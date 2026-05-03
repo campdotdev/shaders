@@ -24,9 +24,20 @@ const config: StorybookConfig = {
     // Without this, pnpm's per-package node_modules layout can cause Vite
     // to bundle two `three` instances — material.dispose() then explodes
     // touching the wrong Nodes bookkeeping (`usedTimes` undefined).
-    // Don't dedupe react here — Storybook's @storybook/react-vite handles
-    // it, and overriding breaks its CJS-default-export interop.
     config.resolve.dedupe = [...(config.resolve.dedupe ?? []), 'three']
+
+    // Pre-bundle react so CJS-default-style `import React from 'react'`
+    // works via Vite's interop. Without this, some chunked deps resolve
+    // react to the raw ESM index.js which has no default export.
+    config.optimizeDeps = config.optimizeDeps ?? {}
+    config.optimizeDeps.include = [
+      ...(config.optimizeDeps.include ?? []),
+      'react',
+      'react/jsx-runtime',
+      'react/jsx-dev-runtime',
+      'react-dom',
+      'react-dom/client',
+    ]
     return config
   },
 }
