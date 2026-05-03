@@ -32,6 +32,7 @@ pnpm-debug.log*
 # Caches
 .cache/
 .eslintcache
+.fallow/
 
 # Brainstorming companion (not source code)
 .superpowers/
