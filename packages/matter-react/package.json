@@ -1,0 +1,44 @@
+{
+  "name": "@lovo/matter-react",
+  "version": "0.0.0",
+  "description": "React binding for Matter — MatterScene, useShaderMaterial, input hooks.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "peerDependencies": {
+    "@lovo/matter": "workspace:*",
+    "react": "^19.0.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@lovo/matter": "workspace:*",
+    "@matter/eslint-config": "workspace:*",
+    "@matter/tsconfig": "workspace:*",
+    "@types/react": "^19.0.0",
+    "@types/three": "^0.170.0",
+    "react": "^19.0.0",
+    "three": "^0.170.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  }
+}
