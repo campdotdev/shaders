@@ -1,0 +1,22 @@
+{
+  "name": "@matter/registry",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Source-of-truth Tier 1 components shipped via the @lovo/matter-cli copy-paste flow. Not published to npm.",
+  "type": "module",
+  "dependencies": {
+    "@lovo/matter": "workspace:*",
+    "@lovo/matter-react": "workspace:*",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.170.0"
+  },
+  "devDependencies": {
+    "@matter/eslint-config": "workspace:*",
+    "@matter/tsconfig": "workspace:*",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.170.0",
+    "typescript": "^5.6.0"
+  }
+}
