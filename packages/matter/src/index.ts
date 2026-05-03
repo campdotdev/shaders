@@ -6,3 +6,6 @@ export type { MatterRenderer, CreateRendererOptions, MatterBackend } from './run
 
 export { MatterScheduler } from './runtime/MatterScheduler.js'
 export type { SchedulerTick, SchedulerClient } from './runtime/MatterScheduler.js'
+
+export { CursorInput } from './inputs/CursorInput.js'
+export type { CursorInputOptions, Vec2 } from './inputs/CursorInput.js'
