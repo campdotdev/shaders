@@ -1,5 +1,5 @@
-// @lovo/matter — engine package.
-// Implementation begins in Milestone 1. This stub exists so the package builds
-// and its workspace wiring can be verified.
+// @lovo/matter — engine package public API.
+// Implementation grows phase by phase through Milestone 1.
 
-export const __MATTER_ENGINE_VERSION__ = '0.0.0' as const
+export { createRenderer } from './runtime/createRenderer.js'
+export type { MatterRenderer, CreateRendererOptions, MatterBackend } from './runtime/createRenderer.js'
