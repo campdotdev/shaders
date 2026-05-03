@@ -25,6 +25,8 @@
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "peerDependencies": {
@@ -34,8 +36,10 @@
     "@matter/eslint-config": "workspace:*",
     "@matter/tsconfig": "workspace:*",
     "@types/three": "^0.170.0",
+    "happy-dom": "^15.0.0",
     "three": "^0.170.0",
     "tsup": "^8.3.0",
-    "typescript": "^5.6.0"
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
   }
 }
