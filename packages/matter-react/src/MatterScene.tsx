@@ -32,50 +32,54 @@ export function MatterScene(props: MatterSceneProps) {
   const { children, fallback, className, style, maxDPR } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const [ctx, setCtx] = useState<MatterContextValue | null>(null)
+  const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
 
     let cancelled = false
-    let disposed = false
-    let value: MatterContextValue | null = null
+    let cleanup: (() => void) | null = null
 
     const setup = async () => {
-      const renderer = await createRenderer(canvas, { maxDPR })
-      if (cancelled) {
-        renderer.dispose()
-        return
-      }
-      const scene = new Scene()
-      const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10)
-      camera.position.z = 1
-      const scheduler = new MatterScheduler()
+      try {
+        const renderer = await createRenderer(canvas, { maxDPR })
+        if (cancelled) {
+          renderer.dispose()
+          return
+        }
+        const scene = new Scene()
+        const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10)
+        camera.position.z = 1
+        const scheduler = new MatterScheduler()
 
-      // The scheduler renders the scene every frame.
-      scheduler.add(() => renderer.three.render(scene, camera))
-      scheduler.start()
+        scheduler.add(() => renderer.three.render(scene, camera))
+        scheduler.start()
 
-      const onResize = () => renderer.resize()
-      window.addEventListener('resize', onResize)
+        const onResize = () => renderer.resize()
+        window.addEventListener('resize', onResize)
 
-      value = { renderer, scene, camera, scheduler }
-      setCtx(value)
+        cleanup = () => {
+          window.removeEventListener('resize', onResize)
+          scheduler.dispose()
+          renderer.dispose()
+        }
 
-      // Cleanup function lives in the outer effect's return below.
-      ;(setup as unknown as { cleanup: () => void }).cleanup = () => {
-        if (disposed) return
-        disposed = true
-        window.removeEventListener('resize', onResize)
-        scheduler.dispose()
-        renderer.dispose()
+        setCtx({ renderer, scene, camera, scheduler })
+      } catch (err) {
+        if (cancelled) return
+        const e = err instanceof Error ? err : new Error(String(err))
+        // eslint-disable-next-line no-console
+        console.error('[MatterScene] renderer init failed:', e)
+        setError(e)
       }
     }
 
     void setup()
     return () => {
       cancelled = true
-      ;(setup as unknown as { cleanup?: () => void }).cleanup?.()
+      cleanup?.()
+      cleanup = null
       setCtx(null)
     }
   }, [maxDPR])
@@ -83,7 +87,27 @@ export function MatterScene(props: MatterSceneProps) {
   return (
     <div className={className} style={{ ...defaultStyle, ...style }}>
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-      {ctx ? (
+      {error ? (
+        <div
+          style={{
+            position: 'absolute',
+            inset: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            color: '#fff',
+            background: 'rgba(120, 30, 30, 0.85)',
+            font: '0.85rem ui-monospace, monospace',
+            whiteSpace: 'pre-wrap',
+            textAlign: 'center',
+          }}
+        >
+          MatterScene init failed:
+          {'\n'}
+          {error.message}
+        </div>
+      ) : ctx ? (
         <MatterContext.Provider value={ctx}>{children}</MatterContext.Provider>
       ) : (
         fallback ?? null

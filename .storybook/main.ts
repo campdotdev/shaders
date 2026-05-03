@@ -20,6 +20,16 @@ const config: StorybookConfig = {
       ...(config.resolve.alias ?? {}),
       '@matter/registry': resolve(__dirname, '../registry'),
     }
+    // Force a single copy of three / react across the workspace.
+    // Without this, pnpm's per-package node_modules layout can cause Vite
+    // to bundle two `three` instances — material.dispose() then explodes
+    // touching the wrong Nodes bookkeeping (`usedTimes` undefined).
+    config.resolve.dedupe = [
+      ...(config.resolve.dedupe ?? []),
+      'three',
+      'react',
+      'react-dom',
+    ]
     return config
   },
 }
