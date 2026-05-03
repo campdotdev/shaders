@@ -45,6 +45,8 @@ importers:
         specifier: ^8.10.0
         version: 8.59.1(eslint@9.39.4)(typescript@5.9.3)
 
+  tooling/tsconfig: {}
+
 packages:
 
   '@eslint-community/eslint-utils@4.9.1':
