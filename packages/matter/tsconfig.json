@@ -1,0 +1,9 @@
+{
+  "extends": "@matter/tsconfig/library.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "incremental": false
+  },
+  "include": ["src"]
+}
