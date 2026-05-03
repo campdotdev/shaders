@@ -1,0 +1,32 @@
+{
+  "name": "@lovo/matter-cli",
+  "version": "0.0.0",
+  "description": "CLI for Matter — copy-paste components from the registry into your project.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "matter-cli": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "files": ["dist"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "devDependencies": {
+    "@matter/eslint-config": "workspace:*",
+    "@matter/tsconfig": "workspace:*",
+    "@types/node": "^22.7.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0"
+  }
+}
