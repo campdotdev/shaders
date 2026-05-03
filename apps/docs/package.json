@@ -1,0 +1,34 @@
+{
+  "name": "@matter/docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "build": "next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint app",
+    "clean": "rm -rf .next .turbo *.tsbuildinfo"
+  },
+  "dependencies": {
+    "@lovo/matter": "workspace:*",
+    "@lovo/matter-react": "workspace:*",
+    "@matter/registry": "workspace:*",
+    "next": "^15.5.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "three": "^0.170.0",
+    "tweakpane": "^4.0.5"
+  },
+  "devDependencies": {
+    "@matter/eslint-config": "workspace:*",
+    "@matter/tsconfig": "workspace:*",
+    "@tweakpane/core": "^2.0.5",
+    "@types/node": "^22.7.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.170.0",
+    "typescript": "^5.6.0"
+  }
+}
