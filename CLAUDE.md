@@ -29,7 +29,8 @@ ls docs/superpowers/plans/         # which plans exist
 - **Three-tier model**: Tier 1 = polished components (`<LinearGradient>` etc., delivered via shadcn-style CLI copy-paste from `registry/`); Tier 2 = TSL primitives in the engine package (`fbm`, `voronoi`, `cursorRipple`, etc.); Tier 3 = recipes (TSL snippets in the docs site).
 - **Three packages**: `@lovo/matter` (engine, framework-agnostic), `@lovo/matter-react` (React binding), `@lovo/matter-cli` (copy-paste delivery).
 - **Three rendering modes** (no auto-detection of `@react-three/fiber`): Mode 1 drop-in (`<LinearGradient />` auto-creates a canvas), Mode 2 shared `<MatterScene>` (one canvas, multiple effects), Mode 3 use `useShaderMaterial` directly inside user's own r3f `<Canvas>`.
-- **Stack**: TypeScript 5 strict mode, pnpm 9 workspaces, Turborepo (orchestration; **NOT Turbopack**), tsup (bundling, ESM+CJS+types), ESLint 9 flat config, Prettier 3, Storybook 10 + Vite (dev), Playwright + Storybook Test Runner (visual regression). Future docs site: Next.js 15.
+- **Stack**: TypeScript 5 strict mode, pnpm 9 workspaces, Turborepo (orchestration; **NOT Turbopack**), tsup (bundling, ESM+CJS+types), ESLint 9 flat config, Prettier 3, Vitest (unit tests), Next.js 15 (docs site, lives at `apps/docs/`), Tweakpane (interactive shader playground panel on the docs site). Visual regression: Playwright against the docs site routes (M5).
+  - **Note (M1 deviation):** the original plan called for Storybook 10 + Vite. We ripped Storybook out — see [Storybook → Tweakpane pivot memory](../../.claude/projects/-Users-hunter-garrett-Documents--personal-mattermix/memory/project_matter_storybook_pivot.md). Don't reintroduce Storybook in v1; the docs page is the demo surface.
 
 For full architecture, public APIs, the v1 catalog of six components, animation/signal protocol, and the docs site design — read the spec.
 
@@ -38,7 +39,7 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 | # | Milestone | Status | Tag |
 |---|---|---|---|
 | 0 | Repo bootstrap | ✅ Complete | `m0-complete` |
-| 1 | Vertical slice — `<LinearGradient>` end-to-end | ⏳ Plan not yet written | — |
+| 1 | Vertical slice — `<LinearGradient>` end-to-end | ✅ Complete | `m1-complete` |
 | 2 | `@lovo/matter-cli` | Pending | — |
 | 3 | The other 5 v1 components | Pending | — |
 | 4 | Docs site polish | Pending | — |
@@ -89,18 +90,25 @@ pnpm --filter @lovo/matter dev            # tsup --watch
 node packages/matter-cli/dist/index.js add foo
 ```
 
-## Gotchas to remember (from M0 lessons)
+## Gotchas to remember (from M0 + M1 lessons)
 
 1. **`${configDir}` substitution is required in shared tsconfigs** — `tooling/tsconfig/library.json` uses `${configDir}/dist`, `${configDir}/src`, etc. Without this, paths resolve relative to the parent file's directory, not the consuming package's, causing TS6059. Don't add `rootDir` back to library.json — tsup's DTS build uses `load-tsconfig` which doesn't substitute `${configDir}`, so `rootDir` must be inferred from `include` instead.
 2. **`incremental: true` + `tsc --noEmit` requires `tsBuildInfoFile`** — already set in `library.json`. If you ever see TS5074, this is why.
 3. **Root `package.json` lacks `"type": "module"`** — causes a harmless `MODULE_TYPELESS_PACKAGE_JSON` warning when ESLint runs. Cosmetic only. Fix if it ever becomes annoying.
 4. **`turbo` ≠ `turbopack`** — Turborepo is the monorepo orchestrator (what `turbo.json` configures); Turbopack is Next.js's bundler (used in `apps/docs/` only, not in the published packages, which use tsup).
+5. **TSL `colorNode` types reject `ShaderNodeObject<unknown>`** — three's types constrain the generic to `extends Node`. Use `Node | ShaderNodeObject<Node>` (see `colorRamp`/`useShaderMaterial`).
+6. **`uniform(vec2(...))` loses the Vector2 mutator API** — TSL's `vec2(...)` returns a TSL Node, so `uniform(vec2(...)).value` is typed as Node, no `.set()`. Use `uniform(new Vector2(...))` when you need to mutate the value imperatively.
+7. **`setClearColor`'s types only accept `Color` in 0.170+** — convert `number | string` via `new Color(...)` before passing.
+8. **Vitest 2.x exits 1 when no test files are found** — set `passWithNoTests: true` in the per-package `vitest.config.ts` so `pnpm test` stays green for packages that haven't grown tests yet.
+9. **`@matter/registry` workspace package + `transpilePackages` is required for the docs site** — Next.js refuses to import raw `.tsx` from a workspace dep without `transpilePackages: ['@lovo/matter', '@lovo/matter-react', '@matter/registry']` in `next.config.ts`.
+10. **`three/webgpu` references `self` at module load** — it cannot SSR. In Next docs pages that render a Matter component, wrap the import in `next/dynamic` with `{ ssr: false }`.
+11. **`tweakpane@4.0.5` ships a broken `@tweakpane/core` package.json reference** — its types pull from `@tweakpane/core` but the path in `dependencies` is the workspace-relative `../core` from tweakpane's own monorepo. Add `@tweakpane/core` (the published 2.x version) as a devDep to fix the typecheck. Runtime is unaffected.
 
 ## Conventions
 
 - **Commit messages**: Conventional Commits (`feat(scope): …`, `fix(scope): …`, `chore: …`, `docs: …`, `ci: …`). Scope is the package name without the `@lovo/` prefix (e.g., `feat(matter):`, `feat(matter-react):`, `fix(tooling):`).
 - **Branch**: `main` only for now. PR branches when GitHub remote is configured.
-- **TDD where applicable**: For Tier 2 primitives and CLI logic, write tests first (Vitest). For Tier 1 components and shader visuals, "tests" are Storybook stories + Playwright visual regression — there is no meaningful unit test for "does this gradient look right." Don't try to mock the GPU.
+- **TDD where applicable**: For Tier 2 primitives and CLI logic, write tests first (Vitest). For Tier 1 components and shader visuals, "tests" are docs-page demos (with Tweakpane controls) + Playwright visual regression in M5 — there is no meaningful unit test for "does this gradient look right." Don't try to mock the GPU.
 - **TypeScript**: strict mode, `verbatimModuleSyntax`, `noUncheckedIndexedAccess`. Use `import type` for type-only imports (the lint rule enforces this).
 - **No emojis in code or commit messages** unless the user explicitly requests them.
 - **Don't add features beyond what the current task or plan specifies.** YAGNI hard. If you find yourself thinking "while I'm here, I'll also add…", stop.
