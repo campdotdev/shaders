@@ -1,0 +1,9 @@
+{
+  "extends": "@matter/tsconfig/react-library.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "moduleResolution": "Bundler",
+    "module": "ESNext"
+  },
+  "include": ["**/*.ts", "**/*.tsx"]
+}
