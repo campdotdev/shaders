@@ -1,2 +1,28 @@
-// Phase 1.2 — placeholder. Implementation comes in Task 3 of Phase 1.2.
-console.log('1-magenta loaded; awaiting createRenderer wiring.')
+import { Scene, OrthographicCamera, Mesh, PlaneGeometry } from 'three'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { vec3 } from 'three/tsl'
+import { createRenderer } from '@lovo/matter'
+
+const canvas = document.getElementById('c') as HTMLCanvasElement
+if (!canvas) throw new Error('canvas#c not found')
+
+const matter = await createRenderer(canvas)
+console.log(`[playground/1-magenta] backend: ${matter.backend}`)
+
+const scene = new Scene()
+const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10)
+camera.position.z = 1
+
+const material = new MeshBasicNodeMaterial()
+material.colorNode = vec3(1, 0, 1) // magenta — hardcoded TSL fragment
+
+const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+scene.add(mesh)
+
+const tick = () => {
+  matter.three.render(scene, camera)
+  requestAnimationFrame(tick)
+}
+tick()
+
+window.addEventListener('resize', matter.resize)
