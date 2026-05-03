@@ -56,11 +56,11 @@ A secondary goal: the project doubles as a learning vehicle for shader programmi
 
 Matter is organized into three tiers, each addressing a different developer need:
 
-| Tier | Name | What it is | Where it lives | Audience |
-|---|---|---|---|---|
-| **1** | **Components** | Polished, prop-configurable shader components (`<LinearGradient>`, `<Aurora>`, etc.) | `registry/*.tsx` (delivered via CLI copy-paste) | All users |
-| **2** | **Primitives** | TSL building blocks (`fbm`, `voronoi`, `cursorRipple`, `colorRamp`, etc.) | `packages/matter/` (npm — `@lovo/matter`) | Component authors and shader-curious users |
-| **3** | **Recipes** | Short TSL snippets (10–30 lines) demonstrating how to combine primitives into specific looks (embossed relief, pixelate, posterize, displacement, etc.) | `apps/docs/` (gallery pages) | Anyone copying ad-hoc shader effects |
+| Tier  | Name           | What it is                                                                                                                                              | Where it lives                                  | Audience                                   |
+| ----- | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ------------------------------------------ |
+| **1** | **Components** | Polished, prop-configurable shader components (`<LinearGradient>`, `<Aurora>`, etc.)                                                                    | `registry/*.tsx` (delivered via CLI copy-paste) | All users                                  |
+| **2** | **Primitives** | TSL building blocks (`fbm`, `voronoi`, `cursorRipple`, `colorRamp`, etc.)                                                                               | `packages/matter/` (npm — `@lovo/matter`)       | Component authors and shader-curious users |
+| **3** | **Recipes**    | Short TSL snippets (10–30 lines) demonstrating how to combine primitives into specific looks (embossed relief, pixelate, posterize, displacement, etc.) | `apps/docs/` (gallery pages)                    | Anyone copying ad-hoc shader effects       |
 
 Tier 1 components are written using Tier 2 primitives. Tier 3 recipes use Tier 2 primitives directly. Popular recipes can graduate into Tier 1 components over time. The catalog scales primarily through Tier 3, not Tier 1.
 
@@ -125,7 +125,7 @@ The component creates its own canvas internally via `<MatterScene>` (auto-wrappi
 ```tsx
 import { MatterScene } from '@lovo/matter-react'
 
-<MatterScene>
+;<MatterScene>
   <LinearGradient />
   <MeshGradient />
 </MatterScene>
@@ -164,8 +164,18 @@ Three export groups:
 
 ```ts
 export {
-  uniform, vec2, vec3, vec4,
-  mix, smoothstep, mod, sin, cos, length, dot, normalize,
+  uniform,
+  vec2,
+  vec3,
+  vec4,
+  mix,
+  smoothstep,
+  mod,
+  sin,
+  cos,
+  length,
+  dot,
+  normalize,
   time,
 } from 'three/tsl'
 ```
@@ -178,21 +188,25 @@ These are the most-used TSL primitives, re-exported through Matter so users have
 // Procedural patterns
 export function noise(uv: Vec2Node, opts?: { scale?: number; seed?: number }): FloatNode
 export function fbm(uv: Vec2Node, opts?: { octaves?: number; persistence?: number }): FloatNode
-export function voronoi(uv: Vec2Node, opts?: { scale?: number }): { distance: FloatNode; cellId: FloatNode }
+export function voronoi(
+  uv: Vec2Node,
+  opts?: { scale?: number },
+): { distance: FloatNode; cellId: FloatNode }
 
 // Spatial / shape
-export function gradient(field: FloatNode, epsilon?: number): Vec2Node    // rate of change in x,y
+export function gradient(field: FloatNode, epsilon?: number): Vec2Node // rate of change in x,y
 export function sdfCircle(uv: Vec2Node, center: Vec2Node, radius: FloatNode): FloatNode
 export function radialGradient(uv: Vec2Node, center: Vec2Node, colors: Vec3Node[]): Vec3Node
 
 // Color & quantization
-export function quantize<T>(value: T, step: T): T                          // posterize / pixelate
+export function quantize<T>(value: T, step: T): T // posterize / pixelate
 export function colorRamp(t: FloatNode, stops: { color: Vec3Node; position: number }[]): Vec3Node
 
 // Distortion
 export function displace(uv: Vec2Node, by: Vec2Node): Vec2Node
 export function cursorRipple(
-  uv: Vec2Node, cursor: Vec2Node,
+  uv: Vec2Node,
+  cursor: Vec2Node,
   opts?: { decay?: number; frequency?: number },
 ): FloatNode
 ```
@@ -218,7 +232,10 @@ export class MatterScheduler {
 // since drop-in mode trades resource sharing for zero-ceremony usage. Users who want shared
 // rendering wrap children in an explicit <MatterScene>.
 
-export function createMaterial(tslShader: ShaderNode, uniforms?: Record<string, any>): MatterMaterial
+export function createMaterial(
+  tslShader: ShaderNode,
+  uniforms?: Record<string, any>,
+): MatterMaterial
 // Wraps THREE.NodeMaterial; provides the prop→uniform binding layer
 ```
 
@@ -228,14 +245,20 @@ export function createMaterial(tslShader: ShaderNode, uniforms?: Record<string, 
 export class CursorInput {
   constructor(opts?: { smoothing?: number; target?: EventTarget })
   uniform: Vec2Uniform
-  get(): Vec2                                 // MotionValue-compatible
-  on(event: 'change', cb: (v: Vec2) => void): () => void   // unsubscribe
+  get(): Vec2 // MotionValue-compatible
+  on(event: 'change', cb: (v: Vec2) => void): () => void // unsubscribe
   dispose(): void
 }
 
-export class TimeInput { /* monotonic clock uniform; same shape */ }
-export class ScrollInput { /* scroll position uniform, normalized; same shape */ }
-export class ResizeInput { /* viewport size uniform; same shape */ }
+export class TimeInput {
+  /* monotonic clock uniform; same shape */
+}
+export class ScrollInput {
+  /* scroll position uniform, normalized; same shape */
+}
+export class ResizeInput {
+  /* viewport size uniform; same shape */
+}
 ```
 
 Each input class implements both a uniform writer (for the GPU) and the MotionValue-compatible signal protocol (`get`, `on('change', cb)`) so they can be composed with other signals via Motion's `useTransform` or similar.
@@ -251,12 +274,15 @@ interface MatterSceneProps {
   fallback?: ReactNode
   className?: string
   style?: CSSProperties
-  maxDPR?: number          // default 2; opt-out via Infinity
-  pauseWhenOffscreen?: boolean  // default true
+  maxDPR?: number // default 2; opt-out via Infinity
+  pauseWhenOffscreen?: boolean // default true
 }
 
 // Material hook — the integration point for r3f (Mode 3) and Tier 1 components
-export function useShaderMaterial(tsl: ShaderNode, uniforms: Record<string, any>): THREE.NodeMaterial
+export function useShaderMaterial(
+  tsl: ShaderNode,
+  uniforms: Record<string, any>,
+): THREE.NodeMaterial
 
 // Context access for advanced cases (e.g., adding custom meshes inside MatterScene)
 export function useMatterContext(): {
@@ -270,9 +296,15 @@ export function useMatterContext(): {
 export function useAnimatableUniform<T>(prop: AnimatableProp<T>): UniformNode
 
 // Input hooks (React wrappers around the engine's input classes)
-export function useCursor(opts?: { smoothing?: number; target?: 'window' | RefObject<HTMLElement> }): CursorSignal
+export function useCursor(opts?: {
+  smoothing?: number
+  target?: 'window' | RefObject<HTMLElement>
+}): CursorSignal
 export function useTime(): TimeSignal
-export function useScroll(opts?: { axis?: 'x' | 'y' | 'both'; target?: RefObject<HTMLElement> }): ScrollSignal
+export function useScroll(opts?: {
+  axis?: 'x' | 'y' | 'both'
+  target?: RefObject<HTMLElement>
+}): ScrollSignal
 export function useResize(): ResizeSignal
 
 // SSR helper — handles client-only mounting + fallback display
@@ -284,7 +316,7 @@ The "signal" return types from the input hooks (`CursorSignal`, `TimeSignal`, et
 ```ts
 interface MatterSignal<T> {
   get(): T
-  on(event: 'change', cb: (v: T) => void): () => void  // returns unsubscribe
+  on(event: 'change', cb: (v: T) => void): () => void // returns unsubscribe
 }
 ```
 
@@ -312,6 +344,7 @@ npx @lovo/matter-cli update [name]        # re-fetch latest
 ```
 
 `add` flow:
+
 1. Fetches `${registryUrl}/registry.json`
 2. Looks up the requested component entry
 3. Fetches the corresponding `.tsx` source
@@ -349,8 +382,9 @@ interface MatterComponentProps {
   // Visual configuration (component-specific props — all numeric/color props are AnimatableProp<T>)
 
   // Interactivity
-  interactive?: boolean              // simple on/off — uses default useCursor() internally
-  inputs?: {                         // advanced — pass user-controlled signals
+  interactive?: boolean // simple on/off — uses default useCursor() internally
+  inputs?: {
+    // advanced — pass user-controlled signals
     cursor?: CursorSignal
     scroll?: ScrollSignal
     time?: TimeSignal
@@ -360,7 +394,7 @@ interface MatterComponentProps {
   // Layout & SSR
   className?: string
   style?: CSSProperties
-  fallback?: ReactNode               // overrides the component's default fallback
+  fallback?: ReactNode // overrides the component's default fallback
 }
 ```
 
@@ -379,12 +413,12 @@ Every Tier 1 component:
 
 ```tsx
 <LinearGradient
-  colors={['#ff7b72', '#7b9cff']}     // 2+ colors
-  angle={45}                          // degrees
-  variant="linear"                    // 'linear' | 'radial'
-  speed={0}                           // animates the gradient drift
-  focalPoint={[0.5, 0.5]}             // for radial variant
-  interactive={false}                 // cursor shifts focal/angle slightly
+  colors={['#ff7b72', '#7b9cff']} // 2+ colors
+  angle={45} // degrees
+  variant="linear" // 'linear' | 'radial'
+  speed={0} // animates the gradient drift
+  focalPoint={[0.5, 0.5]} // for radial variant
+  interactive={false} // cursor shifts focal/angle slightly
 />
 ```
 
@@ -399,10 +433,10 @@ Every Tier 1 component:
 ```tsx
 <MeshGradient
   colors={['#ff61a6', '#61a6ff', '#61ffa6', '#ffd861']}
-  points={'auto'}                     // 'auto' or explicit Vec2[]
+  points={'auto'} // 'auto' or explicit Vec2[]
   speed={0.3}
   blur={0.5}
-  interactive={false}                 // cursor pulls nearest color point
+  interactive={false} // cursor pulls nearest color point
 />
 ```
 
@@ -419,7 +453,7 @@ Every Tier 1 component:
   colors={['#7b61ff', '#5fc7ff', '#ff61a6']}
   speed={0.4}
   intensity={1}
-  interactive={false}                 // cursor warps the flow
+  interactive={false} // cursor warps the flow
 />
 ```
 
@@ -433,12 +467,12 @@ Every Tier 1 component:
 
 ```tsx
 <DotField
-  spacing={30}                        // pixels between dots
-  dotSize={2}                         // pixel radius
+  spacing={30} // pixels between dots
+  dotSize={2} // pixel radius
   color="#888"
-  reach={100}                         // cursor influence radius
+  reach={100} // cursor influence radius
   strength={1}
-  interactive={true}                  // default ON for this component
+  interactive={true} // default ON for this component
 />
 ```
 
@@ -456,7 +490,7 @@ Every Tier 1 component:
   speed={0.5}
   colors={['#000', '#fff']}
   octaves={4}
-  variant="organic"                   // 'organic' | 'cellular' | 'grid'
+  variant="organic" // 'organic' | 'cellular' | 'grid'
 />
 ```
 
@@ -474,8 +508,8 @@ Every Tier 1 component:
   frequency={5}
   speed={1}
   color="#7ec"
-  layers={3}                          // sum N waves at different frequencies
-  interactive={false}                 // cursor spawns ripples
+  layers={3} // sum N waves at different frequencies
+  interactive={false} // cursor spawns ripples
 />
 ```
 
@@ -487,17 +521,17 @@ Every Tier 1 component:
 
 ### 5.3 What this set proves architecturally
 
-| Architectural decision | Validated by |
-|---|---|
-| Hybrid renderer (drop-in + `MatterScene`) | All six work standalone; docs page combines them inside one `MatterScene` |
-| Cursor architecture (`interactive` + `inputs`) | LinearGradient, MeshGradient, Aurora, DotField, Waves opt in differently |
-| Fallback prop + sensible defaults | LinearGradient + DotField + NoiseField have CSS-equivalent fallbacks; Aurora/MeshGradient/Waves use approximations |
-| WebGPU + WebGL2 fallback (TSL auto) | All six render on either backend without code changes |
-| Primitives library (Tier 2) | The six components together use ~10 of ~12 primitives — heavy reuse validates the API |
-| Three-tier model | Components → primitives → recipes shown on docs site |
-| Animatable prop protocol | Every numeric/color prop on every component is `AnimatableProp<T>` |
+| Architectural decision                         | Validated by                                                                                                       |
+| ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
+| Hybrid renderer (drop-in + `MatterScene`)      | All six work standalone; docs page combines them inside one `MatterScene`                                          |
+| Cursor architecture (`interactive` + `inputs`) | LinearGradient, MeshGradient, Aurora, DotField, Waves opt in differently                                           |
+| Fallback prop + sensible defaults              | LinearGradient + DotField + NoiseField have CSS-equivalent fallbacks; Aurora/MeshGradient/Waves use approximations |
+| WebGPU + WebGL2 fallback (TSL auto)            | All six render on either backend without code changes                                                              |
+| Primitives library (Tier 2)                    | The six components together use ~10 of ~12 primitives — heavy reuse validates the API                              |
+| Three-tier model                               | Components → primitives → recipes shown on docs site                                                               |
+| Animatable prop protocol                       | Every numeric/color prop on every component is `AnimatableProp<T>`                                                 |
 
-If these six ship well, every architectural decision in this design is *demonstrably* sound.
+If these six ship well, every architectural decision in this design is _demonstrably_ sound.
 
 ---
 
@@ -532,7 +566,9 @@ import { useMotionValue, animate } from 'motion/react'
 
 function HeroBackground() {
   const angle = useMotionValue(0)
-  useEffect(() => { animate(angle, 360, { duration: 8, repeat: Infinity }) }, [])
+  useEffect(() => {
+    animate(angle, 360, { duration: 8, repeat: Infinity })
+  }, [])
   return <LinearGradient angle={angle} />
 }
 ```
@@ -593,6 +629,7 @@ CSS transforms (`transform: scale(...)` on the canvas element) are CSS concerns;
 ### 7.2 Page treatments
 
 **Component pages** include:
+
 - Full-bleed live demo above the fold with fullscreen toggle
 - **Props playground** — schema-driven panel with sliders/color-pickers/toggles that mutate the live demo's props in real time
 - Install snippet (`npx @lovo/matter-cli add <name>`)
@@ -602,12 +639,14 @@ CSS transforms (`transform: scale(...)` on the canvas element) are CSS concerns;
 - Tier 2 primitives used (cross-links to primitive pages)
 
 **Primitive pages** include:
+
 - One paragraph "what this is for" explainer (with shader concept context for learners)
 - Live demo with a tiny shader using just this primitive, with sliders for its parameters
 - TS function signature
 - Recipes that use it (cross-links)
 
 **Recipe pages** include:
+
 - Live preview rendered as a small Matter component
 - TSL source (10–30 lines)
 - Primitives used (cross-links)
@@ -636,6 +675,7 @@ The `?raw` import suffix yields the file as a string for the code block. (Next.j
 ### 7.5 Hero page
 
 The home page is itself a Matter showcase:
+
 - `<Aurora>` as the hero background
 - `<DotField interactive>` in a feature section, with `useTransform` driving its `reach` from scroll position
 - `<MeshGradient>` behind the "Components" section header
@@ -655,13 +695,13 @@ This serves as both marketing and the most credible scale-test (six components o
 
 Five engine-level behaviors every Matter component gets without per-component code:
 
-| Default | Mechanism | Rationale |
-|---|---|---|
-| **Pause when offscreen** | `IntersectionObserver` on the canvas; scheduler unsubscribes the component when not visible | Below-fold shaders shouldn't burn GPU |
-| **Render-on-demand for static cases** | If no signal-shaped uniforms changed and `time` isn't used, render once and stop the loop | `<LinearGradient speed={0}>` should be one frame, not 60/sec |
-| **DPR clamping** | `Math.min(devicePixelRatio, 2)` by default; opt-out via `<MatterScene maxDPR={Infinity}>` | 4K and Retina at full DPR is 4× the pixel work for marginal perceptual gain |
-| **Pause when tab hidden** | `document.visibilityState` listener | Background tabs shouldn't render |
-| **`prefers-reduced-motion`** | Detects the media query; multiplies `time` uniform by 0 (paused) or 0.3 (slow) per the user's setting | Accessibility — never ambush users with motion |
+| Default                               | Mechanism                                                                                             | Rationale                                                                   |
+| ------------------------------------- | ----------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Pause when offscreen**              | `IntersectionObserver` on the canvas; scheduler unsubscribes the component when not visible           | Below-fold shaders shouldn't burn GPU                                       |
+| **Render-on-demand for static cases** | If no signal-shaped uniforms changed and `time` isn't used, render once and stop the loop             | `<LinearGradient speed={0}>` should be one frame, not 60/sec                |
+| **DPR clamping**                      | `Math.min(devicePixelRatio, 2)` by default; opt-out via `<MatterScene maxDPR={Infinity}>`             | 4K and Retina at full DPR is 4× the pixel work for marginal perceptual gain |
+| **Pause when tab hidden**             | `document.visibilityState` listener                                                                   | Background tabs shouldn't render                                            |
+| **`prefers-reduced-motion`**          | Detects the media query; multiplies `time` uniform by 0 (paused) or 0.3 (slow) per the user's setting | Accessibility — never ambush users with motion                              |
 
 All five live in `MatterScheduler` and `createRenderer`. Users can override per-`MatterScene` via props or globally via the engine's runtime configuration.
 
@@ -669,19 +709,19 @@ All five live in `MatterScheduler` and `createRenderer`. Users can override per-
 
 ## 9. Build / test / CI tooling
 
-| Concern | Choice | Notes |
-|---|---|---|
-| Monorepo | **pnpm workspaces** + **Turborepo** | Standard; Turborepo for build/test caching |
-| Library bundling | **tsup** (esbuild) for `@lovo/matter*` | Library-focused, dual ESM+CJS, faster than Vite library mode |
-| Docs site bundling | **Next.js native** | App Router + MDX |
-| Component dev environment | **Storybook 10 + `@storybook/react-vite`** | Vite builder; one Storybook instance covers `registry/` and `packages/` |
-| TypeScript | strict mode, project references | Each package has its own `tsconfig.json` extending `tooling/tsconfig/` |
-| Lint/format | **ESLint** + **Prettier** | Configs in `tooling/eslint-config/` |
-| Unit tests | **Vitest** | Engine primitives, hooks, CLI logic |
-| Visual regression | **Storybook Test Runner** + Playwright | Snapshots all stories at a fixed frame number to handle rAF non-determinism |
-| Versioning | **Changesets** | Independent per-package versioning across the three published packages |
-| CI | GitHub Actions | typecheck · lint · unit tests · storybook build · visual regression · changesets release-PR |
-| Browser matrix | Chrome, Firefox, Safari (current + previous major) | All have WebGPU as of mid-2026; visual regression runs on Chrome and Safari |
+| Concern                   | Choice                                             | Notes                                                                                       |
+| ------------------------- | -------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Monorepo                  | **pnpm workspaces** + **Turborepo**                | Standard; Turborepo for build/test caching                                                  |
+| Library bundling          | **tsup** (esbuild) for `@lovo/matter*`             | Library-focused, dual ESM+CJS, faster than Vite library mode                                |
+| Docs site bundling        | **Next.js native**                                 | App Router + MDX                                                                            |
+| Component dev environment | **Storybook 10 + `@storybook/react-vite`**         | Vite builder; one Storybook instance covers `registry/` and `packages/`                     |
+| TypeScript                | strict mode, project references                    | Each package has its own `tsconfig.json` extending `tooling/tsconfig/`                      |
+| Lint/format               | **ESLint** + **Prettier**                          | Configs in `tooling/eslint-config/`                                                         |
+| Unit tests                | **Vitest**                                         | Engine primitives, hooks, CLI logic                                                         |
+| Visual regression         | **Storybook Test Runner** + Playwright             | Snapshots all stories at a fixed frame number to handle rAF non-determinism                 |
+| Versioning                | **Changesets**                                     | Independent per-package versioning across the three published packages                      |
+| CI                        | GitHub Actions                                     | typecheck · lint · unit tests · storybook build · visual regression · changesets release-PR |
+| Browser matrix            | Chrome, Firefox, Safari (current + previous major) | All have WebGPU as of mid-2026; visual regression runs on Chrome and Safari                 |
 
 **Story file layout** (per Tier 1 component):
 
@@ -692,9 +732,13 @@ export default { component: LinearGradient } satisfies Meta
 export const Default: Story = { args: { colors: ['#ff7b72', '#7b9cff'] } }
 export const Animated: Story = { args: { speed: 0.5 } }
 export const Interactive: Story = { args: { interactive: true } }
-export const WithMotion: Story = { /* signal-driven angle */ }
+export const WithMotion: Story = {
+  /* signal-driven angle */
+}
 export const Radial: Story = { args: { variant: 'radial' } }
-export const Fallback: Story = { /* decorator forces WebGPU off */ }
+export const Fallback: Story = {
+  /* decorator forces WebGPU off */
+}
 ```
 
 These stories double as the dev iteration UI and the visual regression test fixtures.
@@ -718,29 +762,29 @@ The strategic milestones below are checkpoints in the design doc. The **implemen
 
 ### 10.2 Strategic milestones
 
-| # | Milestone | Validates |
-|---|---|---|
-| **0** | **Repo bootstrap.** Rename `mattermix/` → `matter/`, git init, pnpm workspaces, Turborepo, shared configs, empty package skeletons, CI stubs, LICENSE/README. | Tooling works |
+| #     | Milestone                                                                                                                                                                                                                                                                                                                                                                    | Validates                                                                                                     |
+| ----- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| **0** | **Repo bootstrap.** Rename `mattermix/` → `matter/`, git init, pnpm workspaces, Turborepo, shared configs, empty package skeletons, CI stubs, LICENSE/README.                                                                                                                                                                                                                | Tooling works                                                                                                 |
 | **1** | **Vertical slice — LinearGradient end-to-end.** Engine: `createRenderer`, `MatterScheduler`, `createMaterial`, `colorRamp`, `time`, `CursorInput`. React binding: `<MatterScene>`, `useShaderMaterial`, `useCursor`, `<FallbackBoundary>`, `useAnimatableUniform`. Registry: `linear-gradient.tsx` + stories. Docs: minimal Next.js + one component page. Storybook running. | The whole architecture works on a real running shader; the cursor "feel" decision is made on a real prototype |
-| **2** | **CLI.** `init`, `add`, `list`, `update`. Reads `registry.json` from GitHub raw URL. Smoke-test in a fresh Next.js project. | Distribution model works end-to-end |
-| **3** | **The other five components.** `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, `waves`. Adds primitives: `noise`, `fbm`, `voronoi`, `gradient`, `sdfCircle`, `quantize`, `displace`, `cursorRipple`, `radialGradient`. Adds input hooks: `useScroll`, `useResize`. | Tier 1 catalog complete; Tier 2 primitives shaped by real usage |
-| **4** | **Docs site polish.** Component pages with `<PropsPlayground>` for all six; primitive pages; 4–6 starter recipes; dogfooded hero page; Pagefind search; theme toggle. | Distribution + learning surface |
-| **5** | **Performance + testing + a11y.** All five engine performance defaults. Unit tests (Vitest), visual regression (Storybook Test Runner). `prefers-reduced-motion` honored end-to-end. | Production-ready quality |
-| **6** | **Publish.** Changesets release of `@lovo/matter@0.1.0`, `@lovo/matter-react@0.1.0`, `@lovo/matter-cli@0.1.0`. Docs deployment per the user's deployment policies. | v1 ships |
+| **2** | **CLI.** `init`, `add`, `list`, `update`. Reads `registry.json` from GitHub raw URL. Smoke-test in a fresh Next.js project.                                                                                                                                                                                                                                                  | Distribution model works end-to-end                                                                           |
+| **3** | **The other five components.** `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, `waves`. Adds primitives: `noise`, `fbm`, `voronoi`, `gradient`, `sdfCircle`, `quantize`, `displace`, `cursorRipple`, `radialGradient`. Adds input hooks: `useScroll`, `useResize`.                                                                                                    | Tier 1 catalog complete; Tier 2 primitives shaped by real usage                                               |
+| **4** | **Docs site polish.** Component pages with `<PropsPlayground>` for all six; primitive pages; 4–6 starter recipes; dogfooded hero page; Pagefind search; theme toggle.                                                                                                                                                                                                        | Distribution + learning surface                                                                               |
+| **5** | **Performance + testing + a11y.** All five engine performance defaults. Unit tests (Vitest), visual regression (Storybook Test Runner). `prefers-reduced-motion` honored end-to-end.                                                                                                                                                                                         | Production-ready quality                                                                                      |
+| **6** | **Publish.** Changesets release of `@lovo/matter@0.1.0`, `@lovo/matter-react@0.1.0`, `@lovo/matter-cli@0.1.0`. Docs deployment per the user's deployment policies.                                                                                                                                                                                                           | v1 ships                                                                                                      |
 
-Milestones 1 and 2 carry the architectural risk (can the design *be built*?). Once those are green, 3–6 are largely execution.
+Milestones 1 and 2 carry the architectural risk (can the design _be built_?). Once those are green, 3–6 are largely execution.
 
 ### 10.3 Sample sub-phase expansion (Milestone 1)
 
 This is the granularity the implementation plan will produce for every milestone:
 
-- **1.1 — Engine package skeleton.** `@lovo/matter` set up with `three` peer dependency, exports nothing yet, builds. *Validation: package builds; types resolve.* ~½ day.
-- **1.2 — `createRenderer` in isolation.** Wrap `WebGPURenderer` with WebGPU/WebGL2 fallback. Render a hardcoded TSL fragment to a manually-created `<canvas>` in a tiny HTML test harness. *Stop and play: open the test harness, see TSL run on the GPU.* ~1 day.
-- **1.3 — First TSL shader you wrote yourself.** In the same test harness, write a 5-line gradient TSL shader from scratch. *Stop and play: change colors, change math, see the result. Read TSL docs.* ~½–1 day, mostly learning.
-- **1.4 — `MatterScheduler`.** Plain rAF batcher class. Tested with two manual canvases sharing one tick. *Validation: a console log fires once per frame.* ~½ day.
-- **1.5 — React binding skeleton + `<MatterScene>`.** Mount a renderer, run the scheduler, expose context. Test with a hardcoded child drawing a magenta square. *Stop and play: same magenta square as 1.2, now in React.* ~1 day.
-- **1.6 — `useShaderMaterial` + first interactive shader.** Inline `<HardcodedGradient>` test component using `useShaderMaterial` + `useCursor`. *Stop and play: this is the architectural moment of truth — does the cursor feel right? Try smoothing values. Decide if `useCursor`'s API needs revision before propagating.* ~1–2 days.
-- **1.7 — `LinearGradient` lifts to `registry/`.** Full v1 prop API. `<FallbackBoundary>` with CSS-gradient default. Storybook stories (Default, Animated, Interactive, Radial, Fallback). Bare-bones docs page. *Stop and play: scrub Storybook args, feel the prop API, capture initial visual regression baselines.* ~1–2 days.
+- **1.1 — Engine package skeleton.** `@lovo/matter` set up with `three` peer dependency, exports nothing yet, builds. _Validation: package builds; types resolve._ ~½ day.
+- **1.2 — `createRenderer` in isolation.** Wrap `WebGPURenderer` with WebGPU/WebGL2 fallback. Render a hardcoded TSL fragment to a manually-created `<canvas>` in a tiny HTML test harness. _Stop and play: open the test harness, see TSL run on the GPU._ ~1 day.
+- **1.3 — First TSL shader you wrote yourself.** In the same test harness, write a 5-line gradient TSL shader from scratch. _Stop and play: change colors, change math, see the result. Read TSL docs._ ~½–1 day, mostly learning.
+- **1.4 — `MatterScheduler`.** Plain rAF batcher class. Tested with two manual canvases sharing one tick. _Validation: a console log fires once per frame._ ~½ day.
+- **1.5 — React binding skeleton + `<MatterScene>`.** Mount a renderer, run the scheduler, expose context. Test with a hardcoded child drawing a magenta square. _Stop and play: same magenta square as 1.2, now in React._ ~1 day.
+- **1.6 — `useShaderMaterial` + first interactive shader.** Inline `<HardcodedGradient>` test component using `useShaderMaterial` + `useCursor`. _Stop and play: this is the architectural moment of truth — does the cursor feel right? Try smoothing values. Decide if `useCursor`'s API needs revision before propagating._ ~1–2 days.
+- **1.7 — `LinearGradient` lifts to `registry/`.** Full v1 prop API. `<FallbackBoundary>` with CSS-gradient default. Storybook stories (Default, Animated, Interactive, Radial, Fallback). Bare-bones docs page. _Stop and play: scrub Storybook args, feel the prop API, capture initial visual regression baselines._ ~1–2 days.
 
 Total: ~6–9 days for Milestone 1 with three explicit learning gates (1.2, 1.3, 1.6).
 
@@ -749,18 +793,22 @@ Total: ~6–9 days for Milestone 1 with three explicit learning gates (1.2, 1.3,
 ## 11. Open questions and risks
 
 **Architectural / feel decisions deferred to implementation:**
+
 - **Cursor smoothing default value** — gets validated in Phase 1.6 on a running shader. The `useCursor` hook's `smoothing` parameter default is provisional; revise based on feel.
 - **Shared scene perf ceiling** — how many simultaneous Matter components does `<MatterScene>` handle gracefully on a typical laptop GPU? Not knowable until Milestone 4 (six components on the docs hero page).
 - **CLI registry mechanism** — v1 fetches from GitHub raw URLs. If repo growth or rate limits become an issue, migrate to a hosted JSON endpoint. Defer until evidence demands it.
 
 **Operational / deployment:**
+
 - **Docs site deployment platform** — chosen at deployment time per the user's deployment policies. Design works on any Next.js-compatible host.
 - **WebGPU support in target browsers** — current as of mid-2026 in Chrome, Edge, Safari, and Firefox (recently). Some users will still hit WebGL2 fallback; that's expected and tested.
 
 **Visual regression non-determinism:**
+
 - Snapshots at fixed frame numbers with a small pixel-difference tolerance. Acceptable tolerance value chosen empirically in Milestone 5.
 
 **Risks:**
+
 - **Storybook 10 + Vite + WebGPU + TSL interaction** — Storybook 10 is recent; if a specific addon or builder integration fails, falling back to a chrome-less route in `apps/docs` (Option C from the brainstorming) is a known escape hatch.
 - **Three.js TSL stability** — TSL is still evolving in Three.js. API shifts in Three.js minor releases may require version pinning and migration work. Acceptable risk for the engine layer's value; mitigated by re-exporting TSL primitives through `@lovo/matter` so user code is shielded from Three.js renames.
 
@@ -792,25 +840,25 @@ For the user's reference while learning shaders. Terms used throughout this doc.
 
 For traceability. Each decision was made through Q&A during the 2026-05-01..02 brainstorming session.
 
-| # | Question | Choice |
-|---|---|---|
-| 1 | Audience layering | Both layered: curated effects on top + primitives underneath |
-| 2 | Effect categories scope | All categories eventually; v1 scoped to backgrounds + cursor interaction |
-| 3 | Renderer ownership | Hybrid (drop-in default + `MatterScene` for shared rendering) — refined to drop r3f dependency |
-| 4 | Distribution model | Hybrid (engine npm package + CLI copy-paste for components) |
-| 5 | Browser support | WebGPU + WebGL2 fallback (free via TSL) |
-| 6 | SSR/Next.js | Client-only with sensible default fallback + `fallback` prop |
-| 7 | Cursor architecture | Hybrid (`interactive` prop default + `inputs` for advanced) |
-| 8 | Styling integration | Sensible default (`absolute inset-0`) + className override |
-| 9 | v1 component catalog | All six: LinearGradient, MeshGradient, Aurora, DotField, NoiseField, Waves |
-| 10 | Docs site framework | Next.js custom (with framework switcher infra, hidden in v1) |
-| — | Multi-framework approach | Framework-agnostic engine; React binding only in v1; deliver code via tabs (not run multi-framework demos) |
-| — | Three-tier model (Components/Primitives/Recipes) | Adopted to scale catalog without infinite component count |
-| — | Animation library | Don't ship; accept MotionValue-shaped signals via `AnimatableProp<T>` |
-| — | Component dev environment | Storybook 10 + `@storybook/react-vite` |
-| — | Build approach | Approach 1: monorepo from day one + vertical slice; many small phases over few large ones |
-| — | Package naming | `@lovo/matter`, `@lovo/matter-react`, `@lovo/matter-cli` |
+| #   | Question                                         | Choice                                                                                                     |
+| --- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| 1   | Audience layering                                | Both layered: curated effects on top + primitives underneath                                               |
+| 2   | Effect categories scope                          | All categories eventually; v1 scoped to backgrounds + cursor interaction                                   |
+| 3   | Renderer ownership                               | Hybrid (drop-in default + `MatterScene` for shared rendering) — refined to drop r3f dependency             |
+| 4   | Distribution model                               | Hybrid (engine npm package + CLI copy-paste for components)                                                |
+| 5   | Browser support                                  | WebGPU + WebGL2 fallback (free via TSL)                                                                    |
+| 6   | SSR/Next.js                                      | Client-only with sensible default fallback + `fallback` prop                                               |
+| 7   | Cursor architecture                              | Hybrid (`interactive` prop default + `inputs` for advanced)                                                |
+| 8   | Styling integration                              | Sensible default (`absolute inset-0`) + className override                                                 |
+| 9   | v1 component catalog                             | All six: LinearGradient, MeshGradient, Aurora, DotField, NoiseField, Waves                                 |
+| 10  | Docs site framework                              | Next.js custom (with framework switcher infra, hidden in v1)                                               |
+| —   | Multi-framework approach                         | Framework-agnostic engine; React binding only in v1; deliver code via tabs (not run multi-framework demos) |
+| —   | Three-tier model (Components/Primitives/Recipes) | Adopted to scale catalog without infinite component count                                                  |
+| —   | Animation library                                | Don't ship; accept MotionValue-shaped signals via `AnimatableProp<T>`                                      |
+| —   | Component dev environment                        | Storybook 10 + `@storybook/react-vite`                                                                     |
+| —   | Build approach                                   | Approach 1: monorepo from day one + vertical slice; many small phases over few large ones                  |
+| —   | Package naming                                   | `@lovo/matter`, `@lovo/matter-react`, `@lovo/matter-cli`                                                   |
 
 ---
 
-*Next step after user review of this spec: writing-plans skill produces the granular implementation plan.*
+_Next step after user review of this spec: writing-plans skill produces the granular implementation plan._

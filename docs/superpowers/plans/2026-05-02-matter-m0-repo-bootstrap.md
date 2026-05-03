@@ -13,6 +13,7 @@
 ## Scope
 
 **In scope (this plan validates "tooling works"):**
+
 - Git repo with the existing design doc as first commit
 - Root `package.json`, `pnpm-workspace.yaml`, `tsconfig.base.json`, `turbo.json`
 - Three publishable package skeletons (`packages/matter/`, `packages/matter-react/`, `packages/matter-cli/`) — each with `package.json`, `tsconfig.json`, `tsup.config.ts`, and a stub `src/index.ts`
@@ -21,6 +22,7 @@
 - GitHub Actions CI workflow stub (`typecheck`, `lint`, `build` jobs)
 
 **Out of scope (handled in later milestones):**
+
 - `apps/docs/` (Next.js docs site) — Milestone 1 phase 1.7+ / Milestone 4
 - `.storybook/` config — Milestone 1 phase 1.7
 - `registry/` and `registry.json` — Milestone 1 phase 1.7
@@ -98,6 +100,7 @@ mattermix/                              # (rename to matter/ deferred)
 ## Task 1: Initialize git and commit existing artifacts
 
 **Files:**
+
 - Create: `.gitignore`
 - Create: `.nvmrc`
 
@@ -186,6 +189,7 @@ Expected: commit succeeds with the four files listed.
 ## Task 2: Root package.json and pnpm workspace
 
 **Files:**
+
 - Create: `package.json` (root)
 - Create: `pnpm-workspace.yaml`
 
@@ -227,8 +231,8 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/pnpm-workspace.yaml`
 
 ```yaml
 packages:
-  - "packages/*"
-  - "tooling/*"
+  - 'packages/*'
+  - 'tooling/*'
 ```
 
 (`apps/*` is intentionally excluded for now — there are no apps in M0.)
@@ -261,6 +265,7 @@ git commit -m "chore: initialize pnpm workspace with root devDependencies"
 ## Task 3: Base TypeScript config
 
 **Files:**
+
 - Create: `tsconfig.base.json`
 
 - [ ] **Step 3.1: Create `tsconfig.base.json` at repo root.**
@@ -313,6 +318,7 @@ git commit -m "chore: add base tsconfig with strict settings"
 ## Task 4: Turborepo configuration
 
 **Files:**
+
 - Create: `turbo.json`
 
 - [ ] **Step 4.1: Create `turbo.json` at repo root.**
@@ -370,6 +376,7 @@ git commit -m "chore: configure Turborepo task graph"
 ## Task 5: ESLint flat config + Prettier
 
 **Files:**
+
 - Create: `tooling/eslint-config/package.json`
 - Create: `tooling/eslint-config/index.js`
 - Create: `eslint.config.js` (root)
@@ -433,7 +440,10 @@ export default tseslint.config(
     },
     rules: {
       '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
-      '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'warn',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
     },
   },
   {
@@ -451,7 +461,7 @@ export default tseslint.config(
       ...reactPlugin.configs.recommended.rules,
       ...reactHooksPlugin.configs.recommended.rules,
       'react/react-in-jsx-scope': 'off', // not needed in React 19
-      'react/prop-types': 'off',          // we use TS
+      'react/prop-types': 'off', // we use TS
     },
     settings: {
       react: { version: 'detect' },
@@ -559,6 +569,7 @@ git commit -m "chore: add ESLint flat config and Prettier"
 ## Task 6: Shared TypeScript configs
 
 **Files:**
+
 - Create: `tooling/tsconfig/package.json`
 - Create: `tooling/tsconfig/base.json`
 - Create: `tooling/tsconfig/library.json`
@@ -650,6 +661,7 @@ git commit -m "chore: add shared TypeScript configs (library, react-library)"
 ## Task 7: `@lovo/matter` package skeleton (engine)
 
 **Files:**
+
 - Create: `packages/matter/package.json`
 - Create: `packages/matter/tsconfig.json`
 - Create: `packages/matter/tsup.config.ts`
@@ -788,6 +800,7 @@ git commit -m "feat(matter): add @lovo/matter engine package skeleton"
 ## Task 8: `@lovo/matter-react` package skeleton (React binding)
 
 **Files:**
+
 - Create: `packages/matter-react/package.json`
 - Create: `packages/matter-react/tsconfig.json`
 - Create: `packages/matter-react/tsup.config.ts`
@@ -916,6 +929,7 @@ git commit -m "feat(matter-react): add @lovo/matter-react binding package skelet
 ## Task 9: `@lovo/matter-cli` package skeleton (CLI)
 
 **Files:**
+
 - Create: `packages/matter-cli/package.json`
 - Create: `packages/matter-cli/tsconfig.json`
 - Create: `packages/matter-cli/tsup.config.ts`
@@ -1031,6 +1045,7 @@ node packages/matter-cli/dist/index.js add foo
 ```
 
 Expected output:
+
 ```
 matter-cli stub — implementation in Milestone 2.
 args: [ 'add', 'foo' ]
@@ -1056,6 +1071,7 @@ git commit -m "feat(matter-cli): add @lovo/matter-cli package skeleton with stub
 ## Task 10: LICENSE
 
 **Files:**
+
 - Create: `LICENSE`
 
 - [ ] **Step 10.1: Confirm license choice.**
@@ -1102,6 +1118,7 @@ git commit -m "chore: add MIT LICENSE"
 ## Task 11: README
 
 **Files:**
+
 - Create: `README.md`
 
 - [ ] **Step 11.1: Create `README.md`.**
@@ -1178,6 +1195,7 @@ git commit -m "docs: add README with project overview and roadmap"
 ## Task 12: GitHub Actions CI stub
 
 **Files:**
+
 - Create: `.github/workflows/ci.yml`
 
 - [ ] **Step 12.1: Create `.github/workflows/ci.yml`.**
@@ -1331,6 +1349,7 @@ git log --oneline
 ```
 
 Expected: a clean linear history of commits, roughly:
+
 1. `chore: initial commit — design spec and M0 plan`
 2. `chore: initialize pnpm workspace with root devDependencies`
 3. `chore: add base tsconfig with strict settings`
@@ -1348,6 +1367,7 @@ Expected: a clean linear history of commits, roughly:
 - [ ] **Step 14.3: Stop and play — what to verify by hand before moving on.**
 
 Open the repo in your editor. Spend a few minutes:
+
 - Browse the package skeletons. Notice how each one has the same shape (package.json + tsconfig + tsup config + src/index.ts) — this regularity will pay dividends when M1 adds real code.
 - Run `pnpm dev` in one of the packages (e.g., `pnpm --filter @lovo/matter dev`) to see tsup's watch mode. Modify `src/index.ts`, save, watch it rebuild. Stop with `Ctrl+C`.
 - Push the repo to GitHub (create a `lovo/matter` repo first if you want), let CI run, watch it pass.
@@ -1358,19 +1378,19 @@ When this feels solid and you're ready to write actual shader code, move on to w
 
 ## What this milestone validated
 
-| Architectural element | How M0 validated it |
-|---|---|
-| Three-package split is buildable | Each package builds independently with tsup |
-| Workspace tooling cohesion | Shared `@matter/eslint-config` and `@matter/tsconfig` packages work across all three |
-| Turborepo caching | Step 13.7 shows cache hits |
-| Public API exports | Each package has a working `exports` map (validated when consumers import in M1) |
-| CI baseline | `.github/workflows/ci.yml` runs typecheck/lint/build on every push |
+| Architectural element            | How M0 validated it                                                                  |
+| -------------------------------- | ------------------------------------------------------------------------------------ |
+| Three-package split is buildable | Each package builds independently with tsup                                          |
+| Workspace tooling cohesion       | Shared `@matter/eslint-config` and `@matter/tsconfig` packages work across all three |
+| Turborepo caching                | Step 13.7 shows cache hits                                                           |
+| Public API exports               | Each package has a working `exports` map (validated when consumers import in M1)     |
+| CI baseline                      | `.github/workflows/ci.yml` runs typecheck/lint/build on every push                   |
 
 ---
 
 ## Notes for the executor
 
 - **Commit boundaries are intentional.** Each task ends with a commit so the history reads as a clean progression of small additions. If you find yourself making a 200-line commit, that's a signal to break the task into more steps.
-- **Don't add scope.** This milestone is *only* tooling. No engine code, no React components, no docs site. Resist the urge to "while I'm here, add..." — that work is in M1+.
+- **Don't add scope.** This milestone is _only_ tooling. No engine code, no React components, no docs site. Resist the urge to "while I'm here, add..." — that work is in M1+.
 - **If a step's expected output doesn't match.** Stop. Read the actual output carefully — most failures here are version mismatches or typos in JSON/YAML. Don't paper over by adding workarounds; the foundation must be clean.
 - **The `mattermix/` → `matter/` folder rename** can happen any time. It's purely cosmetic. Defer or do it now in a separate terminal — the plan's commands all use the current path.

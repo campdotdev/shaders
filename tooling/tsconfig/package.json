@@ -2,5 +2,9 @@
   "name": "@matter/tsconfig",
   "version": "0.0.0",
   "private": true,
-  "files": ["base.json", "library.json", "react-library.json"]
+  "files": [
+    "base.json",
+    "library.json",
+    "react-library.json"
+  ]
 }
