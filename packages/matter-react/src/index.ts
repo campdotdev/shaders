@@ -10,3 +10,9 @@ export { useShaderMaterial } from './useShaderMaterial.js'
 
 export { useCursor } from './useCursor.js'
 export type { CursorSignal } from './useCursor.js'
+
+export { useAnimatableUniform } from './useAnimatableUniform.js'
+export type { AnimatableProp, MatterSignal } from './useAnimatableUniform.js'
+
+export { FallbackBoundary } from './FallbackBoundary.js'
+export type { FallbackBoundaryProps } from './FallbackBoundary.js'
