@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, type CSSProperties, type ReactNode } from 'react'
-import { Mesh, PlaneGeometry } from 'three'
+import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
+import { Mesh, PlaneGeometry, Vector2 } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
-import { vec3, vec2, mix, mod, length, uv, time } from '@lovo/matter'
+import { vec3, vec2, mix, mod, length, uv, time, uniform } from '@lovo/matter'
 import { colorRamp, type ColorRampStop } from '@lovo/matter'
 import {
   MatterScene,
@@ -65,6 +65,28 @@ function LinearGradientMesh(props: LinearGradientProps) {
     props.focalPoint ?? [0.5, 0.5],
   )
 
+  // Cursor uniform — a real Vector2 we mutate in place from the cursor
+  // signal so the GPU sees the new value every frame without a remount.
+  const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
+  const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
+
+  // Drive cursorVec from the cursor signal when interactive; otherwise
+  // park it on the static focalPoint prop (or screen center). The TSL
+  // math reads cursorUniform either way, so both modes use one path.
+  // y is inverted: DOM y=0 is top, UV y=0 is bottom of the geometry.
+  useEffect(() => {
+    if (cursor) {
+      return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y))
+    }
+    const fp = props.focalPoint
+    if (Array.isArray(fp)) {
+      cursorVec.set(fp[0] ?? 0.5, 1 - (fp[1] ?? 0.5))
+    } else {
+      cursorVec.set(0.5, 0.5)
+    }
+    return undefined
+  }, [cursor, cursorVec, props.focalPoint])
+
   useEffect(() => {
     if (!ctx) return
 
@@ -80,24 +102,24 @@ function LinearGradientMesh(props: LinearGradientProps) {
     const focalX = Array.isArray(focal) ? focal[0] : (focal as { x: number }).x
     const focalY = Array.isArray(focal) ? focal[1] : (focal as { y: number }).y
 
+    // The cursor uniform is consumed via `uv().sub(cursorUniform)` (the
+    // arg form, not chained receiver) — this matches the playground
+    // harness's working pattern. Chained .sub/.mul/.dot starting from a
+    // raw uniform node didn't propagate the value through the GPU
+    // pipeline reliably; the arg form does.
     let tNode
     if (props.variant === 'radial') {
-      // Radial: t is distance from focalPoint (DOM y inverted to UV y).
-      const focalVec = vec2(focalX, 1 - focalY)
-      tNode = length(uv().sub(focalVec))
+      // Radial: t is distance from focal. When interactive, the focal
+      // tracks the cursor (DOM-y already inverted in the change handler).
+      tNode = length(uv().sub(cursorUniform))
     } else {
-      // Linear: project uv along the rotation direction. angle in degrees → radians.
+      // Linear: project (uv - cursor) along the gradient direction so
+      // the bands flow toward where the cursor is.
       const angleRad = (angleUniform as unknown as { value: number }).value * (Math.PI / 180)
       const dirX = Math.cos(angleRad)
       const dirY = Math.sin(angleRad)
-      tNode = uv().sub(vec2(0.5, 0.5)).dot(vec2(dirX, dirY)).add(0.5)
+      tNode = uv().sub(cursorUniform).dot(vec2(dirX, dirY)).add(0.5)
     }
-
-    // Cursor influence: deliberately a no-op for the v1 visual. The
-    // architecture (interactive prop, useCursor, inputs prop) is real
-    // and tested in the playground harness; richer cursor-driven warping
-    // ships in M3 alongside DotField / Aurora / cursorRipple.
-    void cursor
 
     // Animate the gradient drift via TSL `time`. A naive `mod(t, 1)` wraps
     // hard and shows a seam at the boundary. Use a triangle wave that
@@ -123,19 +145,30 @@ function LinearGradientMesh(props: LinearGradientProps) {
       try {
         material.dispose()
       } catch (err) {
+        // Known benign three.js webgpu race during rapid material churn —
+        // see CLAUDE.md gotchas. Demoted to debug so it doesn't spam logs.
         // eslint-disable-next-line no-console
-        console.warn('[LinearGradient] material.dispose ignored:', err)
+        console.debug('[LinearGradient] material.dispose ignored:', err)
       }
       try {
         mesh.geometry.dispose()
       } catch (err) {
         // eslint-disable-next-line no-console
-        console.warn('[LinearGradient] geometry.dispose ignored:', err)
+        console.debug('[LinearGradient] geometry.dispose ignored:', err)
       }
     }
-    // Re-run when structural inputs change. Animatable uniforms are mutated
-    // in place and don't re-trigger this effect.
-  }, [ctx, props.variant, colors.join('|'), cursor, angleUniform, speedUniform, focalUniform])
+    // Re-run when structural inputs change. Animatable uniforms (incl.
+    // cursorUniform) are mutated in place and don't re-trigger this effect.
+  }, [
+    ctx,
+    props.variant,
+    colors.join('|'),
+    cursor,
+    angleUniform,
+    speedUniform,
+    focalUniform,
+    cursorUniform,
+  ])
 
   return null
 }

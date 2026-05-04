@@ -11,40 +11,59 @@ export interface CursorSignal {
   on(event: 'change', cb: (value: Vec2) => void): () => void
 }
 
+// Inert stub returned on the first render before the lifecycle effect
+// has created the real CursorInput. Calling .on returns an unsub no-op.
+const STUB_SIGNAL: CursorSignal = {
+  get: () => [0.5, 0.5] as const,
+  on: () => () => undefined,
+}
+
 /**
  * React wrapper for CursorInput. Auto-attaches to the parent <MatterScene>'s
  * scheduler if available; otherwise creates a free-running rAF tick.
+ *
+ * Lifecycle is in a single effect so React 19 Strict Mode's intentional
+ * mount→unmount→mount cycle creates a *fresh* CursorInput per real mount
+ * instead of disposing a long-lived one (which would silently break the
+ * window mousemove listener and the smoothing tick).
  */
 export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
   const ctx = useMatterContext()
-  const [input] = useState(() => new CursorInput(opts))
+  const [input, setInput] = useState<CursorInput | null>(null)
 
   useEffect(() => {
-    let raf: number | null = null
-    let lastNow = performance.now()
+    const fresh = new CursorInput(opts)
+    setInput(fresh)
 
+    let detach: (() => void) | null = null
     if (ctx?.scheduler) {
-      const client = ({ delta }: { delta: number }) => input.tick(delta)
+      const client = ({ delta }: { delta: number }) => fresh.tick(delta)
       ctx.scheduler.add(client)
-      return () => ctx.scheduler.remove(client)
-    }
-
-    // No parent MatterScene — drive the input from a free rAF.
-    const loop = (now: number) => {
-      const delta = (now - lastNow) / 1000
-      lastNow = now
-      input.tick(delta)
+      detach = () => ctx.scheduler.remove(client)
+    } else {
+      let raf: number | null = null
+      let lastNow = performance.now()
+      const loop = (now: number) => {
+        const delta = (now - lastNow) / 1000
+        lastNow = now
+        fresh.tick(delta)
+        raf = requestAnimationFrame(loop)
+      }
       raf = requestAnimationFrame(loop)
+      detach = () => {
+        if (raf !== null) cancelAnimationFrame(raf)
+      }
     }
-    raf = requestAnimationFrame(loop)
+
     return () => {
-      if (raf !== null) cancelAnimationFrame(raf)
+      detach?.()
+      fresh.dispose()
+      setInput(null)
     }
-  }, [ctx, input])
+    // We intentionally only re-create on ctx change, not opts (which is a
+    // fresh object literal each render). Smoothing tweaks during dev are
+    // applied by remounting the parent component.
+  }, [ctx])
 
-  useEffect(() => {
-    return () => input.dispose()
-  }, [input])
-
-  return input
+  return input ?? STUB_SIGNAL
 }
