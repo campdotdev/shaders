@@ -71,9 +71,18 @@ export default function LinearGradientPage() {
 
     pane.on('change', () => {
       setParams({ ...local })
-      // Most uniforms are read at material-build time; remount to apply.
-      setInstanceKey((k) => k + 1)
     })
+
+    // M1 scope: color and variant changes flow through the LinearGradient
+    // mesh effect's deps automatically (no remount). angle/speed/focalPoint
+    // are snapshotted into the TSL fragment at material-build time, so they
+    // require a remount to apply — wired here as an explicit "Apply" button
+    // rather than auto-remounting on every slider tick (which races
+    // three's WebGPU pipeline and crashes on dispose). M3 replaces this
+    // with live AnimatableProp uniform updates — no remount, no button.
+    pane
+      .addButton({ title: 'Apply angle / speed / focal' })
+      .on('click', () => setInstanceKey((k) => k + 1))
 
     return () => {
       pane.dispose()
@@ -114,9 +123,10 @@ export default function LinearGradientPage() {
           foundational Matter component — proves the architecture end-to-end.
         </p>
         <p style={{ opacity: 0.7, fontSize: '0.9rem' }}>
-          The panel in the top-right is live. Tweak the values and the canvas above
-          remounts with the new props. (In M3, AnimatableProp uniforms become fully
-          live — no remount needed.)
+          The panel on the right is the prop API. <strong>colors</strong> and{' '}
+          <strong>variant</strong> apply live. <strong>angle</strong>, <strong>speed</strong>,
+          and <strong>focalPoint</strong> require an explicit Apply (M1 captures them at
+          material-build time; M3 makes them fully live AnimatableProps with no remount).
         </p>
         <h2>Usage</h2>
         <pre

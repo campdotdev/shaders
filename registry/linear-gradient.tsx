@@ -3,7 +3,7 @@
 import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { Mesh, PlaneGeometry } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
-import { vec3, vec2, mix, length, uv, time } from '@lovo/matter'
+import { vec3, vec2, mix, mod, length, uv, time } from '@lovo/matter'
 import { colorRamp, type ColorRampStop } from '@lovo/matter'
 import {
   MatterScene,
@@ -99,9 +99,14 @@ function LinearGradientMesh(props: LinearGradientProps) {
     // ships in M3 alongside DotField / Aurora / cursorRipple.
     void cursor
 
-    // Animate the gradient drift via TSL `time` uniform.
+    // Animate the gradient drift via TSL `time`. A naive `mod(t, 1)` wraps
+    // hard and shows a seam at the boundary. Use a triangle wave that
+    // ping-pongs t between 0 and 1: 1 - |1 - mod(t, 2)|. Smooth, seamless.
     const speedScalar = (speedUniform as unknown as { value: number }).value
-    const tAnimated = tNode.add(time.mul(speedScalar))
+    const tAnimated =
+      speedScalar === 0
+        ? tNode
+        : mod(tNode.add(time.mul(speedScalar)), 2).sub(1).abs().oneMinus()
 
     const material = new MeshBasicNodeMaterial()
     material.colorNode = colorRamp(tAnimated, stops) as unknown as MeshBasicNodeMaterial['colorNode']
@@ -110,8 +115,23 @@ function LinearGradientMesh(props: LinearGradientProps) {
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      material.dispose()
-      mesh.geometry.dispose()
+      // three's WebGPURenderer can throw inside `material.dispose()` when
+      // the renderer's Nodes bookkeeping has already cleaned up the node
+      // tree (typically during rapid rebuild cycles). Swallowing the
+      // dispose error prevents a page crash; the underlying GPU resources
+      // will be reaped when the parent renderer is disposed at unmount.
+      try {
+        material.dispose()
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[LinearGradient] material.dispose ignored:', err)
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch (err) {
+        // eslint-disable-next-line no-console
+        console.warn('[LinearGradient] geometry.dispose ignored:', err)
+      }
     }
     // Re-run when structural inputs change. Animatable uniforms are mutated
     // in place and don't re-trigger this effect.
