@@ -71,11 +71,13 @@ describe('runAdd (single component, no aliases)', () => {
     ).rejects.toThrow(/nope.*not found/i)
   })
 
-  it('prints a basic install hint with the component dependencies', async () => {
+  it('prints a "Wrote" line and an install hint with the component dependencies', async () => {
     await seedConfig()
     const log = vi.fn()
     await runAdd(['synthetic-component'], {}, { cwd: dir, log })
     const output = log.mock.calls.map((c) => c[0]).join('\n')
-    expect(output).toMatch(/npm install.*react/)
+    expect(output).toMatch(/^Wrote .*synthetic-component\.tsx/m)
+    expect(output).toContain('This component requires: react')
+    expect(output).toMatch(/^npm install react/m)
   })
 })

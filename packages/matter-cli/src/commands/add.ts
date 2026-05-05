@@ -42,16 +42,8 @@ export async function runAdd(
   }
 
   const targetPath = join(io.cwd, cfg.componentsDir, entry.file)
-  if (!opts.force) {
-    try {
-      await access(targetPath)
-      throw new Error(
-        `${targetPath} already exists. Pass --force to overwrite.`,
-      )
-    } catch (err) {
-      // ENOENT is the happy path here — file should not exist.
-      if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
-    }
+  if (!opts.force && (await fileExists(targetPath))) {
+    throw new Error(`${targetPath} already exists. Pass --force to overwrite.`)
   }
 
   const source = await fetchComponentSource(registryUrl, entry.file)
@@ -61,7 +53,17 @@ export async function runAdd(
 
   io.log(`Wrote ${targetPath}`)
   io.log('')
-  io.log('Install required dependencies:')
-  io.log(`  npm install ${entry.dependencies.join(' ')}`)
-  io.log('  (use your preferred package manager — pnpm/yarn/bun work too)')
+  io.log(`This component requires: ${entry.dependencies.join(', ')}`)
+  io.log('Install with your package manager, e.g.:')
+  io.log(`npm install ${entry.dependencies.join(' ')}`)
+}
+
+async function fileExists(p: string): Promise<boolean> {
+  try {
+    await access(p)
+    return true
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false
+    throw err
+  }
 }
