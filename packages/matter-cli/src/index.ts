@@ -22,8 +22,9 @@ program
   .description('show available components in the registry')
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
-  .action(() => {
-    console.log('list: not implemented yet (Phase 2.3)')
+  .action(async (opts: { registry?: string; ref?: string }) => {
+    const { runList } = await import('./commands/list.js')
+    await runList(opts)
   })
 
 program
