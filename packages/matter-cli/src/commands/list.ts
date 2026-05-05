@@ -23,7 +23,7 @@ export async function runList(opts: ListOptions, io: ListIO = { log: console.log
   }
 
   const registry = await fetchRegistry(opts.registry)
-  const entries = Object.entries(registry.components)
+  const entries = Object.entries(registry.components).sort(([a], [b]) => a.localeCompare(b))
 
   if (entries.length === 0) {
     io.log('No components in registry.')

@@ -2,6 +2,12 @@ import { Command } from 'commander'
 
 declare const __VERSION__: string
 
+function fail(err: unknown): never {
+  const message = err instanceof Error ? err.message : String(err)
+  process.stderr.write(`error: ${message}\n`)
+  process.exit(1)
+}
+
 const program = new Command()
 
 program
@@ -13,8 +19,12 @@ program
   .command('init')
   .description('one-time project setup — writes matter.config.json')
   .option('--force', 'overwrite an existing matter.config.json')
-  .action(() => {
-    console.log('init: not implemented yet (Phase 2.4)')
+  .action(async () => {
+    try {
+      console.log('init: not implemented yet (Phase 2.4)')
+    } catch (err) {
+      fail(err)
+    }
   })
 
 program
@@ -23,8 +33,12 @@ program
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .action(async (opts: { registry?: string; ref?: string }) => {
-    const { runList } = await import('./commands/list.js')
-    await runList(opts)
+    try {
+      const { runList } = await import('./commands/list.js')
+      await runList(opts)
+    } catch (err) {
+      fail(err)
+    }
   })
 
 program
@@ -34,8 +48,12 @@ program
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .option('--force', 'overwrite existing files in componentsDir')
-  .action(() => {
-    console.log('add: not implemented yet (Phase 2.5)')
+  .action(async () => {
+    try {
+      console.log('add: not implemented yet (Phase 2.5)')
+    } catch (err) {
+      fail(err)
+    }
   })
 
 program
@@ -45,8 +63,12 @@ program
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .option('--force', 'overwrite files even if they have local edits')
-  .action(() => {
-    console.log('update: not implemented yet (Phase 2.8)')
+  .action(async () => {
+    try {
+      console.log('update: not implemented yet (Phase 2.8)')
+    } catch (err) {
+      fail(err)
+    }
   })
 
 await program.parseAsync(process.argv)
