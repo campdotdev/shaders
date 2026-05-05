@@ -19,9 +19,10 @@ program
   .command('init')
   .description('one-time project setup — writes matter.config.json')
   .option('--force', 'overwrite an existing matter.config.json')
-  .action(async () => {
+  .action(async (opts: { force?: boolean }) => {
     try {
-      console.log('init: not implemented yet (Phase 2.4)')
+      const { runInit } = await import('./commands/init.js')
+      await runInit(opts)
     } catch (err) {
       fail(err)
     }
