@@ -1,7 +1,12 @@
 import { access, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { readMatterConfig } from '../config/matterConfig.js'
-import { fetchComponentSource, fetchRegistry, type Registry } from '../registry/fetchRegistry.js'
+import {
+  fetchComponentSource,
+  fetchRegistry,
+  type Registry,
+  type RegistryEntry,
+} from '../registry/fetchRegistry.js'
 import { rewriteImports } from '../transforms/rewriteImports.js'
 
 export interface AddOptions {
@@ -42,16 +47,25 @@ export async function runAdd(
     }
   }
 
-  // Fetch + rewrite + write.
+  // Fetch all sources concurrently. If any fetch fails, the throw
+  // propagates before we touch disk — no partial-write states.
+  const fetched = await Promise.all(
+    resolved.map(async (r) => {
+      const source = await fetchComponentSource(registryUrl, r.entry.file)
+      return { ...r, source }
+    }),
+  )
+
+  // Now write sequentially (mkdir + writeFile per target). Sequential
+  // here is fine: the bottleneck has already passed.
   const allDeps = new Set<string>()
-  for (const r of resolved) {
-    const targetPath = join(io.cwd, cfg.componentsDir, r.entry.file)
-    const source = await fetchComponentSource(registryUrl, r.entry.file)
-    const rewritten = rewriteImports(source, cfg.aliases)
+  for (const f of fetched) {
+    const targetPath = join(io.cwd, cfg.componentsDir, f.entry.file)
+    const rewritten = rewriteImports(f.source, cfg.aliases)
     await mkdir(dirname(targetPath), { recursive: true })
     await writeFile(targetPath, rewritten, 'utf-8')
     io.log(`Wrote ${targetPath}`)
-    for (const dep of r.entry.dependencies) allDeps.add(dep)
+    for (const dep of f.entry.dependencies) allDeps.add(dep)
   }
 
   // Dedup + alphabetize install hint.
@@ -66,7 +80,7 @@ function resolveComponent(
   slug: string,
   registry: Registry,
   registryUrl: string,
-): { slug: string; entry: NonNullable<Registry['components'][string]> } {
+): { slug: string; entry: RegistryEntry } {
   const entry = registry.components[slug]
   if (!entry) {
     throw new Error(
