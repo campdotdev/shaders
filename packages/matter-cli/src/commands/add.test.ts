@@ -7,6 +7,7 @@ import { DEFAULT_MATTER_CONFIG, writeMatterConfig } from '../config/matterConfig
 import { runAdd } from './add.js'
 
 const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/', import.meta.url))}`
+const VERSION = '0.0.0'
 
 let dir: string
 
@@ -30,7 +31,7 @@ async function seedConfig(overrides: Partial<typeof DEFAULT_MATTER_CONFIG> = {})
 describe('runAdd (single component, no aliases)', () => {
   it('writes the component source to componentsDir/<name>.tsx', async () => {
     await seedConfig()
-    await runAdd(['synthetic-component'], {}, { cwd: dir, log: vi.fn() })
+    await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
     const target = join(dir, 'src/components/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
     expect(written).toContain('SyntheticComponent')
@@ -40,7 +41,7 @@ describe('runAdd (single component, no aliases)', () => {
 
   it('creates componentsDir if it does not exist', async () => {
     await seedConfig({ componentsDir: 'app/very/nested/matter' })
-    await runAdd(['synthetic-component'], {}, { cwd: dir, log: vi.fn() })
+    await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
     const target = join(dir, 'app/very/nested/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
     expect(written).toContain('SyntheticComponent')
@@ -51,7 +52,7 @@ describe('runAdd (single component, no aliases)', () => {
     await mkdir(join(dir, 'src/components/matter'), { recursive: true })
     await writeFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'existing', 'utf-8')
     await expect(
-      runAdd(['synthetic-component'], {}, { cwd: dir, log: vi.fn() }),
+      runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() }),
     ).rejects.toThrow(/already exists/)
   })
 
@@ -59,7 +60,7 @@ describe('runAdd (single component, no aliases)', () => {
     await seedConfig()
     await mkdir(join(dir, 'src/components/matter'), { recursive: true })
     await writeFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'old', 'utf-8')
-    await runAdd(['synthetic-component'], { force: true }, { cwd: dir, log: vi.fn() })
+    await runAdd(['synthetic-component'], { force: true, cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
     const written = await readFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'utf-8')
     expect(written).toContain('SyntheticComponent')
   })
@@ -67,14 +68,14 @@ describe('runAdd (single component, no aliases)', () => {
   it('errors clearly when the requested component is not in the registry', async () => {
     await seedConfig()
     await expect(
-      runAdd(['nope'], {}, { cwd: dir, log: vi.fn() }),
+      runAdd(['nope'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() }),
     ).rejects.toThrow(/nope.*not found/i)
   })
 
   it('prints a "Wrote" line and an install hint with the component dependencies', async () => {
     await seedConfig()
     const log = vi.fn()
-    await runAdd(['synthetic-component'], {}, { cwd: dir, log })
+    await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log })
     const output = log.mock.calls.map((c) => c[0]).join('\n')
     expect(output).toMatch(/^Wrote .*synthetic-component\.tsx/m)
     expect(output).toContain('This component requires: react')
@@ -103,7 +104,7 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
 
     await seedConfig({ registryUrl: `file://${inlineDir}/` })
     const log = vi.fn()
-    await runAdd(['alpha', 'beta'], {}, { cwd: dir, log })
+    await runAdd(['alpha', 'beta'], { cliVersion: VERSION }, { cwd: dir, log })
 
     const a = await readFile(join(dir, 'src/components/matter/alpha.tsx'), 'utf-8')
     const b = await readFile(join(dir, 'src/components/matter/beta.tsx'), 'utf-8')
@@ -122,10 +123,47 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
 
   it('rewrites @matter-internal imports per matter.config.json aliases', async () => {
     await seedConfig({ aliases: { '@matter-internal/': '@/lib/matter/' } })
-    await runAdd(['synthetic-component'], {}, { cwd: dir, log: vi.fn() })
+    await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
     const target = join(dir, 'src/components/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
     expect(written).toContain(`from '@/lib/matter/lib'`)
     expect(written).not.toContain('@matter-internal/lib')
+  })
+})
+
+describe('runAdd (--ref handling)', () => {
+  it('substitutes ${ref} into the registry URL when present', async () => {
+    // Build a fake "templated" registry URL by parking a fixture under
+    // a ref-shaped subdir.
+    const inlineDir = await mkdtemp(join(tmpdir(), 'matter-ref-fixture-'))
+    await mkdir(join(inlineDir, 'main'), { recursive: true })
+    await writeFile(
+      join(inlineDir, 'main/registry.json'),
+      JSON.stringify({
+        version: '0.0.0-test',
+        components: {
+          'synthetic-component': {
+            file: 'synthetic-component.tsx',
+            description: 'fixture',
+            dependencies: ['react'],
+            tier: 1,
+          },
+        },
+      }),
+      'utf-8',
+    )
+    await writeFile(
+      join(inlineDir, 'main/synthetic-component.tsx'),
+      `export function X(){ return null }\n`,
+      'utf-8',
+    )
+
+    await seedConfig({ registryUrl: `file://${inlineDir}/\${ref}` })
+    await runAdd(['synthetic-component'], { ref: 'main', cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
+    const target = join(dir, 'src/components/matter/synthetic-component.tsx')
+    const written = await readFile(target, 'utf-8')
+    expect(written).toContain('function X')
+
+    await rm(inlineDir, { recursive: true, force: true })
   })
 })

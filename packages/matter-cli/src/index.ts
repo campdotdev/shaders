@@ -36,7 +36,7 @@ program
   .action(async (opts: { registry?: string; ref?: string }) => {
     try {
       const { runList } = await import('./commands/list.js')
-      await runList(opts)
+      await runList({ ...opts, cliVersion: __VERSION__ })
     } catch (err) {
       fail(err)
     }
@@ -55,7 +55,7 @@ program
   ) => {
     try {
       const { runAdd } = await import('./commands/add.js')
-      await runAdd(components, opts)
+      await runAdd(components, { ...opts, cliVersion: __VERSION__ })
     } catch (err) {
       fail(err)
     }

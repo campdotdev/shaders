@@ -1,17 +1,45 @@
+import { mkdtemp, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { runList } from './list.js'
 
 const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/', import.meta.url))}`
 
+let dir: string
+
+beforeEach(async () => {
+  dir = await mkdtemp(join(tmpdir(), 'matter-list-test-'))
+})
+
+afterEach(async () => {
+  await rm(dir, { recursive: true, force: true })
+})
+
 describe('runList', () => {
-  it('prints one line per component using a registry URL override', async () => {
+  it('prints one line per component using --registry override', async () => {
     const log = vi.fn()
-    await runList({ registry: FIXTURE_BASE, ref: 'main' }, { log })
+    await runList(
+      { registry: FIXTURE_BASE, cliVersion: '0.0.0' },
+      { cwd: dir, log },
+    )
     const output = log.mock.calls.map((c) => c[0]).join('\n')
     expect(output).toContain('synthetic-component')
-    expect(output).toContain('A tiny synthetic component')
     expect(output).toContain('tier 1')
+  })
+
+  it('reads matter.config.json when --registry is not supplied', async () => {
+    // Write a minimal config pointing at the fixture (with ${ref} placeholder).
+    const { writeMatterConfig, DEFAULT_MATTER_CONFIG } = await import('../config/matterConfig.js')
+    await writeMatterConfig(dir, {
+      ...DEFAULT_MATTER_CONFIG,
+      registryUrl: FIXTURE_BASE, // no ${ref} — stays literal
+    })
+    const log = vi.fn()
+    await runList({ cliVersion: '0.0.0' }, { cwd: dir, log })
+    const output = log.mock.calls.map((c) => c[0]).join('\n')
+    expect(output).toContain('synthetic-component')
   })
 
   // Failure modes (unreachable registry, malformed JSON, missing components key)

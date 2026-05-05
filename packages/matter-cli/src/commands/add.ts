@@ -7,12 +7,14 @@ import {
   type Registry,
   type RegistryEntry,
 } from '../registry/fetchRegistry.js'
+import { resolveRef } from '../registry/ref.js'
 import { rewriteImports } from '../transforms/rewriteImports.js'
 
 export interface AddOptions {
   registry?: string
   ref?: string
   force?: boolean
+  cliVersion: string
 }
 
 export interface AddIO {
@@ -30,7 +32,9 @@ export async function runAdd(
   }
 
   const cfg = await readMatterConfig(io.cwd)
-  const registryUrl = opts.registry ?? cfg.registryUrl
+  const baseUrl = opts.registry ?? cfg.registryUrl
+  const ref = resolveRef(opts.ref, opts.cliVersion)
+  const registryUrl = baseUrl.replace('${ref}', ref)
   const registry = await fetchRegistry(registryUrl)
 
   // Resolve every component up front so we fail fast on missing slugs
