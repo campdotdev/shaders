@@ -81,3 +81,51 @@ describe('runAdd (single component, no aliases)', () => {
     expect(output).toMatch(/^npm install react/m)
   })
 })
+
+describe('runAdd (multi-component + dedup + alias rewriting)', () => {
+  it('writes multiple components in one invocation against a custom registry', async () => {
+    // Build an inline two-component registry in a temp dir so we can
+    // exercise multi-slug add without bloating the shared fixture.
+    const inlineDir = await mkdtemp(join(tmpdir(), 'matter-multi-fixture-'))
+    await writeFile(
+      join(inlineDir, 'registry.json'),
+      JSON.stringify({
+        version: '0.0.0-test',
+        components: {
+          alpha: { file: 'alpha.tsx', dependencies: ['react'], tier: 1 },
+          beta: { file: 'beta.tsx', dependencies: ['react', 'three'], tier: 1 },
+        },
+      }),
+      'utf-8',
+    )
+    await writeFile(join(inlineDir, 'alpha.tsx'), 'export const alpha = 1\n', 'utf-8')
+    await writeFile(join(inlineDir, 'beta.tsx'), 'export const beta = 2\n', 'utf-8')
+
+    await seedConfig({ registryUrl: `file://${inlineDir}/` })
+    const log = vi.fn()
+    await runAdd(['alpha', 'beta'], {}, { cwd: dir, log })
+
+    const a = await readFile(join(dir, 'src/components/matter/alpha.tsx'), 'utf-8')
+    const b = await readFile(join(dir, 'src/components/matter/beta.tsx'), 'utf-8')
+    expect(a).toContain('alpha = 1')
+    expect(b).toContain('beta = 2')
+
+    // Dedup install hint: both depend on react; only one comes through.
+    // The install line is now flush-left "npm install ..." (Phase 2.5 polish).
+    const output = log.mock.calls.map((c) => c[0]).join('\n')
+    const installLine = output.split('\n').find((l) => l.startsWith('npm install '))!
+    const args = installLine.replace('npm install ', '').trim().split(/\s+/).sort()
+    expect(args).toEqual(['react', 'three'])
+
+    await rm(inlineDir, { recursive: true, force: true })
+  })
+
+  it('rewrites @matter-internal imports per matter.config.json aliases', async () => {
+    await seedConfig({ aliases: { '@matter-internal/': '@/lib/matter/' } })
+    await runAdd(['synthetic-component'], {}, { cwd: dir, log: vi.fn() })
+    const target = join(dir, 'src/components/matter/synthetic-component.tsx')
+    const written = await readFile(target, 'utf-8')
+    expect(written).toContain(`from '@/lib/matter/lib'`)
+    expect(written).not.toContain('@matter-internal/lib')
+  })
+})

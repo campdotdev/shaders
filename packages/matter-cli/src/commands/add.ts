@@ -1,7 +1,8 @@
 import { access, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { readMatterConfig } from '../config/matterConfig.js'
-import { fetchComponentSource, fetchRegistry } from '../registry/fetchRegistry.js'
+import { fetchComponentSource, fetchRegistry, type Registry } from '../registry/fetchRegistry.js'
+import { rewriteImports } from '../transforms/rewriteImports.js'
 
 export interface AddOptions {
   registry?: string
@@ -27,35 +28,52 @@ export async function runAdd(
   const registryUrl = opts.registry ?? cfg.registryUrl
   const registry = await fetchRegistry(registryUrl)
 
-  // Phase 2.5: handle exactly one component. Phase 2.6 generalizes to N.
-  if (components.length > 1) {
-    throw new Error(
-      'add: multi-component support arrives in Phase 2.6. Pass exactly one slug for now.',
-    )
+  // Resolve every component up front so we fail fast on missing slugs
+  // before any disk write.
+  const resolved = components.map((slug) => resolveComponent(slug, registry, registryUrl))
+
+  // Pre-flight overwrite check on every target.
+  if (!opts.force) {
+    for (const r of resolved) {
+      const targetPath = join(io.cwd, cfg.componentsDir, r.entry.file)
+      if (await fileExists(targetPath)) {
+        throw new Error(`${targetPath} already exists. Pass --force to overwrite.`)
+      }
+    }
   }
-  const slug = components[0]!
+
+  // Fetch + rewrite + write.
+  const allDeps = new Set<string>()
+  for (const r of resolved) {
+    const targetPath = join(io.cwd, cfg.componentsDir, r.entry.file)
+    const source = await fetchComponentSource(registryUrl, r.entry.file)
+    const rewritten = rewriteImports(source, cfg.aliases)
+    await mkdir(dirname(targetPath), { recursive: true })
+    await writeFile(targetPath, rewritten, 'utf-8')
+    io.log(`Wrote ${targetPath}`)
+    for (const dep of r.entry.dependencies) allDeps.add(dep)
+  }
+
+  // Dedup + alphabetize install hint.
+  const sortedDeps = [...allDeps].sort()
+  io.log('')
+  io.log(`This component requires: ${sortedDeps.join(', ')}`)
+  io.log('Install with your package manager, e.g.:')
+  io.log(`npm install ${sortedDeps.join(' ')}`)
+}
+
+function resolveComponent(
+  slug: string,
+  registry: Registry,
+  registryUrl: string,
+): { slug: string; entry: NonNullable<Registry['components'][string]> } {
   const entry = registry.components[slug]
   if (!entry) {
     throw new Error(
       `Component "${slug}" not found in registry at ${registryUrl}. Run \`matter-cli list\` to see available components.`,
     )
   }
-
-  const targetPath = join(io.cwd, cfg.componentsDir, entry.file)
-  if (!opts.force && (await fileExists(targetPath))) {
-    throw new Error(`${targetPath} already exists. Pass --force to overwrite.`)
-  }
-
-  const source = await fetchComponentSource(registryUrl, entry.file)
-
-  await mkdir(dirname(targetPath), { recursive: true })
-  await writeFile(targetPath, source, 'utf-8')
-
-  io.log(`Wrote ${targetPath}`)
-  io.log('')
-  io.log(`This component requires: ${entry.dependencies.join(', ')}`)
-  io.log('Install with your package manager, e.g.:')
-  io.log(`npm install ${entry.dependencies.join(' ')}`)
+  return { slug, entry }
 }
 
 async function fileExists(p: string): Promise<boolean> {
