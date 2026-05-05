@@ -1,0 +1,12 @@
+{
+  "version": "0.0.0-test",
+  "components": {
+    "synthetic-component": {
+      "file": "synthetic-component.tsx",
+      "description": "A tiny synthetic component used by matter-cli tests. Not shipped.",
+      "dependencies": ["react"],
+      "uses_primitives": [],
+      "tier": 1
+    }
+  }
+}
