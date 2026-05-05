@@ -23,7 +23,12 @@ export async function readUrl(url: string): Promise<string> {
   }
 
   if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
-    const res = await fetch(url)
+    let res: Response
+    try {
+      res = await fetch(url)
+    } catch (err) {
+      throw new Error(`Failed to fetch ${url}: ${(err as Error).message}`)
+    }
     if (!res.ok) {
       throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`)
     }

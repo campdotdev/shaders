@@ -40,12 +40,11 @@ export async function fetchRegistry(baseUrl: string): Promise<Registry> {
       `Registry at ${url} is not valid JSON: ${(err as Error).message}`,
     )
   }
-  if (
-    typeof parsed !== 'object' ||
-    parsed === null ||
-    !('components' in parsed) ||
-    typeof (parsed as { components: unknown }).components !== 'object'
-  ) {
+  if (typeof parsed !== 'object' || parsed === null || !('components' in parsed)) {
+    throw new Error(`Registry at ${url} is missing a "components" object`)
+  }
+  const components = (parsed as { components: unknown }).components
+  if (typeof components !== 'object' || components === null || Array.isArray(components)) {
     throw new Error(`Registry at ${url} is missing a "components" object`)
   }
   return parsed as Registry

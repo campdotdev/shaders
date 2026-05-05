@@ -24,6 +24,20 @@ describe('fetchRegistry', () => {
     const reg = await fetchRegistry(noTrailingSlash)
     expect(reg.components['synthetic-component']).toBeDefined()
   })
+
+  it('rejects an array-shaped "components" field', async () => {
+    const { mkdtemp, writeFile, rm } = await import('node:fs/promises')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+    const dir = await mkdtemp(join(tmpdir(), 'matter-registry-array-'))
+    await writeFile(
+      join(dir, 'registry.json'),
+      JSON.stringify({ version: '0', components: [] }),
+      'utf-8',
+    )
+    await expect(fetchRegistry(`file://${dir}/`)).rejects.toThrow(/components.*object/i)
+    await rm(dir, { recursive: true, force: true })
+  })
 })
 
 describe('fetchComponentSource', () => {
