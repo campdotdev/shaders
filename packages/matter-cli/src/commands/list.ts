@@ -1,4 +1,4 @@
-import { readMatterConfig } from '../config/matterConfig.js'
+import { DEFAULT_MATTER_CONFIG, configExists, readMatterConfig } from '../config/matterConfig.js'
 import { fetchRegistry } from '../registry/fetchRegistry.js'
 import { resolveRef } from '../registry/ref.js'
 
@@ -17,23 +17,18 @@ export async function runList(
   opts: ListOptions,
   io: ListIO = { cwd: process.cwd(), log: console.log },
 ): Promise<void> {
-  // If --registry isn't supplied, the user likely ran `init` already —
-  // try reading the config. If the config is missing, fall back to the
-  // built-in default template via DEFAULT_MATTER_CONFIG (the default's
-  // template includes ${ref}).
+  // URL resolution: --registry > matter.config.json > built-in default.
+  // Missing config → default (lets users `list` before `init`). Malformed
+  // config (invalid JSON, missing fields) → propagate so the user sees the
+  // problem instead of silently falling back to the GitHub URL.
   let baseUrl: string
   if (opts.registry !== undefined && opts.registry !== '') {
     baseUrl = opts.registry
+  } else if (await configExists(io.cwd)) {
+    const cfg = await readMatterConfig(io.cwd)
+    baseUrl = cfg.registryUrl
   } else {
-    try {
-      const cfg = await readMatterConfig(io.cwd)
-      baseUrl = cfg.registryUrl
-    } catch {
-      // No config? Use the built-in default. This lets users `list`
-      // before they `init` — friendlier than forcing init first.
-      const { DEFAULT_MATTER_CONFIG } = await import('../config/matterConfig.js')
-      baseUrl = DEFAULT_MATTER_CONFIG.registryUrl
-    }
+    baseUrl = DEFAULT_MATTER_CONFIG.registryUrl
   }
 
   const ref = resolveRef(opts.ref, opts.cliVersion)
