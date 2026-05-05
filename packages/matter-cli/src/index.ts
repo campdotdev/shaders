@@ -49,9 +49,13 @@ program
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .option('--force', 'overwrite existing files in componentsDir')
-  .action(async () => {
+  .action(async (
+    components: string[],
+    opts: { registry?: string; ref?: string; force?: boolean },
+  ) => {
     try {
-      console.log('add: not implemented yet (Phase 2.5)')
+      const { runAdd } = await import('./commands/add.js')
+      await runAdd(components, opts)
     } catch (err) {
       fail(err)
     }
