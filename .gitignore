@@ -38,3 +38,6 @@ pnpm-debug.log*
 
 # Brainstorming companion (not source code)
 .superpowers/
+
+# Git worktrees
+.worktrees/
