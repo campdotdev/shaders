@@ -8,8 +8,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
-import { Mesh, PlaneGeometry } from 'three'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu'
 import { vec2, vec3, uv, time, uniform } from '@lovo/matter'
 import { colorRamp, type ColorRampStop } from '@lovo/matter'
 import { fbm } from '@lovo/matter'
