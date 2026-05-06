@@ -2,8 +2,7 @@
 'use client'
 
 import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
-import { Mesh, PlaneGeometry, Vector2 } from 'three'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
 import { vec2, vec3, uv, time, uniform } from '@lovo/matter'
@@ -72,6 +71,9 @@ function NoiseFieldMesh(props: NoiseFieldProps) {
   // path doesn't read it — that's fine, the wiring is silent until used.
   // Keeping it declared documents the contract with the cursor signal.
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
+  // TODO: when cursor-displace wires up, consume cursorUniform in the TSL
+  // chain (root from uv()/vec2, pass cursorUniform as arg per gotcha #12)
+  // and drop this eslint-disable.
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
   useEffect(() => {

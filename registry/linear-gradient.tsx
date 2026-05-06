@@ -1,8 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
-import { Mesh, PlaneGeometry, Vector2 } from 'three'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import { vec3, vec2, mix, mod, length, uv, time, uniform } from '@lovo/matter'
 import { colorRamp, type ColorRampStop } from '@lovo/matter'
 import {
