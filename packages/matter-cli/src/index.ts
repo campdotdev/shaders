@@ -68,9 +68,13 @@ program
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .option('--force', 'overwrite files even if they have local edits')
-  .action(async () => {
+  .action(async (
+    components: string[],
+    opts: { registry?: string; ref?: string; force?: boolean },
+  ) => {
     try {
-      console.log('update: not implemented yet (Phase 2.8)')
+      const { runUpdate } = await import('./commands/update.js')
+      await runUpdate(components ?? [], { ...opts, cliVersion: __VERSION__ })
     } catch (err) {
       fail(err)
     }
