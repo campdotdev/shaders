@@ -60,6 +60,8 @@ export async function runUpdate(
   }
 
   io.log(`Updating ${toUpdate.length} component(s) from ${registryUrl}…`)
+  // registryUrl already has ${ref} substituted above; pass ref: undefined so
+  // runAdd doesn't try to resolve again over an already-substituted URL.
   await runAdd(
     toUpdate,
     {
@@ -81,6 +83,9 @@ async function safeReaddir(path: string): Promise<string[]> {
   }
 }
 
+// Convention in v1: slug equals the basename of entry.file. update keys off
+// the local filename, so a registry whose slug and filename diverge would
+// silently get skipped here. The single check guards both invariants.
 function slugIsInRegistry(slug: string, registry: Registry): boolean {
   const entry = registry.components[slug]
   return entry !== undefined && entry.file.replace(/\.(tsx|ts)$/, '') === slug
