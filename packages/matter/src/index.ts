@@ -13,5 +13,10 @@ export type { CursorInputOptions, Vec2 } from './inputs/CursorInput.js'
 export { colorRamp } from './primitives/colorRamp.js'
 export type { ColorRampStop, TSLNode } from './primitives/colorRamp.js'
 
+export { noise } from './primitives/noise.js'
+
+export { fbm } from './primitives/fbm.js'
+export type { FBMOptions } from './primitives/fbm.js'
+
 // TSL re-exports — stable surface
 export * from './primitives/tsl-reexports.js'
