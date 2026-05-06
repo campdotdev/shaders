@@ -18,5 +18,9 @@ export { noise } from './primitives/noise.js'
 export { fbm } from './primitives/fbm.js'
 export type { FBMOptions } from './primitives/fbm.js'
 
+export { voronoi } from './primitives/voronoi.js'
+
+export { quantize } from './primitives/quantize.js'
+
 // TSL re-exports — stable surface
 export * from './primitives/tsl-reexports.js'

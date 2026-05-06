@@ -8,6 +8,13 @@
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "length", "time", "uniform"],
       "tier": 1
+    },
+    "noise-field": {
+      "file": "noise-field.tsx",
+      "description": "Pure noise pattern in three flavors: organic (fbm), cellular (voronoi), grid (quantized fbm).",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": ["colorRamp", "fbm", "voronoi", "quantize", "uv", "vec2", "vec3", "time", "uniform"],
+      "tier": 1
     }
   }
 }
