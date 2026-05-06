@@ -40,7 +40,7 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 |---|---|---|---|
 | 0 | Repo bootstrap | ✅ Complete | `m0-complete` |
 | 1 | Vertical slice — `<LinearGradient>` end-to-end | ✅ Complete | `m1-complete` |
-| 2 | `@lovo/matter-cli` | Pending | — |
+| 2 | `@lovo/matter-cli` | ✅ Complete | `m2-complete` |
 | 3 | The other 5 v1 components | Pending | — |
 | 4 | Docs site polish | Pending | — |
 | 5 | Performance + testing + a11y | Pending | — |
@@ -86,8 +86,8 @@ pnpm format                               # prettier write
 # Watch mode for a single package:
 pnpm --filter @lovo/matter dev            # tsup --watch
 
-# Smoke test the CLI binary:
-node packages/matter-cli/dist/index.js add foo
+# End-to-end smoke test the CLI in a fresh /tmp project:
+pnpm smoke
 ```
 
 ## Gotchas to remember (from M0 + M1 lessons)
