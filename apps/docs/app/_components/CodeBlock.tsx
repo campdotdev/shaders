@@ -1,8 +1,8 @@
-import { getHighlighter } from '../_lib/shiki'
+import { getHighlighter, type CodeLang } from '../_lib/shiki'
 
 interface CodeBlockProps {
   source: string
-  lang?: 'tsx' | 'ts' | 'bash' | 'json'
+  lang?: CodeLang
 }
 
 // Server Component — shiki runs at build/request time on the server. We emit
