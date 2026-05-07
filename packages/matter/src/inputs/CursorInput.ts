@@ -14,6 +14,18 @@ export interface CursorInputOptions {
   initial?: Vec2
   /** Listen on this target. Default: window. */
   target?: EventTarget
+  /**
+   * Element to normalize cursor coordinates against. Default: window viewport.
+   *
+   * When set, cursor x/y are in [0,1] across the element's bounding rect, with
+   * extrapolation outside (negative when left/above, >1 when right/below). This
+   * matches what shader UV space expects: a cursor at the canvas's top-left
+   * corner reads as (0, 0); at bottom-right as (1, 1); regardless of where the
+   * canvas sits in the viewport. Without this, components inside a partial-
+   * viewport scene (e.g. a 70vh hero section) see a cursor offset that scales
+   * with the canvas's vertical position on the page.
+   */
+  element?: { getBoundingClientRect(): { left: number; top: number; width: number; height: number } }
 }
 
 type ChangeListener = (value: Vec2) => void
@@ -30,22 +42,38 @@ export class CursorInput {
   private readonly smoothing: number
   private readonly listeners = new Set<ChangeListener>()
   private readonly eventTarget: EventTarget
+  private readonly element: CursorInputOptions['element']
   private readonly handleMouseMove: (e: Event) => void
   private disposed = false
 
   constructor(opts: CursorInputOptions = {}) {
-    const { smoothing = 0.1, initial = [0.5, 0.5], target } = opts
+    const { smoothing = 0.1, initial = [0.5, 0.5], target, element } = opts
     this.smoothing = clamp01(smoothing)
     this.value = [initial[0], initial[1]]
     this.target = [initial[0], initial[1]]
     this.eventTarget = target ?? (typeof window !== 'undefined' ? window : new EventTarget())
+    this.element = element
 
     this.handleMouseMove = (e: Event) => {
       const me = e as MouseEvent
-      // Normalize to 0..1 across the viewport.
-      const w = (typeof window !== 'undefined' && window.innerWidth) || 1
-      const h = (typeof window !== 'undefined' && window.innerHeight) || 1
-      this.target = [me.clientX / w, me.clientY / h]
+      if (this.element) {
+        // Normalize to 0..1 across the element's bounding rect. Reading the
+        // rect on every move is fine — `getBoundingClientRect` is cheap and
+        // mousemove is already throttled to ~60Hz by the browser. The benefit
+        // is tracking the element's position even if it moved/scrolled since
+        // the last frame.
+        const r = this.element.getBoundingClientRect()
+        const w = r.width || 1
+        const h = r.height || 1
+        this.target = [(me.clientX - r.left) / w, (me.clientY - r.top) / h]
+      } else {
+        // Fallback: viewport-normalized. Used when no element is supplied —
+        // mostly the standalone-API case for users not consuming through
+        // <MatterScene>'s context.
+        const w = (typeof window !== 'undefined' && window.innerWidth) || 1
+        const h = (typeof window !== 'undefined' && window.innerHeight) || 1
+        this.target = [me.clientX / w, me.clientY / h]
+      }
       this.targetDirty = true
     }
 

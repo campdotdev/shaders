@@ -32,7 +32,15 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
   const [input, setInput] = useState<CursorInput | null>(null)
 
   useEffect(() => {
-    const fresh = new CursorInput(opts)
+    // Plumb the parent <MatterScene>'s canvas as the cursor's normalization
+    // element. Without this, cursor coords are viewport-normalized — fine for
+    // a full-page scene but visibly offset when the canvas sits inside a
+    // smaller wrapper (e.g., 70vh hero). DotField's cell tiling makes the
+    // mismatch obvious; LinearGradient mostly gets away with it. Caller can
+    // override by passing `opts.element` explicitly.
+    const canvas = ctx?.renderer.three.domElement
+    const elementOpt = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined)
+    const fresh = new CursorInput({ ...opts, element: elementOpt })
     setInput(fresh)
 
     let detach: (() => void) | null = null

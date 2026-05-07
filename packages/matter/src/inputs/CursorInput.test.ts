@@ -75,4 +75,19 @@ describe('CursorInput', () => {
 
     expect(sub).not.toHaveBeenCalled()
   })
+
+  it('normalizes against an element rect when `element` is supplied', () => {
+    // Element at viewport (100, 200) sized 400x300. Cursor at viewport (300, 350)
+    // is at element-relative (200, 150) → element-normalized (0.5, 0.5).
+    const fakeElement = {
+      getBoundingClientRect: () => ({ left: 100, top: 200, width: 400, height: 300 }),
+    }
+    const cursor = new CursorInput({ smoothing: 0, element: fakeElement })
+
+    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 300, clientY: 350 }))
+    cursor.tick(1)
+
+    expect(cursor.get()).toEqual([0.5, 0.5])
+    cursor.dispose()
+  })
 })
