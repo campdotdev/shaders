@@ -1,4 +1,8 @@
+import './globals.css'
+import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { ThemeToggle } from './_components/ThemeToggle'
+import { Providers } from './providers'
 
 export const metadata = {
   title: 'Matter — React shader components',
@@ -8,16 +12,28 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        suppressHydrationWarning
-        style={{
-          margin: 0,
-          fontFamily: 'system-ui, -apple-system, "Segoe UI", sans-serif',
-          background: '#0e0e1a',
-          color: '#e0e0f0',
-        }}
-      >
-        {children}
+      <body suppressHydrationWarning>
+        <Providers>
+          <header
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 10,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              padding: '0.75rem 1.5rem',
+              background: 'var(--bg)',
+              borderBottom: '1px solid var(--border)',
+            }}
+          >
+            <Link href="/" style={{ fontWeight: 600, color: 'var(--fg)' }}>
+              Matter
+            </Link>
+            <ThemeToggle />
+          </header>
+          <main>{children}</main>
+        </Providers>
       </body>
     </html>
   )
