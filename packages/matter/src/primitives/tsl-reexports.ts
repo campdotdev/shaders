@@ -17,4 +17,5 @@ export {
   normalize,
   time,
   uv,
+  max,
 } from 'three/tsl'
