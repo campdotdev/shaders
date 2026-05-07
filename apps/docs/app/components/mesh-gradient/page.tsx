@@ -19,6 +19,7 @@ interface Params {
   c3: string
   blur: number
   speed: number
+  strength: number
   interactive: boolean
 }
 
@@ -29,6 +30,7 @@ const INITIAL: Params = {
   c3: '#ffd861',
   blur: 0.4,
   speed: 0.3,
+  strength: 0.15,
   interactive: false,
 }
 
@@ -46,8 +48,16 @@ export default function MeshGradientPage() {
     pane.addBinding(local, 'c2', { label: 'color 2' })
     pane.addBinding(local, 'c3', { label: 'color 3' })
     pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'blur', { min: 0.1, max: 2, step: 0.01 })
+    // blur slider min matches the TSL-side floor (`max(blurUniform, 0.05)`).
+    // Below 0.05 the floor would just clip silently — practical UI limit.
+    pane.addBinding(local, 'blur', { min: 0.05, max: 2, step: 0.01 })
     pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 })
+    pane.addBinding(local, 'strength', {
+      label: 'cursor pull',
+      min: 0,
+      max: 1,
+      step: 0.01,
+    })
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'interactive', { label: 'interactive (cursor pull)' })
     // No Apply button: speed and blur flow through live uniforms; colors and
@@ -68,6 +78,7 @@ export default function MeshGradientPage() {
           colors={[params.c0, params.c1, params.c2, params.c3]}
           blur={params.blur}
           speed={params.speed}
+          strength={params.strength}
           interactive={params.interactive}
         />
       </div>
@@ -86,7 +97,7 @@ export default function MeshGradientPage() {
             fontSize: '0.85rem',
           }}
         >
-{`<MeshGradient colors={['#ff61a6','#61a6ff','#61ffa6','#ffd861']} blur={0.4} speed={0.3} />`}
+{`<MeshGradient colors={['#ff61a6','#61a6ff','#61ffa6','#ffd861']} blur={0.4} speed={0.3} strength={0.15} interactive />`}
         </pre>
       </section>
     </main>

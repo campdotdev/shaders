@@ -26,6 +26,13 @@ export interface MeshGradientProps {
   points?: 'auto' | readonly MeshPoint[]
   speed?: AnimatableProp<number>
   blur?: AnimatableProp<number>
+  /**
+   * Cursor pull strength as a 0..1 lerp factor. 0 = no pull, 1 = points
+   * snap to cursor (collapsing the blend to a single color at the pointer).
+   * Default 0.15 — visible but not dominating. Only consumed when
+   * `interactive` is truthy or `inputs.cursor` is provided.
+   */
+  strength?: AnimatableProp<number>
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
   fallback?: ReactNode
@@ -88,6 +95,7 @@ function MeshGradientMesh(props: MeshGradientProps) {
   const colors = resolveColors(props.colors)
   const speedUniform = useAnimatableUniform<number>(props.speed ?? 0.3)
   const blurUniform = useAnimatableUniform<number>(props.blur ?? DEFAULT_BLUR)
+  const strengthUniform = useAnimatableUniform<number>(props.strength ?? 0.15)
 
   const points = useMemo(() => {
     if (props.points === undefined || props.points === 'auto') return autoPointsFor(colors.length)
@@ -171,10 +179,12 @@ function MeshGradientMesh(props: MeshGradientProps) {
         // (cursor - point) = -(point - cursor). Chain rooted in `point`
         // (vec2-derived), uniform passed as the .sub argument (gotcha #12).
         const cursorPull = (point as ShaderNodeObject<Node>).sub(cursorUniform).mul(-1)
-        // 0.05 = 5% lerp of point toward cursor. Strong enough to feel
-        // responsive on hover; weak enough that noise drift still dominates
-        // the visual character. Promotable to a `pull` prop in v2.
-        point = point.add(cursorPull.mul(0.05)) as ShaderNodeObject<Node>
+        // strengthUniform is the user's lerp factor (default 0.15 = 15%
+        // toward cursor). Chain rooted in cursorPull (uv-derived), uniform
+        // as .mul argument. Live updates flow without rebuild.
+        point = point.add(
+          cursorPull.mul(strengthUniform as unknown as number),
+        ) as ShaderNodeObject<Node>
       }
 
       // d = length(uv() - point) — uv-rooted chain, `point` as arg
@@ -218,7 +228,17 @@ function MeshGradientMesh(props: MeshGradientProps) {
       try { material.dispose() } catch { /* benign during rebuild */ }
       try { mesh.geometry.dispose() } catch { /* same */ }
     }
-  }, [ctx, colors.join('|'), points, speedUniform, blurUniform, cursor, cursorUniform, resUniform])
+  }, [
+    ctx,
+    colors.join('|'),
+    points,
+    speedUniform,
+    blurUniform,
+    strengthUniform,
+    cursor,
+    cursorUniform,
+    resUniform,
+  ])
 
   return null
 }
