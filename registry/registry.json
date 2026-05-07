@@ -36,6 +36,13 @@
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["noise", "length", "max", "uv", "vec2", "vec3", "vec4", "time", "uniform"],
       "tier": 1
+    },
+    "aurora": {
+      "file": "aurora.tsx",
+      "description": "Flowing FBM-displaced color bands with optional cursor amplification.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": ["fbm", "displace", "colorRamp", "smoothstep", "length", "uv", "vec2", "vec3", "vec4", "time", "uniform"],
+      "tier": 1
     }
   }
 }

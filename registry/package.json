@@ -9,7 +9,8 @@
     "./noise-field": "./noise-field.tsx",
     "./dot-field": "./dot-field.tsx",
     "./waves": "./waves.tsx",
-    "./mesh-gradient": "./mesh-gradient.tsx"
+    "./mesh-gradient": "./mesh-gradient.tsx",
+    "./aurora": "./aurora.tsx"
   },
   "dependencies": {
     "@lovo/matter": "workspace:*",
