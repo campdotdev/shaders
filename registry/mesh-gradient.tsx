@@ -5,7 +5,7 @@ import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
-import { vec2, vec3, vec4, length, max, time, uv, uniform } from '@lovo/matter'
+import { vec2, vec3, vec4, length, max, min, time, uv, uniform } from '@lovo/matter'
 import { noise } from '@lovo/matter'
 import {
   MatterScene,
@@ -193,7 +193,15 @@ function MeshGradientMesh(props: MeshGradientProps) {
       const d = length(uv().sub(point)).add(epsilonUv as never) as ShaderNodeObject<Node>
       // weight = d^(-1/blur)  ==  1 / d^(1/blur). negInvBlur is built above
       // as a TSL chain, so live `blur` updates flow without rebuild.
-      const weight = d.pow(negInvBlur as never) as ShaderNodeObject<Node>
+      // Cap the weight at 1e30 so float32 doesn't overflow to Infinity at
+      // the corner singularity for small `blur` values: at blur=0.05 the
+      // raw weight reaches ~10^66 within ~1px of the corner, overflowing
+      // to Infinity, which propagates as NaN through the weighted-sum
+      // normalization and renders as black ellipses at each corner.
+      // 10^30 is comfortably below float32 max (~3.4e38) and still leaves
+      // the corner color visually dominant — about 10^29 larger than
+      // typical inter-corner weights.
+      const weight = min(d.pow(negInvBlur as never), 1e30) as ShaderNodeObject<Node>
 
       const [r, g, b] = hex(colors[i] ?? colors[colors.length - 1] ?? '#ffffff')
       const contribution = (vec3(r, g, b) as ShaderNodeObject<Node>).mul(weight)

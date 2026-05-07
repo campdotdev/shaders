@@ -18,4 +18,5 @@ export {
   time,
   uv,
   max,
+  min,
 } from 'three/tsl'
