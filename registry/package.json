@@ -7,7 +7,8 @@
   "exports": {
     "./linear-gradient": "./linear-gradient.tsx",
     "./noise-field": "./noise-field.tsx",
-    "./dot-field": "./dot-field.tsx"
+    "./dot-field": "./dot-field.tsx",
+    "./waves": "./waves.tsx"
   },
   "dependencies": {
     "@lovo/matter": "workspace:*",

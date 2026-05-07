@@ -26,5 +26,8 @@ export { sdfCircle } from './primitives/sdfCircle.js'
 
 export { displace } from './primitives/displace.js'
 
+export { cursorRipple } from './primitives/cursorRipple.js'
+export type { CursorRippleOptions } from './primitives/cursorRipple.js'
+
 // TSL re-exports — stable surface
 export * from './primitives/tsl-reexports.js'

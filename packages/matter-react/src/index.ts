@@ -14,6 +14,9 @@ export type { CursorSignal } from './useCursor.js'
 export { useResize } from './useResize.js'
 export type { ResizeSignal, ResizeValue } from './useResize.js'
 
+export { useScroll } from './useScroll.js'
+export type { ScrollSignal, ScrollValue } from './useScroll.js'
+
 export { useAnimatableUniform } from './useAnimatableUniform.js'
 export type { AnimatableProp, MatterSignal } from './useAnimatableUniform.js'
 

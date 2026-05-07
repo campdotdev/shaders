@@ -22,6 +22,13 @@
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["sdfCircle", "displace", "mix", "mod", "smoothstep", "length", "uv", "vec2", "vec3", "vec4", "uniform"],
       "tier": 1
+    },
+    "waves": {
+      "file": "waves.tsx",
+      "description": "Layered sine waves with cursor-spawned ripples.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": ["cursorRipple", "sin", "mix", "smoothstep", "uv", "vec3", "vec4", "time", "uniform"],
+      "tier": 1
     }
   }
 }
