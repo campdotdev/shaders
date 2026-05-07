@@ -21,6 +21,8 @@ export interface AuroraProps {
   colors?: AnimatableProp<string[]>
   speed?: AnimatableProp<number>
   intensity?: AnimatableProp<number>
+  /** Cursor amplification ceiling. 0 disables; 1 = 2x flow at cursor; 3 = 4x. */
+  cursorStrength?: AnimatableProp<number>
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
   fallback?: ReactNode
@@ -57,6 +59,7 @@ function AuroraMesh(props: AuroraProps) {
   const colors = resolveColors(props.colors)
   const speedUniform = useAnimatableUniform<number>(props.speed ?? 0.4)
   const intensityUniform = useAnimatableUniform<number>(props.intensity ?? 1)
+  const cursorStrengthUniform = useAnimatableUniform<number>(props.cursorStrength ?? 1)
 
   // Cursor uniform — UV-space, y flipped from DOM-space. useCursor()'s signal
   // is already canvas-rect-normalized centrally (matter PR 0e09e90), so we
@@ -78,26 +81,37 @@ function AuroraMesh(props: AuroraProps) {
     })
 
     // 1. FBM displacement field, scaled by speed and intensity.
-    //    flow = fbm(uv * 0.5 + time * speed)
+    //    flow = fbm(uv * 0.5 + time * speed * 0.1)
     //    displaced uv = displace(uv, vec2(flow * intensity, 0))
     // Chain rooted in uv() / time (TSL nodes), uniforms passed only as args
     // (gotcha #12: chained-on-uniform silently produces wrong GPU values).
-    const tNode = (time as ShaderNodeObject<Node>).mul(speedUniform as unknown as number)
+    //
+    // The trailing `.mul(0.1)` is an internal time-rate scaling so that the
+    // user-facing `speed` prop sits in a calm, aurora-like cadence range. At
+    // speed=0.4 (default) the effective FBM scroll rate is 0.04 noise units/sec,
+    // traversing one feature in ~25s — calm. Without the 0.1× factor, speed=0.4
+    // traversed a feature in ~2.5s, which felt hectic per stop-and-play feedback.
+    const tNode = (time as ShaderNodeObject<Node>)
+      .mul(speedUniform as unknown as number)
+      .mul(0.1)
     const sampleP = (uv() as ShaderNodeObject<Node>)
       .mul(0.5)
       .add(vec2(tNode, tNode)) as ShaderNodeObject<Node>
     const flow = fbm(sampleP, { octaves: 4 }) as ShaderNodeObject<Node>
 
-    // 2. Cursor amplification: a 1..2x multiplier on the flow magnitude near
-    //    the cursor. Use an isotropic falloff with smoothstep over uv-distance.
+    // 2. Cursor amplification: a 1..(1 + cursorStrength)x multiplier on the
+    //    flow magnitude near the cursor. Isotropic falloff via smoothstep over
+    //    uv-distance.
     let amplified = flow
     if (cursor) {
       const d = length(uv().sub(cursorUniform))
       // smoothstep(0.3, 0, d): 1 at the cursor, 0 at uv-distance >= 0.3.
+      // 0.3 ≈ 30% of the canvas's shorter edge in UV space.
       const amp = smoothstep(0.3, 0, d as never) as ShaderNodeObject<Node>
-      // 1 + amp: 1x at the edge of reach, 2x at the cursor itself.
-      // (A3 fix: replaced redundant `amp.mul(1).add(1)` with `amp.add(1)`.)
-      amplified = flow.mul(amp.add(1) as ShaderNodeObject<Node>) as ShaderNodeObject<Node>
+      // 1 + amp * cursorStrength: 1x at the edge of reach,
+      // (1 + cursorStrength)x at the cursor itself. cursorStrength=0 disables.
+      const ampScaled = amp.mul(cursorStrengthUniform as unknown as number) as ShaderNodeObject<Node>
+      amplified = flow.mul(ampScaled.add(1) as ShaderNodeObject<Node>) as ShaderNodeObject<Node>
     }
 
     // x-only displacement: bands are vertical, so warping x produces the
@@ -129,7 +143,7 @@ function AuroraMesh(props: AuroraProps) {
       try { material.dispose() } catch { /* benign during rebuild */ }
       try { mesh.geometry.dispose() } catch { /* same */ }
     }
-  }, [ctx, colors.join('|'), speedUniform, intensityUniform, cursor, cursorUniform])
+  }, [ctx, colors.join('|'), speedUniform, intensityUniform, cursorStrengthUniform, cursor, cursorUniform])
 
   return null
 }

@@ -18,6 +18,7 @@ interface Params {
   c2: string
   speed: number
   intensity: number
+  cursorStrength: number
   interactive: boolean
 }
 
@@ -27,6 +28,7 @@ const INITIAL: Params = {
   c2: '#ff61a6',
   speed: 0.4,
   intensity: 1,
+  cursorStrength: 1,
   interactive: false,
 }
 
@@ -47,6 +49,12 @@ export default function AuroraPage() {
     pane.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 })
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'interactive', { label: 'interactive (cursor warps flow)' })
+    pane.addBinding(local, 'cursorStrength', {
+      label: 'cursor strength',
+      min: 0,
+      max: 3,
+      step: 0.01,
+    })
     pane.on('change', () => {
       setParams({ ...local })
     })
@@ -62,6 +70,7 @@ export default function AuroraPage() {
           colors={[params.c0, params.c1, params.c2]}
           speed={params.speed}
           intensity={params.intensity}
+          cursorStrength={params.cursorStrength}
           interactive={params.interactive}
         />
       </div>
