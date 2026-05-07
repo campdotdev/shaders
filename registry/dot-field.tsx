@@ -111,14 +111,21 @@ function DotFieldMesh(props: DotFieldProps) {
     // argument, again per gotcha #12.
     const pullDir = (cellCenterUv as ShaderNodeObject<Node>).sub(cursorUniform).mul(-1)
 
-    // Offset the cell-local coord toward the cursor, scaled by influence and
-    // strength. The 0.5 cap keeps the displaced point inside the cell so the
-    // SDF circle stays renderable.
+    // Offset toward the cursor, scaled by influence and strength. The 0.5
+    // cap keeps the displaced point inside the cell so the SDF circle stays
+    // renderable.
     const offset = pullDir
       .mul(influence as unknown as number)
       .mul(strengthUniform as unknown as number)
       .mul(0.5)
-    const displacedLocal = displace(cellLocal as never, offset as never)
+    // SDF translation: rendering a disk at +v means evaluating the SDF at
+    // (p - v), not (p + v). `displace` is naive vector addition, so we
+    // negate `offset` here — otherwise dots visibly push AWAY from the
+    // cursor instead of pulling toward it.
+    const displacedLocal = displace(
+      cellLocal as never,
+      (offset as ShaderNodeObject<Node>).mul(-1) as never,
+    )
 
     // dotSize is in CSS px; convert to cell-local fraction:
     // radius = dotSize / (spacing * 2). Root this chain in vec2(0).x —
