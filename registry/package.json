@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     "./linear-gradient": "./linear-gradient.tsx",
-    "./noise-field": "./noise-field.tsx"
+    "./noise-field": "./noise-field.tsx",
+    "./dot-field": "./dot-field.tsx"
   },
   "dependencies": {
     "@lovo/matter": "workspace:*",

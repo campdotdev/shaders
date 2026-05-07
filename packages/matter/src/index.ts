@@ -22,5 +22,9 @@ export { voronoi } from './primitives/voronoi.js'
 
 export { quantize } from './primitives/quantize.js'
 
+export { sdfCircle } from './primitives/sdfCircle.js'
+
+export { displace } from './primitives/displace.js'
+
 // TSL re-exports — stable surface
 export * from './primitives/tsl-reexports.js'

@@ -1,0 +1,91 @@
+// apps/docs/app/components/dot-field/page.tsx
+'use client'
+
+import { useEffect, useRef, useState } from 'react'
+import { Pane } from 'tweakpane'
+import dynamic from 'next/dynamic'
+
+// DotField pulls in three/webgpu, which references `self` at module load
+// time and breaks Next's SSR. Load it client-only.
+const DotField = dynamic(
+  () => import('@matter/registry/dot-field').then((m) => m.DotField),
+  { ssr: false },
+)
+
+interface Params {
+  color: string
+  spacing: number
+  dotSize: number
+  reach: number
+  strength: number
+  interactive: boolean
+}
+
+const INITIAL: Params = {
+  color: '#888888',
+  spacing: 30,
+  dotSize: 2,
+  reach: 100,
+  strength: 1,
+  interactive: true,
+}
+
+export default function DotFieldPage() {
+  const paneContainerRef = useRef<HTMLDivElement>(null)
+  const [params, setParams] = useState<Params>(INITIAL)
+
+  useEffect(() => {
+    const container = paneContainerRef.current
+    if (!container) return
+    const local = { ...INITIAL }
+    const pane = new Pane({ container, title: '<DotField>' })
+    pane.addBinding(local, 'color')
+    pane.addBlade({ view: 'separator' })
+    pane.addBinding(local, 'spacing', { min: 8, max: 80, step: 1 })
+    pane.addBinding(local, 'dotSize', { label: 'dot size', min: 1, max: 8, step: 0.5 })
+    pane.addBlade({ view: 'separator' })
+    pane.addBinding(local, 'reach', { min: 10, max: 400, step: 5 })
+    pane.addBinding(local, 'strength', { min: 0, max: 3, step: 0.05 })
+    pane.addBlade({ view: 'separator' })
+    pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' })
+    pane.on('change', () => {
+      setParams({ ...local })
+    })
+    return () => {
+      pane.dispose()
+    }
+  }, [])
+
+  return (
+    <main style={{ minHeight: '100vh', position: 'relative' }}>
+      <div style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
+        <DotField
+          color={params.color}
+          spacing={params.spacing}
+          dotSize={params.dotSize}
+          reach={params.reach}
+          strength={params.strength}
+          interactive={params.interactive}
+        />
+      </div>
+      <div
+        ref={paneContainerRef}
+        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+      />
+      <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
+        <h1 style={{ marginTop: 0 }}>&lt;DotField /&gt;</h1>
+        <pre
+          style={{
+            background: '#1a1a2a',
+            color: '#e0e0f0',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            fontSize: '0.85rem',
+          }}
+        >
+{`<DotField spacing={30} dotSize={2} color="#888" reach={100} strength={1} />`}
+        </pre>
+      </section>
+    </main>
+  )
+}

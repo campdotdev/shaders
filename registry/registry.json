@@ -15,6 +15,13 @@
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["colorRamp", "fbm", "voronoi", "quantize", "uv", "vec2", "vec3", "time", "uniform"],
       "tier": 1
+    },
+    "dot-field": {
+      "file": "dot-field.tsx",
+      "description": "Tiled dot field with cursor displacement — the architecturally-validating Matter component.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": ["sdfCircle", "displace", "mix", "mod", "smoothstep", "length", "uv", "vec2", "vec3", "vec4", "uniform"],
+      "tier": 1
     }
   }
 }
