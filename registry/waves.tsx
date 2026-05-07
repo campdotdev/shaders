@@ -52,7 +52,10 @@ function WavesMesh(props: WavesProps) {
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
   const cursor = cursorFromInputs ?? (props.interactive ? cursorAuto : null)
-  const layers = props.layers ?? DEFAULTS.layers
+  // Floor at 1: a non-positive `layers` would still render the always-on base
+  // wave (visually identical to layers=1) but reads as "no waves please."
+  // Clamping keeps the public API honest about what the visible minimum is.
+  const layers = Math.max(1, props.layers ?? DEFAULTS.layers)
 
   const ampUniform = useAnimatableUniform<number>(props.amplitude ?? DEFAULTS.amplitude)
   const freqUniform = useAnimatableUniform<number>(props.frequency ?? DEFAULTS.frequency)
@@ -88,6 +91,12 @@ function WavesMesh(props: WavesProps) {
       uvX.mul(freqUniform).add(tNode.mul(speedUniform)),
     ) as ShaderNodeObject<Node>
     let totalAmp = 1
+    // Per-layer detuning: each successive layer gets a slightly higher
+    // frequency, faster phase, and a phase-offset to keep peaks from aligning
+    // across layers (which would just look like a louder fundamental). The
+    // 0.7 / 0.4 / 1.3 magic numbers are chosen to give a "harmonic-ish but
+    // not exact" stack — small enough that low-default freq=5 doesn't alias
+    // at i=5, large enough that you can hear the layer count grow visually.
     for (let i = 1; i < layers; i++) {
       // Anchor the per-layer freq/speed in zeroScalar so freqUniform /
       // speedUniform appear only as arguments to .add() — never as the

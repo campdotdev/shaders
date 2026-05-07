@@ -29,6 +29,13 @@ const STUB_SIGNAL: ScrollSignal = {
  * Strict-Mode-safe: lifecycle is in one effect, so React 19's intentional
  * mount→unmount→mount cycle in dev creates a fresh listener pair per real
  * mount and tears down cleanly on each pseudo-unmount (CLAUDE.md gotcha #14).
+ *
+ * **Known limitation (v1):** `progress` is computed against whichever
+ * `documentHeight` was current when the last scroll fired. If the page grows
+ * after mount (async content, font load reflow, expanding panels) without
+ * the user scrolling, the denominator goes stale. A future ResizeObserver/
+ * MutationObserver pass would close the gap; deferred until a v1 component
+ * consumes scroll input.
  */
 export function useScroll(): ScrollSignal {
   const [signal, setSignal] = useState<ScrollSignal | null>(null)

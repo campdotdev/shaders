@@ -33,10 +33,6 @@ const INITIAL: Params = {
 export default function WavesPage() {
   const paneContainerRef = useRef<HTMLDivElement>(null)
   const [params, setParams] = useState<Params>(INITIAL)
-  // `layers` bakes into the TSL fragment at material build time, so changing
-  // it must remount the component. instanceKey + the Apply button drive that;
-  // the live `change` handler only updates the uniform-driven props.
-  const [instanceKey, setInstanceKey] = useState(0)
 
   useEffect(() => {
     const container = paneContainerRef.current
@@ -52,11 +48,18 @@ export default function WavesPage() {
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'interactive', { label: 'interactive (cursor ripple)' })
     pane.addBlade({ view: 'separator' })
+    // `layers` and `interactive` bake into the TSL fragment shape (loop length
+    // and conditional ripple branch). Each change rebuilds the material via
+    // the mesh effect's dep array. The Apply button defers their commit so a
+    // user dragging the layers slider 1→6 doesn't trigger 5 mid-drag rebuilds;
+    // they get one rebuild on click. Live-uniform props (color/amplitude/
+    // frequency/speed) flow through the per-tick `change` handler below.
     pane.addButton({ title: 'Apply layers / interactive' }).on('click', () => {
       setParams({ ...local })
-      setInstanceKey((k) => k + 1)
     })
-    pane.on('change', () => {
+    pane.on('change', (ev) => {
+      const key = (ev.target as { key?: keyof Params }).key
+      if (key === 'layers' || key === 'interactive') return
       setParams({ ...local })
     })
     return () => {
@@ -68,7 +71,6 @@ export default function WavesPage() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
         <Waves
-          key={instanceKey}
           color={params.color}
           amplitude={params.amplitude}
           frequency={params.frequency}
