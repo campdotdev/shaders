@@ -121,10 +121,14 @@ function DotFieldMesh(props: DotFieldProps) {
     const displacedLocal = displace(cellLocal as never, offset as never)
 
     // dotSize is in CSS px; convert to cell-local fraction:
-    // radius = (dotSize / 2) / spacing.
-    const radius = (dotSizeUniform as unknown as { div(n: unknown): unknown }).div(
-      (spacingUniform as unknown as { mul(n: number): unknown }).mul(2),
-    )
+    // radius = dotSize / (spacing * 2). Root this chain in vec2(0).x —
+    // a TSL literal scalar — so dotSize/spacing appear only as ARGUMENTS,
+    // not as chain receivers (gotcha #12: chain methods on raw uniform
+    // nodes silently produce wrong GPU values).
+    const zeroScalar = (vec2(0) as ShaderNodeObject<Node>).x
+    const radius = zeroScalar
+      .add(dotSizeUniform)
+      .div(zeroScalar.add(spacingUniform).mul(2))
     const sdf = sdfCircle(displacedLocal, radius as never)
     // Soft edge: smoothstep across [+aa, -aa] so inside maps to 1 and the
     // boundary gets a subpixel falloff instead of an aliased step.
