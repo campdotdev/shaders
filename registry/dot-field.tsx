@@ -96,28 +96,35 @@ function DotFieldMesh(props: DotFieldProps) {
       .mul(spacingUniform as unknown as number)
       .div(resUniform)
 
-    // Distance from cell center to cursor — computed in PIXEL space so we can
-    // compare directly against `reachUniform` (which is in CSS px). This also
-    // keeps the chain rooted in `cellCenterUv` (a uv()-derived node) and only
-    // uses uniforms as ARGUMENTS, per gotcha #12.
-    const distToCursorPx = length(
-      (cellCenterUv as ShaderNodeObject<Node>).sub(cursorUniform).mul(resUniform),
-    )
-    // Cursor influence: 1 at the cursor, 0 at `reach` px away.
+    // Cell→cursor in pixel space, computed once and reused for the influence
+    // curve and the displacement direction. Root in cellCenterUv (uv-derived)
+    // so the chain is gotcha-#12-clean: uniforms appear only as arguments.
+    const cellToCursorPx = (cellCenterUv as ShaderNodeObject<Node>)
+      .sub(cursorUniform)
+      .mul(-1)
+      .mul(resUniform)
+    const distToCursorPx = length(cellToCursorPx)
+    // Cursor influence: 1 at cursor, 0 at `reach` px away.
     const influence = smoothstep(reachUniform as never, 0, distToCursorPx as never)
 
-    // Pull direction = cursor - cellCenter. Computed as -(cellCenter - cursor)
-    // so the chain roots in cellCenterUv (uv-derived) and the uniform is an
-    // argument, again per gotcha #12.
-    const pullDir = (cellCenterUv as ShaderNodeObject<Node>).sub(cursorUniform).mul(-1)
+    // Unit direction from cell toward cursor. Adding 0.001 to the divisor
+    // avoids div-by-zero at the cursor itself; the influence weight forces
+    // the offset to ~0 there anyway so the small bias is invisible.
+    const dirToCursor = (cellToCursorPx as ShaderNodeObject<Node>).div(
+      (distToCursorPx as ShaderNodeObject<Node>).add(0.001),
+    )
 
-    // Offset toward the cursor, scaled by influence and strength. The 0.5
-    // cap keeps the displaced point inside the cell so the SDF circle stays
-    // renderable.
-    const offset = pullDir
+    // Offset in CELL-LOCAL units. dirToCursor is a dimensionless unit vector,
+    // so multiplying by the 0.4 cap means "shift up to 40% of a cell width
+    // toward the cursor at peak influence × peak strength." Earlier this was
+    // `pullDir = cell - cursor` (UV-space) without normalization — the offset
+    // magnitude scaled with screen size, so on a 1000px canvas the visible
+    // shift at default reach=100 / strength=1 was only a few pixels (you had
+    // to max both sliders to see anything). Normalizing fixes the feel.
+    const offset = (dirToCursor as ShaderNodeObject<Node>)
       .mul(influence as unknown as number)
       .mul(strengthUniform as unknown as number)
-      .mul(0.5)
+      .mul(0.4)
     // SDF translation: rendering a disk at +v means evaluating the SDF at
     // (p - v), not (p + v). `displace` is naive vector addition, so we
     // negate `offset` here — otherwise dots visibly push AWAY from the
