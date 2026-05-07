@@ -68,7 +68,10 @@ function DotFieldMesh(props: DotFieldProps) {
   // immediately so the GPU sees real values on first render even before any
   // ResizeObserver tick fires (the stub returns [0, 0, 1], which we ignore).
   // resize.on('change', ...) fires only on actual size deltas, not initial.
-  const resVec = useMemo(() => new Vector2(1, 1), [])
+  // Initial (1920,1080) is a sane large default — the original (1,1) made
+  // the tile math (`uv * res / spacing`) collapse to a near-zero range for
+  // one frame, briefly hiding all dots until the resize effect seeded.
+  const resVec = useMemo(() => new Vector2(1920, 1080), [])
   const resUniform = useMemo(() => uniform(resVec), [resVec])
   useEffect(() => {
     const [w, h] = resize.get()

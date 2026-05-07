@@ -108,7 +108,12 @@ function MeshGradientMesh(props: MeshGradientProps) {
   // Resolution uniform — CSS pixels of the canvas. Seed from resize.get()
   // immediately so the GPU sees real values on first render even before any
   // ResizeObserver tick fires. Pattern mirrors DotField (registry/dot-field.tsx).
-  const resVec = useMemo(() => new Vector2(1, 1), [])
+  // Initial (1920,1080) is a sane large default rather than (1,1): with (1,1)
+  // the resolution-aware epsilon (length(res)*0.7071*-1) collapses to ~1.0 in
+  // UV space for one frame, producing a washed-out flash before the resize
+  // effect seeds the real canvas dims. Real desktop canvases will overwrite
+  // this immediately; mobile users start with a closer estimate.
+  const resVec = useMemo(() => new Vector2(1920, 1080), [])
   const resUniform = useMemo(() => uniform(resVec), [resVec])
   useEffect(() => {
     const [w, h] = resize.get()
@@ -128,7 +133,9 @@ function MeshGradientMesh(props: MeshGradientProps) {
     // uses for isotropic reach. length(...) is a function-call result (not a
     // uniform receiver), so chaining .mul/.pow off it is gotcha-#12-clean.
     const meanResPx = length(resUniform).mul(0.7071)
-    // epsilonUv = 1 / meanResPx  ≈  1 pixel expressed in UV units.
+    // epsilonUv = 1 / meanResPx ≈ one diagonal-mean pixel in UV space —
+    // slightly tighter than 1px on the long axis, slightly looser on the
+    // short axis. Same isotropic-reach trick DotField uses.
     const epsilonUv = meanResPx.pow(-1)
 
     // vec2(0).x is a TSL literal scalar — chain rooted here means blurUniform
@@ -164,6 +171,9 @@ function MeshGradientMesh(props: MeshGradientProps) {
         // (cursor - point) = -(point - cursor). Chain rooted in `point`
         // (vec2-derived), uniform passed as the .sub argument (gotcha #12).
         const cursorPull = (point as ShaderNodeObject<Node>).sub(cursorUniform).mul(-1)
+        // 0.05 = 5% lerp of point toward cursor. Strong enough to feel
+        // responsive on hover; weak enough that noise drift still dominates
+        // the visual character. Promotable to a `pull` prop in v2.
         point = point.add(cursorPull.mul(0.05)) as ShaderNodeObject<Node>
       }
 
