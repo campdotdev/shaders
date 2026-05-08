@@ -29,6 +29,8 @@ export interface NoiseFieldProps {
   fallback?: ReactNode
   className?: string
   style?: CSSProperties
+  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
+  children?: ReactNode
 }
 
 const DEFAULT_COLORS = ['#0a0a0a', '#f5f5f5']
@@ -176,10 +178,12 @@ function DefaultFallback() {
 }
 
 export function NoiseField(props: NoiseFieldProps) {
+  const { children, ...meshProps } = props
   return (
     <FallbackBoundary fallback={props.fallback ?? <DefaultFallback />}>
       <MatterScene className={props.className} style={props.style}>
-        <NoiseFieldMesh {...props} />
+        <NoiseFieldMesh {...meshProps} />
+        {children}
       </MatterScene>
     </FallbackBoundary>
   )

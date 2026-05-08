@@ -28,6 +28,8 @@ export interface WavesProps {
   fallback?: ReactNode
   className?: string
   style?: CSSProperties
+  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
+  children?: ReactNode
 }
 
 const DEFAULTS = {
@@ -183,10 +185,12 @@ function DefaultFallback({ color }: { color: string }) {
 
 export function Waves(props: WavesProps) {
   const fallbackColor = typeof props.color === 'string' ? props.color : DEFAULTS.color
+  const { children, ...meshProps } = props
   return (
     <FallbackBoundary fallback={props.fallback ?? <DefaultFallback color={fallbackColor} />}>
       <MatterScene className={props.className} style={props.style}>
-        <WavesMesh {...props} />
+        <WavesMesh {...meshProps} />
+        {children}
       </MatterScene>
     </FallbackBoundary>
   )

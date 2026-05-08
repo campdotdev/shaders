@@ -29,6 +29,8 @@ export interface DotFieldProps {
   fallback?: ReactNode
   className?: string
   style?: CSSProperties
+  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
+  children?: ReactNode
 }
 
 const DEFAULTS = { spacing: 30, dotSize: 2, color: '#888888', reach: 100, strength: 1 } as const
@@ -193,6 +195,7 @@ function DefaultFallback({ color, spacing }: { color: string; spacing: number })
 export function DotField(props: DotFieldProps) {
   const fallbackColor = typeof props.color === 'string' ? props.color : DEFAULTS.color
   const fallbackSpacing = typeof props.spacing === 'number' ? props.spacing : DEFAULTS.spacing
+  const { children, ...meshProps } = props
   return (
     <FallbackBoundary
       fallback={
@@ -200,7 +203,8 @@ export function DotField(props: DotFieldProps) {
       }
     >
       <MatterScene className={props.className} style={props.style}>
-        <DotFieldMesh {...props} />
+        <DotFieldMesh {...meshProps} />
+        {children}
       </MatterScene>
     </FallbackBoundary>
   )

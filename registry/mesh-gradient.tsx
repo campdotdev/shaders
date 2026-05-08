@@ -38,6 +38,8 @@ export interface MeshGradientProps {
   fallback?: ReactNode
   className?: string
   style?: CSSProperties
+  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
+  children?: ReactNode
 }
 
 const DEFAULT_COLORS = ['#ff61a6', '#61a6ff', '#61ffa6', '#ffd861']
@@ -270,10 +272,12 @@ function DefaultFallback({ colors }: { colors: string[] }) {
 
 export function MeshGradient(props: MeshGradientProps) {
   const colors = resolveColors(props.colors)
+  const { children, ...meshProps } = props
   return (
     <FallbackBoundary fallback={props.fallback ?? <DefaultFallback colors={colors} />}>
       <MatterScene className={props.className} style={props.style}>
-        <MeshGradientMesh {...props} />
+        <MeshGradientMesh {...meshProps} />
+        {children}
       </MatterScene>
     </FallbackBoundary>
   )

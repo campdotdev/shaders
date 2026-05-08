@@ -28,6 +28,8 @@ export interface AuroraProps {
   fallback?: ReactNode
   className?: string
   style?: CSSProperties
+  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
+  children?: ReactNode
 }
 
 const DEFAULT_COLORS = ['#7b61ff', '#5fc7ff', '#ff61a6']
@@ -168,10 +170,12 @@ function DefaultFallback({ colors }: { colors: string[] }) {
 
 export function Aurora(props: AuroraProps) {
   const colors = resolveColors(props.colors)
+  const { children, ...meshProps } = props
   return (
     <FallbackBoundary fallback={props.fallback ?? <DefaultFallback colors={colors} />}>
       <MatterScene className={props.className} style={props.style}>
-        <AuroraMesh {...props} />
+        <AuroraMesh {...meshProps} />
+        {children}
       </MatterScene>
     </FallbackBoundary>
   )
