@@ -182,3 +182,46 @@ describe('setIdle (render-on-demand)', () => {
     expect(client).toHaveBeenCalledTimes(2)
   })
 })
+
+describe('dispose invariants', () => {
+  let rafCallbacks: FrameRequestCallback[] = []
+  let nextRafId = 0
+  let cancelled: number[] = []
+
+  beforeEach(() => {
+    rafCallbacks = []
+    nextRafId = 0
+    cancelled = []
+    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb)
+      return ++nextRafId
+    })
+    vi.stubGlobal('cancelAnimationFrame', (id: number) => {
+      cancelled.push(id)
+    })
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('cancels the pending rAF on dispose', () => {
+    const scheduler = new MatterScheduler()
+    scheduler.add(vi.fn())
+    scheduler.start()
+    expect(rafCallbacks.length).toBe(1)
+    scheduler.dispose()
+    expect(cancelled.length).toBe(1)
+  })
+
+  it('does not invoke clients after dispose', () => {
+    const scheduler = new MatterScheduler()
+    const client = vi.fn()
+    scheduler.add(client)
+    scheduler.start()
+    scheduler.dispose()
+    // even if a leftover rAF callback fires, client should not be called
+    rafCallbacks.forEach((cb) => cb(performance.now()))
+    expect(client).not.toHaveBeenCalled()
+  })
+})
