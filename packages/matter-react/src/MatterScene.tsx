@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Scene, OrthographicCamera } from 'three'
-import { createRenderer, MatterScheduler, createVisibilityWatcher } from '@lovo/matter'
+import { createRenderer, MatterScheduler, createVisibilityWatcher, createIntersectionWatcher } from '@lovo/matter'
 import { MatterContext, type MatterContextValue } from './matter-context.js'
 
 export interface MatterSceneProps {
@@ -57,18 +57,26 @@ export function MatterScene(props: MatterSceneProps) {
         scheduler.start()
 
         const visibility = createVisibilityWatcher()
-        if (!visibility.isVisible()) scheduler.pause()
-        const unsubVisibility = visibility.subscribe((visible) => {
-          if (visible) scheduler.resume()
+        const intersection = createIntersectionWatcher(canvas)
+
+        const updatePauseState = () => {
+          const shouldRun = visibility.isVisible() && intersection.isInView()
+          if (shouldRun) scheduler.resume()
           else scheduler.pause()
-        })
+        }
+        updatePauseState()
+
+        const unsubVisibility = visibility.subscribe(updatePauseState)
+        const unsubIntersection = intersection.subscribe(updatePauseState)
 
         const onResize = () => renderer.resize()
         window.addEventListener('resize', onResize)
 
         cleanup = () => {
           unsubVisibility()
+          unsubIntersection()
           visibility.dispose()
+          intersection.dispose()
           window.removeEventListener('resize', onResize)
           scheduler.dispose()
           renderer.dispose()
