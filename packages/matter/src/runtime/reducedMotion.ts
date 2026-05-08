@@ -1,3 +1,7 @@
+import { uniform } from 'three/tsl'
+import type { ShaderNodeObject } from 'three/tsl'
+import type { Node } from 'three/webgpu'
+
 export type ReducedMotionPolicy = 'auto' | 'off' | 'slow' | 'paused'
 
 /**
@@ -122,4 +126,31 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
   }
   state.watchers.add(watcher)
   return watcher
+}
+
+let globalScaleUniform: ShaderNodeObject<Node> | null = null
+let globalWatcher: ReducedMotionWatcher | null = null
+
+/**
+ * Returns the engine-shared TSL uniform that `time` is multiplied by. Lazily
+ * initialized on first read; reused across all materials. Mutating `.value`
+ * imperatively when policy changes is safe — TSL re-reads the uniform every
+ * frame.
+ */
+export function getReducedMotionTimeScale(): ShaderNodeObject<Node> {
+  if (globalScaleUniform === null) {
+    globalWatcher = createReducedMotionWatcher()
+    globalScaleUniform = uniform(globalWatcher.scale()) as unknown as ShaderNodeObject<Node>
+    globalWatcher.subscribe((s) => {
+      ;(globalScaleUniform as unknown as { value: number }).value = s
+    })
+  }
+  return globalScaleUniform
+}
+
+// Keep a typed reference for tests that may want to re-init between tests.
+export const __resetReducedMotionForTests = () => {
+  globalWatcher?.dispose()
+  globalWatcher = null
+  globalScaleUniform = null
 }

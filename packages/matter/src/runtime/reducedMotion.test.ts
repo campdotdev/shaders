@@ -1,6 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
+  __resetReducedMotionForTests,
   createReducedMotionWatcher,
+  getReducedMotionTimeScale,
   setReducedMotionPolicy,
 } from './reducedMotion.js'
 
@@ -155,5 +157,32 @@ describe('reducedMotion watcher — SSR fallback', () => {
     // But scale() at the time of next call should reflect the latest policy.
     expect(w.scale()).toBe(0.3)
     w.dispose()
+  })
+})
+
+describe('reducedMotion uniform', () => {
+  beforeEach(() => {
+    __resetReducedMotionForTests()
+    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }))
+    setReducedMotionPolicy('auto')
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    __resetReducedMotionForTests()
+    setReducedMotionPolicy('auto')
+  })
+
+  it('exposes a TSL uniform whose value matches the current scale', () => {
+    setReducedMotionPolicy('slow')
+    const u = getReducedMotionTimeScale()
+    expect((u as unknown as { value: number }).value).toBe(0.3)
+  })
+
+  it('updates the uniform value when policy changes', () => {
+    const u = getReducedMotionTimeScale()
+    setReducedMotionPolicy('off')
+    expect((u as unknown as { value: number }).value).toBe(1)
+    setReducedMotionPolicy('paused')
+    expect((u as unknown as { value: number }).value).toBe(0)
   })
 })
