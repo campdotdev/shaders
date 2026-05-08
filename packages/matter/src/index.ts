@@ -39,3 +39,6 @@ export {
   createReducedMotionWatcher,
 } from './runtime/reducedMotion.js'
 export type { ReducedMotionPolicy, ReducedMotionWatcher } from './runtime/reducedMotion.js'
+
+export { createVisibilityWatcher } from './runtime/visibility.js'
+export type { VisibilityWatcher } from './runtime/visibility.js'
