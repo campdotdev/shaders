@@ -19,6 +19,8 @@ export class MatterScheduler {
   private rafId: number | null = null
   private running = false
   private paused = false
+  private idle = false
+  private flushPending = false
   private startedAt = 0
   private lastTickAt = 0
 
@@ -63,10 +65,35 @@ export class MatterScheduler {
     this.clients.clear()
   }
 
+  /**
+   * Mark the scheduler idle. The next tick still fires (a final flush so
+   * uniform changes that triggered the idle state are rendered), then the
+   * rAF loop halts. Use `requestRender()` or `setIdle(false)` to wake.
+   */
+  setIdle(idle: boolean): void {
+    if (this.idle === idle) return
+    this.idle = idle
+    if (idle) {
+      this.flushPending = true
+      this.maybeQueue()
+    } else {
+      this.flushPending = false
+      this.maybeQueue()
+    }
+  }
+
+  /** Force a single tick while idle. Useful for prop-change invalidation. */
+  requestRender(): void {
+    if (!this.idle) return
+    this.flushPending = true
+    this.maybeQueue()
+  }
+
   private maybeQueue(): void {
     if (this.rafId !== null) return
     if (!this.running) return
     if (this.clients.size === 0) return
+    if (this.idle && !this.flushPending) return
     this.rafId = requestAnimationFrame(this.frame)
   }
 
@@ -94,6 +121,7 @@ export class MatterScheduler {
       client(tick)
     }
 
+    this.flushPending = false
     this.maybeQueue()
   }
 }
