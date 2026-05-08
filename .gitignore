@@ -41,3 +41,8 @@ pnpm-debug.log*
 
 # Git worktrees
 .worktrees/
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/
