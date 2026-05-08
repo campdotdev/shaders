@@ -1,8 +1,29 @@
 export type ReducedMotionPolicy = 'auto' | 'off' | 'slow' | 'paused'
 
+/**
+ * Public surface exposed to package consumers. `recompute` is intentionally
+ * absent — it is engine-internal and should not be callable from outside.
+ */
+export interface ReducedMotionWatcher {
+  /** Current time scale: 0, 0.3, or 1. */
+  scale(): number
+  /** Subscribe to scale changes. Returns unsubscribe. */
+  subscribe(cb: (scale: number) => void): () => void
+  /** Tear down media-query listener. */
+  dispose(): void
+}
+
+/**
+ * Engine-internal extension of the public watcher. Only `setReducedMotionPolicy`
+ * calls `recompute`; it is never part of the consumer-visible type.
+ */
+interface InternalWatcher extends ReducedMotionWatcher {
+  recompute(): void
+}
+
 interface PolicyState {
   policy: ReducedMotionPolicy
-  watchers: Set<ReducedMotionWatcher>
+  watchers: Set<InternalWatcher>
 }
 
 const state: PolicyState = {
@@ -27,17 +48,6 @@ export function getReducedMotionPolicy(): ReducedMotionPolicy {
   return state.policy
 }
 
-export interface ReducedMotionWatcher {
-  /** Current time scale: 0, 0.3, or 1. */
-  scale(): number
-  /** Subscribe to scale changes. Returns unsubscribe. */
-  subscribe(cb: (scale: number) => void): () => void
-  /** Internal: recompute after policy change and notify subscribers. */
-  recompute(): void
-  /** Tear down media-query listener. */
-  dispose(): void
-}
-
 const computeScale = (mqlMatches: boolean): number => {
   switch (state.policy) {
     case 'off':
@@ -58,20 +68,22 @@ const computeScale = (mqlMatches: boolean): number => {
  */
 export function createReducedMotionWatcher(): ReducedMotionWatcher {
   // SSR safety: bail to the no-op watcher if matchMedia is missing.
+  // SSR watcher: scale() respects policy override but does not emit
+  // subscription events (the engine has no way to notify SSR-created
+  // watchers because they are not added to state.watchers — but in
+  // practice CLAUDE.md gotcha #10 requires `ssr: false` for any component
+  // that touches the matter engine).
   if (typeof matchMedia !== 'function') {
-    const subs = new Set<(s: number) => void>()
     return {
-      scale: () => 1,
+      scale: () => computeScale(false),
       subscribe: (cb) => {
-        subs.add(cb)
-        return () => subs.delete(cb)
+        // No-op: SSR watchers are not in state.watchers and will never
+        // receive policy-change notifications.
+        void cb
+        return () => {}
       },
-      recompute: () => {
-        for (const cb of subs) cb(computeScale(false))
-      },
-      dispose: () => {
-        subs.clear()
-      },
+      /** SSR watcher does not emit policy-change notifications. */
+      dispose: () => {},
     }
   }
 
@@ -89,7 +101,7 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
 
   mql.addEventListener('change', onChange)
 
-  const watcher: ReducedMotionWatcher = {
+  const watcher: InternalWatcher = {
     scale: () => last,
     subscribe(cb) {
       subs.add(cb)

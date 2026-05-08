@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   createReducedMotionWatcher,
   setReducedMotionPolicy,
-  type ReducedMotionPolicy,
 } from './reducedMotion.js'
 
 interface MockMQL {
@@ -109,5 +108,52 @@ describe('reducedMotion watcher', () => {
     expect(mql.listeners.length).toBe(1)
     w.dispose()
     expect(mql.listeners.length).toBe(0)
+  })
+
+  it('survives a strict-mode create-dispose-recreate cycle', () => {
+    const w1 = createReducedMotionWatcher()
+    const cb = vi.fn()
+    w1.subscribe(cb)
+    w1.dispose()
+
+    const w2 = createReducedMotionWatcher()
+    w2.subscribe(cb)
+    setReducedMotionPolicy('paused')
+    // Only w2 is live; cb should be called exactly once (from w2's recompute).
+    expect(cb).toHaveBeenCalledTimes(1)
+    expect(cb).toHaveBeenLastCalledWith(0)
+    w2.dispose()
+  })
+})
+
+describe('reducedMotion watcher — SSR fallback', () => {
+  beforeEach(() => {
+    setReducedMotionPolicy('auto')
+    vi.stubGlobal('matchMedia', undefined)
+  })
+  afterEach(() => {
+    vi.unstubAllGlobals()
+    setReducedMotionPolicy('auto')
+  })
+
+  it('returns a no-op watcher when matchMedia is undefined', () => {
+    const w = createReducedMotionWatcher()
+    expect(w.scale()).toBe(1)
+    const cb = vi.fn()
+    const unsub = w.subscribe(cb)
+    unsub()
+    w.dispose()
+    // No throw, no error — that's the contract.
+  })
+
+  it('respects policy override on the SSR watcher', () => {
+    setReducedMotionPolicy('paused')
+    const w = createReducedMotionWatcher()
+    expect(w.scale()).toBe(0)
+    setReducedMotionPolicy('slow')
+    // Note: SSR watcher does not emit on policy change (it's not in state.watchers).
+    // But scale() at the time of next call should reflect the latest policy.
+    expect(w.scale()).toBe(0.3)
+    w.dispose()
   })
 })
