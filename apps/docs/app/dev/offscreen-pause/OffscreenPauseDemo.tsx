@@ -38,8 +38,9 @@ export function OffscreenPauseDemo() {
           angle={45}
           speed={1}
           style={{ borderRadius: 8 }}
-        />
-        <MatterMonitor anchor="top-right" />
+        >
+          <MatterMonitor anchor="top-right" />
+        </LinearGradient>
       </div>
       <Spacer label="Keep scrolling — gradient should be off-screen above by now." />
     </main>

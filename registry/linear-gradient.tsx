@@ -26,6 +26,8 @@ export interface LinearGradientProps {
   fallback?: ReactNode
   className?: string
   style?: CSSProperties
+  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
+  children?: ReactNode
 }
 
 const DEFAULT_COLORS = ['#ff7b72', '#7b9cff']
@@ -193,6 +195,8 @@ export function LinearGradient(props: LinearGradientProps) {
   const colorsForFallback = resolveColors(props.colors)
   const angleForFallback = typeof props.angle === 'number' ? props.angle : 0
 
+  const { children, ...meshProps } = props
+
   return (
     <FallbackBoundary
       fallback={
@@ -200,7 +204,8 @@ export function LinearGradient(props: LinearGradientProps) {
       }
     >
       <MatterScene className={props.className} style={props.style}>
-        <LinearGradientMesh {...props} />
+        <LinearGradientMesh {...meshProps} />
+        {children}
       </MatterScene>
     </FallbackBoundary>
   )

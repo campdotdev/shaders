@@ -21,8 +21,9 @@ export function PerfMonitorDemo() {
         <code style={{ marginLeft: 8 }}>{speed.toFixed(1)}</code>
       </label>
       <div style={{ position: 'relative', width: 600, height: 400 }}>
-        <LinearGradient colors={['#ff7b72', '#7b9cff']} angle={45} speed={speed} />
-        <MatterMonitor anchor="top-right" />
+        <LinearGradient colors={['#ff7b72', '#7b9cff']} angle={45} speed={speed}>
+          <MatterMonitor anchor="top-right" />
+        </LinearGradient>
       </div>
       <p style={{ marginTop: 12, color: '#666' }}>
         Set <code>speed</code> to 0 &mdash; fps should drop to 0 after one final flush tick
