@@ -24,3 +24,6 @@ export { FallbackBoundary } from './FallbackBoundary.js'
 export type { FallbackBoundaryProps } from './FallbackBoundary.js'
 
 export { useStaticHint } from './useStaticHint.js'
+
+export { MatterMonitor } from './MatterMonitor.js'
+export type { MatterMonitorProps, MonitorAnchor } from './MatterMonitor.js'
