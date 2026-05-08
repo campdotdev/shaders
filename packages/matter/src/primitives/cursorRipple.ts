@@ -1,4 +1,5 @@
-import { sin, length, smoothstep, time } from 'three/tsl'
+import { sin, length, smoothstep } from 'three/tsl'
+import { time } from './tsl-reexports.js'
 import type { TSLNode } from './colorRamp.js'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
@@ -46,8 +47,9 @@ export function cursorRipple(
   const d = length(
     (p as ShaderNodeObject<Node>).sub(center as ShaderNodeObject<Node>),
   ) as ShaderNodeObject<Node>
-  // `time` is a TSL TimerNode (built-in), not a uniform — chaining off it is
-  // safe and matches the pattern used in noise-field's animated UV.
+  // `time` is the engine-gated TSL node (re-exported from tsl-reexports.ts);
+  // chains rooted in `time` automatically respect `prefers-reduced-motion` and
+  // the runtime override set via `setReducedMotionPolicy`.
   const wave = sin(d.mul(frequency).sub(time.mul(speed))) as ShaderNodeObject<Node>
   const decay = smoothstep(reach, 0, d as never) as ShaderNodeObject<Node>
   return wave.mul(amplitude).mul(decay)

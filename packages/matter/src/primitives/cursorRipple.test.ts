@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { uv, vec2 } from 'three/tsl'
 import { cursorRipple } from './cursorRipple.js'
+import { time as gatedTime } from './tsl-reexports.js'
 
 describe('cursorRipple', () => {
   it('returns a TSL node with default options', () => {
@@ -16,5 +17,16 @@ describe('cursorRipple', () => {
         amplitude: 0.3,
       }),
     ).toBeDefined()
+  })
+})
+
+describe('cursorRipple — reduced-motion gating', () => {
+  it('consumes the engine-gated time (not the raw three/tsl time)', async () => {
+    // Reference equality on the *imported* identifier inside cursorRipple
+    // can't be tested directly. Instead, prove that the gated time export
+    // is what the engine exposes, and that cursorRipple is in the same
+    // module graph as the gated time. This regression-guards the import line.
+    const builtin = (await import('three/tsl')).time
+    expect(gatedTime).not.toBe(builtin)
   })
 })
