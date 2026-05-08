@@ -9,6 +9,7 @@ import {
   useMatterContext,
   useAnimatableUniform,
   useCursor,
+  useStaticHint,
   FallbackBoundary,
   type AnimatableProp,
   type CursorSignal,
@@ -51,6 +52,9 @@ function LinearGradientMesh(props: LinearGradientProps) {
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
   const cursor = cursorFromInputs ?? (props.interactive ? cursorAuto : null)
+
+  const isStatic = typeof props.speed === 'number' && props.speed === 0
+  useStaticHint(isStatic)
 
   const colors = resolveColors(props.colors)
 
