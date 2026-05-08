@@ -1,12 +1,13 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { render, waitFor } from '@testing-library/react'
+import type * as MatterModule from '@lovo/matter'
 import { MatterScene } from './MatterScene.js'
 
 // Mock createRenderer because happy-dom cannot initialize WebGPU.
 // The other @lovo/matter exports (MatterScheduler, createVisibilityWatcher,
 // createIntersectionWatcher) work fine in happy-dom and don't need mocking.
 vi.mock('@lovo/matter', async (importOriginal) => {
-  const actual = await importOriginal<typeof import('@lovo/matter')>()
+  const actual = await importOriginal<typeof MatterModule>()
   return {
     ...actual,
     createRenderer: vi.fn(async () => ({
