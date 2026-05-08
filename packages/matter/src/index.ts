@@ -42,3 +42,6 @@ export type { ReducedMotionPolicy, ReducedMotionWatcher } from './runtime/reduce
 
 export { createVisibilityWatcher } from './runtime/visibility.js'
 export type { VisibilityWatcher } from './runtime/visibility.js'
+
+export { createIntersectionWatcher } from './runtime/intersection.js'
+export type { IntersectionWatcher } from './runtime/intersection.js'
