@@ -36,10 +36,13 @@ export type RecipeBuild = (deps: {
 }) => ShaderNodeObject<Node>
 
 export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
-  // sin(uv.x * 20 + time * 0.5) → 0..1 → 2-stop colorRamp.
+  // sin(uv.x * 20 + time * 2) → 0..1 → 2-stop colorRamp.
   // Chain root: uv() (for uv().x) and time. No uniform receivers.
+  // time multiplier 2 means one full stripe cycle every ~3.1s — visibly
+  // animated. (Earlier value of 0.5 took ~12.6s per cycle, which read as
+  // static at a glance.)
   'animated-stripes': () => {
-    const tNode = (time as ShaderNodeObject<Node>).mul(0.5)
+    const tNode = (time as ShaderNodeObject<Node>).mul(2)
     // uv().x is a swizzle on a TSL-built node — safe receiver.
     const phase = (uv() as ShaderNodeObject<Node>).x.mul(20).add(tNode) as ShaderNodeObject<Node>
     const stripe = sin(phase as never) as ShaderNodeObject<Node>

@@ -18,11 +18,11 @@ export const RECIPES: readonly RecipeEntry[] = [
     slug: 'animated-stripes',
     name: 'Animated stripes',
     description:
-      'Vertical bands that scroll horizontally. Simplest combination of sin, time, and colorRamp.',
+      'Warm/cool vertical bands that scroll horizontally. Simplest combination of sin, time, and colorRamp.',
     primitivesUsed: ['time', 'uv', 'color-ramp'],
     source: `import { uv, time, vec3, vec4, sin, colorRamp } from '@lovo/matter'
 
-const stripe = sin(uv().x.mul(20).add(time.mul(0.5)))
+const stripe = sin(uv().x.mul(20).add(time.mul(2)))
 const t = stripe.mul(0.5).add(0.5).clamp(0, 1)
 const stops = [
   { color: vec3(1, 0.5, 0.4), position: 0 },
@@ -34,7 +34,7 @@ material.colorNode = vec4(colorRamp(t, stops), 1)`,
     slug: 'cursor-glow',
     name: 'Cursor glow',
     description:
-      'A soft circular glow that follows the cursor. Demonstrates length, smoothstep, and a cursor uniform.',
+      'A magenta-blue glow that follows the cursor. Demonstrates length, smoothstep, and a cursor uniform.',
     primitivesUsed: ['uv'],
     source: `import { uv, vec4, length, smoothstep, uniform } from '@lovo/matter'
 import { Vector2 } from 'three/webgpu'
@@ -68,7 +68,7 @@ material.colorNode = vec4(colorRamp(f, stops), 1)`,
     slug: 'cellular-tiles',
     name: 'Cellular tiles',
     description:
-      'Voronoi cells quantized into discrete tiles. Useful for organic-but-discrete textures.',
+      'Voronoi cells flattened into 4 discrete sepia bands — a mosaic / stained-glass / low-poly aesthetic. Use as a hand-crafted-feeling background where each region renders one solid color rather than a gradient.',
     primitivesUsed: ['voronoi', 'quantize', 'uv'],
     source: `import { uv, vec4, voronoi, quantize } from '@lovo/matter'
 
