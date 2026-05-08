@@ -173,8 +173,8 @@ describe('reducedMotion uniform', () => {
   })
 
   it('exposes a TSL uniform whose value matches the current scale', () => {
-    setReducedMotionPolicy('slow')
     const u = getReducedMotionTimeScale()
+    setReducedMotionPolicy('slow')
     expect((u as unknown as { value: number }).value).toBe(0.3)
   })
 

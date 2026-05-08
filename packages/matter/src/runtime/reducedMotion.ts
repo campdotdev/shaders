@@ -142,6 +142,7 @@ export function getReducedMotionTimeScale(): ShaderNodeObject<Node> {
     globalWatcher = createReducedMotionWatcher()
     globalScaleUniform = uniform(globalWatcher.scale()) as unknown as ShaderNodeObject<Node>
     globalWatcher.subscribe((s) => {
+      if (globalScaleUniform === null) return
       ;(globalScaleUniform as unknown as { value: number }).value = s
     })
   }
