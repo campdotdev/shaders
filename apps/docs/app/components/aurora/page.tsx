@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
+import { VisualTestPause } from '../../_lib/visualTestHooks'
 
 // Aurora pulls in three/webgpu, which references `self` at module load time
 // and breaks Next's SSR. Load it client-only.
@@ -72,7 +73,9 @@ export default function AuroraPage() {
           intensity={params.intensity}
           cursorStrength={params.cursorStrength}
           interactive={params.interactive}
-        />
+        >
+          <VisualTestPause />
+        </Aurora>
       </div>
       <div
         ref={paneContainerRef}

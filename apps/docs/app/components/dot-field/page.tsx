@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
+import { VisualTestPause } from '../../_lib/visualTestHooks'
 
 // DotField pulls in three/webgpu, which references `self` at module load
 // time and breaks Next's SSR. Load it client-only.
@@ -66,7 +67,9 @@ export default function DotFieldPage() {
           reach={params.reach}
           strength={params.strength}
           interactive={params.interactive}
-        />
+        >
+          <VisualTestPause />
+        </DotField>
       </div>
       <div
         ref={paneContainerRef}

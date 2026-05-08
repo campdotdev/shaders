@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
+import { VisualTestPause } from '../../_lib/visualTestHooks'
 
 // NoiseField pulls in three/webgpu, which references `self` at module load
 // time and breaks Next's SSR. Load it client-only.
@@ -81,7 +82,9 @@ export default function NoiseFieldPage() {
           octaves={params.octaves}
           variant={params.variant}
           interactive={params.interactive}
-        />
+        >
+          <VisualTestPause />
+        </NoiseField>
       </div>
       <div
         ref={paneContainerRef}

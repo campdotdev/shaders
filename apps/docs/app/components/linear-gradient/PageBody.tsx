@@ -9,6 +9,7 @@ import {
   type PropSchema,
   type PropsState,
 } from '../../_components/PropsPlayground'
+import { VisualTestPause } from '../../_lib/visualTestHooks'
 
 // LinearGradient pulls in three/webgpu, which references `self` at module
 // load time and breaks Next's SSR. `ssr: false` requires this to live in a
@@ -62,7 +63,9 @@ export function PageBody({ schema, code }: PageBodyProps) {
           speed={speed}
           variant={variant}
           interactive={interactive}
-        />
+        >
+          <VisualTestPause />
+        </LinearGradient>
       </LiveDemo>
 
       <div
