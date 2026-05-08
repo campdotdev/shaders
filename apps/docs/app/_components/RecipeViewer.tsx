@@ -4,6 +4,17 @@ import dynamic from 'next/dynamic'
 
 interface RecipeViewerProps {
   slug: string
+  /**
+   * Variant key (e.g. 'canonical', 'square', 'pinpoint'). Composed with slug
+   * to look up RECIPE_BUILDS via key '<slug>.<variant>'.
+   */
+  variant: string
+  /**
+   * When true, skip the framed/bordered host div — the parent owns the
+   * frame (e.g. the variant card). Default false renders the standalone
+   * 320px frame used by the per-recipe canonical preview.
+   */
+  unframed?: boolean
 }
 
 // RecipeScene pulls in three/webgpu transitively (via @lovo/matter-react's
@@ -15,7 +26,12 @@ const RecipeScene = dynamic(
   { ssr: false },
 )
 
-export function RecipeViewer({ slug }: RecipeViewerProps) {
+export function RecipeViewer({ slug, variant, unframed = false }: RecipeViewerProps) {
+  if (unframed) {
+    // Variant cards on the recipe page own their own height/frame; we just
+    // mount the scene and let it fill the parent.
+    return <RecipeScene slug={slug} variant={variant} />
+  }
   return (
     <div
       style={{
@@ -27,7 +43,7 @@ export function RecipeViewer({ slug }: RecipeViewerProps) {
         border: '1px solid var(--border)',
       }}
     >
-      <RecipeScene slug={slug} />
+      <RecipeScene slug={slug} variant={variant} />
     </div>
   )
 }

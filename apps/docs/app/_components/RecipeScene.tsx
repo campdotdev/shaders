@@ -8,22 +8,24 @@ import { RECIPE_BUILDS } from '../recipes/_builds'
 
 interface RecipeSceneProps {
   slug: string
+  variant: string
 }
 
 // Inner scene — wraps <MatterScene> and dispatches the live build callback by
-// slug. Lives in a separate file from RecipeViewer because three/webgpu pulls
-// in `self` at module load (breaks SSR). The Server page can't ssr-disable a
-// dynamic import directly anymore in Next 15, so RecipeViewer is the Client
-// host that ssr-disables this module.
-export function RecipeScene({ slug }: RecipeSceneProps) {
+// composite key '<slug>.<variant>'. Lives in a separate file from
+// RecipeViewer because three/webgpu pulls in `self` at module load (breaks
+// SSR). The Server page can't ssr-disable a dynamic import directly anymore
+// in Next 15, so RecipeViewer is the Client host that ssr-disables this
+// module.
+export function RecipeScene({ slug, variant }: RecipeSceneProps) {
   return (
     <MatterScene>
-      <RecipeMesh slug={slug} />
+      <RecipeMesh slug={slug} variant={variant} />
     </MatterScene>
   )
 }
 
-function RecipeMesh({ slug }: { slug: string }) {
+function RecipeMesh({ slug, variant }: { slug: string; variant: string }) {
   const ctx = useMatterContext()
   const cursor = useCursor()
 
@@ -43,13 +45,15 @@ function RecipeMesh({ slug }: { slug: string }) {
     return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y))
   }, [cursor, cursorVec])
 
-  // Mesh lifecycle in its own effect — when slug or ctx changes, we tear
-  // down the old colorNode/material/mesh and rebuild. The dispose try/catch
-  // mirrors registry components: three's WebGPURenderer occasionally throws
-  // inside material.dispose() during rapid rebuilds; swallowing is benign.
+  // Mesh lifecycle in its own effect — when slug, variant, or ctx changes,
+  // we tear down the old colorNode/material/mesh and rebuild. The dispose
+  // try/catch mirrors registry components: three's WebGPURenderer
+  // occasionally throws inside material.dispose() during rapid rebuilds;
+  // swallowing is benign.
   useEffect(() => {
     if (!ctx) return
-    const build = RECIPE_BUILDS[slug]
+    const key = `${slug}.${variant}`
+    const build = RECIPE_BUILDS[key]
     if (!build) return
 
     const colorNode = build({ cursorUniform })
@@ -71,7 +75,7 @@ function RecipeMesh({ slug }: { slug: string }) {
         /* same */
       }
     }
-  }, [ctx, slug, cursorUniform])
+  }, [ctx, slug, variant, cursorUniform])
 
   return null
 }
