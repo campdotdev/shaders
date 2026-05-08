@@ -23,6 +23,14 @@
     },
     "clean": {
       "cache": false
+    },
+    "test:visual": {
+      "dependsOn": ["^build"],
+      "outputs": []
+    },
+    "test:visual:update": {
+      "cache": false,
+      "outputs": ["**/snapshots/**"]
     }
   }
 }

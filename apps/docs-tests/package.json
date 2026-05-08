@@ -1,0 +1,19 @@
+{
+  "name": "@matter/docs-tests",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "test:visual": "playwright test",
+    "test:visual:update": "playwright test --update-snapshots",
+    "test:a11y": "playwright test --grep @a11y",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@matter/tsconfig": "workspace:*",
+    "@playwright/test": "^1.48.0",
+    "@axe-core/playwright": "^4.10.0",
+    "@types/node": "^22",
+    "typescript": "^5"
+  }
+}

@@ -16,7 +16,9 @@
     "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "smoke": "node scripts/smoke-test-cli.mjs",
-    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\""
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
+    "test:visual": "turbo run test:visual",
+    "test:visual:update": "turbo run test:visual:update"
   },
   "devDependencies": {
     "@matter/eslint-config": "workspace:*",
