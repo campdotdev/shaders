@@ -22,3 +22,5 @@ export type { AnimatableProp, MatterSignal } from './useAnimatableUniform.js'
 
 export { FallbackBoundary } from './FallbackBoundary.js'
 export type { FallbackBoundaryProps } from './FallbackBoundary.js'
+
+export { useStaticHint } from './useStaticHint.js'
