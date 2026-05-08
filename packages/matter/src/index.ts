@@ -31,3 +31,11 @@ export type { CursorRippleOptions } from './primitives/cursorRipple.js'
 
 // TSL re-exports — stable surface
 export * from './primitives/tsl-reexports.js'
+
+export {
+  setReducedMotionPolicy,
+  getReducedMotionPolicy,
+  getReducedMotionTimeScale,
+  createReducedMotionWatcher,
+} from './runtime/reducedMotion.js'
+export type { ReducedMotionPolicy, ReducedMotionWatcher } from './runtime/reducedMotion.js'

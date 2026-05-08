@@ -15,8 +15,25 @@ export {
   length,
   dot,
   normalize,
-  time,
   uv,
   max,
   min,
 } from 'three/tsl'
+
+import { time as _builtinTime } from 'three/tsl'
+import { getReducedMotionTimeScale } from '../runtime/reducedMotion.js'
+import type { ShaderNodeObject } from 'three/tsl'
+import type { Node } from 'three/webgpu'
+
+/**
+ * Engine-gated `time`: equals the TSL built-in `time` multiplied by the
+ * reduced-motion scale uniform. Components consuming `time` from `@lovo/matter`
+ * automatically respect `prefers-reduced-motion` and the policy override set
+ * via `setReducedMotionPolicy`.
+ *
+ * If you want raw uncapped time (e.g. for a debug overlay), import
+ * `time` from `three/tsl` directly.
+ */
+export const time: ShaderNodeObject<Node> = (_builtinTime as ShaderNodeObject<Node>).mul(
+  getReducedMotionTimeScale(),
+) as ShaderNodeObject<Node>
