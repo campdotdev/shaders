@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Scene, OrthographicCamera } from 'three'
-import { createRenderer, MatterScheduler } from '@lovo/matter'
+import { createRenderer, MatterScheduler, createVisibilityWatcher } from '@lovo/matter'
 import { MatterContext, type MatterContextValue } from './matter-context.js'
 
 export interface MatterSceneProps {
@@ -56,10 +56,19 @@ export function MatterScene(props: MatterSceneProps) {
         scheduler.add(() => renderer.three.render(scene, camera))
         scheduler.start()
 
+        const visibility = createVisibilityWatcher()
+        if (!visibility.isVisible()) scheduler.pause()
+        const unsubVisibility = visibility.subscribe((visible) => {
+          if (visible) scheduler.resume()
+          else scheduler.pause()
+        })
+
         const onResize = () => renderer.resize()
         window.addEventListener('resize', onResize)
 
         cleanup = () => {
+          unsubVisibility()
+          visibility.dispose()
           window.removeEventListener('resize', onResize)
           scheduler.dispose()
           renderer.dispose()
