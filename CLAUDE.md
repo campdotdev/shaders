@@ -42,7 +42,7 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 | 1 | Vertical slice — `<LinearGradient>` end-to-end | ✅ Complete | `m1-complete` |
 | 2 | `@lovo/matter-cli` | ✅ Complete | `m2-complete` |
 | 3 | The other 5 v1 components | ✅ Complete | `m3-complete` |
-| 4 | Docs site polish | Pending | — |
+| 4 | Docs site polish (light scope) | ✅ Complete | `m4-complete` |
 | 5 | Performance + testing + a11y | Pending | — |
 | 6 | v0.1.0 publish | Pending | — |
 
