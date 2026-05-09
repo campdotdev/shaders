@@ -69,6 +69,7 @@ export function PropsPlayground({ schema, onChange, className, style }: PropsPla
     <form
       className={className}
       onSubmit={(e) => e.preventDefault()}
+      aria-label="Live property controls"
       style={{
         display: 'flex',
         flexDirection: 'column',
