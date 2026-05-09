@@ -24,11 +24,12 @@ const TARGET_FRAME = 2
  *   screenshotting.
  *
  * - `?reducedMotion=<policy>`
- *   Overrides the runtime reduced-motion policy before the scheduler starts.
- *   Valid values: `auto` | `off` | `slow` | `paused`. Useful for Playwright
- *   tests that need to assert frozen animation without relying on OS-level
- *   `prefers-reduced-motion` alone (e.g., asserting byte-identical screenshots
- *   one second apart when policy is `paused`).
+ *   Overrides the reduced-motion policy. Valid values: `auto` | `off` | `slow`
+ *   | `paused`. When `?visualTest=1` is set, this defaults to `paused` (so the
+ *   gated `time` re-export evaluates to 0 in TSL chains, removing platform
+ *   jitter at sub-pixel boundaries — the only known cross-platform divergence
+ *   source for animated shaders). Pass an explicit override to opt out
+ *   (`?reducedMotion=auto` for live time, etc.).
  */
 const QUERY_FLAG = 'visualTest'
 const REDUCED_MOTION_FLAG = 'reducedMotion'
@@ -66,12 +67,17 @@ export function useVisualTestPause(): void {
     if (params.get(QUERY_FLAG) !== '1') return
     if (!ctx) return
 
-    // Apply reduced-motion policy override BEFORE the scheduler starts, so
-    // the first frame already runs under the requested policy.
+    // Apply reduced-motion policy BEFORE the scheduler starts. Default to
+    // `paused` for visual tests: gating `time` to 0 in TSL chains is the only
+    // way to get pixel-identical output across platforms (Linux/macOS Chromium
+    // have ~ms-level init jitter that NodeFrame.time reset can't fully absorb).
+    // Explicit `?reducedMotion=<policy>` overrides this default.
     const policyParam = params.get(REDUCED_MOTION_FLAG)
-    if (policyParam && (VALID_POLICIES as string[]).includes(policyParam)) {
-      setReducedMotionPolicy(policyParam as ReducedMotionPolicy)
-    }
+    const policy: ReducedMotionPolicy =
+      policyParam && (VALID_POLICIES as string[]).includes(policyParam)
+        ? (policyParam as ReducedMotionPolicy)
+        : 'paused'
+    setReducedMotionPolicy(policy)
 
     // Wake the scheduler in case a static component has already idled it.
     ctx.scheduler.setIdle(false)
