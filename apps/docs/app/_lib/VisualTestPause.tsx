@@ -7,13 +7,32 @@
 
 import { useEffect } from 'react'
 import { useMatterContext } from '@lovo/matter-react'
-import type { SchedulerTick } from '@lovo/matter'
+import { setReducedMotionPolicy } from '@lovo/matter'
+import type { SchedulerTick, ReducedMotionPolicy } from '@lovo/matter'
 
 // Number of renderer frames to wait after context init before screenshotting.
 // 2 frames is enough for the TSL material to compile and produce a stable
 // raster while keeping `time` near zero.
 const TARGET_FRAME = 2
+
+/**
+ * URL query flags supported by this hook:
+ *
+ * - `?visualTest=1`
+ *   Pauses the scheduler after TARGET_FRAME renderer ticks and sets
+ *   `window.__matterTestReady = true`. Playwright waits for that flag before
+ *   screenshotting.
+ *
+ * - `?reducedMotion=<policy>`
+ *   Overrides the runtime reduced-motion policy before the scheduler starts.
+ *   Valid values: `auto` | `off` | `slow` | `paused`. Useful for Playwright
+ *   tests that need to assert frozen animation without relying on OS-level
+ *   `prefers-reduced-motion` alone (e.g., asserting byte-identical screenshots
+ *   one second apart when policy is `paused`).
+ */
 const QUERY_FLAG = 'visualTest'
+const REDUCED_MOTION_FLAG = 'reducedMotion'
+const VALID_POLICIES: ReducedMotionPolicy[] = ['auto', 'off', 'slow', 'paused']
 
 /**
  * If the page is loaded with `?visualTest=1`, pauses the scheduler after
@@ -46,6 +65,13 @@ export function useVisualTestPause(): void {
     const params = new URLSearchParams(window.location.search)
     if (params.get(QUERY_FLAG) !== '1') return
     if (!ctx) return
+
+    // Apply reduced-motion policy override BEFORE the scheduler starts, so
+    // the first frame already runs under the requested policy.
+    const policyParam = params.get(REDUCED_MOTION_FLAG)
+    if (policyParam && (VALID_POLICIES as string[]).includes(policyParam)) {
+      setReducedMotionPolicy(policyParam as ReducedMotionPolicy)
+    }
 
     // Wake the scheduler in case a static component has already idled it.
     ctx.scheduler.setIdle(false)
