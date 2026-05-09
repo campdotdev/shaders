@@ -21,10 +21,15 @@ const QUERY_FLAG = 'visualTest'
  * Playwright waits for that flag before screenshotting.
  *
  * Implementation notes:
- * - Resets the Three.js NodeFrame elapsed time to 0 before counting frames so
- *   that animated shaders using the `time` TSL node produce identical output
- *   regardless of how long the page took to initialize. This is the determinism
- *   fix for components like Waves (speed=1) whose output is sensitive to time.
+ * - Resets the Three.js NodeFrame elapsed time to 0 on the FIRST scheduler
+ *   tick (not in the effect body). This is critical: `_nodes.nodeFrame` is
+ *   populated lazily by Three.js during the first `render()` call. Resetting
+ *   it in the effect body risks a race where `nodeFrame` is null and the reset
+ *   is silently skipped, leaving `time` at whatever value has accumulated since
+ *   page load. By resetting inside the client on frame 1 (which fires AFTER the
+ *   renderer's render() call in the same rAF cycle), we guarantee the node
+ *   frame exists. The screenshot is captured at frame TARGET_FRAME + 1 so the
+ *   renderer gets one full frame after the reset with time starting near 0.
  * - Calls `scheduler.setIdle(false)` so that static components (e.g.
  *   LinearGradient at speed=0, which calls useStaticHint(true)) don't halt
  *   the rAF loop before the frame target is reached.
@@ -42,31 +47,39 @@ export function useVisualTestPause(): void {
     if (params.get(QUERY_FLAG) !== '1') return
     if (!ctx) return
 
-    // Reset the Three.js NodeFrame elapsed time to zero. This ensures that
-    // TSL's `time` uniform reads as 0 (or very close to 0) for the first
-    // captured frame, making animated shaders deterministic regardless of
-    // page initialization latency.
-    // NodeFrame is a private implementation detail of WebGPURenderer; the
-    // accessor path is stable across three@0.170.x.
-    const nodeFrame = (
-      ctx.renderer.three as unknown as {
-        _nodes?: { nodeFrame?: { time?: number; deltaTime?: number; lastTime?: number } }
-      }
-    )._nodes?.nodeFrame
-    if (nodeFrame) {
-      nodeFrame.time = 0
-      nodeFrame.deltaTime = 0
-      // Reset lastTime so the next update() recomputes delta from now.
-      nodeFrame.lastTime = undefined as unknown as number
-    }
-
     // Wake the scheduler in case a static component has already idled it.
     ctx.scheduler.setIdle(false)
+
+    type NodeFrameInternal = { time?: number; deltaTime?: number; lastTime?: number }
+    const getNodeFrame = (): NodeFrameInternal | undefined =>
+      (
+        ctx.renderer.three as unknown as {
+          _nodes?: { nodeFrame?: NodeFrameInternal }
+        }
+      )._nodes?.nodeFrame
 
     let frame = 0
     const client = (_tick: SchedulerTick) => {
       frame += 1
-      if (frame >= TARGET_FRAME) {
+
+      if (frame === 1) {
+        // Reset NodeFrame elapsed time to 0 on the first tick, AFTER the
+        // renderer has called render() in this same rAF cycle (and therefore
+        // after Three.js has had a chance to populate _nodes.nodeFrame).
+        // Resetting here rather than in the effect body avoids the race where
+        // nodeFrame is null at effect-fire time (Three.js populates it lazily
+        // on the first render call).
+        const nodeFrame = getNodeFrame()
+        if (nodeFrame) {
+          nodeFrame.time = 0
+          nodeFrame.deltaTime = 0
+          // Reset lastTime so the next update() recomputes delta from now.
+          nodeFrame.lastTime = undefined as unknown as number
+        }
+        return
+      }
+
+      if (frame > TARGET_FRAME) {
         ctx.scheduler.remove(client)
         ctx.scheduler.pause()
         ;(window as unknown as { __matterTestReady: boolean }).__matterTestReady = true
