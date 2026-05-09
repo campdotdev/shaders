@@ -59,7 +59,17 @@ export function LiveDemo({
         ...style,
       }}
     >
-      {children}
+      {/* The shader canvas is purely decorative — hide it from the a11y tree
+          so screen readers don't attempt to describe raw pixel output. The
+          fullscreen button is kept outside this subtree so it remains
+          keyboard-accessible. */}
+      <div
+        aria-hidden="true"
+        role="presentation"
+        style={{ position: 'absolute', inset: 0 }}
+      >
+        {children}
+      </div>
       <button
         onClick={toggleFullscreen}
         aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
