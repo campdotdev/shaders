@@ -85,8 +85,13 @@ export default function MeshGradientPage() {
           <VisualTestPause />
         </MeshGradient>
       </div>
+      {/* Tweakpane generates its own DOM without ARIA labels. `inert` both
+          removes the subtree from the a11y tree and prevents focus from
+          entering the container, satisfying the aria-hidden-focus rule.
+          The page content in <section> below is the accessible surface. */}
       <div
         ref={paneContainerRef}
+        inert
         style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
