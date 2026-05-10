@@ -1,0 +1,77 @@
+# @lovo/matter-cli
+
+shadcn-style copy-paste CLI for **Matter** — fetch polished shader components from the registry into your project, where they're yours to edit.
+
+## Install
+
+```bash
+npm install -D @lovo/matter-cli
+# or run ad-hoc: npx @lovo/matter-cli <command>
+```
+
+Requires Node 22+.
+
+## Usage
+
+### One-time setup
+
+```bash
+npx matter-cli init
+```
+
+Writes `matter.config.json` to your project root with sensible defaults:
+
+```json
+{
+  "componentsDir": "src/components/matter",
+  "registryUrl": "https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry",
+  "aliases": { "@/": "src/" },
+  "tsx": true
+}
+```
+
+The `${ref}` placeholder is auto-substituted with the CLI's published version tag (e.g., `v0.1.0`), so you get a stable snapshot. Override with `--ref <tag|branch|sha>` if you want to track `main` or a specific commit.
+
+### List available components
+
+```bash
+npx matter-cli list
+```
+
+### Copy a component into your project
+
+```bash
+npx matter-cli add linear-gradient
+# or multiple at once:
+npx matter-cli add linear-gradient aurora dot-field
+```
+
+The component lands in `componentsDir` (default `src/components/matter/`) — you own it from that point forward.
+
+### Refresh a previously-added component
+
+```bash
+# Refresh one (errors if you have local edits):
+npx matter-cli update linear-gradient
+
+# Refresh all, overwriting local edits:
+npx matter-cli update --force
+```
+
+## v1 components
+
+`linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, `waves`.
+
+Each component depends on `@lovo/matter` and `@lovo/matter-react`, which you install separately:
+
+```bash
+npm install @lovo/matter @lovo/matter-react three
+```
+
+## Docs
+
+<https://github.com/lovo-hq/matter>
+
+## License
+
+MIT — see [LICENSE](./LICENSE).
