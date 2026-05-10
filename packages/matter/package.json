@@ -3,6 +3,28 @@
   "version": "0.0.0",
   "description": "Engine for Matter — TSL primitives, renderer, scheduler. Framework-agnostic.",
   "license": "MIT",
+  "keywords": [
+    "shader",
+    "shaders",
+    "webgpu",
+    "tsl",
+    "three.js",
+    "react",
+    "components",
+    "gradient",
+    "background"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lovo-hq/matter.git",
+    "directory": "packages/matter"
+  },
+  "homepage": "https://github.com/lovo-hq/matter#readme",
+  "bugs": {
+    "url": "https://github.com/lovo-hq/matter/issues"
+  },
+  "author": "lovo-hq",
+  "sideEffects": false,
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
