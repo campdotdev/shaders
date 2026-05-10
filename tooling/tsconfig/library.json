@@ -6,7 +6,7 @@
     "declarationMap": true,
     "sourceMap": true,
     "outDir": "${configDir}/dist",
-    "tsBuildInfoFile": "${configDir}/dist/.tsbuildinfo"
+    "tsBuildInfoFile": "${configDir}/.tsbuildinfo"
   },
   "include": ["${configDir}/src"]
 }
