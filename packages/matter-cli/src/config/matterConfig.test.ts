@@ -9,6 +9,21 @@ import {
   type MatterConfig,
 } from './matterConfig.js'
 
+describe('DEFAULT_MATTER_CONFIG.registryUrl', () => {
+  it('points at the lovo-hq/matter org (NOT lovo/matter — that is a 404)', () => {
+    expect(DEFAULT_MATTER_CONFIG.registryUrl).toContain('/lovo-hq/matter/')
+    expect(DEFAULT_MATTER_CONFIG.registryUrl).not.toMatch(/\/lovo\/matter\//)
+  })
+
+  it('contains the ${ref} placeholder for resolveRef substitution', () => {
+    expect(DEFAULT_MATTER_CONFIG.registryUrl).toContain('${ref}')
+  })
+
+  it('targets the registry/ subdirectory', () => {
+    expect(DEFAULT_MATTER_CONFIG.registryUrl).toMatch(/\/registry$|\/registry\/$/)
+  })
+})
+
 let dir: string
 
 beforeEach(async () => {
