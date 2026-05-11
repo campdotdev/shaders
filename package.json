@@ -21,6 +21,7 @@
     "test:visual:update": "turbo run test:visual:update"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@matter/eslint-config": "workspace:*",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
