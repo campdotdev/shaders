@@ -2,7 +2,7 @@
 
 React shader components powered by WebGPU and Three.js TSL.
 
-> **Status:** Approaching v0.1.0 — all six v1 components are implemented, performance-tuned, tested (Vitest + Playwright visual regression + axe a11y), and documented. Currently preparing for the first npm publish (M6 in progress).
+> **Status:** v0.1.0 shipped to npm. `npm install -D @lovo/matter-cli && npx matter-cli init && npx matter-cli add linear-gradient` to scaffold your first component.
 
 ## What is Matter?
 
@@ -60,8 +60,8 @@ pnpm --filter @matter/playground dev  # Vite at http://localhost:5173
 - ✅ **Milestone 3** — The other 5 v1 components (MeshGradient, Aurora, DotField, NoiseField, Waves)
 - ✅ **Milestone 4** — Docs site polish
 - ✅ **Milestone 5** — Performance, testing, accessibility
-- ⏳ **Milestone 6** — v0.1.0 publish
-- **Milestone 7** — Vite Plus toolchain migration
+- ✅ **Milestone 6** — v0.1.0 publish
+- ⏳ **Milestone 7** — Vite Plus toolchain migration
 
 ## Releasing
 

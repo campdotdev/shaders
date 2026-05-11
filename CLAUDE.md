@@ -44,7 +44,8 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 | 3 | The other 5 v1 components | ✅ Complete | `m3-complete` |
 | 4 | Docs site polish (light scope) | ✅ Complete | `m4-complete` |
 | 5 | Performance + testing + a11y | ✅ Complete | `m5-complete` |
-| 6 | v0.1.0 publish | Pending | — |
+| 6 | v0.1.0 publish | ✅ Complete | `m6-complete` |
+| 7 | Vite Plus toolchain migration | Pending | — |
 
 Each milestone is its own session and its own implementation plan. Don't try to do multiple milestones in one session.
 
