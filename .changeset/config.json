@@ -7,8 +7,5 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@matter/registry", "@matter/eslint-config", "@matter/tsconfig", "@matter/docs", "@matter/docs-tests", "@matter/playground"],
-  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
-    "onlyUpdatePeerDependentsWhenOutOfRange": true
-  }
+  "ignore": ["@matter/registry", "@matter/eslint-config", "@matter/tsconfig", "@matter/docs", "@matter/docs-tests", "@matter/playground"]
 }

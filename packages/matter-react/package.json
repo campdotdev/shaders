@@ -1,6 +1,6 @@
 {
   "name": "@lovo/matter-react",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React binding for Matter — MatterScene, useShaderMaterial, input hooks.",
   "license": "MIT",
   "keywords": [
@@ -52,7 +52,7 @@
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@lovo/matter": ">=0.0.0",
+    "@lovo/matter": "workspace:^",
     "react": "^19.0.0",
     "three": "^0.170.0"
   },
