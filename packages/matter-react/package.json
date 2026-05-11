@@ -52,7 +52,7 @@
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@lovo/matter": "workspace:*",
+    "@lovo/matter": "workspace:^",
     "react": "^19.0.0",
     "three": "^0.170.0"
   },
