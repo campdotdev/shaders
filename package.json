@@ -18,9 +18,13 @@
     "smoke": "node scripts/smoke-test-cli.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "test:visual": "turbo run test:visual",
-    "test:visual:update": "turbo run test:visual:update"
+    "test:visual:update": "turbo run test:visual:update",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm smoke && pnpm publish -r --access public --no-git-checks"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.31.0",
     "@matter/eslint-config": "workspace:*",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

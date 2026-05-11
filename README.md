@@ -2,7 +2,7 @@
 
 React shader components powered by WebGPU and Three.js TSL.
 
-> **Status:** Pre-release — Milestones 0 and 1 complete. `<LinearGradient>` runs end-to-end with WebGPU + Three.js TSL. v1 catalog under active development. Not yet published to npm.
+> **Status:** Approaching v0.1.0 — all six v1 components are implemented, performance-tuned, tested (Vitest + Playwright visual regression + axe a11y), and documented. Currently preparing for the first npm publish (M6 in progress).
 
 ## What is Matter?
 
@@ -55,12 +55,24 @@ pnpm --filter @matter/playground dev  # Vite at http://localhost:5173
 ## Roadmap
 
 - ✅ **Milestone 0** — Repo bootstrap
-- ✅ **Milestone 1** — Vertical slice: `<LinearGradient>` end-to-end (engine, React binding, registry component, Tweakpane-driven docs page)
-- ⏳ **Milestone 2** — `@lovo/matter-cli` (copy-paste delivery)
-- **Milestone 3** — The other 5 v1 components (MeshGradient, Aurora, DotField, NoiseField, Waves)
-- **Milestone 4** — Docs site polish
-- **Milestone 5** — Performance, testing, accessibility
-- **Milestone 6** — v0.1.0 publish
+- ✅ **Milestone 1** — Vertical slice: `<LinearGradient>` end-to-end
+- ✅ **Milestone 2** — `@lovo/matter-cli` (copy-paste delivery)
+- ✅ **Milestone 3** — The other 5 v1 components (MeshGradient, Aurora, DotField, NoiseField, Waves)
+- ✅ **Milestone 4** — Docs site polish
+- ✅ **Milestone 5** — Performance, testing, accessibility
+- ⏳ **Milestone 6** — v0.1.0 publish
+- **Milestone 7** — Vite Plus toolchain migration
+
+## Releasing
+
+This repo uses [Changesets](https://github.com/changesets/changesets) for versioning. To prepare a release:
+
+1. Run `pnpm changeset` and describe the change (patch / minor / major).
+2. Open a PR; merge it.
+3. Run `pnpm changeset version` locally — bumps versions, updates `CHANGELOG.md` per package.
+4. Run `pnpm build && pnpm test && pnpm smoke` — final dress rehearsal.
+5. Run `pnpm publish -r --access public` — publishes all three public packages. Requires `npm login` and 2FA.
+6. `git tag v<x.y.z>` and `git push --tags`.
 
 ## License
 

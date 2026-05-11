@@ -20,7 +20,7 @@ describe('runInit', () => {
     const raw = await readFile(join(dir, 'matter.config.json'), 'utf-8')
     const cfg = JSON.parse(raw)
     expect(cfg.componentsDir).toBe('src/components/matter')
-    expect(cfg.registryUrl).toContain('lovo/matter')
+    expect(cfg.registryUrl).toContain('lovo-hq/matter')
     expect(cfg.tsx).toBe(true)
   })
 

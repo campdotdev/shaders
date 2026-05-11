@@ -15,7 +15,7 @@ export interface MatterConfig {
  */
 export const DEFAULT_MATTER_CONFIG: MatterConfig = {
   componentsDir: 'src/components/matter',
-  registryUrl: 'https://raw.githubusercontent.com/lovo/matter/${ref}/registry',
+  registryUrl: 'https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry',
   aliases: { '@/': 'src/' },
   tsx: true,
 }

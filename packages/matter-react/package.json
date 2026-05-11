@@ -1,8 +1,30 @@
 {
   "name": "@lovo/matter-react",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "React binding for Matter — MatterScene, useShaderMaterial, input hooks.",
   "license": "MIT",
+  "keywords": [
+    "shader",
+    "shaders",
+    "webgpu",
+    "tsl",
+    "three.js",
+    "react",
+    "react-three-fiber",
+    "components",
+    "hooks"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lovo-hq/matter.git",
+    "directory": "packages/matter-react"
+  },
+  "homepage": "https://github.com/lovo-hq/matter#readme",
+  "bugs": {
+    "url": "https://github.com/lovo-hq/matter/issues"
+  },
+  "author": "lovo-hq",
+  "sideEffects": false,
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -30,7 +52,7 @@
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "peerDependencies": {
-    "@lovo/matter": "workspace:*",
+    "@lovo/matter": "workspace:^",
     "react": "^19.0.0",
     "three": "^0.170.0"
   },
