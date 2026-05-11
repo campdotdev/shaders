@@ -18,7 +18,10 @@
     "smoke": "node scripts/smoke-test-cli.mjs",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,yml,yaml}\"",
     "test:visual": "turbo run test:visual",
-    "test:visual:update": "turbo run test:visual:update"
+    "test:visual:update": "turbo run test:visual:update",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && pnpm test && pnpm smoke && changeset publish"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
