@@ -477,3 +477,51 @@ resolve: {
 | pnpm lint | 0 | Pre-existing MODULE_TYPELESS_PACKAGE_JSON warnings (cosmetic); 2 unused-var warnings in playground src (pre-existing) |
 | pnpm build | 0 | Playground built with `vite v8.0.12`; Next.js docs site 31 pages SSG; all packages clean |
 | pnpm test | 0 | 126 tests pass (55 matter + 46 matter-cli + 25 matter-react); Vitest 2.1.9 compatible with Vite 8 — no B.3 forced |
+
+## Vitest 2 → 4.1.6 bump (Task B.3 — captured 2026-05-12)
+
+### Packages bumped
+- `vitest`: 2.1.9 → 4.1.6 (root + 3 packages)
+- `@vitest/ui`: 2.1.9 → 4.1.6 (root)
+
+### Config restructure
+- Deleted: `vitest.workspace.ts`
+- Created: `vitest.config.ts` (root) with `projects: ['packages/*/vitest.config.ts']`
+
+### Per-package vitest.config.ts changes
+- `packages/matter/vitest.config.ts`: added `oxc` inline tsconfig workaround (see below)
+- `packages/matter-react/vitest.config.ts`: added `oxc` inline tsconfig workaround (see below)
+- `packages/matter-cli/vitest.config.ts`: added `oxc` inline tsconfig workaround (see below)
+
+### OXC tsconfig resolution issue and fix
+
+**Problem:** Vite 8's OXC transformer (from Rolldown) auto-discovers each package's `tsconfig.json` when transforming test files. The shared tsconfig chain (`@matter/tsconfig/library.json`) uses `${configDir}` path substitution (a TypeScript 5.5 feature). OXC's Rust-based tsconfig reader does not implement `${configDir}` — it encounters `"outDir": "${configDir}/dist"` and bails out entirely with `[TSCONFIG_ERROR] Failed to load tsconfig ... Tsconfig not found`.
+
+This did not surface under Vitest 2 because Vitest 2 requires Vite ^5 (esbuild-based transform). Vitest 4 requires Vite ^6-8 and gets Vite 8 (OXC/Rolldown-based transform), which triggers the issue.
+
+**Fix:** Vite 8's `OxcOptions` type omits the `tsconfig` option (it strips it before exposing the type), but the option still flows through the internal spread to `transformSync`. By passing an inline `tsconfig` in the `oxc` config key (cast to `any` to bypass the type omission), OXC uses the provided compiler options instead of discovering tsconfig from disk:
+
+```ts
+// In each per-package vitest.config.ts:
+oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } } as any,
+```
+
+This is the minimal set of compiler options OXC needs for our TypeScript syntax (`verbatimModuleSyntax: true` is the only field from `tsconfig.base.json` that affects how OXC transforms `import type` statements). All other fields OXC cares about (jsx, experimentalDecorators, useDefineForClassFields) are either absent from our config or use OXC's defaults which match our intent.
+
+**Note for CLAUDE.md gotcha list:** Add this as gotcha #15 — OXC does not support `${configDir}` in tsconfig extends chains; the workaround is inline `tsconfig` in the `oxc` Vite config key.
+
+### Test API changes required
+No test files needed changes. All 3 packages' test suites were drop-in compatible with Vitest 4.
+
+### @testing-library/react + happy-dom smoke
+- Test: ad hoc 1-test smoke under `packages/matter-react/src/__smoke__.test.tsx` (deleted after passing)
+- Outcome: pass — `render(<div>hi</div>)` → `container.textContent === 'hi'` ✓
+
+### Full pipeline parity (after bump)
+| Command | Exit | Notes |
+|---|---|---|
+| pnpm typecheck | 0 | 8 tasks, all pass |
+| pnpm lint | 0 | Pre-existing warnings only (no new errors) |
+| pnpm build | 0 | All packages + Next.js docs site |
+| pnpm test | 0 | 126 tests pass (55 matter + 46+1todo matter-cli + 25 matter-react) |
+| pnpm smoke | 0 | add + update --force, byte-identical file check passed |
