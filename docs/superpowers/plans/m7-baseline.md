@@ -781,3 +781,74 @@ From `vite.config.ts` `lint` block:
 ### Per-package vitest.config.ts OXC tsconfig workaround status
 
 Still in place in all 3 per-package configs. The `oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } } as any` workaround is required because OXC does not support `${configDir}` substitution in shared tsconfigs (CLAUDE.md gotcha, task B.3). vp migrate correctly updated the import from `vitest/config` to `vite-plus` but did not remove or centralize the workaround — it remains per-package. The eslint disable comments were updated to `oxlint-disable-next-line` by vp migrate.
+
+## Pipeline parity (Task D.1 — captured 2026-05-12)
+
+### vp command surface
+
+| pnpm command                   | vp equivalent         | Notes                                                                                    |
+| ------------------------------ | --------------------- | ---------------------------------------------------------------------------------------- |
+| `pnpm install --frozen-lockfile` | `vp install --frozen-lockfile` | Direct pass-through to pnpm                                                 |
+| `pnpm typecheck`               | `vp run typecheck`    | `vp check` runs fmt+lint+types but exits 1 here (see below); `vp run typecheck` via Turbo |
+| `pnpm lint`                    | `vp lint`             | `vp lint` is workspace-wide (141 files); `pnpm lint` is per-package scoped             |
+| `pnpm build`                   | `vp run build`        | `vp build` fails (no root `index.html`); `vp run build` delegates to Turbo per-package  |
+| `pnpm test`                    | `vp test`             | `vp test` runs all projects workspace-wide; same 126 tests                               |
+| `pnpm smoke`                   | no equivalent         | Custom Node.js script; no vp counterpart                                                 |
+
+**`vp check` (format + lint + types):** Exits 1 due to Oxfmt finding 12 files not matching its expected format. These are files outside the packages that were not covered when `vp fmt` ran during C.1 (HTML playground pages, CSS, markdown plan files, smoke script). The formatting issues are cosmetic and do not affect correctness. `pnpm lint` (Turbo per-package) does not run `vp fmt --check`, so it doesn't see these. A `vp fmt` pass would fix them; deferred until a dedicated formatting cleanup task.
+
+**`vp lint` vs `pnpm lint` discrepancy:** `pnpm lint` (Turbo) invokes `vp lint src` or `vp lint app` scoped per package. The `registry/` package has no lint script in its `package.json`, so Turbo skips it. `vp lint` (workspace-wide) finds 5 errors in files Turbo doesn't cover:
+- `registry/linear-gradient.tsx`: `mix` imported but unused (error); `focalX` and `focalY` declared but unused (errors) — dead code from a refactor; these are real bugs that should be fixed.
+- `packages/matter-react/vitest.config.ts`: TS2321 + TS2769 on the `as any` OXC workaround — false positives from the type-aware lint mode; the workaround is intentional and functionally correct.
+
+### pnpm surface timings (post-migration, 2026-05-12)
+
+| Command | Wall time | Exit | Delta vs pre-M7 baseline |
+|---|---|---|---|
+| pnpm install --frozen-lockfile | 0.7s | 0 | ~0s (lockfile up to date) |
+| pnpm typecheck | 1.1s | 0 | -5.9s (fully cached via Turbo) |
+| pnpm lint (now Oxlint) | 0.5s | 0 | -2.1s (fully cached; Oxlint itself 2-4s vs ESLint 2.6s) |
+| pnpm build | 0.4s | 0 | -12.9s (fully cached; actual build ~15s uncached) |
+| pnpm test (now Vitest 4) | 0.4s | 0 | -3.4s (fully cached; actual run ~2s uncached) |
+| pnpm smoke | 2.8s | 0 | +0.5s (uncached by design; CLI build + npm install) |
+
+Note: all pnpm commands hit Turbo cache from prior runs. Uncached timings (from C.1 run): typecheck ~7s, lint ~2-4s, build ~15s, test ~2s.
+
+### vp surface timings (new this milestone)
+
+| Command | Wall time | Exit | Notes |
+|---|---|---|---|
+| vp install --frozen-lockfile | 0.6s | 0 | Pass-through to pnpm; lockfile up to date |
+| vp check (fmt + lint + types) | ~2s | 1 | Exits 1: 12 files have Oxfmt formatting drift (HTML, CSS, MD, .mjs outside packages). Lint and typecheck portions pass. |
+| vp lint (workspace-wide) | ~5s | 1 | 5 errors: 3 unused vars in registry/linear-gradient.tsx (real dead code), 2 TS false-positives on vitest.config.ts `as any` OXC workaround. 16 warnings (pre-existing). |
+| vp run build | 1.8s | 0 | Delegates to Turbo per-package; all 5 tasks succeed (4 cached) |
+| vp test | 1.9s | 0 | 126 tests pass across 31 test files (workspace-wide) |
+
+### Visual regression (Playwright)
+
+- Total tests: 15 (8 a11y + 7 visual snapshot)
+- Passed: 15
+- Failed: 0
+- Decision: all pass — no snapshot updates needed, no diffs
+
+Visual snapshots verified:
+- Aurora default (1.1s)
+- DotField default (1.1s)
+- LinearGradient default (991ms)
+- LinearGradient reduced-motion paused (2.0s)
+- MeshGradient default (1.3s)
+- NoiseField default (1.1s)
+- Waves default (1.1s)
+
+a11y: all 8 axe-clean assertions pass (/, all 6 component pages, /recipes).
+
+### Docs dev server smoke
+
+- `pnpm --filter @matter/docs start` → ready in 463ms
+- curl http://localhost:3000/ → HTTP 200
+
+### Known issues to address before m7-complete
+
+1. **`registry/linear-gradient.tsx` unused vars** — `mix`, `focalX`, `focalY` are real dead code (errors under `vp lint`). Fix: remove the unused import and the two unused `const` declarations. Low risk — purely additive dead code.
+2. **`vp lint` vs `pnpm lint` scope gap** — the registry package has no lint script, so Turbo misses it. Fix: add a `lint` script to `registry/package.json` and add `@matter/registry` to Turbo's lint task scope. This is the authoritative fix for the parity gap.
+3. **`vp check` format drift** — 12 files (HTML playground pages, CSS globals, markdown plans, smoke script) need `vp fmt` applied. These are in paths not covered by `fmt.ignorePatterns` but were missed in C.1's `vp fmt` pass. Fix: run `vp fmt` on remaining file types.
