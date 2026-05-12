@@ -426,3 +426,54 @@ Reason: Default order holds. No forcing constraint — Vitest 4.1.6 accepts Vite
 2. `vitest.workspace.ts` → root `vitest.config.ts` with `projects` key — one-file rename + reshaping, functionally identical.
 3. No pool, reporter, coverage, or test-API breaking changes affect our test suite.
 4. The three/webgpu dual-bundle risk in playground needs a post-bump smoke check but has a known mitigation (`resolve.alias`) if needed.
+
+## Vite 5 → 8 bump (Task B.2 — captured 2026-05-12)
+
+### Packages bumped
+- `vite`: 5.4.21 → 8.0.12 (root + apps/playground)
+- `@vitejs/plugin-react`: 4.7.0 → 6.0.1 (root + apps/playground + packages/matter-react)
+
+Note: `packages/matter-react` also required the plugin-react bump. Its `devDependencies` still had `^4.3.0`, which pnpm flagged as an unmet peer against the workspace-hoisted Vite 8. Fixed in the same pass.
+
+### Config changes needed
+
+`apps/playground/vite.config.ts` required a `resolve.alias` block for the three dual-bundle problem (see below). No other config keys changed — `@vitejs/plugin-react` 6.0.1 is a zero-config drop-in for our usage (we pass no Babel options).
+
+### Three dual-bundle mitigation applied?
+
+**Yes.** The playground imports from both `three` (e.g., `Mesh`, `PlaneGeometry`) and `three/webgpu`/`three/tsl` (e.g., `MeshBasicNodeMaterial`, `vec3`). Without explicit aliases, Vite 8 (which dropped format-sniffing for `browser`/`module` field resolution) resolves these to separate three bundle copies, which would produce `Cannot read properties of undefined (reading 'usedTimes')` on dispose (CLAUDE.md gotcha #13).
+
+The alias was added proactively (before observing a build failure) because the dual-import pattern in the playground made the problem guaranteed. The alias mirrors `apps/docs/next.config.ts` exactly — same logic, translated from webpack to Vite `resolve.alias`.
+
+Alias config added to `apps/playground/vite.config.ts`:
+
+```ts
+import { createRequire } from 'node:module'
+import { resolve } from 'node:path'
+
+const _require = createRequire(import.meta.url)
+const threeMain = _require.resolve('three')
+const threeDir = resolve(threeMain, '..', '..')
+const webgpuBundle = resolve(threeDir, 'build/three.webgpu.js')
+
+// In defineConfig:
+resolve: {
+  alias: {
+    'three/webgpu': webgpuBundle,
+    'three/tsl': webgpuBundle,
+    three: webgpuBundle,
+  },
+},
+```
+
+### Dev server smoke
+- Vite version reported: `VITE v8.0.12  ready in 107 ms`
+- Errors/warnings at HMR ready: One non-fatal dep-scan warning — rolldown's dependency scanner failed to resolve the tsconfig for playground src files during pre-bundling (`TSCONFIG_ERROR: Failed to load tsconfig for 'src/1-magenta.ts' ...`). This is a Vite 8 / rolldown-based dep-scanner limitation in monorepos where tsconfigs use `extends` with workspace packages. The dev server still started and printed "ready". Production build is unaffected (build succeeded clean). Dep pre-bundling is skipped; HMR still works. This is a known Vite 8 alpha-stage rough edge for monorepo setups.
+
+### Full pipeline parity check (after bump)
+| Command | Exit | Notes |
+|---|---|---|
+| pnpm typecheck | 0 | 8 tasks, all pass; pre-existing docs#typecheck outputs warning (cosmetic) |
+| pnpm lint | 0 | Pre-existing MODULE_TYPELESS_PACKAGE_JSON warnings (cosmetic); 2 unused-var warnings in playground src (pre-existing) |
+| pnpm build | 0 | Playground built with `vite v8.0.12`; Next.js docs site 31 pages SSG; all packages clean |
+| pnpm test | 0 | 126 tests pass (55 matter + 46 matter-cli + 25 matter-react); Vitest 2.1.9 compatible with Vite 8 — no B.3 forced |
