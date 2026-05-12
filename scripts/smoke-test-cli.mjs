@@ -82,7 +82,10 @@ try {
   run(`node node_modules/@lovo/matter-cli/dist/index.js update linear-gradient --force`, {
     cwd: smokeDir,
   })
-  const refreshed = readFileSync(join(smokeDir, 'src/components/matter/linear-gradient.tsx'), 'utf-8')
+  const refreshed = readFileSync(
+    join(smokeDir, 'src/components/matter/linear-gradient.tsx'),
+    'utf-8',
+  )
   if (refreshed !== expected) {
     throw new Error('Component was not refreshed by update --force')
   }
