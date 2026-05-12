@@ -46,3 +46,9 @@ pnpm-debug.log*
 test-results/
 playwright-report/
 blob-report/
+
+# Vite+ (M7)
+.viteplus/
+**/.viteplus/
+.vp-cache/
+**/.vp-cache/

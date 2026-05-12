@@ -29,7 +29,7 @@ ls docs/superpowers/plans/         # which plans exist
 - **Three-tier model**: Tier 1 = polished components (`<LinearGradient>` etc., delivered via shadcn-style CLI copy-paste from `registry/`); Tier 2 = TSL primitives in the engine package (`fbm`, `voronoi`, `cursorRipple`, etc.); Tier 3 = recipes (TSL snippets in the docs site).
 - **Three packages**: `@lovo/matter` (engine, framework-agnostic), `@lovo/matter-react` (React binding), `@lovo/matter-cli` (copy-paste delivery).
 - **Three rendering modes** (no auto-detection of `@react-three/fiber`): Mode 1 drop-in (`<LinearGradient />` auto-creates a canvas), Mode 2 shared `<MatterScene>` (one canvas, multiple effects), Mode 3 use `useShaderMaterial` directly inside user's own r3f `<Canvas>`.
-- **Stack**: TypeScript 5 strict mode, pnpm 9 workspaces, Turborepo (orchestration; **NOT Turbopack**), tsup (bundling, ESM+CJS+types), ESLint 9 flat config, Prettier 3, Vitest (unit tests), Next.js 15 (docs site, lives at `apps/docs/`), Tweakpane (interactive shader playground panel on the docs site). Visual regression: Playwright against the docs site routes (M5).
+- **Stack**: TypeScript 5 strict mode, pnpm 9 workspaces wrapped by Vite+ (`vp install`/`vp remove` ≡ pnpm equivalents), Vite+-managed Node 22 runtime (`vp env` shims to `.node-version` 22.22.2), Turborepo (orchestration; **NOT Turbopack** — `vp run` migration deferred to M7.2), tsup (bundling, ESM+CJS+types — `tsdown` migration deferred to M7.1), Oxlint (linter, replaced ESLint in M7), Oxfmt (formatter, replaced Prettier in M7), Vite 8 + Vitest 4 (tests; imports route through `vite-plus/test` per the post-`vp migrate` consolidation), Next.js 15 (docs site, lives at `apps/docs/` — untouched by M7), Tweakpane (interactive shader playground panel on the docs site). Visual regression: Playwright against the docs site routes (M5).
   - **Note (M1 deviation):** the original plan called for Storybook 10 + Vite. We ripped Storybook out — see [Storybook → Tweakpane pivot memory](../../.claude/projects/-Users-hunter-garrett-Documents--personal-mattermix/memory/project_matter_storybook_pivot.md). Don't reintroduce Storybook in v1; the docs page is the demo surface.
 
 For full architecture, public APIs, the v1 catalog of six components, animation/signal protocol, and the docs site design — read the spec.
@@ -45,7 +45,9 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 | 4   | Docs site polish (light scope)                 | ✅ Complete | `m4-complete` |
 | 5   | Performance + testing + a11y                   | ✅ Complete | `m5-complete` |
 | 6   | v0.1.0 publish                                 | ✅ Complete | `m6-complete` |
-| 7   | Vite Plus toolchain migration                  | Pending     | —             |
+| 7   | Vite+ adoption (runtime + pkg mgr + `vp migrate` consolidated with Oxlint + Oxfmt) | ✅ Complete | `m7-complete` |
+| 7.1 | tsup → tsdown (3 packages)                                                        | Pending     | —             |
+| 7.2 | Turborepo → `vp run`                                                              | Pending     | —             |
 
 Each milestone is its own session and its own implementation plan. Don't try to do multiple milestones in one session.
 
@@ -78,13 +80,21 @@ The user is **relatively new to shaders** and wants Matter to double as a learni
 **On runtime + package manager (post-M7):** Vite+ wraps pnpm. You can call either surface — they produce identical results. The Vite+ surface is `vp install` (acts as both `pnpm install` and `pnpm add`, e.g., `vp install -D <pkg> -w` to add a workspace-root devDep) plus `vp remove` (aliases: `rm`, `un`, `uninstall`) for removal. The pnpm surface (`pnpm install` / `pnpm add` / `pnpm remove`) continues to work identically — `packageManager: pnpm@9.12.0` is locked either way. Vite+ also manages the project's Node 22 runtime via `vp env`; the project's `.node-version` (22.22.2) is the source of truth.
 
 ```bash
-# At repo root:
+# At repo root (pnpm surface — still the recommended CI surface):
 pnpm install                              # install/restore everything
 pnpm build                                # build all packages (tsup, ~5s cold, instant from cache)
 pnpm typecheck                            # tsc --noEmit on all packages
-pnpm lint                                 # eslint on all packages
+pnpm lint                                 # oxlint on all packages
 pnpm clean                                # remove all dist/, .turbo/, node_modules/
-pnpm format                               # prettier write
+pnpm format                               # oxfmt --write (was prettier --write)
+
+# vp surface (parity):
+vp install                                # ≡ pnpm install
+vp run typecheck                          # ≡ pnpm typecheck
+vp lint                                   # ≡ pnpm lint (oxlint)
+vp run build                              # ≡ pnpm build  (note: `vp build` alone needs an index.html — see gotcha #16)
+vp test                                   # ≡ pnpm test
+vp check                                  # runs fmt + lint + types together
 
 # Watch mode for a single package:
 pnpm --filter @lovo/matter dev            # tsup --watch
@@ -109,6 +119,13 @@ pnpm smoke
 12. **Consume `uniform(...)` as an _argument_, not a chained receiver, in TSL math.** `uv().sub(cursorUniform)` works; `cursorUniform.sub(vec2(0.5, 0.5)).mul(...).dot(...)` silently produces wrong values on the GPU even though it typechecks. The chain methods on raw uniform nodes don't propagate the value through the pipeline. The rule of thumb: build TSL expressions starting from `uv()` / `vec2(...)` / etc. and pass uniforms as args to those chains.
 13. **`three` ships TWO standalone bundles (`three.module.js` and `three.webgpu.js`) and importing both creates two copies of three core.** Symptom: `Cannot read properties of undefined (reading 'usedTimes')` on `material.dispose()`. Fix in Next: webpack alias all three subpaths to the unified webgpu bundle (see `apps/docs/next.config.ts`). For other bundlers, force a single resolved path the same way.
 14. **Hooks that own a long-lived disposable (CursorInput, scheduler clients, etc.) must be Strict-Mode-safe.** React 19 mounts effects → cleans up → mounts again in dev. The naive pattern `useState(() => new X())` + `useEffect(() => () => x.dispose(), [x])` disposes the singleton during pseudo-unmount, leaving you with a permanently-dead instance. Pattern that survives: collapse lifecycle into one `useEffect` that creates a fresh instance, attaches it, returns a cleanup that disposes it; expose the current instance via `useState`. Each Strict Mode cycle creates+destroys cleanly. See `useCursor.ts` for the canonical implementation.
+15. **Vite 8 + Rolldown's OXC transformer can't resolve `${configDir}` substitution in our shared tsconfig extends chain.** Symptom: `[TSCONFIG_ERROR] Failed to load tsconfig: Tsconfig not found` when running Vitest 4 (or anything that goes through OXC's TS transform). Fix in per-package `vitest.config.ts`: bypass OXC's file-based tsconfig discovery by passing the essential compiler options inline via the `oxc` config key with a `@ts-expect-error` directive (the key is omitted from `OxcOptions` types but flows through at runtime):
+    ```ts
+    // @ts-expect-error oxc.tsconfig is undocumented in OxcOptions but threaded through
+    oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } },
+    ```
+    This means per-package vitest configs no longer share the tsconfig chain with the rest of the toolchain — a divergence to be aware of. Upstream fix likely arrives when OXC supports TS 5.5's `${configDir}` (track Rolldown/oxc-project).
+16. **`vp build` (without `run`) fails in our monorepo with "no root index.html"** because vp's build command expects an SPA root. Use `vp run build` (note the `run`) — it delegates to each package's build script via Turborepo and matches `pnpm build` behavior. The pnpm scripts (`pnpm build`, `pnpm typecheck`, etc.) all continue to work and are the recommended surface for CI.
 
 ## Conventions
 
