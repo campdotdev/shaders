@@ -2,7 +2,12 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Scene, OrthographicCamera } from 'three'
-import { createRenderer, MatterScheduler, createVisibilityWatcher, createIntersectionWatcher } from '@lovo/matter'
+import {
+  createRenderer,
+  MatterScheduler,
+  createVisibilityWatcher,
+  createIntersectionWatcher,
+} from '@lovo/matter'
 import { MatterContext, type MatterContextValue } from './matter-context.js'
 
 export interface MatterSceneProps {
@@ -86,7 +91,6 @@ export function MatterScene(props: MatterSceneProps) {
       } catch (err) {
         if (cancelled) return
         const e = err instanceof Error ? err : new Error(String(err))
-        // eslint-disable-next-line no-console
         console.error('[MatterScene] renderer init failed:', e)
         setError(e)
       }
@@ -127,7 +131,7 @@ export function MatterScene(props: MatterSceneProps) {
       ) : ctx ? (
         <MatterContext.Provider value={ctx}>{children}</MatterContext.Provider>
       ) : (
-        fallback ?? null
+        (fallback ?? null)
       )}
     </div>
   )
