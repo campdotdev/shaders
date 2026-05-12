@@ -64,9 +64,9 @@ Before starting, verify M0 state:
 - [ ] **Working tree clean.** Run `git status --short`. Expected: empty output.
 - [ ] **Everything builds clean from M0 state.** Run:
       `bash
-    pnpm install --frozen-lockfile
-    pnpm build && pnpm typecheck && pnpm lint
-    `
+pnpm install --frozen-lockfile
+pnpm build && pnpm typecheck && pnpm lint
+`
       Expected: all green.
 - [ ] **Node and pnpm versions.** Run `node -v` (≥ v22) and `pnpm -v` (≥ 9).
 

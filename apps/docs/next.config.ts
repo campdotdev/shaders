@@ -29,7 +29,7 @@ const nextConfig: NextConfig = {
     // unified webgpu bundle.
     const webgpuBundle = resolve(threeDir, 'build/three.webgpu.js')
     config.resolve.alias = {
-      ...(config.resolve.alias ?? {}),
+      ...config.resolve.alias,
       three$: webgpuBundle,
       'three/webgpu$': webgpuBundle,
       'three/tsl$': webgpuBundle,

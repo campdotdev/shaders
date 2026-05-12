@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
-import { vec3, vec2, mix, mod, length, uv, time, uniform } from '@lovo/matter'
+import { vec3, vec2, mod, length, uv, time, uniform } from '@lovo/matter'
 import { colorRamp, type ColorRampStop } from '@lovo/matter'
 import {
   MatterScene,
@@ -102,12 +102,6 @@ function LinearGradientMesh(props: LinearGradientProps) {
         position: i / Math.max(colors.length - 1, 1),
       }
     })
-
-    const focal = (
-      focalUniform as unknown as { value: { x: number; y: number } | readonly [number, number] }
-    ).value
-    const focalX = Array.isArray(focal) ? focal[0] : (focal as { x: number }).x
-    const focalY = Array.isArray(focal) ? focal[1] : (focal as { y: number }).y
 
     // The cursor uniform is consumed via `uv().sub(cursorUniform)` (the
     // arg form, not chained receiver) — this matches the playground

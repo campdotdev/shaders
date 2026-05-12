@@ -49,9 +49,9 @@ Run these before starting Phase 2.1.
 - [ ] **Working tree clean.** Run `git status --short`. Expected: empty output.
 - [ ] **Everything builds clean from M1 state.**
       `bash
-    pnpm install --frozen-lockfile
-    pnpm build && pnpm typecheck && pnpm lint && pnpm test
-    `
+pnpm install --frozen-lockfile
+pnpm build && pnpm typecheck && pnpm lint && pnpm test
+`
       Expected: all green.
 - [ ] **Node and pnpm versions.** Run `node -v` (≥ v22) and `pnpm -v` (≥ 9). The CLI relies on Node 22's native `fetch` and stable ESM `import` of JSON.
 - [ ] **Registry exists.** Run `ls registry/`. Expected to include `linear-gradient.tsx` and `registry.json` (created in M1).

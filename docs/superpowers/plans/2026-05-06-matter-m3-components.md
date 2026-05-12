@@ -69,9 +69,9 @@ Run these before starting Phase 3.1.a.
 - [ ] **Working tree clean.** Run `git status --short`. Expected: empty (or only the M2 plan file `docs/superpowers/plans/2026-05-04-matter-m2-cli.md` if it was committed elsewhere — fine either way; just verify nothing else uncommitted).
 - [ ] **Everything builds clean from M2 state.**
       `bash
-    pnpm install --frozen-lockfile
-    pnpm build && pnpm typecheck && pnpm lint && pnpm test
-    `
+pnpm install --frozen-lockfile
+pnpm build && pnpm typecheck && pnpm lint && pnpm test
+`
       Expected: all green. If a package shows "no test files" — verify `passWithNoTests: true` is set per CLAUDE.md gotcha #8.
 - [ ] **LinearGradient still renders.** Run `pnpm --filter @matter/docs dev`, open `http://localhost:3000/components/linear-gradient`, drag the angle slider, verify the gradient updates after Apply. Kill the dev server.
 - [ ] **CLI smoke test still passes.** Run `pnpm smoke`. Expected: green.
