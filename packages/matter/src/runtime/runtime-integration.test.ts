@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { MatterScheduler } from './MatterScheduler.js'
 import { createVisibilityWatcher } from './visibility.js'
 import { createIntersectionWatcher } from './intersection.js'

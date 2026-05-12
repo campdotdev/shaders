@@ -19,7 +19,17 @@ const colorB = vec3(0.48, 0.61, 1)
 
 // Animate by piping the TSL `time` uniform through `sin` to oscillate the mix factor.
 const material = new MeshBasicNodeMaterial()
-material.colorNode = mix(colorA, colorB, sin(uv().x.mul(6.28).add(performance.now() / 1000)).mul(0.5).add(0.5))
+material.colorNode = mix(
+  colorA,
+  colorB,
+  sin(
+    uv()
+      .x.mul(6.28)
+      .add(performance.now() / 1000),
+  )
+    .mul(0.5)
+    .add(0.5),
+)
 
 const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 scene.add(mesh)

@@ -7,5 +7,11 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@matter/registry", "@matter/eslint-config", "@matter/tsconfig", "@matter/docs", "@matter/docs-tests", "@matter/playground"]
+  "ignore": [
+    "@matter/registry",
+    "@matter/tsconfig",
+    "@matter/docs",
+    "@matter/docs-tests",
+    "@matter/playground"
+  ]
 }

@@ -93,9 +93,7 @@ function AuroraMesh(props: AuroraProps) {
     // speed=0.4 (default) the effective FBM scroll rate is 0.04 noise units/sec,
     // traversing one feature in ~25s — calm. Without the 0.1× factor, speed=0.4
     // traversed a feature in ~2.5s, which felt hectic per stop-and-play feedback.
-    const tNode = (time as ShaderNodeObject<Node>)
-      .mul(speedUniform as unknown as number)
-      .mul(0.1)
+    const tNode = (time as ShaderNodeObject<Node>).mul(speedUniform as unknown as number).mul(0.1)
     const sampleP = (uv() as ShaderNodeObject<Node>)
       .mul(0.5)
       .add(vec2(tNode, tNode)) as ShaderNodeObject<Node>
@@ -112,7 +110,9 @@ function AuroraMesh(props: AuroraProps) {
       const amp = smoothstep(0.3, 0, d as never) as ShaderNodeObject<Node>
       // 1 + amp * cursorStrength: 1x at the edge of reach,
       // (1 + cursorStrength)x at the cursor itself. cursorStrength=0 disables.
-      const ampScaled = amp.mul(cursorStrengthUniform as unknown as number) as ShaderNodeObject<Node>
+      const ampScaled = amp.mul(
+        cursorStrengthUniform as unknown as number,
+      ) as ShaderNodeObject<Node>
       amplified = flow.mul(ampScaled.add(1) as ShaderNodeObject<Node>) as ShaderNodeObject<Node>
     }
 
@@ -142,10 +142,26 @@ function AuroraMesh(props: AuroraProps) {
       // (typically during rapid rebuild cycles). Swallowing the dispose error
       // prevents a page crash; the underlying GPU resources will be reaped
       // when the parent renderer is disposed at unmount.
-      try { material.dispose() } catch { /* benign during rebuild */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign during rebuild */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
-  }, [ctx, colors.join('|'), speedUniform, intensityUniform, cursorStrengthUniform, cursor, cursorUniform])
+  }, [
+    ctx,
+    colors.join('|'),
+    speedUniform,
+    intensityUniform,
+    cursorStrengthUniform,
+    cursor,
+    cursorUniform,
+  ])
 
   return null
 }

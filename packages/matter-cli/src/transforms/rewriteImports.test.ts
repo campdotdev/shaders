@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { rewriteImports } from './rewriteImports.js'
 
 describe('rewriteImports', () => {
@@ -36,9 +36,7 @@ describe('rewriteImports', () => {
   })
 
   it('handles multiple aliases', () => {
-    const src =
-      `import { a } from '@matter-internal/lib'\n` +
-      `import { b } from '@/utils'\n`
+    const src = `import { a } from '@matter-internal/lib'\n` + `import { b } from '@/utils'\n`
     const out = rewriteImports(src, {
       '@matter-internal/': '@/lib/matter/',
       '@/': 'src/',

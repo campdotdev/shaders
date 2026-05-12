@@ -125,8 +125,16 @@ function PrototypeMesh({
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* benign during rebuild */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign during rebuild */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
   }, [ctx, colors, blur, jitterUniform])
 
@@ -175,13 +183,7 @@ export default function MeshGradientPlaygroundScene() {
   }, [jitterUniform])
 
   const colors = useMemo(
-    () =>
-      [
-        hex(params.c0),
-        hex(params.c1),
-        hex(params.c2),
-        hex(params.c3),
-      ] as const,
+    () => [hex(params.c0), hex(params.c1), hex(params.c2), hex(params.c3)] as const,
     [params.c0, params.c1, params.c2, params.c3],
   )
 
@@ -189,11 +191,7 @@ export default function MeshGradientPlaygroundScene() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh' }}>
         <MatterScene>
-          <PrototypeMesh
-            colors={colors}
-            blur={params.blur}
-            jitterUniform={jitterUniform}
-          />
+          <PrototypeMesh colors={colors} blur={params.blur} jitterUniform={jitterUniform} />
         </MatterScene>
       </div>
       <div
@@ -203,10 +201,10 @@ export default function MeshGradientPlaygroundScene() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>MeshGradient blend prototype</h1>
         <p>
-          Internal Matter dev surface — not part of the public component catalog. Use this
-          to feel out a good <code>blur</code> exponent default before{' '}
-          <code>&lt;MeshGradient&gt;</code> locks its prop API in 3.4.b. At low blur, points
-          stay localized; at high blur, the whole field becomes mushy.
+          Internal Matter dev surface — not part of the public component catalog. Use this to feel
+          out a good <code>blur</code> exponent default before <code>&lt;MeshGradient&gt;</code>{' '}
+          locks its prop API in 3.4.b. At low blur, points stay localized; at high blur, the whole
+          field becomes mushy.
         </p>
       </section>
     </main>

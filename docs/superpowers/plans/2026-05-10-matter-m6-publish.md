@@ -9,11 +9,13 @@
 **Tech Stack:** pnpm 9 workspaces, Turborepo (orchestration), tsup (bundling), Vitest (unit tests), `@changesets/cli` (versioning + changelogs), npm public registry.
 
 **Pre-flight invariants (verify before starting):**
+
 - `gh repo view lovo-hq/matter --json visibility` returns `"PUBLIC"`.
 - `git tag` includes `m5-complete`; working tree clean on `main`.
 - `pnpm build && pnpm typecheck && pnpm test && pnpm lint && pnpm smoke` all pass.
 
 **Out of scope (deferred to M7+):**
+
 - Vite Plus toolchain migration (M7 — see memory `project_matter_m7_vite_plus_migration.md`).
 - CI-driven publish workflow (NPM_TOKEN secret, automation tokens, release-please-style automation).
 - Registry mirror / hosted registry endpoint (CLI continues to fetch from GitHub raw).
@@ -25,6 +27,7 @@
 ## File Structure
 
 **Created:**
+
 - `packages/matter/LICENSE` — MIT, copy of root LICENSE
 - `packages/matter-react/LICENSE` — MIT, copy of root LICENSE
 - `packages/matter-cli/LICENSE` — MIT, copy of root LICENSE
@@ -38,6 +41,7 @@
 - `docs/superpowers/plans/2026-05-10-matter-m6-publish-SUMMARY.md` — written at end of M6
 
 **Modified:**
+
 - `packages/matter/package.json` — add `keywords`, `repository`, `homepage`, `bugs`, `author`, `sideEffects`
 - `packages/matter-react/package.json` — same fields as above
 - `packages/matter-cli/package.json` — same fields as above (no `sideEffects` — it's a bin, not a tree-shakable lib)
@@ -48,6 +52,7 @@
 - `pnpm-lock.yaml` — auto-regenerated when adding Changesets
 
 **Not touched:**
+
 - `apps/docs/`, `apps/playground/`, `apps/docs-tests/` — none of these get published.
 - `registry/` — already on `main`, will be reachable at `v0.1.0` tag automatically.
 - `tooling/eslint-config/`, `tooling/tsconfig/` — internal `@matter/*` packages, marked `private: true`, not published. Verify in Phase 6.1.
@@ -64,6 +69,7 @@
 ### Task 1: Verify internal packages are marked private (skip publish)
 
 **Files:**
+
 - Read: `tooling/eslint-config/package.json`
 - Read: `tooling/tsconfig/package.json`
 - Read: `registry/package.json`
@@ -88,6 +94,7 @@ git commit -m "chore(tooling): mark internal package private to prevent accident
 ### Task 2: Add publish metadata to `@lovo/matter`
 
 **Files:**
+
 - Modify: `packages/matter/package.json`
 
 - [ ] **Step 1: Add `keywords`, `repository`, `homepage`, `bugs`, `author`, `sideEffects` to package.json**
@@ -170,6 +177,7 @@ git commit -m "chore(matter): add npm publish metadata (keywords, repo, homepage
 ### Task 3: Add publish metadata to `@lovo/matter-react`
 
 **Files:**
+
 - Modify: `packages/matter-react/package.json`
 
 - [ ] **Step 1: Add the same metadata fields, with React-specific keywords**
@@ -217,6 +225,7 @@ git commit -m "chore(matter-react): add npm publish metadata"
 ### Task 4: Add publish metadata to `@lovo/matter-cli`
 
 **Files:**
+
 - Modify: `packages/matter-cli/package.json`
 
 - [ ] **Step 1: Add metadata; CLI-specific keywords; do NOT add `sideEffects`**
@@ -268,6 +277,7 @@ git commit -m "chore(matter-cli): add npm publish metadata"
 ### Task 5: Copy LICENSE into each publishable package
 
 **Files:**
+
 - Create: `packages/matter/LICENSE`
 - Create: `packages/matter-react/LICENSE`
 - Create: `packages/matter-cli/LICENSE`
@@ -320,6 +330,7 @@ cd packages/matter-cli && npm pack --dry-run 2>&1 | head -60 && cd -
 ```
 
 **Pass criteria:**
+
 - All five `pnpm` commands succeed.
 - Each tarball includes `dist/`, `package.json`, `LICENSE` (and will include `README.md` after Phase 6.3).
 - No tarball includes `src/`, `*.test.ts`, `*.tsbuildinfo`, config files.
@@ -336,6 +347,7 @@ cd packages/matter-cli && npm pack --dry-run 2>&1 | head -60 && cd -
 ### Task 1: Add a failing test that pins the default registry URL org
 
 **Files:**
+
 - Create: `packages/matter-cli/src/config/matterConfig.test.ts`
 
 - [ ] **Step 1: Write the test that asserts `DEFAULT_MATTER_CONFIG.registryUrl` points at `lovo-hq/matter`**
@@ -370,6 +382,7 @@ Expected: 1 test fails — `points at the lovo-hq/matter org` — because the cu
 ### Task 2: Fix the typo in the default config
 
 **Files:**
+
 - Modify: `packages/matter-cli/src/config/matterConfig.ts:18`
 
 - [ ] **Step 1: Replace `lovo` with `lovo-hq` in the default registryUrl**
@@ -429,6 +442,7 @@ Expected output: `Resolved URL: https://raw.githubusercontent.com/lovo-hq/matter
 (If the CLI is built ESM-only and the `require` form fails, build first with `pnpm --filter @lovo/matter-cli build` and use a `node --input-type=module` invocation — or just open the file in an editor and verify visually.)
 
 **Pass criteria:**
+
 - All CLI tests pass.
 - `pnpm smoke` passes.
 - Resolved URL points at `https://raw.githubusercontent.com/lovo-hq/matter/v0.1.0/registry`.
@@ -445,6 +459,7 @@ Expected output: `Resolved URL: https://raw.githubusercontent.com/lovo-hq/matter
 ### Task 1: Write `packages/matter/README.md` (engine)
 
 **Files:**
+
 - Create: `packages/matter/README.md`
 
 - [ ] **Step 1: Write the engine README**
@@ -482,8 +497,8 @@ import { uv, vec3, time } from 'three/tsl'
 // Inside your TSL fragment graph:
 const noise = fbm(uv().mul(4).add(time.mul(0.1)))
 const color = colorRamp(noise, [
-  { stop: 0.0, color: vec3(0.05, 0.05, 0.10) },
-  { stop: 1.0, color: vec3(0.30, 0.50, 0.95) },
+  { stop: 0.0, color: vec3(0.05, 0.05, 0.1) },
+  { stop: 1.0, color: vec3(0.3, 0.5, 0.95) },
 ])
 ```
 
@@ -517,6 +532,7 @@ git commit -m "docs(matter): add per-package README for npm page"
 ### Task 2: Write `packages/matter-react/README.md` (binding)
 
 **Files:**
+
 - Create: `packages/matter-react/README.md`
 
 - [ ] **Step 1: Write the React binding README**
@@ -556,10 +572,7 @@ import { LinearGradient } from '@/components/matter/linear-gradient'
 export default function Hero() {
   return (
     <MatterScene>
-      <LinearGradient
-        colors={['#0b0c2a', '#1d1f57', '#7d2dff']}
-        angle={120}
-      />
+      <LinearGradient colors={['#0b0c2a', '#1d1f57', '#7d2dff']} angle={120} />
     </MatterScene>
   )
 }
@@ -600,6 +613,7 @@ Expected from grep: line containing `README.md`.
 ### Task 3: Write `packages/matter-cli/README.md`
 
 **Files:**
+
 - Create: `packages/matter-cli/README.md`
 
 - [ ] **Step 1: Write the CLI README**
@@ -700,6 +714,7 @@ Expected: line containing `README.md`.
 ### Task 4: Polish root README for v0.1 baseline
 
 **Files:**
+
 - Modify: `README.md`
 
 - [ ] **Step 1: Update the status line and milestone table**
@@ -786,6 +801,7 @@ Expected: each lists README.md, LICENSE, the dist files, and package.json.
 **Manual play step:** Open each per-package README in your editor or markdown previewer. Read it as if you were a developer evaluating the package. Confirm: install command works, code samples are syntactically valid, links resolve.
 
 **Pass criteria:**
+
 - All three tarballs contain README.md and LICENSE.
 - Root README accurately reflects M0–M5 complete, M6 in progress, M7 (Vite Plus) planned.
 - Release ritual is documented for future you.
@@ -801,6 +817,7 @@ Expected: each lists README.md, LICENSE, the dist files, and package.json.
 ### Task 1: Install Changesets
 
 **Files:**
+
 - Modify: `package.json` (root)
 - Modify: `pnpm-lock.yaml`
 
@@ -829,6 +846,7 @@ git commit -m "chore: add @changesets/cli as workspace devDep"
 ### Task 2: Initialize Changesets
 
 **Files:**
+
 - Create: `.changeset/config.json`
 - Create: `.changeset/README.md`
 
@@ -872,11 +890,19 @@ Replace with:
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@matter/registry", "@matter/eslint-config", "@matter/tsconfig", "@matter/docs", "@matter/docs-tests", "@matter/playground"]
+  "ignore": [
+    "@matter/registry",
+    "@matter/eslint-config",
+    "@matter/tsconfig",
+    "@matter/docs",
+    "@matter/docs-tests",
+    "@matter/playground"
+  ]
 }
 ```
 
 Key changes:
+
 - `"access": "public"` — packages publish to the public npm registry (matches each package's `publishConfig.access`).
 - `"fixed": [[...]]` — the three publishable packages bump together (locked versions). This means a `patch` in any one bumps all three to the same version. Picked because the engine, binding, and CLI are co-developed; mixed versions create user confusion in the early v0.x phase.
 - `"ignore": [...]` — internal `@matter/*` packages (registry, tooling, apps) are workspace-private and shouldn't be considered for releases. List them explicitly so changeset doesn't complain.
@@ -902,6 +928,7 @@ git commit -m "chore: configure Changesets for v1 monorepo (fixed @lovo/* triple
 ### Task 3: Author the v0.1.0 changeset
 
 **Files:**
+
 - Create: `.changeset/v0-1-0-initial-release.md`
 
 - [ ] **Step 1: Write the changeset directly (skip the interactive prompt for predictability)**
@@ -910,9 +937,9 @@ Create `.changeset/v0-1-0-initial-release.md`:
 
 ```markdown
 ---
-"@lovo/matter": minor
-"@lovo/matter-react": minor
-"@lovo/matter-cli": minor
+'@lovo/matter': minor
+'@lovo/matter-react': minor
+'@lovo/matter-cli': minor
 ---
 
 Initial public release of Matter — React shader components on WebGPU + Three.js TSL.
@@ -955,6 +982,7 @@ git commit -m "chore: add v0.1.0 changeset (initial public release)"
 ### Task 4: Add release scripts to root package.json
 
 **Files:**
+
 - Modify: `package.json` (root)
 
 - [ ] **Step 1: Add `version-packages` and `release` scripts**
@@ -1017,6 +1045,7 @@ pnpm changeset status
 ```
 
 Expected:
+
 - Shows 3 packages bumping at minor.
 - All three resolve to version `0.1.0`.
 - No warnings about unrecognized packages or missing config.
@@ -1034,6 +1063,7 @@ pnpm build && pnpm typecheck && pnpm test && pnpm lint && pnpm smoke
 Expected: all green. The `__VERSION__` baked into the CLI is still `0.0.0` at this point (we haven't run `version-packages` yet), so the smoke uses dev-mode fall-back to `main`. That's fine — Phase 6.5 will rebuild after the version bump.
 
 **Pass criteria:**
+
 - `pnpm changeset status` shows the v0.1.0 release ready to roll.
 - All four CI gates green.
 - No leftover changeset files other than `v0-1-0-initial-release.md`, `config.json`, `README.md`.
@@ -1049,6 +1079,7 @@ Expected: all green. The `__VERSION__` baked into the CLI is still `0.0.0` at th
 ### Task 1: Run `changeset version` to bump packages
 
 **Files (auto-modified by `changeset version`):**
+
 - Modify: `packages/matter/package.json` (version: `0.0.0` → `0.1.0`)
 - Modify: `packages/matter-react/package.json` (version: `0.0.0` → `0.1.0`)
 - Modify: `packages/matter-cli/package.json` (version: `0.0.0` → `0.1.0`)
@@ -1077,6 +1108,7 @@ git diff
 ```
 
 Expected:
+
 - Three `package.json` files now show `"version": "0.1.0"`.
 - Three new `CHANGELOG.md` files (one per package), each with a "## 0.1.0" entry containing the changeset body.
 - `.changeset/v0-1-0-initial-release.md` deleted (consumed).
@@ -1099,7 +1131,7 @@ Each should start with:
 
 ### Minor Changes
 
--   Initial public release of Matter — React shader components on WebGPU + Three.js TSL.
+- Initial public release of Matter — React shader components on WebGPU + Three.js TSL.
 ```
 
 (With the package name varying.)
@@ -1147,6 +1179,7 @@ Expected: all green. The smoke now runs against a CLI built with `__VERSION__ = 
 ### Task 3: Tarball-based smoke install in throwaway Next.js project
 
 **Files:**
+
 - Create: `/tmp/matter-prepublish-smoke/` — throwaway, deleted at end
 
 - [ ] **Step 1: Pack each publishable package**
@@ -1225,7 +1258,7 @@ const config: NextConfig = {
     config.resolve = config.resolve ?? {}
     config.resolve.alias = {
       ...(config.resolve.alias ?? {}),
-      'three$': 'three/webgpu',
+      three$: 'three/webgpu',
       'three/tsl': 'three/build/three.tsl.js',
     }
     return config
@@ -1253,6 +1286,7 @@ rm -rf /tmp/matter-prepublish-smoke
 ### Phase 6.5 — Validation Gate (stop and play)
 
 **At this point everything is local. Nothing has been published. The repo state is:**
+
 - All 3 packages at version `0.1.0` in package.json + CHANGELOG.md committed.
 - Tarballs build cleanly.
 - Tarballs installed into a fresh Next.js project; `next build` succeeds.
@@ -1273,6 +1307,7 @@ git log --oneline | head -10
 Expected: most recent commit is `chore: version packages 0.0.0 → 0.1.0 (Changesets)`.
 
 **Pass criteria:**
+
 - `git diff` shows zero untracked changes in the repo.
 - A throwaway Next.js project successfully built against tarballs of all three packages.
 - The published bin's `matter.config.json` printed `lovo-hq/matter` (typo fix is in the published artifact).
@@ -1322,11 +1357,13 @@ pnpm publish -r --access public --no-git-checks
 npm will prompt for the OTP (one-time password) per package — three OTP prompts in sequence (Authenticator app, security key, etc., per your npm 2FA setup).
 
 Expected:
+
 - `+ @lovo/matter@0.1.0`
 - `+ @lovo/matter-react@0.1.0`
 - `+ @lovo/matter-cli@0.1.0`
 
 If any individual package fails (network blip, OTP timeout, etc.):
+
 - The published packages stay published. You **cannot** "rerun the whole publish" — re-running tries to publish 0.1.0 again and errors with "version already exists" on the successful packages.
 - For the failed package only, run: `cd packages/<failed> && npm publish --access public` (npm CLI directly, not pnpm).
 - If you cannot recover (e.g., 2FA service is down), revert by `npm unpublish @lovo/<pkg>@0.1.0` (within 24 hours) and try again later. Do NOT bump to 0.1.1 to "fix" — that's user-confusing for the first release.
@@ -1436,6 +1473,7 @@ git push origin main
 ### Task 4: Update CLAUDE.md milestone status
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 1: Mark M6 complete in the milestone table**
@@ -1488,6 +1526,7 @@ npm view @lovo/matter-cli@0.1.0 dist.tarball
 Expected: each prints a registry URL like `https://registry.npmjs.org/@lovo/matter/-/matter-0.1.0.tgz`.
 
 **Pass criteria:**
+
 - All three packages live on public npm at version `0.1.0`.
 - `v0.1.0` and `m6-complete` tags pushed.
 - `https://raw.githubusercontent.com/lovo-hq/matter/v0.1.0/registry/registry.json` returns 200.
@@ -1501,9 +1540,11 @@ Expected: each prints a registry URL like `https://registry.npmjs.org/@lovo/matt
 After Phase 6.6 completes, write a SUMMARY for this plan:
 
 **Files:**
+
 - Create: `docs/superpowers/plans/2026-05-10-matter-m6-publish-SUMMARY.md`
 
 The SUMMARY should record:
+
 - What shipped (three packages, version, npm URLs).
 - Total time per phase (rough estimate based on commits).
 - Any new gotchas discovered during M6 (add to CLAUDE.md gotchas list if persistent).
@@ -1512,6 +1553,7 @@ The SUMMARY should record:
 **Memory updates after M6:**
 
 Save a project memory `project_matter_m6_complete.md` with:
+
 - Date shipped, npm URLs, lessons learned.
 - Update `MEMORY.md` index.
 
@@ -1522,6 +1564,7 @@ This sets up the next session to pick up M7 (Vite Plus migration) cleanly.
 ## Plan Self-Review Checklist (writing-plans skill)
 
 **Spec coverage** (mapping CLAUDE.md M6 + the conversation that produced this plan):
+
 - ✅ Package.json metadata polish — Phase 6.1
 - ✅ Per-package READMEs — Phase 6.3
 - ✅ CHANGELOG via Changesets — Phase 6.4 / 6.5
@@ -1541,6 +1584,7 @@ This sets up the next session to pick up M7 (Vite Plus migration) cleanly.
 **Placeholder scan:** No `TBD`, `TODO`, "implement later", or "similar to Task N" anywhere in the plan. Every task has full code/commands.
 
 **Type / name consistency:**
+
 - `DEFAULT_MATTER_CONFIG` referenced consistently (matterConfig.ts:18 → matterConfig.test.ts).
 - `resolveRef(ref, cliVersion)` signature matches Phase 6.2 references and existing code.
 - Package names `@lovo/matter`, `@lovo/matter-react`, `@lovo/matter-cli` consistent throughout.

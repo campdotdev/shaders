@@ -4,7 +4,7 @@
 
 **Goal:** Ship the remaining five Tier 1 components (`<NoiseField>`, `<DotField>`, `<Waves>`, `<MeshGradient>`, `<Aurora>`) plus the Tier 2 primitives they require (`noise`, `fbm`, `voronoi`, `quantize`, `sdfCircle`, `displace`, `cursorRipple`) plus two input hooks (`useResize`, `useScroll`). Every component lands in `registry/`, gets a minimal `apps/docs/app/components/<slug>/page.tsx` with a Tweakpane control on every prop, and is wired into the registry manifest so `@lovo/matter-cli add <slug>` Just Works. M3 is split into seven sub-phases, simplest-first, each ending at a runnable browser route the user can scrub. Tag `m3-complete` at the end.
 
-**Architecture:** Tier 2 primitives are pure TSL functions in `packages/matter/src/primitives/<name>.ts`, exported through `packages/matter/src/index.ts`. Input hooks live in `packages/matter-react/src/use<Name>.ts` and follow the Strict-Mode-safe single-effect pattern from `useCursor` (CLAUDE.md gotcha #14). Tier 1 components live in `registry/<slug>.tsx` as standalone copy-paste files that import only from `@lovo/matter` and `@lovo/matter-react`; they wrap their own `<MatterScene>` and `<FallbackBoundary>`. The docs site renders each component on `/components/<slug>` with a Tweakpane panel on every prop. Two phases (3.1.a and 3.4.a) are *prototype* phases that surface a feel-decision on a hardcoded shader at `/dev/<slug>-playground` before the prop API of the consuming component is locked.
+**Architecture:** Tier 2 primitives are pure TSL functions in `packages/matter/src/primitives/<name>.ts`, exported through `packages/matter/src/index.ts`. Input hooks live in `packages/matter-react/src/use<Name>.ts` and follow the Strict-Mode-safe single-effect pattern from `useCursor` (CLAUDE.md gotcha #14). Tier 1 components live in `registry/<slug>.tsx` as standalone copy-paste files that import only from `@lovo/matter` and `@lovo/matter-react`; they wrap their own `<MatterScene>` and `<FallbackBoundary>`. The docs site renders each component on `/components/<slug>` with a Tweakpane panel on every prop. Two phases (3.1.a and 3.4.a) are _prototype_ phases that surface a feel-decision on a hardcoded shader at `/dev/<slug>-playground` before the prop API of the consuming component is locked.
 
 **Tech Stack:** Inherited from M0/M1 — TypeScript 5 strict (`verbatimModuleSyntax`, `noUncheckedIndexedAccess`), pnpm 9 + Turborepo, tsup (engine + binding bundling), Vitest 2, Next.js 15 (`apps/docs/`), Tweakpane 4 (already wired). No new build tooling.
 
@@ -14,16 +14,16 @@
 
 ### M3 dependency graph (which primitives ship in which sub-phase)
 
-| Component (and phase that ships it)   | Primitives & hooks the component consumes                                                              | New things this phase ships                              |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
-| LinearGradient *(M1, already shipped)* | `colorRamp`, `mix`, `time`, `length`, `uniform`                                                        | —                                                         |
-| **3.1.a — FBM playground**            | n/a (prototype)                                                                                        | `noise`, `fbm`                                            |
-| **3.1.b — `<NoiseField>`**            | `fbm` (3.1.a), `voronoi` (here), `quantize` (here), `colorRamp` (M1), `time` (M1)                     | `voronoi`, `quantize`, `<NoiseField>` component           |
-| **3.2 — `<DotField>`**                | `sdfCircle` (here), `displace` (here), `mix`, cursor uniform; `useResize` (here)                       | `sdfCircle`, `displace`, `useResize`, `<DotField>`        |
-| **3.3 — `<Waves>`**                   | `sin`/`cos` (TSL built-ins), `cursorRipple` (here), `mix`, `time`; `useScroll` (here, exposed only)    | `cursorRipple`, `useScroll`, `<Waves>`                    |
-| **3.4.a — MeshGradient prototype**    | n/a (prototype) — exercises `noise` (3.1.a)                                                            | `/dev/mesh-gradient-playground` only — no new primitives  |
-| **3.4.b — `<MeshGradient>`**          | `colorRamp` (M1), `mix`, `noise` (3.1.a), cursor uniform                                               | `<MeshGradient>` component                                |
-| **3.5 — `<Aurora>`**                  | `fbm` (3.1.a), `mix`, `smoothstep`, `displace` (3.2), `time`, cursor uniform                           | `<Aurora>` component (no new primitives)                  |
+| Component (and phase that ships it)    | Primitives & hooks the component consumes                                                           | New things this phase ships                              |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| LinearGradient _(M1, already shipped)_ | `colorRamp`, `mix`, `time`, `length`, `uniform`                                                     | —                                                        |
+| **3.1.a — FBM playground**             | n/a (prototype)                                                                                     | `noise`, `fbm`                                           |
+| **3.1.b — `<NoiseField>`**             | `fbm` (3.1.a), `voronoi` (here), `quantize` (here), `colorRamp` (M1), `time` (M1)                   | `voronoi`, `quantize`, `<NoiseField>` component          |
+| **3.2 — `<DotField>`**                 | `sdfCircle` (here), `displace` (here), `mix`, cursor uniform; `useResize` (here)                    | `sdfCircle`, `displace`, `useResize`, `<DotField>`       |
+| **3.3 — `<Waves>`**                    | `sin`/`cos` (TSL built-ins), `cursorRipple` (here), `mix`, `time`; `useScroll` (here, exposed only) | `cursorRipple`, `useScroll`, `<Waves>`                   |
+| **3.4.a — MeshGradient prototype**     | n/a (prototype) — exercises `noise` (3.1.a)                                                         | `/dev/mesh-gradient-playground` only — no new primitives |
+| **3.4.b — `<MeshGradient>`**           | `colorRamp` (M1), `mix`, `noise` (3.1.a), cursor uniform                                            | `<MeshGradient>` component                               |
+| **3.5 — `<Aurora>`**                   | `fbm` (3.1.a), `mix`, `smoothstep`, `displace` (3.2), `time`, cursor uniform                        | `<Aurora>` component (no new primitives)                 |
 
 **Rationale for deviations from the brainstorm-prompt graph:**
 
@@ -68,10 +68,10 @@ Run these before starting Phase 3.1.a.
 - [ ] **M2 tag present.** Run `git tag`. Expected: `m0-complete`, `m1-complete`, `m2-complete` listed.
 - [ ] **Working tree clean.** Run `git status --short`. Expected: empty (or only the M2 plan file `docs/superpowers/plans/2026-05-04-matter-m2-cli.md` if it was committed elsewhere — fine either way; just verify nothing else uncommitted).
 - [ ] **Everything builds clean from M2 state.**
-      ```bash
-      pnpm install --frozen-lockfile
-      pnpm build && pnpm typecheck && pnpm lint && pnpm test
-      ```
+      `bash
+    pnpm install --frozen-lockfile
+    pnpm build && pnpm typecheck && pnpm lint && pnpm test
+    `
       Expected: all green. If a package shows "no test files" — verify `passWithNoTests: true` is set per CLAUDE.md gotcha #8.
 - [ ] **LinearGradient still renders.** Run `pnpm --filter @matter/docs dev`, open `http://localhost:3000/components/linear-gradient`, drag the angle slider, verify the gradient updates after Apply. Kill the dev server.
 - [ ] **CLI smoke test still passes.** Run `pnpm smoke`. Expected: green.
@@ -137,6 +137,7 @@ mattermix/
 **Scope:** New TSL primitives only — no new component, no registry change.
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/noise.ts`
 - Create: `packages/matter/src/primitives/noise.test.ts`
 - Create: `packages/matter/src/primitives/fbm.ts`
@@ -149,6 +150,7 @@ mattermix/
 Three.js TSL exposes a built-in `mx_noise_float` (MaterialX-derived simplex noise). Wrap it in a stable Matter API so users have one import path and we can absorb upstream renames.
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/noise.ts`
 
 - [ ] **Step 1.1: Create `noise.ts`.**
@@ -202,9 +204,10 @@ Expected: tests green, dist builds.
 
 ### Task 2: Add `fbm` primitive
 
-Fractal Brownian Motion: sum N octaves of `noise` at increasing frequency (multiplied by `lacunarity`) and decreasing amplitude (multiplied by `gain`). The classical defaults are `octaves=4, lacunarity=2, gain=0.5` — but the *feel-decision* belongs to the user, not the spec. Ship with defaults that the user picks during this phase's playground beat (see Step 6 below).
+Fractal Brownian Motion: sum N octaves of `noise` at increasing frequency (multiplied by `lacunarity`) and decreasing amplitude (multiplied by `gain`). The classical defaults are `octaves=4, lacunarity=2, gain=0.5` — but the _feel-decision_ belongs to the user, not the spec. Ship with defaults that the user picks during this phase's playground beat (see Step 6 below).
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/fbm.ts`
 - Create: `packages/matter/src/primitives/fbm.test.ts`
 
@@ -303,6 +306,7 @@ Expected: green.
 ### Task 3: Export `noise` and `fbm` from `@lovo/matter`
 
 **Files:**
+
 - Modify: `packages/matter/src/index.ts`
 
 - [ ] **Step 3.1: Add new primitive exports below the existing `colorRamp` export.**
@@ -332,6 +336,7 @@ The page renders a hardcoded shader on a full-viewport `<MatterScene>` with gray
 Because `octaves` (and lacunarity/gain) are JS-side and bake into the TSL fragment, the page MUST remount the inner scene on `octaves` change — same pattern as M1's LinearGradient page using an `instanceKey`. `scale` and `timeSpeed` are TSL uniforms and update without remount.
 
 **Files:**
+
 - Create: `apps/docs/app/dev/fbm-playground/page.tsx`
 
 - [ ] **Step 4.1: Create the playground page.**
@@ -396,7 +401,12 @@ function FbmMesh({
     // p = uv() * scale + time * timeSpeed (broadcast time scalar to vec2)
     const animatedUv = uv()
       .mul(scaleUniform as unknown as number)
-      .add(vec2(time.mul(timeSpeedUniform as unknown as number), time.mul(timeSpeedUniform as unknown as number)))
+      .add(
+        vec2(
+          time.mul(timeSpeedUniform as unknown as number),
+          time.mul(timeSpeedUniform as unknown as number),
+        ),
+      )
     const t = fbm(animatedUv, { octaves, lacunarity, gain })
     // Normalize fbm's [-1..1]-ish range into [0..1] for colorRamp.
     const tNorm = (t as unknown as { add(n: number): { mul(n: number): unknown } }).add(1).mul(0.5)
@@ -407,8 +417,16 @@ function FbmMesh({
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* gotcha #13-adjacent benign race */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* gotcha #13-adjacent benign race */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
   }, [ctx, octaves, lacunarity, gain, scaleUniform, timeSpeedUniform])
 
@@ -491,9 +509,9 @@ export default function FbmPlaygroundPage() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>FBM playground</h1>
         <p>
-          Internal Matter dev surface — not part of the public component catalog. Use this to
-          feel out good defaults for <code>octaves</code>, <code>lacunarity</code>, and{' '}
-          <code>gain</code> before <code>&lt;NoiseField&gt;</code> locks the prop API in 3.1.b.
+          Internal Matter dev surface — not part of the public component catalog. Use this to feel
+          out good defaults for <code>octaves</code>, <code>lacunarity</code>, and <code>gain</code>{' '}
+          before <code>&lt;NoiseField&gt;</code> locks the prop API in 3.1.b.
         </p>
       </section>
     </main>
@@ -538,6 +556,7 @@ at /dev/fbm-playground lets us feel out octaves/lacunarity/gain before
 ### Stop-and-play gate (3.1.a)
 
 Open `/dev/fbm-playground`. Scrub:
+
 - `octaves` 1 → 8 (Apply each time)
 - `lacunarity` 1.5 → 3
 - `gain` 0.3 → 0.7
@@ -559,9 +578,9 @@ Open `/dev/fbm-playground`. Scrub:
 
 Two-stage subagent review. Spawn one subagent for spec-compliance, one for code-quality.
 
-**Spec-compliance reviewer prompt:** *"Review Phase 3.1.a's diff (since `m2-complete`) against the spec at `docs/superpowers/specs/2026-05-02-matter-design.md` §5.2 (NoiseField/Aurora primitives) and §11 row 3 (M3 row). Confirm: (1) `noise` and `fbm` ship as named exports of `@lovo/matter`; (2) `fbm` accepts the three documented options with sensible defaults; (3) the playground page lives at `/dev/fbm-playground` and is unlinked from main nav; (4) no out-of-scope additions. Report any gaps."*
+**Spec-compliance reviewer prompt:** _"Review Phase 3.1.a's diff (since `m2-complete`) against the spec at `docs/superpowers/specs/2026-05-02-matter-design.md` §5.2 (NoiseField/Aurora primitives) and §11 row 3 (M3 row). Confirm: (1) `noise` and `fbm` ship as named exports of `@lovo/matter`; (2) `fbm` accepts the three documented options with sensible defaults; (3) the playground page lives at `/dev/fbm-playground` and is unlinked from main nav; (4) no out-of-scope additions. Report any gaps."_
 
-**Code-quality reviewer prompt:** *"Review the same diff for code quality. Specifically check: gotcha #12 (uniform-as-arg, not chained-receiver) — is every TSL chain in the playground built starting from `uv()`/`vec2(...)` rather than from a uniform? Strict-mode safety — does the playground's effect lifecycle survive Strict-Mode mount→unmount→mount without leaking material/mesh? TypeScript strict — any `as unknown as` casts that should be replaced with proper TSL type narrowing? File hygiene — no `// TODO`/`// removed`/dead code? Comments — only WHY comments, no narration?"*
+**Code-quality reviewer prompt:** _"Review the same diff for code quality. Specifically check: gotcha #12 (uniform-as-arg, not chained-receiver) — is every TSL chain in the playground built starting from `uv()`/`vec2(...)` rather than from a uniform? Strict-mode safety — does the playground's effect lifecycle survive Strict-Mode mount→unmount→mount without leaking material/mesh? TypeScript strict — any `as unknown as` casts that should be replaced with proper TSL type narrowing? File hygiene — no `// TODO`/`// removed`/dead code? Comments — only WHY comments, no narration?"_
 
 Address all REQUIRED review notes; defer SUGGESTED. Re-run check suite. Move to 3.1.b.
 
@@ -574,6 +593,7 @@ Address all REQUIRED review notes; defer SUGGESTED. Re-run check suite. Move to 
 **Scope:** Two new primitives + one Tier 1 component + one docs page + registry manifest update.
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/voronoi.ts`, `voronoi.test.ts`
 - Create: `packages/matter/src/primitives/quantize.ts`, `quantize.test.ts`
 - Modify: `packages/matter/src/index.ts`
@@ -584,11 +604,12 @@ Address all REQUIRED review notes; defer SUGGESTED. Re-run check suite. Move to 
 
 ### Task 1: Add `voronoi` primitive
 
-Voronoi gives the cellular look. Implementation: classical 2D voronoi via the standard "hash-based jitter inside grid cells" approach, returning the distance to the nearest jittered cell point. We use TSL's `mx_cell_noise_float` which gives us per-cell-id noise in `[0,1]` — for the cellular *distance* output, fall back to a hand-written hash + min-distance loop in TSL.
+Voronoi gives the cellular look. Implementation: classical 2D voronoi via the standard "hash-based jitter inside grid cells" approach, returning the distance to the nearest jittered cell point. We use TSL's `mx_cell_noise_float` which gives us per-cell-id noise in `[0,1]` — for the cellular _distance_ output, fall back to a hand-written hash + min-distance loop in TSL.
 
 Three's TSL `mx_worley_noise_float` gives Worley/voronoi-style noise as a scalar (the standard distance-to-nearest output). Use that as the implementation.
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/voronoi.ts`
 
 - [ ] **Step 1.1: Create `voronoi.ts`.**
@@ -641,6 +662,7 @@ pnpm --filter @lovo/matter test && pnpm --filter @lovo/matter build
 `quantize(t, steps)` rounds a scalar TSL node to `steps` discrete levels. Used by NoiseField's `grid` variant to produce hard-edged stepped output from FBM. Pure-math testable.
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/quantize.ts`
 - Create: `packages/matter/src/primitives/quantize.test.ts`
 
@@ -668,11 +690,7 @@ export function quantize(t: TSLNode, steps: number): TSLNode {
   const denom = steps - 1
   // floor(t * (steps-1) + 0.5) / (steps-1)
   // Using floor(x + 0.5) instead of round() for TSL portability.
-  return (t as ShaderNodeObject<Node>)
-    .mul(denom)
-    .add(0.5)
-    .floor()
-    .div(denom)
+  return (t as ShaderNodeObject<Node>).mul(denom).add(0.5).floor().div(denom)
 }
 ```
 
@@ -713,6 +731,7 @@ pnpm --filter @lovo/matter test && pnpm --filter @lovo/matter build
 ### Task 3: Export both primitives
 
 **Files:**
+
 - Modify: `packages/matter/src/index.ts`
 
 - [ ] **Step 3.1: Append exports.**
@@ -736,6 +755,7 @@ pnpm --filter @lovo/matter build && pnpm --filter @lovo/matter typecheck
 Spec §5.2: `<NoiseField scale={1} speed={0.5} colors={['#000','#fff']} octaves={4} variant="organic" />`. Three variants: `organic` uses fbm; `cellular` uses voronoi; `grid` uses `quantize(fbm(...))`. Default fallback is an inline SVG `<feTurbulence>`.
 
 **Files:**
+
 - Create: `registry/noise-field.tsx`
 
 - [ ] **Step 4.1: Create the component.**
@@ -834,7 +854,10 @@ function NoiseFieldMesh(props: NoiseFieldProps) {
       .sub(cursorUniform.mul(0).add(0)) // no-op: keeps reference for future cursor-displace work
       .mul(scaleUniform as unknown as number)
     const animatedUv = baseUv.add(
-      vec2(time.mul(speedUniform as unknown as number), time.mul(speedUniform as unknown as number)),
+      vec2(
+        time.mul(speedUniform as unknown as number),
+        time.mul(speedUniform as unknown as number),
+      ),
     )
 
     let t
@@ -857,18 +880,18 @@ function NoiseFieldMesh(props: NoiseFieldProps) {
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* benign during rebuild */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign during rebuild */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
-  }, [
-    ctx,
-    colors.join('|'),
-    octaves,
-    variant,
-    scaleUniform,
-    speedUniform,
-    cursorUniform,
-  ])
+  }, [ctx, colors.join('|'), octaves, variant, scaleUniform, speedUniform, cursorUniform])
 
   return null
 }
@@ -916,6 +939,7 @@ export function NoiseField(props: NoiseFieldProps) {
 ### Task 5: Update registry manifest and package exports
 
 **Files:**
+
 - Modify: `registry/registry.json`
 - Modify: `registry/package.json`
 
@@ -939,7 +963,17 @@ Replace the contents of `registry/registry.json` with:
       "file": "noise-field.tsx",
       "description": "Pure noise pattern in three flavors: organic (fbm), cellular (voronoi), grid (quantized fbm).",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["colorRamp", "fbm", "voronoi", "quantize", "uv", "vec2", "vec3", "time", "uniform"],
+      "uses_primitives": [
+        "colorRamp",
+        "fbm",
+        "voronoi",
+        "quantize",
+        "uv",
+        "vec2",
+        "vec3",
+        "time",
+        "uniform"
+      ],
       "tier": 1
     }
   }
@@ -988,6 +1022,7 @@ pnpm install
 Pattern matches `apps/docs/app/components/linear-gradient/page.tsx`. Tweakpane on every prop. `octaves` requires Apply (baked into TSL); other props are live.
 
 **Files:**
+
 - Create: `apps/docs/app/components/noise-field/page.tsx`
 
 - [ ] **Step 6.1: Create the page.**
@@ -1000,10 +1035,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
 
-const NoiseField = dynamic(
-  () => import('@matter/registry/noise-field').then((m) => m.NoiseField),
-  { ssr: false },
-)
+const NoiseField = dynamic(() => import('@matter/registry/noise-field').then((m) => m.NoiseField), {
+  ssr: false,
+})
 
 interface Params {
   color0: string
@@ -1092,7 +1126,7 @@ export default function NoiseFieldPage() {
             fontSize: '0.85rem',
           }}
         >
-{`import { NoiseField } from '@/components/matter/noise-field'
+          {`import { NoiseField } from '@/components/matter/noise-field'
 
 <NoiseField
   variant="organic"
@@ -1149,9 +1183,9 @@ colorRamp. Registry entry + docs page + Tweakpane on every prop."
 
 ### Review pass (3.1.b)
 
-**Spec-compliance reviewer:** *"Review Phase 3.1.b against spec §5.2 NoiseField (line 485). Confirm: prop names match (`scale`, `speed`, `colors`, `octaves`, `variant`); the three variants exist and produce visually distinct output; the SVG fallback exists; the component wraps itself in `<MatterScene>` and `<FallbackBoundary>` per the contract in §5.1."*
+**Spec-compliance reviewer:** _"Review Phase 3.1.b against spec §5.2 NoiseField (line 485). Confirm: prop names match (`scale`, `speed`, `colors`, `octaves`, `variant`); the three variants exist and produce visually distinct output; the SVG fallback exists; the component wraps itself in `<MatterScene>` and `<FallbackBoundary>` per the contract in §5.1."_
 
-**Code-quality reviewer:** *"Review the NoiseField component for: gotcha #12 (TSL chains start from `uv()`/`vec2`, not from uniforms — flag any `uniform.something()` patterns); strict-mode safety of the cursor effect; absence of out-of-scope props (the spec lists exactly five visual props + `interactive`/`inputs`/`fallback`/`className`/`style`); registry component file imports ONLY from `@lovo/matter`, `@lovo/matter-react`, `react` — no imports from another registry file (CLAUDE.md `registry/*.tsx` rule)."*
+**Code-quality reviewer:** _"Review the NoiseField component for: gotcha #12 (TSL chains start from `uv()`/`vec2`, not from uniforms — flag any `uniform.something()` patterns); strict-mode safety of the cursor effect; absence of out-of-scope props (the spec lists exactly five visual props + `interactive`/`inputs`/`fallback`/`className`/`style`); registry component file imports ONLY from `@lovo/matter`, `@lovo/matter-react`, `react` — no imports from another registry file (CLAUDE.md `registry/_.tsx` rule)."\*
 
 ---
 
@@ -1162,6 +1196,7 @@ colorRamp. Registry entry + docs page + Tweakpane on every prop."
 **Scope:** Two new primitives + one new hook + one Tier 1 component + one docs page.
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/sdfCircle.ts`, `sdfCircle.test.ts`
 - Create: `packages/matter/src/primitives/displace.ts` (no test — pure TSL passthrough)
 - Modify: `packages/matter/src/index.ts`
@@ -1176,6 +1211,7 @@ colorRamp. Registry entry + docs page + Tweakpane on every prop."
 A signed distance field for a circle. Returns negative inside, zero at boundary, positive outside.
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/sdfCircle.ts`
 
 - [ ] **Step 1.1: Create the file.**
@@ -1229,6 +1265,7 @@ describe('sdfCircle', () => {
 `displace(p, by)` adds a 2D displacement vector to a point. Trivial wrapper but earns its keep as the cursor-influence pattern in DotField (3.2) and the FBM-warp pattern in Aurora (3.5).
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/displace.ts`
 
 - [ ] **Step 2.1: Create the file.**
@@ -1260,6 +1297,7 @@ export function displace(p: TSLNode, by: TSLNode): TSLNode {
 ### Task 3: Export the two primitives
 
 **Files:**
+
 - Modify: `packages/matter/src/index.ts`
 
 - [ ] **Step 3.1: Append.**
@@ -1281,6 +1319,7 @@ pnpm --filter @lovo/matter build && pnpm --filter @lovo/matter test
 The hook returns a signal with the current canvas client size and DPR. We use `ResizeObserver` on the canvas element from the parent `MatterScene`. The signal emits `[width, height, dpr]` triples.
 
 **Files:**
+
 - Create: `packages/matter-react/src/useResize.ts`
 
 - [ ] **Step 4.1: Create the hook.**
@@ -1422,6 +1461,7 @@ pnpm --filter @lovo/matter-react build && pnpm --filter @lovo/matter-react test
 Spec §5.2 line 466: `<DotField spacing={30} dotSize={2} color="#888" reach={100} strength={1} interactive={true} />`. Tile uv into cells; render a circle per cell via `sdfCircle` + `smoothstep`; displace each cell center based on cursor distance.
 
 **Files:**
+
 - Create: `registry/dot-field.tsx`
 
 - [ ] **Step 5.1: Create the component.**
@@ -1473,7 +1513,7 @@ function DotFieldMesh(props: DotFieldProps) {
   const ctx = useMatterContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
-  const cursor = cursorFromInputs ?? (props.interactive ?? true ? cursorAuto : null)
+  const cursor = cursorFromInputs ?? ((props.interactive ?? true) ? cursorAuto : null)
   const resize = useResize()
 
   const spacingUniform = useAnimatableUniform<number>(props.spacing ?? DEFAULTS.spacing)
@@ -1556,14 +1596,28 @@ function DotFieldMesh(props: DotFieldProps) {
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* benign */ }
-      try { mesh.geometry.dispose() } catch { /* benign */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* benign */
+      }
     }
   }, [
     ctx,
-    cr, cg, cb,
-    spacingUniform, dotSizeUniform, reachUniform, strengthUniform,
-    cursorUniform, resUniform,
+    cr,
+    cg,
+    cb,
+    spacingUniform,
+    dotSizeUniform,
+    reachUniform,
+    strengthUniform,
+    cursorUniform,
+    resUniform,
   ])
 
   return null
@@ -1633,10 +1687,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
 
-const DotField = dynamic(
-  () => import('@matter/registry/dot-field').then((m) => m.DotField),
-  { ssr: false },
-)
+const DotField = dynamic(() => import('@matter/registry/dot-field').then((m) => m.DotField), {
+  ssr: false,
+})
 
 interface Params {
   color: string
@@ -1675,7 +1728,9 @@ export default function DotFieldPage() {
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' })
     pane.on('change', () => setParams({ ...local }))
-    return () => { pane.dispose() }
+    return () => {
+      pane.dispose()
+    }
   }, [])
 
   return (
@@ -1696,8 +1751,16 @@ export default function DotFieldPage() {
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;DotField /&gt;</h1>
-        <pre style={{ background: '#1a1a2a', color: '#e0e0f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.85rem' }}>
-{`<DotField spacing={30} dotSize={2} color="#888" reach={100} strength={1} />`}
+        <pre
+          style={{
+            background: '#1a1a2a',
+            color: '#e0e0f0',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            fontSize: '0.85rem',
+          }}
+        >
+          {`<DotField spacing={30} dotSize={2} color="#888" reach={100} strength={1} />`}
         </pre>
       </section>
     </main>
@@ -1746,9 +1809,9 @@ read canvas resolution as a uniform."
 
 ### Review pass (3.2)
 
-**Spec-compliance reviewer:** *"Verify against spec §5.2 DotField (line 466): five visual props match, defaults are sensible, fallback uses CSS `radial-gradient` with `background-size: spacing px spacing px`. Confirm useResize ships in `@lovo/matter-react` exports."*
+**Spec-compliance reviewer:** _"Verify against spec §5.2 DotField (line 466): five visual props match, defaults are sensible, fallback uses CSS `radial-gradient` with `background-size: spacing px spacing px`. Confirm useResize ships in `@lovo/matter-react` exports."_
 
-**Code-quality reviewer:** *"Focus on the `useResize` hook against gotcha #14 (Strict Mode). The lifecycle MUST live in one effect that creates+attaches+disposes a fresh ResizeObserver — flag any pattern that creates the observer outside the effect. Also: gotcha #12 — every TSL chain in DotField must start from `uv()`/`vec2`/etc., never from a uniform receiver. Look for any `cursorUniform.sub(...)` or `resUniform.mul(...)` patterns and verify they're being used as ARGUMENTS to a chain rooted in `uv()`-derived nodes."*
+**Code-quality reviewer:** _"Focus on the `useResize` hook against gotcha #14 (Strict Mode). The lifecycle MUST live in one effect that creates+attaches+disposes a fresh ResizeObserver — flag any pattern that creates the observer outside the effect. Also: gotcha #12 — every TSL chain in DotField must start from `uv()`/`vec2`/etc., never from a uniform receiver. Look for any `cursorUniform.sub(...)` or `resUniform.mul(...)` patterns and verify they're being used as ARGUMENTS to a chain rooted in `uv()`-derived nodes."_
 
 ---
 
@@ -1757,6 +1820,7 @@ read canvas resolution as a uniform."
 **Goal:** Ship `<Waves>` — sum of N sine layers + cursor-spawned radial ripples. Adds `cursorRipple` primitive and `useScroll` hook (the latter exported but not consumed by Waves itself in v1).
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/cursorRipple.ts`, `cursorRipple.test.ts`
 - Modify: `packages/matter/src/index.ts`
 - Create: `packages/matter-react/src/useScroll.ts`, `useScroll.test.ts`
@@ -1770,6 +1834,7 @@ read canvas resolution as a uniform."
 A radial ripple field around a center point that decays with distance and oscillates with time — the "drop in a pond" feel.
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/cursorRipple.ts`
 
 - [ ] **Step 1.1: Create the file.**
@@ -1807,11 +1872,7 @@ export interface CursorRippleOptions {
  * @param p — Vec2 TSL node (typically `uv()`).
  * @param center — Vec2 TSL node (cursor uniform, in UV space).
  */
-export function cursorRipple(
-  p: TSLNode,
-  center: TSLNode,
-  opts: CursorRippleOptions = {},
-): TSLNode {
+export function cursorRipple(p: TSLNode, center: TSLNode, opts: CursorRippleOptions = {}): TSLNode {
   const reach = opts.reach ?? 0.4
   const frequency = opts.frequency ?? 30
   const speed = opts.speed ?? 6
@@ -1868,6 +1929,7 @@ pnpm --filter @lovo/matter build && pnpm --filter @lovo/matter test
 Exposes window scroll position as a MatterSignal — `[scrollY, progress]` where `progress` is `scrollY / (documentHeight - viewportHeight)` clamped to [0,1]. Throttled via rAF.
 
 **Files:**
+
 - Create: `packages/matter-react/src/useScroll.ts`
 
 - [ ] **Step 2.1: Create the hook.**
@@ -1985,6 +2047,7 @@ pnpm --filter @lovo/matter-react build && pnpm --filter @lovo/matter-react test
 Spec §5.2 line 503: `<Waves amplitude={0.1} frequency={5} speed={1} color="#7ec" layers={3} interactive={false} />`. Sum N sine layers + add cursor ripple when interactive.
 
 **Files:**
+
 - Create: `registry/waves.tsx`
 
 - [ ] **Step 3.1: Create the component.**
@@ -2072,9 +2135,9 @@ function WavesMesh(props: WavesProps) {
       const layerAmp = 1 / (i + 1)
       const phase = i * 1.3
       const layer = sin(
-        (uv().x as ShaderNodeObject<Node>).mul(layerFreq as never).add(
-          (time as ShaderNodeObject<Node>).mul(layerSpeed as never).add(phase),
-        ),
+        (uv().x as ShaderNodeObject<Node>)
+          .mul(layerFreq as never)
+          .add((time as ShaderNodeObject<Node>).mul(layerSpeed as never).add(phase)),
       ) as ShaderNodeObject<Node>
       waveSum = waveSum.add(layer.mul(layerAmp)) as ShaderNodeObject<Node>
       totalAmp += layerAmp
@@ -2083,7 +2146,9 @@ function WavesMesh(props: WavesProps) {
 
     // Optional cursor ripple — added on top of the base wave field.
     const fullWave = cursor
-      ? (baseWave.add(cursorRipple(uv(), cursorUniform) as ShaderNodeObject<Node>) as ShaderNodeObject<Node>)
+      ? (baseWave.add(
+          cursorRipple(uv(), cursorUniform) as ShaderNodeObject<Node>,
+        ) as ShaderNodeObject<Node>)
       : baseWave
 
     // Render: y-coord vs wave value with a soft band around 0.
@@ -2104,8 +2169,16 @@ function WavesMesh(props: WavesProps) {
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* benign */ }
-      try { mesh.geometry.dispose() } catch { /* benign */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* benign */
+      }
     }
   }, [ctx, layers, cr, cg, cb, ampUniform, freqUniform, speedUniform, cursor, cursorUniform])
 
@@ -2212,7 +2285,9 @@ export default function WavesPage() {
       setInstanceKey((k) => k + 1)
     })
     pane.on('change', () => setParams({ ...local }))
-    return () => { pane.dispose() }
+    return () => {
+      pane.dispose()
+    }
   }, [])
 
   return (
@@ -2228,11 +2303,22 @@ export default function WavesPage() {
           interactive={params.interactive}
         />
       </div>
-      <div ref={paneContainerRef} style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }} />
+      <div
+        ref={paneContainerRef}
+        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+      />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;Waves /&gt;</h1>
-        <pre style={{ background: '#1a1a2a', color: '#e0e0f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.85rem' }}>
-{`<Waves amplitude={0.1} frequency={5} speed={1} layers={3} interactive />`}
+        <pre
+          style={{
+            background: '#1a1a2a',
+            color: '#e0e0f0',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            fontSize: '0.85rem',
+          }}
+        >
+          {`<Waves amplitude={0.1} frequency={5} speed={1} layers={3} interactive />`}
         </pre>
       </section>
     </main>
@@ -2277,9 +2363,9 @@ hook (no v1 component consumes it; exposed for users)."
 
 ### Review pass (3.3)
 
-**Spec-compliance:** *"Verify against §5.2 Waves (line 503): six props, defaults sensible, fallback is an SVG `<path>` sine wave per spec line 519. Confirm cursorRipple is exported from `@lovo/matter` and consumed by Waves only when `interactive` (or `inputs.cursor`) is set."*
+**Spec-compliance:** _"Verify against §5.2 Waves (line 503): six props, defaults sensible, fallback is an SVG `<path>` sine wave per spec line 519. Confirm cursorRipple is exported from `@lovo/matter` and consumed by Waves only when `interactive` (or `inputs.cursor`) is set."_
 
-**Code-quality:** *"Strict-Mode-safe useScroll? (gotcha #14). All TSL chains in Waves rooted in `uv()` not in uniforms? (gotcha #12). The layered-sum loop in WavesMesh — does it correctly accumulate without going through any uniform receiver?"*
+**Code-quality:** _"Strict-Mode-safe useScroll? (gotcha #14). All TSL chains in Waves rooted in `uv()` not in uniforms? (gotcha #12). The layered-sum loop in WavesMesh — does it correctly accumulate without going through any uniform receiver?"_
 
 ---
 
@@ -2290,6 +2376,7 @@ hook (no v1 component consumes it; exposed for users)."
 **Scope:** One new docs page at `/dev/mesh-gradient-playground`. Nothing else.
 
 **Files:**
+
 - Create: `apps/docs/app/dev/mesh-gradient-playground/page.tsx`
 
 ### Task 1: Build the playground
@@ -2423,8 +2510,16 @@ function PrototypeMesh({
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* benign */ }
-      try { mesh.geometry.dispose() } catch { /* benign */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* benign */
+      }
     }
   }, [ctx, colors, blur, jitterUniform])
 
@@ -2432,9 +2527,7 @@ function PrototypeMesh({
 }
 
 const SceneWrapper = dynamic(
-  async () => (props: { children: React.ReactNode }) => (
-    <MatterScene>{props.children}</MatterScene>
-  ),
+  async () => (props: { children: React.ReactNode }) => <MatterScene>{props.children}</MatterScene>,
   { ssr: false },
 )
 
@@ -2467,7 +2560,9 @@ export default function MeshGradientPlaygroundPage() {
         ;(jitterUniform as unknown as { value: number }).value = local.jitter
       }
     })
-    return () => { pane.dispose() }
+    return () => {
+      pane.dispose()
+    }
   }, [jitterUniform])
 
   const colors = [hex(params.c0), hex(params.c1), hex(params.c2), hex(params.c3)] as const
@@ -2479,7 +2574,10 @@ export default function MeshGradientPlaygroundPage() {
           <PrototypeMesh colors={colors} blur={params.blur} jitterUniform={jitterUniform} />
         </SceneWrapper>
       </div>
-      <div ref={paneContainerRef} style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }} />
+      <div
+        ref={paneContainerRef}
+        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+      />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>MeshGradient blend prototype</h1>
         <p>
@@ -2527,7 +2625,7 @@ on a hardcoded shader. The chosen blur exponent default carries into
 
 ### Review pass (3.4.a)
 
-**Code-quality (single reviewer):** *"This phase ships a prototype-only — no public API. Verify: gotcha #12 (TSL chains rooted in `uv()`, not in `point` uniform/literal); gotcha #10 (the page uses `next/dynamic({ ssr: false })` for any three/webgpu-touching child); the placeholder/dummy block from the planning listing has been removed (no `require('three/tsl')` or `@typescript-eslint/no-require-imports` disable comments left in the final file)."*
+**Code-quality (single reviewer):** _"This phase ships a prototype-only — no public API. Verify: gotcha #12 (TSL chains rooted in `uv()`, not in `point` uniform/literal); gotcha #10 (the page uses `next/dynamic({ ssr: false })` for any three/webgpu-touching child); the placeholder/dummy block from the planning listing has been removed (no `require('three/tsl')` or `@typescript-eslint/no-require-imports` disable comments left in the final file)."_
 
 ---
 
@@ -2538,6 +2636,7 @@ on a hardcoded shader. The chosen blur exponent default carries into
 **Scope:** One Tier 1 component + one docs page + registry update.
 
 **Files:**
+
 - Create: `registry/mesh-gradient.tsx`
 - Modify: `registry/registry.json`, `registry/package.json`
 - Create: `apps/docs/app/components/mesh-gradient/page.tsx`
@@ -2670,7 +2769,9 @@ function MeshGradientMesh(props: MeshGradientProps) {
       // pull on all points is visually equivalent within typical cursor reach
       // and simpler to implement on the GPU. Promotable in v2.)
       if (cursor) {
-        point = point.add((cursorUniform.sub(point) as ShaderNodeObject<Node>).mul(0.05)) as ShaderNodeObject<Node>
+        point = point.add(
+          (cursorUniform.sub(point) as ShaderNodeObject<Node>).mul(0.05),
+        ) as ShaderNodeObject<Node>
       }
 
       // Inverse-distance weight. uv-rooted chain; point as arg (gotcha #12).
@@ -2695,7 +2796,9 @@ function MeshGradientMesh(props: MeshGradientProps) {
       }
     }
 
-    const finalColor = (weightedSum as ShaderNodeObject<Node>).div(totalWeight as ShaderNodeObject<Node>)
+    const finalColor = (weightedSum as ShaderNodeObject<Node>).div(
+      totalWeight as ShaderNodeObject<Node>,
+    )
 
     const material = new MeshBasicNodeMaterial()
     material.colorNode = vec4(
@@ -2709,8 +2812,16 @@ function MeshGradientMesh(props: MeshGradientProps) {
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* benign */ }
-      try { mesh.geometry.dispose() } catch { /* benign */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* benign */
+      }
     }
   }, [ctx, colors.join('|'), points, speedUniform, blurUniform, cursor, cursorUniform])
 
@@ -2719,15 +2830,10 @@ function MeshGradientMesh(props: MeshGradientProps) {
 
 function DefaultFallback({ colors }: { colors: string[] }) {
   // Four stacked CSS radial-gradients per spec §5.2 line 446.
-  const corners = [
-    'top left',
-    'top right',
-    'bottom right',
-    'bottom left',
-  ]
-  const layers = colors.slice(0, 4).map((c, i) =>
-    `radial-gradient(at ${corners[i]}, ${c} 0%, transparent 60%)`
-  )
+  const corners = ['top left', 'top right', 'bottom right', 'bottom left']
+  const layers = colors
+    .slice(0, 4)
+    .map((c, i) => `radial-gradient(at ${corners[i]}, ${c} 0%, transparent 60%)`)
   return (
     <div
       style={{
@@ -2784,13 +2890,23 @@ const MeshGradient = dynamic(
 )
 
 interface Params {
-  c0: string; c1: string; c2: string; c3: string
-  blur: number; speed: number; interactive: boolean
+  c0: string
+  c1: string
+  c2: string
+  c3: string
+  blur: number
+  speed: number
+  interactive: boolean
 }
 
 const INITIAL: Params = {
-  c0: '#ff61a6', c1: '#61a6ff', c2: '#61ffa6', c3: '#ffd861',
-  blur: 0.5, speed: 0.3, interactive: false,
+  c0: '#ff61a6',
+  c1: '#61a6ff',
+  c2: '#61ffa6',
+  c3: '#ffd861',
+  blur: 0.5,
+  speed: 0.3,
+  interactive: false,
 }
 
 export default function MeshGradientPage() {
@@ -2812,7 +2928,9 @@ export default function MeshGradientPage() {
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'interactive', { label: 'interactive (cursor pull)' })
     pane.on('change', () => setParams({ ...local }))
-    return () => { pane.dispose() }
+    return () => {
+      pane.dispose()
+    }
   }, [])
 
   return (
@@ -2825,11 +2943,22 @@ export default function MeshGradientPage() {
           interactive={params.interactive}
         />
       </div>
-      <div ref={paneContainerRef} style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }} />
+      <div
+        ref={paneContainerRef}
+        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+      />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;MeshGradient /&gt;</h1>
-        <pre style={{ background: '#1a1a2a', color: '#e0e0f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.85rem' }}>
-{`<MeshGradient colors={['#ff61a6','#61a6ff','#61ffa6','#ffd861']} blur={0.5} speed={0.3} />`}
+        <pre
+          style={{
+            background: '#1a1a2a',
+            color: '#e0e0f0',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            fontSize: '0.85rem',
+          }}
+        >
+          {`<MeshGradient colors={['#ff61a6','#61a6ff','#61ffa6','#ffd861']} blur={0.5} speed={0.3} />`}
         </pre>
       </section>
     </main>
@@ -2870,9 +2999,9 @@ playground."
 
 ### Review pass (3.4.b)
 
-**Spec-compliance:** *"Verify against §5.2 MeshGradient (line 431). Six props match (`colors`, `points`, `speed`, `blur`, `interactive`, plus standard `inputs`/`fallback`/`className`/`style`). `points='auto'` works for any color count. Fallback is 4 stacked CSS radial gradients."*
+**Spec-compliance:** _"Verify against §5.2 MeshGradient (line 431). Six props match (`colors`, `points`, `speed`, `blur`, `interactive`, plus standard `inputs`/`fallback`/`className`/`style`). `points='auto'` works for any color count. Fallback is 4 stacked CSS radial gradients."_
 
-**Code-quality:** *"TSL chains in MeshGradientMesh: every `length(uv().sub(point))` rooted in `uv()`? (gotcha #12). The `cursor ? point.add(...) : point` branch — does it create the same TSL graph each iteration when interactive is false (i.e., is `cursor` evaluated once, JS-side, before the loop)? The `pow(blurUniform.oneOver())` — does this evaluate at runtime, not at material-build time?"*
+**Code-quality:** _"TSL chains in MeshGradientMesh: every `length(uv().sub(point))` rooted in `uv()`? (gotcha #12). The `cursor ? point.add(...) : point` branch — does it create the same TSL graph each iteration when interactive is false (i.e., is `cursor` evaluated once, JS-side, before the loop)? The `pow(blurUniform.oneOver())` — does this evaluate at runtime, not at material-build time?"_
 
 ---
 
@@ -2881,6 +3010,7 @@ playground."
 **Goal:** Ship the final v1 component. Aurora composes `fbm` (3.1.a), `displace` (3.2), and the cursor uniform — no new primitives. Then wrap M3: update the homepage to link to all six components, and tag `m3-complete`.
 
 **Files:**
+
 - Create: `registry/aurora.tsx`
 - Modify: `registry/registry.json`, `registry/package.json`
 - Create: `apps/docs/app/components/aurora/page.tsx`
@@ -2987,7 +3117,9 @@ function AuroraMesh(props: AuroraProps) {
       // Within reach 0.3, amplify up to 2x; outside, 1x.
       const amp = smoothstep(0.3, 0, d as never)
       amplified = flow.mul(
-        ((amp as ShaderNodeObject<Node>).mul(1) as ShaderNodeObject<Node>).add(1) as ShaderNodeObject<Node>,
+        ((amp as ShaderNodeObject<Node>).mul(1) as ShaderNodeObject<Node>).add(
+          1,
+        ) as ShaderNodeObject<Node>,
       ) as ShaderNodeObject<Node>
     }
 
@@ -2999,19 +3131,22 @@ function AuroraMesh(props: AuroraProps) {
     const colorAtUv = colorRamp(band as never, stops) as ShaderNodeObject<Node>
 
     const material = new MeshBasicNodeMaterial()
-    material.colorNode = vec4(
-      colorAtUv.x,
-      colorAtUv.y,
-      colorAtUv.z,
-      1,
-    ) as never
+    material.colorNode = vec4(colorAtUv.x, colorAtUv.y, colorAtUv.z, 1) as never
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* benign */ }
-      try { mesh.geometry.dispose() } catch { /* benign */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* benign */
+      }
     }
   }, [ctx, colors.join('|'), speedUniform, intensityUniform, cursor, cursorUniform])
 
@@ -3073,16 +3208,26 @@ import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
 
-const Aurora = dynamic(() => import('@matter/registry/aurora').then((m) => m.Aurora), { ssr: false })
+const Aurora = dynamic(() => import('@matter/registry/aurora').then((m) => m.Aurora), {
+  ssr: false,
+})
 
 interface Params {
-  c0: string; c1: string; c2: string
-  speed: number; intensity: number; interactive: boolean
+  c0: string
+  c1: string
+  c2: string
+  speed: number
+  intensity: number
+  interactive: boolean
 }
 
 const INITIAL: Params = {
-  c0: '#7b61ff', c1: '#5fc7ff', c2: '#ff61a6',
-  speed: 0.4, intensity: 1, interactive: false,
+  c0: '#7b61ff',
+  c1: '#5fc7ff',
+  c2: '#ff61a6',
+  speed: 0.4,
+  intensity: 1,
+  interactive: false,
 }
 
 export default function AuroraPage() {
@@ -3103,7 +3248,9 @@ export default function AuroraPage() {
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'interactive', { label: 'interactive (cursor warps flow)' })
     pane.on('change', () => setParams({ ...local }))
-    return () => { pane.dispose() }
+    return () => {
+      pane.dispose()
+    }
   }, [])
 
   return (
@@ -3116,11 +3263,22 @@ export default function AuroraPage() {
           interactive={params.interactive}
         />
       </div>
-      <div ref={paneContainerRef} style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }} />
+      <div
+        ref={paneContainerRef}
+        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+      />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;Aurora /&gt;</h1>
-        <pre style={{ background: '#1a1a2a', color: '#e0e0f0', padding: '1rem', borderRadius: '0.5rem', fontSize: '0.85rem' }}>
-{`<Aurora colors={['#7b61ff','#5fc7ff','#ff61a6']} speed={0.4} intensity={1} />`}
+        <pre
+          style={{
+            background: '#1a1a2a',
+            color: '#e0e0f0',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            fontSize: '0.85rem',
+          }}
+        >
+          {`<Aurora colors={['#7b61ff','#5fc7ff','#ff61a6']} speed={0.4} intensity={1} />`}
         </pre>
       </section>
     </main>
@@ -3150,14 +3308,15 @@ export default function Home() {
     <main style={{ padding: '4rem 2rem', maxWidth: '60ch', margin: '0 auto' }}>
       <h1 style={{ marginTop: 0 }}>Matter</h1>
       <p>React shader components powered by WebGPU and Three.js TSL.</p>
-      <p style={{ opacity: 0.75 }}>
-        Status: pre-release, M3 complete — six v1 components live.
-      </p>
+      <p style={{ opacity: 0.75 }}>Status: pre-release, M3 complete — six v1 components live.</p>
       <h2 style={{ marginTop: '2rem' }}>Components</h2>
       <ul style={{ paddingLeft: '1.25rem', lineHeight: 1.8 }}>
         {COMPONENTS.map((c) => (
           <li key={c.slug}>
-            <Link href={`/components/${c.slug}`} style={{ color: '#88aaff', textDecoration: 'none' }}>
+            <Link
+              href={`/components/${c.slug}`}
+              style={{ color: '#88aaff', textDecoration: 'none' }}
+            >
               {c.label}
             </Link>
           </li>
@@ -3258,11 +3417,11 @@ Walk the full v1 catalog: open all six component pages and the two `/dev/` playg
 
 Spawn **three** subagents this final time — the broader scope of the M3 wrap-up earns it.
 
-**Spec-compliance reviewer:** *"Verify M3 ships exactly what spec §5.2 specifies for the six components: every prop name, every default, every variant, every fallback approach. Spot-check the dependency graph (top of `2026-05-06-matter-m3-components.md`): does each component import only the primitives it lists in its registry.json `uses_primitives`? Confirm `gradient`/`radialGradient` are intentionally absent (deferred per scope) — not silently missed."*
+**Spec-compliance reviewer:** _"Verify M3 ships exactly what spec §5.2 specifies for the six components: every prop name, every default, every variant, every fallback approach. Spot-check the dependency graph (top of `2026-05-06-matter-m3-components.md`): does each component import only the primitives it lists in its registry.json `uses_primitives`? Confirm `gradient`/`radialGradient` are intentionally absent (deferred per scope) — not silently missed."_
 
-**Code-quality reviewer:** *"Sweep all six registry components for: gotcha #12 (`uv()`-rooted TSL chains, uniforms as args); gotcha #14 (Strict-Mode-safe hook lifecycles in `useResize`/`useScroll`); the `try/catch` around `material.dispose()` and `mesh.geometry.dispose()` per CLAUDE.md known issue. Flag any Tier 1 component that imports from another Tier 1 component file. Flag any duplicate code that should be extracted to `@lovo/matter` instead of repeated in every component (e.g., `hexToVec3` is duplicated by design — copy-paste components are self-contained — but call out anything else that crossed the duplication line)."*
+**Code-quality reviewer:** _"Sweep all six registry components for: gotcha #12 (`uv()`-rooted TSL chains, uniforms as args); gotcha #14 (Strict-Mode-safe hook lifecycles in `useResize`/`useScroll`); the `try/catch` around `material.dispose()` and `mesh.geometry.dispose()` per CLAUDE.md known issue. Flag any Tier 1 component that imports from another Tier 1 component file. Flag any duplicate code that should be extracted to `@lovo/matter` instead of repeated in every component (e.g., `hexToVec3` is duplicated by design — copy-paste components are self-contained — but call out anything else that crossed the duplication line)."_
 
-**Architectural-soundness reviewer:** *"Per spec §5.3 line 522, the v1 catalog should validate seven architectural decisions. Walk each row of the §5.3 table and confirm the corresponding evidence exists in M3's deliverables. Flag any architectural claim the implementation doesn't actually back up."*
+**Architectural-soundness reviewer:** _"Per spec §5.3 line 522, the v1 catalog should validate seven architectural decisions. Walk each row of the §5.3 table and confirm the corresponding evidence exists in M3's deliverables. Flag any architectural claim the implementation doesn't actually back up."_
 
 Address all REQUIRED notes; SUGGESTED notes go to a follow-up commit if substantial, or to memory if they're "in M4 we should…".
 
@@ -3286,7 +3445,7 @@ Engineer reads this top-to-bottom:
 
 - [ ] Every primitive listed in spec §11 row 3 has a phase that ships it OR a documented deferral with rationale.
 - [ ] Every component in spec §5.2 has a registry file, a docs page, a registry.json entry, and a package.json export key.
-- [ ] No phase relies on a primitive shipped by a *later* phase (verify the dependency graph at the top).
+- [ ] No phase relies on a primitive shipped by a _later_ phase (verify the dependency graph at the top).
 - [ ] Every TSL chain in every shader fragment starts from `uv()`/`vec2(...)` and consumes uniforms as arguments — gotcha #12.
 - [ ] Every docs-page component import uses `next/dynamic({ ssr: false })` — gotcha #10.
 - [ ] Every input hook (useResize, useScroll) follows the single-effect Strict-Mode pattern — gotcha #14.

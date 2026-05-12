@@ -19,10 +19,9 @@ interface PrimitiveDemoProps {
 // MatterScene), and three/webgpu touches `self` at module load — that breaks
 // SSR. `ssr: false` requires a Client Component host, which is why this file
 // (the host of the dynamic import) carries the 'use client' directive.
-const PrimitiveScene = dynamic(
-  () => import('./PrimitiveScene').then((m) => m.PrimitiveScene),
-  { ssr: false },
-)
+const PrimitiveScene = dynamic(() => import('./PrimitiveScene').then((m) => m.PrimitiveScene), {
+  ssr: false,
+})
 
 // Maps each PrimitiveControl entry onto a PropsPlayground number-slider entry.
 // All primitive controls in M4 are numeric; if a future primitive needs a

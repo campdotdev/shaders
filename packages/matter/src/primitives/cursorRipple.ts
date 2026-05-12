@@ -30,11 +30,7 @@ export interface CursorRippleOptions {
  * @param p — Vec2 TSL node (typically `uv()`).
  * @param center — Vec2 TSL node (cursor uniform, in UV space).
  */
-export function cursorRipple(
-  p: TSLNode,
-  center: TSLNode,
-  opts: CursorRippleOptions = {},
-): TSLNode {
+export function cursorRipple(p: TSLNode, center: TSLNode, opts: CursorRippleOptions = {}): TSLNode {
   const reach = opts.reach ?? 0.4
   const frequency = opts.frequency ?? 30
   const speed = opts.speed ?? 6

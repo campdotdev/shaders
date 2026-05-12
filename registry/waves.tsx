@@ -151,16 +151,18 @@ function WavesMesh(props: WavesProps) {
       // (typically during rapid rebuild cycles). Swallowing the dispose error
       // prevents a page crash; the underlying GPU resources will be reaped
       // when the parent renderer is disposed at unmount.
-      try { material.dispose() } catch { /* benign during rebuild */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign during rebuild */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
-  }, [
-    ctx,
-    layers,
-    cr, cg, cb,
-    ampUniform, freqUniform, speedUniform,
-    cursor, cursorUniform,
-  ])
+  }, [ctx, layers, cr, cg, cb, ampUniform, freqUniform, speedUniform, cursor, cursorUniform])
 
   return null
 }

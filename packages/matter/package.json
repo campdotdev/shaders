@@ -46,22 +46,22 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "lint": "vp lint src",
+    "test": "vp test run",
+    "test:watch": "vp test",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "peerDependencies": {
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "@matter/eslint-config": "workspace:*",
     "@matter/tsconfig": "workspace:*",
     "@types/three": "^0.170.0",
     "happy-dom": "^15.0.0",
     "three": "^0.170.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "^4.1.6"
+    "vitest": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

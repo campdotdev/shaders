@@ -11,7 +11,10 @@ export default function RecipesIndex() {
         Tier 3 — short TSL snippets that combine{' '}
         {/* textDecoration ensures the link is distinguishable without relying
             on color alone (WCAG 1.4.1 / axe link-in-text-block rule). */}
-        <Link href="/primitives" style={{ textDecoration: 'underline' }}>primitives</Link>. Copy-paste into your own component.
+        <Link href="/primitives" style={{ textDecoration: 'underline' }}>
+          primitives
+        </Link>
+        . Copy-paste into your own component.
       </p>
       <ul style={{ paddingLeft: '1.25rem', lineHeight: 1.8 }}>
         {RECIPES.map((r) => (

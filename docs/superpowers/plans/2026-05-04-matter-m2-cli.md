@@ -48,10 +48,10 @@ Run these before starting Phase 2.1.
 - [ ] **M1 tag present.** Run `git tag`. Expected: `m0-complete` and `m1-complete` listed.
 - [ ] **Working tree clean.** Run `git status --short`. Expected: empty output.
 - [ ] **Everything builds clean from M1 state.**
-      ```bash
-      pnpm install --frozen-lockfile
-      pnpm build && pnpm typecheck && pnpm lint && pnpm test
-      ```
+      `bash
+    pnpm install --frozen-lockfile
+    pnpm build && pnpm typecheck && pnpm lint && pnpm test
+    `
       Expected: all green.
 - [ ] **Node and pnpm versions.** Run `node -v` (≥ v22) and `pnpm -v` (≥ 9). The CLI relies on Node 22's native `fetch` and stable ESM `import` of JSON.
 - [ ] **Registry exists.** Run `ls registry/`. Expected to include `linear-gradient.tsx` and `registry.json` (created in M1).
@@ -110,6 +110,7 @@ mattermix/
 ### Task 1: Add `commander` runtime dep and inject version at build time
 
 **Files:**
+
 - Modify: `packages/matter-cli/package.json`
 - Modify: `packages/matter-cli/tsup.config.ts`
 
@@ -130,9 +131,7 @@ Replace its content with:
     "matter-cli": "./dist/index.js"
   },
   "main": "./dist/index.js",
-  "files": [
-    "dist"
-  ],
+  "files": ["dist"],
   "publishConfig": {
     "access": "public"
   },
@@ -216,6 +215,7 @@ git commit -m "chore(matter-cli): add commander runtime dep and __VERSION__ buil
 ### Task 2: Replace stub with commander entry + subcommand stubs
 
 **Files:**
+
 - Modify: `packages/matter-cli/src/index.ts`
 
 - [ ] **Step 2.1: Write the new entry.**
@@ -354,6 +354,7 @@ Run `node packages/matter-cli/dist/index.js --help` and read the help output. Tr
 ### Task 1: Wire vitest for matter-cli
 
 **Files:**
+
 - Create: `packages/matter-cli/vitest.config.ts`
 
 - [ ] **Step 1.1: Create `vitest.config.ts`.**
@@ -393,6 +394,7 @@ git commit -m "chore(matter-cli): wire vitest with passWithNoTests"
 ### Task 2: Fixture registry for tests
 
 **Files:**
+
 - Create: `packages/matter-cli/src/test-fixtures/registry/registry.json`
 - Create: `packages/matter-cli/src/test-fixtures/registry/synthetic-component.tsx`
 - Create: `packages/matter-cli/src/test-fixtures/README.md`
@@ -469,6 +471,7 @@ git commit -m "test(matter-cli): add fixture registry for unit tests"
 ### Task 3: TDD `readUrl(url)`
 
 **Files:**
+
 - Create: `packages/matter-cli/src/registry/readUrl.test.ts`
 - Create: `packages/matter-cli/src/registry/readUrl.ts`
 
@@ -548,7 +551,9 @@ export async function readUrl(url: string): Promise<string> {
     return await res.text()
   }
 
-  throw new Error(`Unsupported protocol: ${parsed.protocol} (only file://, http://, https:// are supported)`)
+  throw new Error(
+    `Unsupported protocol: ${parsed.protocol} (only file://, http://, https:// are supported)`,
+  )
 }
 ```
 
@@ -570,6 +575,7 @@ git commit -m "feat(matter-cli): add readUrl with file:// + https:// support"
 ### Task 4: TDD `fetchRegistry(url)` and `fetchComponentSource(url, file)`
 
 **Files:**
+
 - Create: `packages/matter-cli/src/registry/fetchRegistry.test.ts`
 - Create: `packages/matter-cli/src/registry/fetchRegistry.ts`
 
@@ -666,9 +672,7 @@ export async function fetchRegistry(baseUrl: string): Promise<Registry> {
   try {
     parsed = JSON.parse(json)
   } catch (err) {
-    throw new Error(
-      `Registry at ${url} is not valid JSON: ${(err as Error).message}`,
-    )
+    throw new Error(`Registry at ${url} is not valid JSON: ${(err as Error).message}`)
   }
   if (
     typeof parsed !== 'object' ||
@@ -730,6 +734,7 @@ You should see 7 passing tests. The registry layer is now solid before any user-
 ### Task 1: TDD the `list` command
 
 **Files:**
+
 - Create: `packages/matter-cli/src/commands/list.test.ts`
 - Create: `packages/matter-cli/src/commands/list.ts`
 
@@ -910,6 +915,7 @@ Run `node packages/matter-cli/dist/index.js list --registry "file://$(pwd)/regis
 ### Task 1: TDD the matter-config read/write helper
 
 **Files:**
+
 - Create: `packages/matter-cli/src/config/matterConfig.test.ts`
 - Create: `packages/matter-cli/src/config/matterConfig.ts`
 
@@ -1039,9 +1045,7 @@ export async function readMatterConfig(projectRoot: string): Promise<MatterConfi
   try {
     parsed = JSON.parse(raw)
   } catch (err) {
-    throw new Error(
-      `${path} is not valid JSON: ${(err as Error).message}`,
-    )
+    throw new Error(`${path} is not valid JSON: ${(err as Error).message}`)
   }
   return validateMatterConfig(parsed, path)
 }
@@ -1104,6 +1108,7 @@ git commit -m "feat(matter-cli): add matter.config.json read/write/validate help
 ### Task 2: TDD the `init` command
 
 **Files:**
+
 - Create: `packages/matter-cli/src/commands/init.test.ts`
 - Create: `packages/matter-cli/src/commands/init.ts`
 
@@ -1195,9 +1200,7 @@ export async function runInit(
 ): Promise<void> {
   const exists = await configExists(io.cwd)
   if (exists && !opts.force) {
-    throw new Error(
-      `matter.config.json already exists in ${io.cwd}. Pass --force to overwrite.`,
-    )
+    throw new Error(`matter.config.json already exists in ${io.cwd}. Pass --force to overwrite.`)
   }
   await writeMatterConfig(io.cwd, DEFAULT_MATTER_CONFIG)
   io.log(`Created matter.config.json at ${configPath(io.cwd)}`)
@@ -1287,6 +1290,7 @@ git commit -m "feat(matter-cli): implement init command"
 ### Task 1: TDD the single-component `add` flow
 
 **Files:**
+
 - Create: `packages/matter-cli/src/commands/add.test.ts`
 - Create: `packages/matter-cli/src/commands/add.ts`
 
@@ -1347,9 +1351,9 @@ describe('runAdd (single component, no aliases)', () => {
     await seedConfig()
     await mkdir(join(dir, 'src/components/matter'), { recursive: true })
     await writeFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'existing', 'utf-8')
-    await expect(
-      runAdd(['synthetic-component'], {}, { cwd: dir, log: vi.fn() }),
-    ).rejects.toThrow(/already exists/)
+    await expect(runAdd(['synthetic-component'], {}, { cwd: dir, log: vi.fn() })).rejects.toThrow(
+      /already exists/,
+    )
   })
 
   it('overwrites with --force', async () => {
@@ -1357,15 +1361,18 @@ describe('runAdd (single component, no aliases)', () => {
     await mkdir(join(dir, 'src/components/matter'), { recursive: true })
     await writeFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'old', 'utf-8')
     await runAdd(['synthetic-component'], { force: true }, { cwd: dir, log: vi.fn() })
-    const written = await readFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'utf-8')
+    const written = await readFile(
+      join(dir, 'src/components/matter/synthetic-component.tsx'),
+      'utf-8',
+    )
     expect(written).toContain('SyntheticComponent')
   })
 
   it('errors clearly when the requested component is not in the registry', async () => {
     await seedConfig()
-    await expect(
-      runAdd(['nope'], {}, { cwd: dir, log: vi.fn() }),
-    ).rejects.toThrow(/nope.*not found/i)
+    await expect(runAdd(['nope'], {}, { cwd: dir, log: vi.fn() })).rejects.toThrow(
+      /nope.*not found/i,
+    )
   })
 
   it('prints a basic install hint with the component dependencies', async () => {
@@ -1438,9 +1445,7 @@ export async function runAdd(
   if (!opts.force) {
     try {
       await access(targetPath)
-      throw new Error(
-        `${targetPath} already exists. Pass --force to overwrite.`,
-      )
+      throw new Error(`${targetPath} already exists. Pass --force to overwrite.`)
     } catch (err) {
       // ENOENT is the happy path here — file should not exist.
       if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
@@ -1497,13 +1502,12 @@ program
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .option('--force', 'overwrite existing files in componentsDir')
-  .action(async (
-    components: string[],
-    opts: { registry?: string; ref?: string; force?: boolean },
-  ) => {
-    const { runAdd } = await import('./commands/add.js')
-    await runAdd(components, opts)
-  })
+  .action(
+    async (components: string[], opts: { registry?: string; ref?: string; force?: boolean }) => {
+      const { runAdd } = await import('./commands/add.js')
+      await runAdd(components, opts)
+    },
+  )
 ```
 
 - [ ] **Step 1.6: Build and smoke-test against the local registry.**
@@ -1551,6 +1555,7 @@ In a temp dir: run `init` then `add linear-gradient --registry file://…/regist
 ### Task 1: TDD the alias rewriter
 
 **Files:**
+
 - Create: `packages/matter-cli/src/transforms/rewriteImports.test.ts`
 - Create: `packages/matter-cli/src/transforms/rewriteImports.ts`
 
@@ -1597,9 +1602,7 @@ describe('rewriteImports', () => {
   })
 
   it('handles multiple aliases', () => {
-    const src =
-      `import { a } from '@matter-internal/lib'\n` +
-      `import { b } from '@/utils'\n`
+    const src = `import { a } from '@matter-internal/lib'\n` + `import { b } from '@/utils'\n`
     const out = rewriteImports(src, {
       '@matter-internal/': '@/lib/matter/',
       '@/': 'src/',
@@ -1674,6 +1677,7 @@ git commit -m "feat(matter-cli): add import-alias rewriter"
 ### Task 2: Generalize `add` to multi-component + dedup install hint + alias rewriting
 
 **Files:**
+
 - Modify: `packages/matter-cli/src/commands/add.ts`
 - Modify: `packages/matter-cli/src/commands/add.test.ts`
 
@@ -1787,9 +1791,7 @@ export async function runAdd(
     if (!opts.force) {
       try {
         await access(targetPath)
-        throw new Error(
-          `${targetPath} already exists. Pass --force to overwrite.`,
-        )
+        throw new Error(`${targetPath} already exists. Pass --force to overwrite.`)
       } catch (err) {
         if ((err as NodeJS.ErrnoException).code !== 'ENOENT') throw err
       }
@@ -1884,6 +1886,7 @@ Run `add linear-gradient` in a temp dir and read the install hint — confirm de
 ### Task 1: TDD ref resolution
 
 **Files:**
+
 - Create: `packages/matter-cli/src/registry/ref.test.ts`
 - Create: `packages/matter-cli/src/registry/ref.ts`
 
@@ -1961,6 +1964,7 @@ git commit -m "feat(matter-cli): add resolveRef helper"
 ### Task 2: Wire ref resolution into the CLI entry, `list`, and `add`
 
 **Files:**
+
 - Modify: `packages/matter-cli/src/index.ts`
 - Modify: `packages/matter-cli/src/commands/list.ts`
 - Modify: `packages/matter-cli/src/commands/add.ts`
@@ -2078,10 +2082,7 @@ afterEach(async () => {
 describe('runList', () => {
   it('prints one line per component using --registry override', async () => {
     const log = vi.fn()
-    await runList(
-      { registry: FIXTURE_BASE, cliVersion: '0.0.0' },
-      { cwd: dir, log },
-    )
+    await runList({ registry: FIXTURE_BASE, cliVersion: '0.0.0' }, { cwd: dir, log })
     const output = log.mock.calls.map((c) => c[0]).join('\n')
     expect(output).toContain('synthetic-component')
     expect(output).toContain('tier 1')
@@ -2185,7 +2186,11 @@ describe('runAdd (--ref handling)', () => {
     )
 
     await seedConfig({ registryUrl: `file://${inlineDir}/\${ref}` })
-    await runAdd(['synthetic-component'], { ref: 'main', cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
+    await runAdd(
+      ['synthetic-component'],
+      { ref: 'main', cliVersion: VERSION },
+      { cwd: dir, log: vi.fn() },
+    )
     const target = join(dir, 'src/components/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
     expect(written).toContain('function X')
@@ -2305,6 +2310,7 @@ git commit -m "feat(matter-cli): support --ref and read registryUrl from matter.
 ### Task 1: TDD `update`
 
 **Files:**
+
 - Create: `packages/matter-cli/src/commands/update.test.ts`
 - Create: `packages/matter-cli/src/commands/update.ts`
 
@@ -2364,11 +2370,7 @@ describe('runUpdate', () => {
 
   it('refreshes every component in componentsDir when no names are given', async () => {
     await seedConfigAndComponent()
-    await runUpdate(
-      [],
-      { force: true, cliVersion: '0.0.0' },
-      { cwd: dir, log: vi.fn() },
-    )
+    await runUpdate([], { force: true, cliVersion: '0.0.0' }, { cwd: dir, log: vi.fn() })
     const written = await readFile(
       join(dir, 'src/components/matter/synthetic-component.tsx'),
       'utf-8',
@@ -2383,11 +2385,7 @@ describe('runUpdate', () => {
     })
     await mkdir(join(dir, 'src/components/matter'), { recursive: true })
     await expect(
-      runUpdate(
-        [],
-        { force: true, cliVersion: '0.0.0' },
-        { cwd: dir, log: vi.fn() },
-      ),
+      runUpdate([], { force: true, cliVersion: '0.0.0' }, { cwd: dir, log: vi.fn() }),
     ).rejects.toThrow(/no components/i)
   })
 
@@ -2409,11 +2407,7 @@ describe('runUpdate', () => {
   it('refuses to overwrite without --force', async () => {
     await seedConfigAndComponent()
     await expect(
-      runUpdate(
-        ['synthetic-component'],
-        { cliVersion: '0.0.0' },
-        { cwd: dir, log: vi.fn() },
-      ),
+      runUpdate(['synthetic-component'], { cliVersion: '0.0.0' }, { cwd: dir, log: vi.fn() }),
     ).rejects.toThrow(/already exists/)
   })
 })
@@ -2480,9 +2474,7 @@ export async function runUpdate(
     // Filter local files to those that resolve to a registry slug.
     toUpdate = localSlugs.filter((slug) => slugIsInRegistry(slug, registry))
     if (toUpdate.length === 0) {
-      throw new Error(
-        `No components in ${componentsDir} match any registry entry.`,
-      )
+      throw new Error(`No components in ${componentsDir} match any registry entry.`)
     }
   } else {
     for (const slug of components) {
@@ -2563,13 +2555,12 @@ program
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .option('--force', 'overwrite files even if they have local edits')
-  .action(async (
-    components: string[],
-    opts: { registry?: string; ref?: string; force?: boolean },
-  ) => {
-    const { runUpdate } = await import('./commands/update.js')
-    await runUpdate(components ?? [], { ...opts, cliVersion: __VERSION__ })
-  })
+  .action(
+    async (components: string[], opts: { registry?: string; ref?: string; force?: boolean }) => {
+      const { runUpdate } = await import('./commands/update.js')
+      await runUpdate(components ?? [], { ...opts, cliVersion: __VERSION__ })
+    },
+  )
 ```
 
 - [ ] **Step 1.6: Build and smoke-test update manually.**
@@ -2625,6 +2616,7 @@ Add a component, edit the copied file by hand, then `update <name> --force` — 
 ### Task 1: Author the smoke-test script
 
 **Files:**
+
 - Create: `scripts/smoke-test-cli.mjs`
 
 - [ ] **Step 1.1: Write the script.**
@@ -2716,7 +2708,10 @@ try {
   run(`node node_modules/@lovo/matter-cli/dist/index.js update linear-gradient --force`, {
     cwd: smokeDir,
   })
-  const refreshed = readFileSync(join(smokeDir, 'src/components/matter/linear-gradient.tsx'), 'utf-8')
+  const refreshed = readFileSync(
+    join(smokeDir, 'src/components/matter/linear-gradient.tsx'),
+    'utf-8',
+  )
   if (refreshed !== expected) {
     throw new Error('Component was not refreshed by update --force')
   }
@@ -2740,6 +2735,7 @@ node scripts/smoke-test-cli.mjs
 ```
 
 Expected: ends with `All smoke-test assertions passed ✅` and exit code 0. The full pipeline ran:
+
 - pnpm pack → tarball
 - npm install of the tarball into a fresh /tmp project
 - init → list → add linear-gradient → assert byte-equal to source
@@ -2784,6 +2780,7 @@ git commit -m "test(matter-cli): add end-to-end smoke test against /tmp/ project
 ### Task 2: Update CLAUDE.md M2 status and tag the milestone
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 2.1: Update the milestone status table.**
@@ -2859,19 +2856,19 @@ This is a checklist for the plan author. If gaps exist, fix the plan inline.
 
 **1. Spec coverage:**
 
-| Spec requirement (§4.3 + §10.2 M2) | Phase that delivers it |
-|---|---|
-| `init` command | 2.4 |
-| `list` command | 2.3 |
-| `add` (single + multi) | 2.5, 2.6 |
-| `update` (single + all) | 2.8 |
-| `--ref <tag\|branch\|commit>` | 2.7 |
-| Default ref = installed CLI version | 2.7 (`resolveRef`) |
-| Reads `registry.json` from GitHub raw URL | 2.2 (`readUrl`), 2.3, 2.4 (default config) |
-| Rewrites internal imports per aliases | 2.6 (`rewriteImports`) |
-| `matter.config.json` with `componentsDir` / `registryUrl` / `aliases` / `tsx` | 2.4 (`matterConfig`) |
-| Prints required `npm install` deps | 2.5, 2.6 (dedup) |
-| Smoke-test in a fresh project | 2.9 |
+| Spec requirement (§4.3 + §10.2 M2)                                            | Phase that delivers it                     |
+| ----------------------------------------------------------------------------- | ------------------------------------------ |
+| `init` command                                                                | 2.4                                        |
+| `list` command                                                                | 2.3                                        |
+| `add` (single + multi)                                                        | 2.5, 2.6                                   |
+| `update` (single + all)                                                       | 2.8                                        |
+| `--ref <tag\|branch\|commit>`                                                 | 2.7                                        |
+| Default ref = installed CLI version                                           | 2.7 (`resolveRef`)                         |
+| Reads `registry.json` from GitHub raw URL                                     | 2.2 (`readUrl`), 2.3, 2.4 (default config) |
+| Rewrites internal imports per aliases                                         | 2.6 (`rewriteImports`)                     |
+| `matter.config.json` with `componentsDir` / `registryUrl` / `aliases` / `tsx` | 2.4 (`matterConfig`)                       |
+| Prints required `npm install` deps                                            | 2.5, 2.6 (dedup)                           |
+| Smoke-test in a fresh project                                                 | 2.9                                        |
 
 All boxes checked.
 

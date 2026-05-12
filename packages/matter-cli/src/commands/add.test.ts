@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { DEFAULT_MATTER_CONFIG, writeMatterConfig } from '../config/matterConfig.js'
 import { runAdd } from './add.js'
 
@@ -60,8 +60,15 @@ describe('runAdd (single component, no aliases)', () => {
     await seedConfig()
     await mkdir(join(dir, 'src/components/matter'), { recursive: true })
     await writeFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'old', 'utf-8')
-    await runAdd(['synthetic-component'], { force: true, cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
-    const written = await readFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'utf-8')
+    await runAdd(
+      ['synthetic-component'],
+      { force: true, cliVersion: VERSION },
+      { cwd: dir, log: vi.fn() },
+    )
+    const written = await readFile(
+      join(dir, 'src/components/matter/synthetic-component.tsx'),
+      'utf-8',
+    )
     expect(written).toContain('SyntheticComponent')
   })
 
@@ -159,7 +166,11 @@ describe('runAdd (--ref handling)', () => {
     )
 
     await seedConfig({ registryUrl: `file://${inlineDir}/\${ref}` })
-    await runAdd(['synthetic-component'], { ref: 'main', cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
+    await runAdd(
+      ['synthetic-component'],
+      { ref: 'main', cliVersion: VERSION },
+      { cwd: dir, log: vi.fn() },
+    )
     const target = join(dir, 'src/components/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
     expect(written).toContain('function X')

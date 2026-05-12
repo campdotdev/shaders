@@ -21,10 +21,9 @@ interface RecipeViewerProps {
 // MatterScene), and three/webgpu touches `self` at module load — that breaks
 // SSR. `ssr: false` is no longer allowed in Server Components in Next 15, so
 // this Client host owns the dynamic import. Mirrors PrimitiveDemo's pattern.
-const RecipeScene = dynamic(
-  () => import('./RecipeScene').then((m) => m.RecipeScene),
-  { ssr: false },
-)
+const RecipeScene = dynamic(() => import('./RecipeScene').then((m) => m.RecipeScene), {
+  ssr: false,
+})
 
 export function RecipeViewer({ slug, variant, unframed = false }: RecipeViewerProps) {
   if (unframed) {

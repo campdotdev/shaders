@@ -8,10 +8,9 @@ import { VisualTestPause } from '../../_lib/visualTestHooks'
 
 // Aurora pulls in three/webgpu, which references `self` at module load time
 // and breaks Next's SSR. Load it client-only.
-const Aurora = dynamic(
-  () => import('@matter/registry/aurora').then((m) => m.Aurora),
-  { ssr: false },
-)
+const Aurora = dynamic(() => import('@matter/registry/aurora').then((m) => m.Aurora), {
+  ssr: false,
+})
 
 interface Params {
   c0: string
@@ -97,7 +96,7 @@ export default function AuroraPage() {
             fontSize: '0.85rem',
           }}
         >
-{`<Aurora colors={['#7b61ff','#5fc7ff','#ff61a6']} speed={0.4} intensity={1} />`}
+          {`<Aurora colors={['#7b61ff','#5fc7ff','#ff61a6']} speed={0.4} intensity={1} />`}
         </pre>
       </section>
     </main>

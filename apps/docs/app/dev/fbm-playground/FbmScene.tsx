@@ -57,7 +57,12 @@ function FbmMesh({
     // p = uv() * scale + time * timeSpeed (broadcast time scalar to vec2)
     const animatedUv = uv()
       .mul(scaleUniform as unknown as number)
-      .add(vec2(time.mul(timeSpeedUniform as unknown as number), time.mul(timeSpeedUniform as unknown as number)))
+      .add(
+        vec2(
+          time.mul(timeSpeedUniform as unknown as number),
+          time.mul(timeSpeedUniform as unknown as number),
+        ),
+      )
     const t = fbm(animatedUv, { octaves, lacunarity, gain })
     // Normalize fbm's [-1..1]-ish range into [0..1] for colorRamp.
     const tNorm = (t as unknown as { add(n: number): { mul(n: number): unknown } }).add(1).mul(0.5)
@@ -68,8 +73,16 @@ function FbmMesh({
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* gotcha #13-adjacent benign race */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* gotcha #13-adjacent benign race */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
   }, [ctx, octaves, lacunarity, gain, scaleUniform, timeSpeedUniform])
 
@@ -141,9 +154,9 @@ export default function FbmPlayground() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>FBM playground</h1>
         <p>
-          Internal Matter dev surface — not part of the public component catalog. Use this to
-          feel out good defaults for <code>octaves</code>, <code>lacunarity</code>, and{' '}
-          <code>gain</code> before <code>&lt;NoiseField&gt;</code> locks the prop API in 3.1.b.
+          Internal Matter dev surface — not part of the public component catalog. Use this to feel
+          out good defaults for <code>octaves</code>, <code>lacunarity</code>, and <code>gain</code>{' '}
+          before <code>&lt;NoiseField&gt;</code> locks the prop API in 3.1.b.
         </p>
       </section>
     </main>

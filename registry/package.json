@@ -19,7 +19,6 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "@matter/eslint-config": "workspace:*",
     "@matter/tsconfig": "workspace:*",
     "@types/react": "^19.0.0",
     "@types/three": "^0.170.0",

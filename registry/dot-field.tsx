@@ -47,7 +47,7 @@ function DotFieldMesh(props: DotFieldProps) {
   const ctx = useMatterContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
-  const cursor = cursorFromInputs ?? (props.interactive ?? true ? cursorAuto : null)
+  const cursor = cursorFromInputs ?? ((props.interactive ?? true) ? cursorAuto : null)
   const resize = useResize()
 
   const spacingUniform = useAnimatableUniform<number>(props.spacing ?? DEFAULTS.spacing)
@@ -145,9 +145,7 @@ function DotFieldMesh(props: DotFieldProps) {
     // not as chain receivers (gotcha #12: chain methods on raw uniform
     // nodes silently produce wrong GPU values).
     const zeroScalar = (vec2(0) as ShaderNodeObject<Node>).x
-    const radius = zeroScalar
-      .add(dotSizeUniform)
-      .div(zeroScalar.add(spacingUniform).mul(2))
+    const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2))
     const sdf = sdfCircle(displacedLocal, radius as never)
     // Soft edge: smoothstep across [+aa, -aa] so inside maps to 1 and the
     // boundary gets a subpixel falloff instead of an aliased step.
@@ -166,14 +164,28 @@ function DotFieldMesh(props: DotFieldProps) {
     ctx.scene.add(mesh)
     return () => {
       ctx.scene.remove(mesh)
-      try { material.dispose() } catch { /* benign during rebuild */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign during rebuild */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
   }, [
     ctx,
-    cr, cg, cb,
-    spacingUniform, dotSizeUniform, reachUniform, strengthUniform,
-    cursorUniform, resUniform,
+    cr,
+    cg,
+    cb,
+    spacingUniform,
+    dotSizeUniform,
+    reachUniform,
+    strengthUniform,
+    cursorUniform,
+    resUniform,
   ])
 
   return null

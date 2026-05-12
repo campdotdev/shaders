@@ -19,9 +19,5 @@ export function quantize(t: TSLNode, steps: number): TSLNode {
   const denom = steps - 1
   // floor(t * (steps-1) + 0.5) / (steps-1)
   // Using floor(x + 0.5) instead of round() for TSL portability.
-  return (t as ShaderNodeObject<Node>)
-    .mul(denom)
-    .add(0.5)
-    .floor()
-    .div(denom)
+  return (t as ShaderNodeObject<Node>).mul(denom).add(0.5).floor().div(denom)
 }

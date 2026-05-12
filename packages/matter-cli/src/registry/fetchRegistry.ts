@@ -36,9 +36,7 @@ export async function fetchRegistry(baseUrl: string): Promise<Registry> {
   try {
     parsed = JSON.parse(json)
   } catch (err) {
-    throw new Error(
-      `Registry at ${url} is not valid JSON: ${(err as Error).message}`,
-    )
+    throw new Error(`Registry at ${url} is not valid JSON: ${(err as Error).message}`)
   }
   if (typeof parsed !== 'object' || parsed === null || !('components' in parsed)) {
     throw new Error(`Registry at ${url} is missing a "components" object`)

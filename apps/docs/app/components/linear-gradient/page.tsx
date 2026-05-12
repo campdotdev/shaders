@@ -25,8 +25,8 @@ export default async function LinearGradientPage() {
     <div style={{ padding: '2rem 1.5rem', maxWidth: '1100px', margin: '0 auto' }}>
       <h1 style={{ marginTop: 0 }}>&lt;LinearGradient /&gt;</h1>
       <p style={{ color: 'var(--fg-muted)' }}>
-        Animated linear or radial gradient with optional cursor parallax. The simplest,
-        foundational Matter component.
+        Animated linear or radial gradient with optional cursor parallax. The simplest, foundational
+        Matter component.
       </p>
 
       <PageBody schema={SCHEMA} code={<CodeBlock source={source} lang="tsx" />} />

@@ -28,8 +28,8 @@ import { uv, vec3, time } from 'three/tsl'
 // Inside your TSL fragment graph:
 const noise = fbm(uv().mul(4).add(time.mul(0.1)))
 const color = colorRamp(noise, [
-  { stop: 0.0, color: vec3(0.05, 0.05, 0.10) },
-  { stop: 1.0, color: vec3(0.30, 0.50, 0.95) },
+  { stop: 0.0, color: vec3(0.05, 0.05, 0.1) },
+  { stop: 1.0, color: vec3(0.3, 0.5, 0.95) },
 ])
 ```
 

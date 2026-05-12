@@ -30,10 +30,7 @@ import { LinearGradient } from '@/components/matter/linear-gradient'
 export default function Hero() {
   return (
     <MatterScene>
-      <LinearGradient
-        colors={['#0b0c2a', '#1d1f57', '#7d2dff']}
-        angle={120}
-      />
+      <LinearGradient colors={['#0b0c2a', '#1d1f57', '#7d2dff']} angle={120} />
     </MatterScene>
   )
 }

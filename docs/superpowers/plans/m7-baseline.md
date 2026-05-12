@@ -1,16 +1,18 @@
 # M7 baseline — captured 2026-05-12
 
-| Command | Wall time | Exit | Notes |
-|---|---|---|---|
-| pnpm install --frozen-lockfile | 0.7s | 0 | Lockfile up to date, nothing to install |
-| pnpm typecheck | 7.0s | 0 | 4 cached; turbo warning: no outputs key for docs#typecheck (pre-existing) |
-| pnpm lint | 2.6s | 0 | 2 cached; MODULE_TYPELESS_PACKAGE_JSON warnings (pre-existing, cosmetic) |
-| pnpm build | 13.3s | 0 | 2 cached; full Next.js docs site SSG included |
-| pnpm test | 3.8s | 0 | 2 cached; 22 test files, 80 tests (55 matter + 25 matter-react) all pass |
-| pnpm smoke | 2.3s | 0 | add + update --force, byte-identical file check passed |
+| Command                        | Wall time | Exit | Notes                                                                     |
+| ------------------------------ | --------- | ---- | ------------------------------------------------------------------------- |
+| pnpm install --frozen-lockfile | 0.7s      | 0    | Lockfile up to date, nothing to install                                   |
+| pnpm typecheck                 | 7.0s      | 0    | 4 cached; turbo warning: no outputs key for docs#typecheck (pre-existing) |
+| pnpm lint                      | 2.6s      | 0    | 2 cached; MODULE_TYPELESS_PACKAGE_JSON warnings (pre-existing, cosmetic)  |
+| pnpm build                     | 13.3s     | 0    | 2 cached; full Next.js docs site SSG included                             |
+| pnpm test                      | 3.8s      | 0    | 2 cached; 22 test files, 80 tests (55 matter + 25 matter-react) all pass  |
+| pnpm smoke                     | 2.3s      | 0    | add + update --force, byte-identical file check passed                    |
 
 dist/ artifacts present:
+
 - packages/matter/dist:
+
 ```
 drwxr-xr-x@  9 hunter.garrett  staff     288 May 11 18:52 .
 drwxr-xr-x@ 15 hunter.garrett  staff     480 May 12 17:03 ..
@@ -22,7 +24,9 @@ drwxr-xr-x@ 15 hunter.garrett  staff     480 May 12 17:03 ..
 -rw-r--r--@  1 hunter.garrett  staff   13009 May 11 18:52 index.js
 -rw-r--r--@  1 hunter.garrett  staff   39565 May 11 18:52 index.js.map
 ```
+
 - packages/matter-react/dist:
+
 ```
 drwxr-xr-x@  9 hunter.garrett  staff     288 May 12 17:03 .
 drwxr-xr-x@ 15 hunter.garrett  staff     480 May 12 17:03 ..
@@ -34,7 +38,9 @@ drwxr-xr-x@ 15 hunter.garrett  staff     480 May 12 17:03 ..
 -rw-r--r--@  1 hunter.garrett  staff   12612 May 12 17:03 index.js
 -rw-r--r--@  1 hunter.garrett  staff   30808 May 12 17:03 index.js.map
 ```
+
 - packages/matter-cli/dist:
+
 ```
 drwxr-xr-x@ 20 hunter.garrett  staff    640 May 12 17:03 .
 drwxr-xr-x@ 15 hunter.garrett  staff    480 May 12 17:03 ..
@@ -55,11 +61,13 @@ drwxr-xr-x@ 15 hunter.garrett  staff    480 May 12 17:03 ..
 - `vp --version`: vp v0.1.14
 
 **Concerns (non-fatal):**
+
 - Node.js is v24.15.0, not v22.x as specified in `.nvmrc`. This is a version ahead of what the plan assumed. No failures observed; document in case any tool behaves differently under v24.
 - pnpm is 9.12.3 vs the pinned `9.12.0` in `packageManager`. Patch-level drift only; no failures observed.
 - `vp --version` output also shows all local Vite+ tools (vite, rolldown, vitest, oxfmt, oxlint, tsdown) as "Not found" — expected at this baseline stage before `vp install` / `vp migrate` runs. The `Package manager` and `Node.js` lines confirm `vp` is correctly detecting the environment.
 
 ### `vp --help` (first 30 lines)
+
 ```
 VITE+ - The Unified Toolchain for the Web
 
@@ -93,6 +101,7 @@ Build:
 ```
 
 ### `vp env --help` (first 30 lines)
+
 ```
 VITE+ - The Unified Toolchain for the Web
 
@@ -127,6 +136,7 @@ Examples:
 ```
 
 ### `vp install --help` (first 30 lines)
+
 ```
 VITE+ - The Unified Toolchain for the Web
 
@@ -161,6 +171,7 @@ Options:
 ```
 
 ### `vp migrate --help` (first 30 lines)
+
 ```
 VITE+ - The Unified Toolchain for the Web
 
@@ -197,10 +208,12 @@ Migration Prompt:
 ## `vp env` adoption (Task A.2 — captured 2026-05-12)
 
 ### Diagnostic snapshot (before changes)
+
 - `node -v` (before): v24.15.0
 - `which node` (before): /Users/hunter.garrett/.vite-plus/bin/node
 
 ### `vp env current` (before)
+
 ```
 VITE+ - The Unified Toolchain for the Web
 
@@ -217,6 +230,7 @@ Tool Paths:
 ```
 
 ### `vp env doctor` (before)
+
 ```
 VITE+ - The Unified Toolchain for the Web
 
@@ -247,24 +261,28 @@ v All checks passed
 ```
 
 ### `vp env list` (before)
+
 ```
 * v24.14.1
 * v24.15.0  current
 ```
 
 ### Node version intent
+
 - `.nvmrc` content: `22`
 - `engines.node` from root package.json: `>=22`
 - Chosen: vp-managed Node 22.x.x (matches `.nvmrc`)
 - Rationale: `vp env` was already in managed mode but resolving to 24.15.0 via `engines.node` (the `>=22` range satisfies with the highest installed version). To lock the project to Node 22 as `.nvmrc` intends, `vp env pin 22` was used — this creates `.node-version` in the repo root, which vp treats as the highest-priority resolution source (overrides both `.nvmrc` and `engines.node`).
 
 ### Actions taken
+
 - `vp env list` (before): showed only v24.14.1 and v24.15.0 — Node 22 not yet installed
 - `vp env install 22`: installed Node v22.22.2 (latest LTS in the 22.x line) into vp's managed store
 - `vp env on`: already set to managed — output: "Shim mode is already set to managed."
 - `vp env pin 22 --force`: created `.node-version` containing `22.22.2` in repo root; vp resolved `22` to the latest LTS `22.22.2`
 
 ### Post-switch state
+
 - `node -v` (after): v22.22.2
 - `vp env current` Source (after): `.node-version` (overrides `engines.node`)
 - `pnpm -v` (after): 9.12.3 (unchanged; pnpm is not shimmed by vp env)
@@ -272,36 +290,44 @@ v All checks passed
 - `pnpm-lock.yaml` clean after install: yes
 
 ### Full-pipeline parity check
-| Command | Exit | Notes |
-|---|---|---|
-| pnpm typecheck | 0 | 8 cached, FULL TURBO |
-| pnpm lint | 0 | 5 cached, FULL TURBO; pre-existing MODULE_TYPELESS_PACKAGE_JSON warnings (cosmetic) |
-| pnpm build | 0 | 5 cached, FULL TURBO; Next.js SSG 31 pages |
-| pnpm test | 0 | 55 matter + 46 matter-cli + 25 matter-react = 126 tests pass |
-| pnpm smoke | 0 | add + update --force, byte-identical file check passed |
+
+| Command        | Exit | Notes                                                                               |
+| -------------- | ---- | ----------------------------------------------------------------------------------- |
+| pnpm typecheck | 0    | 8 cached, FULL TURBO                                                                |
+| pnpm lint      | 0    | 5 cached, FULL TURBO; pre-existing MODULE_TYPELESS_PACKAGE_JSON warnings (cosmetic) |
+| pnpm build     | 0    | 5 cached, FULL TURBO; Next.js SSG 31 pages                                          |
+| pnpm test      | 0    | 55 matter + 46 matter-cli + 25 matter-react = 126 tests pass                        |
+| pnpm smoke     | 0    | add + update --force, byte-identical file check passed                              |
 
 ### Shell rc note
+
 vp printed no rc modification instructions. `vp env on` reported "Shim mode is already set to managed." — the user's shell rc was already configured during the original Vite+ install (A.1 captured: "IDE integration: env sourced in ~/.zshenv"). No rc edits were needed or made.
 
 ### `.node-version` file
+
 Created at repo root by `vp env pin 22 --force`. Content: `22.22.2`. This is committed as project intent — it pins all developers (and CI) to Node 22 LTS, matching `.nvmrc`, and takes priority over the `>=22` engines range so vp does not resolve to Node 24.
 
 ## `vp install` adoption (Task A.3 — captured 2026-05-12)
 
 ### Discovered command surface
+
 - `vp install` (no args): delegates to pnpm install
 - `vp install <pkg>`: acts as `pnpm add` (per help: "Packages to add (if provided, acts as `vp add`)")
 - `vp remove` (aliases: `rm`, `un`, `uninstall`): removes packages from dependencies — dedicated subcommand, not a passthrough
 
 ### Round-trip test
+
 - `vp install -D tiny-glob -w`: succeeded — `package.json` gained `tiny-glob ^0.2.9` under root `devDependencies`; `pnpm-lock.yaml` gained 21 lines (3 packages added). Diff shape identical to what `pnpm add -Dw tiny-glob` would produce.
 - `vp remove tiny-glob -w`: succeeded — clean removal; `package.json` and `pnpm-lock.yaml` both reverted to pre-test state with zero diff. `git status` reported working tree clean.
 
 ### CI deferral decision
+
 CI (`.github/workflows/ci.yml`) continues to use `pnpm install --frozen-lockfile`. No GitHub Action for vp installation is published yet (vp v0.1.14 alpha). Revisit when vp leaves alpha or a `setup-vp` action ships.
 
 ### Gate A endpoint reached
+
 Phase A complete:
+
 - ✅ vp v0.1.14 installed globally (A.1)
 - ✅ vp env on; project shims Node to 22.22.2 via `.node-version` (A.2)
 - ✅ vp install wraps pnpm; round-trip verified (A.3)
@@ -312,6 +338,7 @@ The user's stated M7 intent ("use Vite+ to manage runtime and package manager") 
 ## Migration research (Task B.1 — captured 2026-05-12)
 
 ### Target versions
+
 - Vite: 5.4.x → **8.0.12**
 - @vitejs/plugin-react: 4.3.x → **6.0.1**
 - Vitest: 2.1.x → **4.1.6**
@@ -320,12 +347,14 @@ The user's stated M7 intent ("use Vite+ to manage runtime and package manager") 
 ### Vite 5→8 breaking changes that affect us
 
 **Vite 5→6:**
+
 - `resolve.conditions` defaults changed: now includes `['module', 'browser', 'development|production']` for client builds. We have no explicit `resolve.conditions` in `vite.config.ts`, so Vite 6 will apply the new defaults automatically — this is fine for playground but worth noting since it changes how packages with a `module` export field are resolved.
 - CommonJS `strictRequires` changed from `'auto'` to `true`: playground imports `three` and `@lovo/matter*` which are ESM, so no impact expected.
 - Sass legacy API removed as default (modern API now default): we use no Sass in playground — no impact.
 - None of the other v5→v6 changes (json.stringify, PostCSS v6, library CSS naming, HTML asset processing, SSR CSS default import) touch our playground config surface.
 
 **Vite 6→7:**
+
 - Node.js 18 dropped; 20.19+ or 22.12+ required. We are on 22.22.2 — satisfied.
 - `build.target` defaults shifted (Chrome 87→107, etc.). Our `vite.config.ts` sets `build.target: 'es2022'` explicitly — the default change does not apply to us.
 - Named `build.target: 'modules'` removed, replaced with `'baseline-widely-available'`. We use `'es2022'`, not `'modules'` — no impact.
@@ -334,6 +363,7 @@ The user's stated M7 intent ("use Vite+ to manage runtime and package manager") 
 - `splitVendorChunkPlugin` removed. We do not use it — no impact.
 
 **Vite 7→8:**
+
 - **`build.rollupOptions` → `build.rolldownOptions`**: We have no `rollupOptions` in `vite.config.ts` — no impact.
 - **`optimizeDeps.esbuildOptions` deprecated** in favour of `optimizeDeps.rolldownOptions`. We have no `optimizeDeps` config — no impact.
 - **`esbuild` config deprecated** in favour of `oxc`. We have no `esbuild` config — no impact.
@@ -344,16 +374,19 @@ The user's stated M7 intent ("use Vite+ to manage runtime and package manager") 
 - **`shouldTransformCachedModule`, `resolveImportMeta`, `renderDynamicImport`, `resolveFileUrl` hooks removed.** We use none of these — no impact.
 
 **`@vitejs/plugin-react` 4.3.x → 6.0.1:**
+
 - **v4→v5** (4.3.x → 5.x): Default `exclude` changed to `[/\/node_modules\//]`; auto-deduplication of `react`/`react-dom` from `resolve.dedupe` removed; Node 20.19+ or 22.12+ required. De-deduplification could theoretically matter for three.js if plugin-react was implicitly deduplicating it — but plugin-react only deduped `react`/`react-dom`, not `three`. We are on Node 22.22.2. No impact.
 - **v5→v6** (5.x → 6.0.1): Babel removed as a bundled dependency; Vite 8+ required. If any Babel plugins were configured via `react({ babel: { plugins: [...] } })`, they must migrate to `@rolldown/plugin-babel`. Our `react()` call in `vite.config.ts` uses zero options — no Babel plugins — so this is a drop-in replacement with no config changes needed. `@rolldown/plugin-babel` and `babel-plugin-react-compiler` are optional peer deps (both confirmed optional via `peerDependenciesMeta`) — we do not need to install them.
 
 **Three/three-webgpu dual-bundle implications (playground-specific):**
+
 - Vite 8 removes format-sniffing heuristics (the old behaviour where Vite inspected file content to prefer ESM when both `browser` and `module` fields existed). It now strictly follows `resolve.mainFields` ordering. The `three` package ships `three.module.js` (ESM, `module` field) and `three.webgpu.js` (ESM, separate entry). For playground this is lower-risk than docs (no Next.js webpack involved), but we must verify after bumping that `import 'three'` and `import 'three/webgpu'` still resolve to the same three core. If a duplicate-instance symptom appears (the `usedTimes` error noted in CLAUDE.md gotcha #13), the fix is `resolve.alias` in `vite.config.ts` forcing both to the same path — the same mitigation that already exists in `apps/docs/next.config.ts` for webpack.
 - Vitest 4.1.6 peerDeps: `vite: '^6.0.0 || ^7.0.0 || ^8.0.0'` — Vite 8 is fully supported.
 
 ### Vitest 2→4.1+ breaking changes that affect us
 
 **Vitest 2→3:**
+
 - `test()`/`describe()` options argument order changed: `test('name', { retry: 3 }, fn)` is now correct (options second, fn third). Previously it was `test('name', fn, { retry: 3 })`. Vitest 3 warns; Vitest 4 errors. Our existing tests use no per-test options objects — no impact.
 - `spy.mockReset()` now restores original implementation instead of replacing with noop. No `mockReset` calls in our tests (matter-react test suite uses `@testing-library/react`; no spy reset calls confirmed) — no impact.
 - `vi.spyOn()` on an already-spied method reuses existing mock instead of creating new spy. No cascaded spyOn calls in our tests — no impact.
@@ -362,6 +395,7 @@ The user's stated M7 intent ("use Vite+ to manage runtime and package manager") 
 - `WorkspaceSpec` type renamed to `TestSpecification`; `Custom` type deprecated in favour of `Test`. We do not import Vitest internal types in our tests or configs — no impact.
 
 **Vitest 3→4:**
+
 - **Pool rework**: `maxThreads`/`maxForks` → `maxWorkers`; `singleThread`/`singleFork` → `maxWorkers: 1, isolate: false`; `poolOptions` key removed. Our vitest configs use none of these options — no impact.
 - **`workspace` option renamed to `projects`** (deprecated since 3.2, removed/replaced in 4): see `defineWorkspace` section below.
 - **Reporter APIs changed**: `onCollected`, `onSpecsCollected`, `onPathsCollected`, `onTaskUpdate`, `onFinished` removed. We use no custom reporters — no impact.
@@ -404,6 +438,7 @@ Note: if a root `vitest.config.ts` already exists or is created for another purp
 ### Per-package `vitest.config.ts` adaptation needed?
 
 No changes required to any of the three per-package configs:
+
 - `packages/matter/vitest.config.ts`: `environment: 'happy-dom'`, `passWithNoTests: true` — both still supported, no deprecated options used.
 - `packages/matter-react/vitest.config.ts`: same, plus `setupFiles`, `globals: false`, `@vitejs/plugin-react` — all still supported. The `react()` plugin import will need its package updated to `@vitejs/plugin-react` 6.0.1 (same import path, zero config changes since we use no Babel options).
 - `packages/matter-cli/vitest.config.ts`: `environment: 'node'`, `passWithNoTests: true` — both still supported.
@@ -422,6 +457,7 @@ Reason: Default order holds. No forcing constraint — Vitest 4.1.6 accepts Vite
 ### Confidence level
 
 **HIGH** — the breaking changes that affect us are well-defined and limited:
+
 1. `@vitejs/plugin-react` 6.x drops Babel; our `react()` call uses no Babel options — zero config change.
 2. `vitest.workspace.ts` → root `vitest.config.ts` with `projects` key — one-file rename + reshaping, functionally identical.
 3. No pool, reporter, coverage, or test-API breaking changes affect our test suite.
@@ -430,6 +466,7 @@ Reason: Default order holds. No forcing constraint — Vitest 4.1.6 accepts Vite
 ## Vite 5 → 8 bump (Task B.2 — captured 2026-05-12)
 
 ### Packages bumped
+
 - `vite`: 5.4.21 → 8.0.12 (root + apps/playground)
 - `@vitejs/plugin-react`: 4.7.0 → 6.0.1 (root + apps/playground + packages/matter-react)
 
@@ -467,28 +504,33 @@ resolve: {
 ```
 
 ### Dev server smoke
+
 - Vite version reported: `VITE v8.0.12  ready in 107 ms`
 - Errors/warnings at HMR ready: One non-fatal dep-scan warning — rolldown's dependency scanner failed to resolve the tsconfig for playground src files during pre-bundling (`TSCONFIG_ERROR: Failed to load tsconfig for 'src/1-magenta.ts' ...`). This is a Vite 8 / rolldown-based dep-scanner limitation in monorepos where tsconfigs use `extends` with workspace packages. The dev server still started and printed "ready". Production build is unaffected (build succeeded clean). Dep pre-bundling is skipped; HMR still works. This is a known Vite 8 alpha-stage rough edge for monorepo setups.
 
 ### Full pipeline parity check (after bump)
-| Command | Exit | Notes |
-|---|---|---|
-| pnpm typecheck | 0 | 8 tasks, all pass; pre-existing docs#typecheck outputs warning (cosmetic) |
-| pnpm lint | 0 | Pre-existing MODULE_TYPELESS_PACKAGE_JSON warnings (cosmetic); 2 unused-var warnings in playground src (pre-existing) |
-| pnpm build | 0 | Playground built with `vite v8.0.12`; Next.js docs site 31 pages SSG; all packages clean |
-| pnpm test | 0 | 126 tests pass (55 matter + 46 matter-cli + 25 matter-react); Vitest 2.1.9 compatible with Vite 8 — no B.3 forced |
+
+| Command        | Exit | Notes                                                                                                                 |
+| -------------- | ---- | --------------------------------------------------------------------------------------------------------------------- |
+| pnpm typecheck | 0    | 8 tasks, all pass; pre-existing docs#typecheck outputs warning (cosmetic)                                             |
+| pnpm lint      | 0    | Pre-existing MODULE_TYPELESS_PACKAGE_JSON warnings (cosmetic); 2 unused-var warnings in playground src (pre-existing) |
+| pnpm build     | 0    | Playground built with `vite v8.0.12`; Next.js docs site 31 pages SSG; all packages clean                              |
+| pnpm test      | 0    | 126 tests pass (55 matter + 46 matter-cli + 25 matter-react); Vitest 2.1.9 compatible with Vite 8 — no B.3 forced     |
 
 ## Vitest 2 → 4.1.6 bump (Task B.3 — captured 2026-05-12)
 
 ### Packages bumped
+
 - `vitest`: 2.1.9 → 4.1.6 (root + 3 packages)
 - `@vitest/ui`: 2.1.9 → 4.1.6 (root)
 
 ### Config restructure
+
 - Deleted: `vitest.workspace.ts`
 - Created: `vitest.config.ts` (root) with `projects: ['packages/*/vitest.config.ts']`
 
 ### Per-package vitest.config.ts changes
+
 - `packages/matter/vitest.config.ts`: added `oxc` inline tsconfig workaround (see below)
 - `packages/matter-react/vitest.config.ts`: added `oxc` inline tsconfig workaround (see below)
 - `packages/matter-cli/vitest.config.ts`: added `oxc` inline tsconfig workaround (see below)
@@ -511,17 +553,231 @@ This is the minimal set of compiler options OXC needs for our TypeScript syntax 
 **Note for CLAUDE.md gotcha list:** Add this as gotcha #15 — OXC does not support `${configDir}` in tsconfig extends chains; the workaround is inline `tsconfig` in the `oxc` Vite config key.
 
 ### Test API changes required
+
 No test files needed changes. All 3 packages' test suites were drop-in compatible with Vitest 4.
 
 ### @testing-library/react + happy-dom smoke
+
 - Test: ad hoc 1-test smoke under `packages/matter-react/src/__smoke__.test.tsx` (deleted after passing)
 - Outcome: pass — `render(<div>hi</div>)` → `container.textContent === 'hi'` ✓
 
 ### Full pipeline parity (after bump)
-| Command | Exit | Notes |
-|---|---|---|
-| pnpm typecheck | 0 | 8 tasks, all pass |
-| pnpm lint | 0 | Pre-existing warnings only (no new errors) |
-| pnpm build | 0 | All packages + Next.js docs site |
-| pnpm test | 0 | 126 tests pass (55 matter + 46+1todo matter-cli + 25 matter-react) |
-| pnpm smoke | 0 | add + update --force, byte-identical file check passed |
+
+| Command        | Exit | Notes                                                              |
+| -------------- | ---- | ------------------------------------------------------------------ |
+| pnpm typecheck | 0    | 8 tasks, all pass                                                  |
+| pnpm lint      | 0    | Pre-existing warnings only (no new errors)                         |
+| pnpm build     | 0    | All packages + Next.js docs site                                   |
+| pnpm test      | 0    | 126 tests pass (55 matter + 46+1todo matter-cli + 25 matter-react) |
+| pnpm smoke     | 0    | add + update --force, byte-identical file check passed             |
+
+## vp migrate: @lovo/matter-cli — BLOCKED (Task C.1 — captured 2026-05-12)
+
+### Command attempted
+
+`cd packages/matter-cli && vp migrate --no-interactive --no-agent --no-editor --no-hooks`
+
+### What vp migrate actually did (SCOPE VIOLATION)
+
+vp migrate is NOT a per-package operation in a pnpm monorepo. Despite running from `packages/matter-cli/`, it traversed to the monorepo root (detected via `pnpm-workspace.yaml`) and operated on the entire workspace. Its stdout was:
+
+```
+VITE+ - The Unified Toolchain for the Web
+
+Prettier configuration detected. Auto-migrating to Oxfmt...
+
+✔ Merged ../../.oxlintrc.json into ../../vite.config.ts
+◇ Migrated ../.. to Vite+
+• Node 24.15.0  pnpm 9.12.0
+✓ Dependencies installed in 4.4s
+• 2 config updates applied, 37 files had imports rewritten
+• ESLint rules migrated to Oxlint
+• Prettier migrated to Oxfmt
+! Warnings:
+  - ../../.prettierignore found — Oxfmt uses .oxfmtignore. Please migrate manually.
+```
+
+The `../../` paths in its output confirm it ran at the repo root (2 levels up from `packages/matter-cli/`).
+
+### Files changed by vp migrate (before revert)
+
+Scope violations (files that MUST NOT be changed in M7):
+
+- `.prettierrc.json`: DELETED (M7.4 Prettier→Oxfmt deferred)
+- `eslint.config.js`: DELETED (M7.3 ESLint→Oxlint deferred)
+- `vitest.config.ts` (root): modified
+- `vite.config.ts` (root): NEW FILE created (unified root config)
+- `pnpm-workspace.yaml`: modified
+- `package.json` (root): modified
+
+Other packages also touched (not just matter-cli):
+
+- `apps/docs/package.json`
+- `apps/playground/package.json`
+- `apps/playground/vite.config.ts`
+- `packages/matter-react/package.json` + all 8 test files
+- `packages/matter/package.json` + all 12 test files
+- `packages/matter-cli/package.json` + all 9 test files + `vitest.config.ts`
+- `registry/linear-gradient.tsx`
+- `registry/noise-field.tsx`
+- `pnpm-lock.yaml`
+
+Total: ~47 files changed across the entire monorepo.
+
+### Revert taken
+
+All changes reverted immediately:
+
+```bash
+git checkout -- .
+git clean -f vite.config.ts
+```
+
+Post-revert pipeline confirmed green: typecheck=0, test=0 (126 tests).
+
+### Root cause: vp migrate is monorepo-root-only
+
+`vp migrate` in a pnpm workspace always operates at the workspace root. The Vite+ monorepo model is a single root `vite.config.ts` with per-package overrides — not per-package `vite.config.ts` files. The M7 plan's assumption ("run vp migrate per package, starting with matter-cli") is inconsistent with how vp migrate actually works.
+
+Per the Vite+ monorepo docs (https://viteplus.dev/guide/monorepo):
+
+- Target apps with: `vp dev apps/web` or `vp build apps/web`
+- Root `vite.config.ts` is the unified config for the whole workspace
+- `vp migrate` creates ONE root config, not per-package configs
+
+### What vp migrate would actually do (if accepted)
+
+1. Create root `vite.config.ts` (the unified Vite+ config)
+2. Rewrite all `import { ... } from 'vitest'` → `import { ... } from 'vite-plus/test'` across ALL test files in ALL packages (37 files across matter, matter-react, matter-cli, registry)
+3. Migrate ESLint → Oxlint (scope violation: M7.3 deferred)
+4. Migrate Prettier → Oxfmt (scope violation: M7.4 deferred)
+5. Add `vite-plus` dep to all packages
+
+### Decision required
+
+The M7 plan's phased approach (C.1 → C.2 → C.3 → C.4, one package at a time) is not how vp migrate works. Options:
+
+**Option A: Run vp migrate once at the repo root, accept all changes**
+
+- Pros: This is how Vite+ is designed to work; gets to the correct end state in one step.
+- Cons: Takes ESLint→Oxlint and Prettier→Oxfmt in the same commit, breaking the "deferred M7.3/M7.4" plan. The test import rewrites (vitest → vite-plus/test) across all packages is fine; the ESLint/Prettier migrations are the concern.
+
+**Option B: Run vp migrate at root but revert the ESLint/Prettier changes (RECOMMENDED)**
+
+- Run `vp migrate --no-interactive --no-agent --no-editor --no-hooks` at the repo root.
+- Accept: root `vite.config.ts`, `vite-plus/test` import rewrites, `vite-plus` dep additions.
+- Revert: deletion of `eslint.config.js`, deletion of `.prettierrc.json`, any `package.json` script changes from `eslint`/`prettier` to `vp lint`/`vp fmt`.
+- This matches the M7 intent — adopt Vite+ surface without yet swapping linter or formatter.
+
+**Option C: Do the import rewrites manually without running vp migrate**
+
+- Manually rewrite all `from 'vitest'` → `from 'vite-plus/test'` in the 37 test files.
+- Manually add `vite-plus` to each package's devDeps.
+- Manually create a root `vite.config.ts`.
+- Skip `vp migrate` entirely.
+
+**Option D: Accept that Phase C is no longer per-package and re-scope**
+
+- Same as Option B — `vp migrate` is a single atomic root-level operation.
+- The "per-package" sequencing in the plan was a planning artifact based on incorrect assumptions about vp migrate's behavior.
+
+## vp migrate (Task C.1 consolidated — captured 2026-05-12)
+
+### Scope decision
+
+User accepted full vp migrate output, collapsing M7 + M7.3 (Oxlint) + M7.4 (Oxfmt) into one milestone.
+
+### Command
+
+`vp migrate --no-interactive --no-agent --no-editor --no-hooks` at repo root.
+
+### vp migrate stdout (full)
+
+```
+Prettier configuration detected. Auto-migrating to Oxfmt...
+
+✔ Merged .oxlintrc.json into vite.config.ts
+◇ Migrated . to Vite+
+• Node 22.22.2  pnpm 9.12.0
+✓ Dependencies installed in 2.6s
+• 2 config updates applied, 37 files had imports rewritten
+• ESLint rules migrated to Oxlint
+• Prettier migrated to Oxfmt
+! Warnings:
+  - .prettierignore found — Oxfmt supports .prettierignore, but using the `ignorePatterns` option is recommended.
+```
+
+### Files changed
+
+**Created:**
+- `vite.config.ts` (root) — new unified Vite+/Oxlint/Oxfmt config; ~1333 lines including full browser globals list
+- `apps/docs/css.d.ts` — CSS module declaration for Oxlint's TS type-check mode (manual addition)
+
+**Deleted:**
+- `.prettierrc.json` — Oxfmt settings now in `vite.config.ts` `fmt` block
+- `.prettierignore` — patterns migrated to `vite.config.ts` `fmt.ignorePatterns` (used `git rm`)
+- `eslint.config.js` — replaced by `vite.config.ts` `lint` block
+- `tooling/eslint-config/index.js` — dead workspace package removed
+- `tooling/eslint-config/package.json` — dead workspace package removed
+
+**Modified:**
+- `pnpm-workspace.yaml` — added `catalog:` entries for `vite`/`vitest`/`vite-plus`, added `overrides` and `peerDependencyRules`
+- `package.json` (root) — `format` script updated to `vp fmt`, `@matter/eslint-config` dep removed
+- `apps/docs/package.json` — `lint` script: `eslint app` → `vp lint app`; `@matter/eslint-config` dep removed
+- `apps/docs/tsconfig.json` — added `css.d.ts` to `include` array (manual addition)
+- `apps/playground/package.json` — `lint` script updated; `@matter/eslint-config` dep removed; `vite/vitest` now `catalog:`
+- `apps/playground/vite.config.ts` — `defineConfig` import: `vite` → `vite-plus`
+- `apps/playground/src/2-gradient.ts` — removed unused `time`/`sin` imports (found by Oxlint)
+- All 37 test files — `import { ... } from 'vitest'` → `import { ... } from 'vite-plus/test'`
+- All 3 `packages/*/vitest.config.ts` — `import from 'vitest/config'` → `import from 'vite-plus'`; eslint disable comments → oxlint
+- All 3 `packages/*/package.json` — `lint`/`test`/`test:watch` scripts updated; `@matter/eslint-config` removed; `vitest` → `catalog:`
+- `registry/linear-gradient.tsx` and `registry/noise-field.tsx` — `eslint-disable-next-line` → `oxlint-disable-next-line`
+- `packages/matter-cli/src/test-fixtures/registry/synthetic-component.tsx` — added `@ts-expect-error` for intentionally synthetic `@matter-internal/lib` import
+- `.changeset/config.json` — removed `@matter/eslint-config` from `ignore` list
+- `pnpm-lock.yaml` — updated (1020 insertions/268 deletions)
+- Many source files — reformatted by Oxfmt
+
+### Manual cleanup performed
+
+- `.prettierignore` → `fmt.ignorePatterns` in `vite.config.ts`: patterns already present in the migrated config. `.prettierignore` removed via `git rm`. No separate `.oxfmtignore` created (vp migrate recommended `ignorePatterns` option which is now in `vite.config.ts`).
+- `tooling/eslint-config/` directory: **deleted** (`rm -rf tooling/eslint-config/`)
+- `@matter/eslint-config` workspace deps in package.json: **removed** from all 8 referencing package.jsons: root, `packages/matter`, `packages/matter-react`, `packages/matter-cli`, `apps/docs`, `apps/playground`, `registry`, `.changeset/config.json`
+- No files reverted (turbo.json, tsup.config.ts×3, pnpm-workspace.yaml, CLAUDE.md all untouched by vp migrate)
+
+### Oxlint configuration after migration
+
+From `vite.config.ts` `lint` block:
+- Plugins: `['oxc', 'typescript', 'unicorn', 'react']`
+- Categories: `{ correctness: 'warn' }`
+- Globals: full browser + node + commonjs environments
+- ignorePatterns: `dist/`, `build/`, `.turbo/`, `.next/`, `node_modules/`, `coverage/`
+- Rules migrated: all prior ESLint + typescript-eslint + react/react-hooks rules
+- Notable: `typescript/consistent-type-imports: ['error', { prefer: 'type-imports' }]` preserved; `react/exhaustive-deps: 'warn'`; `react/react-in-jsx-scope: 'off'`; `options.typeAware: true, typeCheck: true`
+
+### Oxlint findings on existing code
+
+- Total new findings vs ESLint (errors): 3 original errors, all fixed
+  1. `typescript(TS2307)` in `matter-cli/src/test-fixtures/registry/synthetic-component.tsx` — intentional fake import for rewriter tests. Fixed: `@ts-expect-error` directive.
+  2. `typescript(TS2882)` in `apps/docs/app/layout.tsx` — CSS side-effect import not declared. Fixed: added `apps/docs/css.d.ts` declaring `module '*.css' {}`; added to tsconfig include.
+  3. `eslint(no-unused-vars)` in `apps/playground/src/2-gradient.ts` — `time`/`sin` imported but not used. Fixed: removed from import.
+- Warnings (not blocking): `typescript-eslint(unbound-method)` in fetchRegistry.test.ts (false positive on `const { join } = await import('node:path')`); `eslint-plugin-unicorn(no-useless-spread)` in reducedMotion.test.ts; `eslint-plugin-react-hooks(exhaustive-deps)` in useCursor.ts and useAnimatableUniform.ts (intentional omissions, documented in source); `typescript-eslint(no-floating-promises)` in playground render loops.
+- Fixed in source: 3 errors; Suppressed via config: 0 (all suppressions via inline disable comments or TS suppression directives in the specific files)
+
+### Oxfmt vs Prettier diff
+
+- Files reformatted by `vp fmt "**/*.{ts,tsx,js,jsx,json,md,yml,yaml}"`: 189 files processed; formatting applied where Oxfmt style differed from Prettier
+- Style changes: Oxfmt uses single quotes (matching `singleQuote: true` setting), no semicolons, trailing commas — identical to our Prettier config. The main visible difference: JSON object keys in `vite.config.ts` became unquoted (JS object literals vs JSON-style strings). All other style parameters matched.
+
+### Full pipeline parity (final)
+
+| Command        | Exit | Notes                                            |
+| -------------- | ---- | ------------------------------------------------ |
+| pnpm typecheck | 0    | 8 tasks passing                                  |
+| pnpm lint      | 0    | Now Oxlint via `vp lint`; 145 rules; warnings ok |
+| pnpm build     | 0    | All packages + Next.js docs (31 SSG pages)       |
+| pnpm test      | 0    | 126 tests (55 matter + 46 matter-cli + 25 react) |
+| pnpm smoke     | 0    | CLI add + update --force verified                |
+
+### Per-package vitest.config.ts OXC tsconfig workaround status
+
+Still in place in all 3 per-package configs. The `oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } } as any` workaround is required because OXC does not support `${configDir}` substitution in shared tsconfigs (CLAUDE.md gotcha, task B.3). vp migrate correctly updated the import from `vitest/config` to `vite-plus` but did not remove or centralize the workaround — it remains per-package. The eslint disable comments were updated to `oxlint-disable-next-line` by vp migrate.

@@ -1,5 +1,5 @@
 import { fileURLToPath } from 'node:url'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { readUrl } from './readUrl.js'
 
 const FIXTURE_DIR = fileURLToPath(new URL('../test-fixtures/registry/', import.meta.url))

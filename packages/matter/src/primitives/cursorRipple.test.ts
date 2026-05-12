@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { uv, vec2 } from 'three/tsl'
 import { cursorRipple } from './cursorRipple.js'
 import { time as gatedTime } from './tsl-reexports.js'

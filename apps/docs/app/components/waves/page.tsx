@@ -8,10 +8,7 @@ import { VisualTestPause } from '../../_lib/visualTestHooks'
 
 // Waves pulls in three/webgpu, which references `self` at module load time
 // and breaks Next's SSR. Load it client-only.
-const Waves = dynamic(
-  () => import('@matter/registry/waves').then((m) => m.Waves),
-  { ssr: false },
-)
+const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false })
 
 interface Params {
   color: string
@@ -102,7 +99,7 @@ export default function WavesPage() {
             fontSize: '0.85rem',
           }}
         >
-{`<Waves amplitude={0.1} frequency={5} speed={1} layers={3} interactive />`}
+          {`<Waves amplitude={0.1} frequency={5} speed={1} layers={3} interactive />`}
         </pre>
       </section>
     </main>

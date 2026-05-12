@@ -2,7 +2,7 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import { DEFAULT_MATTER_CONFIG, writeMatterConfig } from '../config/matterConfig.js'
 import { runUpdate } from './update.js'
 
@@ -49,11 +49,7 @@ describe('runUpdate', () => {
 
   it('refreshes every component in componentsDir when no names are given', async () => {
     await seedConfigAndComponent()
-    await runUpdate(
-      [],
-      { force: true, cliVersion: '0.0.0' },
-      { cwd: dir, log: vi.fn() },
-    )
+    await runUpdate([], { force: true, cliVersion: '0.0.0' }, { cwd: dir, log: vi.fn() })
     const written = await readFile(
       join(dir, 'src/components/matter/synthetic-component.tsx'),
       'utf-8',
@@ -68,11 +64,7 @@ describe('runUpdate', () => {
     })
     await mkdir(join(dir, 'src/components/matter'), { recursive: true })
     await expect(
-      runUpdate(
-        [],
-        { force: true, cliVersion: '0.0.0' },
-        { cwd: dir, log: vi.fn() },
-      ),
+      runUpdate([], { force: true, cliVersion: '0.0.0' }, { cwd: dir, log: vi.fn() }),
     ).rejects.toThrow(/no components/i)
   })
 
@@ -94,11 +86,7 @@ describe('runUpdate', () => {
   it('refuses to overwrite without --force', async () => {
     await seedConfigAndComponent()
     await expect(
-      runUpdate(
-        ['synthetic-component'],
-        { cliVersion: '0.0.0' },
-        { cwd: dir, log: vi.fn() },
-      ),
+      runUpdate(['synthetic-component'], { cliVersion: '0.0.0' }, { cwd: dir, log: vi.fn() }),
     ).rejects.toThrow(/already exists/)
   })
 })

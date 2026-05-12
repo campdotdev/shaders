@@ -8,10 +8,9 @@ import { VisualTestPause } from '../../_lib/visualTestHooks'
 
 // NoiseField pulls in three/webgpu, which references `self` at module load
 // time and breaks Next's SSR. Load it client-only.
-const NoiseField = dynamic(
-  () => import('@matter/registry/noise-field').then((m) => m.NoiseField),
-  { ssr: false },
-)
+const NoiseField = dynamic(() => import('@matter/registry/noise-field').then((m) => m.NoiseField), {
+  ssr: false,
+})
 
 interface Params {
   color0: string
@@ -107,7 +106,7 @@ export default function NoiseFieldPage() {
             fontSize: '0.85rem',
           }}
         >
-{`import { NoiseField } from '@/components/matter/noise-field'
+          {`import { NoiseField } from '@/components/matter/noise-field'
 
 <NoiseField
   variant="organic"

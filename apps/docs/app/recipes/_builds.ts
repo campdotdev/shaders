@@ -103,7 +103,9 @@ export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
   // Chain root: uv(). cursorUniform appears ONLY as an arg to .sub() — the
   // canonical gotcha-#12-safe pattern from registry/aurora.tsx.
   'cursor-glow.circular': ({ cursorUniform }) => {
-    const offset = (uv() as ShaderNodeObject<Node>).sub(cursorUniform as never) as ShaderNodeObject<Node>
+    const offset = (uv() as ShaderNodeObject<Node>).sub(
+      cursorUniform as never,
+    ) as ShaderNodeObject<Node>
     const dist = length(offset as never) as ShaderNodeObject<Node>
     const glow = smoothstep(0.3, 0, dist as never) as ShaderNodeObject<Node>
     return vec4(
@@ -148,7 +150,9 @@ export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
   // Pinpoint: tighter smoothstep edge (0.1 instead of 0.3) + uniform
   // RGB instead of the blue-tinted mix → small white dot at the cursor.
   'cursor-glow.pinpoint': ({ cursorUniform }) => {
-    const offset = (uv() as ShaderNodeObject<Node>).sub(cursorUniform as never) as ShaderNodeObject<Node>
+    const offset = (uv() as ShaderNodeObject<Node>).sub(
+      cursorUniform as never,
+    ) as ShaderNodeObject<Node>
     const dist = length(offset as never) as ShaderNodeObject<Node>
     const glow = smoothstep(0.1, 0, dist as never) as ShaderNodeObject<Node>
     return vec4(glow, glow, glow, 1) as never

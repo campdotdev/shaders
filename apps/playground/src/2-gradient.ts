@@ -1,6 +1,6 @@
 import { Scene, OrthographicCamera, Mesh, PlaneGeometry } from 'three'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
-import { vec3, mix, uv, time, sin } from 'three/tsl'
+import { vec3, mix, uv } from 'three/tsl'
 import { createRenderer } from '@lovo/matter'
 
 const canvas = document.getElementById('c') as HTMLCanvasElement

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
+import { describe, expect, it, vi, beforeEach, afterEach } from 'vite-plus/test'
 import { render, waitFor } from '@testing-library/react'
 import type * as MatterModule from '@lovo/matter'
 import { MatterScene } from './MatterScene.js'
@@ -42,9 +42,7 @@ describe('MatterScene', () => {
   it('renders the fallback before the async context resolves', () => {
     // createRenderer is async; on the initial render ctx is null so the
     // fallback prop is shown.
-    const { container } = render(
-      <MatterScene fallback={<div data-testid="fb">loading</div>} />,
-    )
+    const { container } = render(<MatterScene fallback={<div data-testid="fb">loading</div>} />)
     expect(container.querySelector('[data-testid="fb"]')).toBeInTheDocument()
   })
 

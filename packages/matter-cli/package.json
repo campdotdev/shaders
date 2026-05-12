@@ -36,8 +36,8 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vitest run",
+    "lint": "vp lint src",
+    "test": "vp test run",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "engines": {
@@ -47,11 +47,11 @@
     "commander": "^12.1.0"
   },
   "devDependencies": {
-    "@matter/eslint-config": "workspace:*",
     "@matter/tsconfig": "workspace:*",
     "@types/node": "^22.7.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "^4.1.6"
+    "vitest": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

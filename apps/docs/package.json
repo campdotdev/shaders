@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint app",
+    "lint": "vp lint app",
     "clean": "rm -rf .next .turbo *.tsbuildinfo"
   },
   "dependencies": {
@@ -24,7 +24,6 @@
     "tweakpane": "^4.0.5"
   },
   "devDependencies": {
-    "@matter/eslint-config": "workspace:*",
     "@matter/tsconfig": "workspace:*",
     "@tweakpane/core": "^2.0.5",
     "@types/node": "^22.7.0",

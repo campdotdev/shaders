@@ -37,9 +37,7 @@ interface ColorRampStop {
   position: number  // 0..1
 }`,
     usedBy: ['linear-gradient', 'noise-field', 'aurora'],
-    controls: [
-      { name: 'position', min: 0, max: 1, step: 0.01, default: 0.5 },
-    ],
+    controls: [{ name: 'position', min: 0, max: 1, step: 0.01, default: 0.5 }],
   },
   {
     slug: 'noise',
@@ -95,9 +93,7 @@ interface FBMOptions {
     signature: `function quantize(t: TSLNode, steps: number): TSLNode
 // steps is JS-side (baked into TSL at build time).`,
     usedBy: ['noise-field'],
-    controls: [
-      { name: 'bins', min: 2, max: 16, step: 1, default: 4 },
-    ],
+    controls: [{ name: 'bins', min: 2, max: 16, step: 1, default: 4 }],
   },
   {
     slug: 'sdf-circle',
