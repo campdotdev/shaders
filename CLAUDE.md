@@ -75,6 +75,8 @@ The user is **relatively new to shaders** and wants Matter to double as a learni
 
 ## Common commands
 
+**On runtime + package manager (post-M7):** Vite+ wraps pnpm. You can call either surface — they produce identical results. The Vite+ surface is `vp install` (acts as both `pnpm install` and `pnpm add`, e.g., `vp install -D <pkg> -w` to add a workspace-root devDep) plus `vp remove` (aliases: `rm`, `un`, `uninstall`) for removal. The pnpm surface (`pnpm install` / `pnpm add` / `pnpm remove`) continues to work identically — `packageManager: pnpm@9.12.0` is locked either way. Vite+ also manages the project's Node 22 runtime via `vp env`; the project's `.node-version` (22.22.2) is the source of truth.
+
 ```bash
 # At repo root:
 pnpm install                              # install/restore everything
