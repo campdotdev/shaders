@@ -308,3 +308,121 @@ Phase A complete:
 - ❌ CI deferred (no setup-vp action)
 
 The user's stated M7 intent ("use Vite+ to manage runtime and package manager") is fulfilled. Phases B–D (vp migrate, Vite/Vitest bumps, full verification) remain pending.
+
+## Migration research (Task B.1 — captured 2026-05-12)
+
+### Target versions
+- Vite: 5.4.x → **8.0.12**
+- @vitejs/plugin-react: 4.3.x → **6.0.1**
+- Vitest: 2.1.x → **4.1.6**
+- @vitest/ui: 2.1.x → **4.1.6**
+
+### Vite 5→8 breaking changes that affect us
+
+**Vite 5→6:**
+- `resolve.conditions` defaults changed: now includes `['module', 'browser', 'development|production']` for client builds. We have no explicit `resolve.conditions` in `vite.config.ts`, so Vite 6 will apply the new defaults automatically — this is fine for playground but worth noting since it changes how packages with a `module` export field are resolved.
+- CommonJS `strictRequires` changed from `'auto'` to `true`: playground imports `three` and `@lovo/matter*` which are ESM, so no impact expected.
+- Sass legacy API removed as default (modern API now default): we use no Sass in playground — no impact.
+- None of the other v5→v6 changes (json.stringify, PostCSS v6, library CSS naming, HTML asset processing, SSR CSS default import) touch our playground config surface.
+
+**Vite 6→7:**
+- Node.js 18 dropped; 20.19+ or 22.12+ required. We are on 22.22.2 — satisfied.
+- `build.target` defaults shifted (Chrome 87→107, etc.). Our `vite.config.ts` sets `build.target: 'es2022'` explicitly — the default change does not apply to us.
+- Named `build.target: 'modules'` removed, replaced with `'baseline-widely-available'`. We use `'es2022'`, not `'modules'` — no impact.
+- `optimizeDeps.entries` now receives only glob patterns (not literal paths). We have no `optimizeDeps.entries` configured — no impact.
+- Sass legacy API fully removed (already removed in v6). No Sass — no impact.
+- `splitVendorChunkPlugin` removed. We do not use it — no impact.
+
+**Vite 7→8:**
+- **`build.rollupOptions` → `build.rolldownOptions`**: We have no `rollupOptions` in `vite.config.ts` — no impact.
+- **`optimizeDeps.esbuildOptions` deprecated** in favour of `optimizeDeps.rolldownOptions`. We have no `optimizeDeps` config — no impact.
+- **`esbuild` config deprecated** in favour of `oxc`. We have no `esbuild` config — no impact.
+- **CSS minification default changed** to Lightning CSS. `playground/vite.config.ts` has no `build.cssMinify` override. The default change is cosmetic for playground (it's a dev app, not a lib). Accepted.
+- **`resolve.alias[].customResolver` removed**. We have no alias customResolvers — no impact.
+- **Browser target defaults changed** again (Chrome 107→111, etc.). We set `build.target: 'es2022'` explicitly — no impact.
+- **Plugin `load`/`transform` hooks must return `{ code, moduleType: 'js' }` when converting to JS.** `@vitejs/plugin-react` 6.0.1 handles this internally — we don't write custom Vite plugins — no impact.
+- **`shouldTransformCachedModule`, `resolveImportMeta`, `renderDynamicImport`, `resolveFileUrl` hooks removed.** We use none of these — no impact.
+
+**`@vitejs/plugin-react` 4.3.x → 6.0.1:**
+- **v4→v5** (4.3.x → 5.x): Default `exclude` changed to `[/\/node_modules\//]`; auto-deduplication of `react`/`react-dom` from `resolve.dedupe` removed; Node 20.19+ or 22.12+ required. De-deduplification could theoretically matter for three.js if plugin-react was implicitly deduplicating it — but plugin-react only deduped `react`/`react-dom`, not `three`. We are on Node 22.22.2. No impact.
+- **v5→v6** (5.x → 6.0.1): Babel removed as a bundled dependency; Vite 8+ required. If any Babel plugins were configured via `react({ babel: { plugins: [...] } })`, they must migrate to `@rolldown/plugin-babel`. Our `react()` call in `vite.config.ts` uses zero options — no Babel plugins — so this is a drop-in replacement with no config changes needed. `@rolldown/plugin-babel` and `babel-plugin-react-compiler` are optional peer deps (both confirmed optional via `peerDependenciesMeta`) — we do not need to install them.
+
+**Three/three-webgpu dual-bundle implications (playground-specific):**
+- Vite 8 removes format-sniffing heuristics (the old behaviour where Vite inspected file content to prefer ESM when both `browser` and `module` fields existed). It now strictly follows `resolve.mainFields` ordering. The `three` package ships `three.module.js` (ESM, `module` field) and `three.webgpu.js` (ESM, separate entry). For playground this is lower-risk than docs (no Next.js webpack involved), but we must verify after bumping that `import 'three'` and `import 'three/webgpu'` still resolve to the same three core. If a duplicate-instance symptom appears (the `usedTimes` error noted in CLAUDE.md gotcha #13), the fix is `resolve.alias` in `vite.config.ts` forcing both to the same path — the same mitigation that already exists in `apps/docs/next.config.ts` for webpack.
+- Vitest 4.1.6 peerDeps: `vite: '^6.0.0 || ^7.0.0 || ^8.0.0'` — Vite 8 is fully supported.
+
+### Vitest 2→4.1+ breaking changes that affect us
+
+**Vitest 2→3:**
+- `test()`/`describe()` options argument order changed: `test('name', { retry: 3 }, fn)` is now correct (options second, fn third). Previously it was `test('name', fn, { retry: 3 })`. Vitest 3 warns; Vitest 4 errors. Our existing tests use no per-test options objects — no impact.
+- `spy.mockReset()` now restores original implementation instead of replacing with noop. No `mockReset` calls in our tests (matter-react test suite uses `@testing-library/react`; no spy reset calls confirmed) — no impact.
+- `vi.spyOn()` on an already-spied method reuses existing mock instead of creating new spy. No cascaded spyOn calls in our tests — no impact.
+- Fake timers: Vitest no longer provides default `fakeTimers.toFake` options, now mocks all available timer APIs by default. Our tests do not use fake timers — no impact.
+- Vite 6 `module` condition excluded from `resolve.conditions` by default. Consistent with what Vite 6 does anyway; our package vitest configs have no `resolve.conditions` overrides — no impact.
+- `WorkspaceSpec` type renamed to `TestSpecification`; `Custom` type deprecated in favour of `Test`. We do not import Vitest internal types in our tests or configs — no impact.
+
+**Vitest 3→4:**
+- **Pool rework**: `maxThreads`/`maxForks` → `maxWorkers`; `singleThread`/`singleFork` → `maxWorkers: 1, isolate: false`; `poolOptions` key removed. Our vitest configs use none of these options — no impact.
+- **`workspace` option renamed to `projects`** (deprecated since 3.2, removed/replaced in 4): see `defineWorkspace` section below.
+- **Reporter APIs changed**: `onCollected`, `onSpecsCollected`, `onPathsCollected`, `onTaskUpdate`, `onFinished` removed. We use no custom reporters — no impact.
+- **V8 coverage rework**: `coverage.ignoreEmptyLines` removed; AST-based remapping now default. We have no `coverage` configuration — no impact.
+- **`vi.restoreAllMocks` no longer resets automocks**. We use no automocks — no impact.
+- **Custom elements shadow root printing changed** (`printShadowRoot: false` to restore previous behavior). Our tests use happy-dom, no shadow DOM assertions — no impact.
+- **`deps.external/inline/fallbackCJS`, `poolMatchGlobs`, `environmentMatchGlobs`, `minWorkers`, `browser.testerScripts`** all removed. We use none of these — no impact.
+- **`vite-node` replaced by Vite `ModuleRunner`**; `VITE_NODE_DEPS_MODULE_DIRECTORIES` env var renamed to `VITEST_MODULE_DIRECTORIES`. We set no `VITE_NODE_DEPS_MODULE_DIRECTORIES` anywhere in the repo — no impact.
+
+**`defineWorkspace`:** Still exported from `vitest/config` in Vitest 4.1.6 — it has not been removed. However, the `workspace` configuration option was deprecated in Vitest 3.2 and is now replaced by the `projects` key inside `defineConfig`. The recommended migration is to consolidate into `vitest.config.ts` using `projects`. The standalone `vitest.workspace.ts` pattern (with `defineWorkspace`) still works but is deprecated. **Action required** — see adaptation section below.
+
+**`passWithNoTests`:** Still supported in Vitest 4. No breaking changes documented. Confirmed present in current Vitest config docs sidebar.
+
+**`environment: 'happy-dom'`:** Still supported. Custom environments now optionally accept `viteEnvironment` instead of `transformMode`, but the `happy-dom` string value itself is unchanged. `happy-dom` remains an optional peer dependency of Vitest 4.
+
+**`setupFiles`:** Still supported. No breaking changes.
+
+**`@testing-library/react` compatibility:** No peer dep conflict documented. `@testing-library/react` 14+ supports React 19 and does not have a Vitest version constraint. Vitest 4 does not change the testing library integration surface.
+
+### `vitest.workspace.ts` adaptation needed?
+
+Yes — the current `vitest.workspace.ts` using `defineWorkspace` is deprecated (since Vitest 3.2). It still works in 4.1.6 but will eventually be removed. The recommended migration is:
+
+**Delete** `vitest.workspace.ts` and **create** `vitest.config.ts` at the repo root:
+
+```typescript
+import { defineConfig } from 'vitest/config'
+
+export default defineConfig({
+  test: {
+    projects: ['packages/*/vitest.config.ts'],
+  },
+})
+```
+
+This is functionally identical to the current `defineWorkspace(['packages/*/vitest.config.ts'])` and removes the deprecation. The glob pattern `'packages/*/vitest.config.ts'` is the same.
+
+Note: if a root `vitest.config.ts` already exists or is created for another purpose, the `projects` key can be added to it. Currently there is no root `vitest.config.ts`.
+
+### Per-package `vitest.config.ts` adaptation needed?
+
+No changes required to any of the three per-package configs:
+- `packages/matter/vitest.config.ts`: `environment: 'happy-dom'`, `passWithNoTests: true` — both still supported, no deprecated options used.
+- `packages/matter-react/vitest.config.ts`: same, plus `setupFiles`, `globals: false`, `@vitejs/plugin-react` — all still supported. The `react()` plugin import will need its package updated to `@vitejs/plugin-react` 6.0.1 (same import path, zero config changes since we use no Babel options).
+- `packages/matter-cli/vitest.config.ts`: `environment: 'node'`, `passWithNoTests: true` — both still supported.
+
+The only per-package change is bumping `@vitejs/plugin-react` in `packages/matter-react/package.json` devDeps (from `^2.x` whatever is currently pinned there) alongside the root bump.
+
+### Order of bumps
+
+1. **Vite 5→8** (`apps/playground/package.json` + root `package.json` devDeps)
+2. **`@vitejs/plugin-react` 4.3.x → 6.0.1** (root `package.json`, `apps/playground/package.json`, `packages/matter-react/package.json`)
+3. **Vitest 2→4.1.6 + `@vitest/ui` 2→4.1.6** (all package `devDependencies` + root)
+4. **`vitest.workspace.ts` → root `vitest.config.ts`** (deprecation cleanup, same task as step 3)
+
+Reason: Default order holds. No forcing constraint — Vitest 4.1.6 accepts Vite `^6 || ^7 || ^8`, so Vitest can be bumped after or alongside Vite 8 without conflict. Steps 1 and 2 must be co-ordinated because `@vitejs/plugin-react` 6.0.1 requires Vite 8 (peerDep: `^8.0.0`). Step 3 is independent of steps 1–2 from a peer-dep perspective but logically follows once the Vite bump is stable.
+
+### Confidence level
+
+**HIGH** — the breaking changes that affect us are well-defined and limited:
+1. `@vitejs/plugin-react` 6.x drops Babel; our `react()` call uses no Babel options — zero config change.
+2. `vitest.workspace.ts` → root `vitest.config.ts` with `projects` key — one-file rename + reshaping, functionally identical.
+3. No pool, reporter, coverage, or test-API breaking changes affect our test suite.
+4. The three/webgpu dual-bundle risk in playground needs a post-bump smoke check but has a known mitigation (`resolve.alias`) if needed.
