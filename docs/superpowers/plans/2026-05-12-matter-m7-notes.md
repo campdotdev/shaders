@@ -910,3 +910,50 @@ a11y: all 8 axe-clean assertions pass (/, all 6 component pages, /recipes).
 | pnpm smoke     | 0    |                                        |
 | vp lint        | 0    | 15 warnings (pre-existing, not errors) |
 | vp check       | 0    | All 195 files correctly formatted      |
+
+## M7 fix-up: completed ESLint/Prettier removal + dev shortcuts (captured 2026-05-12)
+
+The task description for this fix-up described `tooling/eslint-config/`, `eslint.config.js`,
+`.prettierrc.json`, and 7+ workspace-dep references still being present on the branch. **Audit
+result: the `feat/m7-vite-plus` branch was already clean in all those respects** — the C.1
+implementer's report was accurate for the branch itself. The issues described (broken `eslint src`
+invocation) exist on `main`, which never received the migration; the branch diff was correct.
+
+What was actually outstanding on the branch:
+
+1. Root `format` script had an extraneous glob path argument (`vp fmt "**/*.{...}"`) — fixed to
+   `vp fmt` (vp scans the workspace by default; the argument was redundant and non-standard).
+2. `dev:playground` and `dev:docs` shortcuts were missing from root `package.json` — added as
+   Option 2 dev shortcuts using `vp run @matter/playground#dev` and `vp run @matter/docs#dev`.
+3. `CLAUDE.md` had minor Oxfmt whitespace drift (table column widths) — fixed via `vp check --fix`.
+
+### Files changed in fix-up
+
+- `package.json` (root): `format` script simplified; `dev:playground` and `dev:docs` added
+- `CLAUDE.md`: Oxfmt table whitespace normalization
+
+### Self-review checklist
+
+- `find . -name "eslint.config.js" -not -path "*/node_modules/*"` — returns nothing (worktrees only, not tracked)
+- `find . -name ".prettierrc*" -not -path "*/node_modules/*"` — returns nothing (worktrees only)
+- `ls tooling/` — `tsconfig` only (no `eslint-config`)
+- `grep -rn "@matter/eslint-config" --include='*.json' .` — zero matches
+- Root `package.json` has `dev:playground` and `dev:docs` scripts
+- Root `package.json` `format` script: `vp fmt` (no path arg)
+- Per-package lint: `vp lint src` (vp surfaces oxlint; no direct oxlint binary in PATH)
+
+### Cold pipeline verification (Turbo cache cleared via pnpm clean)
+
+| Command        | Exit | Notes                                                              |
+| -------------- | ---- | ------------------------------------------------------------------ |
+| pnpm typecheck | 0    | 8 tasks, 0 cached                                                  |
+| pnpm lint      | 0    | 5 tasks, 0 cached; 1 warning in matter (pre-existing useless-spread) |
+| pnpm build     | 0    | 5 tasks, 2 cached (libs rebuilt fresh)                             |
+| pnpm test      | 0    | 126 tests (55 matter + 25 matter-react + 46 matter-cli)            |
+| pnpm smoke     | 0    | byte-identical file check passed                                   |
+| vp lint        | 0    | 15 warnings, 0 errors (workspace-wide)                             |
+| vp check       | 0    | All 195 files correctly formatted                                  |
+| vp run typecheck | 0  | 8 tasks, cached                                                    |
+| vp run build   | 0    | 5 tasks, cached                                                    |
+| vp test        | 0    | 126 passed, 1 todo (127 total)                                     |
+| Playwright     | 0    | 15/15 (8 a11y + 7 visual snapshots)                                |

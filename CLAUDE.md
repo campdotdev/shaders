@@ -36,18 +36,18 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 
 ## Milestone status
 
-| #   | Milestone                                      | Status      | Tag           |
-| --- | ---------------------------------------------- | ----------- | ------------- |
-| 0   | Repo bootstrap                                 | ✅ Complete | `m0-complete` |
-| 1   | Vertical slice — `<LinearGradient>` end-to-end | ✅ Complete | `m1-complete` |
-| 2   | `@lovo/matter-cli`                             | ✅ Complete | `m2-complete` |
-| 3   | The other 5 v1 components                      | ✅ Complete | `m3-complete` |
-| 4   | Docs site polish (light scope)                 | ✅ Complete | `m4-complete` |
-| 5   | Performance + testing + a11y                   | ✅ Complete | `m5-complete` |
-| 6   | v0.1.0 publish                                 | ✅ Complete | `m6-complete` |
+| #   | Milestone                                                                          | Status      | Tag           |
+| --- | ---------------------------------------------------------------------------------- | ----------- | ------------- |
+| 0   | Repo bootstrap                                                                     | ✅ Complete | `m0-complete` |
+| 1   | Vertical slice — `<LinearGradient>` end-to-end                                     | ✅ Complete | `m1-complete` |
+| 2   | `@lovo/matter-cli`                                                                 | ✅ Complete | `m2-complete` |
+| 3   | The other 5 v1 components                                                          | ✅ Complete | `m3-complete` |
+| 4   | Docs site polish (light scope)                                                     | ✅ Complete | `m4-complete` |
+| 5   | Performance + testing + a11y                                                       | ✅ Complete | `m5-complete` |
+| 6   | v0.1.0 publish                                                                     | ✅ Complete | `m6-complete` |
 | 7   | Vite+ adoption (runtime + pkg mgr + `vp migrate` consolidated with Oxlint + Oxfmt) | ✅ Complete | `m7-complete` |
-| 7.1 | tsup → tsdown (3 packages)                                                        | Pending     | —             |
-| 7.2 | Turborepo → `vp run`                                                              | Pending     | —             |
+| 7.1 | tsup → tsdown (3 packages)                                                         | Pending     | —             |
+| 7.2 | Turborepo → `vp run`                                                               | Pending     | —             |
 
 Each milestone is its own session and its own implementation plan. Don't try to do multiple milestones in one session.
 
