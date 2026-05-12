@@ -17,6 +17,10 @@ const webgpuBundle = resolve(threeDir, 'build/three.webgpu.js')
 export default defineConfig({
   plugins: [react()],
   resolve: {
+    // Vite alias entries are PREFIX matches in order — unlike webpack's regex
+    // exact-match `three$` form in apps/docs/next.config.ts. The bare `three`
+    // entry below also catches `three/examples/*` etc., which is intentional:
+    // every three-* subpath should route to the single webgpu bundle.
     alias: {
       'three/webgpu': webgpuBundle,
       'three/tsl': webgpuBundle,
