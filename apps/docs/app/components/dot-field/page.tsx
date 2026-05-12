@@ -8,10 +8,9 @@ import { VisualTestPause } from '../../_lib/visualTestHooks'
 
 // DotField pulls in three/webgpu, which references `self` at module load
 // time and breaks Next's SSR. Load it client-only.
-const DotField = dynamic(
-  () => import('@matter/registry/dot-field').then((m) => m.DotField),
-  { ssr: false },
-)
+const DotField = dynamic(() => import('@matter/registry/dot-field').then((m) => m.DotField), {
+  ssr: false,
+})
 
 interface Params {
   color: string
@@ -91,7 +90,7 @@ export default function DotFieldPage() {
             fontSize: '0.85rem',
           }}
         >
-{`<DotField spacing={30} dotSize={2} color="#888" reach={100} strength={1} />`}
+          {`<DotField spacing={30} dotSize={2} color="#888" reach={100} strength={1} />`}
         </pre>
       </section>
     </main>

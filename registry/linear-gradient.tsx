@@ -103,7 +103,9 @@ function LinearGradientMesh(props: LinearGradientProps) {
       }
     })
 
-    const focal = (focalUniform as unknown as { value: { x: number; y: number } | readonly [number, number] }).value
+    const focal = (
+      focalUniform as unknown as { value: { x: number; y: number } | readonly [number, number] }
+    ).value
     const focalX = Array.isArray(focal) ? focal[0] : (focal as { x: number }).x
     const focalY = Array.isArray(focal) ? focal[1] : (focal as { y: number }).y
 
@@ -133,10 +135,16 @@ function LinearGradientMesh(props: LinearGradientProps) {
     const tAnimated =
       speedScalar === 0
         ? tNode
-        : mod(tNode.add(time.mul(speedScalar)), 2).sub(1).abs().oneMinus()
+        : mod(tNode.add(time.mul(speedScalar)), 2)
+            .sub(1)
+            .abs()
+            .oneMinus()
 
     const material = new MeshBasicNodeMaterial()
-    material.colorNode = colorRamp(tAnimated, stops) as unknown as MeshBasicNodeMaterial['colorNode']
+    material.colorNode = colorRamp(
+      tAnimated,
+      stops,
+    ) as unknown as MeshBasicNodeMaterial['colorNode']
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
     ctx.scene.add(mesh)
@@ -152,13 +160,13 @@ function LinearGradientMesh(props: LinearGradientProps) {
       } catch (err) {
         // Known benign three.js webgpu race during rapid material churn —
         // see CLAUDE.md gotchas. Demoted to debug so it doesn't spam logs.
-        // eslint-disable-next-line no-console
+        // oxlint-disable-next-line no-console
         console.debug('[LinearGradient] material.dispose ignored:', err)
       }
       try {
         mesh.geometry.dispose()
       } catch (err) {
-        // eslint-disable-next-line no-console
+        // oxlint-disable-next-line no-console
         console.debug('[LinearGradient] geometry.dispose ignored:', err)
       }
     }

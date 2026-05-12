@@ -124,7 +124,6 @@ The component creates its own canvas internally via `<MatterScene>` (auto-wrappi
 
 ```tsx
 import { MatterScene } from '@lovo/matter-react'
-
 ;<MatterScene>
   <LinearGradient />
   <MeshGradient />

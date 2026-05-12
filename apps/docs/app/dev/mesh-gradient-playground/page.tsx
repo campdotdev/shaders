@@ -6,10 +6,9 @@ import dynamic from 'next/dynamic'
 // through @lovo/matter and @lovo/matter-react), which references `self` at
 // module load and breaks Next's SSR pass. Load it client-only.
 // (CLAUDE.md gotcha #10 — same pattern as fbm-playground/page.tsx.)
-const MeshGradientPlaygroundScene = dynamic(
-  () => import('./MeshGradientPlaygroundScene'),
-  { ssr: false },
-)
+const MeshGradientPlaygroundScene = dynamic(() => import('./MeshGradientPlaygroundScene'), {
+  ssr: false,
+})
 
 export default function MeshGradientPlaygroundPage() {
   return <MeshGradientPlaygroundScene />

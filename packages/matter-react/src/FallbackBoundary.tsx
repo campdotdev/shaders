@@ -18,5 +18,5 @@ export function FallbackBoundary({ fallback, children }: FallbackBoundaryProps) 
   useEffect(() => {
     setMounted(true)
   }, [])
-  return <>{mounted ? children : fallback ?? null}</>
+  return <>{mounted ? children : (fallback ?? null)}</>
 }

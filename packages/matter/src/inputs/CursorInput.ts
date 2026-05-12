@@ -25,7 +25,9 @@ export interface CursorInputOptions {
    * viewport scene (e.g. a 70vh hero section) see a cursor offset that scales
    * with the canvas's vertical position on the page.
    */
-  element?: { getBoundingClientRect(): { left: number; top: number; width: number; height: number } }
+  element?: {
+    getBoundingClientRect(): { left: number; top: number; width: number; height: number }
+  }
 }
 
 type ChangeListener = (value: Vec2) => void

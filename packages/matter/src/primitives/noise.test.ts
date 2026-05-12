@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect } from 'vite-plus/test'
 import { uv } from 'three/tsl'
 import { noise } from './noise.js'
 

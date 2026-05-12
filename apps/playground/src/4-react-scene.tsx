@@ -26,7 +26,9 @@ function MagentaPlane() {
 
 function App() {
   return (
-    <MatterScene fallback={<div style={{ color: '#888', padding: '1rem' }}>Initializing renderer…</div>}>
+    <MatterScene
+      fallback={<div style={{ color: '#888', padding: '1rem' }}>Initializing renderer…</div>}
+    >
       <MagentaPlane />
     </MatterScene>
   )

@@ -46,9 +46,9 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src",
-    "test": "vitest run",
-    "test:watch": "vitest",
+    "lint": "vp lint src",
+    "test": "vp test run",
+    "test:watch": "vp test",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "peerDependencies": {
@@ -58,7 +58,6 @@
   },
   "devDependencies": {
     "@lovo/matter": "workspace:*",
-    "@matter/eslint-config": "workspace:*",
     "@matter/tsconfig": "workspace:*",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
@@ -71,6 +70,7 @@
     "three": "^0.170.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "^4.1.6"
+    "vitest": "catalog:",
+    "vite-plus": "catalog:"
   }
 }

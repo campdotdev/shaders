@@ -35,5 +35,7 @@ export async function readUrl(url: string): Promise<string> {
     return await res.text()
   }
 
-  throw new Error(`Unsupported protocol: ${parsed.protocol} (only file://, http://, https:// are supported)`)
+  throw new Error(
+    `Unsupported protocol: ${parsed.protocol} (only file://, http://, https:// are supported)`,
+  )
 }

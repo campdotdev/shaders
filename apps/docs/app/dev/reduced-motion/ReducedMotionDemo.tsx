@@ -8,10 +8,7 @@ import { Pane } from 'tweakpane'
 
 // Waves pulls in three/webgpu, which references `self` at module load time
 // and breaks Next's SSR. Load it client-only.
-const Waves = dynamic(
-  () => import('@matter/registry/waves').then((m) => m.Waves),
-  { ssr: false },
-)
+const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false })
 
 // Tweakpane mutates this object directly; React state tracks the display value.
 const INITIAL_PARAMS: { policy: ReducedMotionPolicy } = { policy: 'auto' }
@@ -53,11 +50,10 @@ export function ReducedMotionDemo() {
           </div>
         </div>
         <div>
-          <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>
-            Waves
-          </p>
+          <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>Waves</p>
           <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#666' }}>
-            Hover over the canvas to trigger the cursor ripple — it should also freeze when policy is paused.
+            Hover over the canvas to trigger the cursor ripple — it should also freeze when policy
+            is paused.
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
             <Waves

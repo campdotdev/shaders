@@ -14,19 +14,19 @@
 
 Each phase is 1–2 days and ends at a runnable, observable point per the user's pacing preference. "Stop and play" gate is called out at the end of each phase.
 
-| #    | Phase                                                  | Validation gate                                                                                                                              |
-| ---- | ------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| 5.1  | Reduced-motion — gated `time` infrastructure           | Toggle OS reduced-motion → all six docs component pages slow to 30%; manual override pauses to 0.                                            |
-| 5.2  | Pause when tab hidden                                  | Open the docs hero, switch to another tab for 5s, return — frame counter shows zero increment while away.                                    |
+| #    | Phase                                                  | Validation gate                                                                                                                             |
+| ---- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| 5.1  | Reduced-motion — gated `time` infrastructure           | Toggle OS reduced-motion → all six docs component pages slow to 30%; manual override pauses to 0.                                           |
+| 5.2  | Pause when tab hidden                                  | Open the docs hero, switch to another tab for 5s, return — frame counter shows zero increment while away.                                   |
 | 5.3  | Pause when offscreen                                   | Long scroll page with three component slots — only the visible one ticks; `MatterMonitor` proves it.                                        |
 | 5.4  | Render-on-demand opt-in                                | `<LinearGradient speed={0}>` renders one frame and stops; setting `speed={0.5}` resumes the loop.                                           |
 | 5.5  | `MatterMonitor` dev overlay                            | Drop `<MatterMonitor />` into the docs `/dev/perf-monitor` page; live FPS + tick count + paused-state visible.                              |
-| 5.6  | Hook & binding unit tests                              | `pnpm --filter @lovo/matter-react test` runs ≥ 25 tests, all green.                                                                          |
-| 5.7  | Engine perf-default unit tests                         | `pnpm --filter @lovo/matter test` covers reduced-motion, visibility, intersection, render-on-demand at the unit level; all green.            |
-| 5.8  | Playwright visual regression — setup + 6 baselines    | `pnpm --filter @matter/docs-tests test:visual` produces 6 baselines on first run, zero diffs on second run.                                  |
-| 5.9  | Playwright tolerance tuning + flake hardening         | 10 consecutive `test:visual` runs all green; an intentional pixel change in one component causes that test (and only that one) to fail.      |
+| 5.6  | Hook & binding unit tests                              | `pnpm --filter @lovo/matter-react test` runs ≥ 25 tests, all green.                                                                         |
+| 5.7  | Engine perf-default unit tests                         | `pnpm --filter @lovo/matter test` covers reduced-motion, visibility, intersection, render-on-demand at the unit level; all green.           |
+| 5.8  | Playwright visual regression — setup + 6 baselines     | `pnpm --filter @matter/docs-tests test:visual` produces 6 baselines on first run, zero diffs on second run.                                 |
+| 5.9  | Playwright tolerance tuning + flake hardening          | 10 consecutive `test:visual` runs all green; an intentional pixel change in one component causes that test (and only that one) to fail.     |
 | 5.10 | A11y pass — `prefers-reduced-motion`, ARIA, axe-core   | `axe-core` runs clean on all six component pages, the homepage, and the recipes index.                                                      |
-| 5.11 | CI gates — tests + visual regression in GitHub Actions | A pushed branch shows separate `unit-tests` and `visual-regression` jobs; both pass on a clean PR; both fail on a deliberate regression PR.  |
+| 5.11 | CI gates — tests + visual regression in GitHub Actions | A pushed branch shows separate `unit-tests` and `visual-regression` jobs; both pass on a clean PR; both fail on a deliberate regression PR. |
 | 5.12 | M5 wrap-up — docs, memory, tag                         | `git tag m5-complete && git push --tags`; CLAUDE.md milestone table updated; memory entry written.                                          |
 
 Total: ~14–18 days at the user's pace, with 12 explicit play gates.
@@ -36,18 +36,21 @@ Total: ~14–18 days at the user's pace, with 12 explicit play gates.
 ## File Structure
 
 **New files (engine):**
+
 - `packages/matter/src/runtime/visibility.ts` — `createVisibilityWatcher()` factory wrapping `document.visibilityState`
 - `packages/matter/src/runtime/intersection.ts` — `createIntersectionWatcher(canvas)` factory wrapping IntersectionObserver
 - `packages/matter/src/runtime/reducedMotion.ts` — `createReducedMotionWatcher()` + gated `time` factory
 - `packages/matter/src/runtime/visibility.test.ts`, `intersection.test.ts`, `reducedMotion.test.ts`
 
 **Modified files (engine):**
+
 - `packages/matter/src/runtime/MatterScheduler.ts` — add `setIdle()` API for render-on-demand
 - `packages/matter/src/runtime/MatterScheduler.test.ts` — extend with `setIdle` tests
 - `packages/matter/src/primitives/tsl-reexports.ts` — replace `time` with gated `time`
 - `packages/matter/src/index.ts` — export new public surface (`setReducedMotionPolicy`, etc.)
 
 **New files (React binding):**
+
 - `packages/matter-react/src/MatterMonitor.tsx` — dev overlay component
 - `packages/matter-react/src/useStaticHint.ts` — opt-in render-on-demand hook
 - `packages/matter-react/src/MatterMonitor.test.tsx`, `useShaderMaterial.test.tsx`, `useAnimatableUniform.test.tsx`, `useCursor.test.tsx`, `MatterScene.test.tsx`, `FallbackBoundary.test.tsx`, `useStaticHint.test.tsx`
@@ -55,14 +58,17 @@ Total: ~14–18 days at the user's pace, with 12 explicit play gates.
 - `packages/matter-react/src/test-setup.ts` — RTL setup, jsdom polyfills
 
 **Modified files (React binding):**
+
 - `packages/matter-react/src/MatterScene.tsx` — wire visibility, intersection, reduced-motion observers into the scheduler
 - `packages/matter-react/src/index.ts` — export `MatterMonitor`, `useStaticHint`
 - `packages/matter-react/package.json` — add `happy-dom`, `@testing-library/react`, `@testing-library/dom`, `@testing-library/jest-dom` devDeps
 
 **Modified files (registry):**
+
 - `registry/linear-gradient.tsx` — opt into render-on-demand via `useStaticHint(speed === 0 && !interactive)`
 
 **New files (docs tests):**
+
 - `apps/docs-tests/package.json`, `tsconfig.json`, `playwright.config.ts`
 - `apps/docs-tests/visual/linear-gradient.spec.ts` (and 5 more — one per component)
 - `apps/docs-tests/visual/recipes-cosmic-aurora.spec.ts` (and 3 more — one per recipe)
@@ -70,6 +76,7 @@ Total: ~14–18 days at the user's pace, with 12 explicit play gates.
 - `apps/docs-tests/a11y/component-pages.spec.ts` — axe-core pass on all 6 component pages
 
 **New files (docs site):**
+
 - `apps/docs/app/dev/perf-monitor/page.tsx` — `<MatterMonitor />` showcase
 - `apps/docs/app/dev/perf-monitor/PerfMonitorDemo.tsx`
 - `apps/docs/app/dev/offscreen-pause/page.tsx` — long scroll test page for 5.3
@@ -77,17 +84,20 @@ Total: ~14–18 days at the user's pace, with 12 explicit play gates.
 - `apps/docs/app/_lib/visualTestHooks.ts` — `?visualTest=1` query param hook that pauses scheduler at frame 60 and exposes `window.__matterTestReady`
 
 **Modified files (docs site):**
+
 - `apps/docs/app/components/*/page.tsx` (×6) — add `aria-hidden` + `role="presentation"` on the canvas wrapper for decorative shader; add `prefers-reduced-motion` notice on Tweakpane panel where relevant
 - `apps/docs/app/_components/PropsPlayground.tsx` — keyboard accessibility audit fixes (focus rings, aria-labels)
 - `apps/docs/next.config.ts` — verify `experimental.serverActions` not blocking (no change expected)
 - `apps/docs/package.json` — add scripts (`test:visual`, `test:visual:update`)
 
 **Modified files (CI / root):**
+
 - `.github/workflows/ci.yml` — add `unit-tests` and `visual-regression` jobs
 - `package.json` — add `test:visual` root script
 - `turbo.json` — add `test` and `test:visual` task definitions
 
 **Modified files (docs):**
+
 - `CLAUDE.md` — milestone table: M5 → complete
 - `.claude/projects/.../memory/project_matter_m5_complete.md` — new memory entry
 - `.claude/projects/.../memory/MEMORY.md` — link to M5 entry
@@ -99,6 +109,7 @@ Total: ~14–18 days at the user's pace, with 12 explicit play gates.
 **Goal:** Replace the TSL `time` re-export in `@lovo/matter` with a gated version whose value is multiplied by an engine-controlled scalar. `prefers-reduced-motion: reduce` → scale = 0.3; explicit override → scale = 0 (paused) or 1 (forced full). Existing registry components inherit the behavior with zero changes.
 
 **Files:**
+
 - Create: `packages/matter/src/runtime/reducedMotion.ts`
 - Create: `packages/matter/src/runtime/reducedMotion.test.ts`
 - Modify: `packages/matter/src/primitives/tsl-reexports.ts`
@@ -495,10 +506,10 @@ Read the current `packages/matter/src/primitives/tsl-reexports.ts`. Replace the 
 
 ```ts
 // BEFORE
-export { time, uv, vec2, vec3, vec4, /* … */ } from 'three/tsl'
+export { time, uv, vec2, vec3, vec4 /* … */ } from 'three/tsl'
 
 // AFTER — keep all the other re-exports unchanged, but pull `time` separately
-export { uv, vec2, vec3, vec4, /* … */ } from 'three/tsl'
+export { uv, vec2, vec3, vec4 /* … */ } from 'three/tsl'
 
 import { time as _builtinTime } from 'three/tsl'
 import { getReducedMotionTimeScale } from '../runtime/reducedMotion.js'
@@ -614,9 +625,9 @@ export default function Page() {
       <h1>Reduced motion playground</h1>
       <p>
         Toggle the OS setting (System Settings → Accessibility → Display → Reduce motion) or the
-        runtime override below. With <code>auto</code>, scale follows the OS; with{' '}
-        <code>off</code> it is always 1; with <code>slow</code> it is always 0.3; with{' '}
-        <code>paused</code> it is always 0.
+        runtime override below. With <code>auto</code>, scale follows the OS; with <code>off</code>{' '}
+        it is always 1; with <code>slow</code> it is always 0.3; with <code>paused</code> it is
+        always 0.
       </p>
       <ReducedMotionDemo />
     </main>
@@ -630,6 +641,7 @@ Run: `pnpm --filter @matter/docs dev`
 Open: http://localhost:3000/dev/reduced-motion
 
 Expected behavior:
+
 - With OS reduce-motion off + policy `auto` → gradient drifts at full speed
 - Switch policy to `slow` → gradient drifts visibly slower (~30% speed)
 - Switch policy to `paused` → gradient appears frozen (the math is still running, but `time` is multiplied by 0)
@@ -654,6 +666,7 @@ git commit -m "feat(docs): /dev/reduced-motion demo page for policy gating"
 - [ ] **Step 1: Capture the validation evidence**
 
 Open the demo page in dev. Cycle through all four policies. Confirm:
+
 1. `auto` (OS reduce off) → full speed
 2. `auto` (OS reduce on) → ~30% speed
 3. `off` → full speed regardless
@@ -661,6 +674,7 @@ Open the demo page in dev. Cycle through all four policies. Confirm:
 5. `paused` → frozen
 
 If any of the above doesn't match, debug. Likely culprits:
+
 - TSL `time` cached in a `useMemo` without re-reading the uniform — the gating relies on the uniform being multiplied at TSL graph build time, then the value updating per frame.
 - A registry component importing `time` from `three/tsl` directly instead of `@lovo/matter`. Grep: `grep -rn "from 'three/tsl'" registry/` — every `time` should come from `@lovo/matter`.
 
@@ -673,6 +687,7 @@ If any of the above doesn't match, debug. Likely culprits:
 **Goal:** Wire `document.visibilityState` to the scheduler. When the tab is hidden, scheduler.pause(); when visible again, scheduler.resume(). Saves GPU time for backgrounded users.
 
 **Files:**
+
 - Create: `packages/matter/src/runtime/visibility.ts`
 - Create: `packages/matter/src/runtime/visibility.test.ts`
 - Modify: `packages/matter-react/src/MatterScene.tsx`
@@ -862,6 +877,7 @@ Open Chrome DevTools → Performance Monitor (More Tools → Performance Monitor
 Alternative: open the page, then open another tab; in the other tab open DevTools and look at the original tab in the Activity panel — should show 0 fps while in background.
 
 If frames continue while hidden, scheduler.pause() didn't fire. Check:
+
 - The visibility watcher subscription is created **after** scheduler.start()
 - Strict-Mode-safe: in dev, the cleanup runs once during the pseudo-unmount; ensure the second mount creates a fresh watcher (it does, because `setup()` is called again).
 
@@ -874,6 +890,7 @@ If frames continue while hidden, scheduler.pause() didn't fire. Check:
 **Goal:** IntersectionObserver on the canvas pauses the scheduler when the canvas is fully out of the viewport, resumes when any portion comes back. Saves GPU when the user has scrolled past a shader.
 
 **Files:**
+
 - Create: `packages/matter/src/runtime/intersection.ts`
 - Create: `packages/matter/src/runtime/intersection.test.ts`
 - Modify: `packages/matter-react/src/MatterScene.tsx`
@@ -1128,7 +1145,13 @@ const Slot = ({ id, color }: { id: number; color: string }) => (
   >
     <LinearGradient colors={[color, '#7b9cff']} angle={45 + id * 30} speed={0.5} />
     <div
-      style={{ position: 'absolute', top: 8, left: 8, color: '#fff', font: 'bold 0.9rem monospace' }}
+      style={{
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        color: '#fff',
+        font: 'bold 0.9rem monospace',
+      }}
     >
       Slot {id} — watch its tick counter
     </div>
@@ -1176,11 +1199,13 @@ Note: This page imports `MatterMonitor`, which is implemented in Phase 5.5. Defe
 - [ ] **Step 3: Validation gate (after 5.5 lands)**
 
 After Phase 5.5 ships `MatterMonitor`, open http://localhost:3000/dev/offscreen-pause. Scroll slowly. Each scene's tick counter should:
+
 - Increment when its slot is in view
 - Stop incrementing when fully scrolled past
 - Resume when scrolled back into view
 
 If a scene continues to tick while offscreen, debug:
+
 - `IntersectionObserver` not firing — verify with `console.log` inside `intersection.ts`
 - Watcher disposed prematurely (Strict Mode) — confirm a fresh watcher is created on the second mount
 
@@ -1193,6 +1218,7 @@ If a scene continues to tick while offscreen, debug:
 **Goal:** Add a `setIdle(boolean)` method to `MatterScheduler`. When idle, the rAF loop skips ticks (callback runs once for a final flush, then halts until idle is cleared). Add a `useStaticHint(idle: boolean)` hook in `@lovo/matter-react` that components like `<LinearGradient speed={0}>` can opt into. Wire LinearGradient as the proof point.
 
 **Files:**
+
 - Modify: `packages/matter/src/runtime/MatterScheduler.ts`
 - Modify: `packages/matter/src/runtime/MatterScheduler.test.ts`
 - Create: `packages/matter-react/src/useStaticHint.ts`
@@ -1549,9 +1575,10 @@ Open: http://localhost:3000/components/linear-gradient
 Open Chrome DevTools → Performance → Record. Set `speed` to 0 in the Tweakpane panel. After 1 second, recording should show essentially zero JS frames. Set `speed` to 0.5 — frames return at 60fps.
 
 If frames continue at speed=0:
+
 - Confirm `useStaticHint` actually fires on prop change. Add a `console.log('[LinearGradient] static?', isStatic)`.
 - Confirm `scheduler.setIdle(true)` is being called via a `console.log` inside `setIdle`.
-- The first tick *after* `setIdle(true)` is intentional (final flush) — verify the loop stops on tick 2+.
+- The first tick _after_ `setIdle(true)` is intentional (final flush) — verify the loop stops on tick 2+.
 
 - [ ] **Step 2: No commit** (validation only)
 
@@ -1562,6 +1589,7 @@ If frames continue at speed=0:
 **Goal:** A small `<MatterMonitor />` component that renders an HTML overlay showing live FPS, total ticks, paused state, and idle state. Drop into any `<MatterScene>` for instant perf observability.
 
 **Files:**
+
 - Create: `packages/matter-react/src/MatterMonitor.tsx`
 - Create: `packages/matter-react/src/MatterMonitor.test.tsx`
 - Modify: `packages/matter-react/src/index.ts`
@@ -1743,7 +1771,15 @@ export function PerfMonitorDemo() {
   return (
     <div>
       <label style={{ display: 'block', marginBottom: 12 }}>
-        speed: <input type="range" min={0} max={2} step={0.1} value={speed} onChange={(e) => setSpeed(+e.target.value)} />
+        speed:{' '}
+        <input
+          type="range"
+          min={0}
+          max={2}
+          step={0.1}
+          value={speed}
+          onChange={(e) => setSpeed(+e.target.value)}
+        />
         <code style={{ marginLeft: 8 }}>{speed.toFixed(1)}</code>
       </label>
       <div style={{ position: 'relative', width: 600, height: 400 }}>
@@ -1751,9 +1787,9 @@ export function PerfMonitorDemo() {
         <MatterMonitor anchor="top-right" />
       </div>
       <p style={{ marginTop: 12, color: '#666' }}>
-        Set <code>speed</code> to 0 — fps should drop to 0 after one final flush tick (render-on-demand).
-        Switch tabs — fps should drop to 0 (visibility pause). Scroll the canvas off-screen — fps should
-        drop to 0 (intersection pause).
+        Set <code>speed</code> to 0 — fps should drop to 0 after one final flush tick
+        (render-on-demand). Switch tabs — fps should drop to 0 (visibility pause). Scroll the canvas
+        off-screen — fps should drop to 0 (intersection pause).
       </p>
     </div>
   )
@@ -1767,10 +1803,9 @@ Create `apps/docs/app/dev/perf-monitor/page.tsx`:
 ```tsx
 import dynamic from 'next/dynamic'
 
-const PerfMonitorDemo = dynamic(
-  () => import('./PerfMonitorDemo').then((m) => m.PerfMonitorDemo),
-  { ssr: false },
-)
+const PerfMonitorDemo = dynamic(() => import('./PerfMonitorDemo').then((m) => m.PerfMonitorDemo), {
+  ssr: false,
+})
 
 export default function Page() {
   return (
@@ -1788,6 +1823,7 @@ Run: `pnpm --filter @matter/docs dev`
 Open: http://localhost:3000/dev/perf-monitor
 
 Verify:
+
 1. Default speed (0.5): fps shows ~60, tick counter increments rapidly.
 2. Set speed to 0: fps drops to 0 after one tick (you may briefly see fps:60 → 0). Tick counter freezes.
 3. Switch to another tab for 5s, return: tick counter is unchanged from the moment you switched away.
@@ -1809,6 +1845,7 @@ git commit -m "feat(docs): /dev/perf-monitor and /dev/offscreen-pause showcase p
 **Goal:** Stand up a happy-dom + RTL test environment in `@lovo/matter-react` and write unit tests for every hook and binding component. Lays the foundation for confident refactoring.
 
 **Files:**
+
 - Modify: `packages/matter-react/package.json` (add devDeps)
 - Modify: `packages/matter-react/vitest.config.ts` (add happy-dom env + setup)
 - Create: `packages/matter-react/src/test-setup.ts`
@@ -2034,7 +2071,13 @@ import { render, act } from '@testing-library/react'
 import { useEffect, useRef } from 'react'
 import { useCursor } from './useCursor.js'
 
-function Probe({ canvas, onCursor }: { canvas: HTMLCanvasElement | null; onCursor: (uv: { x: number; y: number }) => void }) {
+function Probe({
+  canvas,
+  onCursor,
+}: {
+  canvas: HTMLCanvasElement | null
+  onCursor: (uv: { x: number; y: number }) => void
+}) {
   const ref = useRef(canvas)
   useEffect(() => {
     ref.current = canvas
@@ -2202,9 +2245,7 @@ describe('MatterScene', () => {
   })
 
   it('renders fallback before context resolves', () => {
-    const { container } = render(
-      <MatterScene fallback={<div data-testid="fb">loading</div>} />,
-    )
+    const { container } = render(<MatterScene fallback={<div data-testid="fb">loading</div>} />)
     expect(container.querySelector('[data-testid="fb"]')).toBeInTheDocument()
   })
 
@@ -2236,6 +2277,7 @@ Run: `pnpm --filter @lovo/matter-react test`
 Expected: ≥ 25 tests, all green.
 
 If any flake or fail, debug. Common issues:
+
 - Missing `@vitejs/plugin-react` — add it.
 - happy-dom missing globals — usually means a real DOM API is needed. happy-dom supports most things; if not, switch the env to `jsdom` and re-run.
 
@@ -2248,6 +2290,7 @@ If any flake or fail, debug. Common issues:
 **Goal:** All four perf-default modules now have happy-path unit tests (created during 5.1–5.4). This phase fills coverage gaps: integration test that ties scheduler + visibility + intersection + reduced-motion together end-to-end at the unit level (mocked observers and matchMedia), plus a `MatterScheduler.dispose()` invariant test.
 
 **Files:**
+
 - Create: `packages/matter/src/runtime/runtime-integration.test.ts`
 - Modify (extend): `packages/matter/src/runtime/MatterScheduler.test.ts`
 
@@ -2471,6 +2514,7 @@ Expected: 30+ tests, all green. Coverage of all four perf defaults at the unit l
 **Goal:** Stand up Playwright in a sibling app `apps/docs-tests`. Configure a single baseline run that captures one screenshot per Tier 1 component page (and per recipe page) at frame 60. Subsequent runs diff against the baseline with a small tolerance.
 
 **Files:**
+
 - Create: `apps/docs-tests/package.json`
 - Create: `apps/docs-tests/tsconfig.json`
 - Create: `apps/docs-tests/playwright.config.ts`
@@ -2692,9 +2736,13 @@ import { test, expect } from '@playwright/test'
 test('LinearGradient — default story', async ({ page }) => {
   await page.goto('/components/linear-gradient?visualTest=1')
   // Wait for the scheduler to pause at frame 60 and signal ready.
-  await page.waitForFunction(() => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true, undefined, {
-    timeout: 15_000,
-  })
+  await page.waitForFunction(
+    () => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true,
+    undefined,
+    {
+      timeout: 15_000,
+    },
+  )
   // Allow one frame for the pause to render
   await page.waitForTimeout(50)
 
@@ -2738,13 +2786,18 @@ import { test, expect } from '@playwright/test'
 
 test('MeshGradient — default story', async ({ page }) => {
   await page.goto('/components/mesh-gradient?visualTest=1')
-  await page.waitForFunction(() => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true, undefined, { timeout: 15_000 })
+  await page.waitForFunction(
+    () => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true,
+    undefined,
+    { timeout: 15_000 },
+  )
   await page.waitForTimeout(50)
   await expect(page.locator('canvas').first()).toHaveScreenshot('mesh-gradient-default.png')
 })
 ```
 
 Repeat with the same template, swapping the route and snapshot name, for:
+
 - `apps/docs-tests/visual/aurora.spec.ts` → `/components/aurora`
 - `apps/docs-tests/visual/dot-field.spec.ts` → `/components/dot-field`
 - `apps/docs-tests/visual/noise-field.spec.ts` → `/components/noise-field`
@@ -2782,6 +2835,7 @@ Run `pnpm --filter @matter/docs-tests test:visual` three times back-to-back. All
 **Goal:** Empirically choose a stable tolerance, harden against rAF non-determinism, and prove the test suite catches a real regression.
 
 **Files:**
+
 - Modify: `apps/docs-tests/playwright.config.ts`
 - Possibly modify: `apps/docs/app/_lib/visualTestHooks.ts` (if seeding needed)
 
@@ -2803,6 +2857,7 @@ Expected: All 10 runs pass.
 - [ ] **Step 2: If any flakes occur**
 
 Investigate the failing snapshot. Common causes:
+
 1. Uniform seeded by `Math.random()` or `Date.now()` — search registry for these:
    ```bash
    grep -rn "Math.random\|Date.now" registry/
@@ -2866,6 +2921,7 @@ git commit -m "test(docs-tests): document chosen visual tolerance"
 **Goal:** Audit and fix accessibility issues across the docs site. Decorative shaders get `aria-hidden`. Interactive demos get keyboard accessibility (focus rings, ARIA labels, axe-core clean).
 
 **Files:**
+
 - Modify: `apps/docs/app/components/*/page.tsx` (×6) — `aria-hidden` on canvas wrappers; ARIA on Tweakpane wrappers if interactive
 - Modify: `apps/docs/app/_components/PropsPlayground.tsx`
 - Modify: `apps/docs/app/_components/LiveDemo.tsx` (if exists)
@@ -2885,7 +2941,7 @@ Find the component that renders `<MatterScene>` for component pages. Likely one 
 Modify the wrapper(s). The `<MatterScene>` itself accepts `className` and `style`; we want to wrap it (or its containing `div`) with `aria-hidden="true"` and `role="presentation"`. If the surrounding component returns a `<div>` containing `<MatterScene>`, modify that div:
 
 ```tsx
-<div aria-hidden="true" role="presentation" style={{ position: 'relative', /* … */ }}>
+<div aria-hidden="true" role="presentation" style={{ position: 'relative' /* … */ }}>
   <MatterScene>…</MatterScene>
 </div>
 ```
@@ -2909,6 +2965,7 @@ git commit -m "a11y(docs): aria-hidden decorative shader canvases"
 - [ ] **Step 1: Audit Tweakpane integration**
 
 Tweakpane renders into a div; its inputs may not expose proper ARIA labels. Open `apps/docs/app/_components/PropsPlayground.tsx`. Verify:
+
 1. The Tweakpane container has a meaningful `aria-label` (e.g., `aria-label="Live property controls"`)
 2. Each control's label is set via Tweakpane's API (not just visually)
 3. Tab order goes: page nav → demo → playground → next section
@@ -2924,6 +2981,7 @@ If any of the above is missing, fix in code. Likely 1–3 small additions:
 - [ ] **Step 3: Manual keyboard nav test**
 
 Open the docs site, navigate to a component page. Press Tab repeatedly — verify:
+
 - Focus moves through page navigation
 - Focus enters the playground panel
 - Within the playground, arrow keys/space adjust controls
@@ -3001,7 +3059,11 @@ test('LinearGradient — reduced motion paused', async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: 'reduce' })
   const page = await ctx.newPage()
   await page.goto('/components/linear-gradient?visualTest=1&reducedMotion=paused')
-  await page.waitForFunction(() => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true, undefined, { timeout: 15_000 })
+  await page.waitForFunction(
+    () => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true,
+    undefined,
+    { timeout: 15_000 },
+  )
 
   // Capture two screenshots one second apart. With paused, they should be identical.
   const buf1 = await page.locator('canvas').first().screenshot()
@@ -3065,6 +3127,7 @@ Expected: all pass.
 **Goal:** Extend the CI workflow to run unit tests and visual regression on every PR. Visual regression baselines are committed; the CI job compares against them.
 
 **Files:**
+
 - Modify: `.github/workflows/ci.yml`
 
 ### Task 1: Add unit-tests job
@@ -3203,6 +3266,7 @@ type: project
 M5 shipped on YYYY-MM-DD (replace with actual date). Tag: `m5-complete`.
 
 **What landed:**
+
 - Reduced-motion: `time` re-export gated by an engine-owned scale uniform; `setReducedMotionPolicy('auto'|'off'|'slow'|'paused')` API. Every existing registry component picked it up automatically because they all import `time` from `@lovo/matter`.
 - Visibility pause: `document.visibilityState` watcher → scheduler.pause/resume via MatterScene.
 - Offscreen pause: IntersectionObserver on canvas → scheduler.pause/resume via MatterScene.
@@ -3215,6 +3279,7 @@ M5 shipped on YYYY-MM-DD (replace with actual date). Tag: `m5-complete`.
 - CI: `unit-tests` and `visual-regression` jobs added; visual diffs uploaded on failure.
 
 **Lessons / gotchas to remember:**
+
 1. **`time` gating is process-global, not per-scene.** Setting `setReducedMotionPolicy('paused')` affects every MatterScene mounted in the same JS context. Acceptable trade-off for v1; if multi-tenant policy ever matters, refactor to per-scene scale uniforms.
 2. **`setIdle(true)` runs one final flush tick before halting.** This is intentional — uniforms set just before the idle transition still get rendered. Tests assert this contract.
 3. **Visual regression flake came from [list any flake sources discovered during 5.9, e.g. Math.random() seeded uniforms].** Document the seed strategy.
@@ -3269,6 +3334,7 @@ Open `https://github.com/lovo-hq/matter/tags`. Confirm `m5-complete` appears.
 - [ ] **Step 1: Capture the closing observation**
 
 Open the docs site in a browser. Walk through:
+
 1. `/dev/perf-monitor` — confirm fps drops to 0 on tab-switch, scroll-off, and `speed=0`.
 2. `/dev/reduced-motion` — confirm policy buttons cycle behavior.
 3. `/components/linear-gradient` — confirm shader runs full speed; tab away → pauses.
@@ -3286,6 +3352,7 @@ M5 is shipped.
 ## Self-Review Checklist (run this before declaring the plan ready)
 
 **1. Spec coverage:**
+
 - [x] All five engine performance defaults — ✅ DPR (already done), visibility (5.2), intersection (5.3), render-on-demand (5.4), reduced-motion (5.1)
 - [x] Vitest unit tests — ✅ engine integration (5.7) + bindings (5.6) + perf-default modules (5.1–5.4)
 - [x] Visual regression — ✅ Playwright against docs site routes, not Storybook (per CLAUDE.md M1 deviation note)
@@ -3297,6 +3364,7 @@ M5 is shipped.
 **2. Placeholder scan:** No "TBD", "implement later", or "similar to Task N" — every task has actual file paths and code blocks.
 
 **3. Type consistency:**
+
 - `setReducedMotionPolicy` / `getReducedMotionPolicy` / `getReducedMotionTimeScale` / `createReducedMotionWatcher` — consistent across reducedMotion.ts and index.ts exports
 - `createVisibilityWatcher` returns `VisibilityWatcher` with `isVisible() / subscribe / dispose` — consistent
 - `createIntersectionWatcher` returns `IntersectionWatcher` with `isInView() / subscribe / dispose` — consistent
@@ -3307,6 +3375,7 @@ M5 is shipped.
 - `?visualTest=1` and `?reducedMotion=<policy>` query flags — consistent across docs site and Playwright specs
 
 **4. Codebase-specific gotchas honored:**
+
 - `three/webgpu` imports for class types (per memory note) — yes
 - Strict-Mode-safe lifecycle (gotcha #14) — yes, all watchers create+dispose per mount cycle
 - `passWithNoTests: true` in vitest configs — preserved

@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { resolve } from 'node:path'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite-plus'
 import react from '@vitejs/plugin-react'
 
 // Mirror the three aliasing from apps/docs/next.config.ts (CLAUDE.md gotcha #13).

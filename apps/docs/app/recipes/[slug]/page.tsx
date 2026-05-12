@@ -53,8 +53,8 @@ export default async function RecipePage({ params }: RecipePageProps) {
         <section style={{ marginTop: '2rem' }}>
           <h2 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>Variants</h2>
           <p style={{ color: 'var(--fg-muted)', marginTop: 0, fontSize: '0.9rem' }}>
-            Same recipe, different parameters. Each card&apos;s caption
-            describes the one-line change to the source above.
+            Same recipe, different parameters. Each card&apos;s caption describes the one-line
+            change to the source above.
           </p>
           <div
             style={{

@@ -213,7 +213,9 @@ function MeshGradientMesh(props: MeshGradientProps) {
         weightedSum = contribution
       } else {
         totalWeight = totalWeight.add(weight) as ShaderNodeObject<Node>
-        weightedSum = (weightedSum as ShaderNodeObject<Node>).add(contribution) as ShaderNodeObject<Node>
+        weightedSum = (weightedSum as ShaderNodeObject<Node>).add(
+          contribution,
+        ) as ShaderNodeObject<Node>
       }
     }
 
@@ -235,8 +237,16 @@ function MeshGradientMesh(props: MeshGradientProps) {
       // (typically during rapid rebuild cycles). Swallowing the dispose error
       // prevents a page crash; the underlying GPU resources will be reaped
       // when the parent renderer is disposed at unmount.
-      try { material.dispose() } catch { /* benign during rebuild */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign during rebuild */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
   }, [
     ctx,
@@ -256,9 +266,9 @@ function MeshGradientMesh(props: MeshGradientProps) {
 function DefaultFallback({ colors }: { colors: string[] }) {
   // Four stacked CSS radial-gradients per spec §5.2 line 446.
   const corners = ['top left', 'top right', 'bottom right', 'bottom left']
-  const layers = colors.slice(0, 4).map((c, i) =>
-    `radial-gradient(at ${corners[i]}, ${c} 0%, transparent 60%)`,
-  )
+  const layers = colors
+    .slice(0, 4)
+    .map((c, i) => `radial-gradient(at ${corners[i]}, ${c} 0%, transparent 60%)`)
   return (
     <div
       style={{

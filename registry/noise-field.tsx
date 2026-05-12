@@ -76,7 +76,7 @@ function NoiseFieldMesh(props: NoiseFieldProps) {
   // TODO: when cursor-displace wires up, consume cursorUniform in the TSL
   // chain (root from uv()/vec2, pass cursorUniform as arg per gotcha #12)
   // and drop this eslint-disable.
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // oxlint-disable-next-line @typescript-eslint/no-unused-vars
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
   useEffect(() => {
     if (cursor) {
@@ -133,17 +133,18 @@ function NoiseFieldMesh(props: NoiseFieldProps) {
       // tree (typically during rapid rebuild cycles). Swallowing the
       // dispose error prevents a page crash; the underlying GPU resources
       // will be reaped when the parent renderer is disposed at unmount.
-      try { material.dispose() } catch { /* benign during rebuild */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign during rebuild */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
-  }, [
-    ctx,
-    colors.join('|'),
-    octaves,
-    variant,
-    scaleUniform,
-    speedUniform,
-  ])
+  }, [ctx, colors.join('|'), octaves, variant, scaleUniform, speedUniform])
 
   return null
 }

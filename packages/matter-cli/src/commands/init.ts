@@ -20,9 +20,7 @@ export async function runInit(
 ): Promise<void> {
   const exists = await configExists(io.cwd)
   if (exists && !opts.force) {
-    throw new Error(
-      `matter.config.json already exists in ${io.cwd}. Pass --force to overwrite.`,
-    )
+    throw new Error(`matter.config.json already exists in ${io.cwd}. Pass --force to overwrite.`)
   }
   await writeMatterConfig(io.cwd, DEFAULT_MATTER_CONFIG)
   io.log(`Created matter.config.json at ${configPath(io.cwd)}`)

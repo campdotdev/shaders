@@ -13,35 +13,90 @@
       "file": "noise-field.tsx",
       "description": "Pure noise pattern in three flavors: organic (fbm), cellular (voronoi), grid (quantized fbm).",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["colorRamp", "fbm", "voronoi", "quantize", "uv", "vec2", "vec3", "time", "uniform"],
+      "uses_primitives": [
+        "colorRamp",
+        "fbm",
+        "voronoi",
+        "quantize",
+        "uv",
+        "vec2",
+        "vec3",
+        "time",
+        "uniform"
+      ],
       "tier": 1
     },
     "dot-field": {
       "file": "dot-field.tsx",
       "description": "Tiled dot field with cursor displacement — the architecturally-validating Matter component.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["sdfCircle", "displace", "mix", "mod", "smoothstep", "length", "uv", "vec2", "vec3", "vec4", "uniform"],
+      "uses_primitives": [
+        "sdfCircle",
+        "displace",
+        "mix",
+        "mod",
+        "smoothstep",
+        "length",
+        "uv",
+        "vec2",
+        "vec3",
+        "vec4",
+        "uniform"
+      ],
       "tier": 1
     },
     "waves": {
       "file": "waves.tsx",
       "description": "Layered sine waves with cursor-spawned ripples.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["cursorRipple", "sin", "mix", "smoothstep", "uv", "vec2", "vec3", "vec4", "time", "uniform"],
+      "uses_primitives": [
+        "cursorRipple",
+        "sin",
+        "mix",
+        "smoothstep",
+        "uv",
+        "vec2",
+        "vec3",
+        "vec4",
+        "time",
+        "uniform"
+      ],
       "tier": 1
     },
     "mesh-gradient": {
       "file": "mesh-gradient.tsx",
       "description": "Stripe-style multi-point gradient with animated blending and optional cursor pull.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["noise", "length", "max", "uv", "vec2", "vec3", "vec4", "time", "uniform"],
+      "uses_primitives": [
+        "noise",
+        "length",
+        "max",
+        "uv",
+        "vec2",
+        "vec3",
+        "vec4",
+        "time",
+        "uniform"
+      ],
       "tier": 1
     },
     "aurora": {
       "file": "aurora.tsx",
       "description": "Flowing FBM-displaced color bands with optional cursor amplification.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["fbm", "displace", "colorRamp", "smoothstep", "length", "uv", "vec2", "vec3", "vec4", "time", "uniform"],
+      "uses_primitives": [
+        "fbm",
+        "displace",
+        "colorRamp",
+        "smoothstep",
+        "length",
+        "uv",
+        "vec2",
+        "vec3",
+        "vec4",
+        "time",
+        "uniform"
+      ],
       "tier": 1
     }
   }

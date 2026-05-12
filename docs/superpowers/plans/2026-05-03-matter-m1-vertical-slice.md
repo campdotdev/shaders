@@ -63,10 +63,10 @@ Before starting, verify M0 state:
 - [ ] **M0 tag present.** Run `git tag`. Expected: `m0-complete` listed.
 - [ ] **Working tree clean.** Run `git status --short`. Expected: empty output.
 - [ ] **Everything builds clean from M0 state.** Run:
-      ```bash
-      pnpm install --frozen-lockfile
-      pnpm build && pnpm typecheck && pnpm lint
-      ```
+      `bash
+    pnpm install --frozen-lockfile
+    pnpm build && pnpm typecheck && pnpm lint
+    `
       Expected: all green.
 - [ ] **Node and pnpm versions.** Run `node -v` (≥ v22) and `pnpm -v` (≥ 9).
 
@@ -145,6 +145,7 @@ mattermix/
 ### Task 1: Add `apps/*` to the workspace and scaffold the playground
 
 **Files:**
+
 - Modify: `pnpm-workspace.yaml`
 - Create: `apps/playground/package.json`
 - Create: `apps/playground/tsconfig.json`
@@ -160,9 +161,9 @@ Replace its content with:
 
 ```yaml
 packages:
-  - "apps/*"
-  - "packages/*"
-  - "tooling/*"
+  - 'apps/*'
+  - 'packages/*'
+  - 'tooling/*'
 ```
 
 - [ ] **Step 1.2: Create the playground package.json.**
@@ -252,12 +253,28 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/apps/playground/index
         padding: 2rem;
         line-height: 1.5;
       }
-      h1 { margin-top: 0; }
-      ul { list-style: none; padding: 0; }
-      li { margin: 0.5rem 0; }
-      a { color: #88aaff; text-decoration: none; }
-      a:hover { text-decoration: underline; }
-      code { background: #1a1a2a; padding: 0.1rem 0.3rem; border-radius: 3px; }
+      h1 {
+        margin-top: 0;
+      }
+      ul {
+        list-style: none;
+        padding: 0;
+      }
+      li {
+        margin: 0.5rem 0;
+      }
+      a {
+        color: #88aaff;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      code {
+        background: #1a1a2a;
+        padding: 0.1rem 0.3rem;
+        border-radius: 3px;
+      }
     </style>
   </head>
   <body>
@@ -285,8 +302,19 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/apps/playground/1-mag
     <meta charset="UTF-8" />
     <title>1.2 — Magenta square</title>
     <style>
-      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
-      canvas { display: block; width: 100%; height: 100%; }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
     </style>
   </head>
   <body>
@@ -331,6 +359,7 @@ git commit -m "feat(playground): add Vite playground app for M1 manual test harn
 ### Task 2: Implement `createRenderer` in `@lovo/matter`
 
 **Files:**
+
 - Create: `packages/matter/src/runtime/createRenderer.ts`
 - Modify: `packages/matter/src/index.ts`
 
@@ -410,7 +439,8 @@ export async function createRenderer(
   // Detect backend after init. The exact API may differ between three versions;
   // probe the renderer's backend symbol if present, fall back to a property check.
   const backend: MatterBackend =
-    forceWebGL || (three as unknown as { backend?: { isWebGLBackend?: boolean } }).backend?.isWebGLBackend
+    forceWebGL ||
+    (three as unknown as { backend?: { isWebGLBackend?: boolean } }).backend?.isWebGLBackend
       ? 'webgl2'
       : 'webgpu'
 
@@ -436,7 +466,11 @@ Replace its current content (the `__MATTER_ENGINE_VERSION__` stub) with:
 // Implementation grows phase by phase through Milestone 1.
 
 export { createRenderer } from './runtime/createRenderer.js'
-export type { MatterRenderer, CreateRendererOptions, MatterBackend } from './runtime/createRenderer.js'
+export type {
+  MatterRenderer,
+  CreateRendererOptions,
+  MatterBackend,
+} from './runtime/createRenderer.js'
 ```
 
 (Remove the `__MATTER_ENGINE_VERSION__` const — it served its purpose in M0 and isn't needed anymore.)
@@ -479,6 +513,7 @@ git commit -m "feat(matter): add createRenderer with WebGPU + WebGL2 fallback"
 ### Task 3: Wire the playground to render the magenta square
 
 **Files:**
+
 - Modify: `apps/playground/src/1-magenta.ts`
 
 - [ ] **Step 3.1: Replace the placeholder with the actual harness.**
@@ -563,6 +598,7 @@ git commit -m "feat(playground): render hardcoded magenta TSL fragment via creat
 ### Task 1: Wire the gradient harness page
 
 **Files:**
+
 - Create: `apps/playground/2-gradient.html`
 - Create: `apps/playground/src/2-gradient.ts`
 
@@ -577,8 +613,19 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/apps/playground/2-gra
     <meta charset="UTF-8" />
     <title>1.3 — Hand-written gradient</title>
     <style>
-      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
-      canvas { display: block; width: 100%; height: 100%; }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
     </style>
   </head>
   <body>
@@ -612,8 +659,8 @@ camera.position.z = 1
 //   `uv()` returns the per-pixel UV coordinate (vec2 from 0..1)
 //   `uv().x` is the horizontal component (0 on the left, 1 on the right)
 //   `mix(a, b, t)` linearly interpolates from `a` (when t=0) to `b` (when t=1)
-const colorA = vec3(1, 0.48, 0.45)  // warm coral (#ff7b72)
-const colorB = vec3(0.48, 0.61, 1)  // cool periwinkle (#7b9cff)
+const colorA = vec3(1, 0.48, 0.45) // warm coral (#ff7b72)
+const colorB = vec3(0.48, 0.61, 1) // cool periwinkle (#7b9cff)
 
 const material = new MeshBasicNodeMaterial()
 material.colorNode = mix(colorA, colorB, uv().x)
@@ -677,6 +724,7 @@ This task has no implementation — it's deliberately for you to author TSL by h
 ### Task 1: Add Vitest to the workspace and per-package wiring
 
 **Files:**
+
 - Modify: `package.json` (root) — add `vitest`
 - Create: `vitest.workspace.ts` (root)
 - Modify: `packages/matter/package.json` — add `vitest` devDep + `test` script
@@ -695,9 +743,7 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/vitest.workspace.ts`
 ```ts
 import { defineWorkspace } from 'vitest/config'
 
-export default defineWorkspace([
-  'packages/*/vitest.config.ts',
-])
+export default defineWorkspace(['packages/*/vitest.config.ts'])
 ```
 
 - [ ] **Step 1.3: Add vitest dev-dep and test script to `@lovo/matter`.**
@@ -773,6 +819,7 @@ git commit -m "chore: add Vitest to workspace and wire @lovo/matter"
 ### Task 2: TDD — write failing tests for `MatterScheduler`
 
 **Files:**
+
 - Create: `packages/matter/src/runtime/MatterScheduler.test.ts`
 
 - [ ] **Step 2.1: Write the failing test file.**
@@ -898,6 +945,7 @@ Expected output: ESM resolution error or "Cannot find module './MatterScheduler.
 ### Task 3: Implement `MatterScheduler`
 
 **Files:**
+
 - Create: `packages/matter/src/runtime/MatterScheduler.ts`
 - Modify: `packages/matter/src/index.ts` — add export
 
@@ -1015,7 +1063,11 @@ Update `/Users/hunter.garrett/Documents/_personal/mattermix/packages/matter/src/
 // @lovo/matter — engine package public API.
 
 export { createRenderer } from './runtime/createRenderer.js'
-export type { MatterRenderer, CreateRendererOptions, MatterBackend } from './runtime/createRenderer.js'
+export type {
+  MatterRenderer,
+  CreateRendererOptions,
+  MatterBackend,
+} from './runtime/createRenderer.js'
 
 export { MatterScheduler } from './runtime/MatterScheduler.js'
 export type { SchedulerTick, SchedulerClient } from './runtime/MatterScheduler.js'
@@ -1047,6 +1099,7 @@ git commit -m "feat(matter): add MatterScheduler rAF batcher with unit tests"
 ### Task 4: Wire MatterScheduler into a playground harness
 
 **Files:**
+
 - Create: `apps/playground/3-scheduler.html`
 - Create: `apps/playground/src/3-scheduler.ts`
 
@@ -1061,9 +1114,30 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/apps/playground/3-sch
     <meta charset="UTF-8" />
     <title>1.4 — MatterScheduler</title>
     <style>
-      html, body { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; color: #fff; font-family: system-ui; }
-      canvas { display: block; width: 100%; height: 100%; }
-      #log { position: absolute; bottom: 1rem; left: 1rem; font-size: 0.85rem; opacity: 0.8; background: rgba(0,0,0,0.5); padding: 0.5rem; }
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+        color: #fff;
+        font-family: system-ui;
+      }
+      canvas {
+        display: block;
+        width: 100%;
+        height: 100%;
+      }
+      #log {
+        position: absolute;
+        bottom: 1rem;
+        left: 1rem;
+        font-size: 0.85rem;
+        opacity: 0.8;
+        background: rgba(0, 0, 0, 0.5);
+        padding: 0.5rem;
+      }
     </style>
   </head>
   <body>
@@ -1100,7 +1174,17 @@ const colorB = vec3(0.48, 0.61, 1)
 
 // Animate by piping the TSL `time` uniform through `sin` to oscillate the mix factor.
 const material = new MeshBasicNodeMaterial()
-material.colorNode = mix(colorA, colorB, sin(uv().x.mul(6.28).add(performance.now() / 1000)).mul(0.5).add(0.5))
+material.colorNode = mix(
+  colorA,
+  colorB,
+  sin(
+    uv()
+      .x.mul(6.28)
+      .add(performance.now() / 1000),
+  )
+    .mul(0.5)
+    .add(0.5),
+)
 
 const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 scene.add(mesh)
@@ -1152,6 +1236,7 @@ When the loop feels solid, move on.
 ### Task 1: Add React + Vite-React plugin to the playground
 
 **Files:**
+
 - Modify: `apps/playground/package.json` — add `react`, `react-dom`, `@vitejs/plugin-react`
 - Modify: `apps/playground/vite.config.ts` — register the React plugin
 
@@ -1218,6 +1303,7 @@ git commit -m "chore(playground): add React + Vite plugin for upcoming React har
 ### Task 2: Implement the matter context + `<MatterScene>`
 
 **Files:**
+
 - Create: `packages/matter-react/src/matter-context.ts`
 - Create: `packages/matter-react/src/MatterScene.tsx`
 - Create: `packages/matter-react/src/useMatterContext.ts`
@@ -1362,7 +1448,7 @@ export function MatterScene(props: MatterSceneProps) {
       {ctx ? (
         <MatterContext.Provider value={ctx}>{children}</MatterContext.Provider>
       ) : (
-        fallback ?? null
+        (fallback ?? null)
       )}
     </div>
   )
@@ -1405,6 +1491,7 @@ git commit -m "feat(matter-react): add <MatterScene>, useMatterContext, and matt
 ### Task 3: React playground harness — magenta plane via MatterScene
 
 **Files:**
+
 - Create: `apps/playground/4-react-scene.html`
 - Create: `apps/playground/src/4-react-scene.tsx`
 
@@ -1419,7 +1506,15 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/apps/playground/4-rea
     <meta charset="UTF-8" />
     <title>1.5 — React MatterScene</title>
     <style>
-      html, body, #root { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
+      html,
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
     </style>
   </head>
   <body>
@@ -1462,7 +1557,9 @@ function MagentaPlane() {
 
 function App() {
   return (
-    <MatterScene fallback={<div style={{ color: '#888', padding: '1rem' }}>Initializing renderer…</div>}>
+    <MatterScene
+      fallback={<div style={{ color: '#888', padding: '1rem' }}>Initializing renderer…</div>}
+    >
       <MagentaPlane />
     </MatterScene>
   )
@@ -1506,6 +1603,7 @@ When solid, proceed.
 ### Task 1: Implement `CursorInput` (engine class) with TDD
 
 **Files:**
+
 - Create: `packages/matter/src/inputs/CursorInput.ts`
 - Create: `packages/matter/src/inputs/CursorInput.test.ts`
 - Modify: `packages/matter/src/index.ts`
@@ -1710,7 +1808,11 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/packages/matter/src/i
 // @lovo/matter — engine package public API.
 
 export { createRenderer } from './runtime/createRenderer.js'
-export type { MatterRenderer, CreateRendererOptions, MatterBackend } from './runtime/createRenderer.js'
+export type {
+  MatterRenderer,
+  CreateRendererOptions,
+  MatterBackend,
+} from './runtime/createRenderer.js'
 
 export { MatterScheduler } from './runtime/MatterScheduler.js'
 export type { SchedulerTick, SchedulerClient } from './runtime/MatterScheduler.js'
@@ -1745,6 +1847,7 @@ git commit -m "feat(matter): add CursorInput with smoothing, signal protocol, an
 ### Task 2: Implement `useShaderMaterial` and `useCursor` in matter-react
 
 **Files:**
+
 - Create: `packages/matter-react/src/useShaderMaterial.ts`
 - Create: `packages/matter-react/src/useCursor.ts`
 - Modify: `packages/matter-react/src/index.ts`
@@ -1768,9 +1871,7 @@ import type { ShaderNodeObject } from 'three/tsl'
  * factory function changes. For dynamic uniforms, mutate `.value` on the
  * uniform nodes — don't recreate the TSL fragment per render.
  */
-export function useShaderMaterial(
-  build: () => ShaderNodeObject<unknown>,
-): MeshBasicNodeMaterial {
+export function useShaderMaterial(build: () => ShaderNodeObject<unknown>): MeshBasicNodeMaterial {
   const material = useMemo(() => {
     const m = new MeshBasicNodeMaterial()
     m.colorNode = build()
@@ -1881,6 +1982,7 @@ git commit -m "feat(matter-react): add useShaderMaterial and useCursor"
 ### Task 3: Cursor playground harness
 
 **Files:**
+
 - Create: `apps/playground/5-cursor.html`
 - Create: `apps/playground/src/5-cursor.tsx`
 
@@ -1895,7 +1997,15 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/apps/playground/5-cur
     <meta charset="UTF-8" />
     <title>1.6 — Cursor-reactive gradient</title>
     <style>
-      html, body, #root { margin: 0; padding: 0; height: 100%; overflow: hidden; background: #000; }
+      html,
+      body,
+      #root {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+        background: #000;
+      }
     </style>
   </head>
   <body>
@@ -2049,6 +2159,7 @@ testing values 0, 0.05, 0.1, 0.2, 0.5, 0.85 — <BRIEF-RATIONALE>."
 ### Task 1: Implement `colorRamp` primitive
 
 **Files:**
+
 - Create: `packages/matter/src/primitives/colorRamp.ts`
 - Create: `packages/matter/src/primitives/tsl-reexports.ts`
 - Modify: `packages/matter/src/index.ts`
@@ -2136,7 +2247,11 @@ File: `/Users/hunter.garrett/Documents/_personal/mattermix/packages/matter/src/i
 // @lovo/matter — engine package public API.
 
 export { createRenderer } from './runtime/createRenderer.js'
-export type { MatterRenderer, CreateRendererOptions, MatterBackend } from './runtime/createRenderer.js'
+export type {
+  MatterRenderer,
+  CreateRendererOptions,
+  MatterBackend,
+} from './runtime/createRenderer.js'
 
 export { MatterScheduler } from './runtime/MatterScheduler.js'
 export type { SchedulerTick, SchedulerClient } from './runtime/MatterScheduler.js'
@@ -2169,6 +2284,7 @@ git commit -m "feat(matter): add colorRamp primitive and TSL re-exports"
 ### Task 2: Implement `useAnimatableUniform` and `<FallbackBoundary>`
 
 **Files:**
+
 - Create: `packages/matter-react/src/useAnimatableUniform.ts`
 - Create: `packages/matter-react/src/FallbackBoundary.tsx`
 - Modify: `packages/matter-react/src/index.ts`
@@ -2206,9 +2322,7 @@ const isSignal = <T>(value: AnimatableProp<T>): value is MatterSignal<T> => {
  * path). Signals subscribe via .on('change') and write into the uniform
  * imperatively without re-rendering.
  */
-export function useAnimatableUniform<T>(
-  value: AnimatableProp<T>,
-): ShaderNodeObject<unknown> {
+export function useAnimatableUniform<T>(value: AnimatableProp<T>): ShaderNodeObject<unknown> {
   const uniformNode = useMemo(() => {
     const initial = isSignal(value) ? value.get() : value
     return uniform(initial)
@@ -2254,7 +2368,7 @@ export function FallbackBoundary({ fallback, children }: FallbackBoundaryProps) 
   useEffect(() => {
     setMounted(true)
   }, [])
-  return <>{mounted ? children : fallback ?? null}</>
+  return <>{mounted ? children : (fallback ?? null)}</>
 }
 ```
 
@@ -2301,6 +2415,7 @@ git commit -m "feat(matter-react): add useAnimatableUniform and FallbackBoundary
 ### Task 3: Implement `<LinearGradient>` in `registry/`
 
 **Files:**
+
 - Create: `registry/linear-gradient.tsx`
 - Create: `registry/registry.json`
 
@@ -2355,14 +2470,17 @@ function LinearGradientMesh(props: LinearGradientProps) {
   const cursorAuto = useCursor()
   const cursor = cursorFromInputs ?? (props.interactive ? cursorAuto : null)
 
-  const colors = (typeof props.colors === 'object' && 'get' in (props.colors ?? {}))
-    ? (props.colors as unknown as { get(): string[] }).get()
-    : (props.colors as string[]) ?? DEFAULT_COLORS
+  const colors =
+    typeof props.colors === 'object' && 'get' in (props.colors ?? {})
+      ? (props.colors as unknown as { get(): string[] }).get()
+      : ((props.colors as string[]) ?? DEFAULT_COLORS)
 
   // The angle prop is animatable; bind it to a uniform.
   const angleUniform = useAnimatableUniform<number>(props.angle ?? 0)
   const speedUniform = useAnimatableUniform<number>(props.speed ?? 0)
-  const focalUniform = useAnimatableUniform<readonly [number, number]>(props.focalPoint ?? [0.5, 0.5])
+  const focalUniform = useAnimatableUniform<readonly [number, number]>(
+    props.focalPoint ?? [0.5, 0.5],
+  )
 
   useEffect(() => {
     if (!ctx) return
@@ -2437,7 +2555,7 @@ export function LinearGradient(props: LinearGradientProps) {
   const colorsForFallback =
     typeof props.colors === 'object' && 'get' in (props.colors ?? {})
       ? (props.colors as unknown as { get(): string[] }).get()
-      : (props.colors as string[]) ?? DEFAULT_COLORS
+      : ((props.colors as string[]) ?? DEFAULT_COLORS)
   const angleForFallback = typeof props.angle === 'number' ? props.angle : 0
 
   return (
@@ -2488,6 +2606,7 @@ git commit -m "feat(registry): add <LinearGradient> Tier 1 component and registr
 ### Task 4: Add Storybook 10 to the workspace
 
 **Files:**
+
 - Create: `.storybook/main.ts`
 - Create: `.storybook/preview.ts`
 - Modify: root `package.json` — add storybook deps + scripts
@@ -2584,6 +2703,7 @@ git commit -m "chore: add Storybook 10 with @storybook/react-vite at repo root"
 ### Task 5: Add `<LinearGradient>` Storybook stories
 
 **Files:**
+
 - Create: `registry/linear-gradient.stories.tsx`
 
 - [ ] **Step 5.1: Create stories.**
@@ -2667,6 +2787,7 @@ pnpm storybook
 ```
 
 Open `http://localhost:6006/`. Expected: a sidebar lists `Components/LinearGradient` with 5 stories. Clicking through each renders correctly:
+
 - **Default** — coral-to-periwinkle horizontal gradient
 - **Animated** — three-stop gradient at 45° drifting over time
 - **Interactive** — gradient with subtle cursor parallax (move mouse to feel)
@@ -2685,6 +2806,7 @@ git commit -m "feat(registry): add <LinearGradient> Storybook stories"
 ### Task 6: Scaffold `apps/docs/` (Next.js)
 
 **Files:**
+
 - Create: `apps/docs/package.json`
 - Create: `apps/docs/next.config.ts`
 - Create: `apps/docs/tsconfig.json`
@@ -2830,22 +2952,25 @@ export default function LinearGradientPage() {
   return (
     <main style={{ padding: '0', minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '60vh' }}>
-        <LinearGradient
-          colors={['#ff7b72', '#7b9cff']}
-          angle={45}
-          speed={0.2}
-          interactive
-        />
+        <LinearGradient colors={['#ff7b72', '#7b9cff']} angle={45} speed={0.2} interactive />
       </div>
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1>&lt;LinearGradient /&gt;</h1>
         <p>
-          Animated linear or radial gradient with optional cursor parallax. The
-          simplest, foundational Matter component — proves the architecture.
+          Animated linear or radial gradient with optional cursor parallax. The simplest,
+          foundational Matter component — proves the architecture.
         </p>
         <h2>Usage</h2>
-        <pre style={{ background: '#1a1a2a', color: '#e0e0f0', padding: '1rem', borderRadius: '0.5rem', overflow: 'auto' }}>
-{`import { LinearGradient } from '@/components/matter/linear-gradient'
+        <pre
+          style={{
+            background: '#1a1a2a',
+            color: '#e0e0f0',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            overflow: 'auto',
+          }}
+        >
+          {`import { LinearGradient } from '@/components/matter/linear-gradient'
 
 <LinearGradient
   colors={['#ff7b72', '#7b9cff']}
@@ -2855,8 +2980,8 @@ export default function LinearGradientPage() {
 />`}
         </pre>
         <p>
-          (In Milestone 2, the CLI will copy <code>linear-gradient.tsx</code>{' '}
-          into your project so you own and can edit the source.)
+          (In Milestone 2, the CLI will copy <code>linear-gradient.tsx</code> into your project so
+          you own and can edit the source.)
         </p>
       </section>
     </main>
@@ -2969,6 +3094,7 @@ git commit -m "chore: format with Prettier"
 ### Task 8: Update CLAUDE.md milestone status + tag M1 complete
 
 **Files:**
+
 - Modify: `CLAUDE.md`
 
 - [ ] **Step 8.1: Update the milestone status table in `CLAUDE.md`.**
@@ -3039,17 +3165,17 @@ When this all feels solid, M1 is done. The vertical slice is real. Every archite
 
 When M1 is green, every architectural choice in the spec has been demonstrated on running code:
 
-| Spec decision | Validated by |
-|---|---|
-| Three-tier model (components/primitives/recipes) | LinearGradient (T1) uses `colorRamp` (T2); recipes are M4 |
-| Hybrid renderer ownership (drop-in + MatterScene) | MatterScene auto-wraps in LinearGradient; can also be used directly |
+| Spec decision                                     | Validated by                                                                              |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| Three-tier model (components/primitives/recipes)  | LinearGradient (T1) uses `colorRamp` (T2); recipes are M4                                 |
+| Hybrid renderer ownership (drop-in + MatterScene) | MatterScene auto-wraps in LinearGradient; can also be used directly                       |
 | Hybrid distribution (engine npm + CLI copy-paste) | Engine package shipped via npm; LinearGradient lives in `registry/` waiting for CLI in M2 |
-| WebGPU + WebGL2 fallback | `createRenderer` does it; backend logged in playground harnesses |
-| Hybrid cursor architecture | `interactive` prop + `inputs` prop + `useCursor` hook all exist and work |
-| Sensible default styling | MatterScene defaults to `position: absolute; inset: 0` |
-| SSR with fallback | FallbackBoundary + DefaultFallback CSS gradient |
-| AnimatableProp protocol | useAnimatableUniform accepts both static and signal props |
-| Storybook 10 + Vite | Workspace runs `pnpm storybook` against the registry |
-| Next.js docs site dogfooding | apps/docs renders LinearGradient on a real page |
+| WebGPU + WebGL2 fallback                          | `createRenderer` does it; backend logged in playground harnesses                          |
+| Hybrid cursor architecture                        | `interactive` prop + `inputs` prop + `useCursor` hook all exist and work                  |
+| Sensible default styling                          | MatterScene defaults to `position: absolute; inset: 0`                                    |
+| SSR with fallback                                 | FallbackBoundary + DefaultFallback CSS gradient                                           |
+| AnimatableProp protocol                           | useAnimatableUniform accepts both static and signal props                                 |
+| Storybook 10 + Vite                               | Workspace runs `pnpm storybook` against the registry                                      |
+| Next.js docs site dogfooding                      | apps/docs renders LinearGradient on a real page                                           |
 
 Six v1 components remain. The second one (M3) is roughly half the work of the first because the engine is now in place — the per-component cost drops dramatically after M1.

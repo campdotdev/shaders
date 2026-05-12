@@ -17,14 +17,8 @@ export async function CodeBlock({ source, lang = 'tsx' }: CodeBlockProps) {
 
   return (
     <div className="codeblock">
-      <div
-        className="codeblock-light"
-        dangerouslySetInnerHTML={{ __html: lightHtml }}
-      />
-      <div
-        className="codeblock-dark"
-        dangerouslySetInnerHTML={{ __html: darkHtml }}
-      />
+      <div className="codeblock-light" dangerouslySetInnerHTML={{ __html: lightHtml }} />
+      <div className="codeblock-dark" dangerouslySetInnerHTML={{ __html: darkHtml }} />
     </div>
   )
 }

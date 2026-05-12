@@ -1,8 +1,0 @@
-node_modules/
-dist/
-build/
-.turbo/
-.next/
-pnpm-lock.yaml
-*.tsbuildinfo
-.superpowers/

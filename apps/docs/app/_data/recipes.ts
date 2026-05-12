@@ -99,8 +99,7 @@ material.colorNode = vec4(glow, glow.mul(0.7), glow.mul(1.5), 1)`,
   {
     slug: 'plasma',
     name: 'Plasma',
-    description:
-      'FBM-driven color swirl. The canonical "shader-y" look from one primitive.',
+    description: 'FBM-driven color swirl. The canonical "shader-y" look from one primitive.',
     primitivesUsed: ['fbm', 'time', 'uv', 'color-ramp'],
     source: `import { uv, time, vec2, vec3, vec4, fbm, colorRamp } from '@lovo/matter'
 

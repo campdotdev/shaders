@@ -105,7 +105,7 @@ export default function MeshGradientPage() {
             fontSize: '0.85rem',
           }}
         >
-{`<MeshGradient colors={['#ff61a6','#61a6ff','#61ffa6','#ffd861']} blur={0.4} speed={0.3} strength={0.15} interactive />`}
+          {`<MeshGradient colors={['#ff61a6','#61a6ff','#61ffa6','#ffd861']} blur={0.4} speed={0.3} strength={0.15} interactive />`}
         </pre>
       </section>
     </main>

@@ -63,11 +63,7 @@ export function LiveDemo({
           so screen readers don't attempt to describe raw pixel output. The
           fullscreen button is kept outside this subtree so it remains
           keyboard-accessible. */}
-      <div
-        aria-hidden="true"
-        role="presentation"
-        style={{ position: 'absolute', inset: 0 }}
-      >
+      <div aria-hidden="true" role="presentation" style={{ position: 'absolute', inset: 0 }}>
         {children}
       </div>
       <button

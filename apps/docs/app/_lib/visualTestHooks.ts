@@ -21,7 +21,6 @@ import dynamic from 'next/dynamic'
  *     <VisualTestPause />
  *   </LinearGradient>
  */
-export const VisualTestPause = dynamic(
-  () => import('./VisualTestPause').then((m) => m.default),
-  { ssr: false },
-)
+export const VisualTestPause = dynamic(() => import('./VisualTestPause').then((m) => m.default), {
+  ssr: false,
+})

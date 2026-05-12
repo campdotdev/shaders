@@ -5,8 +5,23 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgp
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
 import {
-  uv, vec2, vec3, vec4, time, uniform, sin, smoothstep, mix,
-  noise, fbm, voronoi, quantize, sdfCircle, displace, cursorRipple, colorRamp,
+  uv,
+  vec2,
+  vec3,
+  vec4,
+  time,
+  uniform,
+  sin,
+  smoothstep,
+  mix,
+  noise,
+  fbm,
+  voronoi,
+  quantize,
+  sdfCircle,
+  displace,
+  cursorRipple,
+  colorRamp,
   type ColorRampStop,
 } from '@lovo/matter'
 import { MatterScene, useMatterContext } from '@lovo/matter-react'
@@ -73,7 +88,11 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
         const marker = smoothstep(0.01, 0, distFromMarker as never) as ShaderNodeObject<Node>
         // Brighten the band at the marker position so the user can see the
         // sampled color "pin" against the background ramp.
-        const lit = mix(baseColor, vec3(1, 1, 1), marker.mul(0.6) as never) as ShaderNodeObject<Node>
+        const lit = mix(
+          baseColor,
+          vec3(1, 1, 1),
+          marker.mul(0.6) as never,
+        ) as ShaderNodeObject<Node>
         colorNode = vec4(lit as never, 1) as never
         break
       }
@@ -191,7 +210,10 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
           speed: speed * 6,
         }) as ShaderNodeObject<Node>
         // ripple is in roughly [-amplitude, +amplitude]; map to [0, 1] gray.
-        const g = (ripple.div(amplitude * 2 + 0.0001).add(0.5) as ShaderNodeObject<Node>).clamp(0, 1)
+        const g = (ripple.div(amplitude * 2 + 0.0001).add(0.5) as ShaderNodeObject<Node>).clamp(
+          0,
+          1,
+        )
         colorNode = vec4(g, g, g, 1) as never
         break
       }
@@ -227,8 +249,16 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
       // three's WebGPURenderer can throw inside `material.dispose()` during
       // rapid rebuilds (Nodes bookkeeping race). Mirror the registry pattern:
       // swallow the dispose error, GPU resources reap on renderer dispose.
-      try { material.dispose() } catch { /* benign during rebuild */ }
-      try { mesh.geometry.dispose() } catch { /* same */ }
+      try {
+        material.dispose()
+      } catch {
+        /* benign during rebuild */
+      }
+      try {
+        mesh.geometry.dispose()
+      } catch {
+        /* same */
+      }
     }
   }, [ctx, slug, params, staticCursor])
 

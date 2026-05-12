@@ -6,14 +6,14 @@ The repository is currently at `/Users/hunter.garrett/Documents/_personal/matter
 
 ## Where to find things
 
-| You need… | Read… |
-|---|---|
-| Full design — what we're building and why | `docs/superpowers/specs/2026-05-02-matter-design.md` |
-| Implementation plans (one per milestone) | `docs/superpowers/plans/` |
-| Memory of decisions, gotchas, and user preferences | Already auto-loaded via `MEMORY.md` — review what's there before asking the user about anything |
-| Current code | `packages/matter/`, `packages/matter-react/`, `packages/matter-cli/` (engine, React binding, CLI), `tooling/eslint-config/`, `tooling/tsconfig/` |
-| Future Tier 1 components (none yet) | `registry/` (created in Milestone 1) |
-| Future docs site | `apps/docs/` (created in Milestone 1.7+) |
+| You need…                                          | Read…                                                                                                                                            |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Full design — what we're building and why          | `docs/superpowers/specs/2026-05-02-matter-design.md`                                                                                             |
+| Implementation plans (one per milestone)           | `docs/superpowers/plans/`                                                                                                                        |
+| Memory of decisions, gotchas, and user preferences | Already auto-loaded via `MEMORY.md` — review what's there before asking the user about anything                                                  |
+| Current code                                       | `packages/matter/`, `packages/matter-react/`, `packages/matter-cli/` (engine, React binding, CLI), `tooling/eslint-config/`, `tooling/tsconfig/` |
+| Future Tier 1 components (none yet)                | `registry/` (created in Milestone 1)                                                                                                             |
+| Future docs site                                   | `apps/docs/` (created in Milestone 1.7+)                                                                                                         |
 
 **At session start**, run these to get oriented:
 
@@ -36,16 +36,16 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 
 ## Milestone status
 
-| # | Milestone | Status | Tag |
-|---|---|---|---|
-| 0 | Repo bootstrap | ✅ Complete | `m0-complete` |
-| 1 | Vertical slice — `<LinearGradient>` end-to-end | ✅ Complete | `m1-complete` |
-| 2 | `@lovo/matter-cli` | ✅ Complete | `m2-complete` |
-| 3 | The other 5 v1 components | ✅ Complete | `m3-complete` |
-| 4 | Docs site polish (light scope) | ✅ Complete | `m4-complete` |
-| 5 | Performance + testing + a11y | ✅ Complete | `m5-complete` |
-| 6 | v0.1.0 publish | ✅ Complete | `m6-complete` |
-| 7 | Vite Plus toolchain migration | Pending | — |
+| #   | Milestone                                      | Status      | Tag           |
+| --- | ---------------------------------------------- | ----------- | ------------- |
+| 0   | Repo bootstrap                                 | ✅ Complete | `m0-complete` |
+| 1   | Vertical slice — `<LinearGradient>` end-to-end | ✅ Complete | `m1-complete` |
+| 2   | `@lovo/matter-cli`                             | ✅ Complete | `m2-complete` |
+| 3   | The other 5 v1 components                      | ✅ Complete | `m3-complete` |
+| 4   | Docs site polish (light scope)                 | ✅ Complete | `m4-complete` |
+| 5   | Performance + testing + a11y                   | ✅ Complete | `m5-complete` |
+| 6   | v0.1.0 publish                                 | ✅ Complete | `m6-complete` |
+| 7   | Vite Plus toolchain migration                  | Pending     | —             |
 
 Each milestone is its own session and its own implementation plan. Don't try to do multiple milestones in one session.
 
@@ -106,7 +106,7 @@ pnpm smoke
 9. **`@matter/registry` workspace package + `transpilePackages` is required for the docs site** — Next.js refuses to import raw `.tsx` from a workspace dep without `transpilePackages: ['@lovo/matter', '@lovo/matter-react', '@matter/registry']` in `next.config.ts`.
 10. **`three/webgpu` references `self` at module load** — it cannot SSR. In Next docs pages that render a Matter component, wrap the import in `next/dynamic` with `{ ssr: false }`.
 11. **`tweakpane@4.0.5` ships a broken `@tweakpane/core` package.json reference** — its types pull from `@tweakpane/core` but the path in `dependencies` is the workspace-relative `../core` from tweakpane's own monorepo. Add `@tweakpane/core` (the published 2.x version) as a devDep to fix the typecheck. Runtime is unaffected.
-12. **Consume `uniform(...)` as an *argument*, not a chained receiver, in TSL math.** `uv().sub(cursorUniform)` works; `cursorUniform.sub(vec2(0.5, 0.5)).mul(...).dot(...)` silently produces wrong values on the GPU even though it typechecks. The chain methods on raw uniform nodes don't propagate the value through the pipeline. The rule of thumb: build TSL expressions starting from `uv()` / `vec2(...)` / etc. and pass uniforms as args to those chains.
+12. **Consume `uniform(...)` as an _argument_, not a chained receiver, in TSL math.** `uv().sub(cursorUniform)` works; `cursorUniform.sub(vec2(0.5, 0.5)).mul(...).dot(...)` silently produces wrong values on the GPU even though it typechecks. The chain methods on raw uniform nodes don't propagate the value through the pipeline. The rule of thumb: build TSL expressions starting from `uv()` / `vec2(...)` / etc. and pass uniforms as args to those chains.
 13. **`three` ships TWO standalone bundles (`three.module.js` and `three.webgpu.js`) and importing both creates two copies of three core.** Symptom: `Cannot read properties of undefined (reading 'usedTimes')` on `material.dispose()`. Fix in Next: webpack alias all three subpaths to the unified webgpu bundle (see `apps/docs/next.config.ts`). For other bundlers, force a single resolved path the same way.
 14. **Hooks that own a long-lived disposable (CursorInput, scheduler clients, etc.) must be Strict-Mode-safe.** React 19 mounts effects → cleans up → mounts again in dev. The naive pattern `useState(() => new X())` + `useEffect(() => () => x.dispose(), [x])` disposes the singleton during pseudo-unmount, leaving you with a permanently-dead instance. Pattern that survives: collapse lifecycle into one `useEffect` that creates a fresh instance, attaches it, returns a cleanup that disposes it; expose the current instance via `useState`. Each Strict Mode cycle creates+destroys cleanly. See `useCursor.ts` for the canonical implementation.
 

@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
 import {
   __resetReducedMotionForTests,
   createReducedMotionWatcher,
@@ -163,7 +163,11 @@ describe('reducedMotion watcher — SSR fallback', () => {
 describe('reducedMotion uniform', () => {
   beforeEach(() => {
     __resetReducedMotionForTests()
-    vi.stubGlobal('matchMedia', () => ({ matches: false, addEventListener: () => {}, removeEventListener: () => {} }))
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: () => {},
+      removeEventListener: () => {},
+    }))
     setReducedMotionPolicy('auto')
   })
   afterEach(() => {

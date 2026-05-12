@@ -1,11 +1,7 @@
 {
   "extends": "@matter/tsconfig/base.json",
   "compilerOptions": {
-    "lib": [
-      "ES2022",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
     "incremental": false,
     "moduleResolution": "Bundler",
@@ -20,10 +16,5 @@
       }
     ]
   },
-  "include": [
-    "app",
-    "next-env.d.ts",
-    "next.config.ts",
-    ".next/types/**/*.ts"
-  ]
+  "include": ["app", "css.d.ts", "next-env.d.ts", "next.config.ts", ".next/types/**/*.ts"]
 }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vite-plus/test'
 import { render, screen, act } from '@testing-library/react'
 import { FallbackBoundary } from './FallbackBoundary.js'
 
