@@ -193,3 +193,95 @@ Examples:
 
 Migration Prompt:
 ```
+
+## `vp env` adoption (Task A.2 — captured 2026-05-12)
+
+### Diagnostic snapshot (before changes)
+- `node -v` (before): v24.15.0
+- `which node` (before): /Users/hunter.garrett/.vite-plus/bin/node
+
+### `vp env current` (before)
+```
+VITE+ - The Unified Toolchain for the Web
+
+Environment:
+  Version       24.15.0
+  Source        engines.node
+  Source Path   /Users/hunter.garrett/Documents/_personal/matter/package.json
+  Project Root  /Users/hunter.garrett/Documents/_personal/matter
+
+Tool Paths:
+  node  /Users/hunter.garrett/.vite-plus/js_runtime/node/24.15.0/bin/node
+  npm   /Users/hunter.garrett/.vite-plus/js_runtime/node/24.15.0/bin/npm
+  npx   /Users/hunter.garrett/.vite-plus/js_runtime/node/24.15.0/bin/npx
+```
+
+### `vp env doctor` (before)
+```
+VITE+ - The Unified Toolchain for the Web
+
+Installation
+  v VITE_PLUS_HOME    ~/.vite-plus
+  v Bin directory     exists
+  v Shims             node, npm, npx, vpx
+
+Configuration
+  v Shim mode         managed
+  v IDE integration   env sourced in ~/.zshenv
+
+PATH
+  ! vp                in PATH at position 1
+  note: For best results, bin should be first in PATH.
+  v node              ~/.vite-plus/bin/node (vp shim)
+  v npm               ~/.vite-plus/bin/npm (vp shim)
+  v npx               ~/.vite-plus/bin/npx (vp shim)
+  v vpx               ~/.vite-plus/bin/vpx (vp shim)
+
+Version Resolution
+  Directory         /Users/hunter.garrett/Documents/_personal/matter
+  Source            /Users/hunter.garrett/Documents/_personal/matter/package.json
+  Version           24.15.0
+  v Node binary       installed
+
+v All checks passed
+```
+
+### `vp env list` (before)
+```
+* v24.14.1
+* v24.15.0  current
+```
+
+### Node version intent
+- `.nvmrc` content: `22`
+- `engines.node` from root package.json: `>=22`
+- Chosen: vp-managed Node 22.x.x (matches `.nvmrc`)
+- Rationale: `vp env` was already in managed mode but resolving to 24.15.0 via `engines.node` (the `>=22` range satisfies with the highest installed version). To lock the project to Node 22 as `.nvmrc` intends, `vp env pin 22` was used — this creates `.node-version` in the repo root, which vp treats as the highest-priority resolution source (overrides both `.nvmrc` and `engines.node`).
+
+### Actions taken
+- `vp env list` (before): showed only v24.14.1 and v24.15.0 — Node 22 not yet installed
+- `vp env install 22`: installed Node v22.22.2 (latest LTS in the 22.x line) into vp's managed store
+- `vp env on`: already set to managed — output: "Shim mode is already set to managed."
+- `vp env pin 22 --force`: created `.node-version` containing `22.22.2` in repo root; vp resolved `22` to the latest LTS `22.22.2`
+
+### Post-switch state
+- `node -v` (after): v22.22.2
+- `vp env current` Source (after): `.node-version` (overrides `engines.node`)
+- `pnpm -v` (after): 9.12.3 (unchanged; pnpm is not shimmed by vp env)
+- `pnpm install --frozen-lockfile` outcome: pass — "Lockfile is up to date, resolution step is skipped"
+- `pnpm-lock.yaml` clean after install: yes
+
+### Full-pipeline parity check
+| Command | Exit | Notes |
+|---|---|---|
+| pnpm typecheck | 0 | 8 cached, FULL TURBO |
+| pnpm lint | 0 | 5 cached, FULL TURBO; pre-existing MODULE_TYPELESS_PACKAGE_JSON warnings (cosmetic) |
+| pnpm build | 0 | 5 cached, FULL TURBO; Next.js SSG 31 pages |
+| pnpm test | 0 | 55 matter + 46 matter-cli + 25 matter-react = 126 tests pass |
+| pnpm smoke | 0 | add + update --force, byte-identical file check passed |
+
+### Shell rc note
+vp printed no rc modification instructions. `vp env on` reported "Shim mode is already set to managed." — the user's shell rc was already configured during the original Vite+ install (A.1 captured: "IDE integration: env sourced in ~/.zshenv"). No rc edits were needed or made.
+
+### `.node-version` file
+Created at repo root by `vp env pin 22 --force`. Content: `22.22.2`. This is committed as project intent — it pins all developers (and CI) to Node 22 LTS, matching `.nvmrc`, and takes priority over the `>=22` engines range so vp does not resolve to Node 24.
