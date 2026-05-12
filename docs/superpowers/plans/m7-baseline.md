@@ -285,3 +285,26 @@ vp printed no rc modification instructions. `vp env on` reported "Shim mode is a
 
 ### `.node-version` file
 Created at repo root by `vp env pin 22 --force`. Content: `22.22.2`. This is committed as project intent — it pins all developers (and CI) to Node 22 LTS, matching `.nvmrc`, and takes priority over the `>=22` engines range so vp does not resolve to Node 24.
+
+## `vp install` adoption (Task A.3 — captured 2026-05-12)
+
+### Discovered command surface
+- `vp install` (no args): delegates to pnpm install
+- `vp install <pkg>`: acts as `pnpm add` (per help: "Packages to add (if provided, acts as `vp add`)")
+- `vp remove` (aliases: `rm`, `un`, `uninstall`): removes packages from dependencies — dedicated subcommand, not a passthrough
+
+### Round-trip test
+- `vp install -D tiny-glob -w`: succeeded — `package.json` gained `tiny-glob ^0.2.9` under root `devDependencies`; `pnpm-lock.yaml` gained 21 lines (3 packages added). Diff shape identical to what `pnpm add -Dw tiny-glob` would produce.
+- `vp remove tiny-glob -w`: succeeded — clean removal; `package.json` and `pnpm-lock.yaml` both reverted to pre-test state with zero diff. `git status` reported working tree clean.
+
+### CI deferral decision
+CI (`.github/workflows/ci.yml`) continues to use `pnpm install --frozen-lockfile`. No GitHub Action for vp installation is published yet (vp v0.1.14 alpha). Revisit when vp leaves alpha or a `setup-vp` action ships.
+
+### Gate A endpoint reached
+Phase A complete:
+- ✅ vp v0.1.14 installed globally (A.1)
+- ✅ vp env on; project shims Node to 22.22.2 via `.node-version` (A.2)
+- ✅ vp install wraps pnpm; round-trip verified (A.3)
+- ❌ CI deferred (no setup-vp action)
+
+The user's stated M7 intent ("use Vite+ to manage runtime and package manager") is fulfilled. Phases B–D (vp migrate, Vite/Vitest bumps, full verification) remain pending.
