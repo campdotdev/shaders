@@ -20,6 +20,12 @@ for (const route of routes) {
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .disableRules(['color-contrast']) // shader bg colors yield false positives — handled separately
+      // Tweakpane mounts its own unlabeled controls (sliders, color pickers,
+      // etc.) into the host div. The host is marked `aria-hidden` because
+      // the pane is dev-only; excluding the entire `[data-tweakpane-host]`
+      // subtree from axe analysis avoids the aria-hidden-focus violation
+      // the rule would otherwise raise on the focusable Tweakpane children.
+      .exclude('[data-tweakpane-host]')
       .analyze()
 
     if (results.violations.length > 0) {

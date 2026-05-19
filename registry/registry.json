@@ -81,15 +81,13 @@
       "tier": 1
     },
     "aurora": {
-      "file": "aurora.tsx",
-      "description": "Flowing FBM-displaced color bands with optional cursor amplification.",
+      "file": "aurora/aurora.tsx",
+      "description": "Four color-seeded noise curtains sharing one atmospheric noise field, layered over a dusk sky.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
-        "fbm",
-        "displace",
-        "colorRamp",
+        "noise",
         "smoothstep",
-        "length",
+        "sub",
         "uv",
         "vec2",
         "vec3",

@@ -1,4 +1,4 @@
-import { sin, length, smoothstep } from 'three/tsl'
+import { sin, length, smoothstep, sub } from 'three/tsl'
 import { time } from './tsl-reexports.js'
 import type { TSLNode } from './colorRamp.js'
 import type { ShaderNodeObject } from 'three/tsl'
@@ -30,23 +30,25 @@ export interface CursorRippleOptions {
  * @param p — Vec2 TSL node (typically `uv()`).
  * @param center — Vec2 TSL node (cursor uniform, in UV space).
  */
-export function cursorRipple(p: TSLNode, center: TSLNode, opts: CursorRippleOptions = {}): TSLNode {
+export function cursorRipple(
+  p: TSLNode,
+  center: TSLNode,
+  opts: CursorRippleOptions = {},
+): ShaderNodeObject<Node> {
   const reach = opts.reach ?? 0.4
   const frequency = opts.frequency ?? 30
   const speed = opts.speed ?? 6
   const amplitude = opts.amplitude ?? 0.5
 
-  // d = length(p - center). Build the chain rooted in `p` (uv()-derived) and
-  // pass `center` (a uniform in real callers) as the SUBTRACTION ARGUMENT —
-  // never as the receiver. Per gotcha #12, chaining `.sub(...).mul(...)` off
-  // a raw `uniform()` receiver silently produces wrong GPU values.
-  const d = length(
-    (p as ShaderNodeObject<Node>).sub(center as ShaderNodeObject<Node>),
-  ) as ShaderNodeObject<Node>
+  // d = length(p - center). Use functional `sub(p, center)` because both
+  // are typed as the broad TSLNode union (no chain receiver). Per gotcha #12,
+  // building from a raw `uniform()` receiver silently produces wrong GPU
+  // values, so the functional form is also safer for `center` being a uniform.
+  const d = length(sub(p, center))
   // `time` is the engine-gated TSL node (re-exported from tsl-reexports.ts);
   // chains rooted in `time` automatically respect `prefers-reduced-motion` and
   // the runtime override set via `setReducedMotionPolicy`.
-  const wave = sin(d.mul(frequency).sub(time.mul(speed))) as ShaderNodeObject<Node>
-  const decay = smoothstep(reach, 0, d as never) as ShaderNodeObject<Node>
+  const wave = sin(d.mul(frequency).sub(time.mul(speed)))
+  const decay = smoothstep(reach, 0, d)
   return wave.mul(amplitude).mul(decay)
 }

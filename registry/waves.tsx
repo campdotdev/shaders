@@ -1,18 +1,16 @@
 // registry/waves.tsx
 'use client'
 
-import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
 import { vec2, vec3, vec4, sin, mix, smoothstep, uv, time, uniform } from '@lovo/matter'
 import { cursorRipple } from '@lovo/matter'
 import {
-  MatterScene,
   useMatterContext,
   useAnimatableUniform,
   useCursor,
-  FallbackBoundary,
   type AnimatableProp,
   type CursorSignal,
 } from '@lovo/matter-react'
@@ -25,11 +23,6 @@ export interface WavesProps {
   layers?: number // JS-side; baked into the TSL fragment at material build.
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
-  fallback?: ReactNode
-  className?: string
-  style?: CSSProperties
-  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
-  children?: ReactNode
 }
 
 const DEFAULTS = {
@@ -49,7 +42,7 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
   ]
 }
 
-function WavesMesh(props: WavesProps) {
+export function Waves(props: WavesProps) {
   const ctx = useMatterContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
@@ -165,35 +158,4 @@ function WavesMesh(props: WavesProps) {
   }, [ctx, layers, cr, cg, cb, ampUniform, freqUniform, speedUniform, cursor, cursorUniform])
 
   return null
-}
-
-function DefaultFallback({ color }: { color: string }) {
-  // Static SVG sine-wave path — rough approximation of the rest pose. Per
-  // spec line 519, Waves' fallback is an SVG <path> sine curve.
-  return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      <svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
-        <path
-          d="M 0 50 C 12.5 35, 37.5 35, 50 50 C 62.5 65, 87.5 65, 100 50"
-          stroke={color}
-          strokeWidth="3"
-          fill="none"
-          vectorEffect="non-scaling-stroke"
-        />
-      </svg>
-    </div>
-  )
-}
-
-export function Waves(props: WavesProps) {
-  const fallbackColor = typeof props.color === 'string' ? props.color : DEFAULTS.color
-  const { children, ...meshProps } = props
-  return (
-    <FallbackBoundary fallback={props.fallback ?? <DefaultFallback color={fallbackColor} />}>
-      <MatterScene className={props.className} style={props.style}>
-        <WavesMesh {...meshProps} />
-        {children}
-      </MatterScene>
-    </FallbackBoundary>
-  )
 }

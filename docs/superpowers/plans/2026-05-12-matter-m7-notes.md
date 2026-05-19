@@ -944,16 +944,16 @@ What was actually outstanding on the branch:
 
 ### Cold pipeline verification (Turbo cache cleared via pnpm clean)
 
-| Command        | Exit | Notes                                                              |
-| -------------- | ---- | ------------------------------------------------------------------ |
-| pnpm typecheck | 0    | 8 tasks, 0 cached                                                  |
-| pnpm lint      | 0    | 5 tasks, 0 cached; 1 warning in matter (pre-existing useless-spread) |
-| pnpm build     | 0    | 5 tasks, 2 cached (libs rebuilt fresh)                             |
-| pnpm test      | 0    | 126 tests (55 matter + 25 matter-react + 46 matter-cli)            |
-| pnpm smoke     | 0    | byte-identical file check passed                                   |
-| vp lint        | 0    | 15 warnings, 0 errors (workspace-wide)                             |
-| vp check       | 0    | All 195 files correctly formatted                                  |
-| vp run typecheck | 0  | 8 tasks, cached                                                    |
-| vp run build   | 0    | 5 tasks, cached                                                    |
-| vp test        | 0    | 126 passed, 1 todo (127 total)                                     |
-| Playwright     | 0    | 15/15 (8 a11y + 7 visual snapshots)                                |
+| Command          | Exit | Notes                                                                |
+| ---------------- | ---- | -------------------------------------------------------------------- |
+| pnpm typecheck   | 0    | 8 tasks, 0 cached                                                    |
+| pnpm lint        | 0    | 5 tasks, 0 cached; 1 warning in matter (pre-existing useless-spread) |
+| pnpm build       | 0    | 5 tasks, 2 cached (libs rebuilt fresh)                               |
+| pnpm test        | 0    | 126 tests (55 matter + 25 matter-react + 46 matter-cli)              |
+| pnpm smoke       | 0    | byte-identical file check passed                                     |
+| vp lint          | 0    | 15 warnings, 0 errors (workspace-wide)                               |
+| vp check         | 0    | All 195 files correctly formatted                                    |
+| vp run typecheck | 0    | 8 tasks, cached                                                      |
+| vp run build     | 0    | 5 tasks, cached                                                      |
+| vp test          | 0    | 126 passed, 1 todo (127 total)                                       |
+| Playwright       | 0    | 15/15 (8 a11y + 7 visual snapshots)                                  |

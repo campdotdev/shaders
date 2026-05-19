@@ -10,7 +10,7 @@
 
 ## 1. Overview
 
-**Matter** is a React shader component library targeting modern WebGPU via Three.js's TSL (Three Shading Language). It ships polished, drop-in components for shader-driven backgrounds and interactive surfaces, alongside a primitives library and recipe gallery for developers who want to author their own shaders.
+**Matter** is a React shader component library targeting modern WebGPU via Three.js's TSL (Three Shading Language). It ships polished, prop-configurable components for shader-driven backgrounds and interactive surfaces, alongside a primitives library and recipe gallery for developers who want to author their own shaders.
 
 The project serves two audiences from a single codebase:
 
@@ -108,31 +108,33 @@ matter/                              # rename from mattermix/ at git init
 
 Why components live outside `packages/`: if they were inside a published package, they'd be part of an npm bundle, defeating the copy-paste model. By keeping them in a top-level `registry/` directory, they are never published — only delivered via the CLI. The docs site imports them via workspace path. This mirrors shadcn/ui's registry structure.
 
-### 3.4 Three rendering modes
+### 3.4 Two rendering modes
 
-Components support three usage modes, achieved through context detection without auto-detecting r3f:
+Components support two usage modes. Both require an explicit `<MatterScene>` wrap — there is no auto-wrap, no context-detection magic. The wrap is the price of admission for using a Matter shader, and the same syntax handles single-effect and multi-effect cases:
 
-**Mode 1 — Drop-in (the 90% case):**
-
-```tsx
-<LinearGradient interactive />
-```
-
-The component creates its own canvas internally via `<MatterScene>` (auto-wrapping when no parent scene is detected). Zero ceremony.
-
-**Mode 2 — Shared scene (Matter-managed):**
+**Mode 1 — Matter-managed scene (the 90% case):**
 
 ```tsx
 import { MatterScene } from '@lovo/matter-react'
+import { LinearGradient } from '@/components/matter/linear-gradient'
+
 ;<MatterScene>
+  <LinearGradient interactive />
+</MatterScene>
+```
+
+`<MatterScene>` creates one canvas, one renderer, one render loop, and one shared scheduler. Adding more components to the same scene is just adding more children:
+
+```tsx
+<MatterScene>
   <LinearGradient />
   <MeshGradient />
 </MatterScene>
 ```
 
-`<MatterScene>` creates one canvas, one renderer, one render loop, and one shared scheduler. Children detect they're inside a `MatterScene` (via React context) and skip the auto-wrap. Multiple components on the same page share resources.
+The mental model matches r3f's `<Canvas>` and shadcn's provider-then-component pattern: a single explicit boundary owns the GPU resources; the components inside it consume the context. No subtle "is there a parent scene?" detection — the wrap is always there.
 
-**Mode 3 — Custom Three.js or r3f integration (escape hatch):**
+**Mode 2 — Custom Three.js or r3f integration (escape hatch):**
 
 ```tsx
 import { Canvas } from '@react-three/fiber'
@@ -149,7 +151,7 @@ function MyR3FScene() {
 </Canvas>
 ```
 
-Matter exposes its hooks (especially `useShaderMaterial`) as the integration surface for users who already own a Three.js / r3f / Threlte / TresJS scene. **Matter never imports r3f, even optionally.** Multi-framework integration scales by writing thin equivalent bindings (`@lovo/matter-vue`, `@lovo/matter-svelte`) that follow the same three-mode pattern.
+Matter exposes its hooks (especially `useShaderMaterial`) as the integration surface for users who already own a Three.js / r3f / Threlte / TresJS scene. **Matter never imports r3f, even optionally.** Multi-framework integration scales by writing thin equivalent bindings (`@lovo/matter-vue`, `@lovo/matter-svelte`) that follow the same two-mode pattern.
 
 ---
 
@@ -226,10 +228,9 @@ export class MatterScheduler {
   resume(): void
 }
 // One scheduler per <MatterScene>. Components inside the same MatterScene share its scheduler
-// (single requestAnimationFrame loop ticking all clients). Multiple drop-in components on the
-// same page (each auto-wrapping its own MatterScene) each get their own scheduler — by design,
-// since drop-in mode trades resource sharing for zero-ceremony usage. Users who want shared
-// rendering wrap children in an explicit <MatterScene>.
+// (single requestAnimationFrame loop ticking all clients). Mounting multiple <MatterScene>
+// roots on the same page (e.g., separate sections each owning their own scene) gives each
+// scene its own scheduler — by design, so unrelated regions don't share a render loop.
 
 export function createMaterial(
   tslShader: ShaderNode,
@@ -265,7 +266,7 @@ Each input class implements both a uniform writer (for the GPU) and the MotionVa
 ### 4.2 `@lovo/matter-react` (React binding)
 
 ```ts
-// Shared scene wrapper (Mode 2)
+// Scene wrapper — required around every Tier 1 component (Mode 1)
 export function MatterScene(props: MatterSceneProps): JSX.Element
 
 interface MatterSceneProps {
@@ -277,7 +278,7 @@ interface MatterSceneProps {
   pauseWhenOffscreen?: boolean // default true
 }
 
-// Material hook — the integration point for r3f (Mode 3) and Tier 1 components
+// Material hook — the integration point for r3f (Mode 2) and Tier 1 components
 export function useShaderMaterial(
   tsl: ShaderNode,
   uniforms: Record<string, any>,
@@ -389,42 +390,40 @@ interface MatterComponentProps {
     time?: TimeSignal
     [key: string]: MatterSignal<any> | undefined
   }
-
-  // Layout & SSR
-  className?: string
-  style?: CSSProperties
-  fallback?: ReactNode // overrides the component's default fallback
 }
 ```
 
+Tier 1 components are bare mesh-effect components: they consume `useMatterContext()` from a surrounding `<MatterScene>` and return `null`. They do not own a canvas, do not apply layout, and do not ship fallbacks of their own — layout (`className`/`style`), SSR/init fallback rendering, and DOM sizing all live on the user's `<MatterScene>` wrap.
+
 Every Tier 1 component:
 
-1. Wraps itself in `<FallbackBoundary>` with a sensible default fallback (component-specific, usually CSS-based)
-2. Auto-wraps in `<MatterScene>` if no parent scene is detected via context
-3. Defaults to `position: absolute; inset: 0` (sized by nearest positioned ancestor)
-4. Composes its TSL fragment from `@lovo/matter` primitives
-5. Marked with `'use client'` (client-only)
-6. Exposes every numeric and color prop as `AnimatableProp<T>` (see Section 6)
+1. Requires an enclosing `<MatterScene>` — calling it outside one renders nothing (no canvas to add the mesh to)
+2. Composes its TSL fragment from `@lovo/matter` primitives
+3. Marked with `'use client'` (client-only)
+4. Exposes every numeric and color prop as `AnimatableProp<T>` (see Section 6)
 
 ### 5.2 v1 catalog
+
+Every example below assumes an enclosing `<MatterScene>`. The wrap is shown once on `<LinearGradient>` for reference; the other components are written bare for compactness.
 
 #### `<LinearGradient>` — the simplest, the foundation
 
 ```tsx
-<LinearGradient
-  colors={['#ff7b72', '#7b9cff']} // 2+ colors
-  angle={45} // degrees
-  variant="linear" // 'linear' | 'radial'
-  speed={0} // animates the gradient drift
-  focalPoint={[0.5, 0.5]} // for radial variant
-  interactive={false} // cursor shifts focal/angle slightly
-/>
+<MatterScene>
+  <LinearGradient
+    colors={['#ff7b72', '#7b9cff']} // 2+ colors
+    angle={45} // degrees
+    variant="linear" // 'linear' | 'radial'
+    speed={0} // animates the gradient drift
+    focalPoint={[0.5, 0.5]} // for radial variant
+    interactive={false} // cursor shifts focal/angle slightly
+  />
+</MatterScene>
 ```
 
 - **Primitives**: `colorRamp`, `mix`, `time` (when animated), optional cursor uniform
 - **TSL approach**: project `uv` along the rotated direction → sample `colorRamp(t, colors)`. Radial variant uses `length(uv - focalPoint)` instead of projection.
 - **Cursor behavior**: subtle parallax — focal point eases toward cursor
-- **Default fallback**: CSS `linear-gradient(${angle}deg, ...)` / `radial-gradient(...)` (pixel-identical at rest)
 - **Teaches**: position → t → color interpolation, the simplest shader pattern
 
 #### `<MeshGradient>` — Stripe-style multi-point blending
@@ -442,7 +441,6 @@ Every Tier 1 component:
 - **Primitives**: `colorRamp`, `mix`, `noise` (animates point positions), optional cursor
 - **TSL approach**: for N color points at positions `p[i]`, weight each by `1 / pow(distance(uv, p[i]), 1/blur)`; normalize weights; sum `weight[i] * color[i]`. Animate `p[i]` with `p[i] + noise(time + i) * 0.1`.
 - **Cursor behavior**: nearest color point eases toward cursor
-- **Default fallback**: 4 stacked CSS `radial-gradient`s at the four corners
 - **Teaches**: multi-source blending, weight functions
 
 #### `<Aurora>` — the signature shader-y look
@@ -459,7 +457,6 @@ Every Tier 1 component:
 - **Primitives**: `fbm`, `mix`, `smoothstep`, `displace`, `time`, optional cursor
 - **TSL approach**: vertical band gradient via `colorRamp`; displace sample `uv` by `vec2(fbm(uv*0.5 + time*speed), 0)`; result is bands warped by flowing noise. Layered FBM at multiple scales for depth.
 - **Cursor behavior**: locally amplifies displacement field near cursor
-- **Default fallback**: 3 stacked CSS radial gradients with `filter: blur()`
 - **Teaches**: FBM, displacement-based effects, layered noise
 
 #### `<DotField>` — the cursor showcase
@@ -478,7 +475,6 @@ Every Tier 1 component:
 - **Primitives**: `sdfCircle`, `displace`, `mix`, cursor uniform (interactive defaults to true)
 - **TSL approach**: tile `uv` with `mod(uv * resolution / spacing, 1.0)` for per-cell coords; `sdfCircle(cellUv - 0.5, radius)` renders a dot at each cell center; before tiling, displace each cell center based on distance to cursor (`displaceAmount = strength * smoothstep(reach, 0, distance(cell, cursor))`).
 - **Cursor behavior**: dots within `reach` get pulled or pushed
-- **Default fallback**: static CSS background — `background-image: radial-gradient(...)` with `background-size: ${spacing}px ${spacing}px` (identical at rest)
 - **Teaches**: tiling, signed distance fields, cursor-driven displacement (this is the architecturally-validating component)
 
 #### `<NoiseField>` — the primitive made visible
@@ -496,7 +492,6 @@ Every Tier 1 component:
 - **Primitives**: `fbm` (organic), `voronoi` (cellular), or quantized `fbm` (grid); `colorRamp`, `time`
 - **TSL approach**: `t = fbm(uv * scale + time * speed, { octaves })`; output `colorRamp(t, colors)`. `cellular` uses `voronoi`; `grid` uses `quantize(t, 0.1)`.
 - **Cursor behavior**: optional UV displacement near cursor
-- **Default fallback**: SVG inline noise filter (`<feTurbulence>`)
 - **Teaches**: FBM and Voronoi are the two most important pattern primitives in shader work
 
 #### `<Waves>` — trig as the engine
@@ -515,16 +510,16 @@ Every Tier 1 component:
 - **Primitives**: `sin`/`cos`, `cursorRipple`, `mix`, `time`
 - **TSL approach**: sum `layers` sine waves at different frequencies and phases — `Σ sin(uv.x * freq[i] + time * speed[i] + phase[i]) * amp[i]`. Threshold via `smoothstep` for soft wave bands. Add `cursorRipple(uv, cursor)` for interaction.
 - **Cursor behavior**: cursor adds a radial ripple field that decays with distance (drop-of-water look)
-- **Default fallback**: SVG static `<path>` with sine-wave-shaped curves
 - **Teaches**: trig as the core engine of motion, layered superposition, cursor-as-event-source
+
+> **Fallbacks during WebGPU init.** v1 does not ship per-component fallback UIs. Pass a fallback element to `<MatterScene fallback={...}>` for the brief window between mount and renderer-ready; for SSR, dynamic-import (`next/dynamic` with `{ ssr: false }`, or your framework's equivalent) any tree containing a Matter component. Shipping CSS-equivalent fallbacks as reusable exports (e.g., `<LinearGradientCSSFallback colors={...} />`) is a v2 add.
 
 ### 5.3 What this set proves architecturally
 
 | Architectural decision                         | Validated by                                                                                                       |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
-| Hybrid renderer (drop-in + `MatterScene`)      | All six work standalone; docs page combines them inside one `MatterScene`                                          |
+| Explicit `<MatterScene>` wrap (one mode)       | All six render inside the same `<MatterScene>`; multi-effect composition is just stacking children                 |
 | Cursor architecture (`interactive` + `inputs`) | LinearGradient, MeshGradient, Aurora, DotField, Waves opt in differently                                           |
-| Fallback prop + sensible defaults              | LinearGradient + DotField + NoiseField have CSS-equivalent fallbacks; Aurora/MeshGradient/Waves use approximations |
 | WebGPU + WebGL2 fallback (TSL auto)            | All six render on either backend without code changes                                                              |
 | Primitives library (Tier 2)                    | The six components together use ~10 of ~12 primitives — heavy reuse validates the API                              |
 | Three-tier model                               | Components → primitives → recipes shown on docs site                                                               |
@@ -619,8 +614,8 @@ CSS transforms (`transform: scale(...)` on the canvas element) are CSS concerns;
 /recipes/[slug]              Tier 3 — short TSL snippets
 /guides/animation            Motion library patterns + signal protocol
 /guides/ssr-and-fallbacks    Next.js / SSR / fallback prop patterns
-/guides/shared-scenes        Mode 2 (`MatterScene`) — multiple effects, one renderer
-/guides/three-r3f            Mode 3 — using Matter inside `<Canvas>` from r3f
+/guides/shared-scenes        Combining multiple effects inside a single `<MatterScene>`
+/guides/three-r3f            Mode 2 — using Matter inside `<Canvas>` from r3f
 /guides/perf                 Pause-when-offscreen, DPR clamping, render-on-demand
 /reference                   Full API reference per package
 ```
@@ -831,7 +826,7 @@ For the user's reference while learning shaders. Terms used throughout this doc.
 - **Renderer** — the object that owns the GPU connection and translates a scene description into draw calls. Three.js's `WebGPURenderer` or `WebGLRenderer`.
 - **DPR (devicePixelRatio)** — ratio of physical pixels to CSS pixels. 2 on most Retina displays.
 - **rAF (requestAnimationFrame)** — browser API for syncing redraws to display refresh.
-- **react-three-fiber (r3f)** — popular React reconciler for Three.js. **Matter does not depend on r3f**, but is compatible with users who use r3f via the Mode 3 hook integration pattern.
+- **react-three-fiber (r3f)** — popular React reconciler for Three.js. **Matter does not depend on r3f**, but is compatible with users who use r3f via the Mode 2 hook integration pattern.
 
 ---
 
@@ -843,7 +838,7 @@ For traceability. Each decision was made through Q&A during the 2026-05-01..02 b
 | --- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
 | 1   | Audience layering                                | Both layered: curated effects on top + primitives underneath                                               |
 | 2   | Effect categories scope                          | All categories eventually; v1 scoped to backgrounds + cursor interaction                                   |
-| 3   | Renderer ownership                               | Hybrid (drop-in default + `MatterScene` for shared rendering) — refined to drop r3f dependency             |
+| 3   | Renderer ownership                               | Hybrid (drop-in default + `MatterScene` for shared rendering) — refined to drop r3f dependency. **Revised 2026-05-18** to always-wrap (no auto-wrap, single mode) — Section 3.4 holds the current model.             |
 | 4   | Distribution model                               | Hybrid (engine npm package + CLI copy-paste for components)                                                |
 | 5   | Browser support                                  | WebGPU + WebGL2 fallback (free via TSL)                                                                    |
 | 6   | SSR/Next.js                                      | Client-only with sensible default fallback + `fallback` prop                                               |

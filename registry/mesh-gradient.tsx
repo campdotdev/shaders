@@ -1,19 +1,17 @@
 // registry/mesh-gradient.tsx
 'use client'
 
-import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
 import { vec2, vec3, vec4, length, max, min, time, uv, uniform } from '@lovo/matter'
 import { noise } from '@lovo/matter'
 import {
-  MatterScene,
   useMatterContext,
   useAnimatableUniform,
   useCursor,
   useResize,
-  FallbackBoundary,
   type AnimatableProp,
   type CursorSignal,
 } from '@lovo/matter-react'
@@ -35,11 +33,6 @@ export interface MeshGradientProps {
   strength?: AnimatableProp<number>
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
-  fallback?: ReactNode
-  className?: string
-  style?: CSSProperties
-  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
-  children?: ReactNode
 }
 
 const DEFAULT_COLORS = ['#ff61a6', '#61a6ff', '#61ffa6', '#ffd861']
@@ -87,7 +80,7 @@ const autoPointsFor = (n: number): readonly MeshPoint[] => {
   return out
 }
 
-function MeshGradientMesh(props: MeshGradientProps) {
+export function MeshGradient(props: MeshGradientProps) {
   const ctx = useMatterContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
@@ -261,34 +254,4 @@ function MeshGradientMesh(props: MeshGradientProps) {
   ])
 
   return null
-}
-
-function DefaultFallback({ colors }: { colors: string[] }) {
-  // Four stacked CSS radial-gradients per spec §5.2 line 446.
-  const corners = ['top left', 'top right', 'bottom right', 'bottom left']
-  const layers = colors
-    .slice(0, 4)
-    .map((c, i) => `radial-gradient(at ${corners[i]}, ${c} 0%, transparent 60%)`)
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundImage: layers.join(', '),
-      }}
-    />
-  )
-}
-
-export function MeshGradient(props: MeshGradientProps) {
-  const colors = resolveColors(props.colors)
-  const { children, ...meshProps } = props
-  return (
-    <FallbackBoundary fallback={props.fallback ?? <DefaultFallback colors={colors} />}>
-      <MatterScene className={props.className} style={props.style}>
-        <MeshGradientMesh {...meshProps} />
-        {children}
-      </MatterScene>
-    </FallbackBoundary>
-  )
 }

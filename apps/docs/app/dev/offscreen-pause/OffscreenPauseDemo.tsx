@@ -1,7 +1,7 @@
 'use client'
 
 import { LinearGradient } from '@matter/registry/linear-gradient'
-import { MatterMonitor } from '@lovo/matter-react'
+import { MatterMonitor, MatterScene } from '@lovo/matter-react'
 
 const Spacer = ({ label }: { label: string }) => (
   <div
@@ -33,14 +33,10 @@ export function OffscreenPauseDemo() {
       </p>
       <Spacer label="Scroll down…" />
       <div style={{ position: 'relative', width: '100%', height: 360, margin: '2rem 0' }}>
-        <LinearGradient
-          colors={['#ff7b72', '#7b9cff', '#7bff9c']}
-          angle={45}
-          speed={1}
-          style={{ borderRadius: 8 }}
-        >
+        <MatterScene style={{ borderRadius: 8 }}>
+          <LinearGradient colors={['#ff7b72', '#7b9cff', '#7bff9c']} angle={45} speed={1} />
           <MatterMonitor anchor="top-right" />
-        </LinearGradient>
+        </MatterScene>
       </div>
       <Spacer label="Keep scrolling — gradient should be off-screen above by now." />
     </main>

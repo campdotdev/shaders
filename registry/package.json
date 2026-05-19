@@ -10,7 +10,7 @@
     "./dot-field": "./dot-field.tsx",
     "./waves": "./waves.tsx",
     "./mesh-gradient": "./mesh-gradient.tsx",
-    "./aurora": "./aurora.tsx"
+    "./aurora": "./aurora/aurora.tsx"
   },
   "dependencies": {
     "@lovo/matter": "workspace:*",
