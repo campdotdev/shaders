@@ -134,6 +134,13 @@ Aurora, DotField, LinearGradient, MeshGradient, NoiseField, Waves.
 - **Tier:** 1
 - **Size:** M
 
+### God Rays
+
+- **What:** Sunbeams spilling down through the clouds in big, dramatic shafts of light
+- **Source:**
+- **Tier:** 1
+- **Size:** M
+
 ## Hologram
 
 - **What:** Shiny holo effect that you would often see with trading cards, slight rainbow sheen
