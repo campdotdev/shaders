@@ -141,6 +141,13 @@ Aurora, DotField, LinearGradient, MeshGradient, NoiseField, Waves.
 - **Tier:** 1
 - **Size:** M
 
+### Stars Nebula
+
+- **What:** Stars and colorful space nebula in space
+- **Source:**
+- **Tier:** 1
+- **Size:** L
+
 ## Hologram
 
 - **What:** Shiny holo effect that you would often see with trading cards, slight rainbow sheen
