@@ -1,7 +1,6 @@
 // packages/matter/src/primitives/quantize.ts
-import type { TSLNode } from './colorRamp.js'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
+import type { ShaderNodeObject } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 
 /**
  * Quantize a scalar TSL node to `steps` discrete levels.
@@ -11,13 +10,13 @@ import type { Node } from 'three/webgpu'
  * `steps` is a JS-side number (loop-equivalent at TSL build time, baked in).
  * If you need an animatable step count, rebuild the TSL fragment.
  */
-export function quantize(t: TSLNode, steps: number): TSLNode {
+export function quantize(t: ShaderNodeObject<Node>, steps: number): ShaderNodeObject<Node> {
   if (steps <= 1) {
     // Edge case: single step → constant 0. Return as-is wrapped in mul(0).
-    return (t as ShaderNodeObject<Node>).mul(0)
+    return t.mul(0);
   }
-  const denom = steps - 1
+  const denom = steps - 1;
   // floor(t * (steps-1) + 0.5) / (steps-1)
   // Using floor(x + 0.5) instead of round() for TSL portability.
-  return (t as ShaderNodeObject<Node>).mul(denom).add(0.5).floor().div(denom)
+  return t.mul(denom).add(0.5).floor().div(denom);
 }

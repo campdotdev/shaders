@@ -1,16 +1,14 @@
 'use client'
 
-import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import { vec3, vec2, mod, length, uv, time, uniform } from '@lovo/matter'
 import { colorRamp, type ColorRampStop } from '@lovo/matter'
 import {
-  MatterScene,
   useMatterContext,
   useAnimatableUniform,
   useCursor,
   useStaticHint,
-  FallbackBoundary,
   type AnimatableProp,
   type CursorSignal,
 } from '@lovo/matter-react'
@@ -23,11 +21,6 @@ export interface LinearGradientProps {
   speed?: AnimatableProp<number>
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
-  fallback?: ReactNode
-  className?: string
-  style?: CSSProperties
-  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
-  children?: ReactNode
 }
 
 const DEFAULT_COLORS = ['#ff7b72', '#7b9cff']
@@ -49,7 +42,7 @@ const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => 
   return prop
 }
 
-function LinearGradientMesh(props: LinearGradientProps) {
+export function LinearGradient(props: LinearGradientProps) {
   const ctx = useMatterContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
@@ -178,37 +171,4 @@ function LinearGradientMesh(props: LinearGradientProps) {
   ])
 
   return null
-}
-
-function DefaultFallback({ colors, angle }: { colors: string[]; angle: number }) {
-  const stops = colors.join(', ')
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundImage: `linear-gradient(${angle}deg, ${stops})`,
-      }}
-    />
-  )
-}
-
-export function LinearGradient(props: LinearGradientProps) {
-  const colorsForFallback = resolveColors(props.colors)
-  const angleForFallback = typeof props.angle === 'number' ? props.angle : 0
-
-  const { children, ...meshProps } = props
-
-  return (
-    <FallbackBoundary
-      fallback={
-        props.fallback ?? <DefaultFallback colors={colorsForFallback} angle={angleForFallback} />
-      }
-    >
-      <MatterScene className={props.className} style={props.style}>
-        <LinearGradientMesh {...meshProps} />
-        {children}
-      </MatterScene>
-    </FallbackBoundary>
-  )
 }

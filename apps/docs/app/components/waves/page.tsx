@@ -6,8 +6,13 @@ import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
 import { VisualTestPause } from '../../_lib/visualTestHooks'
 
-// Waves pulls in three/webgpu, which references `self` at module load time
-// and breaks Next's SSR. Load it client-only.
+// Both MatterScene and Waves pull in three/webgpu (via createRenderer),
+// which references `self` at module load time and breaks Next's SSR. Load
+// both client-only.
+const MatterScene = dynamic(
+  () => import('@lovo/matter-react').then((m) => m.MatterScene),
+  { ssr: false },
+)
 const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false })
 
 interface Params {
@@ -68,24 +73,28 @@ export default function WavesPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
-        <Waves
-          color={params.color}
-          amplitude={params.amplitude}
-          frequency={params.frequency}
-          speed={params.speed}
-          layers={params.layers}
-          interactive={params.interactive}
-        >
+        <MatterScene>
+          <Waves
+            color={params.color}
+            amplitude={params.amplitude}
+            frequency={params.frequency}
+            speed={params.speed}
+            layers={params.layers}
+            interactive={params.interactive}
+          />
           <VisualTestPause />
-        </Waves>
+        </MatterScene>
       </div>
-      {/* Tweakpane generates its own DOM without ARIA labels. `inert` both
-          removes the subtree from the a11y tree and prevents focus from
-          entering the container, satisfying the aria-hidden-focus rule.
-          The page content in <section> below is the accessible surface. */}
+      {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
+          hides the pane from screen readers; the axe test excludes the
+          `.tp-dfwv` subtree so the unlabeled internal controls don't trip
+          aria-hidden-focus. The page content in <section> below is the
+          accessible surface. (`inert` would have blocked mouse input too —
+          regression noted 2026-05-13.) */}
       <div
         ref={paneContainerRef}
-        inert
+        data-tweakpane-host
+        aria-hidden="true"
         style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
@@ -99,7 +108,9 @@ export default function WavesPage() {
             fontSize: '0.85rem',
           }}
         >
-          {`<Waves amplitude={0.1} frequency={5} speed={1} layers={3} interactive />`}
+          {`<MatterScene>
+  <Waves amplitude={0.1} frequency={5} speed={1} layers={3} interactive />
+</MatterScene>`}
         </pre>
       </section>
     </main>

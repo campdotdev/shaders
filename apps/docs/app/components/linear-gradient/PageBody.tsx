@@ -11,9 +11,14 @@ import {
 } from '../../_components/PropsPlayground'
 import { VisualTestPause } from '../../_lib/visualTestHooks'
 
-// LinearGradient pulls in three/webgpu, which references `self` at module
-// load time and breaks Next's SSR. `ssr: false` requires this to live in a
-// Client Component (Next 15 forbids it in Server Components).
+// Both MatterScene and LinearGradient pull in three/webgpu (via
+// createRenderer), which references `self` at module load time and breaks
+// Next's SSR. `ssr: false` requires this to live in a Client Component
+// (Next 15 forbids it in Server Components).
+const MatterScene = dynamic(
+  () => import('@lovo/matter-react').then((m) => m.MatterScene),
+  { ssr: false },
+)
 const LinearGradient = dynamic(
   () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
   { ssr: false },
@@ -56,16 +61,17 @@ export function PageBody({ schema, code }: PageBodyProps) {
   return (
     <>
       <LiveDemo>
-        <LinearGradient
-          key={remountKey}
-          colors={colors}
-          angle={angle}
-          speed={speed}
-          variant={variant}
-          interactive={interactive}
-        >
+        <MatterScene>
+          <LinearGradient
+            key={remountKey}
+            colors={colors}
+            angle={angle}
+            speed={speed}
+            variant={variant}
+            interactive={interactive}
+          />
           <VisualTestPause />
-        </LinearGradient>
+        </MatterScene>
       </LiveDemo>
 
       <div

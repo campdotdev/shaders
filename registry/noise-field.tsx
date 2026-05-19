@@ -1,7 +1,7 @@
 // registry/noise-field.tsx
 'use client'
 
-import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
@@ -9,11 +9,9 @@ import { vec2, vec3, uv, time, uniform } from '@lovo/matter'
 import { colorRamp, type ColorRampStop } from '@lovo/matter'
 import { fbm, voronoi, quantize } from '@lovo/matter'
 import {
-  MatterScene,
   useMatterContext,
   useAnimatableUniform,
   useCursor,
-  FallbackBoundary,
   type AnimatableProp,
   type CursorSignal,
 } from '@lovo/matter-react'
@@ -26,11 +24,6 @@ export interface NoiseFieldProps {
   variant?: 'organic' | 'cellular' | 'grid'
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
-  fallback?: ReactNode
-  className?: string
-  style?: CSSProperties
-  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
-  children?: ReactNode
 }
 
 const DEFAULT_COLORS = ['#0a0a0a', '#f5f5f5']
@@ -53,7 +46,7 @@ const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => 
   return prop
 }
 
-function NoiseFieldMesh(props: NoiseFieldProps) {
+export function NoiseField(props: NoiseFieldProps) {
   const ctx = useMatterContext()
   const colors = resolveColors(props.colors)
   const octaves = props.octaves ?? 4
@@ -147,45 +140,4 @@ function NoiseFieldMesh(props: NoiseFieldProps) {
   }, [ctx, colors.join('|'), octaves, variant, scaleUniform, speedUniform])
 
   return null
-}
-
-function DefaultFallback() {
-  // SVG <feTurbulence> approximation per spec §5.2.
-  // baseFrequency tuned to roughly match `fbm(uv*3)` at default octaves.
-  const id = 'matter-noisefield-fallback'
-  return (
-    <div style={{ position: 'absolute', inset: 0, overflow: 'hidden' }}>
-      <svg
-        width="100%"
-        height="100%"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ display: 'block' }}
-        preserveAspectRatio="none"
-      >
-        <filter id={id}>
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="3" />
-          <feColorMatrix
-            type="matrix"
-            values="0 0 0 0 0.04
-                    0 0 0 0 0.04
-                    0 0 0 0 0.04
-                    0 0 0 1 0"
-          />
-        </filter>
-        <rect width="100%" height="100%" filter={`url(#${id})`} />
-      </svg>
-    </div>
-  )
-}
-
-export function NoiseField(props: NoiseFieldProps) {
-  const { children, ...meshProps } = props
-  return (
-    <FallbackBoundary fallback={props.fallback ?? <DefaultFallback />}>
-      <MatterScene className={props.className} style={props.style}>
-        <NoiseFieldMesh {...meshProps} />
-        {children}
-      </MatterScene>
-    </FallbackBoundary>
-  )
 }

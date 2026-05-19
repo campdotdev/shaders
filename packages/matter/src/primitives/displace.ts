@@ -1,6 +1,7 @@
-import type { TSLNode } from './colorRamp.js'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
+import { add } from 'three/tsl';
+import type { TSLNode } from './colorRamp.js';
+import type { ShaderNodeObject } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 
 /**
  * Naive vector addition: returns `p + by`.
@@ -18,6 +19,6 @@ import type { Node } from 'three/webgpu'
  * @param p — Vec2 TSL node (the position being displaced).
  * @param by — Vec2 TSL node (the displacement vector).
  */
-export function displace(p: TSLNode, by: TSLNode): TSLNode {
-  return (p as ShaderNodeObject<Node>).add(by as ShaderNodeObject<Node>)
+export function displace(p: TSLNode, by: TSLNode): ShaderNodeObject<Node> {
+  return add(p, by);
 }

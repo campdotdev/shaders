@@ -6,8 +6,13 @@ import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
 import { VisualTestPause } from '../../_lib/visualTestHooks'
 
-// MeshGradient pulls in three/webgpu, which references `self` at module load
-// time and breaks Next's SSR. Load it client-only.
+// Both MatterScene and MeshGradient pull in three/webgpu (via createRenderer),
+// which references `self` at module load time and breaks Next's SSR. Load
+// both client-only.
+const MatterScene = dynamic(
+  () => import('@lovo/matter-react').then((m) => m.MatterScene),
+  { ssr: false },
+)
 const MeshGradient = dynamic(
   () => import('@matter/registry/mesh-gradient').then((m) => m.MeshGradient),
   { ssr: false },
@@ -75,23 +80,27 @@ export default function MeshGradientPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh' }}>
-        <MeshGradient
-          colors={[params.c0, params.c1, params.c2, params.c3]}
-          blur={params.blur}
-          speed={params.speed}
-          strength={params.strength}
-          interactive={params.interactive}
-        >
+        <MatterScene>
+          <MeshGradient
+            colors={[params.c0, params.c1, params.c2, params.c3]}
+            blur={params.blur}
+            speed={params.speed}
+            strength={params.strength}
+            interactive={params.interactive}
+          />
           <VisualTestPause />
-        </MeshGradient>
+        </MatterScene>
       </div>
-      {/* Tweakpane generates its own DOM without ARIA labels. `inert` both
-          removes the subtree from the a11y tree and prevents focus from
-          entering the container, satisfying the aria-hidden-focus rule.
-          The page content in <section> below is the accessible surface. */}
+      {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
+          hides the pane from screen readers; the axe test excludes the
+          `.tp-dfwv` subtree so the unlabeled internal controls don't trip
+          aria-hidden-focus. The page content in <section> below is the
+          accessible surface. (`inert` would have blocked mouse input too —
+          regression noted 2026-05-13.) */}
       <div
         ref={paneContainerRef}
-        inert
+        data-tweakpane-host
+        aria-hidden="true"
         style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
@@ -105,7 +114,9 @@ export default function MeshGradientPage() {
             fontSize: '0.85rem',
           }}
         >
-          {`<MeshGradient colors={['#ff61a6','#61a6ff','#61ffa6','#ffd861']} blur={0.4} speed={0.3} strength={0.15} interactive />`}
+          {`<MatterScene>
+  <MeshGradient colors={['#ff61a6','#61a6ff','#61ffa6','#ffd861']} blur={0.4} speed={0.3} strength={0.15} interactive />
+</MatterScene>`}
         </pre>
       </section>
     </main>

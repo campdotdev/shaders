@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
 import { LinearGradient } from '@matter/registry/linear-gradient'
+import { MatterScene } from '@lovo/matter-react'
 import { setReducedMotionPolicy, type ReducedMotionPolicy } from '@lovo/matter'
 import { Pane } from 'tweakpane'
 
@@ -41,12 +42,9 @@ export function ReducedMotionDemo() {
             LinearGradient
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
-            <LinearGradient
-              colors={['#ff7b72', '#7b9cff', '#7bff9c']}
-              angle={45}
-              speed={1}
-              style={{ borderRadius: 8 }}
-            />
+            <MatterScene style={{ borderRadius: 8 }}>
+              <LinearGradient colors={['#ff7b72', '#7b9cff', '#7bff9c']} angle={45} speed={1} />
+            </MatterScene>
           </div>
         </div>
         <div>
@@ -56,15 +54,9 @@ export function ReducedMotionDemo() {
             is paused.
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
-            <Waves
-              color="#77eecc"
-              amplitude={0.1}
-              frequency={5}
-              speed={1}
-              layers={3}
-              interactive
-              style={{ borderRadius: 8 }}
-            />
+            <MatterScene style={{ borderRadius: 8 }}>
+              <Waves color="#77eecc" amplitude={0.1} frequency={5} speed={1} layers={3} interactive />
+            </MatterScene>
           </div>
         </div>
         <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#666' }}>

@@ -1,19 +1,17 @@
 // registry/dot-field.tsx
 'use client'
 
-import { useEffect, useMemo, type CSSProperties, type ReactNode } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
 import { vec2, vec3, vec4, mix, mod, length, smoothstep, uv, uniform } from '@lovo/matter'
 import { sdfCircle, displace } from '@lovo/matter'
 import {
-  MatterScene,
   useMatterContext,
   useAnimatableUniform,
   useCursor,
   useResize,
-  FallbackBoundary,
   type AnimatableProp,
   type CursorSignal,
 } from '@lovo/matter-react'
@@ -26,11 +24,6 @@ export interface DotFieldProps {
   strength?: AnimatableProp<number>
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
-  fallback?: ReactNode
-  className?: string
-  style?: CSSProperties
-  /** Optional content rendered inside the internal MatterScene. Useful for dev overlays like MatterMonitor. */
-  children?: ReactNode
 }
 
 const DEFAULTS = { spacing: 30, dotSize: 2, color: '#888888', reach: 100, strength: 1 } as const
@@ -43,7 +36,7 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
   return [r, g, b]
 }
 
-function DotFieldMesh(props: DotFieldProps) {
+export function DotField(props: DotFieldProps) {
   const ctx = useMatterContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
@@ -189,35 +182,4 @@ function DotFieldMesh(props: DotFieldProps) {
   ])
 
   return null
-}
-
-function DefaultFallback({ color, spacing }: { color: string; spacing: number }) {
-  return (
-    <div
-      style={{
-        position: 'absolute',
-        inset: 0,
-        backgroundImage: `radial-gradient(circle, ${color} 1px, transparent 1.5px)`,
-        backgroundSize: `${spacing}px ${spacing}px`,
-      }}
-    />
-  )
-}
-
-export function DotField(props: DotFieldProps) {
-  const fallbackColor = typeof props.color === 'string' ? props.color : DEFAULTS.color
-  const fallbackSpacing = typeof props.spacing === 'number' ? props.spacing : DEFAULTS.spacing
-  const { children, ...meshProps } = props
-  return (
-    <FallbackBoundary
-      fallback={
-        props.fallback ?? <DefaultFallback color={fallbackColor} spacing={fallbackSpacing} />
-      }
-    >
-      <MatterScene className={props.className} style={props.style}>
-        <DotFieldMesh {...meshProps} />
-        {children}
-      </MatterScene>
-    </FallbackBoundary>
-  )
 }
