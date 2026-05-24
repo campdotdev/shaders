@@ -3,7 +3,11 @@ import { notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
 import rehypeSlug from 'rehype-slug'
 import remarkGfm from 'remark-gfm'
+import { Breadcrumbs } from '@/components/docs/Breadcrumbs'
+import { PrevNext } from '@/components/docs/PrevNext'
+import { TableOfContents } from '@/components/docs/TableOfContents'
 import { mdxComponents } from '@/content/mdx'
+import { getDocsBreadcrumbs, getDocsPrevNext } from '@/content/nav'
 import { getDocsPage, getDocsStaticParams } from '@/content/source'
 
 export const dynamicParams = false
@@ -33,18 +37,37 @@ export default async function DocsPage({ params }: PageProps) {
   const page = await getDocsPage(slug)
   if (!page) notFound()
 
+  const [crumbs, prevNext] = await Promise.all([
+    getDocsBreadcrumbs(page),
+    getDocsPrevNext(page),
+  ])
+
   return (
-    <article>
-      <MDXRemote
-        source={page.body}
-        components={mdxComponents}
-        options={{
-          mdxOptions: {
-            remarkPlugins: [remarkGfm],
-            rehypePlugins: [rehypeSlug],
-          },
-        }}
-      />
-    </article>
+    <div
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'minmax(0, 1fr) 200px',
+        gap: '2.5rem',
+        alignItems: 'start',
+      }}
+    >
+      <article style={{ minWidth: 0, lineHeight: 1.65 }}>
+        <Breadcrumbs crumbs={crumbs} />
+        <MDXRemote
+          source={page.body}
+          components={mdxComponents}
+          options={{
+            mdxOptions: {
+              remarkPlugins: [remarkGfm],
+              rehypePlugins: [rehypeSlug],
+            },
+          }}
+        />
+        <PrevNext prev={prevNext.prev} next={prevNext.next} />
+      </article>
+      <aside>
+        <TableOfContents headings={page.headings} />
+      </aside>
+    </div>
   )
 }
