@@ -10,11 +10,14 @@
     "allowJs": true,
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
+    "paths": {
+      "@/*": ["./src/*"]
+    },
     "plugins": [
       {
         "name": "next"
       }
     ]
   },
-  "include": ["app", "css.d.ts", "next-env.d.ts", "next.config.ts", ".next/types/**/*.ts"]
+  "include": ["src", "css.d.ts", "next-env.d.ts", "next.config.ts", ".next/types/**/*.ts"]
 }

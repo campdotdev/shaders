@@ -12,7 +12,7 @@
 
 **Scope notes:**
 
-- **Recipes deferred.** The existing `/recipes/*` routes and `_data/recipes.ts` stay in the repo from M3/M4 but are **not** surfaced in M8's nav, sidebar, search, or breadcrumbs. They return post-launch.
+- **Recipes deferred.** The existing `/recipes/*` routes and `src/data/recipes.ts` stay in the repo from M3/M4 but are **not** surfaced in M8's nav, sidebar, search, or breadcrumbs. They return post-launch.
 - **Hero / `/` landing.** Owned by the user's Figma design pass, not this milestone. M8 leaves the existing `/` route untouched.
 - **Framework-aware IA.** URL structure follows Option B (framework hub): engine surfaces are framework-agnostic; React-specific guides and API live under `/react/*`. See "Information Architecture" below.
 
@@ -63,7 +63,7 @@ Do not build in this milestone:
 
 ### MDX should not own heavy demos yet
 
-MDX pages can use small docs components (`<Callout>`, `<Steps>`, `<Tabs>`, `<CodeBlock>`), but should avoid importing registry components directly in MDX during this milestone. If a prose guide needs a live shader, expose a narrow allow-listed component from `_content/mdx.tsx` rather than allowing arbitrary imports.
+MDX pages can use small docs components (`<Callout>`, `<Steps>`, `<Tabs>`, `<CodeBlock>`), but should avoid importing registry components directly in MDX during this milestone. If a prose guide needs a live shader, expose a narrow allow-listed component from `src/content/mdx.tsx` rather than allowing arbitrary imports.
 
 ### Defer visual polish to Figma
 
@@ -138,10 +138,10 @@ Sidebar group order: **Overview → Components → Primitives → Guides → Fra
 Nav is data-driven from two sources:
 
 1. **Per-page frontmatter** declares membership via a dotted `section` path.
-2. **A single nav config** at `apps/docs/app/_content/nav.config.ts` defines group structure, order, and labels.
+2. **A single nav config** at `apps/docs/src/content/nav.config.ts` defines group structure, order, and labels.
 
 ```ts
-// apps/docs/app/_content/nav.config.ts
+// apps/docs/src/content/nav.config.ts
 export const NAV: NavGroup[] = [
   {
     label: 'Overview',
@@ -240,21 +240,16 @@ apps/docs/
 │       │       └── three-r3f.mdx
 │       └── reference/
 │           └── matter.mdx
-├── app/
-│   ├── (docs-content)/
-│   │   ├── [...slug]/page.tsx
-│   │   └── layout.tsx
-│   ├── _content/
-│   │   ├── catalog.ts
-│   │   ├── mdx.tsx
-│   │   ├── nav.config.ts
-│   │   ├── nav.ts
-│   │   ├── schema.ts
-│   │   ├── search.ts
-│   │   ├── source.ts
-│   │   ├── toc.ts
-│   │   └── types.ts
-│   ├── _components/
+├── src/
+│   ├── app/
+│   │   ├── (docs-content)/
+│   │   │   ├── [...slug]/page.tsx
+│   │   │   └── layout.tsx
+│   │   ├── components/
+│   │   │   └── page.tsx              ← NEW: top-level catalog index
+│   │   └── primitives/
+│   │       └── page.tsx              ← already exists; integrate into shared shell
+│   ├── components/
 │   │   ├── docs/
 │   │   │   ├── Breadcrumbs.tsx
 │   │   │   ├── Callout.tsx
@@ -265,17 +260,25 @@ apps/docs/
 │   │   │   ├── Steps.tsx
 │   │   │   └── TableOfContents.tsx
 │   │   └── SearchBar.tsx
-│   ├── components/
-│   │   └── page.tsx              ← NEW: top-level catalog index
-│   └── primitives/
-│       └── page.tsx              ← already exists; integrate into shared shell
+│   └── content/
+│       ├── catalog.ts
+│       ├── mdx.tsx
+│       ├── nav.config.ts
+│       ├── nav.ts
+│       ├── schema.ts
+│       ├── search.ts
+│       ├── source.ts
+│       ├── toc.ts
+│       └── types.ts
 └── package.json
 ```
 
-Exact paths can shift if the existing docs app has a stronger convention by implementation time, but keep the separation clear:
+Imports between folders use the `@/` path alias (`@/components/...`, `@/content/...`, `@/lib/...`) — set up in `tsconfig.json` with `paths: { "@/*": ["./src/*"] }`. Same-folder imports stay relative.
 
-- `_content/` = data/source utilities + nav config
-- `_components/docs/` = reusable docs chrome
+Keep the separation clear:
+
+- `src/content/` = data/source utilities + nav config
+- `src/components/docs/` = reusable docs chrome
 - `content/docs/` = author-authored MDX
 - `(docs-content)/[...slug]` = generic prose renderer
 
@@ -336,7 +339,7 @@ Catalog pages (`components`, `primitives`) are synthetic records and do not use 
 **Files:**
 
 - Temporarily create: `apps/docs/content/docs/_spike.mdx`
-- Temporarily create or modify: `apps/docs/app/(docs-content)/_spike/page.tsx`
+- Temporarily create or modify: `apps/docs/src/app/(docs-content)/_spike/page.tsx`
 - Modify: `apps/docs/package.json`
 
 ### Task 1: Add spike dependencies
@@ -384,19 +387,19 @@ pnpm --filter @matter/docs add @next/mdx @mdx-js/loader @mdx-js/react gray-matte
 
 **Files:**
 
-- Create: `apps/docs/app/_content/types.ts`
-- Create: `apps/docs/app/_content/schema.ts`
-- Create: `apps/docs/app/_content/source.ts`
-- Create: `apps/docs/app/_content/toc.ts`
-- Create: `apps/docs/app/_content/nav.config.ts`
-- Create: `apps/docs/app/_content/nav.ts`
-- Create: `apps/docs/app/_content/search.ts`
+- Create: `apps/docs/src/content/types.ts`
+- Create: `apps/docs/src/content/schema.ts`
+- Create: `apps/docs/src/content/source.ts`
+- Create: `apps/docs/src/content/toc.ts`
+- Create: `apps/docs/src/content/nav.config.ts`
+- Create: `apps/docs/src/content/nav.ts`
+- Create: `apps/docs/src/content/search.ts`
 
 ### Task 1: Define page types
 
 - [ ] Define `DocsFrontmatter`, `DocsPage`, `DocsHeading`, `DocsSearchDocument`.
 - [ ] Define nav config types: `NavGroup`, `NavItem` (with kinds `page`, `section`, `catalog`, and nested groups).
-- [ ] Keep URL construction centralized. No page should hand-concatenate slugs except inside `_content/source.ts`.
+- [ ] Keep URL construction centralized. No page should hand-concatenate slugs except inside `src/content/source.ts`.
 - [ ] Include `sourcePath` on page records for diagnostics, but do not expose local filesystem paths in the rendered UI.
 
 ### Task 2: Validate frontmatter
@@ -452,9 +455,9 @@ pnpm --filter @matter/docs add @next/mdx @mdx-js/loader @mdx-js/react gray-matte
 
 **Files:**
 
-- Create: `apps/docs/app/(docs-content)/[...slug]/page.tsx`
-- Create: `apps/docs/app/(docs-content)/layout.tsx`
-- Create: `apps/docs/app/_content/mdx.tsx`
+- Create: `apps/docs/src/app/(docs-content)/[...slug]/page.tsx`
+- Create: `apps/docs/src/app/(docs-content)/layout.tsx`
+- Create: `apps/docs/src/content/mdx.tsx`
 - Fallback only: create `apps/docs/mdx-components.tsx` if Phase 8.0 chooses `@next/mdx`
 
 ### Task 1: Add catch-all page
@@ -498,12 +501,12 @@ pnpm --filter @matter/docs add @next/mdx @mdx-js/loader @mdx-js/react gray-matte
 
 **Files:**
 
-- Create: `apps/docs/app/_components/docs/DocsShell.tsx`
-- Create: `apps/docs/app/_components/docs/DocsSidebar.tsx`
-- Create: `apps/docs/app/_components/docs/Breadcrumbs.tsx`
-- Create: `apps/docs/app/_components/docs/TableOfContents.tsx`
-- Create: `apps/docs/app/_components/docs/PrevNext.tsx`
-- Modify: `apps/docs/app/(docs-content)/layout.tsx`
+- Create: `apps/docs/src/components/docs/DocsShell.tsx`
+- Create: `apps/docs/src/components/docs/DocsSidebar.tsx`
+- Create: `apps/docs/src/components/docs/Breadcrumbs.tsx`
+- Create: `apps/docs/src/components/docs/TableOfContents.tsx`
+- Create: `apps/docs/src/components/docs/PrevNext.tsx`
+- Modify: `apps/docs/src/app/(docs-content)/layout.tsx`
 
 ### Task 1: Build the docs shell
 
@@ -593,16 +596,16 @@ pnpm --filter @matter/docs add @next/mdx @mdx-js/loader @mdx-js/react gray-matte
 
 **Files:**
 
-- Create: `apps/docs/app/_content/catalog.ts`
-- Create: `apps/docs/app/components/page.tsx` (top-level catalog index — does not yet exist)
-- Modify: `apps/docs/app/_content/nav.ts` to resolve `catalog` items
-- Modify: `apps/docs/app/_content/search.ts`
-- Optionally modify: `apps/docs/app/primitives/page.tsx` to use the shared shell
+- Create: `apps/docs/src/content/catalog.ts`
+- Create: `apps/docs/src/app/components/page.tsx` (top-level catalog index — does not yet exist)
+- Modify: `apps/docs/src/content/nav.ts` to resolve `catalog` items
+- Modify: `apps/docs/src/content/search.ts`
+- Optionally modify: `apps/docs/src/app/primitives/page.tsx` to use the shared shell
 
 ### Task 1: Define synthetic catalog records
 
 - [ ] Add synthetic records for each Tier 1 component from `registry/registry.json` or the existing docs component list.
-- [ ] Add synthetic records for `PRIMITIVES` from `apps/docs/app/_data/primitives.ts`.
+- [ ] Add synthetic records for `PRIMITIVES` from `apps/docs/src/data/primitives.ts`.
 - [ ] Do **not** add synthetic records for recipes (deferred from launch).
 - [ ] Keep synthetic records shaped similarly to MDX records where practical:
   - `title`
@@ -620,8 +623,8 @@ pnpm --filter @matter/docs add @next/mdx @mdx-js/loader @mdx-js/react gray-matte
 
 ### Task 3: Build top-level catalog index pages
 
-- [ ] Create `apps/docs/app/components/page.tsx` — a grid/list of all Tier 1 components, linking to `/components/[slug]`. Use the same docs shell so navigation works consistently.
-- [ ] Confirm `apps/docs/app/primitives/page.tsx` (already exists) integrates with the shared shell — minor refactor if needed.
+- [ ] Create `apps/docs/src/app/components/page.tsx` — a grid/list of all Tier 1 components, linking to `/components/[slug]`. Use the same docs shell so navigation works consistently.
+- [ ] Confirm `apps/docs/src/app/primitives/page.tsx` (already exists) integrates with the shared shell — minor refactor if needed.
 - [ ] Both index pages should be discoverable from the sidebar group headers.
 
 ### Task 4: Do not over-refactor custom pages
@@ -638,10 +641,10 @@ pnpm --filter @matter/docs add @next/mdx @mdx-js/loader @mdx-js/react gray-matte
 
 **Files:**
 
-- Modify: `apps/docs/app/_content/search.ts`
-- Create or modify: `apps/docs/app/_components/SearchBar.tsx`
-- Optionally create: `apps/docs/app/api/search/route.ts`
-- Optionally modify: `apps/docs/app/layout.tsx`
+- Modify: `apps/docs/src/content/search.ts`
+- Create or modify: `apps/docs/src/components/SearchBar.tsx`
+- Optionally create: `apps/docs/src/app/api/search/route.ts`
+- Optionally modify: `apps/docs/src/app/layout.tsx`
 
 ### Task 1: Build search documents
 
