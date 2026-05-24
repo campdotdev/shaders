@@ -34,7 +34,7 @@ export interface AuroraLayer {
   hex: string;
   speed: AnimatableProp<number>;
   intensity: AnimatableProp<number>;
-  seed: number;
+  variation: number;
 }
 
 export type AuroraDirection = 'bottom' | 'top' | 'left' | 'right';
@@ -162,13 +162,13 @@ export function AuroraShader(props: AuroraShaderProps) {
     [layer0, layer1, layer2, layer3],
   );
 
-  const seeds = useMemo(
+  const variations = useMemo(
     () =>
       [
-        props.layers[0].seed,
-        props.layers[1].seed,
-        props.layers[2].seed,
-        props.layers[3].seed,
+        props.layers[0].variation,
+        props.layers[1].variation,
+        props.layers[2].variation,
+        props.layers[3].variation,
       ] as const,
     [props.layers],
   );
@@ -188,7 +188,7 @@ export function AuroraShader(props: AuroraShaderProps) {
 
     for (let i = 0; i < 4; i++) {
       const lu = layerUniforms[i]!;
-      const seed = seeds[i]!;
+      const variation = variations[i]!;
 
       const t = time.mul(speedU).mul(lu.speed);
 
@@ -197,7 +197,10 @@ export function AuroraShader(props: AuroraShaderProps) {
         scaledUv.y.add(t.mul(driftYU)),
       );
 
-      const warpSeed = vec2(lu.color.x.add(seed), lu.color.y.add(seed + 1));
+      const warpSeed = vec2(
+        lu.color.x.add(variation),
+        lu.color.y.add(variation + 1),
+      );
 
       const inner = noise(
         vec2(warpSeed.x.add(p.x).add(t), warpSeed.y.add(p.y).add(t)),
@@ -236,7 +239,7 @@ export function AuroraShader(props: AuroraShaderProps) {
   }, [
     ctx,
     layerUniforms,
-    seeds,
+    variations,
     intensityU,
     speedU,
     densityXU,

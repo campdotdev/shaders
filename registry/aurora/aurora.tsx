@@ -48,10 +48,10 @@ export const DEFAULT_LAYERS: [
   AuroraLayer,
   AuroraLayer,
 ] = [
-  { hex: '#09e24b', speed: 0.07, intensity: 0.6, seed: 0 },
-  { hex: '#1837e6', speed: 0.1, intensity: 0, seed: 5 },
-  { hex: '#661acc', speed: 0.15, intensity: 0.3, seed: 11 },
-  { hex: '#cc1a99', speed: 0.07, intensity: 0, seed: 17 },
+  { hex: '#09e24b', speed: 0.07, intensity: 0.6, variation: 0 },
+  { hex: '#1837e6', speed: 0.1, intensity: 0, variation: 5 },
+  { hex: '#661acc', speed: 0.15, intensity: 0.3, variation: 11 },
+  { hex: '#cc1a99', speed: 0.07, intensity: 0, variation: 17 },
 ];
 
 export function Aurora({
