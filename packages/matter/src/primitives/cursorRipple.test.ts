@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vite-plus/test'
 import { uv, vec2 } from 'three/tsl'
 import { cursorRipple } from './cursorRipple.js'
-import { time as gatedTime } from './tsl-reexports.js'
+import { time as gatedTime } from './time.js'
 
 describe('cursorRipple', () => {
   it('returns a TSL node with default options', () => {

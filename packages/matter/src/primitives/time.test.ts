@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vite-plus/test'
-import { time } from './tsl-reexports.js'
+import { time } from './time.js'
 import { setReducedMotionPolicy, __resetReducedMotionForTests } from '../runtime/reducedMotion.js'
 
 describe('gated time', () => {

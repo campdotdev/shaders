@@ -33,7 +33,9 @@ export { displace } from './primitives/displace.js'
 export { cursorRipple } from './primitives/cursorRipple.js'
 export type { CursorRippleOptions } from './primitives/cursorRipple.js'
 
-// TSL re-exports — stable surface
+export { time } from './primitives/time.js'
+
+// TSL re-exports — to be removed in 0.2.0 (M9 Phase 9.4)
 export * from './primitives/tsl-reexports.js'
 
 export {
