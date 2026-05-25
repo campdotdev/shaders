@@ -1,6 +1,6 @@
 ---
 title: Engine API
-description: '@lovo/matter — primitives, runtime, inputs, and TSL re-exports.'
+description: '@lovo/matter — primitives, runtime, inputs, and reduced-motion-gated time.'
 section: reference
 order: 10
 ---
@@ -22,15 +22,25 @@ TSL building blocks for writing shader expressions. Each primitive is documented
 - `displace(uv, offset)` — UV displacement helper.
 - `cursorRipple(uv, cursor, opts?)` — cursor-following ripple displacement (used by `<DotField>`).
 
-## TSL re-exports
+## Layering and `time`
 
-The most common TSL nodes, re-exported as a stable surface so registry components only need one import path:
+Matter sits on top of Three.js's TSL. Pure TSL primitives (`uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`) live in `three/tsl` — import them directly from there:
 
 ```ts
-import { uniform, uv, vec2, vec3, mix, time, /* ... */ } from '@lovo/matter'
+import { uv, vec3, uniform, mix } from 'three/tsl'
 ```
 
-The full list lives in `packages/matter/src/primitives/tsl-reexports.ts`. If you need a TSL node that isn't re-exported, fall back to `import { x } from 'three/tsl'` — Matter doesn't restrict your TSL surface, it just curates what's commonly used.
+Matter exports one TSL node of its own: **`time`**. It's the TSL built-in `time` multiplied by an engine-owned reduced-motion scale uniform, so every component that animates against `time` from `@lovo/matter` automatically respects `prefers-reduced-motion` and the policy override set via `setReducedMotionPolicy`.
+
+```ts
+import { time } from '@lovo/matter'
+//  → equivalent to three/tsl's `time.mul(reducedMotionScale)`
+
+// If you specifically want raw uncapped time (e.g. a debug overlay):
+import { time as rawTime } from 'three/tsl'
+```
+
+> **Migrating from 0.1.x?** Before 0.2.0, `@lovo/matter` re-exported the TSL primitives listed above as a convenience. They're gone in 0.2.0 — replace `import { vec3, uv, … } from '@lovo/matter'` with `import { vec3, uv, … } from 'three/tsl'`. `time` is the only carry-over and stays imported from `@lovo/matter`.
 
 ## Runtime
 

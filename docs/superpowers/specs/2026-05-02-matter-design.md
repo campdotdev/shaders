@@ -100,7 +100,7 @@ matter/                              # rename from mattermix/ at git init
 
 ### 3.3 Package responsibilities and dependency graph
 
-- **`@lovo/matter`** (engine) — pure TypeScript, framework-agnostic. Depends on `three` (peer). Exports TSL primitive re-exports, Matter-specific primitives, runtime utilities (`createRenderer`, `MatterScheduler`, `createMaterial`), and input source classes.
+- **`@lovo/matter`** (engine) — pure TypeScript, framework-agnostic. Depends on `three` (peer). Exports Matter-specific primitives, the reduced-motion-gated `time`, runtime utilities (`createRenderer`, `MatterScheduler`, `createMaterial`), and input source classes.
 - **`@lovo/matter-react`** (React binding) — depends on `@lovo/matter` (peer) and `react` (peer). Exports `<MatterScene>`, `useShaderMaterial`, `useMatterContext`, `<FallbackBoundary>`, `useAnimatableUniform`, and the four input hooks (`useCursor`, `useTime`, `useScroll`, `useResize`). **Does not depend on `@react-three/fiber` — optional peer or otherwise.**
 - **`@lovo/matter-cli`** — standalone npm package, no workspace dependencies at runtime. Reads `registry/registry.json` from GitHub raw URLs (or a future hosted endpoint).
 - **`registry/*.tsx`** — Tier 1 components. Import from `@lovo/matter` and `@lovo/matter-react`. Do **not** import from each other (each component is a self-contained file the user copies). Component files do not appear in any published npm package — they are delivered exclusively via the CLI.
@@ -139,7 +139,8 @@ The mental model matches r3f's `<Canvas>` and shadcn's provider-then-component p
 ```tsx
 import { Canvas } from '@react-three/fiber'
 import { useShaderMaterial } from '@lovo/matter-react'
-import { /* TSL primitives */ } from '@lovo/matter'
+import { uv, vec3, uniform } from 'three/tsl'
+import { fbm, time } from '@lovo/matter'
 
 function MyR3FScene() {
   const material = useShaderMaterial(/* TSL fragment */, /* uniforms */)
@@ -161,27 +162,11 @@ Matter exposes its hooks (especially `useShaderMaterial`) as the integration sur
 
 Three export groups:
 
-#### TSL re-exports (stable surface)
+#### Layering — Matter and TSL
 
-```ts
-export {
-  uniform,
-  vec2,
-  vec3,
-  vec4,
-  mix,
-  smoothstep,
-  mod,
-  sin,
-  cos,
-  length,
-  dot,
-  normalize,
-  time,
-} from 'three/tsl'
-```
+Matter sits *on top of* TSL. Pure TSL primitives (`uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`) are imported directly from `three/tsl` by Tier 1 components and by recipe snippets — Matter does **not** re-export them. The single TSL node Matter owns is `time`, which wraps `three/tsl`'s built-in `time` with a reduced-motion scale uniform so every component honoring `time` automatically respects `prefers-reduced-motion`.
 
-These are the most-used TSL primitives, re-exported through Matter so users have one stable import path. New TSL versions are absorbed by updating Matter's re-exports without changing user code.
+> Pre-0.2.0 history: `@lovo/matter` originally re-exported the pure TSL primitives as a "stable surface" against future TSL renames. In 0.2.0 we judged the boundary muddier than the cost it claimed to mitigate and dropped them. See the M9 plan and the 0.2.0 changelog.
 
 #### Matter primitives (Tier 2)
 
@@ -804,7 +789,7 @@ Total: ~6–9 days for Milestone 1 with three explicit learning gates (1.2, 1.3,
 **Risks:**
 
 - **Storybook 10 + Vite + WebGPU + TSL interaction** — Storybook 10 is recent; if a specific addon or builder integration fails, falling back to a chrome-less route in `apps/docs` (Option C from the brainstorming) is a known escape hatch.
-- **Three.js TSL stability** — TSL is still evolving in Three.js. API shifts in Three.js minor releases may require version pinning and migration work. Acceptable risk for the engine layer's value; mitigated by re-exporting TSL primitives through `@lovo/matter` so user code is shielded from Three.js renames.
+- **Three.js TSL stability** — TSL is still evolving in Three.js. API shifts in Three.js minor releases may require version pinning and migration work. Acceptable risk for the engine layer's value; mitigated by wrapping load-bearing TSL primitives where Matter adds value (e.g., the reduced-motion-gated `time`); consumers handle pure-TSL renames at their import site.
 
 ---
 
