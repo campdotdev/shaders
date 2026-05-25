@@ -5,6 +5,7 @@ export function TableOfContents({ headings }: { headings: DocsHeading[] }) {
   return (
     <nav
       aria-label="On this page"
+      data-pagefind-ignore="all"
       style={{
         position: 'sticky',
         top: '4rem',

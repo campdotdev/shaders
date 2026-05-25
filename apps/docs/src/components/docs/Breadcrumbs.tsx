@@ -6,6 +6,7 @@ export function Breadcrumbs({ crumbs }: { crumbs: DocsBreadcrumb[] }) {
   return (
     <nav
       aria-label="Breadcrumb"
+      data-pagefind-ignore="all"
       style={{
         fontSize: '0.8125rem',
         color: 'var(--fg-muted)',

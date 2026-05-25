@@ -16,6 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body suppressHydrationWarning>
         <Providers>
           <header
+            data-pagefind-ignore="all"
             style={{
               position: 'sticky',
               top: 0,

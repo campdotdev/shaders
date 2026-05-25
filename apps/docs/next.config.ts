@@ -16,6 +16,9 @@ const threeDir = resolve(threeMain, '..', '..')
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  // Static export — the docs are fully prerendered (no SSR, no server
+  // actions), and `out/` is the directory Pagefind crawls in postbuild.
+  output: 'export',
   // Transpile workspace packages so Next can compile our raw source / tsx
   // (Next would otherwise refuse to load .tsx from node_modules).
   transpilePackages: ['@lovo/matter', '@lovo/matter-react', '@matter/registry'],

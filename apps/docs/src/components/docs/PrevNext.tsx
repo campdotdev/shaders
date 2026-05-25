@@ -36,6 +36,7 @@ export function PrevNext({
   return (
     <nav
       aria-label="Previous and next page"
+      data-pagefind-ignore="all"
       style={{
         display: 'grid',
         gridTemplateColumns: '1fr 1fr',
