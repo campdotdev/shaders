@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
-import { vec3, vec2, mod, length, uv, time, uniform } from '@lovo/matter'
-import { colorRamp, type ColorRampStop } from '@lovo/matter'
+import { vec3, vec2, mod, length, uv, uniform } from 'three/tsl'
+import { time, colorRamp, type ColorRampStop } from '@lovo/matter'
 import {
   useMatterContext,
   useAnimatableUniform,

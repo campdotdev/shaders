@@ -5,7 +5,7 @@ import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
-import { vec2, vec3, vec4, mix, mod, length, smoothstep, uv, uniform } from '@lovo/matter'
+import { vec2, vec3, vec4, mix, mod, length, smoothstep, uv, uniform } from 'three/tsl'
 import { sdfCircle, displace } from '@lovo/matter'
 import {
   useMatterContext,
