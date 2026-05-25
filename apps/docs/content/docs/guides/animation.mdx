@@ -1,0 +1,91 @@
+---
+title: Animation
+description: Signal-shaped props, MotionValue compatibility, and how Matter animates uniforms on the GPU.
+section: guides
+order: 10
+---
+
+# Animation
+
+Matter doesn't ship its own animation library. Component props that need to animate accept either a static value or a **signal** — anything with a `get()` and `subscribe(callback)` shape. Motion's `MotionValue`, Jotai atoms with a wrapper, custom signal libraries — they all work, because Matter just reads the current value and subscribes to changes.
+
+## The signal contract
+
+A signal is any object shaped like:
+
+```ts
+interface MatterSignal<T> {
+  get(): T
+  subscribe(callback: (value: T) => void): () => void
+}
+```
+
+When a Matter component receives a signal as a prop, it:
+
+1. Reads `signal.get()` once to seed the uniform.
+2. Subscribes for updates and writes the new value into the GPU uniform on every change.
+3. Unsubscribes on unmount.
+
+The animation engine doesn't run on the CPU per-frame — values flow straight into the uniform and the GPU does the rest.
+
+## With Motion
+
+[Motion](https://motion.dev) (formerly Framer Motion) is the canonical integration. `MotionValue<number>` and `MotionValue<string>` already implement the signal shape, so you can pass them directly:
+
+```tsx
+import { useMotionValue, useTransform, useScroll } from 'motion/react'
+import { MatterScene } from '@lovo/matter-react'
+import { DotField } from './components/matter/dot-field'
+
+export function Hero() {
+  const { scrollYProgress } = useScroll()
+  const reach = useTransform(scrollYProgress, [0, 1], [0.1, 0.6])
+
+  return (
+    <MatterScene style={{ height: '100vh' }}>
+      <DotField reach={reach} />
+    </MatterScene>
+  )
+}
+```
+
+`reach` is a `MotionValue<number>` — Matter subscribes to it and pipes updates into the `reach` uniform.
+
+## Built-in input signals
+
+Matter ships three React hooks that produce ready-to-use signals — they handle the canvas-aware math and Strict Mode lifecycle correctly:
+
+- `useCursor()` — returns a `CursorSignal` with `value` ([0,1] across the canvas rect, not the viewport).
+- `useScroll()` — returns a `ScrollSignal` with normalized scroll progress.
+- `useResize()` — returns a `ResizeSignal` with current canvas dimensions.
+
+```tsx
+import { MatterScene, useCursor } from '@lovo/matter-react'
+
+function App() {
+  return (
+    <MatterScene>
+      <Cursor />
+    </MatterScene>
+  )
+}
+
+function Cursor() {
+  const cursor = useCursor()
+  return <DotField cursor={cursor} />
+}
+```
+
+`useCursor()` must be called inside a `<MatterScene>` so it can plumb to the canvas; it normalizes coordinates to the canvas bounding rect.
+
+## Animating any uniform
+
+If a component doesn't expose the prop you want, `useAnimatableUniform` is the lower-level escape hatch — give it any TSL `uniform` plus a signal, and it wires the subscription up for you. See [the React API](/react/api) for the full signature.
+
+## What Matter does NOT ship
+
+- No built-in spring / keyframe / timeline library.
+- No `<motion.div>`-style component primitives.
+- No state machine glue.
+
+Bring your own animation library. Matter just consumes signals.

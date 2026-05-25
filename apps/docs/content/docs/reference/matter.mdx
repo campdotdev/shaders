@@ -1,0 +1,58 @@
+---
+title: Engine API
+description: '@lovo/matter — primitives, runtime, inputs, and TSL re-exports.'
+section: reference
+order: 10
+---
+
+# Engine API
+
+`@lovo/matter` is the framework-agnostic engine. This page lists everything it exports. A generated TypeDoc reference replaces this hand-written page post-launch.
+
+## Tier 2 primitives
+
+TSL building blocks for writing shader expressions. Each primitive is documented individually under [/primitives](/primitives) with a live demo and parameter sliders.
+
+- `colorRamp(stops, t)` — multi-stop color gradient sampled at `t` ∈ [0, 1].
+- `noise(uv, opts?)` — single-octave 2D value noise.
+- `fbm(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `scale`, `octaves`, `lacunarity`, `gain`, `speed`.
+- `voronoi(uv, opts?)` — distance-to-nearest-feature noise.
+- `quantize(value, bins)` — posterize a float to discrete steps.
+- `sdfCircle(uv, radius, center)` — signed-distance field for a circle. Negative inside, positive outside.
+- `displace(uv, offset)` — UV displacement helper.
+- `cursorRipple(uv, cursor, opts?)` — cursor-following ripple displacement (used by `<DotField>`).
+
+## TSL re-exports
+
+The most common TSL nodes, re-exported as a stable surface so registry components only need one import path:
+
+```ts
+import { uniform, uv, vec2, vec3, mix, time, /* ... */ } from '@lovo/matter'
+```
+
+The full list lives in `packages/matter/src/primitives/tsl-reexports.ts`. If you need a TSL node that isn't re-exported, fall back to `import { x } from 'three/tsl'` — Matter doesn't restrict your TSL surface, it just curates what's commonly used.
+
+## Runtime
+
+- **`createRenderer(opts)`** → `MatterRenderer`. Allocates a WebGPU renderer. Used internally by `<MatterScene>`; you rarely call it directly.
+- **`MatterScheduler`** — the render-frame coordinator. Components register as `SchedulerClient`s; the scheduler ticks them when their scene is visible and not reduced-motion-paused.
+- **Visibility / intersection watchers** — `createVisibilityWatcher()`, `createIntersectionWatcher()`. Low-level utilities behind the offscreen-pause behavior.
+
+## Inputs
+
+- **`CursorInput`** — framework-agnostic cursor source. `useCursor()` in `@lovo/matter-react` wraps it; in Mode 2 or non-React contexts, you instantiate it directly.
+
+## Reduced motion
+
+- **`setReducedMotionPolicy(policy)`** — set globally to `'respect'`, `'slow'`, or `'ignore'`. See [the performance guide](/guides/perf#reduced-motion).
+- **`getReducedMotionPolicy()`** — read the current policy.
+- **`getReducedMotionTimeScale()`** — get the current animation time scale (0, 0.3, or 1).
+- **`createReducedMotionWatcher()`** — subscribe to policy changes.
+
+## Type exports
+
+The engine exports types for everything above: `MatterRenderer`, `CreateRendererOptions`, `MatterBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vec2`, `ColorRampStop`, `TSLNode`, `FBMOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`.
+
+<Callout>
+  For React-specific exports (`<MatterScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@lovo/matter`.
+</Callout>

@@ -1,19 +1,83 @@
 ---
 title: Performance
-description: Pause-when-offscreen, DPR clamping, reduced motion, static render cases.
+description: What Matter does automatically and what you can tune for offscreen pausing, DPR, reduced motion, and static renders.
 section: guides
 order: 20
-status: draft
 ---
 
 # Performance
 
-Placeholder — Phase 8.4 fills this in.
+Matter applies five engine-level defaults you don't have to wire up yourself. This page covers what's automatic, what's tunable, and how to opt out when you need to.
 
 ## Pause when offscreen
 
+Every `<MatterScene>` registers an `IntersectionObserver` on its canvas. When the canvas leaves the viewport, the scheduler unsubscribes the scene — no GPU frames are produced. When the canvas re-enters, rendering resumes from where it left off.
+
+This is on by default and applies to all Matter components without per-component code. You don't need to do anything.
+
+<Callout>
+  If you depend on continuous rendering — for example, you're capturing the canvas as a texture for another effect — opt out of offscreen pause by setting `pauseOffscreen={false}` on `<MatterScene>`.
+</Callout>
+
 ## DPR clamping
 
-### Per-component override
+WebGPU honors `window.devicePixelRatio` by default, so a Retina display at DPR 3 means rendering 9× the pixels of DPR 1. That's overkill for most shader work.
+
+`<MatterScene>` clamps DPR to a sensible ceiling (currently 2.0). You can override it:
+
+```tsx
+<MatterScene dprMax={1.5}>
+  <Aurora />
+</MatterScene>
+```
+
+Drop to `dprMax={1}` for the cheapest possible render, or set `dprMax={Infinity}` if you need full native resolution.
 
 ## Reduced motion
+
+Matter reads `prefers-reduced-motion: reduce` on mount and respects the user's choice automatically. Three policies are available via `setReducedMotionPolicy`:
+
+- `'respect'` (default) — when the user prefers reduced motion, animation time scales by `0` (effectively pausing time).
+- `'slow'` — time scales by `0.3`.
+- `'ignore'` — Matter ignores the OS hint entirely.
+
+```ts
+import { setReducedMotionPolicy } from '@lovo/matter'
+
+setReducedMotionPolicy('slow')
+```
+
+This is global to the page and runs once at module init. The hook `useStaticHint` from `@lovo/matter-react` can read the current scale per-render if you need to swap visuals based on it.
+
+## Static / render-on-demand
+
+For decorative shaders that don't actually need to animate every frame, you can hint to Matter that the scene is "static" — it renders once on mount, then only on prop / signal changes.
+
+```tsx
+import { MatterScene, useStaticHint } from '@lovo/matter-react'
+
+function Hero() {
+  useStaticHint(true)
+  return (
+    <MatterScene>
+      <LinearGradient />
+    </MatterScene>
+  )
+}
+```
+
+Use this for hero backgrounds where the gradient doesn't need a `time` uniform. Removes the per-frame redraw cost entirely.
+
+## Visibility watcher
+
+Beyond intersection-based pausing, `<MatterScene>` also listens to `document.visibilitychange` — when the tab is backgrounded, rendering stops; when it comes back, it resumes. Combined with offscreen pause, this means an inactive shader effectively costs zero GPU time.
+
+## Monitoring at dev time
+
+Drop `<MatterMonitor />` into your dev pages to get a corner overlay showing FPS, active component count, and scheduler state. It's a dev tool — not for production — and tree-shakes out when guarded behind `import.meta.env.DEV` or similar.
+
+```tsx
+import { MatterMonitor } from '@lovo/matter-react'
+
+{process.env.NODE_ENV === 'development' && <MatterMonitor anchor="bottom-right" />}
+```

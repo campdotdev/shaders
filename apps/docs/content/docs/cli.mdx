@@ -1,0 +1,75 @@
+---
+title: CLI
+description: Copy components from the Matter registry into your project with @lovo/matter-cli.
+section: overview
+order: 20
+---
+
+# CLI
+
+`@lovo/matter-cli` copies polished shader components from the Matter registry directly into your project. It's a shadcn-style copy-paste workflow — once a component is in your repo, it's yours to edit. There's no runtime CLI dependency; you only need it installed during development.
+
+## Install
+
+```bash
+pnpm add -D @lovo/matter-cli
+```
+
+Requires Node 22+.
+
+## Commands
+
+### `init`
+
+Run once per project to write a `matter.config.json`:
+
+```bash
+npx matter-cli init
+```
+
+Default config:
+
+```json
+{
+  "componentsDir": "src/components/matter",
+  "registryUrl": "https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry",
+  "aliases": { "@/": "src/" },
+  "tsx": true
+}
+```
+
+The `${ref}` placeholder resolves to the CLI's published version tag (e.g. `v0.1.0`), so every CLI release pins a stable snapshot. Override with `--ref <tag|branch|sha>` to track `main` or a specific commit.
+
+### `list`
+
+```bash
+npx matter-cli list
+```
+
+Prints the components in the configured registry.
+
+### `add`
+
+```bash
+npx matter-cli add linear-gradient
+npx matter-cli add aurora dot-field waves
+```
+
+Copies the component file (and any utility files it depends on) into `componentsDir`. The fetched source is byte-identical to what's documented on this site.
+
+### `update`
+
+```bash
+npx matter-cli update linear-gradient    # one component
+npx matter-cli update --force            # refresh all, overwriting local edits
+```
+
+Without `--force`, `update` refuses to overwrite a file you've modified — you keep your edits unless you explicitly ask to discard them.
+
+## Why not a runtime dependency?
+
+Tier 1 components (`<LinearGradient>`, `<Aurora>`, etc.) aren't published to npm. They live in [the registry](https://github.com/lovo-hq/matter/tree/main/registry) and get copied into your project, where you can edit the shader, swap props, or refactor the JSX freely. The two packages you do depend on at runtime — `@lovo/matter` and `@lovo/matter-react` — provide the primitives, hooks, and `<MatterScene>` that those components call into.
+
+<Callout>
+  There is no hosted registry endpoint. The CLI fetches sources from GitHub raw URLs at the pinned `${ref}`. If you want to host your own fork, change `registryUrl` in `matter.config.json` to point at your fork's raw URL.
+</Callout>
