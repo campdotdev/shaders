@@ -5,8 +5,8 @@ import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
-import { vec2, vec3, vec4, sin, mix, smoothstep, uv, time, uniform } from '@lovo/matter'
-import { cursorRipple } from '@lovo/matter'
+import { vec2, vec3, vec4, sin, mix, smoothstep, uv, uniform } from 'three/tsl'
+import { time, cursorRipple } from '@lovo/matter'
 import {
   useMatterContext,
   useAnimatableUniform,

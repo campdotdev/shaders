@@ -5,9 +5,8 @@ import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
-import { vec2, vec3, uv, time, uniform } from '@lovo/matter'
-import { colorRamp, type ColorRampStop } from '@lovo/matter'
-import { fbm, voronoi, quantize } from '@lovo/matter'
+import { vec2, vec3, uv, uniform } from 'three/tsl'
+import { time, colorRamp, fbm, voronoi, quantize, type ColorRampStop } from '@lovo/matter'
 import {
   useMatterContext,
   useAnimatableUniform,
