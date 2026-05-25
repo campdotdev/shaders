@@ -1,6 +1,6 @@
 {
   "name": "@lovo/matter-cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "CLI for Matter — copy-paste components from the registry into your project.",
   "license": "MIT",
   "keywords": [
@@ -27,7 +27,8 @@
   },
   "main": "./dist/index.js",
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md"
   ],
   "publishConfig": {
     "access": "public"

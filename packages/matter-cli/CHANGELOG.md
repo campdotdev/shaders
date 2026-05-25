@@ -1,5 +1,11 @@
 # @lovo/matter-cli
 
+## 0.2.0
+
+### Minor Changes
+
+- No API changes. Bumped alongside `@lovo/matter` 0.2.0 because the three packages ship as a fixed version group. See [`@lovo/matter`'s 0.2.0 changelog](../matter/CHANGELOG.md#020) for the engine-level breaking change.
+
 ## 0.1.0
 
 ### Minor Changes
