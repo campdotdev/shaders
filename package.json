@@ -19,6 +19,8 @@
     "format": "vp fmt",
     "dev:playground": "vp run @matter/playground#dev",
     "dev:docs": "vp run @matter/docs#dev",
+    "build:docs": "vp run @matter/docs#build",
+    "preview:docs": "vp run @matter/docs#preview",
     "test:visual": "turbo run test:visual",
     "test:visual:update": "turbo run test:visual:update",
     "changeset": "changeset",
