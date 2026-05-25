@@ -35,7 +35,7 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm --filter @matter/docs build && pnpm --filter @matter/docs start',
+    command: 'pnpm --filter @matter/docs build && pnpm --filter @matter/docs preview',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
