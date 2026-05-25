@@ -3,6 +3,12 @@
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
+interface SearchResult {
+  url: string
+  title: string
+  excerpt: string
+}
+
 interface SearchDoc {
   url: string
   title: string
@@ -12,11 +18,42 @@ interface SearchDoc {
   tags: string[]
 }
 
-function prettifySection(s: string): string {
-  return s
-    .split('.')
-    .map((p) => (p.length > 0 ? p[0]!.toUpperCase() + p.slice(1) : p))
-    .join(' ')
+type SearchBackend = (query: string) => Promise<SearchResult[]>
+
+interface PagefindModule {
+  search(query: string): Promise<{
+    results: Array<{
+      id: string
+      data(): Promise<{
+        url: string
+        excerpt: string
+        meta?: { title?: string }
+      }>
+    }>
+  }>
+}
+
+async function createPagefindBackend(): Promise<SearchBackend | null> {
+  try {
+    const path = '/pagefind/pagefind.js'
+    const mod = (await import(
+      /* webpackIgnore: true */ path
+    )) as PagefindModule
+    return async (query) => {
+      if (!query.trim()) return []
+      const search = await mod.search(query)
+      const items = await Promise.all(
+        search.results.slice(0, 20).map((r) => r.data()),
+      )
+      return items.map((d) => ({
+        url: d.url.replace(/\.html$/, '').replace(/\/index$/, '/'),
+        title: d.meta?.title ?? d.url,
+        excerpt: d.excerpt,
+      }))
+    }
+  } catch {
+    return null
+  }
 }
 
 function matches(doc: SearchDoc, q: string): boolean {
@@ -29,27 +66,65 @@ function matches(doc: SearchDoc, q: string): boolean {
   )
 }
 
+async function createFallbackBackend(): Promise<SearchBackend | null> {
+  try {
+    const res = await fetch('/api/search')
+    if (!res.ok) return null
+    const docs = (await res.json()) as SearchDoc[]
+    return async (query) => {
+      const q = query.toLowerCase().trim()
+      if (!q) return []
+      return docs
+        .filter((d) => matches(d, q))
+        .slice(0, 20)
+        .map((d) => ({ url: d.url, title: d.title, excerpt: d.description }))
+    }
+  } catch {
+    return null
+  }
+}
+
 export function SearchBar() {
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [query, setQuery] = useState('')
-  const [docs, setDocs] = useState<SearchDoc[] | null>(null)
+  const [results, setResults] = useState<SearchResult[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
+  const [backendState, setBackendState] = useState<
+    'loading' | 'ready' | 'unavailable'
+  >('loading')
+  const backendRef = useRef<SearchBackend | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
 
-  // Lazy-load the search index on first open
+  // Lazy-load the backend on first open. Pagefind first, /api/search fallback.
   useEffect(() => {
-    if (open && docs === null) {
-      fetch('/api/search')
-        .then((r) => r.json())
-        .then((data: SearchDoc[]) => setDocs(data))
-        .catch((err) => {
-          console.error('search: failed to load index', err)
-          setDocs([])
-        })
+    if (!open || backendRef.current) return
+    let cancelled = false
+    void (async () => {
+      const backend =
+        (await createPagefindBackend()) ?? (await createFallbackBackend())
+      if (cancelled) return
+      backendRef.current = backend
+      setBackendState(backend ? 'ready' : 'unavailable')
+    })()
+    return () => {
+      cancelled = true
     }
-  }, [open, docs])
+  }, [open])
+
+  // Run a query through the active backend
+  useEffect(() => {
+    if (!open || backendState !== 'ready' || !backendRef.current) return
+    const backend = backendRef.current
+    let cancelled = false
+    void backend(query).then((r) => {
+      if (!cancelled) setResults(r)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [open, query, backendState])
 
   // Cmd+K / Ctrl+K to toggle, Esc to close
   useEffect(() => {
@@ -71,13 +146,9 @@ export function SearchBar() {
     if (!open) {
       setQuery('')
       setSelectedIndex(0)
+      setResults([])
     }
   }, [open])
-
-  const q = query.toLowerCase().trim()
-  const results = !docs
-    ? []
-    : (q ? docs.filter((d) => matches(d, q)) : docs).slice(0, 20)
 
   // Clamp selected index when results change
   useEffect(() => {
@@ -236,7 +307,7 @@ export function SearchBar() {
                 overflowY: 'auto',
               }}
             >
-              {docs === null && (
+              {backendState === 'loading' && (
                 <li
                   style={{
                     padding: '1rem',
@@ -244,10 +315,10 @@ export function SearchBar() {
                     fontSize: '0.875rem',
                   }}
                 >
-                  Loading…
+                  Loading search…
                 </li>
               )}
-              {docs !== null && results.length === 0 && (
+              {backendState === 'unavailable' && (
                 <li
                   style={{
                     padding: '1rem',
@@ -255,16 +326,28 @@ export function SearchBar() {
                     fontSize: '0.875rem',
                   }}
                 >
-                  {q ? `No results for "${query}"` : 'Type to search.'}
+                  Search index unavailable. Build the docs to generate the
+                  Pagefind index.
                 </li>
               )}
-              {results.map((doc, i) => (
+              {backendState === 'ready' && results.length === 0 && (
                 <li
-                  key={doc.url}
+                  style={{
+                    padding: '1rem',
+                    color: 'var(--fg-muted)',
+                    fontSize: '0.875rem',
+                  }}
+                >
+                  {query.trim() ? `No results for "${query}"` : 'Type to search.'}
+                </li>
+              )}
+              {results.map((r, i) => (
+                <li
+                  key={r.url}
                   role="option"
                   aria-selected={i === selectedIndex}
                   onMouseEnter={() => setSelectedIndex(i)}
-                  onClick={() => navigate(doc.url)}
+                  onClick={() => navigate(r.url)}
                   style={{
                     padding: '0.625rem 1rem',
                     cursor: 'pointer',
@@ -273,41 +356,21 @@ export function SearchBar() {
                     borderBottom: '1px solid var(--border)',
                   }}
                 >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'baseline',
-                      justifyContent: 'space-between',
-                      gap: '0.75rem',
-                    }}
-                  >
-                    <span style={{ fontWeight: 500, color: 'var(--fg)' }}>
-                      {doc.title}
-                    </span>
-                    <span
-                      style={{
-                        fontSize: '0.7rem',
-                        color: 'var(--fg-muted)',
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.04em',
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      {prettifySection(doc.section)}
-                    </span>
+                  <div style={{ fontWeight: 500, color: 'var(--fg)' }}>
+                    {r.title}
                   </div>
                   <div
                     style={{
                       fontSize: '0.8125rem',
                       color: 'var(--fg-muted)',
                       marginTop: '0.25rem',
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
+                      lineHeight: 1.4,
                     }}
-                  >
-                    {doc.description}
-                  </div>
+                    // Pagefind excerpts contain sanitized HTML with <mark>.
+                    // Fallback excerpts are plain text (no HTML in our
+                    // descriptions). Both render safely via innerHTML.
+                    dangerouslySetInnerHTML={{ __html: r.excerpt }}
+                  />
                 </li>
               ))}
             </ul>

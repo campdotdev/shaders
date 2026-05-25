@@ -87,6 +87,7 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   return (
     <nav
       aria-label="Docs"
+      data-pagefind-ignore="all"
       style={{
         position: 'sticky',
         top: '4rem',
