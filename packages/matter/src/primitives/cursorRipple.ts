@@ -1,5 +1,5 @@
 import { sin, length, smoothstep, sub } from 'three/tsl'
-import { time } from './tsl-reexports.js'
+import { time } from './time.js'
 import type { TSLNode } from './colorRamp.js'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
@@ -45,7 +45,7 @@ export function cursorRipple(
   // building from a raw `uniform()` receiver silently produces wrong GPU
   // values, so the functional form is also safer for `center` being a uniform.
   const d = length(sub(p, center))
-  // `time` is the engine-gated TSL node (re-exported from tsl-reexports.ts);
+  // `time` is the engine-gated TSL node (from primitives/time.ts);
   // chains rooted in `time` automatically respect `prefers-reduced-motion` and
   // the runtime override set via `setReducedMotionPolicy`.
   const wave = sin(d.mul(frequency).sub(time.mul(speed)))
