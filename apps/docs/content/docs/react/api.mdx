@@ -1,0 +1,123 @@
+---
+title: React API
+description: Public exports from @lovo/matter-react — MatterScene, hooks, fallbacks, dev tools.
+section: react.api
+order: 10
+---
+
+# React API
+
+Everything exported from `@lovo/matter-react`. This page is hand-written for the launch milestone; a generated reference from TypeDoc lands post-launch.
+
+## `<MatterScene>`
+
+The scene wrapper. Owns the WebGPU canvas, creates the renderer, runs the scheduler. Every Tier 1 Matter component must render inside one.
+
+```tsx
+import { MatterScene } from '@lovo/matter-react'
+
+<MatterScene
+  style={{ height: '100vh' }}
+  dprMax={2}
+  pauseOffscreen
+>
+  <Aurora />
+</MatterScene>
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `dprMax` | `number` | `2` | Maximum device pixel ratio to render at. |
+| `pauseOffscreen` | `boolean` | `true` | Whether to pause rendering when the canvas leaves the viewport. |
+| `style` | `CSSProperties` | — | Forwarded to the canvas container. |
+| `className` | `string` | — | Forwarded to the canvas container. |
+| `children` | `ReactNode` | — | One or more Matter components. |
+
+## `useShaderMaterial`
+
+The lower-level hook for users who already own a `<Canvas>` from `@react-three/fiber`. Use this when you want Matter primitives inside your own r3f scene — see [Three / r3f](/react/guides/three-r3f).
+
+```tsx
+import { useShaderMaterial } from '@lovo/matter-react'
+import { fbm, uv } from '@lovo/matter'
+
+function Plane() {
+  const material = useShaderMaterial({
+    color: fbm(uv()),
+  })
+  return <mesh material={material}><planeGeometry /></mesh>
+}
+```
+
+## Input hooks
+
+All three return signal-shaped objects compatible with [animation props](/guides/animation):
+
+- **`useCursor()`** → `CursorSignal` with `value` in `[0, 1]` normalized to the canvas bounding rect.
+- **`useScroll()`** → `ScrollSignal` with normalized scroll progress for the page.
+- **`useResize()`** → `ResizeSignal` with current canvas dimensions in pixels.
+
+All three are Strict-Mode-safe (no leaked listeners on dev double-mount) and must be called inside a `<MatterScene>` subtree so they can plumb to the canvas.
+
+## `useAnimatableUniform`
+
+Low-level animation glue. Pass a TSL `uniform` and a signal, get bidirectional wiring:
+
+```tsx
+import { useAnimatableUniform } from '@lovo/matter-react'
+import { uniform } from '@lovo/matter'
+
+const reachUniform = uniform(0.3)
+
+function Inner({ reachSignal }) {
+  useAnimatableUniform(reachUniform, reachSignal)
+  // reachUniform.value updates on every signal change
+}
+```
+
+Tier 1 components call this internally for their public props. You only need it when wiring up a custom shader.
+
+## `<FallbackBoundary>`
+
+Renders fallback content when WebGPU is unavailable or initialization fails. Wrap any Matter subtree:
+
+```tsx
+<FallbackBoundary fallback={<img src="/hero-fallback.png" />}>
+  <MatterScene>
+    <Aurora />
+  </MatterScene>
+</FallbackBoundary>
+```
+
+See [SSR and fallbacks](/react/guides/ssr-and-fallbacks) for the full pattern.
+
+## `useStaticHint`
+
+Marks the scene as static — renders once on mount, then only on prop / signal changes. Use for decorative shaders without time-based animation.
+
+```tsx
+function Hero() {
+  useStaticHint(true)
+  return <LinearGradient />
+}
+```
+
+## `useMatterContext`
+
+Returns the current `MatterContextValue` — renderer, scheduler, canvas refs. Internal-ish; you rarely need it directly. Tier 1 components use it under the hood.
+
+## `<MatterMonitor>`
+
+Dev overlay showing FPS, active component count, scheduler state, and per-component frame budget. Not for production:
+
+```tsx
+{process.env.NODE_ENV === 'development' && <MatterMonitor anchor="bottom-right" />}
+```
+
+**Props:**
+
+| Prop | Type | Default | Description |
+| --- | --- | --- | --- |
+| `anchor` | `'top-left' \| 'top-right' \| 'bottom-left' \| 'bottom-right'` | `'bottom-right'` | Where to position the overlay. |

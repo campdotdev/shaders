@@ -1,15 +1,67 @@
 ---
 title: Three / r3f
-description: Mode 2 escape hatch — using Matter inside your own r3f Canvas.
+description: Use Matter primitives inside a Canvas you already own (Mode 2).
 section: react.guides
 order: 20
-status: draft
 ---
 
 # Three / r3f
 
-Placeholder — Phase 8.4 fills this in.
+Matter has two rendering modes:
+
+- **Mode 1: Matter-managed scene.** `<MatterScene>` owns the canvas. Tier 1 components (`<Aurora>`, `<LinearGradient>`, etc.) only work in Mode 1. This is what [Get Started](/getting-started) covers.
+- **Mode 2: Bring your own Canvas.** You already have an `@react-three/fiber` `<Canvas>` for a 3D scene, and you want Matter's TSL primitives in a material. This page is for Mode 2.
+
+Mode 2 doesn't auto-detect r3f — it's an explicit opt-in via the `useShaderMaterial` hook.
+
+## The escape hatch — `useShaderMaterial`
+
+`useShaderMaterial` takes a TSL color expression and returns a Three.js material you can drop onto any mesh:
+
+```tsx
+import { Canvas } from '@react-three/fiber'
+import { useShaderMaterial } from '@lovo/matter-react'
+import { fbm, uv, vec3, mix } from '@lovo/matter'
+
+function ShaderPlane() {
+  const material = useShaderMaterial({
+    color: mix(vec3(0.1, 0.2, 0.6), vec3(0.8, 0.6, 0.2), fbm(uv())),
+  })
+  return (
+    <mesh material={material}>
+      <planeGeometry args={[2, 2]} />
+    </mesh>
+  )
+}
+
+export function Scene() {
+  return (
+    <Canvas>
+      <ShaderPlane />
+      {/* your other r3f content */}
+    </Canvas>
+  )
+}
+```
+
+The material plays by r3f's rules — dispose, frameloop, demand-rendering all work as r3f expects. Matter just provides the TSL math; r3f provides the scene graph.
 
 ## When to use Mode 2
 
-## useShaderMaterial inside Canvas
+- You're building a 3D scene (geometry, lights, cameras) that also wants shader-y materials.
+- You need fine control over the render loop (custom frameloop, post-processing chain).
+- You want to use Matter primitives (`fbm`, `voronoi`, `colorRamp`, …) without the constraints of a single full-bleed 2D quad.
+
+## What you lose in Mode 2
+
+- **No `<MatterScene>` defaults.** Pause-when-offscreen, DPR clamping, the scheduler — none of that is wired up by `useShaderMaterial`. You manage r3f's lifecycle yourself (or use r3f's `frameloop="demand"`).
+- **No Tier 1 components.** `<Aurora>`, `<LinearGradient>`, etc. are bound to Mode 1. The CLI delivers them assuming `<MatterScene>` is the parent. You'd need to extract their TSL math by hand if you want it in Mode 2.
+- **No `useCursor` / `useScroll` / `useResize`.** Those hooks require a `<MatterScene>` to plumb the canvas; in Mode 2, use r3f's `useThree()` and write your own cursor/scroll wiring.
+
+## The recommendation
+
+Default to Mode 1. Mode 2 exists for the case where you already have an r3f scene and the alternative is duplicating shader work in two canvases. If you're not building a 3D scene, you don't need Mode 2 — `<MatterScene>` does everything you want.
+
+<Callout>
+  Matter and r3f can coexist on the same page in separate canvases — one `<MatterScene>` for your hero shader, one r3f `<Canvas>` for a 3D model below it. They don't interfere. Mode 2 is only relevant when you want to *combine* them in one canvas.
+</Callout>

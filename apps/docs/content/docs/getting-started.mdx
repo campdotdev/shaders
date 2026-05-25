@@ -1,17 +1,86 @@
 ---
 title: Get Started
-description: Install Matter, wrap your scene, render your first component.
+description: Install Matter, copy your first component, and render it inside MatterScene.
 section: overview
 order: 10
-status: draft
 ---
 
 # Get Started
 
-Placeholder — Phase 8.4 fills this in.
+Matter is a React component library for WebGPU shaders built on Three.js TSL. Components are delivered shadcn-style — the CLI copies polished `.tsx` files into your project, where you own and edit them.
+
+<Callout>
+  **WebGPU only.** Matter requires a WebGPU-capable browser (recent Chromium, Safari Technology Preview, or Firefox Nightly with the flag). Plan a fallback for users without WebGPU — see [SSR and fallbacks](/react/guides/ssr-and-fallbacks).
+</Callout>
 
 ## Install
 
-## First component
+Add the engine and the React binding to your app, and the CLI as a dev dependency:
 
-### Wrap with MatterScene
+```bash
+pnpm add @lovo/matter @lovo/matter-react
+pnpm add -D @lovo/matter-cli
+```
+
+Requirements:
+
+- React 19
+- Three.js `^0.170`
+- Node 22+ (for the CLI)
+- Next.js 15+ if you're using one (Matter doesn't require Next, but the docs and recipes assume it)
+
+## Initialize
+
+<Steps>
+  <li>
+    **Initialize the project** to write a `matter.config.json` at your repo root:
+
+    ```bash
+    npx matter-cli init
+    ```
+
+    This creates a config with sensible defaults — components land in `src/components/matter/`, the registry tracks the CLI's published version tag, and TSX is enabled.
+  </li>
+  <li>
+    **List available components:**
+
+    ```bash
+    npx matter-cli list
+    ```
+  </li>
+  <li>
+    **Copy your first component into your project:**
+
+    ```bash
+    npx matter-cli add linear-gradient
+    ```
+
+    The component lands in `src/components/matter/linear-gradient.tsx`. From that point on, the file is yours — edit it however you want.
+  </li>
+</Steps>
+
+## Render it
+
+Every Matter component is bare — it needs a `<MatterScene>` parent to provide the WebGPU canvas. The simplest valid usage:
+
+```tsx
+import { MatterScene } from '@lovo/matter-react'
+import { LinearGradient } from './components/matter/linear-gradient'
+
+export function Hero() {
+  return (
+    <MatterScene style={{ height: '60vh' }}>
+      <LinearGradient />
+    </MatterScene>
+  )
+}
+```
+
+`<MatterScene>` owns the canvas and the WebGPU renderer. Multiple Matter components can share the same scene — just stack them as children. See [Shared scenes](/guides/shared-scenes).
+
+## What's next
+
+- [Animation](/guides/animation) — signal-shaped props for cursor, scroll, and any MotionValue-compatible library.
+- [Performance](/guides/perf) — what Matter does for you automatically, and what you can tune.
+- [The CLI](/cli) — `add`, `update`, refresh workflows, and registry refs.
+- [Three / r3f](/react/guides/three-r3f) — using Matter inside a `<Canvas>` you already own.

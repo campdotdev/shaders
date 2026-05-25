@@ -1,0 +1,92 @@
+---
+title: SSR and fallbacks
+description: Client-only WebGPU, dynamic imports, and fallbacks for browsers without WebGPU.
+section: react.guides
+order: 10
+---
+
+# SSR and fallbacks
+
+Matter is fundamentally a client runtime — it needs `navigator.gpu`, which doesn't exist on the server. This page covers the patterns for using Matter in Next.js (or any SSR framework) and handling browsers that don't support WebGPU at all.
+
+## The core constraint
+
+`three/webgpu` references `self` and `navigator` at module load time. Importing it in a server bundle (RSC, getServerSideProps, etc.) throws. So:
+
+- Matter components are always client components.
+- Pages that import them either need `'use client'` themselves, or they need to load Matter via `next/dynamic` with SSR disabled.
+
+## Next.js — the dynamic import pattern
+
+```tsx
+import dynamic from 'next/dynamic'
+
+const Hero = dynamic(() => import('./hero'), { ssr: false })
+
+export default function Page() {
+  return <Hero />
+}
+```
+
+`Hero` is a regular client component that imports `@lovo/matter-react` and the registry component. The page itself can stay an RSC.
+
+## Webpack alias for three (Next 14+)
+
+Three ships two standalone bundles — `three.module.js` (core only) and `three.webgpu.js` (core + WebGPU + TSL). If both end up in your bundle, you get the dreaded `Cannot read properties of undefined (reading 'usedTimes')` error on dispose.
+
+Add this to `next.config.ts`:
+
+```ts
+import { resolve } from 'node:path'
+import { createRequire } from 'node:module'
+
+const require = createRequire(import.meta.url)
+const threeMain = require.resolve('three')
+const threeDir = resolve(threeMain, '..', '..')
+
+export default {
+  webpack(config) {
+    const webgpuBundle = resolve(threeDir, 'build/three.webgpu.js')
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      three$: webgpuBundle,
+      'three/webgpu$': webgpuBundle,
+      'three/tsl$': webgpuBundle,
+    }
+    return config
+  },
+}
+```
+
+This forces every `three` import to resolve to the unified bundle. Same idea applies to Vite, Webpack, and Rspack — see your bundler's resolve-alias docs.
+
+## Fallback for browsers without WebGPU
+
+Some browsers (Firefox stable, Safari < 18, older Chrome) don't ship WebGPU yet. Wrap any Matter subtree in `<FallbackBoundary>`:
+
+```tsx
+import { FallbackBoundary, MatterScene } from '@lovo/matter-react'
+import { Aurora } from './components/matter/aurora'
+
+export function Hero() {
+  return (
+    <FallbackBoundary fallback={<img src="/hero-fallback.png" alt="" />}>
+      <MatterScene style={{ height: '60vh' }}>
+        <Aurora />
+      </MatterScene>
+    </FallbackBoundary>
+  )
+}
+```
+
+When `navigator.gpu` is missing or `requestAdapter()` returns `null`, the fallback renders. Use any React node — a static image, a CSS gradient, an `<svg>`, a "your browser doesn't support WebGPU" message.
+
+<Callout>
+  Don't try to detect WebGPU yourself with a conditional render. Detection is async (`requestAdapter` is a Promise), and doing it client-side causes hydration mismatches. Let `<FallbackBoundary>` handle it — it renders the fallback during the same render pass and swaps in the real scene only after the device is ready.
+</Callout>
+
+## What gets server-rendered
+
+If you wrap Matter in `next/dynamic` with `ssr: false`, **nothing** Matter-related ships in the server HTML. That's correct — there's nothing useful to render server-side. The fallback inside `<FallbackBoundary>` is what users see during hydration and on unsupported browsers.
+
+If you have SEO-critical content that's currently hidden behind a Matter component, lift it out into the surrounding RSC. Matter is for decoration; the surrounding page is for content.

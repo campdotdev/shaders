@@ -1,0 +1,51 @@
+---
+title: Changelog
+description: Notable changes per release across the Matter packages.
+section: overview
+order: 30
+---
+
+# Changelog
+
+Matter ships as three coordinated npm packages: `@lovo/matter` (engine), `@lovo/matter-react` (React binding), and `@lovo/matter-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo; this page summarizes the headline changes.
+
+## 0.1.0 — Initial public release
+
+The first public release of Matter — React shader components on WebGPU + Three.js TSL.
+
+### `@lovo/matter`
+
+Framework-agnostic engine. Exports:
+
+- **TSL primitives:** `fbm`, `voronoi`, `noise`, `colorRamp`, `quantize`, `sdfCircle`, `displace`, `cursorRipple`.
+- **TSL re-exports:** a stable surface for common TSL nodes (`uniform`, `uv`, `vec2`, `vec3`, `mix`, `time`, etc.) so registry components import everything from one entry point.
+- **Runtime:** `createRenderer`, `MatterScheduler`, visibility/intersection watchers, reduced-motion policy.
+- **Inputs:** `CursorInput` (framework-agnostic cursor source).
+
+### `@lovo/matter-react`
+
+React binding for the engine. Exports:
+
+- `<MatterScene>` — shared WebGPU canvas wrapper.
+- `useShaderMaterial` — r3f-compatible hook for using Matter inside your own `<Canvas>`.
+- Input hooks — `useCursor`, `useScroll`, `useResize`.
+- Animation glue — `useAnimatableUniform`, accepts any MotionValue-shaped signal.
+- Fallback / dev utilities — `FallbackBoundary`, `useStaticHint`, `MatterMonitor`.
+
+### `@lovo/matter-cli`
+
+shadcn-style copy-paste CLI: `init`, `list`, `add`, `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so the component source you copy is stable per release.
+
+### v1 components
+
+Available via `matter-cli add <name>`: `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, `waves`. Each lands in your project as a regular `.tsx` file — you own and edit it from that point.
+
+### Requirements
+
+- Node 22+ for the CLI.
+- WebGPU-capable browser at runtime (Chromium-based, Safari Technology Preview, Firefox Nightly with the flag).
+- React ^19, Three.js ^0.170.
+
+<Callout>
+  Detailed per-package changelogs live in the repo: [`packages/matter/CHANGELOG.md`](https://github.com/lovo-hq/matter/blob/main/packages/matter/CHANGELOG.md), [`packages/matter-react/CHANGELOG.md`](https://github.com/lovo-hq/matter/blob/main/packages/matter-react/CHANGELOG.md), [`packages/matter-cli/CHANGELOG.md`](https://github.com/lovo-hq/matter/blob/main/packages/matter-cli/CHANGELOG.md).
+</Callout>
