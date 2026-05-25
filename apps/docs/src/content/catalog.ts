@@ -2,6 +2,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { cache } from 'react'
 import { PRIMITIVES } from '@/data/primitives'
+import { parseRegistry } from './schema'
 
 const REGISTRY_JSON = resolve(
   process.cwd(),
@@ -20,19 +21,6 @@ export interface CatalogRecord {
   tags: string[]
 }
 
-interface RegistryComponent {
-  description: string
-  tier: number
-  file?: string
-  dependencies?: string[]
-  uses_primitives?: string[]
-}
-
-interface RegistryFile {
-  version: string
-  components: Record<string, RegistryComponent>
-}
-
 function prettifySlug(slug: string): string {
   return slug
     .split('-')
@@ -43,7 +31,7 @@ function prettifySlug(slug: string): string {
 export const getComponentsCatalog = cache(
   async (): Promise<CatalogRecord[]> => {
     const raw = await readFile(REGISTRY_JSON, 'utf8')
-    const data = JSON.parse(raw) as RegistryFile
+    const data = parseRegistry(JSON.parse(raw), REGISTRY_JSON)
     return Object.entries(data.components).map(([slug, info], i) => ({
       url: `/components/${slug}`,
       label: prettifySlug(slug),
