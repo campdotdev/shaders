@@ -41,7 +41,8 @@ The lower-level hook for users who already own a `<Canvas>` from `@react-three/f
 
 ```tsx
 import { useShaderMaterial } from '@lovo/matter-react'
-import { fbm, uv } from '@lovo/matter'
+import { uv } from 'three/tsl'
+import { fbm } from '@lovo/matter'
 
 function Plane() {
   const material = useShaderMaterial({
@@ -67,7 +68,7 @@ Low-level animation glue. Pass a TSL `uniform` and a signal, get bidirectional w
 
 ```tsx
 import { useAnimatableUniform } from '@lovo/matter-react'
-import { uniform } from '@lovo/matter'
+import { uniform } from 'three/tsl'
 
 const reachUniform = uniform(0.3)
 

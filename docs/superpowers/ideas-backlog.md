@@ -392,9 +392,6 @@ These aren't Tier 1 components themselves; they're cross-cutting concerns that a
 - **Size:** M
 - **Notes:** Two layers. (1) JS-side parsing — pulls hex/rgb/hsl/oklch/named strings into canonical sRGB; recommend [culori](https://culorijs.org/) (~14KB, every space supported). (2) GPU-side blending — when `colorSpace` isn't sRGB, convert in JS once before sending as uniform, blend in that space on the GPU with `mix()`, convert back to sRGB at output. OKLab requires 3×3 matrix + cube-root math; HSL requires angular hue mixing. Current registry components all ship a local `hexToVec3` that does no conversion — replace those when this lands. Tracked in Linear (issue already created).
 
-### Drop pure TSL re-exports from `@lovo/matter` public API
+### ~~Drop pure TSL re-exports from `@lovo/matter` public API~~ — shipped in 0.2.0 (M9)
 
-- **What:** remove the pass-through re-exports of TSL primitives (`uv`, `vec2`, `vec3`, `vec4`, `time`, `mix`, `uniform`, `length`, `max`, `sin`, `cos`, `smoothstep`, `mod`, etc.) from `@lovo/matter`'s public surface. Keep only the _named-and-wrapped_ primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) and the runtime/React APIs.
-- **Tier:** Infrastructure / API consolidation
-- **Size:** S
-- **Notes:** Reasoning: Matter sits _on top of_ TSL — it doesn't own those primitives. Re-exporting them muddies the layer boundary and provides no benefit (no rename, no added docs, no future-swap value). Honest layering would have users import `uv`/`vec3`/etc. directly from `three/tsl`. Migration: each Tier 1 component (`registry/*.tsx`) imports several of these from `@lovo/matter` today; ~6 files need a one-line import split per component. Existing end-user copies of components remain functional (re-exports can stay during a deprecation window or be removed in a major bump). Best planned alongside the `colorSpace` work as a "v0.2 API consolidation" milestone since both touch every Tier 1 component's imports.
+Shipped 2026-05-25 — see `docs/superpowers/plans/2026-05-25-matter-m9-drop-tsl-reexports.md` and the 0.2.0 changelog.
