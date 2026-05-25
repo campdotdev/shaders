@@ -43,3 +43,30 @@ export function parseFrontmatter(
     tags: v.tags ?? [],
   }
 }
+
+const registryComponentSchema = z.object({
+  description: z.string().min(1),
+  tier: z.number().int(),
+  file: z.string().optional(),
+  dependencies: z.array(z.string()).optional(),
+  uses_primitives: z.array(z.string()).optional(),
+})
+
+export const registrySchema = z.object({
+  version: z.string().min(1),
+  components: z.record(z.string(), registryComponentSchema),
+})
+
+export type RegistryFile = z.infer<typeof registrySchema>
+export type RegistryComponent = z.infer<typeof registryComponentSchema>
+
+export function parseRegistry(data: unknown, sourcePath: string): RegistryFile {
+  const result = registrySchema.safeParse(data)
+  if (!result.success) {
+    const issues = result.error.issues
+      .map((i) => `  - ${i.path.join('.') || '<root>'}: ${i.message}`)
+      .join('\n')
+    throw new Error(`Invalid registry file at ${sourcePath}:\n${issues}`)
+  }
+  return result.data
+}
