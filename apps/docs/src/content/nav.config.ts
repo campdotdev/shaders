@@ -18,11 +18,17 @@ export const NAV: NavGroup[] = [
   },
   {
     label: 'Components',
-    items: [{ kind: 'catalog', source: 'components' }],
+    items: [
+      { kind: 'link', label: 'Overview', url: '/components' },
+      { kind: 'catalog', source: 'components' },
+    ],
   },
   {
     label: 'Primitives',
-    items: [{ kind: 'catalog', source: 'primitives' }],
+    items: [
+      { kind: 'link', label: 'Overview', url: '/primitives' },
+      { kind: 'catalog', source: 'primitives' },
+    ],
   },
   {
     label: 'Guides',

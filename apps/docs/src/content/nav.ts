@@ -1,4 +1,5 @@
 import { cache } from 'react'
+import { getCatalogRecords } from './catalog'
 import { NAV } from './nav.config'
 import { getMdxDocsPages } from './source'
 import type {
@@ -35,6 +36,9 @@ async function resolveItem(
       if (!page || page.frontmatter.hidden) return []
       return [{ label: page.frontmatter.navTitle, url: page.url }]
     }
+    case 'link': {
+      return [{ label: item.label, url: item.url }]
+    }
     case 'section': {
       return pages
         .filter(
@@ -45,8 +49,8 @@ async function resolveItem(
         .map((p) => ({ label: p.frontmatter.navTitle, url: p.url }))
     }
     case 'catalog': {
-      // Resolved in Phase 8.5 once catalog.ts exists.
-      return []
+      const records = await getCatalogRecords(item.source)
+      return records.map((r) => ({ label: r.label, url: r.url }))
     }
   }
 }
