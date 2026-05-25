@@ -44,6 +44,7 @@ export interface DocsSearchDocument {
 
 export type NavItem =
   | { kind: 'page'; slug: string }
+  | { kind: 'link'; label: string; url: string }
   | { kind: 'section'; collectsFrom: DocsSection }
   | { kind: 'catalog'; source: 'components' | 'primitives' }
 
