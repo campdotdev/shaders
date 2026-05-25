@@ -1,6 +1,7 @@
 import './globals.css'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { SearchBar } from '@/components/SearchBar'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { Providers } from './providers'
 
@@ -30,7 +31,10 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <Link href="/" style={{ fontWeight: 600, color: 'var(--fg)' }}>
               Matter
             </Link>
-            <ThemeToggle />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <SearchBar />
+              <ThemeToggle />
+            </div>
           </header>
           <main>{children}</main>
         </Providers>
