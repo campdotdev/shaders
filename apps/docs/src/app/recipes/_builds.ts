@@ -19,23 +19,16 @@
 // as a scalar argument. The cursor-glow.square variant uses them as
 // arguments inside `uv().x.sub(...)` chains, which is uv-rooted and safe.
 
+import { uv, vec2, vec3, vec4, sin, length, smoothstep, max } from 'three/tsl'
+import type { uniform } from 'three/tsl'
 import {
-  uv,
   time,
-  vec2,
-  vec3,
-  vec4,
-  sin,
-  length,
-  smoothstep,
   fbm,
   voronoi,
   quantize,
   colorRamp,
-  max,
   type ColorRampStop,
 } from '@lovo/matter'
-import type { uniform } from '@lovo/matter'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
 

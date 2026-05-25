@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
-import { uniform } from '@lovo/matter'
+import { uniform } from 'three/tsl'
 import { MatterScene, useMatterContext, useCursor } from '@lovo/matter-react'
 import { RECIPE_BUILDS } from '@/app/recipes/_builds'
 

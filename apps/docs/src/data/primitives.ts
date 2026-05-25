@@ -149,20 +149,13 @@ interface CursorRippleOptions {
   {
     slug: 'time',
     name: 'time',
-    description: 'Seconds since the scene mounted, as a TSL scalar node.',
+    description: 'Reduced-motion-gated seconds since the scene mounted.',
     signature: `const time: TSLNode
-// Re-exported from three/tsl. Builds chain-safe expressions when used as
-// a chain root: time.mul(speed), sin(time.mul(2)), etc.`,
+// Equals three/tsl's built-in time * reducedMotionScale. Honors
+// prefers-reduced-motion and any setReducedMotionPolicy override.
+// Import from '@lovo/matter'. For raw uncapped time, import from
+// 'three/tsl' directly.`,
     usedBy: ['linear-gradient', 'noise-field', 'waves', 'mesh-gradient', 'aurora'],
-    controls: [],
-  },
-  {
-    slug: 'uv',
-    name: 'uv',
-    description: '2D fragment coordinate, 0..1 across the canvas.',
-    signature: `function uv(): TSLNode
-// Re-exported from three/tsl. Returns a vec2 in UV-space (0,0)→(1,1).`,
-    usedBy: ['linear-gradient', 'noise-field', 'dot-field', 'waves', 'mesh-gradient', 'aurora'],
     controls: [],
   },
 ]
