@@ -727,18 +727,70 @@ If a full root check is expensive, at minimum run docs typecheck/build and recor
 - [ ] Confirm custom component pages still render their WebGPU demos.
 - [ ] Confirm the IA group order matches: Overview → Components → Primitives → Guides → Frameworks → Reference.
 
-### Task 4: Documentation note
+### Task 4: How to add a new MDX page (authoring guide)
 
-- [ ] Add a short note to this plan or a docs development note explaining how to add a new MDX page:
-  1. create `apps/docs/content/docs/<path>.mdx`
-  2. add frontmatter with the right `section`
-  3. confirm the page appears under the expected sidebar group (and adjust `nav.config.ts` if a new section is being introduced)
-  4. run docs build/typecheck
-  5. verify nav/search
+1. **Create the file** at `apps/docs/content/docs/<path>.mdx`. The file path becomes the URL — `apps/docs/content/docs/guides/perf.mdx` → `/guides/perf`. Nested directories work (`react/guides/three-r3f.mdx` → `/react/guides/three-r3f`).
 
-### Task 5: Capture future Figma integration points
+2. **Add frontmatter** with the four required fields:
 
-- [ ] Add a short "Figma integration TODOs" note listing visual decisions deferred during M8 (sidebar styling, breadcrumb separator, TOC affordance, search trigger placement). This gives the Figma pass a punchlist rather than re-deriving it.
+   ```mdx
+   ---
+   title: My New Page
+   description: One-line summary used in search results and OG metadata.
+   section: guides
+   order: 50
+   ---
+   ```
+
+   Valid `section` values: `overview`, `guides`, `react.guides`, `react.api`, `reference`. The section determines which sidebar group the page lands under (driven by `apps/docs/src/content/nav.config.ts`).
+
+   Optional frontmatter: `navTitle` (short label for sidebar), `hidden: true` (renderable but omitted from nav), `status: draft` (renderable but excluded from search), `tags: [...]`.
+
+3. **Write the body.** Use standard Markdown plus the allow-listed MDX components from `apps/docs/src/content/mdx.tsx`: `<Callout>`, `<Steps>`, custom `<pre>` styling. Don't import registry components directly — heavy live demos still belong on the bespoke `/components/[slug]` and `/primitives/[slug]` pages.
+
+   Descriptions that begin with `@` must be quoted: `description: '@lovo/matter — engine API'` (YAML treats unquoted `@` as a reserved character).
+
+4. **Build + verify.** Run `vp run build:docs` then `vp run preview:docs` and visit the page. Check that:
+   - it appears in the expected sidebar group
+   - breadcrumbs and prev/next look right
+   - the TOC matches the page's `h2`/`h3` structure
+   - search finds it (unless `status: draft`)
+
+5. **Optional: visit `/dev/docs-graph`** in dev to inspect the resolved content graph — pages, nav tree, and search documents are all printed there.
+
+**Adding a new section** (e.g., `tutorials`): update the literal union in `apps/docs/src/content/schema.ts`, add a group entry to `apps/docs/src/content/nav.config.ts`, then author MDX with `section: tutorials`. No other code changes.
+
+**Adding a new framework** (e.g., Vue): add `vue.api` and `vue.guides` to the section enum, add a Vue subgroup under Frameworks in `nav.config.ts`, author MDX under `content/docs/vue/...`. The catalog records and existing nav config stay unchanged.
+
+---
+
+### Task 5: Figma integration TODOs
+
+Visual decisions deferred during M8 (intentionally minimal — the Figma pass refines):
+
+**Shell + chrome**
+- [ ] Sidebar visual treatment — group header typography, hover/active states, indent for nested groups (Frameworks > React), collapsed-section affordance.
+- [ ] Sidebar responsive behavior — currently inline-styled with no `@media` queries; narrow viewports get cramped. Decide on collapse-to-drawer vs stack-above vs hide.
+- [ ] TOC affordance on the right column — scroll-active highlight, smooth scroll, mobile collapse.
+- [ ] Breadcrumb separator — currently `/` with low opacity; could be `›` or a chevron icon.
+- [ ] PrevNext cards — currently a flat 2-col grid with hairline borders; could use directional icons, larger touch targets.
+
+**Search**
+- [ ] Search trigger styling — current button uses theme vars + `⌘K` kbd hint; matches DocSearch convention but is intentionally generic.
+- [ ] Search modal aesthetic — overlay + card with theme vars; Pagefind excerpt highlighting (`<mark>`) inherits browser defaults.
+
+**Page-level**
+- [ ] MDX prose typography — `line-height: 1.65` on the article, otherwise browser defaults. Heading scale, paragraph spacing, list bullets all unstyled.
+- [ ] MDX `<Callout>` and `<Steps>` styling — current border/background uses `color-mix` against the theme; Figma decides on icon, accent color, variants (info/warn/danger).
+- [ ] MDX `<pre>` blocks — flat background with padding; no syntax highlighting in MDX yet (Shiki integration is post-launch polish for prose code samples).
+- [ ] Catalog index pages (`/components`, `/primitives`) — currently a `<ul>` list of links; could be a card grid with thumbnails.
+
+**Detail-page alignment**
+- [ ] Component detail pages (`/components/[slug]`) — still use their own outer container padding/max-width inside `DocsShell`. Slight padding redundancy; Figma decides on unified treatment.
+- [ ] Primitive detail pages — same; the inline breadcrumb at the top (`primitives / colorRamp`) becomes redundant once the shell's breadcrumb wraps these.
+
+**Out of M8 scope**
+- [ ] Hero / landing page — owned by the Figma pass entirely.
 
 ---
 
@@ -766,10 +818,36 @@ If a full root check is expensive, at minimum run docs typecheck/build and recor
 - Surface recipes again post-launch (re-enable `/recipes/*` in nav/search; consider whether the catalog model evolves).
 - Generate props tables from component metadata or TypeScript declarations.
 - Generate package API reference from TypeDoc/API Extractor (replaces hand-written `/react/api` and `/reference/matter`).
-- Upgrade lightweight search to Pagefind full-text indexing.
 - Allow a small set of live shader demos inside MDX after designing SSR-safe wrappers.
 - Add related-docs links from shared tags and primitive/component relationships.
 - Cross-package changelog aggregation (M8 ships a single-page summary sourced from engine CHANGELOG.md).
 - Vue / Svelte framework hubs — add `/vue/*`, `/svelte/*` under the existing Frameworks group when bindings ship.
 - Consider versioned docs only after the package has meaningful public releases.
-- Apply the Figma design pass — chrome, type scale, spacing, hero, sidebar treatment.
+- Apply the Figma design pass — chrome, type scale, spacing, hero, sidebar treatment. See Phase 8.7 Task 5 for the deferred-decision punchlist.
+- Consider Shiki-in-MDX for syntax-highlighted code blocks inside prose pages (current behavior: plain `<pre>` with theme-var background).
+- Algolia DocSearch as a search alternative if the hosted-UX upgrade ever outweighs the SaaS dependency. Current Pagefind setup is the no-SaaS default.
+
+---
+
+## M8 Verification Log (Phase 8.7)
+
+Date: 2026-05-25. Branch: `hunter/mat-11-add-docs-architecture`. Commit at audit time: `cb6d154` plus this commit.
+
+**Quality checks** (all clean):
+- `vp run @matter/docs#typecheck` — 0 errors
+- `vp run @matter/docs#lint` — 0 warnings, 0 errors (61 files, 146 rules)
+- `vp run typecheck` (root) — 8/8 packages successful
+- `vp run build:docs` — clean static export to `apps/docs/out/`, Pagefind indexed 39 pages, 1493 words
+
+**Route audit** (verified against the build output):
+- ✅ `/` (homepage, untouched by M8)
+- ✅ 11 MDX routes prerender under `/[...slug]`: `/getting-started`, `/cli`, `/changelog`, `/examples`, `/guides/{animation,perf,shared-scenes}`, `/react/api`, `/react/guides/{ssr-and-fallbacks,three-r3f}`, `/reference/matter`
+- ✅ 6 component detail pages, 10 primitive detail pages, both index pages (`/components`, `/primitives`), all wrapped in the shared shell
+- ✅ `/recipes/*` still resolves (5 routes preserved from M3/M4 — not surfaced in nav, sidebar, or search)
+- ✅ `/api/search` exports as static JSON (used as the dev-mode fallback for SearchBar; Pagefind is the prod primary)
+- ✅ `/dev/docs-graph` diagnostics page available for inspecting the content graph
+- ✅ `/_not-found` prerendered; unknown routes 404 cleanly
+
+**Sidebar IA order** (verified via diagnostics): Overview → Components → Primitives → Guides → Frameworks → Reference.
+
+**What was deferred to Figma**: see Task 5 above. The shell is intentionally minimal — theme variables only, no responsive `@media` queries, no decorative chrome.
