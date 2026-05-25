@@ -9,9 +9,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu'
-import { vec2, vec3, uv, time, uniform } from '@lovo/matter'
-import { colorRamp, type ColorRampStop } from '@lovo/matter'
-import { fbm } from '@lovo/matter'
+import { vec2, vec3, uv, uniform } from 'three/tsl'
+import { time, colorRamp, type ColorRampStop, fbm } from '@lovo/matter'
 import { MatterScene, useMatterContext } from '@lovo/matter-react'
 
 interface Params {

@@ -11,8 +11,8 @@ import { Pane } from 'tweakpane'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
-import { vec2, vec3, vec4, length, uv, time, uniform } from '@lovo/matter'
-import { noise } from '@lovo/matter'
+import { vec2, vec3, vec4, length, uv, uniform } from 'three/tsl'
+import { time, noise } from '@lovo/matter'
 import { MatterScene, useMatterContext } from '@lovo/matter-react'
 
 interface Params {

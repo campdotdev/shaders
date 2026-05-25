@@ -4,16 +4,9 @@ import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 import type { ShaderNodeObject } from 'three/tsl'
+import { uv, vec2, vec3, vec4, uniform, sin, smoothstep, mix } from 'three/tsl'
 import {
-  uv,
-  vec2,
-  vec3,
-  vec4,
   time,
-  uniform,
-  sin,
-  smoothstep,
-  mix,
   noise,
   fbm,
   voronoi,
@@ -224,12 +217,6 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
           .mul(0.5)
           .add(0.5) as ShaderNodeObject<Node>
         colorNode = vec4(v, v, v, 1) as never
-        break
-      }
-
-      case 'uv': {
-        // No controls. UV gradient: red increases →, green increases ↑.
-        colorNode = vec4(uv() as never, 0, 1) as never
         break
       }
 

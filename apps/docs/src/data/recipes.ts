@@ -35,8 +35,9 @@ export const RECIPES: readonly RecipeEntry[] = [
     name: 'Animated stripes',
     description:
       'Warm/cool vertical bands that scroll horizontally. Simplest combination of sin, time, and colorRamp.',
-    primitivesUsed: ['time', 'uv', 'color-ramp'],
-    source: `import { uv, time, vec3, vec4, sin, colorRamp } from '@lovo/matter'
+    primitivesUsed: ['time', 'color-ramp'],
+    source: `import { uv, vec3, vec4, sin } from 'three/tsl'
+import { time, colorRamp } from '@lovo/matter'
 
 const stripe = sin(uv().x.mul(20).add(time.mul(2)))
 const t = stripe.mul(0.5).add(0.5).clamp(0, 1)
@@ -68,8 +69,8 @@ material.colorNode = vec4(colorRamp(t, stops), 1)`,
     name: 'Cursor glow',
     description:
       'A magenta-blue glow that follows the cursor. Demonstrates length, smoothstep, and a cursor uniform.',
-    primitivesUsed: ['uv'],
-    source: `import { uv, vec4, length, smoothstep, uniform } from '@lovo/matter'
+    primitivesUsed: [],
+    source: `import { uv, vec4, length, smoothstep, uniform } from 'three/tsl'
 import { Vector2 } from 'three/webgpu'
 
 // cursorUniform is a uniform(Vector2) updated by useCursor() in your component.
@@ -100,8 +101,9 @@ material.colorNode = vec4(glow, glow.mul(0.7), glow.mul(1.5), 1)`,
     slug: 'plasma',
     name: 'Plasma',
     description: 'FBM-driven color swirl. The canonical "shader-y" look from one primitive.',
-    primitivesUsed: ['fbm', 'time', 'uv', 'color-ramp'],
-    source: `import { uv, time, vec2, vec3, vec4, fbm, colorRamp } from '@lovo/matter'
+    primitivesUsed: ['fbm', 'time', 'color-ramp'],
+    source: `import { uv, vec2, vec3, vec4 } from 'three/tsl'
+import { time, fbm, colorRamp } from '@lovo/matter'
 
 const t = time.mul(0.3)
 const p = uv().mul(2).add(vec2(t, t))
@@ -130,8 +132,9 @@ material.colorNode = vec4(colorRamp(f, stops), 1)`,
     name: 'Cellular tiles',
     description:
       'Voronoi cells flattened into 4 discrete sepia bands — a mosaic / stained-glass / low-poly aesthetic. Use as a hand-crafted-feeling background where each region renders one solid color rather than a gradient.',
-    primitivesUsed: ['voronoi', 'quantize', 'uv', 'color-ramp'],
-    source: `import { uv, vec4, voronoi, quantize } from '@lovo/matter'
+    primitivesUsed: ['voronoi', 'quantize', 'color-ramp'],
+    source: `import { uv, vec4 } from 'three/tsl'
+import { voronoi, quantize } from '@lovo/matter'
 
 const cells = voronoi(uv().mul(8))
 const tiered = quantize(cells, 4)
