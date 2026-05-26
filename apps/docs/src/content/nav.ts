@@ -41,11 +41,7 @@ async function resolveItem(
     }
     case 'section': {
       return pages
-        .filter(
-          (p) =>
-            p.frontmatter.section === item.collectsFrom &&
-            !p.frontmatter.hidden,
-        )
+        .filter((p) => p.frontmatter.section === item.collectsFrom && !p.frontmatter.hidden)
         .map((p) => ({ label: p.frontmatter.navTitle, url: p.url }))
     }
     case 'catalog': {
@@ -71,10 +67,7 @@ interface FlatEntry {
   trail: string[]
 }
 
-function flatten(
-  groups: ResolvedNavGroup[],
-  trail: string[] = [],
-): FlatEntry[] {
+function flatten(groups: ResolvedNavGroup[], trail: string[] = []): FlatEntry[] {
   const out: FlatEntry[] = []
   for (const group of groups) {
     const groupTrail = [...trail, group.label]
@@ -90,9 +83,7 @@ function flatten(
 }
 
 export const getDocsPrevNext = cache(
-  async (
-    page: DocsPage,
-  ): Promise<{ prev: DocsNeighbor | null; next: DocsNeighbor | null }> => {
+  async (page: DocsPage): Promise<{ prev: DocsNeighbor | null; next: DocsNeighbor | null }> => {
     const tree = await getDocsNavTree()
     const flat = flatten(tree)
     const idx = flat.findIndex((item) => item.url === page.url)
@@ -106,15 +97,13 @@ export const getDocsPrevNext = cache(
   },
 )
 
-export const getDocsBreadcrumbs = cache(
-  async (page: DocsPage): Promise<DocsBreadcrumb[]> => {
-    const tree = await getDocsNavTree()
-    const flat = flatten(tree)
-    const item = flat.find((i) => i.url === page.url)
-    if (!item) return [{ label: page.frontmatter.navTitle, url: page.url }]
-    return [
-      ...item.trail.map((label) => ({ label, url: null })),
-      { label: page.frontmatter.navTitle, url: page.url },
-    ]
-  },
-)
+export const getDocsBreadcrumbs = cache(async (page: DocsPage): Promise<DocsBreadcrumb[]> => {
+  const tree = await getDocsNavTree()
+  const flat = flatten(tree)
+  const item = flat.find((i) => i.url === page.url)
+  if (!item) return [{ label: page.frontmatter.navTitle, url: page.url }]
+  return [
+    ...item.trail.map((label) => ({ label, url: null })),
+    { label: page.frontmatter.navTitle, url: page.url },
+  ]
+})

@@ -36,15 +36,11 @@ interface PagefindModule {
 async function createPagefindBackend(): Promise<SearchBackend | null> {
   try {
     const path = '/pagefind/pagefind.js'
-    const mod = (await import(
-      /* webpackIgnore: true */ path
-    )) as PagefindModule
+    const mod = (await import(/* webpackIgnore: true */ path)) as PagefindModule
     return async (query) => {
       if (!query.trim()) return []
       const search = await mod.search(query)
-      const items = await Promise.all(
-        search.results.slice(0, 20).map((r) => r.data()),
-      )
+      const items = await Promise.all(search.results.slice(0, 20).map((r) => r.data()))
       return items.map((d) => ({
         url: d.url.replace(/\.html$/, '').replace(/\/index$/, '/'),
         title: d.meta?.title ?? d.url,
@@ -90,9 +86,7 @@ export function SearchBar() {
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const [backendState, setBackendState] = useState<
-    'loading' | 'ready' | 'unavailable'
-  >('loading')
+  const [backendState, setBackendState] = useState<'loading' | 'ready' | 'unavailable'>('loading')
   const backendRef = useRef<SearchBackend | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
@@ -102,8 +96,7 @@ export function SearchBar() {
     if (!open || backendRef.current) return
     let cancelled = false
     void (async () => {
-      const backend =
-        (await createPagefindBackend()) ?? (await createFallbackBackend())
+      const backend = (await createPagefindBackend()) ?? (await createFallbackBackend())
       if (cancelled) return
       backendRef.current = backend
       setBackendState(backend ? 'ready' : 'unavailable')
@@ -326,8 +319,7 @@ export function SearchBar() {
                     fontSize: '0.875rem',
                   }}
                 >
-                  Search index unavailable. Build the docs to generate the
-                  Pagefind index.
+                  Search index unavailable. Build the docs to generate the Pagefind index.
                 </li>
               )}
               {backendState === 'ready' && results.length === 0 && (
@@ -351,14 +343,11 @@ export function SearchBar() {
                   style={{
                     padding: '0.625rem 1rem',
                     cursor: 'pointer',
-                    background:
-                      i === selectedIndex ? 'var(--bg-muted)' : 'transparent',
+                    background: i === selectedIndex ? 'var(--bg-muted)' : 'transparent',
                     borderBottom: '1px solid var(--border)',
                   }}
                 >
-                  <div style={{ fontWeight: 500, color: 'var(--fg)' }}>
-                    {r.title}
-                  </div>
+                  <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{r.title}</div>
                   <div
                     style={{
                       fontSize: '0.8125rem',
@@ -392,12 +381,7 @@ function SearchIcon() {
       aria-hidden
     >
       <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-      <path
-        d="M11 11L14 14"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
+      <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
   )
 }

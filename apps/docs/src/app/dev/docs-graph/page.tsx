@@ -37,8 +37,8 @@ export default async function DocsGraphPage() {
     >
       <h1>Docs content graph (diagnostics)</h1>
       <p style={{ opacity: 0.7 }}>
-        Phase 8.1 diagnostics — inspect the resolved page graph, nav tree, and
-        search documents. Safe to delete once Phase 8.3 ships the real sidebar.
+        Phase 8.1 diagnostics — inspect the resolved page graph, nav tree, and search documents.
+        Safe to delete once Phase 8.3 ships the real sidebar.
       </p>
 
       <section style={sectionStyle}>

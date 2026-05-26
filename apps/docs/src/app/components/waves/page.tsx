@@ -9,10 +9,9 @@ import { VisualTestPause } from '@/lib/visualTestHooks'
 // Both MatterScene and Waves pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
-const MatterScene = dynamic(
-  () => import('@lovo/matter-react').then((m) => m.MatterScene),
-  { ssr: false },
-)
+const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+  ssr: false,
+})
 const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false })
 
 interface Params {

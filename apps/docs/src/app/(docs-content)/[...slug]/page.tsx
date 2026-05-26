@@ -20,9 +20,7 @@ export async function generateStaticParams() {
   return getDocsStaticParams()
 }
 
-export async function generateMetadata({
-  params,
-}: PageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const page = await getDocsPage(slug)
   if (!page) return {}
@@ -37,10 +35,7 @@ export default async function DocsPage({ params }: PageProps) {
   const page = await getDocsPage(slug)
   if (!page) notFound()
 
-  const [crumbs, prevNext] = await Promise.all([
-    getDocsBreadcrumbs(page),
-    getDocsPrevNext(page),
-  ])
+  const [crumbs, prevNext] = await Promise.all([getDocsBreadcrumbs(page), getDocsPrevNext(page)])
 
   return (
     <div

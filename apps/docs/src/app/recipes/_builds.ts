@@ -21,14 +21,7 @@
 
 import { uv, vec2, vec3, vec4, sin, length, smoothstep, max } from 'three/tsl'
 import type { uniform } from 'three/tsl'
-import {
-  time,
-  fbm,
-  voronoi,
-  quantize,
-  colorRamp,
-  type ColorRampStop,
-} from '@lovo/matter'
+import { time, fbm, voronoi, quantize, colorRamp, type ColorRampStop } from '@lovo/matter'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
 

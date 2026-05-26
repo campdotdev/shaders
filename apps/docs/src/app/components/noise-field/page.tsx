@@ -9,10 +9,9 @@ import { VisualTestPause } from '@/lib/visualTestHooks'
 // Both MatterScene and NoiseField pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
-const MatterScene = dynamic(
-  () => import('@lovo/matter-react').then((m) => m.MatterScene),
-  { ssr: false },
-)
+const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+  ssr: false,
+})
 const NoiseField = dynamic(() => import('@matter/registry/noise-field').then((m) => m.NoiseField), {
   ssr: false,
 })

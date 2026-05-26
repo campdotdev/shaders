@@ -4,13 +4,7 @@ import { cache } from 'react'
 import { PRIMITIVES } from '@/data/primitives'
 import { parseRegistry } from './schema'
 
-const REGISTRY_JSON = resolve(
-  process.cwd(),
-  '..',
-  '..',
-  'registry',
-  'registry.json',
-)
+const REGISTRY_JSON = resolve(process.cwd(), '..', '..', 'registry', 'registry.json')
 
 export interface CatalogRecord {
   url: string
@@ -28,33 +22,29 @@ function prettifySlug(slug: string): string {
     .join(' ')
 }
 
-export const getComponentsCatalog = cache(
-  async (): Promise<CatalogRecord[]> => {
-    const raw = await readFile(REGISTRY_JSON, 'utf8')
-    const data = parseRegistry(JSON.parse(raw), REGISTRY_JSON)
-    return Object.entries(data.components).map(([slug, info], i) => ({
-      url: `/components/${slug}`,
-      label: prettifySlug(slug),
-      description: info.description,
-      source: 'components' as const,
-      order: i * 10,
-      tags: [],
-    }))
-  },
-)
+export const getComponentsCatalog = cache(async (): Promise<CatalogRecord[]> => {
+  const raw = await readFile(REGISTRY_JSON, 'utf8')
+  const data = parseRegistry(JSON.parse(raw), REGISTRY_JSON)
+  return Object.entries(data.components).map(([slug, info], i) => ({
+    url: `/components/${slug}`,
+    label: prettifySlug(slug),
+    description: info.description,
+    source: 'components' as const,
+    order: i * 10,
+    tags: [],
+  }))
+})
 
-export const getPrimitivesCatalog = cache(
-  async (): Promise<CatalogRecord[]> => {
-    return PRIMITIVES.map((p, i) => ({
-      url: `/primitives/${p.slug}`,
-      label: p.name,
-      description: p.description,
-      source: 'primitives' as const,
-      order: i * 10,
-      tags: [],
-    }))
-  },
-)
+export const getPrimitivesCatalog = cache(async (): Promise<CatalogRecord[]> => {
+  return PRIMITIVES.map((p, i) => ({
+    url: `/primitives/${p.slug}`,
+    label: p.name,
+    description: p.description,
+    source: 'primitives' as const,
+    order: i * 10,
+    tags: [],
+  }))
+})
 
 export const getCatalogRecords = cache(
   async (source: 'components' | 'primitives'): Promise<CatalogRecord[]> => {

@@ -1,8 +1,8 @@
 // packages/matter/src/primitives/noise.ts
-import { mx_noise_float } from 'three/tsl';
-import type { ShaderNodeObject } from 'three/tsl';
-import type { Node } from 'three/webgpu';
-import type { TSLNode } from './colorRamp.js';
+import { mx_noise_float } from 'three/tsl'
+import type { ShaderNodeObject } from 'three/tsl'
+import type { Node } from 'three/webgpu'
+import type { TSLNode } from './colorRamp.js'
 
 /**
  * 2D simplex noise sampled at a point. Returns a scalar TSL node in
@@ -18,5 +18,5 @@ import type { TSLNode } from './colorRamp.js';
  * `TSLNode` union, so callers can `.add(...)`/`.mul(...)` without casting.
  */
 export function noise(p: TSLNode): ShaderNodeObject<Node> {
-  return mx_noise_float(p);
+  return mx_noise_float(p)
 }

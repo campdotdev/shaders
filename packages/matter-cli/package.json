@@ -37,7 +37,7 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "vp lint src",
+    "lint": "vp lint src --type-aware --tsconfig ./tsconfig.json",
     "test": "vp test run",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },

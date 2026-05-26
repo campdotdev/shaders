@@ -33,6 +33,7 @@ export function useAnimatableUniform<T>(value: AnimatableProp<T>): ShaderNodeObj
   const uniformNode = useMemo(() => {
     const initial = isSignal(value) ? value.get() : value
     return uniform(initial) as unknown as ShaderNodeObject<Node>
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [])
 
   useEffect(() => {

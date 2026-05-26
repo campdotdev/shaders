@@ -55,7 +55,14 @@ export function ReducedMotionDemo() {
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
             <MatterScene style={{ borderRadius: 8 }}>
-              <Waves color="#77eecc" amplitude={0.1} frequency={5} speed={1} layers={3} interactive />
+              <Waves
+                color="#77eecc"
+                amplitude={0.1}
+                frequency={5}
+                speed={1}
+                layers={3}
+                interactive
+              />
             </MatterScene>
           </div>
         </div>

@@ -1,0 +1,17 @@
+# Read by oxfmt (configured in .oxfmtrc.json) — gitignore syntax.
+# Scope formatting to code only; markdown/mdx is hand-edited.
+*.md
+*.mdx
+CHANGELOG.md
+
+# Auto-generated / build output
+dist/
+.turbo/
+.next/
+coverage/
+playwright-report/
+test-results/
+*.snap
+
+# Isolated worktrees
+.worktrees/

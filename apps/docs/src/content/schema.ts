@@ -1,13 +1,7 @@
 import { z } from 'zod'
 import type { DocsFrontmatter } from './types'
 
-const sectionEnum = z.enum([
-  'overview',
-  'guides',
-  'react.guides',
-  'react.api',
-  'reference',
-])
+const sectionEnum = z.enum(['overview', 'guides', 'react.guides', 'react.api', 'reference'])
 
 export const rawFrontmatterSchema = z.object({
   title: z.string().min(1),
@@ -20,10 +14,7 @@ export const rawFrontmatterSchema = z.object({
   tags: z.array(z.string()).optional(),
 })
 
-export function parseFrontmatter(
-  data: unknown,
-  sourcePath: string,
-): DocsFrontmatter {
+export function parseFrontmatter(data: unknown, sourcePath: string): DocsFrontmatter {
   const result = rawFrontmatterSchema.safeParse(data)
   if (!result.success) {
     const issues = result.error.issues

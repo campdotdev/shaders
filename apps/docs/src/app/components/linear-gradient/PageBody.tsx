@@ -15,10 +15,9 @@ import { VisualTestPause } from '@/lib/visualTestHooks'
 // createRenderer), which references `self` at module load time and breaks
 // Next's SSR. `ssr: false` requires this to live in a Client Component
 // (Next 15 forbids it in Server Components).
-const MatterScene = dynamic(
-  () => import('@lovo/matter-react').then((m) => m.MatterScene),
-  { ssr: false },
-)
+const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+  ssr: false,
+})
 const LinearGradient = dynamic(
   () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
   { ssr: false },
