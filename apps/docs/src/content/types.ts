@@ -1,9 +1,4 @@
-export type DocsSection =
-  | 'overview'
-  | 'guides'
-  | 'react.guides'
-  | 'react.api'
-  | 'reference'
+export type DocsSection = 'overview' | 'guides' | 'react.guides' | 'react.api' | 'reference'
 
 export type DocsStatus = 'draft' | 'ready'
 

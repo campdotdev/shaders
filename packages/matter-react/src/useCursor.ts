@@ -71,6 +71,7 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     // We intentionally only re-create on ctx change, not opts (which is a
     // fresh object literal each render). Smoothing tweaks during dev are
     // applied by remounting the parent component.
+    // oxlint-disable-next-line react/exhaustive-deps
   }, [ctx])
 
   return input ?? STUB_SIGNAL

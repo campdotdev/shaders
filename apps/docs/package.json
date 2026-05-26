@@ -8,7 +8,7 @@
     "build": "next build && pagefind --site out",
     "preview": "serve out -p 3000",
     "typecheck": "tsc --noEmit",
-    "lint": "vp lint src",
+    "lint": "vp lint src --type-aware --tsconfig ./tsconfig.json",
     "clean": "rm -rf .next .turbo out *.tsbuildinfo"
   },
   "dependencies": {

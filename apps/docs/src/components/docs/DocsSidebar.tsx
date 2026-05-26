@@ -4,13 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types'
 
-function NavItemLink({
-  item,
-  pathname,
-}: {
-  item: ResolvedNavItem
-  pathname: string
-}) {
+function NavItemLink({ item, pathname }: { item: ResolvedNavItem; pathname: string }) {
   const active = item.url === pathname
   return (
     <li>
@@ -47,8 +41,7 @@ function NavGroupBlock({
       style={{
         marginBottom: '1.25rem',
         paddingLeft: depth === 0 ? 0 : '0.5rem',
-        borderLeft:
-          depth === 0 ? 'none' : '1px solid var(--border)',
+        borderLeft: depth === 0 ? 'none' : '1px solid var(--border)',
       }}
     >
       <div
@@ -67,11 +60,7 @@ function NavGroupBlock({
         {group.items.map((item, i) =>
           'items' in item ? (
             <li key={`g-${i}`} style={{ marginTop: '0.5rem' }}>
-              <NavGroupBlock
-                group={item}
-                pathname={pathname}
-                depth={depth + 1}
-              />
+              <NavGroupBlock group={item} pathname={pathname} depth={depth + 1} />
             </li>
           ) : (
             <NavItemLink key={item.url} item={item} pathname={pathname} />

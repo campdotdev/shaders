@@ -31,7 +31,9 @@ const makeMQL = (initial: boolean): MockMQL => {
     },
     dispatch(matches) {
       this.matches = matches
-      for (const l of [...listeners]) l({ matches })
+      // Snapshot before iterating: a listener may removeEventListener itself,
+      // mutating `listeners` mid-loop and skipping the next entry.
+      for (const l of listeners.slice()) l({ matches })
     },
   }
 }

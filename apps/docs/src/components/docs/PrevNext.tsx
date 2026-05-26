@@ -25,13 +25,7 @@ const titleStyle = {
   fontSize: '0.9375rem',
 } as const
 
-export function PrevNext({
-  prev,
-  next,
-}: {
-  prev: DocsNeighbor | null
-  next: DocsNeighbor | null
-}) {
+export function PrevNext({ prev, next }: { prev: DocsNeighbor | null; next: DocsNeighbor | null }) {
   if (!prev && !next) return null
   return (
     <nav

@@ -27,7 +27,9 @@ const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 scene.add(mesh)
 
 const tick = () => {
-  matter.three.render(scene, camera)
+  matter.three.render(scene, camera)?.catch((err: unknown) => {
+    console.error('[playground/2-gradient] render failed', err)
+  })
   requestAnimationFrame(tick)
 }
 tick()

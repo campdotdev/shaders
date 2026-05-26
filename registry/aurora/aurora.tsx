@@ -1,39 +1,39 @@
-'use client';
+'use client'
 
-import { AuroraShader, type AuroraDirection, type AuroraLayer } from './shader';
-import type { AnimatableProp } from '@lovo/matter-react';
+import { AuroraShader, type AuroraDirection, type AuroraLayer } from './shader'
+import type { AnimatableProp } from '@lovo/matter-react'
 
-export type { AuroraDirection, AuroraLayer } from './shader';
+export type { AuroraDirection, AuroraLayer } from './shader'
 
 export interface AuroraProps {
   /** Global brightness multiplier. 0 = invisible, 1 = default, 3 = blown out. */
-  intensity?: AnimatableProp<number>;
+  intensity?: AnimatableProp<number>
   /** Global animation rate. 1 = default, 0 = frozen, 2 = double speed. */
-  speed?: AnimatableProp<number>;
+  speed?: AnimatableProp<number>
   /** Horizontal feature density. Higher = more ribbons packed across the frame. */
-  densityX?: AnimatableProp<number>;
+  densityX?: AnimatableProp<number>
   /** Vertical feature density. Higher = more vertical detail in each ribbon. */
-  densityY?: AnimatableProp<number>;
+  densityY?: AnimatableProp<number>
   /** How quickly the curtains fade out toward the top. Higher = shorter reach. */
-  falloff?: AnimatableProp<number>;
+  falloff?: AnimatableProp<number>
   /** Horizontal wind speed. */
-  driftX?: AnimatableProp<number>;
+  driftX?: AnimatableProp<number>
   /** Vertical wind speed. */
-  driftY?: AnimatableProp<number>;
+  driftY?: AnimatableProp<number>
   /**
    * How much each ribbon curls in place. 0 = straight flowing noise,
    * 1 = default curl, 2-3 = turbulent. Independent of `densityX`/`densityY`
    * which control feature density.
    */
-  turbulence?: AnimatableProp<number>;
+  turbulence?: AnimatableProp<number>
   /** Which edge the aurora rises from. Default `'bottom'`. */
-  direction?: AuroraDirection;
+  direction?: AuroraDirection
   /** Horizon color concentrated near the bottom of the frame. */
-  horizonColor?: string;
+  horizonColor?: string
   /** Mid-sky color covering the lower 60% of the frame. */
-  skyColor?: string;
+  skyColor?: string
   /** Four curtain layers stacked back-to-front. */
-  layers?: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer];
+  layers?: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer]
 }
 
 /**
@@ -42,17 +42,12 @@ export interface AuroraProps {
  * Each layer runs identical noise math; what makes them feel different is
  * just color, rate, and the color-seeded warp.
  */
-export const DEFAULT_LAYERS: [
-  AuroraLayer,
-  AuroraLayer,
-  AuroraLayer,
-  AuroraLayer,
-] = [
+export const DEFAULT_LAYERS: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer] = [
   { hex: '#09e24b', speed: 0.07, intensity: 0.6, variation: 0 },
   { hex: '#1837e6', speed: 0.1, intensity: 0, variation: 5 },
   { hex: '#661acc', speed: 0.15, intensity: 0.3, variation: 11 },
   { hex: '#cc1a99', speed: 0.07, intensity: 0, variation: 17 },
-];
+]
 
 export function Aurora({
   intensity = 1,
@@ -83,5 +78,5 @@ export function Aurora({
       skyColor={skyColor}
       layers={layers}
     />
-  );
+  )
 }

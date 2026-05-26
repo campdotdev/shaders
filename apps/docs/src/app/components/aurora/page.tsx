@@ -20,10 +20,9 @@ interface PlainAuroraLayer {
 // Both MatterScene and Aurora pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
-const MatterScene = dynamic(
-  () => import('@lovo/matter-react').then((m) => m.MatterScene),
-  { ssr: false },
-)
+const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+  ssr: false,
+})
 const Aurora = dynamic(() => import('@matter/registry/aurora').then((m) => m.Aurora), {
   ssr: false,
 })
@@ -177,9 +176,7 @@ export default function AuroraPage() {
     }
     const jsxBtn = pane.addButton({ title: 'Copy JSX' })
     jsxBtn.on('click', () => {
-      void navigator.clipboard
-        .writeText(fmtJsx(local))
-        .then(() => flashCopied(jsxBtn, 'Copy JSX'))
+      void navigator.clipboard.writeText(fmtJsx(local)).then(() => flashCopied(jsxBtn, 'Copy JSX'))
     })
     const paramsBtn = pane.addButton({ title: 'Copy params' })
     paramsBtn.on('click', () => {

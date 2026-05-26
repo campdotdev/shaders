@@ -1,8 +1,8 @@
 // packages/matter/src/primitives/voronoi.ts
-import { mx_worley_noise_float } from 'three/tsl';
-import type { ShaderNodeObject } from 'three/tsl';
-import type { Node } from 'three/webgpu';
-import type { TSLNode } from './colorRamp.js';
+import { mx_worley_noise_float } from 'three/tsl'
+import type { ShaderNodeObject } from 'three/tsl'
+import type { Node } from 'three/webgpu'
+import type { TSLNode } from './colorRamp.js'
 
 /**
  * 2D voronoi (Worley) noise — distance to the nearest jittered cell point,
@@ -18,5 +18,5 @@ import type { TSLNode } from './colorRamp.js';
  * @param p — Vec2 TSL node, typically `uv() * scale`.
  */
 export function voronoi(p: TSLNode): ShaderNodeObject<Node> {
-  return mx_worley_noise_float(p);
+  return mx_worley_noise_float(p)
 }

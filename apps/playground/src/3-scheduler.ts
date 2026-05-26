@@ -38,7 +38,9 @@ scene.add(mesh)
 const scheduler = new MatterScheduler()
 let frameCount = 0
 scheduler.add(({ delta, elapsed }) => {
-  matter.three.render(scene, camera)
+  matter.three.render(scene, camera)?.catch((err: unknown) => {
+    console.error('[playground/3-scheduler] render failed', err)
+  })
   if (++frameCount % 60 === 0) {
     log.textContent = `backend: ${matter.backend}\nelapsed: ${elapsed.toFixed(1)}s · frame ${frameCount} · last delta: ${(delta * 1000).toFixed(1)}ms`
   }

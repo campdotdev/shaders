@@ -17,6 +17,7 @@
     "clean": "turbo run clean && rm -rf node_modules .turbo",
     "smoke": "node scripts/smoke-test-cli.mjs",
     "format": "vp fmt",
+    "format:check": "vp fmt --check",
     "dev:playground": "vp run @matter/playground#dev",
     "dev:docs": "vp run @matter/docs#dev",
     "build:docs": "vp run @matter/docs#build",
@@ -25,7 +26,7 @@
     "test:visual:update": "turbo run test:visual:update",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && pnpm typecheck && pnpm lint && pnpm test && pnpm smoke && pnpm publish -r --access public --no-git-checks"
+    "release": "pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm smoke && pnpm publish -r --access public --no-git-checks"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",

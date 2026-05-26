@@ -1,5 +1,10 @@
+import { mkdtemp, writeFile, rm } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vite-plus/test'
+
 import { fetchRegistry, fetchComponentSource } from './fetchRegistry.js'
 
 const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/', import.meta.url))}`
@@ -26,9 +31,6 @@ describe('fetchRegistry', () => {
   })
 
   it('rejects an array-shaped "components" field', async () => {
-    const { mkdtemp, writeFile, rm } = await import('node:fs/promises')
-    const { tmpdir } = await import('node:os')
-    const { join } = await import('node:path')
     const dir = await mkdtemp(join(tmpdir(), 'matter-registry-array-'))
     await writeFile(
       join(dir, 'registry.json'),

@@ -68,17 +68,13 @@ export const getMdxDocsPages = cache(async (): Promise<DocsPage[]> => {
   return pages
 })
 
-export const getDocsPage = cache(
-  async (slugs: string[]): Promise<DocsPage | null> => {
-    const pages = await getMdxDocsPages()
-    const target = '/' + slugs.join('/')
-    return pages.find((p) => p.url === target) ?? null
-  },
-)
+export const getDocsPage = cache(async (slugs: string[]): Promise<DocsPage | null> => {
+  const pages = await getMdxDocsPages()
+  const target = '/' + slugs.join('/')
+  return pages.find((p) => p.url === target) ?? null
+})
 
 export const getDocsStaticParams = cache(async () => {
   const pages = await getMdxDocsPages()
-  return pages
-    .filter((p) => !p.frontmatter.hidden)
-    .map((p) => ({ slug: p.slugs }))
+  return pages.filter((p) => !p.frontmatter.hidden).map((p) => ({ slug: p.slugs }))
 })

@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oxc-project/oxc/main/npm/oxfmt/configuration_schema.json",
+  "singleQuote": true,
+  "semi": false,
+  "sortImports": {
+    "order": "asc",
+    "ignoreCase": true,
+    "newlinesBetween": true,
+    "groups": [
+      ["builtin", "external"],
+      ["internal", "subpath"],
+      "parent",
+      "sibling",
+      "index",
+      "style",
+      "unknown"
+    ]
+  },
+  "sortPackageJson": {
+    "sortScripts": false
+  },
+  "ignorePatterns": []
+}
