@@ -66,8 +66,23 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISHED_PACKAGES: ${{ steps.changesets.outputs.publishedPackages }}
         run: |
+          set -euo pipefail
           VERSION=$(echo "$PUBLISHED_PACKAGES" | jq -r '.[0].version')
           TAG="v${VERSION}"
-          git tag "$TAG"
-          git push origin "$TAG"
-          gh release create "$TAG" --title "$TAG" --generate-notes
+
+          # The version-bump PR's merge commit may already be tagged from a
+          # prior partially-successful run (e.g., publish failed, tag pushed
+          # later). Reuse the existing remote tag instead of trying to retag
+          # HEAD — HEAD here may include extra commits past the bump.
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "Tag $TAG already exists on remote, reusing it for the release."
+          else
+            git tag "$TAG"
+            git push origin "$TAG"
+          fi
+
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Release $TAG already exists, skipping creation."
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes
+          fi
