@@ -12,6 +12,8 @@ export interface MeshGradientProps {
   amplitude?: AnimatableProp<number>;
   /** Palette A ↔ B crossfade rate. 0 = freeze, default 0.5. */
   cycleSpeed?: AnimatableProp<number>;
+  /** Crossfade shape. <1 = linger at extremes, 1 = pure sine, >1 = linger at midpoint. Default 0.6. */
+  cycleEase?: AnimatableProp<number>;
   /** Light palette: 4 hex strings. */
   paletteA?: [string, string, string, string];
   /** Dark palette: 4 hex strings. */
@@ -39,6 +41,7 @@ export function MeshGradient({
   frequency = 5,
   amplitude = 30,
   cycleSpeed = 0.5,
+  cycleEase = 0.6,
   paletteA = DEFAULT_PALETTE_A,
   paletteB = DEFAULT_PALETTE_B,
 }: MeshGradientProps) {
@@ -48,6 +51,7 @@ export function MeshGradient({
       frequency={frequency}
       amplitude={amplitude}
       cycleSpeed={cycleSpeed}
+      cycleEase={cycleEase}
       paletteA={paletteA}
       paletteB={paletteB}
     />

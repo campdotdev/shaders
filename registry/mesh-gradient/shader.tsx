@@ -43,6 +43,8 @@ export interface MeshGradientShaderProps {
   amplitude: AnimatableProp<number>;
   /** Palette A ↔ B crossfade rate. 0 = freeze, higher = faster. */
   cycleSpeed: AnimatableProp<number>;
+  /** Crossfade shape. <1 = linger at extremes, 1 = pure sine, >1 = linger at midpoint. Default 0.6. */
+  cycleEase: AnimatableProp<number>;
   /** Light palette: 4 hex strings. */
   paletteA: [string, string, string, string];
   /** Dark palette: 4 hex strings. */
@@ -74,6 +76,7 @@ export function MeshGradientShader(props: MeshGradientShaderProps) {
   const resize = useResize();
 
   const cycleSpeedU = useAnimatableUniform<number>(props.cycleSpeed);
+  const cycleEaseU = useAnimatableUniform<number>(props.cycleEase);
 
   const a0 = useColorUniform(props.paletteA[0]);
   const a1 = useColorUniform(props.paletteA[1]);
@@ -148,13 +151,17 @@ export function MeshGradientShader(props: MeshGradientShaderProps) {
     const tuv = vec2(tuvRotated.x.add(warpX), tuvRotated.y.add(warpY));
 
     // ---- Time-cycling palette ----------------------------------------
-    // c = sin(time * cycleSpeed)   smooth oscillator in [-1, 1]
-    // eased = (sign(c) * |c|^0.6 + 1) / 2   S-curve in [0, 1] that lingers
-    //                                       at ±1 (palettes A and B)
+    // c = sin(time * cycleSpeed)        smooth oscillator in [-1, 1]
+    // eased = (sign(c) * |c|^cycleEase + 1) / 2
+    //                                   S-curve in [0, 1]. cycleEase < 1
+    //                                   lingers at ±1 (palettes A and B);
+    //                                   cycleEase = 1 is a pure sine;
+    //                                   cycleEase > 1 lingers at the
+    //                                   midpoint.
     const cycleTime = time.mul(cycleSpeedU);
     const cycle = sin(cycleTime);
     const eased = sign(cycle)
-      .mul(pow(abs(cycle), 0.6))
+      .mul(pow(abs(cycle), cycleEaseU))
       .add(1)
       .mul(0.5);
 
@@ -204,6 +211,7 @@ export function MeshGradientShader(props: MeshGradientShaderProps) {
     frequencyU,
     amplitudeU,
     cycleSpeedU,
+    cycleEaseU,
     a0,
     a1,
     a2,
