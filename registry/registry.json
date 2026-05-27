@@ -64,18 +64,22 @@
       "tier": 1
     },
     "mesh-gradient": {
-      "file": "mesh-gradient.tsx",
-      "description": "Stripe-style multi-point gradient with animated blending and optional cursor pull.",
+      "file": "mesh-gradient/mesh-gradient.tsx",
+      "description": "Warped 4-color fluid gradient with time-cycling palette and film grain. Linear/Stripe marketing-page style.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "noise",
-        "length",
-        "max",
+        "time",
         "uv",
         "vec2",
         "vec3",
         "vec4",
-        "time",
+        "mix",
+        "smoothstep",
+        "sin",
+        "cos",
+        "dot",
+        "pow",
         "uniform"
       ],
       "tier": 1
