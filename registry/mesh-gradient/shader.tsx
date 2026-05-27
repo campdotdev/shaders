@@ -6,10 +6,20 @@ import type { Node } from 'three/webgpu'
 import { uv, vec2, vec3, vec4, sin, cos, uniform, type ShaderNodeObject } from 'three/tsl'
 
 import { time, noise } from '@lovo/matter'
-import { useMatterContext, useResize } from '@lovo/matter-react'
+import {
+  useMatterContext,
+  useResize,
+  useAnimatableUniform,
+  type AnimatableProp,
+} from '@lovo/matter-react'
 
 export interface MeshGradientShaderProps {
-  // Props grow in later phases.
+  /** Global animation rate. Multiplies the time the warp uses. */
+  speed: AnimatableProp<number>
+  /** Sine warp frequency. Higher = more wobbles per gradient. */
+  frequency: AnimatableProp<number>
+  /** Sine warp amplitude divisor. Higher = subtler wobble. */
+  amplitude: AnimatableProp<number>
 }
 
 // Four hardcoded debug colors — one per rotated-UV quadrant. Replaced by the
@@ -21,9 +31,13 @@ const DEBUG_COLORS = {
   bl: vec3(0.35, 0.71, 0.95), // blue
 } as const
 
-export function MeshGradientShader(_props: MeshGradientShaderProps) {
+export function MeshGradientShader(props: MeshGradientShaderProps) {
   const ctx = useMatterContext()
   const resize = useResize()
+
+  const speedU = useAnimatableUniform<number>(props.speed)
+  const frequencyU = useAnimatableUniform<number>(props.frequency)
+  const amplitudeU = useAnimatableUniform<number>(props.amplitude)
 
   // Resolution uniform — drives aspect correction. Seed with a sane large
   // default so the first frame doesn't see (1, 1). Pattern from Aurora.
@@ -68,7 +82,18 @@ export function MeshGradientShader(_props: MeshGradientShaderProps) {
     const rx = tuvRaw.x.mul(c).sub(ty.mul(s))
     const ryUnit = tuvRaw.x.mul(s).add(ty.mul(c))
     const ry = ryUnit.mul(aspect)
-    const tuv = vec2(rx, ry)
+    const tuvRotated = vec2(rx, ry)
+
+    // ---- Sine domain warp --------------------------------------------
+    // Push each pixel by a sine of its own coordinates. The y-axis uses
+    // 1.5x frequency and 2x amplitude (relative to x) to de-correlate the
+    // two warps so the result doesn't look like a single shear.
+    const tspeed = time.mul(speedU)
+    const warpX = sin(tuvRotated.y.mul(frequencyU).add(tspeed)).div(amplitudeU)
+    const warpY = sin(tuvRotated.x.mul(frequencyU).mul(1.5).add(tspeed))
+      .div(amplitudeU)
+      .mul(2)
+    const tuv = vec2(tuvRotated.x.add(warpX), tuvRotated.y.add(warpY))
 
     // ---- Quadrant color picking --------------------------------------
     // tuv is now rotated-and-centered. Pick a color by sign of x and y so
@@ -99,7 +124,7 @@ export function MeshGradientShader(_props: MeshGradientShaderProps) {
         // same
       }
     }
-  }, [ctx, resNode])
+  }, [ctx, resNode, speedU, frequencyU, amplitudeU])
 
   return null
 }
