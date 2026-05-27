@@ -71,25 +71,33 @@ function useColorUniform(hex: string) {
   return node;
 }
 
-export function MeshGradientShader(props: MeshGradientShaderProps) {
+export function MeshGradientShader({
+  speed,
+  frequency,
+  amplitude,
+  cycleSpeed,
+  cycleEase,
+  paletteA,
+  paletteB,
+}: MeshGradientShaderProps) {
   const ctx = useMatterContext();
   const resize = useResize();
 
-  const cycleSpeedU = useAnimatableUniform<number>(props.cycleSpeed);
-  const cycleEaseU = useAnimatableUniform<number>(props.cycleEase);
+  const cycleSpeedU = useAnimatableUniform<number>(cycleSpeed);
+  const cycleEaseU = useAnimatableUniform<number>(cycleEase);
 
-  const a0 = useColorUniform(props.paletteA[0]);
-  const a1 = useColorUniform(props.paletteA[1]);
-  const a2 = useColorUniform(props.paletteA[2]);
-  const a3 = useColorUniform(props.paletteA[3]);
-  const b0 = useColorUniform(props.paletteB[0]);
-  const b1 = useColorUniform(props.paletteB[1]);
-  const b2 = useColorUniform(props.paletteB[2]);
-  const b3 = useColorUniform(props.paletteB[3]);
+  const a0 = useColorUniform(paletteA[0]);
+  const a1 = useColorUniform(paletteA[1]);
+  const a2 = useColorUniform(paletteA[2]);
+  const a3 = useColorUniform(paletteA[3]);
+  const b0 = useColorUniform(paletteB[0]);
+  const b1 = useColorUniform(paletteB[1]);
+  const b2 = useColorUniform(paletteB[2]);
+  const b3 = useColorUniform(paletteB[3]);
 
-  const speedU = useAnimatableUniform<number>(props.speed);
-  const frequencyU = useAnimatableUniform<number>(props.frequency);
-  const amplitudeU = useAnimatableUniform<number>(props.amplitude);
+  const speedU = useAnimatableUniform<number>(speed);
+  const frequencyU = useAnimatableUniform<number>(frequency);
+  const amplitudeU = useAnimatableUniform<number>(amplitude);
 
   // Resolution uniform — drives aspect correction. Seed with a sane large
   // default so the first frame doesn't see (1, 1). Pattern from Aurora.
