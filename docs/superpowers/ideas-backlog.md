@@ -412,6 +412,32 @@ These aren't Tier 1 components themselves; they're cross-cutting concerns that a
   mutation alone, no material rebuild. Doesn't change visuals — pure
   plumbing. Apply identically to every Tier 1 component using the pattern.
 
+### Promote `useColorUniform` to `@lovo/matter-react`
+
+- **What:** Lift the inline `useColorUniform` helper out of each registry
+  component (Aurora, MeshGradient, future shaders) and into
+  `@lovo/matter-react` as a public hook. Replaces N inline copies with one
+  canonical implementation; users on Mode 2 (custom r3f integration) gain
+  access to the same hook for their own reactive color uniforms.
+- **Source:** Repeated pattern across registry components; design tension
+  with the copy-paste "everything's in your codebase" registry model.
+- **Tier:** Infrastructure
+- **Size:** S
+- **Notes:** Lift only when ALL of these are true:
+  1. The `Vector3` stability fix above is in (so we lift a stable internal
+     shape, not the current `[hex]`-dep quirk).
+  2. The `colorSpace` cross-component infrastructure is being designed (so
+     the public signature — likely `useColorUniform({ value, colorSpace })`
+     or similar — can be built once for the long run, not lifted twice).
+  3. At least three Tier 1 components use the inline pattern (Aurora today,
+     MeshGradient incoming as #2; need one more before "rule of three"
+     extraction is justified).
+  Breaking change: registry components stop carrying their own
+  `useColorUniform` and import from `@lovo/matter-react`. Users who already
+  copy-pasted an older registry component keep the inline version until
+  they refresh via the CLI, so no immediate break. Minor bump on
+  `@lovo/matter-react` for the new public hook export.
+
 ### ~~Drop pure TSL re-exports from `@lovo/matter` public API~~ — shipped in 0.2.0 (M9)
 
 Shipped 2026-05-25 — see `docs/superpowers/plans/2026-05-25-matter-m9-drop-tsl-reexports.md` and the 0.2.0 changelog.
