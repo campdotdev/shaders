@@ -3,7 +3,17 @@
 import { useEffect, useMemo } from 'react'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
-import { uv, vec2, vec3, vec4, sin, cos, uniform, type ShaderNodeObject } from 'three/tsl'
+import {
+  uv,
+  vec2,
+  vec3,
+  vec4,
+  sin,
+  cos,
+  smoothstep,
+  uniform,
+  type ShaderNodeObject,
+} from 'three/tsl'
 
 import { time, noise } from '@lovo/matter'
 import {
@@ -22,14 +32,18 @@ export interface MeshGradientShaderProps {
   amplitude: AnimatableProp<number>
 }
 
-// Four hardcoded debug colors — one per rotated-UV quadrant. Replaced by the
-// two-layer smoothstep blend in Phase 4.
-const DEBUG_COLORS = {
-  tl: vec3(0.96, 0.73, 0.54), // amberYellow
-  tr: vec3(0.19, 0.38, 0.93), // deepBlue
-  br: vec3(0.96, 0.57, 0.57), // pink
-  bl: vec3(0.35, 0.71, 0.95), // blue
+// Light-palette colors from the ShaderToy reference. Phase 5 adds a second
+// palette + time-based crossfade.
+const PALETTE = {
+  amberYellow: vec3(0.96, 0.73, 0.54),
+  deepBlue: vec3(0.19, 0.38, 0.93),
+  pink: vec3(0.96, 0.57, 0.57),
+  blue: vec3(0.35, 0.71, 0.95),
 } as const
+
+// -5° in radians; baked into the layer-x sample rotation. Could be promoted
+// to a prop later, but is fine as a stylistic constant for now.
+const LAYER_ROT_RAD = (-5 * Math.PI) / 180
 
 export function MeshGradientShader(props: MeshGradientShaderProps) {
   const ctx = useMatterContext()
@@ -95,16 +109,21 @@ export function MeshGradientShader(props: MeshGradientShaderProps) {
       .mul(2)
     const tuv = vec2(tuvRotated.x.add(warpX), tuvRotated.y.add(warpY))
 
-    // ---- Quadrant color picking --------------------------------------
-    // tuv is now rotated-and-centered. Pick a color by sign of x and y so
-    // we can see the rotation visually. Each `step` returns 0 or 1; we use
-    // them as mix factors. (smoothstep on a zero-width edge ≡ step.)
-    // Lerp horizontally between left & right colors per row, then vertically.
-    const isRight = tuv.x.step(0)
-    const isTop = tuv.y.step(0)
-    const topRow = DEBUG_COLORS.tl.mul(isRight.oneMinus()).add(DEBUG_COLORS.tr.mul(isRight))
-    const bottomRow = DEBUG_COLORS.bl.mul(isRight.oneMinus()).add(DEBUG_COLORS.br.mul(isRight))
-    const color = bottomRow.mul(isTop.oneMinus()).add(topRow.mul(isTop))
+    // ---- Two-layer smoothstep blend ---------------------------------
+    // Sample tuv through a small additional rotation (-5°) and use the
+    // resulting x to pick a smooth horizontal gradient per "layer". The
+    // vertical blend uses un-rotated tuv.y. Reversed smoothstep edges
+    // (0.5 -> -0.3) flip the direction so top of canvas reads layer1.
+    const lc = Math.cos(LAYER_ROT_RAD)
+    const ls = Math.sin(LAYER_ROT_RAD)
+    const layerX = tuv.x.mul(lc).sub(tuv.y.mul(ls))
+
+    const hMix = smoothstep(-0.3, 0.2, layerX)
+    const layer1 = PALETTE.pink.mul(hMix.oneMinus()).add(PALETTE.deepBlue.mul(hMix))
+    const layer2 = PALETTE.blue.mul(hMix.oneMinus()).add(PALETTE.amberYellow.mul(hMix))
+
+    const vMix = smoothstep(0.5, -0.3, tuv.y)
+    const color = layer1.mul(vMix.oneMinus()).add(layer2.mul(vMix))
 
     const material = new MeshBasicNodeMaterial()
     material.colorNode = vec4(color, 1)
