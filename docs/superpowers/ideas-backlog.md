@@ -161,10 +161,47 @@ Aurora, DotField, LinearGradient, MeshGradient, NoiseField, Waves.
 
 ### Film grain
 
-- **What:** animated noise overlay; intensity, scale, and color tint controls
-- **Source:** Photoshop, Apple keynote treatments
-- **Tier:** 1
-- **Size:** S
+- **What:** standalone `<FilmGrain>` overlay component that can be stacked
+  in a `<MatterScene>` to apply grain to any underlying effect. Intensity,
+  shutter rate, scale, color tint, blend mode controls.
+- **Source:** Photoshop, Apple keynote treatments,
+  [shaders.com Design Editor](https://shaders.com) (Saturation / Swirl
+  stacked-effects model).
+- **Tier:** 1 (Surfaces category — first member of the overlay category).
+- **Size:** M (component is small; the *architecture* it forces is the work).
+- **Notes:**
+  - **Primitive already shipped.** `filmGrain(uvNode, intensity, timeOffset?)`
+    landed in `@lovo/matter` in MAT-8 phase 6b. The `<FilmGrain>` component
+    becomes a thin wrapper around the primitive plus the overlay/blend
+    plumbing — no hash math to redesign.
+  - **Architecture decision required before building.** Two paths, both
+    real product work:
+    1. *Transparent overlay mesh.* `<FilmGrain>` creates its own
+       full-screen plane with `material.transparent = true` and an additive
+       blend equation so centered grain (mean = 0) adds zero net brightness
+       to the destination. Lighter; fits the current `MatterScene` (single
+       `renderer.render(scene, camera)` call).
+    2. *Render-pass / post-processing pipeline.* `MatterScene` grows a
+       compositor; each overlay component contributes a fullscreen pass that
+       runs after the base scene. Heavier; matches `EffectComposer` and
+       sets up `<Vignette>`, `<Bloom>`, `<ChromaticAberration>` cleanly for
+       the rest of the v2 overlay catalog.
+  - **Stacking order: later child in JSX = renders on top.** Matches CSS,
+    Figma, Photoshop. shaders.com inverts this (below-in-list applies to
+    above), which their own users find unintuitive — avoid replicating.
+    For the overlay-mesh path use `renderOrder`; for the pass path,
+    process passes in JSX-declaration order.
+  - **Subtractive variant.** MAT-8 shipped centered grain as the default
+    because subtractive crushes blacks and surprises users. Expose a
+    `mode: 'centered' | 'subtractive'` prop on `<FilmGrain>` for users
+    who specifically want the film-stock darkening look.
+  - **Twinkle rate.** The primitive deliberately doesn't bake in a shutter
+    rate — caller passes a time node. `<FilmGrain>` should expose a
+    `speed` prop (0 = static, 1 = ~60Hz default matching MAT-8, lower for
+    film-cadence ~24Hz) and quantize internally via `floor(time*speed*60)`.
+  - **Trigger to start work:** beginning v2 overlay-component planning
+    (first milestone after v1 publish) or any user request for "grain on
+    a non-MeshGradient component."
 
 ### Halftone
 
