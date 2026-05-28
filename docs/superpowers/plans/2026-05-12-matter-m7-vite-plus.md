@@ -1180,8 +1180,6 @@ gh pr create --title "feat: M7 — Vite+ adoption (runtime + pkg mgr + vp migrat
 
 ## Notes
 Migration notes (timings, breaking-change findings, Phase decisions) preserved at `docs/superpowers/plans/2026-05-12-matter-m7-notes.md`.
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
 )"
 ```
