@@ -1,6 +1,6 @@
-import { vec2, sin, fract, length } from 'three/tsl';
-import type { ShaderNodeObject } from 'three/tsl';
-import type { Node } from 'three/webgpu';
+import { vec2, sin, fract, length } from 'three/tsl'
+import type { ShaderNodeObject } from 'three/tsl'
+import type { Node } from 'three/webgpu'
 
 /**
  * Hash-based film grain — chaotic, uncorrelated per-pixel noise sampled
@@ -38,14 +38,11 @@ export function filmGrain(
   intensity: ShaderNodeObject<Node> | number,
   timeOffset: ShaderNodeObject<Node> | number = 0,
 ): ShaderNodeObject<Node> {
-  const HASH_C1 = vec2(2127.1, 81.17);
-  const HASH_C2 = vec2(1269.5, 283.37);
-  const base = vec2(
-    uvNode.dot(HASH_C1).add(timeOffset),
-    uvNode.dot(HASH_C2).add(timeOffset),
-  );
+  const HASH_C1 = vec2(2127.1, 81.17)
+  const HASH_C2 = vec2(1269.5, 283.37)
+  const base = vec2(uvNode.dot(HASH_C1).add(timeOffset), uvNode.dot(HASH_C2).add(timeOffset))
 
-  const hash = fract(sin(base).mul(43758.5453));
+  const hash = fract(sin(base).mul(43758.5453))
 
-  return length(hash).sub(0.765).mul(intensity);
+  return length(hash).sub(0.765).mul(intensity)
 }
