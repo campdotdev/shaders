@@ -14,6 +14,10 @@ export interface MeshGradientProps {
   cycleSpeed?: AnimatableProp<number>;
   /** Crossfade shape. <1 = linger at extremes, 1 = pure sine, >1 = linger at midpoint. Default 0.6. */
   cycleEase?: AnimatableProp<number>;
+  /** Film grain intensity (0..1). 0 = clean, 1 = heavy static. Default 0.08. */
+  grain?: AnimatableProp<number>;
+  /** Grain twinkle rate. 0 = static, 1 = default, higher = faster. Default 1. */
+  grainSpeed?: AnimatableProp<number>;
   /** Light palette: 4 hex strings. */
   paletteA?: [string, string, string, string];
   /** Dark palette: 4 hex strings. */
@@ -42,6 +46,8 @@ export function MeshGradient({
   amplitude = 30,
   cycleSpeed = 0.5,
   cycleEase = 0.6,
+  grain = 0.08,
+  grainSpeed = 1,
   paletteA = DEFAULT_PALETTE_A,
   paletteB = DEFAULT_PALETTE_B,
 }: MeshGradientProps) {
@@ -52,6 +58,8 @@ export function MeshGradient({
       amplitude={amplitude}
       cycleSpeed={cycleSpeed}
       cycleEase={cycleEase}
+      grain={grain}
+      grainSpeed={grainSpeed}
       paletteA={paletteA}
       paletteB={paletteB}
     />
