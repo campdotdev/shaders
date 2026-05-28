@@ -21,6 +21,9 @@ import {
   cos,
   smoothstep,
   uniform,
+  fract,
+  length,
+  floor,
   type ShaderNodeObject,
 } from 'three/tsl';
 
@@ -49,6 +52,10 @@ export interface MeshGradientShaderProps {
   paletteA: [string, string, string, string];
   /** Dark palette: 4 hex strings. */
   paletteB: [string, string, string, string];
+  /** Film grain intensity (0..1). 0 = clean, 1 = heavy static. Default 0.08. */
+  grain: AnimatableProp<number>;
+  /** Grain twinkle rate. 0 = static, 1 = default twinkle, higher = faster. */
+  grainSpeed: AnimatableProp<number>;
 }
 
 // -5° in radians; baked into the layer-x sample rotation. Could be promoted
@@ -77,6 +84,8 @@ export function MeshGradientShader({
   amplitude,
   cycleSpeed,
   cycleEase,
+  grain,
+  grainSpeed,
   paletteA,
   paletteB,
 }: MeshGradientShaderProps) {
@@ -98,6 +107,8 @@ export function MeshGradientShader({
   const speedU = useAnimatableUniform<number>(speed);
   const frequencyU = useAnimatableUniform<number>(frequency);
   const amplitudeU = useAnimatableUniform<number>(amplitude);
+  const grainU = useAnimatableUniform<number>(grain);
+  const grainSpeedU = useAnimatableUniform<number>(grainSpeed);
 
   // Resolution uniform — drives aspect correction. Seed with a sane large
   // default so the first frame doesn't see (1, 1). Pattern from Aurora.
@@ -194,8 +205,41 @@ export function MeshGradientShader({
     const vMix = smoothstep(0.5, -0.3, tuv.y);
     const color = layer1.mul(vMix.oneMinus()).add(layer2.mul(vMix));
 
+    // ---- Film grain ---------------------------------------------------
+    // Hash noise: chaotic, uncorrelated per-pixel value. Two `uv·k` dot
+    // products give us two scalars; sin+fract turns each into noise; the
+    // big multiplier (43758.5453) pushes the sine output into a wide range
+    // so fract throws away predictable structure.
+    //
+    // Time quantization: the hash is so sensitive to its input that ANY
+    // sub-frame change in `time` produces a fully fresh value, which is
+    // why naively adding `time * grainSpeed` gave no perceptible speed
+    // control. Instead we quantize time to a discrete "shutter rate" via
+    // `floor(time * grainSpeed * 60)`. Each integer tick re-randomizes
+    // the grain; between ticks it holds — exactly how real film grain
+    // works (each 1/24s exposure is fresh, not a continuous variable).
+    // 60 is the rate at grainSpeed=1; at 0.4 you get ~24Hz film-grain
+    // cadence; at 0 the grain freezes entirely.
+    const HASH_C1 = vec2(2127.1, 81.17);
+    const HASH_C2 = vec2(1269.5, 283.37);
+    const grainTime = floor(time.mul(grainSpeedU).mul(60));
+    const grainBase = vec2(
+      uv().dot(HASH_C1).add(grainTime),
+      uv().dot(HASH_C2).add(grainTime),
+    );
+    const grainHash = fract(sin(grainBase).mul(43758.5453));
+    // length(vec2) of two uniform-[0,1) hash values lands in [0, √2] with
+    // mean ≈ 0.765. Subtracting that mean centers the grain around zero so
+    // it acts as a pure texture overlay — half the pixels brighten, half
+    // darken, average brightness unchanged. (Subtractive `color.sub(...)`
+    // matches real film grain but crushes blacks, which most users find
+    // surprising on a UI gradient. Forkable: a consumer who wants the
+    // film look can swap `.add` for `.sub` and drop the `.sub(0.765)`.)
+    const grainScalar = length(grainHash).sub(0.765).mul(grainU);
+    const colorWithGrain = color.add(grainScalar);
+
     const material = new MeshBasicNodeMaterial();
-    material.colorNode = vec4(color, 1);
+    material.colorNode = vec4(colorWithGrain, 1);
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
     ctx.scene.add(mesh);
@@ -220,6 +264,8 @@ export function MeshGradientShader({
     amplitudeU,
     cycleSpeedU,
     cycleEaseU,
+    grainU,
+    grainSpeedU,
     a0,
     a1,
     a2,

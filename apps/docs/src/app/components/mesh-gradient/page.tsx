@@ -23,6 +23,8 @@ interface Params {
   amplitude: number;
   cycleSpeed: number;
   cycleEase: number;
+  grain: number;
+  grainSpeed: number;
   a0: string;
   a1: string;
   a2: string;
@@ -39,6 +41,8 @@ const INITIAL: Params = {
   amplitude: 30,
   cycleSpeed: 0.5,
   cycleEase: 0.6,
+  grain: 0.08,
+  grainSpeed: 1,
   a0: '#ffba89',
   a1: '#3162ee',
   a2: '#f69292',
@@ -73,6 +77,13 @@ export default function MeshGradientPage() {
       max: 3,
       step: 0.01,
     });
+    pane.addBinding(local, 'grain', { min: 0, max: 1, step: 0.01 });
+    pane.addBinding(local, 'grainSpeed', {
+      label: 'grain speed',
+      min: 0,
+      max: 5,
+      step: 0.01,
+    });
     pane.addBlade({ view: 'separator' });
 
     const aFolder = pane.addFolder({ title: 'Palette A', expanded: false });
@@ -101,6 +112,8 @@ export default function MeshGradientPage() {
             amplitude={params.amplitude}
             cycleSpeed={params.cycleSpeed}
             cycleEase={params.cycleEase}
+            grain={params.grain}
+            grainSpeed={params.grainSpeed}
             paletteA={[params.a0, params.a1, params.a2, params.a3]}
             paletteB={[params.b0, params.b1, params.b2, params.b3]}
           />
@@ -126,7 +139,7 @@ export default function MeshGradientPage() {
       </div>
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;MeshGradient /&gt;</h1>
-        <p>Phase 5 — time-cycling palette. Film grain returns in Phase 6.</p>
+        <p>Phase 6a — inline subtractive film grain via hash noise.</p>
       </section>
     </main>
   );
