@@ -21,13 +21,11 @@ import {
   cos,
   smoothstep,
   uniform,
-  fract,
-  length,
   floor,
   type ShaderNodeObject,
 } from 'three/tsl';
 
-import { time, noise } from '@lovo/matter';
+import { time, noise, filmGrain } from '@lovo/matter';
 import {
   useMatterContext,
   useResize,
@@ -206,36 +204,16 @@ export function MeshGradientShader({
     const color = layer1.mul(vMix.oneMinus()).add(layer2.mul(vMix));
 
     // ---- Film grain ---------------------------------------------------
-    // Hash noise: chaotic, uncorrelated per-pixel value. Two `uv·k` dot
-    // products give us two scalars; sin+fract turns each into noise; the
-    // big multiplier (43758.5453) pushes the sine output into a wide range
-    // so fract throws away predictable structure.
-    //
-    // Time quantization: the hash is so sensitive to its input that ANY
-    // sub-frame change in `time` produces a fully fresh value, which is
-    // why naively adding `time * grainSpeed` gave no perceptible speed
-    // control. Instead we quantize time to a discrete "shutter rate" via
-    // `floor(time * grainSpeed * 60)`. Each integer tick re-randomizes
-    // the grain; between ticks it holds — exactly how real film grain
-    // works (each 1/24s exposure is fresh, not a continuous variable).
-    // 60 is the rate at grainSpeed=1; at 0.4 you get ~24Hz film-grain
-    // cadence; at 0 the grain freezes entirely.
-    const HASH_C1 = vec2(2127.1, 81.17);
-    const HASH_C2 = vec2(1269.5, 283.37);
+    // The `filmGrain` primitive owns the hash math + centering. We still
+    // own the time quantization here because shutter rate is a per-shader
+    // aesthetic decision — `filmGrain` accepts any time-offset node and
+    // doesn't bake in a default rate. Quantizing via floor(time*rate)
+    // makes each integer tick re-randomize the grain (real film exposes
+    // at a discrete shutter rate, not continuously). At grainSpeed=1 the
+    // rate is 60Hz ≈ per-frame; at 0.4 you get ~24Hz film cadence;
+    // at 0 the grain freezes entirely.
     const grainTime = floor(time.mul(grainSpeedU).mul(60));
-    const grainBase = vec2(
-      uv().dot(HASH_C1).add(grainTime),
-      uv().dot(HASH_C2).add(grainTime),
-    );
-    const grainHash = fract(sin(grainBase).mul(43758.5453));
-    // length(vec2) of two uniform-[0,1) hash values lands in [0, √2] with
-    // mean ≈ 0.765. Subtracting that mean centers the grain around zero so
-    // it acts as a pure texture overlay — half the pixels brighten, half
-    // darken, average brightness unchanged. (Subtractive `color.sub(...)`
-    // matches real film grain but crushes blacks, which most users find
-    // surprising on a UI gradient. Forkable: a consumer who wants the
-    // film look can swap `.add` for `.sub` and drop the `.sub(0.765)`.)
-    const grainScalar = length(grainHash).sub(0.765).mul(grainU);
+    const grainScalar = filmGrain(uv(), grainU, grainTime);
     const colorWithGrain = color.add(grainScalar);
 
     const material = new MeshBasicNodeMaterial();
