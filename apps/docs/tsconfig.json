@@ -1,5 +1,9 @@
 {
-  "extends": "@matter/tsconfig/base.json",
+  // Relative extends (rather than "@matter/tsconfig/base.json" like the
+  // other workspaces) because fallow's resolver does not follow tsconfig
+  // `extends` through workspace packages, which causes it to drop this
+  // file's `paths` and flag every `@/*` import as unresolved.
+  "extends": "../../tooling/tsconfig/base.json",
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "noEmit": true,
