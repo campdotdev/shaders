@@ -429,25 +429,14 @@ These aren't Tier 1 components themselves; they're cross-cutting concerns that a
 - **Size:** M
 - **Notes:** Two layers. (1) JS-side parsing — pulls hex/rgb/hsl/oklch/named strings into canonical sRGB; recommend [culori](https://culorijs.org/) (~14KB, every space supported). (2) GPU-side blending — when `colorSpace` isn't sRGB, convert in JS once before sending as uniform, blend in that space on the GPU with `mix()`, convert back to sRGB at output. OKLab requires 3×3 matrix + cube-root math; HSL requires angular hue mixing. Current registry components all ship a local `hexToVec3` that does no conversion — replace those when this lands. Tracked in Linear (issue already created).
 
-### Stable `Vector3` in `useColorUniform`
+### ~~Stable `Vector3` in `useColorUniform`~~ — shipped in MAT-16 phase 4
 
-- **What:** Fix the `useColorUniform(hex)` helper duplicated across Tier 1
-  components (Aurora today; MeshGradient in M8) so the underlying `Vector3`
-  is created once and mutated in place when the hex prop changes. Currently
-  the `useMemo` for the `Vector3` has `[hex]` as its dep, which creates a
-  *new* `Vector3` on every hex change → new `uniform()` node identity →
-  cascade rebuild of the shader material in the host component's main
-  `useEffect`. Visible as a brief stutter on color-picker drags.
-- **Source:** Aurora's `registry/aurora/shader.tsx::useColorUniform` (canonical
-  copy); MeshGradient inherits the pattern in M8 Phase 5.
-- **Tier:** Infrastructure
-- **Size:** XS
-- **Notes:** Use `useRef` for the `Vector3` (lazy init from initial hex), put
-  `uniform(vec)` in a `useMemo([])`, and the existing `useEffect([hex])` that
-  calls `vec.set(r, g, b)` becomes the only path that changes the color. Net
-  effect: material built once at mount; color picker drags update via uniform
-  mutation alone, no material rebuild. Doesn't change visuals — pure
-  plumbing. Apply identically to every Tier 1 component using the pattern.
+Fixed alongside the same pattern in Vignette. The `useMemo` for the underlying
+`Vector*` instance now has empty deps in `useColorUniform` (Aurora +
+MeshGradient), `colorVec`/`dirVec` in `AuroraShader`, and `centerVec`/`colorVec`
+in `VignetteShader`. Prop changes flow through the existing `.set()` effects;
+uniform node identity is stable; material no longer recompiles on color-picker
+or direction drags.
 
 ### Promote `useColorUniform` to `@lovo/matter-react`
 
