@@ -11,7 +11,7 @@ import { useMatterContext } from './useMatterContext.js'
  * overlays as a TSL vec4 node — and returns a modified vec4. Registration
  * happens on mount; unregistration on unmount. The hook re-registers
  * whenever any value in `deps` changes (useEffect semantics): use this
- * for structural changes (e.g., a `mode: 'centered' | 'subtractive'`
+ * for structural changes (e.g., a `mode: 'additive' | 'subtractive'`
  * toggle) that swap the transform function itself. Uniforms captured
  * inside the transform mutate in place, so uniform value changes do
  * NOT need to be in deps.
