@@ -6,7 +6,7 @@ import type { AnimatableProp } from '@lovo/matter-react'
 export type { FilmGrainMode } from './shader'
 
 export interface FilmGrainProps {
-  /** Grain strength. 0 = clean, 1 = heavy. Default 0.08. */
+  /** Grain strength. 0 = clean, 1 = heavy. Default 0.45. */
   intensity?: AnimatableProp<number>
   /** Twinkle rate. 0 = static, 1 = ~60Hz, 0.4 = ~24Hz film cadence. Default 1. */
   speed?: AnimatableProp<number>
@@ -19,7 +19,7 @@ export interface FilmGrainProps {
 }
 
 export function FilmGrain({
-  intensity = 0.08,
+  intensity = 0.45,
   speed = 1,
   mode = 'additive',
 }: FilmGrainProps) {
