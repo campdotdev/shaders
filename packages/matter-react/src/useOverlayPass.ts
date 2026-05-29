@@ -1,7 +1,8 @@
 'use client'
 
-import { useContext, useEffect, type DependencyList } from 'react'
-import { MatterContext, type OverlayTransform } from './matter-context.js'
+import { useEffect, type DependencyList } from 'react'
+import type { OverlayTransform } from './matter-context.js'
+import { useMatterContext } from './useMatterContext.js'
 
 /**
  * Register a TSL transform as an overlay pass on the parent <MatterScene>.
@@ -19,7 +20,7 @@ import { MatterContext, type OverlayTransform } from './matter-context.js'
  * Matches the existing useMatterContext convention.
  */
 export function useOverlayPass(transform: OverlayTransform, deps: DependencyList): void {
-  const ctx = useContext(MatterContext)
+  const ctx = useMatterContext()
 
   useEffect(() => {
     if (!ctx) return
