@@ -34,14 +34,18 @@ interface VignetteParams {
 }
 
 const INITIAL: VignetteParams = {
-  intensity: 0.5,
+  intensity: 0.7,
   softness: 0.5,
   centerX: 0.5,
   centerY: 0.5,
   radius: 0.6,
   color: '#000000',
   grainOrderFirst: true,
-  grainIntensity: 0.06,
+  // Default grain is intentionally prominent so the stacking-order
+  // toggle is visibly different: at low grain (~0.06) the difference
+  // between vignette-attenuated grain and full-amplitude grain is
+  // real but imperceptible.
+  grainIntensity: 0.3,
 }
 
 // Round to 4 decimals so slider noise (e.g. 0.30000000000000004) doesn't
