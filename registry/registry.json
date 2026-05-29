@@ -47,7 +47,7 @@
     },
     "film-grain": {
       "file": "film-grain/film-grain.tsx",
-      "description": "Centered or subtractive film grain overlay. Stacks on top of any base component inside <MatterScene>.",
+      "description": "Additive or subtractive film grain overlay. Stacks on top of any base component inside <MatterScene>.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["filmGrain", "uv", "vec4", "uniform", "time", "floor"],
       "tier": 1
