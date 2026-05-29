@@ -107,6 +107,13 @@
         "uniform"
       ],
       "tier": 1
+    },
+    "vignette": {
+      "file": "vignette/vignette.tsx",
+      "description": "Radial darkening at the canvas edges. Stacks on top of any base component inside <MatterScene>.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": ["uv", "vec2", "vec3", "vec4", "mix", "smoothstep", "length", "uniform"],
+      "tier": 1
     }
   }
 }
