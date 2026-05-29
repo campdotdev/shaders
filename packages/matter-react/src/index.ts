@@ -20,6 +20,9 @@ export type { ScrollSignal, ScrollValue } from './useScroll.js'
 export { useAnimatableUniform } from './useAnimatableUniform.js'
 export type { AnimatableProp, MatterSignal } from './useAnimatableUniform.js'
 
+export { useOverlayPass } from './useOverlayPass.js'
+export type { OverlayTransform } from './matter-context.js'
+
 export { FallbackBoundary } from './FallbackBoundary.js'
 export type { FallbackBoundaryProps } from './FallbackBoundary.js'
 
