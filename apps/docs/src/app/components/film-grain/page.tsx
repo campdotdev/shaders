@@ -27,7 +27,7 @@ interface FilmGrainParams {
   mode: FilmGrainMode
 }
 
-const INITIAL: FilmGrainParams = { intensity: 0.08, speed: 1, mode: 'additive' }
+const INITIAL: FilmGrainParams = { intensity: 0.45, speed: 1, mode: 'additive' }
 
 // Round to 4 decimals so slider noise (e.g. 0.30000000000000004) doesn't
 // leak into the copied snippet.
@@ -173,7 +173,7 @@ export default function FilmGrainPage() {
         >
           {`<MatterScene>
   <LinearGradient />
-  <FilmGrain intensity={0.08} speed={1} mode="additive" />
+  <FilmGrain intensity={0.45} speed={1} mode="additive" />
 </MatterScene>`}
         </pre>
       </section>
