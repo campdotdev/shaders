@@ -55,10 +55,17 @@ export interface MeshGradientShaderProps {
 const LAYER_ROT_RAD = (-5 * Math.PI) / 180
 
 function useColorUniform(hex: string) {
-  const vec = useMemo(() => {
-    const [r, g, b] = parseHex(hex)
-    return new Vector3(r, g, b)
-  }, [hex])
+  // Stable instance — the useEffect below mutates via .set() on hex
+  // changes so the uniform identity stays put and the material doesn't
+  // recompile on every color-picker drag.
+  const vec = useMemo(
+    () => {
+      const [r, g, b] = parseHex(hex)
+      return new Vector3(r, g, b)
+    },
+    // oxlint-disable-next-line react/exhaustive-deps
+    [],
+  )
 
   const node = useMemo(() => uniform(vec), [vec])
 

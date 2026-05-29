@@ -62,10 +62,17 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
   const speedU = useAnimatableUniform<number>(layer.speed)
   const intensityU = useAnimatableUniform<number>(layer.intensity)
 
-  const colorVec = useMemo(() => {
-    const [r, g, b] = parseHex(layer.hex)
-    return new Vector3(r, g, b)
-  }, [layer.hex])
+  // Stable instance — the useEffect below mutates it via .set() on hex
+  // changes, keeping the uniform node identity stable so the material
+  // doesn't recompile on every color-picker drag.
+  const colorVec = useMemo(
+    () => {
+      const [r, g, b] = parseHex(layer.hex)
+      return new Vector3(r, g, b)
+    },
+    // oxlint-disable-next-line react/exhaustive-deps
+    [],
+  )
 
   const colorNode = useMemo(
     () => uniform(colorVec) as unknown as ShaderNodeObject<Node>,
@@ -84,10 +91,15 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
 }
 
 function useColorUniform(hex: string) {
-  const vec = useMemo(() => {
-    const [r, g, b] = parseHex(hex)
-    return new Vector3(r, g, b)
-  }, [hex])
+  // Stable instance — see colorVec in useLayerUniforms above.
+  const vec = useMemo(
+    () => {
+      const [r, g, b] = parseHex(hex)
+      return new Vector3(r, g, b)
+    },
+    // oxlint-disable-next-line react/exhaustive-deps
+    [],
+  )
 
   const node = useMemo(() => uniform(vec) as unknown as ShaderNodeObject<Node>, [vec])
 
@@ -119,10 +131,16 @@ export function AuroraShader(props: AuroraShaderProps) {
     return resize.on('change', ([w2, h2]) => resVec.set(w2, h2))
   }, [resize, resVec])
 
-  const dirVec = useMemo(() => {
-    const [x, y, b] = DIRECTION_VECTORS[props.direction]
-    return new Vector3(x, y, b)
-  }, [props.direction])
+  // Stable instance — the useEffect below mutates it via .set() when the
+  // direction prop changes, keeping the uniform node identity stable.
+  const dirVec = useMemo(
+    () => {
+      const [x, y, b] = DIRECTION_VECTORS[props.direction]
+      return new Vector3(x, y, b)
+    },
+    // oxlint-disable-next-line react/exhaustive-deps
+    [],
+  )
 
   const dirNode = useMemo(() => uniform(dirVec) as unknown as ShaderNodeObject<Node>, [dirVec])
 
