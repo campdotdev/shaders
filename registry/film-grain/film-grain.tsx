@@ -11,7 +11,8 @@ export interface FilmGrainProps {
   /** Twinkle rate. 0 = static, 1 = ~60Hz, 0.4 = ~24Hz film cadence. Default 1. */
   speed?: AnimatableProp<number>
   /**
-   * 'centered' (default): brightens half, darkens half, mean-preserving.
+   * 'additive' (default): adds signed grain so half the pixels brighten and
+   * half darken, preserving average exposure — pure texture, no exposure shift.
    * 'subtractive': only darkens (silver-emulsion film-stock look).
    */
   mode?: FilmGrainMode
@@ -20,7 +21,7 @@ export interface FilmGrainProps {
 export function FilmGrain({
   intensity = 0.08,
   speed = 1,
-  mode = 'centered',
+  mode = 'additive',
 }: FilmGrainProps) {
   return <FilmGrainShader intensity={intensity} speed={speed} mode={mode} />
 }
