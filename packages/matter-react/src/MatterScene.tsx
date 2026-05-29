@@ -3,14 +3,20 @@
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Scene, OrthographicCamera } from 'three'
 import { PostProcessing } from 'three/webgpu'
+import type { Node } from 'three/webgpu'
 import { pass } from 'three/tsl'
+import type { ShaderNodeObject } from 'three/tsl'
 import {
   createRenderer,
   MatterScheduler,
   createVisibilityWatcher,
   createIntersectionWatcher,
 } from '@lovo/matter'
-import { MatterContext, type MatterContextValue } from './matter-context.js'
+import {
+  MatterContext,
+  type MatterContextValue,
+  type OverlayTransform,
+} from './matter-context.js'
 
 export interface MatterSceneProps {
   children?: ReactNode
@@ -59,8 +65,31 @@ export function MatterScene(props: MatterSceneProps) {
         const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10)
         camera.position.z = 1
         const postProcessing = new PostProcessing(renderer.three)
-        postProcessing.outputNode = pass(scene, camera)
         const scheduler = new MatterScheduler()
+
+        const overlays = new Map<symbol, OverlayTransform>()
+
+        const rebuildOutputNode = () => {
+          const basePass = pass(scene, camera)
+          const transforms = Array.from(overlays.values())
+          postProcessing.outputNode = transforms.reduce(
+            (node, transform) => transform(node),
+            basePass as unknown as ShaderNodeObject<Node>,
+          )
+          postProcessing.needsUpdate = true
+        }
+
+        rebuildOutputNode() // initial: just basePass, no overlays
+
+        const registerOverlay = (transform: OverlayTransform): (() => void) => {
+          const key = Symbol('overlay')
+          overlays.set(key, transform)
+          rebuildOutputNode()
+          return () => {
+            overlays.delete(key)
+            rebuildOutputNode()
+          }
+        }
 
         scheduler.add(() => postProcessing.render())
         scheduler.start()
@@ -91,7 +120,7 @@ export function MatterScene(props: MatterSceneProps) {
           renderer.dispose()
         }
 
-        setCtx({ renderer, scene, camera, scheduler })
+        setCtx({ renderer, scene, camera, scheduler, registerOverlay })
       } catch (err) {
         if (cancelled) return
         const e = err instanceof Error ? err : new Error(String(err))
