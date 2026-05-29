@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import { Scene, OrthographicCamera } from 'three'
+import { PostProcessing } from 'three/webgpu'
+import { pass } from 'three/tsl'
 import {
   createRenderer,
   MatterScheduler,
@@ -56,9 +58,11 @@ export function MatterScene(props: MatterSceneProps) {
         const scene = new Scene()
         const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10)
         camera.position.z = 1
+        const postProcessing = new PostProcessing(renderer.three)
+        postProcessing.outputNode = pass(scene, camera)
         const scheduler = new MatterScheduler()
 
-        scheduler.add(() => renderer.three.render(scene, camera))
+        scheduler.add(() => postProcessing.render())
         scheduler.start()
 
         const visibility = createVisibilityWatcher()
