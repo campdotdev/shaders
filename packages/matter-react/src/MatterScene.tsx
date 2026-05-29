@@ -69,12 +69,16 @@ export function MatterScene(props: MatterSceneProps) {
 
         const overlays = new Map<symbol, OverlayTransform>()
 
+        // Allocate the base PassNode once per setup so rebuilds reuse the same
+        // node identity instead of churning a fresh one (and a fresh render
+        // target binding) on every register/unregister.
+        const basePass = pass(scene, camera) as unknown as ShaderNodeObject<Node>
+
         const rebuildOutputNode = () => {
-          const basePass = pass(scene, camera)
           const transforms = Array.from(overlays.values())
           postProcessing.outputNode = transforms.reduce(
             (node, transform) => transform(node),
-            basePass as unknown as ShaderNodeObject<Node>,
+            basePass,
           )
           postProcessing.needsUpdate = true
         }
