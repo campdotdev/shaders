@@ -1,9 +1,6 @@
 import { describe, expect, it, vi } from 'vite-plus/test'
 import { render, cleanup } from '@testing-library/react'
-import { useEffect, useRef } from 'react'
 import type { ReactNode } from 'react'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
 import { MatterContext, type MatterContextValue, type OverlayTransform } from './matter-context.js'
 import { useOverlayPass } from './useOverlayPass.js'
 
