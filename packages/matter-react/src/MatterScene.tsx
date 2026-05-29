@@ -12,11 +12,7 @@ import {
   createVisibilityWatcher,
   createIntersectionWatcher,
 } from '@lovo/matter'
-import {
-  MatterContext,
-  type MatterContextValue,
-  type OverlayTransform,
-} from './matter-context.js'
+import { MatterContext, type MatterContextValue, type OverlayTransform } from './matter-context.js'
 
 export interface MatterSceneProps {
   children?: ReactNode

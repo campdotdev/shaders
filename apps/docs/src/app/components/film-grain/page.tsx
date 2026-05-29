@@ -16,10 +16,9 @@ const LinearGradient = dynamic(
   () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
   { ssr: false },
 )
-const FilmGrain = dynamic(
-  () => import('@matter/registry/film-grain').then((m) => m.FilmGrain),
-  { ssr: false },
-)
+const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
+  ssr: false,
+})
 
 interface FilmGrainParams {
   intensity: number
@@ -113,11 +112,7 @@ export default function FilmGrainPage() {
       <div style={{ position: 'relative', height: '70vh' }}>
         <MatterScene>
           <LinearGradient />
-          <FilmGrain
-            intensity={params.intensity}
-            speed={params.speed}
-            mode={params.mode}
-          />
+          <FilmGrain intensity={params.intensity} speed={params.speed} mode={params.mode} />
           <VisualTestPause />
         </MatterScene>
         {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
@@ -143,23 +138,21 @@ export default function FilmGrainPage() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;FilmGrain /&gt;</h1>
         <p>
-          Standalone film grain overlay. Stacks inside any{' '}
-          <code>&lt;MatterScene&gt;</code> on top of whatever base component you
-          want — gradients, noise fields, mesh gradients — and applies a layer
-          of animated grain via the post-processing pipeline.
+          Standalone film grain overlay. Stacks inside any <code>&lt;MatterScene&gt;</code> on top
+          of whatever base component you want — gradients, noise fields, mesh gradients — and
+          applies a layer of animated grain via the post-processing pipeline.
         </p>
         <p>
-          <strong>Additive</strong> (default) adds signed grain so half the
-          pixels brighten and half darken, preserving average exposure — pure
-          texture, no exposure shift.{' '}
-          <strong>Subtractive</strong> takes the absolute value of the grain
-          and subtracts it, so the image only darkens. Subtractive simulates
-          silver-halide film stock physics, where exposed grain blocks light.
+          <strong>Additive</strong> (default) adds signed grain so half the pixels brighten and half
+          darken, preserving average exposure — pure texture, no exposure shift.{' '}
+          <strong>Subtractive</strong> takes the absolute value of the grain and subtracts it, so
+          the image only darkens. Subtractive simulates silver-halide film stock physics, where
+          exposed grain blocks light.
         </p>
         <p>
-          <code>speed</code> controls the shutter cadence: <code>1</code> ≈
-          60Hz (continuous shimmer at 60fps), <code>0.4</code> ≈ 24Hz (chunky
-          film cadence), <code>0</code> freezes the grain pattern.
+          <code>speed</code> controls the shutter cadence: <code>1</code> ≈ 60Hz (continuous shimmer
+          at 60fps), <code>0.4</code> ≈ 24Hz (chunky film cadence), <code>0</code> freezes the grain
+          pattern.
         </p>
         <pre
           style={{

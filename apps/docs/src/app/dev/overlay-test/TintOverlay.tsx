@@ -21,10 +21,7 @@ export function TintOverlay({ color, intensity }: TintOverlayProps) {
   }, [color])
   const intensityU = useAnimatableUniform<number>(intensity)
 
-  useOverlayPass(
-    (input) => tslMix(input, tintColor, intensityU),
-    [tintColor, intensityU],
-  )
+  useOverlayPass((input) => tslMix(input, tintColor, intensityU), [tintColor, intensityU])
 
   return null
 }
