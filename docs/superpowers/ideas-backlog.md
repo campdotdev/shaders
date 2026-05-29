@@ -274,12 +274,13 @@ Aurora, DotField, LinearGradient, MeshGradient, NoiseField, Waves.
 - **Tier:** 1
 - **Size:** S
 
-### Vignette
+### ~~Vignette~~ — shipped in MAT-16 phase 4
 
-- **What:** darkened or colored edges; customizable shape and softness
-- **Source:** AE, Photoshop
-- **Tier:** 1
-- **Size:** XS
+Standalone `<Vignette>` overlay. Aspect-corrected radial mask via
+`useOverlayPass`, with `intensity`/`softness`/`center`/`radius`/`color`
+props. Plays in the {`"read-upstream"`} half of the post-processing
+pipeline; stacks with `<FilmGrain>` (and any future overlays) inside a
+shared `<MatterScene>`.
 
 ### Lens flare
 
@@ -437,6 +438,63 @@ MeshGradient), `colorVec`/`dirVec` in `AuroraShader`, and `centerVec`/`colorVec`
 in `VignetteShader`. Prop changes flow through the existing `.set()` effects;
 uniform node identity is stable; material no longer recompiles on color-picker
 or direction drags.
+
+### Blend mode prop on overlay components
+
+- **What:** A `blend` prop on `<Vignette>` and `<FilmGrain>` (and any
+  future overlays) accepting `'normal' | 'multiply' | 'screen' | 'overlay'
+  | 'soft-light' | 'hard-light' | 'add' | 'subtract'`. Today each overlay
+  hardcodes its blend math: Vignette uses `mix(input, edgeColor, factor)`
+  (a normal blend); FilmGrain uses `input.add(...)` (additive) or
+  `input.sub(...)` (subtractive). Exposing blend mode lets users compose
+  the same overlay differently — e.g., a Vignette in `'multiply'` mode
+  darkens via channel-wise multiplication for a richer film look, while
+  `'screen'` mode brightens corners for a "lifted shadows" effect.
+- **Source:** Photoshop / AE blend modes are the industry vocabulary;
+  CSS `mix-blend-mode` and Figma's blend modes set user expectation.
+- **Tier:** Infrastructure (touches every overlay component) + per-component
+  surface change.
+- **Size:** M
+- **Notes:** Implement as a TSL `blend(input, layer, mode)` primitive in
+  `@lovo/matter` that branches on `mode`. Each overlay's `useOverlayPass`
+  transform becomes `(input) => blend(input, computeLayer(...), modeUniform)`.
+  The mode prop should be in the `useOverlayPass` deps array — changing it
+  rebuilds the transform graph, which is correct: blend math is structural.
+  Worth doing alongside FilmGrain's existing `mode: 'additive' | 'subtractive'`
+  refactor — that prop becomes redundant once `blend` lands (additive = 'add',
+  subtractive = 'subtract' with `.abs()` baked in or as a separate
+  `clampNegative` prop). Migration path: keep `mode` as a deprecated alias
+  for one release, then remove.
+
+### Atomic overlay reorder in MatterScene
+
+- **What:** Eliminate the 1-frame flash of "bare base scene" that happens
+  when the user reorders overlay children inside `<MatterScene>` (e.g.,
+  swapping `<><FilmGrain/><Vignette/></>` ↔ `<><Vignette/><FilmGrain/></>`).
+  Today each overlay registers on mount + unregisters on cleanup; React's
+  reconciler unmounts both children and remounts both, and between the
+  cleanups and the new mounts the `overlays` Map is empty → pipeline is
+  just `basePass` → one frame renders without overlays.
+- **Source:** Visible in the Vignette playground's "grain first?" toggle
+  (MAT-16 phase 4).
+- **Tier:** Infrastructure
+- **Size:** S–M
+- **Notes:** Two design choices to weigh together:
+  1. **Microtask-batched rebuild.** `rebuildOutputNode` becomes
+     `scheduleRebuild` that queues a microtask if one isn't already
+     scheduled. Multiple register/unregister calls in the same React commit
+     coalesce into one rebuild after all effects settle. Microtasks run
+     before the next paint, so no visible no-overlay frame. Cheap, mostly
+     transparent.
+  2. **Stable-instance reorder API.** Extend `useOverlayPass` with an
+     optional `order` (or `priority`) parameter; let the JSX child order
+     stay decorative. Pages can keep overlay instances mounted (with React
+     keys) and just change the order param. This requires more API surface
+     but enables uniform-only updates for reorder, which composes better
+     with `useAnimatableUniform`.
+  Option 1 should land first — it's a strict improvement with no API change.
+  Option 2 is additive on top if we want truly hitch-free reorder without
+  remount.
 
 ### Promote `useColorUniform` to `@lovo/matter-react`
 
