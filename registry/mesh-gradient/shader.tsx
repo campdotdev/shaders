@@ -15,11 +15,10 @@ import {
   cos,
   smoothstep,
   uniform,
-  floor,
   type ShaderNodeObject,
 } from 'three/tsl'
 
-import { time, noise, filmGrain } from '@lovo/matter'
+import { time, noise } from '@lovo/matter'
 import {
   useMatterContext,
   useResize,
@@ -44,10 +43,6 @@ export interface MeshGradientShaderProps {
   paletteA: [string, string, string, string]
   /** Dark palette: 4 hex strings. */
   paletteB: [string, string, string, string]
-  /** Film grain intensity (0..1). 0 = clean, 1 = heavy static. Default 0.08. */
-  grain: AnimatableProp<number>
-  /** Grain twinkle rate. 0 = static, 1 = default twinkle, higher = faster. */
-  grainSpeed: AnimatableProp<number>
 }
 
 // -5° in radians; baked into the layer-x sample rotation. Could be promoted
@@ -83,8 +78,6 @@ export function MeshGradientShader({
   amplitude,
   cycleSpeed,
   cycleEase,
-  grain,
-  grainSpeed,
   paletteA,
   paletteB,
 }: MeshGradientShaderProps) {
@@ -106,8 +99,6 @@ export function MeshGradientShader({
   const speedU = useAnimatableUniform<number>(speed)
   const frequencyU = useAnimatableUniform<number>(frequency)
   const amplitudeU = useAnimatableUniform<number>(amplitude)
-  const grainU = useAnimatableUniform<number>(grain)
-  const grainSpeedU = useAnimatableUniform<number>(grainSpeed)
 
   // Resolution uniform — drives aspect correction. Seed with a sane large
   // default so the first frame doesn't see (1, 1). Pattern from Aurora.
@@ -199,21 +190,8 @@ export function MeshGradientShader({
     const vMix = smoothstep(0.5, -0.3, tuv.y)
     const color = layer1.mul(vMix.oneMinus()).add(layer2.mul(vMix))
 
-    // ---- Film grain ---------------------------------------------------
-    // The `filmGrain` primitive owns the hash math + centering. We still
-    // own the time quantization here because shutter rate is a per-shader
-    // aesthetic decision — `filmGrain` accepts any time-offset node and
-    // doesn't bake in a default rate. Quantizing via floor(time*rate)
-    // makes each integer tick re-randomize the grain (real film exposes
-    // at a discrete shutter rate, not continuously). At grainSpeed=1 the
-    // rate is 60Hz ≈ per-frame; at 0.4 you get ~24Hz film cadence;
-    // at 0 the grain freezes entirely.
-    const grainTime = floor(time.mul(grainSpeedU).mul(60))
-    const grainScalar = filmGrain(uv(), grainU, grainTime)
-    const colorWithGrain = color.add(grainScalar)
-
     const material = new MeshBasicNodeMaterial()
-    material.colorNode = vec4(colorWithGrain, 1)
+    material.colorNode = vec4(color, 1)
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
     ctx.scene.add(mesh)
@@ -238,8 +216,6 @@ export function MeshGradientShader({
     amplitudeU,
     cycleSpeedU,
     cycleEaseU,
-    grainU,
-    grainSpeedU,
     a0,
     a1,
     a2,
