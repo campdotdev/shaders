@@ -1,5 +1,31 @@
 # @lovo/matter
 
+## 1.0.0
+
+### Minor Changes
+
+- 3856367: Add `filmGrain` primitive — hash-based, centered film grain for shader compositions.
+
+  ```ts
+  import { filmGrain, time } from "@lovo/matter";
+  import { uv } from "three/tsl";
+
+  // Static grain:
+  const grain = filmGrain(uv(), 0.08);
+
+  // Twinkling grain — caller controls the shutter rate. floor() quantizes
+  // time to a discrete cadence; the hash is so sensitive that a continuous
+  // time input gives no perceptible speed control.
+  const grain = filmGrain(uv(), 0.08, time.mul(speed).mul(60).floor());
+
+  material.colorNode = vec4(color.add(grain), 1);
+  ```
+
+  Output is centered around zero (mean of `length(vec2(u, v))` for uniform
+  `u, v ∈ [0, 1)` is ~0.765, subtracted at the recipe level) so the grain
+  acts as a brightness-preserving texture overlay. Subtract instead of add
+  at the call site for film-stock-style darkening.
+
 ## 0.2.0
 
 ### Minor Changes
@@ -12,11 +38,11 @@
 
   ```ts
   // Before (0.1.x)
-  import { vec3, uv, time } from '@lovo/matter'
+  import { vec3, uv, time } from "@lovo/matter";
 
   // After (0.2.0)
-  import { vec3, uv } from 'three/tsl'
-  import { time } from '@lovo/matter'  // still here — reduced-motion-gated
+  import { vec3, uv } from "three/tsl";
+  import { time } from "@lovo/matter"; // still here — reduced-motion-gated
   ```
 
   The Matter-owned `time` (reduced-motion gated) continues to be exported from `@lovo/matter` unchanged. For raw uncapped time, import from `three/tsl` directly.
