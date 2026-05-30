@@ -204,23 +204,22 @@ export default function VignettePage() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;Vignette /&gt;</h1>
         <p>
-          Radial darkening at the canvas edges. Stacks inside any{' '}
-          <code>&lt;MatterScene&gt;</code> on top of whatever base component you want and fades the
-          upstream pixels toward an edge color along a soft falloff ring. Unlike{' '}
-          <code>&lt;FilmGrain /&gt;</code>, which generates new noise from <code>uv</code>, Vignette
-          reads the upstream pixel and mixes it toward <code>color</code> — the {`"read-upstream"`}{' '}
-          half of the post-processing pipeline.
+          Radial darkening at the canvas edges. Stacks inside any <code>&lt;MatterScene&gt;</code>{' '}
+          on top of whatever base component you want and fades the upstream pixels toward an edge
+          color along a soft falloff ring. Unlike <code>&lt;FilmGrain /&gt;</code>, which generates
+          new noise from <code>uv</code>, Vignette reads the upstream pixel and mixes it toward{' '}
+          <code>color</code> — the {`"read-upstream"`} half of the post-processing pipeline.
         </p>
         <p>
-          <strong>Stacking order matters.</strong> The {`"grain first?"`} toggle in the panel
-          swaps which overlay runs first. With grain first, the vignette darkens the already-grainy
-          output — grain dims in the corners along with everything else. With vignette first, the
-          grain is added on top of the already-darkened corners, so grain stays bright even where
-          the image is dark. Both are useful looks; the choice is a stylistic call.
+          <strong>Stacking order matters.</strong> The {`"grain first?"`} toggle in the panel swaps
+          which overlay runs first. With grain first, the vignette darkens the already-grainy output
+          — grain dims in the corners along with everything else. With vignette first, the grain is
+          added on top of the already-darkened corners, so grain stays bright even where the image
+          is dark. Both are useful looks; the choice is a stylistic call.
         </p>
         <p>
-          <code>softness</code> controls how gradual the falloff is. At <code>0</code> the ring is
-          a hard cutoff; at <code>1</code> the entire canvas is in the falloff (a smooth radial
+          <code>softness</code> controls how gradual the falloff is. At <code>0</code> the ring is a
+          hard cutoff; at <code>1</code> the entire canvas is in the falloff (a smooth radial
           gradient from center to edge). <code>radius</code> is the outer edge of the ring;{' '}
           <code>center</code> is the bright spot in normalized UV space.
         </p>
