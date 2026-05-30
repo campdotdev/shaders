@@ -141,11 +141,10 @@ export default function MeshGradientPage() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;MeshGradient /&gt;</h1>
         <p>
-          Animated four-color mesh gradient with a time-cycling palette crossfade and a sine
-          domain warp for organic motion. Pure gradient — grain is supplied separately by{' '}
-          <code>&lt;FilmGrain&gt;</code>, stacked inside the same{' '}
-          <code>&lt;MatterScene&gt;</code>. Drag grain to <code>0</code> in the panel to see the
-          gradient on its own.
+          Animated four-color mesh gradient with a time-cycling palette crossfade and a sine domain
+          warp for organic motion. Pure gradient — grain is supplied separately by{' '}
+          <code>&lt;FilmGrain&gt;</code>, stacked inside the same <code>&lt;MatterScene&gt;</code>.
+          Drag grain to <code>0</code> in the panel to see the gradient on its own.
         </p>
         <pre
           style={{
