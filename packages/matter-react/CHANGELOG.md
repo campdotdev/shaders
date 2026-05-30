@@ -1,6 +1,6 @@
 # @lovo/matter-react
 
-## 1.0.0
+## 0.3.0
 
 ### Minor Changes
 
@@ -32,7 +32,7 @@
 ### Patch Changes
 
 - Updated dependencies [3856367]
-  - @lovo/matter@1.0.0
+  - @lovo/matter@0.3.0
 
 ## 0.2.0
 
