@@ -13,6 +13,9 @@ const MeshGradient = dynamic(
   () => import('@matter/registry/mesh-gradient').then((m) => m.MeshGradient),
   { ssr: false },
 )
+const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
+  ssr: false,
+})
 
 interface Params {
   speed: number
@@ -74,14 +77,16 @@ export default function MeshGradientPage() {
       max: 3,
       step: 0.01,
     })
-    pane.addBinding(local, 'grain', { min: 0, max: 1, step: 0.01 })
-    pane.addBinding(local, 'grainSpeed', {
-      label: 'grain speed',
+    pane.addBlade({ view: 'separator' })
+
+    const grainFolder = pane.addFolder({ title: 'FilmGrain overlay' })
+    grainFolder.addBinding(local, 'grain', { label: 'intensity', min: 0, max: 1, step: 0.01 })
+    grainFolder.addBinding(local, 'grainSpeed', {
+      label: 'speed',
       min: 0,
       max: 5,
       step: 0.01,
     })
-    pane.addBlade({ view: 'separator' })
 
     const aFolder = pane.addFolder({ title: 'Palette A', expanded: false })
     aFolder.addBinding(local, 'a0', { label: 'color 0' })
@@ -109,11 +114,10 @@ export default function MeshGradientPage() {
             amplitude={params.amplitude}
             cycleSpeed={params.cycleSpeed}
             cycleEase={params.cycleEase}
-            grain={params.grain}
-            grainSpeed={params.grainSpeed}
             paletteA={[params.a0, params.a1, params.a2, params.a3]}
             paletteB={[params.b0, params.b1, params.b2, params.b3]}
           />
+          <FilmGrain intensity={params.grain} speed={params.grainSpeed} />
           <VisualTestPause />
         </MatterScene>
         {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
@@ -136,7 +140,28 @@ export default function MeshGradientPage() {
       </div>
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;MeshGradient /&gt;</h1>
-        <p>Phase 6a — inline subtractive film grain via hash noise.</p>
+        <p>
+          Animated four-color mesh gradient with a time-cycling palette crossfade and a sine
+          domain warp for organic motion. Pure gradient — grain is supplied separately by{' '}
+          <code>&lt;FilmGrain&gt;</code>, stacked inside the same{' '}
+          <code>&lt;MatterScene&gt;</code>. Drag grain to <code>0</code> in the panel to see the
+          gradient on its own.
+        </p>
+        <pre
+          style={{
+            background: '#1a1a2a',
+            color: '#e0e0f0',
+            padding: '1rem',
+            borderRadius: '0.5rem',
+            fontSize: '0.85rem',
+            whiteSpace: 'pre-wrap',
+          }}
+        >
+          {`<MatterScene>
+  <MeshGradient />
+  <FilmGrain intensity={0.08} speed={1} />
+</MatterScene>`}
+        </pre>
       </section>
     </main>
   )
