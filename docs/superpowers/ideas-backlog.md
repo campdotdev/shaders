@@ -159,6 +159,18 @@ Aurora, DotField, LinearGradient, MeshGradient, NoiseField, Waves.
 
 ## Surfaces (overlays meant to layer)
 
+### ~~Film grain~~ — shipped 2026-05-29 (MAT-16)
+
+Standalone `<FilmGrain>` overlay shipped in the same milestone that
+introduced the overlay-component category architecture (PostProcessing
+pipeline + `useOverlayPass`). `<Vignette>` shipped alongside as the
+first read-upstream-pixels overlay. MeshGradient's bundled grain was
+removed in the same milestone — grain is now a one-canonical-overlay
+concern across the library. See
+`docs/superpowers/plans/2026-05-28-filmgrain-overlay-plan.md`.
+
+Original entry retained below for posterity.
+
 ### Film grain
 
 - **What:** standalone `<FilmGrain>` overlay component that can be stacked
