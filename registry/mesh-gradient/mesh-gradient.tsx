@@ -20,20 +20,22 @@ export interface MeshGradientProps {
   paletteB?: [string, string, string, string]
 }
 
-// Vibrant rainbow palette — amber + blue + magenta + lime around the wheel.
+// Cool-spring palette — analogous lime → green → teal → sky spectrum,
+// 115° hue span, lightness decreasing naturally (0.84 → 0.55).
 const DEFAULT_PALETTE_A: [string, string, string, string] = [
-  '#ecb100', // palette.amber.base
-  '#1837e6', // palette.blue.base
-  '#cc1a99', // palette.magenta.base
   '#bcdc33', // palette.lime.base
+  '#0ae24b', // palette.green.base
+  '#00cda6', // palette.teal.base
+  '#007bc6', // palette.sky.base
 ]
 
-// Moody warm palette — deep purple, near-black, vivid magenta, dark amber.
+// Warm-sunset palette — analogous amber → orange → red → magenta spectrum,
+// ~100° hue span through the warm side, lightness decreasing (0.79 → 0.57).
 const DEFAULT_PALETTE_B: [string, string, string, string] = [
-  '#43008e', // palette.violet.dark
-  '#131614', // palette.gray[1]
+  '#ecb100', // palette.amber.base
+  '#ee6600', // palette.orange.base
+  '#ff0029', // palette.red.base
   '#cc1a99', // palette.magenta.base
-  '#b38400', // palette.amber.dark
 ]
 
 export function MeshGradient({
