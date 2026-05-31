@@ -25,7 +25,7 @@ export interface NoiseFieldProps {
   inputs?: { cursor?: CursorSignal }
 }
 
-const DEFAULT_COLORS = ['#202421', '#E7E9E7']  // palette.gray[2] → palette.gray[11]
+const DEFAULT_COLORS = ['#131614', '#E7E9E7']  // palette.gray[1] → palette.gray[11]
 const GRID_STEPS = 6 // hardcoded for variant="grid"; promotable to a prop in v2.
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {

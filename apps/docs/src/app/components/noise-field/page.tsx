@@ -28,7 +28,7 @@ interface Params {
 }
 
 const INITIAL: Params = {
-  color0: palette.gray[2],
+  color0: palette.gray[1],
   color1: palette.gray[11],
   scale: 3,
   speed: 0.4,
@@ -123,7 +123,7 @@ import { NoiseField } from '@/components/matter/noise-field'
     variant="organic"
     scale={3}
     speed={0.4}
-    colors={['#202421', '#E7E9E7']}
+    colors={['#131614', '#E7E9E7']}
   />
 </MatterScene>`}
         </pre>
