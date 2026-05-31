@@ -43,10 +43,10 @@ export interface AuroraProps {
  * just color, rate, and the color-seeded warp.
  */
 export const DEFAULT_LAYERS: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer] = [
-  { hex: '#A3C100', speed: 0.07, intensity: 0.6, variation: 0 },  // palette.lime[9] — brand lime
-  { hex: '#359bff', speed: 0.1, intensity: 0, variation: 5 },     // palette.blue.mid
-  { hex: '#a581fa', speed: 0.15, intensity: 0.3, variation: 11 }, // palette.violet.mid
-  { hex: '#e36ab9', speed: 0.07, intensity: 0, variation: 17 },   // palette.pink.mid
+  { hex: '#09e24b', speed: 0.07, intensity: 0.6, variation: 0 },  // palette.green.mid — Aurora original
+  { hex: '#1837e6', speed: 0.1, intensity: 0, variation: 5 },     // palette.blue.mid — Aurora original
+  { hex: '#661acc', speed: 0.15, intensity: 0.3, variation: 11 }, // palette.violet.mid — Aurora original
+  { hex: '#cc1a99', speed: 0.07, intensity: 0, variation: 17 },   // palette.pink.mid — Aurora original
 ]
 
 export function Aurora({
@@ -59,8 +59,8 @@ export function Aurora({
   driftY = -3.15,
   turbulence = 1.3,
   direction = 'top',
-  horizonColor = '#0B0F0D',  // palette.black — was '#040009'
-  skyColor = '#003569',  // palette.blue.dark — was '#146389'
+  horizonColor = '#040009',
+  skyColor = '#146389',
   layers = DEFAULT_LAYERS,
 }: AuroraProps) {
   return (
