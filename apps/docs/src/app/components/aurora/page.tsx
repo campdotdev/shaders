@@ -56,10 +56,10 @@ const INITIAL: AuroraParams = {
   horizonColor: '#040009',
   skyColor: '#146389',
   layers: [
-    { hex: palette.green.mid, speed: 0.07, intensity: 0.6, variation: 0 },
-    { hex: palette.blue.mid, speed: 0.1, intensity: 0, variation: 5 },
-    { hex: palette.violet.mid, speed: 0.15, intensity: 0.3, variation: 11 },
-    { hex: palette.pink.mid, speed: 0.07, intensity: 0, variation: 17 },
+    { hex: palette.green.base, speed: 0.07, intensity: 0.6, variation: 0 },
+    { hex: palette.blue.base, speed: 0.1, intensity: 0, variation: 5 },
+    { hex: palette.violet.base, speed: 0.15, intensity: 0.3, variation: 11 },
+    { hex: palette.magenta.base, speed: 0.07, intensity: 0, variation: 17 },
   ],
 }
 

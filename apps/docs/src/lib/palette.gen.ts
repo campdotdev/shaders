@@ -1,70 +1,71 @@
-// One-shot generator. Run via `pnpm tsx apps/docs/src/lib/palette.gen.ts`.
+// One-shot generator. Run via `npx tsx apps/docs/src/lib/palette.gen.ts`.
 // Output is hand-copied into apps/docs/src/lib/palette.ts. Committed for reproducibility.
 //
-// NOTE on mid step: 8 hues use OKLCH step 8 (L≈0.58, max chroma C≈0.20).
-// The 4 hues that are Aurora-anchored (green, blue, violet, pink) override
-// mid with Aurora's exact original hexes — those exceed OKLCH's sRGB gamut
-// (chroma ~0.27) and are the canonical vibrant for those hues.
+// 12 accent hues × { light, base, dark }. Hue angles and L/C values were
+// hand-tuned by the user so `base` lands at or near Aurora's vibrancy
+// (chroma up to ~0.26 at the Aurora-anchored hues — green/blue/violet/magenta).
 import { formatHex, parse } from 'culori'
 
 const OKLCH = {
   red: {
-    dark:  'oklch(0.338 0.106 25)',
-    mid:   'oklch(0.591 0.192 25)',
-    light: 'oklch(0.866 0.107 25)',
+    light: 'oklch(0.748 0.200 25)',
+    base:  'oklch(0.628 0.258 25)',
+    dark:  'oklch(0.478 0.210 25)',
   },
   orange: {
-    dark:  'oklch(0.335 0.103 55)',
-    mid:   'oklch(0.588 0.189 55)',
-    light: 'oklch(0.869 0.108 55)',
+    light: 'oklch(0.788 0.155 55)',
+    base:  'oklch(0.668 0.205 55)',
+    dark:  'oklch(0.518 0.165 55)',
   },
   amber: {
-    dark:  'oklch(0.338 0.100 75)',
-    mid:   'oklch(0.592 0.188 75)',
-    light: 'oklch(0.894 0.110 75)',
+    light: 'oklch(0.892 0.120 85)',
+    base:  'oklch(0.792 0.168 85)',
+    dark:  'oklch(0.642 0.140 85)',
   },
-  gold: {
-    dark:  'oklch(0.336 0.097 91)',
-    mid:   'oklch(0.588 0.183 91)',
-    light: 'oklch(0.892 0.108 91)',
+  yellowGreen: {
+    light: 'oklch(0.922 0.140 115)',
+    base:  'oklch(0.842 0.185 115)',
+    dark:  'oklch(0.692 0.160 115)',
   },
-  emerald: {
-    dark:  'oklch(0.318 0.113 165)',
-    mid:   'oklch(0.566 0.202 165)',
-    light: 'oklch(0.831 0.115 165)',
+  green: {
+    light: 'oklch(0.892 0.180 145.897)',
+    base:  'oklch(0.795 0.242 145.897)',
+    dark:  'oklch(0.645 0.200 145.897)',
   },
   teal: {
-    dark:  'oklch(0.319 0.106 180)',
-    mid:   'oklch(0.567 0.187 180)',
-    light: 'oklch(0.839 0.109 180)',
+    light: 'oklch(0.865 0.115 175)',
+    base:  'oklch(0.745 0.165 175)',
+    dark:  'oklch(0.595 0.140 175)',
+  },
+  cyan: {
+    light: 'oklch(0.748 0.095 205)',
+    base:  'oklch(0.628 0.135 205)',
+    dark:  'oklch(0.478 0.115 205)',
   },
   sky: {
-    dark:  'oklch(0.322 0.103 210)',
-    mid:   'oklch(0.571 0.181 210)',
-    light: 'oklch(0.843 0.107 210)',
-  },
-  indigo: {
-    dark:  'oklch(0.329 0.104 275)',
-    mid:   'oklch(0.580 0.190 275)',
-    light: 'oklch(0.850 0.107 275)',
-  },
-  // Aurora-anchored hues — only dark+light are generated; mid is overridden
-  // in palette.ts with Aurora's exact original hex (see header note).
-  green: {
-    dark:  'oklch(0.322 0.103 145)',
-    light: 'oklch(0.843 0.107 145)',
+    light: 'oklch(0.665 0.135 235)',
+    base:  'oklch(0.545 0.175 235)',
+    dark:  'oklch(0.395 0.145 235)',
   },
   blue: {
-    dark:  'oklch(0.328 0.107 252)',
-    light: 'oklch(0.849 0.107 252)',
+    light: 'oklch(0.585 0.200 265.847)',
+    base:  'oklch(0.465 0.258 265.847)',
+    dark:  'oklch(0.345 0.200 265.847)',
   },
   violet: {
-    dark:  'oklch(0.330 0.105 295)',
-    light: 'oklch(0.853 0.107 295)',
+    light: 'oklch(0.580 0.185 293.328)',
+    base:  'oklch(0.460 0.238 293.328)',
+    dark:  'oklch(0.340 0.190 293.328)',
   },
-  pink: {
-    dark:  'oklch(0.333 0.103 343)',
-    light: 'oklch(0.857 0.107 343)',
+  purple: {
+    light: 'oklch(0.630 0.190 320)',
+    base:  'oklch(0.510 0.245 320)',
+    dark:  'oklch(0.360 0.200 320)',
+  },
+  magenta: {
+    light: 'oklch(0.693 0.185 343.895)',
+    base:  'oklch(0.573 0.232 343.895)',
+    dark:  'oklch(0.423 0.190 343.895)',
   },
 } as const
 
@@ -74,6 +75,6 @@ for (const [hue, steps] of Object.entries(OKLCH)) {
     const parsed = parse(oklch)
     if (!parsed) throw new Error(`culori failed to parse ${oklch}`)
     const hex = formatHex(parsed)
-    console.log(`  ${step.padEnd(6)} ${oklch.padEnd(28)} -> ${hex}`)
+    console.log(`  ${step.padEnd(6)} ${oklch.padEnd(32)} -> ${hex}`)
   }
 }

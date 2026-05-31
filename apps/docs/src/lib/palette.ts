@@ -1,8 +1,9 @@
 // Matter example color palette.
 //
 // Brand foundation (gray + lime full 12-step scales) defines the chrome.
-// Accent palette (12 hues × dark/mid/light) gives example components 36 vibrant
-// picks sampled from a shared OKLCH master at perceptually-equivalent steps.
+// Accent palette (12 hues × light/base/dark) is hand-tuned in OKLCH so that
+// `base` lands at or near Aurora's vibrancy. Hues at 25/55/85/115/146/175/
+// 205/235/266/293/320/344° around the wheel.
 //
 // Hex values for the accent palette are sRGB conversions of OKLCH definitions;
 // see `palette.gen.ts` for the conversion script. Brand gray and lime hex are
@@ -31,138 +32,137 @@ export const lime = [
 /** Canonical brand lime alias. Equivalent to `lime[9]`. */
 export const brandLime = lime[9]
 
-// Accent palette — dark/light are OKLCH-derived (steps 4 and 11); mid uses
-// max-chroma OKLCH step 8 for most hues. The four Aurora-anchored hues
-// (green, blue, violet, pink) override mid with Aurora's exact original
-// hexes — these exceed OKLCH's sRGB gamut (chroma ~0.27) and are the
-// canonical "vibrant" for those hues. Aurora's defaults pull from this set.
+// Accent palette — { light, base, dark } per hue. All values are OKLCH-derived
+// (see palette.gen.ts). `base` is the vibrant peak — at the Aurora-anchored
+// hues (green/blue/violet/magenta) it lands within 1 byte of Aurora's
+// original hexes, by design.
 
-/** Accent: red (h=25, warm red). */
+/** Accent: red (h=25). */
 export const red = {
-  /** oklch(0.338 0.106 25) */
-  dark:  '#631919',
-  /** oklch(0.591 0.192 25) — vibrant peak (max chroma) */
-  mid:   '#d83d3e',
-  /** oklch(0.866 0.107 25) — soft tint */
-  light: '#ffb7af',
+  /** oklch(0.748 0.200 25) */
+  light: '#ff6f6a',
+  /** oklch(0.628 0.258 25) */
+  base:  '#ff0029',
+  /** oklch(0.478 0.210 25) */
+  dark:  '#b60010',
 } as const
 
-/** Accent: orange (h=55, warm). */
+/** Accent: orange (h=55). */
 export const orange = {
-  /** oklch(0.335 0.103 55) */
-  dark:  '#5d2300',
-  /** oklch(0.588 0.189 55) — vibrant peak (max chroma) */
-  mid:   '#cc5200',
-  /** oklch(0.869 0.108 55) — soft tint */
-  light: '#ffc18e',
+  /** oklch(0.788 0.155 55) */
+  light: '#ff9c4d',
+  /** oklch(0.668 0.205 55) */
+  base:  '#ee6600',
+  /** oklch(0.518 0.165 55) */
+  dark:  '#ac4400',
 } as const
 
-/** Accent: amber (h=75, warm). */
+/** Accent: amber (h=85). */
 export const amber = {
-  /** oklch(0.338 0.100 75) */
-  dark:  '#542d00',
-  /** oklch(0.592 0.188 75) — vibrant peak (max chroma) */
-  mid:   '#bc6600',
-  /** oklch(0.894 0.110 75) — soft tint */
-  light: '#ffd287',
+  /** oklch(0.892 0.120 85) */
+  light: '#ffd57a',
+  /** oklch(0.792 0.168 85) */
+  base:  '#ecb100',
+  /** oklch(0.642 0.140 85) */
+  dark:  '#b38400',
 } as const
 
-/** Accent: gold (h=91, yellow-gold). */
-export const gold = {
-  /** oklch(0.336 0.097 91) */
-  dark:  '#4a3300',
-  /** oklch(0.588 0.183 91) — vibrant peak (max chroma) */
-  mid:   '#a57400',
-  /** oklch(0.892 0.108 91) — soft tint */
-  light: '#f6d986',
+/** Accent: yellowGreen (h=115). */
+export const yellowGreen = {
+  /** oklch(0.922 0.140 115) */
+  light: '#e2f07e',
+  /** oklch(0.842 0.185 115) */
+  base:  '#c8d81e',
+  /** oklch(0.692 0.160 115) */
+  dark:  '#9aa600',
 } as const
 
-/** Accent: green (h=145). Aurora-anchored: mid is Aurora's original spring green. */
+/** Accent: green (h=145.897). Base matches Aurora's original spring green. */
 export const green = {
-  /** oklch(0.322 0.103 145) */
-  dark:  '#00400a',
-  /** Aurora original — exceeds OKLCH sRGB gamut (~L 0.81, C 0.27) */
-  mid:   '#09e24b',
-  /** oklch(0.843 0.107 145) — soft tint */
-  light: '#9fdea0',
+  /** oklch(0.892 0.180 145.897) */
+  light: '#84fa90',
+  /** oklch(0.795 0.242 145.897) — Aurora-anchored vibrant */
+  base:  '#0ae24b',
+  /** oklch(0.645 0.200 145.897) */
+  dark:  '#00ab34',
 } as const
 
-/** Accent: emerald (h=165, blue-leaning green). */
-export const emerald = {
-  /** oklch(0.318 0.113 165) */
-  dark:  '#004323',
-  /** oklch(0.566 0.202 165) — vibrant peak (max chroma) */
-  mid:   '#009857',
-  /** oklch(0.831 0.115 165) — soft tint */
-  light: '#78dfb5',
-} as const
-
-/** Accent: teal (h=180, cyan). */
+/** Accent: teal (h=175). */
 export const teal = {
-  /** oklch(0.319 0.106 180) */
-  dark:  '#004235',
-  /** oklch(0.567 0.187 180) — vibrant peak (max chroma) */
-  mid:   '#00977b',
-  /** oklch(0.839 0.109 180) — soft tint */
-  light: '#70e2cd',
+  /** oklch(0.865 0.115 175) */
+  light: '#77ebce',
+  /** oklch(0.745 0.165 175) */
+  base:  '#00cda6',
+  /** oklch(0.595 0.140 175) */
+  dark:  '#00987a',
 } as const
 
-/** Accent: sky (h=210, sky blue). */
+/** Accent: cyan (h=205). */
+export const cyan = {
+  /** oklch(0.748 0.095 205) */
+  light: '#5abfca',
+  /** oklch(0.628 0.135 205) */
+  base:  '#009eaf',
+  /** oklch(0.478 0.115 205) */
+  dark:  '#006e7c',
+} as const
+
+/** Accent: sky (h=235). */
 export const sky = {
-  /** oklch(0.322 0.103 210) */
-  dark:  '#003f50',
-  /** oklch(0.571 0.181 210) — vibrant peak (max chroma) */
-  mid:   '#0090b2',
-  /** oklch(0.843 0.107 210) — soft tint */
-  light: '#6cdff2',
+  /** oklch(0.665 0.135 235) */
+  light: '#1b9fda',
+  /** oklch(0.545 0.175 235) */
+  base:  '#007bc6',
+  /** oklch(0.395 0.145 235) */
+  dark:  '#004d87',
 } as const
 
-/** Accent: blue (h=252, cool primary). Aurora-anchored: mid is Aurora's original cobalt. */
+/** Accent: blue (h=265.847). Base matches Aurora's original cobalt. */
 export const blue = {
-  /** oklch(0.328 0.107 252) */
-  dark:  '#003569',
-  /** Aurora original — exceeds OKLCH sRGB gamut (~L 0.48, C 0.27) */
-  mid:   '#1837e6',
-  /** oklch(0.849 0.107 252) — soft tint */
-  light: '#9ad2ff',
+  /** oklch(0.585 0.200 265.847) */
+  light: '#4370f0',
+  /** oklch(0.465 0.258 265.847) — Aurora-anchored vibrant */
+  base:  '#1837e6',
+  /** oklch(0.345 0.200 265.847) */
+  dark:  '#0b1e9e',
 } as const
 
-/** Accent: indigo (h=275). */
-export const indigo = {
-  /** oklch(0.329 0.104 275) */
-  dark:  '#272d69',
-  /** oklch(0.580 0.190 275) — vibrant peak (max chroma) */
-  mid:   '#5e69e8',
-  /** oklch(0.850 0.107 275) — soft tint */
-  light: '#b9c8ff',
-} as const
-
-/** Accent: violet (h=295, deep). Aurora-anchored: mid is Aurora's original violet. */
+/** Accent: violet (h=293.328). Base matches Aurora's original violet. */
 export const violet = {
-  /** oklch(0.330 0.105 295) */
-  dark:  '#3b2664',
-  /** Aurora original — exceeds OKLCH sRGB gamut (~L 0.45, C 0.26) */
-  mid:   '#661acc',
-  /** oklch(0.853 0.107 295) — soft tint */
-  light: '#d3c1ff',
+  /** oklch(0.580 0.185 293.328) */
+  light: '#825ddb',
+  /** oklch(0.460 0.238 293.328) — Aurora-anchored vibrant */
+  base:  '#661acc',
+  /** oklch(0.340 0.190 293.328) */
+  dark:  '#43008e',
 } as const
 
-/** Accent: pink (h=343, accent / contrast). Aurora-anchored: mid is Aurora's original magenta. */
-export const pink = {
-  /** oklch(0.333 0.103 343) */
-  dark:  '#581b44',
-  /** Aurora original — exceeds OKLCH sRGB gamut (~L 0.56, C 0.24) */
-  mid:   '#cc1a99',
-  /** oklch(0.857 0.107 343) — soft tint */
-  light: '#ffb4e3',
+/** Accent: purple (h=320). */
+export const purple = {
+  /** oklch(0.630 0.190 320) */
+  light: '#ba5bcf',
+  /** oklch(0.510 0.245 320) */
+  base:  '#9e00ba',
+  /** oklch(0.360 0.200 320) */
+  dark:  '#66007b',
+} as const
+
+/** Accent: magenta (h=343.895). Base matches Aurora's original magenta. */
+export const magenta = {
+  /** oklch(0.693 0.185 343.895) */
+  light: '#e765b8',
+  /** oklch(0.573 0.232 343.895) — Aurora-anchored vibrant */
+  base:  '#cc1a99',
+  /** oklch(0.423 0.190 343.895) */
+  dark:  '#8c0067',
 } as const
 
 /** Convenience grouping for iteration. */
 export const palette = {
   black, white, gray, lime, brandLime,
-  red, orange, amber, gold,
-  green, emerald, teal, sky, blue,
-  indigo, violet, pink,
+  red, orange, amber, yellowGreen,
+  green, teal, cyan, sky,
+  blue, violet, purple, magenta,
 } as const
 
 /**
@@ -183,67 +183,63 @@ export const paletteOklch = {
     'oklch(0.761 0.186 120)', 'oklch(0.875 0.117 120)', 'oklch(0.933 0.068 120)',
   ] as const,
   red: {
-    dark:  'oklch(0.338 0.106 25)',
-    mid:   'oklch(0.591 0.192 25)',
-    light: 'oklch(0.866 0.107 25)',
+    light: 'oklch(0.748 0.200 25)',
+    base:  'oklch(0.628 0.258 25)',
+    dark:  'oklch(0.478 0.210 25)',
   },
   orange: {
-    dark:  'oklch(0.335 0.103 55)',
-    mid:   'oklch(0.588 0.189 55)',
-    light: 'oklch(0.869 0.108 55)',
+    light: 'oklch(0.788 0.155 55)',
+    base:  'oklch(0.668 0.205 55)',
+    dark:  'oklch(0.518 0.165 55)',
   },
   amber: {
-    dark:  'oklch(0.338 0.100 75)',
-    mid:   'oklch(0.592 0.188 75)',
-    light: 'oklch(0.894 0.110 75)',
+    light: 'oklch(0.892 0.120 85)',
+    base:  'oklch(0.792 0.168 85)',
+    dark:  'oklch(0.642 0.140 85)',
   },
-  gold: {
-    dark:  'oklch(0.336 0.097 91)',
-    mid:   'oklch(0.588 0.183 91)',
-    light: 'oklch(0.892 0.108 91)',
+  yellowGreen: {
+    light: 'oklch(0.922 0.140 115)',
+    base:  'oklch(0.842 0.185 115)',
+    dark:  'oklch(0.692 0.160 115)',
   },
   green: {
-    dark:  'oklch(0.322 0.103 145)',
-    // Aurora original — exceeds OKLCH sRGB gamut, so render as hex.
-    mid:   '#09e24b',
-    light: 'oklch(0.843 0.107 145)',
-  },
-  emerald: {
-    dark:  'oklch(0.318 0.113 165)',
-    mid:   'oklch(0.566 0.202 165)',
-    light: 'oklch(0.831 0.115 165)',
+    light: 'oklch(0.892 0.180 145.897)',
+    base:  'oklch(0.795 0.242 145.897)',
+    dark:  'oklch(0.645 0.200 145.897)',
   },
   teal: {
-    dark:  'oklch(0.319 0.106 180)',
-    mid:   'oklch(0.567 0.187 180)',
-    light: 'oklch(0.839 0.109 180)',
+    light: 'oklch(0.865 0.115 175)',
+    base:  'oklch(0.745 0.165 175)',
+    dark:  'oklch(0.595 0.140 175)',
+  },
+  cyan: {
+    light: 'oklch(0.748 0.095 205)',
+    base:  'oklch(0.628 0.135 205)',
+    dark:  'oklch(0.478 0.115 205)',
   },
   sky: {
-    dark:  'oklch(0.322 0.103 210)',
-    mid:   'oklch(0.571 0.181 210)',
-    light: 'oklch(0.843 0.107 210)',
+    light: 'oklch(0.665 0.135 235)',
+    base:  'oklch(0.545 0.175 235)',
+    dark:  'oklch(0.395 0.145 235)',
   },
   blue: {
-    dark:  'oklch(0.328 0.107 252)',
-    // Aurora original — exceeds OKLCH sRGB gamut, so render as hex.
-    mid:   '#1837e6',
-    light: 'oklch(0.849 0.107 252)',
-  },
-  indigo: {
-    dark:  'oklch(0.329 0.104 275)',
-    mid:   'oklch(0.580 0.190 275)',
-    light: 'oklch(0.850 0.107 275)',
+    light: 'oklch(0.585 0.200 265.847)',
+    base:  'oklch(0.465 0.258 265.847)',
+    dark:  'oklch(0.345 0.200 265.847)',
   },
   violet: {
-    dark:  'oklch(0.330 0.105 295)',
-    // Aurora original — exceeds OKLCH sRGB gamut, so render as hex.
-    mid:   '#661acc',
-    light: 'oklch(0.853 0.107 295)',
+    light: 'oklch(0.580 0.185 293.328)',
+    base:  'oklch(0.460 0.238 293.328)',
+    dark:  'oklch(0.340 0.190 293.328)',
   },
-  pink: {
-    dark:  'oklch(0.333 0.103 343)',
-    // Aurora original — exceeds OKLCH sRGB gamut, so render as hex.
-    mid:   '#cc1a99',
-    light: 'oklch(0.857 0.107 343)',
+  purple: {
+    light: 'oklch(0.630 0.190 320)',
+    base:  'oklch(0.510 0.245 320)',
+    dark:  'oklch(0.360 0.200 320)',
+  },
+  magenta: {
+    light: 'oklch(0.693 0.185 343.895)',
+    base:  'oklch(0.573 0.232 343.895)',
+    dark:  'oklch(0.423 0.190 343.895)',
   },
 } as const
