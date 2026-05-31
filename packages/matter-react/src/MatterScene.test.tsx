@@ -1,6 +1,7 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vite-plus/test'
-import { render, waitFor } from '@testing-library/react'
 import type * as MatterModule from '@lovo/matter'
+import { render, waitFor } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { MatterScene } from './MatterScene.js'
 
 // Mock createRenderer because happy-dom cannot initialize WebGPU.
@@ -8,6 +9,7 @@ import { MatterScene } from './MatterScene.js'
 // createIntersectionWatcher) work fine in happy-dom and don't need mocking.
 vi.mock('@lovo/matter', async (importOriginal) => {
   const actual = await importOriginal<typeof MatterModule>()
+
   return {
     ...actual,
     createRenderer: vi.fn(async () => ({
@@ -36,6 +38,7 @@ describe('MatterScene', () => {
 
   it('mounts a canvas element', () => {
     const { container } = render(<MatterScene />)
+
     expect(container.querySelector('canvas')).toBeInTheDocument()
   })
 
@@ -43,11 +46,13 @@ describe('MatterScene', () => {
     // createRenderer is async; on the initial render ctx is null so the
     // fallback prop is shown.
     const { container } = render(<MatterScene fallback={<div data-testid="fb">loading</div>} />)
+
     expect(container.querySelector('[data-testid="fb"]')).toBeInTheDocument()
   })
 
   it('does not throw on unmount', async () => {
     const { unmount } = render(<MatterScene />)
+
     // Allow a tick for the async setup to run (or be cancelled).
     await waitFor(() => {})
     expect(() => unmount()).not.toThrow()

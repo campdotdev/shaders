@@ -50,6 +50,7 @@ export class CursorInput {
 
   constructor(opts: CursorInputOptions = {}) {
     const { smoothing = 0.1, initial = [0.5, 0.5], target, element } = opts
+
     this.smoothing = clamp01(smoothing)
     this.value = [initial[0], initial[1]]
     this.target = [initial[0], initial[1]]
@@ -58,6 +59,7 @@ export class CursorInput {
 
     this.handleMouseMove = (e: Event) => {
       const me = e as MouseEvent
+
       if (this.element) {
         // Normalize to 0..1 across the element's bounding rect. Reading the
         // rect on every move is fine — `getBoundingClientRect` is cheap and
@@ -67,6 +69,7 @@ export class CursorInput {
         const r = this.element.getBoundingClientRect()
         const w = r.width || 1
         const h = r.height || 1
+
         this.target = [(me.clientX - r.left) / w, (me.clientY - r.top) / h]
       } else {
         // Fallback: viewport-normalized. Used when no element is supplied —
@@ -74,6 +77,7 @@ export class CursorInput {
         // <MatterScene>'s context.
         const w = (typeof window !== 'undefined' && window.innerWidth) || 1
         const h = (typeof window !== 'undefined' && window.innerHeight) || 1
+
         this.target = [me.clientX / w, me.clientY / h]
       }
       this.targetDirty = true
@@ -90,6 +94,7 @@ export class CursorInput {
   /** Subscribe to change events. Returns an unsubscribe function. */
   on(_event: 'change', cb: ChangeListener): () => void {
     this.listeners.add(cb)
+
     return () => this.listeners.delete(cb)
   }
 
@@ -105,10 +110,12 @@ export class CursorInput {
     const next0 = lerp(prev0, this.target[0], factor)
     const next1 = lerp(prev1, this.target[1], factor)
     const moved = next0 !== prev0 || next1 !== prev1
+
     if (moved || this.targetDirty) {
       this.value = [next0, next1]
       this.targetDirty = false
       const snapshot: Vec2 = [next0, next1]
+
       for (const listener of this.listeners) listener(snapshot)
     }
   }

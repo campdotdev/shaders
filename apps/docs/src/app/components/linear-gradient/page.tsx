@@ -1,7 +1,8 @@
 import { CodeBlock } from '@/components/CodeBlock'
-import { readRegistrySource } from '@/lib/registrySources'
 import type { PropSchema } from '@/components/PropsPlayground'
 import { palette } from '@/lib/palette'
+import { readRegistrySource } from '@/lib/registrySources'
+
 import { PageBody } from './PageBody'
 
 // Schema declared inline here for 4.2.a (the prototype phase). Phase 4.2.b
@@ -29,8 +30,7 @@ export default async function LinearGradientPage() {
         Animated linear or radial gradient with optional cursor parallax. The simplest, foundational
         Matter component.
       </p>
-
-      <PageBody schema={SCHEMA} code={<CodeBlock source={source} lang="tsx" />} />
+      <PageBody code={<CodeBlock lang="tsx" source={source} />} schema={SCHEMA} />
     </div>
   )
 }

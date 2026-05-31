@@ -1,12 +1,13 @@
 // apps/docs/app/components/aurora/page.tsx
 'use client'
 
+import type { AuroraDirection } from '@matter/registry/aurora'
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
-import dynamic from 'next/dynamic'
-import { VisualTestPause } from '@/lib/visualTestHooks'
+
 import { palette } from '@/lib/palette'
-import type { AuroraDirection } from '@matter/registry/aurora'
+import { VisualTestPause } from '@/lib/visualTestHooks'
 
 // Plain (non-signal) per-layer state for tweakpane. Numbers are assignable
 // to AnimatableProp<number> at the prop boundary so we hand this straight
@@ -70,6 +71,7 @@ const LAYER_TITLES = ['Layer 0 (back)', 'Layer 1', 'Layer 2', 'Layer 3 (front)']
 // user actually cares about.
 const fmtNum = (n: number) => {
   const r = Math.round(n * 10000) / 10000
+
   return String(r)
 }
 
@@ -126,6 +128,7 @@ export default function AuroraPage() {
 
   useEffect(() => {
     const container = paneContainerRef.current
+
     if (!container) return
     // Tweakpane mutates `local` in place; we sync to React state on `change`.
     const local: AuroraParams = JSON.parse(JSON.stringify(INITIAL))
@@ -155,12 +158,13 @@ export default function AuroraPage() {
       Object.assign(local.layers[i]!, INITIAL.layers[i]!)
       savedIntensities[i] = INITIAL.layers[i]!.intensity
       const btn = muteBtns[i]
+
       if (btn) btn.title = 'Mute layer'
     }
 
     pane.addButton({ title: 'Reset all' }).on('click', () => {
       resetGlobals()
-      for (let i = 0; i < 4; i++) resetLayer(i)
+      for (let i = 0; i < 4; i += 1) resetLayer(i)
       pane.refresh()
       syncToReact()
     })
@@ -176,10 +180,12 @@ export default function AuroraPage() {
       }, 1200)
     }
     const jsxBtn = pane.addButton({ title: 'Copy JSX' })
+
     jsxBtn.on('click', () => {
       void navigator.clipboard.writeText(fmtJsx(local)).then(() => flashCopied(jsxBtn, 'Copy JSX'))
     })
     const paramsBtn = pane.addButton({ title: 'Copy params' })
+
     paramsBtn.on('click', () => {
       void navigator.clipboard
         .writeText(fmtParams(local))
@@ -189,6 +195,7 @@ export default function AuroraPage() {
     pane.addBlade({ view: 'separator' })
 
     const globals = pane.addFolder({ title: 'Global' })
+
     globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 })
     globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 })
     globals.addBinding(local, 'densityX', { label: 'density X', min: 0.5, max: 10, step: 0.05 })
@@ -204,7 +211,7 @@ export default function AuroraPage() {
     globals.addBinding(local, 'horizonColor', { label: 'horizon' })
     globals.addBinding(local, 'skyColor', { label: 'sky' })
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i += 1) {
       const folder = pane.addFolder({
         title: LAYER_TITLES[i]!,
         expanded: i === 0,
@@ -214,6 +221,7 @@ export default function AuroraPage() {
       const muteBtn = folder.addButton({
         title: layer.intensity > 0 ? 'Mute layer' : 'Unmute layer',
       })
+
       muteBtns[i] = muteBtn
       muteBtn.on('click', () => {
         if (layer.intensity > 0) {
@@ -222,6 +230,7 @@ export default function AuroraPage() {
           muteBtn.title = 'Unmute layer'
         } else {
           const restore = savedIntensities[i] ?? INITIAL.layers[i]!.intensity
+
           layer.intensity = restore > 0 ? restore : INITIAL.layers[i]!.intensity
           muteBtn.title = 'Mute layer'
         }
@@ -257,18 +266,18 @@ export default function AuroraPage() {
       <div style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
         <MatterScene>
           <Aurora
-            intensity={params.intensity}
-            speed={params.speed}
             densityX={params.densityX}
             densityY={params.densityY}
-            falloff={params.falloff}
+            direction={params.direction}
             driftX={params.driftX}
             driftY={params.driftY}
-            turbulence={params.turbulence}
-            direction={params.direction}
+            falloff={params.falloff}
             horizonColor={params.horizonColor}
-            skyColor={params.skyColor}
+            intensity={params.intensity}
             layers={params.layers}
+            skyColor={params.skyColor}
+            speed={params.speed}
+            turbulence={params.turbulence}
           />
           <VisualTestPause />
         </MatterScene>
@@ -282,9 +291,9 @@ export default function AuroraPage() {
             accessible surface. (`inert` would have blocked mouse input too —
             regression noted 2026-05-13.) */}
         <div
-          ref={paneContainerRef}
-          data-tweakpane-host
           aria-hidden="true"
+          data-tweakpane-host
+          ref={paneContainerRef}
           style={{
             position: 'absolute',
             top: '1rem',

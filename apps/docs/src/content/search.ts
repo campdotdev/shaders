@@ -1,4 +1,5 @@
 import { cache } from 'react'
+
 import { getComponentsCatalog, getPrimitivesCatalog } from './catalog'
 import { getMdxDocsPages } from './source'
 import type { DocsSearchDocument } from './types'

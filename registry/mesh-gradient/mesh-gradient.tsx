@@ -1,7 +1,8 @@
 'use client'
 
-import { MeshGradientShader } from './shader'
 import type { AnimatableProp } from '@lovo/matter-react'
+
+import { MeshGradientShader } from './shader'
 
 export interface MeshGradientProps {
   /** Global animation rate. Default 2. */
@@ -49,13 +50,13 @@ export function MeshGradient({
 }: MeshGradientProps) {
   return (
     <MeshGradientShader
-      speed={speed}
-      frequency={frequency}
       amplitude={amplitude}
-      cycleSpeed={cycleSpeed}
       cycleEase={cycleEase}
+      cycleSpeed={cycleSpeed}
+      frequency={frequency}
       paletteA={paletteA}
       paletteB={paletteB}
+      speed={speed}
     />
   )
 }

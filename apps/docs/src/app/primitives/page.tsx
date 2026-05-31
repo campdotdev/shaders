@@ -1,4 +1,5 @@
 import Link from 'next/link'
+
 import { PRIMITIVES } from '@/data/primitives'
 
 export const metadata = {

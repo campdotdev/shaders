@@ -2,10 +2,12 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+
 import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types'
 
 function NavItemLink({ item, pathname }: { item: ResolvedNavItem; pathname: string }) {
   const active = item.url === pathname
+
   return (
     <li>
       <Link
@@ -60,10 +62,10 @@ function NavGroupBlock({
         {group.items.map((item, i) =>
           'items' in item ? (
             <li key={`g-${i}`} style={{ marginTop: '0.5rem' }}>
-              <NavGroupBlock group={item} pathname={pathname} depth={depth + 1} />
+              <NavGroupBlock depth={depth + 1} group={item} pathname={pathname} />
             </li>
           ) : (
-            <NavItemLink key={item.url} item={item} pathname={pathname} />
+            <NavItemLink item={item} key={item.url} pathname={pathname} />
           ),
         )}
       </ul>
@@ -73,6 +75,7 @@ function NavGroupBlock({
 
 export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   const pathname = usePathname()
+
   return (
     <nav
       aria-label="Docs"
@@ -88,7 +91,7 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
       }}
     >
       {tree.map((group) => (
-        <NavGroupBlock key={group.label} group={group} pathname={pathname} />
+        <NavGroupBlock group={group} key={group.label} pathname={pathname} />
       ))}
     </nav>
   )

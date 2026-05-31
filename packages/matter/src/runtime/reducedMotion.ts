@@ -84,10 +84,15 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
         // No-op: SSR watchers are not in state.watchers and will never
         // receive policy-change notifications.
         void cb
-        return () => {}
+
+        return () => {
+          // SSR no-op unsubscribe
+        }
       },
       /** SSR watcher does not emit policy-change notifications. */
-      dispose: () => {},
+      dispose: () => {
+        // SSR no-op dispose
+      },
     }
   }
 
@@ -97,6 +102,7 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
 
   const onChange = () => {
     const next = computeScale(mql.matches)
+
     if (next !== last) {
       last = next
       for (const cb of subs) cb(next)
@@ -109,10 +115,12 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
     scale: () => last,
     subscribe(cb) {
       subs.add(cb)
+
       return () => subs.delete(cb)
     },
     recompute() {
       const next = computeScale(mql.matches)
+
       if (next !== last) {
         last = next
         for (const cb of subs) cb(next)
@@ -124,7 +132,9 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
       state.watchers.delete(watcher)
     },
   }
+
   state.watchers.add(watcher)
+
   return watcher
 }
 
@@ -146,6 +156,7 @@ export function getReducedMotionTimeScale(): ShaderNodeObject<Node> {
       ;(globalScaleUniform as unknown as { value: number }).value = s
     })
   }
+
   return globalScaleUniform
 }
 

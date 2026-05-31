@@ -1,17 +1,17 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
-import { vec3, vec2, mod, length, uv, uniform } from 'three/tsl'
-import { time, colorRamp, type ColorRampStop } from '@lovo/matter'
+import { colorRamp, type ColorRampStop, time } from '@lovo/matter'
 import {
-  useMatterContext,
-  useAnimatableUniform,
-  useCursor,
-  useStaticHint,
   type AnimatableProp,
   type CursorSignal,
+  useAnimatableUniform,
+  useCursor,
+  useMatterContext,
+  useStaticHint,
 } from '@lovo/matter-react'
+import { useEffect, useMemo } from 'react'
+import { length, mod, uniform, uv, vec2, vec3 } from 'three/tsl'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 
 export interface LinearGradientProps {
   colors?: AnimatableProp<string[]>
@@ -30,6 +30,7 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const r = parseInt(clean.slice(0, 2), 16) / 255
   const g = parseInt(clean.slice(2, 4), 16) / 255
   const b = parseInt(clean.slice(4, 6), 16) / 255
+
   return [r, g, b]
 }
 
@@ -39,6 +40,7 @@ const isSignalLike = (v: unknown): v is { get(): unknown } =>
 const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => {
   if (prop === undefined) return DEFAULT_COLORS
   if (isSignalLike(prop)) return (prop as { get(): string[] }).get()
+
   return prop
 }
 
@@ -49,6 +51,7 @@ export function LinearGradient(props: LinearGradientProps) {
   const cursor = cursorFromInputs ?? (props.interactive ? cursorAuto : null)
 
   const isStatic = typeof props.speed === 'number' && props.speed === 0
+
   useStaticHint(isStatic)
 
   const colors = resolveColors(props.colors)
@@ -77,11 +80,13 @@ export function LinearGradient(props: LinearGradientProps) {
       return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y))
     }
     const fp = props.focalPoint
+
     if (Array.isArray(fp)) {
       cursorVec.set(fp[0] ?? 0.5, 1 - (fp[1] ?? 0.5))
     } else {
       cursorVec.set(0.5, 0.5)
     }
+
     return undefined
   }, [cursor, cursorVec, props.focalPoint])
 
@@ -90,6 +95,7 @@ export function LinearGradient(props: LinearGradientProps) {
 
     const stops: ColorRampStop[] = colors.map((hex, i) => {
       const [r, g, b] = hexToVec3(hex)
+
       return {
         color: vec3(r, g, b),
         position: i / Math.max(colors.length - 1, 1),
@@ -102,6 +108,7 @@ export function LinearGradient(props: LinearGradientProps) {
     // raw uniform node didn't propagate the value through the GPU
     // pipeline reliably; the arg form does.
     let tNode
+
     if (props.variant === 'radial') {
       // Radial: t is distance from focal. When interactive, the focal
       // tracks the cursor (DOM-y already inverted in the change handler).
@@ -112,6 +119,7 @@ export function LinearGradient(props: LinearGradientProps) {
       const angleRad = (angleUniform as unknown as { value: number }).value * (Math.PI / 180)
       const dirX = Math.cos(angleRad)
       const dirY = Math.sin(angleRad)
+
       tNode = uv().sub(cursorUniform).dot(vec2(dirX, dirY)).add(0.5)
     }
 
@@ -128,13 +136,13 @@ export function LinearGradient(props: LinearGradientProps) {
             .oneMinus()
 
     const material = new MeshBasicNodeMaterial()
-    material.colorNode = colorRamp(
-      tAnimated,
-      stops,
-    ) as unknown as MeshBasicNodeMaterial['colorNode']
+
+    material.colorNode = colorRamp(tAnimated, stops)
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
+
     return () => {
       ctx.scene.remove(mesh)
       // three's WebGPURenderer can throw inside `material.dispose()` when
@@ -147,13 +155,13 @@ export function LinearGradient(props: LinearGradientProps) {
       } catch (err) {
         // Known benign three.js webgpu race during rapid material churn —
         // see CLAUDE.md gotchas. Demoted to debug so it doesn't spam logs.
-        // oxlint-disable-next-line no-console
+        // eslint-disable-next-line no-console
         console.debug('[LinearGradient] material.dispose ignored:', err)
       }
       try {
         mesh.geometry.dispose()
       } catch (err) {
-        // oxlint-disable-next-line no-console
+        // eslint-disable-next-line no-console
         console.debug('[LinearGradient] geometry.dispose ignored:', err)
       }
     }

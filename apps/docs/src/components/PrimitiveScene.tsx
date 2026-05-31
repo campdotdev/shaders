@@ -1,23 +1,24 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
-import type { ShaderNodeObject } from 'three/tsl'
-import { uv, vec2, vec3, vec4, uniform, sin, smoothstep, mix } from 'three/tsl'
 import {
-  time,
-  noise,
-  fbm,
-  voronoi,
-  quantize,
-  sdfCircle,
-  displace,
-  cursorRipple,
   colorRamp,
   type ColorRampStop,
+  cursorRipple,
+  displace,
+  fbm,
+  noise,
+  quantize,
+  sdfCircle,
+  time,
+  voronoi,
 } from '@lovo/matter'
 import { MatterScene, useMatterContext } from '@lovo/matter-react'
+import { useEffect, useMemo } from 'react'
+import type { ShaderNodeObject } from 'three/tsl'
+import { mix, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
+import type { Node } from 'three/webgpu'
+
 import type { PropsState } from './PropsPlayground'
 
 interface PrimitiveSceneProps {
@@ -33,14 +34,16 @@ interface PrimitiveSceneProps {
 // gotcha-#12-safe answer for the prototype demo.
 const buildStructuralKey = (slug: string, params: PropsState): string => {
   const keys = Object.keys(params).sort()
+
   return `${slug}|${keys.map((k) => `${k}=${String(params[k])}`).join('|')}`
 }
 
 export function PrimitiveScene({ slug, params }: PrimitiveSceneProps) {
   const remountKey = buildStructuralKey(slug, params)
+
   return (
     <MatterScene>
-      <PrimitiveMesh key={remountKey} slug={slug} params={params} />
+      <PrimitiveMesh key={remountKey} params={params} slug={slug} />
     </MatterScene>
   )
 }
@@ -60,6 +63,7 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
     if (!ctx) return
 
     let colorNode: ShaderNodeObject<Node>
+
     switch (slug) {
       case 'color-ramp': {
         // Sample a fixed 3-stop ramp at a position the user controls.
@@ -76,31 +80,29 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
         // a "cursor" (the visualized sample line) by moving the position
         // slider. We render the full ramp (uv.x) underneath, then overlay a
         // brighter readout where uv.x ≈ position.
-        const baseColor = colorRamp(uv().x as never, stops) as ShaderNodeObject<Node>
-        const distFromMarker = (uv().x as ShaderNodeObject<Node>).sub(position).abs()
-        const marker = smoothstep(0.01, 0, distFromMarker as never) as ShaderNodeObject<Node>
+        const baseColor = colorRamp(uv().x, stops)
+        const distFromMarker = uv().x.sub(position).abs()
+        const marker = smoothstep(0.01, 0, distFromMarker) as ShaderNodeObject<Node>
         // Brighten the band at the marker position so the user can see the
         // sampled color "pin" against the background ramp.
-        const lit = mix(
-          baseColor,
-          vec3(1, 1, 1),
-          marker.mul(0.6) as never,
-        ) as ShaderNodeObject<Node>
-        colorNode = vec4(lit as never, 1) as never
+        const lit = mix(baseColor, vec3(1, 1, 1), marker.mul(0.6)) as ShaderNodeObject<Node>
+
+        colorNode = vec4(lit, 1)
         break
       }
 
       case 'noise': {
         const scale = (params.scale as number | undefined) ?? 3
         const speed = (params.speed as number | undefined) ?? 0.3
-        const t = (time as ShaderNodeObject<Node>).mul(speed)
+        const t = time.mul(speed)
         const p = (uv() as ShaderNodeObject<Node>)
           .mul(scale)
           .add(vec2(t, t)) as ShaderNodeObject<Node>
-        const n = noise(p) as ShaderNodeObject<Node>
+        const n = noise(p)
         // noise returns ~[-1, 1]; map to [0, 1] grayscale.
         const g = (n.mul(0.5).add(0.5) as ShaderNodeObject<Node>).clamp(0, 1)
-        colorNode = vec4(g, g, g, 1) as never
+
+        colorNode = vec4(g, g, g, 1)
         break
       }
 
@@ -111,27 +113,29 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
         const gain = (params.gain as number | undefined) ?? 0.5
         const speed = (params.speed as number | undefined) ?? 0.3
 
-        const t = (time as ShaderNodeObject<Node>).mul(speed)
+        const t = time.mul(speed)
         const p = (uv() as ShaderNodeObject<Node>)
           .mul(scale)
           .add(vec2(t, t)) as ShaderNodeObject<Node>
-        const f = fbm(p, { octaves, lacunarity, gain }) as ShaderNodeObject<Node>
+        const f = fbm(p, { octaves, lacunarity, gain })
         const g = (f.mul(0.5).add(0.5) as ShaderNodeObject<Node>).clamp(0, 1)
-        colorNode = vec4(g, g, g, 1) as never
+
+        colorNode = vec4(g, g, g, 1)
         break
       }
 
       case 'voronoi': {
         const scale = (params.scale as number | undefined) ?? 4
         const speed = (params.speed as number | undefined) ?? 0.2
-        const t = (time as ShaderNodeObject<Node>).mul(speed)
+        const t = time.mul(speed)
         const p = (uv() as ShaderNodeObject<Node>)
           .mul(scale)
           .add(vec2(t, t)) as ShaderNodeObject<Node>
-        const v = voronoi(p) as ShaderNodeObject<Node>
+        const v = voronoi(p)
         // voronoi (mx_worley_noise_float) is roughly [0, 1]; clamp to be safe.
         const g = v.clamp(0, 1)
-        colorNode = vec4(g, g, g, 1) as never
+
+        colorNode = vec4(g, g, g, 1)
         break
       }
 
@@ -140,14 +144,15 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
         // through quantize(...) to show discrete bands. Color via a fixed
         // 3-stop ramp so the bins read as colors, not just gray strips.
         const bins = Math.max(2, Math.round((params.bins as number | undefined) ?? 4))
-        const q = quantize(uv().x as never, bins) as ShaderNodeObject<Node>
+        const q = quantize(uv().x, bins)
         const stops: ColorRampStop[] = [
           { color: vec3(0.15, 0.2, 0.4), position: 0 },
           { color: vec3(0.6, 0.4, 0.9), position: 0.5 },
           { color: vec3(1, 0.7, 0.4), position: 1 },
         ]
-        const c = colorRamp(q as never, stops) as ShaderNodeObject<Node>
-        colorNode = vec4(c as never, 1) as never
+        const c = colorRamp(q, stops)
+
+        colorNode = vec4(c, 1)
         break
       }
 
@@ -158,13 +163,14 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
         // SDF translation: rendering at +center evaluates at (p - center).
         // p is uv()-derived, center is a JS-number vec2 baked into the chain.
         const p = (uv() as ShaderNodeObject<Node>).sub(vec2(cx, cy)) as ShaderNodeObject<Node>
-        const sdf = sdfCircle(p, radius) as ShaderNodeObject<Node>
+        const sdf = sdfCircle(p, radius)
         // Soft-edged disk via smoothstep across [+aa, -aa].
         const aa = 0.005
-        const mask = smoothstep(aa, -aa, sdf as never) as ShaderNodeObject<Node>
+        const mask = smoothstep(aa, -aa, sdf) as ShaderNodeObject<Node>
         // Render disk in white, background in dark blue.
-        const c = mix(vec3(0.05, 0.05, 0.1), vec3(1, 1, 1), mask as never) as ShaderNodeObject<Node>
-        colorNode = vec4(c as never, 1) as never
+        const c = mix(vec3(0.05, 0.05, 0.1), vec3(1, 1, 1), mask) as ShaderNodeObject<Node>
+
+        colorNode = vec4(c, 1)
         break
       }
 
@@ -175,12 +181,13 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
         // The animated_t keeps it visually alive even at zero displacement.
         const x = (params.x as number | undefined) ?? 0.1
         const y = (params.y as number | undefined) ?? 0.05
-        const t = (time as ShaderNodeObject<Node>).mul(0.2)
-        const dUv = displace(uv(), vec2(x, y)) as ShaderNodeObject<Node>
+        const t = time.mul(0.2)
+        const dUv = displace(uv(), vec2(x, y))
         const samplePoint = dUv.mul(4).add(vec2(t, t)) as ShaderNodeObject<Node>
-        const n = noise(samplePoint) as ShaderNodeObject<Node>
+        const n = noise(samplePoint)
         const g = (n.mul(0.5).add(0.5) as ShaderNodeObject<Node>).clamp(0, 1)
-        colorNode = vec4(g, g, g, 1) as never
+
+        colorNode = vec4(g, g, g, 1)
         break
       }
 
@@ -201,36 +208,41 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
           frequency,
           reach,
           speed: speed * 6,
-        }) as ShaderNodeObject<Node>
+        })
         // ripple is in roughly [-amplitude, +amplitude]; map to [0, 1] gray.
         const g = (ripple.div(amplitude * 2 + 0.0001).add(0.5) as ShaderNodeObject<Node>).clamp(
           0,
           1,
         )
-        colorNode = vec4(g, g, g, 1) as never
+
+        colorNode = vec4(g, g, g, 1)
         break
       }
 
       case 'time': {
         // No controls. sin(time * 2) → [-1, 1] → grayscale pulse.
-        const v = (sin((time as ShaderNodeObject<Node>).mul(2)) as ShaderNodeObject<Node>)
+        const v = (sin(time.mul(2)) as ShaderNodeObject<Node>)
           .mul(0.5)
           .add(0.5) as ShaderNodeObject<Node>
-        colorNode = vec4(v, v, v, 1) as never
+
+        colorNode = vec4(v, v, v, 1)
         break
       }
 
       default:
         // Magenta = error sentinel. If you see this, the slug list in
         // primitives.ts and the switch here have drifted apart.
-        colorNode = vec4(1, 0, 1, 1) as never
+        colorNode = vec4(1, 0, 1, 1)
     }
 
     const material = new MeshBasicNodeMaterial()
+
     material.colorNode = colorNode
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
+
     return () => {
       ctx.scene.remove(mesh)
       // three's WebGPURenderer can throw inside `material.dispose()` during

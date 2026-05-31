@@ -1,9 +1,10 @@
 // apps/docs/app/components/noise-field/page.tsx
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
-import dynamic from 'next/dynamic'
+
 import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
@@ -44,6 +45,7 @@ export default function NoiseFieldPage() {
 
   useEffect(() => {
     const container = paneContainerRef.current
+
     if (!container) return
 
     const local = { ...INITIAL }
@@ -80,13 +82,13 @@ export default function NoiseFieldPage() {
       <div style={{ position: 'relative', height: '70vh' }}>
         <MatterScene>
           <NoiseField
-            key={instanceKey}
             colors={[params.color0, params.color1]}
+            interactive={params.interactive}
+            key={instanceKey}
+            octaves={params.octaves}
             scale={params.scale}
             speed={params.speed}
-            octaves={params.octaves}
             variant={params.variant}
-            interactive={params.interactive}
           />
           <VisualTestPause />
         </MatterScene>
@@ -98,9 +100,9 @@ export default function NoiseFieldPage() {
           accessible surface. (`inert` would have blocked mouse input too —
           regression noted 2026-05-13.) */}
       <div
-        ref={paneContainerRef}
-        data-tweakpane-host
         aria-hidden="true"
+        data-tweakpane-host
+        ref={paneContainerRef}
         style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>

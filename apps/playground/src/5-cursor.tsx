@@ -1,9 +1,9 @@
+import { MatterScene, useCursor, useMatterContext } from '@lovo/matter-react'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Mesh, PlaneGeometry, Vector2 } from 'three'
+import { length, mix, uniform, uv, vec3 } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
-import { vec3, mix, uv, length, uniform } from 'three/tsl'
-import { MatterScene, useMatterContext, useCursor } from '@lovo/matter-react'
 
 function CursorGradient() {
   const ctx = useMatterContext()
@@ -27,9 +27,11 @@ function CursorGradient() {
     // Gradient angle eases toward the cursor — t = distance from cursor to current uv.
     const t = length(uv().sub(cursorUniform))
     const material = new MeshBasicNodeMaterial()
+
     material.colorNode = mix(colorA, colorB, t)
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
 
     return () => {
@@ -56,13 +58,13 @@ function CursorGradient() {
       <label>
         Smoothing: {smoothing.toFixed(2)}{' '}
         <input
-          type="range"
-          min={0}
           max={0.99}
-          step={0.01}
-          value={smoothing}
+          min={0}
           onChange={(e) => setSmoothing(Number(e.target.value))}
+          step={0.01}
           style={{ width: '200px', marginLeft: '0.5rem' }}
+          type="range"
+          value={smoothing}
         />
       </label>
       <div style={{ opacity: 0.7, marginTop: '0.25rem' }}>
@@ -81,4 +83,5 @@ function App() {
 }
 
 const root = createRoot(document.getElementById('root')!)
+
 root.render(<App />)

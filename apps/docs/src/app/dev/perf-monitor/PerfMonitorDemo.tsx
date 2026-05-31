@@ -1,28 +1,29 @@
 'use client'
 
-import { useState } from 'react'
-import { LinearGradient } from '@matter/registry/linear-gradient'
 import { MatterMonitor, MatterScene } from '@lovo/matter-react'
+import { LinearGradient } from '@matter/registry/linear-gradient'
+import { useState } from 'react'
 
 export function PerfMonitorDemo() {
   const [speed, setSpeed] = useState(0.5)
+
   return (
     <div>
       <label style={{ display: 'block', marginBottom: 12 }}>
         speed:{' '}
         <input
-          type="range"
-          min={0}
           max={2}
-          step={0.1}
-          value={speed}
+          min={0}
           onChange={(e) => setSpeed(+e.target.value)}
+          step={0.1}
+          type="range"
+          value={speed}
         />
         <code style={{ marginLeft: 8 }}>{speed.toFixed(1)}</code>
       </label>
       <div style={{ position: 'relative', width: 600, height: 400 }}>
         <MatterScene>
-          <LinearGradient colors={['#ff7b72', '#7b9cff']} angle={45} speed={speed} />
+          <LinearGradient angle={45} colors={['#ff7b72', '#7b9cff']} speed={speed} />
           <MatterMonitor anchor="top-right" />
         </MatterScene>
       </div>

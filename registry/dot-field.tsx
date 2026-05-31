@@ -1,20 +1,20 @@
 // registry/dot-field.tsx
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
-import type { ShaderNodeObject } from 'three/tsl'
-import { vec2, vec3, vec4, mix, mod, length, smoothstep, uv, uniform } from 'three/tsl'
-import { sdfCircle, displace } from '@lovo/matter'
+import { displace, sdfCircle } from '@lovo/matter'
 import {
-  useMatterContext,
-  useAnimatableUniform,
-  useCursor,
-  useResize,
   type AnimatableProp,
   type CursorSignal,
+  useAnimatableUniform,
+  useCursor,
+  useMatterContext,
+  useResize,
 } from '@lovo/matter-react'
+import { useEffect, useMemo } from 'react'
+import type { ShaderNodeObject } from 'three/tsl'
+import { length, mix, mod, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
+import type { Node } from 'three/webgpu'
 
 export interface DotFieldProps {
   spacing?: AnimatableProp<number>
@@ -33,6 +33,7 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const r = parseInt(clean.slice(0, 2), 16) / 255
   const g = parseInt(clean.slice(2, 4), 16) / 255
   const b = parseInt(clean.slice(4, 6), 16) / 255
+
   return [r, g, b]
 }
 
@@ -53,9 +54,11 @@ export function DotField(props: DotFieldProps) {
   // Cursor uniform — UV-space, y flipped from DOM-space.
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
+
   useEffect(() => {
     if (cursor) return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y))
     cursorVec.set(0.5, 0.5)
+
     return undefined
   }, [cursor, cursorVec])
 
@@ -68,11 +71,14 @@ export function DotField(props: DotFieldProps) {
   // one frame, briefly hiding all dots until the resize effect seeded.
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
   const resUniform = useMemo(() => uniform(resVec), [resVec])
+
   useEffect(() => {
     const [w, h] = resize.get()
+
     if (w > 0 && h > 0) {
       resVec.set(w, h)
     }
+
     return resize.on('change', ([w2, h2]) => resVec.set(w2, h2))
   }, [resize, resVec])
 
@@ -81,18 +87,13 @@ export function DotField(props: DotFieldProps) {
 
     // Tile uv into cells of `spacing` CSS px. p = uv * resolution / spacing
     // gives each cell unit length 1 along the cell axes.
-    const pxUv = uv()
-      .mul(resUniform)
-      .div(spacingUniform as unknown as number)
+    const pxUv = uv().mul(resUniform).div(spacingUniform)
     // Cell-local coord recentered to [-0.5, 0.5] — input to the SDF.
     const cellLocal = mod(pxUv, 1).sub(vec2(0.5, 0.5))
     // Cell index (whole part) → cell-center in uv space (back-converted from
     // cell space). Used for the per-cell distance-to-cursor calculation.
     const cellIndex = pxUv.sub(mod(pxUv, 1))
-    const cellCenterUv = cellIndex
-      .add(vec2(0.5, 0.5))
-      .mul(spacingUniform as unknown as number)
-      .div(resUniform)
+    const cellCenterUv = cellIndex.add(vec2(0.5, 0.5)).mul(spacingUniform).div(resUniform)
 
     // Cell→cursor in pixel space, computed once and reused for the influence
     // curve and the displacement direction. Root in cellCenterUv (uv-derived)
@@ -103,7 +104,7 @@ export function DotField(props: DotFieldProps) {
       .mul(resUniform)
     const distToCursorPx = length(cellToCursorPx)
     // Cursor influence: 1 at cursor, 0 at `reach` px away.
-    const influence = smoothstep(reachUniform as never, 0, distToCursorPx as never)
+    const influence = smoothstep(reachUniform, 0, distToCursorPx)
 
     // Unit direction from cell toward cursor. Adding 0.001 to the divisor
     // avoids div-by-zero at the cursor itself; the influence weight forces
@@ -120,41 +121,41 @@ export function DotField(props: DotFieldProps) {
     // shift at default reach=100 / strength=1 was only a few pixels (you had
     // to max both sliders to see anything). Normalizing fixes the feel.
     const offset = (dirToCursor as ShaderNodeObject<Node>)
-      .mul(influence as unknown as number)
-      .mul(strengthUniform as unknown as number)
+      .mul(influence)
+      .mul(strengthUniform)
       .mul(0.4)
     // SDF translation: rendering a disk at +v means evaluating the SDF at
     // (p - v), not (p + v). `displace` is naive vector addition, so we
     // negate `offset` here — otherwise dots visibly push AWAY from the
     // cursor instead of pulling toward it.
-    const displacedLocal = displace(
-      cellLocal as never,
-      (offset as ShaderNodeObject<Node>).mul(-1) as never,
-    )
+    const displacedLocal = displace(cellLocal, (offset as ShaderNodeObject<Node>).mul(-1))
 
     // dotSize is in CSS px; convert to cell-local fraction:
     // radius = dotSize / (spacing * 2). Root this chain in vec2(0).x —
     // a TSL literal scalar — so dotSize/spacing appear only as ARGUMENTS,
     // not as chain receivers (gotcha #12: chain methods on raw uniform
     // nodes silently produce wrong GPU values).
-    const zeroScalar = (vec2(0) as ShaderNodeObject<Node>).x
+    const zeroScalar = vec2(0).x
     const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2))
-    const sdf = sdfCircle(displacedLocal, radius as never)
+    const sdf = sdfCircle(displacedLocal, radius)
     // Soft edge: smoothstep across [+aa, -aa] so inside maps to 1 and the
     // boundary gets a subpixel falloff instead of an aliased step.
     const aa = 0.01
-    const dotMask = smoothstep(aa, -aa, sdf as never)
+    const dotMask = smoothstep(aa, -aa, sdf)
 
     // Build the dot color once and reuse — the prior listing rebuilt the
     // mix() tree three times across the .x/.y/.z fields.
-    const dotColor = mix(vec3(0, 0, 0), vec3(cr, cg, cb), dotMask as never)
+    const dotColor = mix(vec3(0, 0, 0), vec3(cr, cg, cb), dotMask)
 
     const material = new MeshBasicNodeMaterial()
+
     // vec4(vec3, scalar) is supported by TSL's ConvertType signature.
-    material.colorNode = vec4(dotColor as never, dotMask as never) as never
+    material.colorNode = vec4(dotColor, dotMask)
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
+
     return () => {
       ctx.scene.remove(mesh)
       try {

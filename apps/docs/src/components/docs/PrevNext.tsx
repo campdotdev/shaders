@@ -1,4 +1,5 @@
 import Link from 'next/link'
+
 import type { DocsNeighbor } from '@/content/types'
 
 const cardStyle = {
@@ -27,6 +28,7 @@ const titleStyle = {
 
 export function PrevNext({ prev, next }: { prev: DocsNeighbor | null; next: DocsNeighbor | null }) {
   if (!prev && !next) return null
+
   return (
     <nav
       aria-label="Previous and next page"

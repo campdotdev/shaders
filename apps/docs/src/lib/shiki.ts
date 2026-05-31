@@ -17,5 +17,6 @@ export function getHighlighter(): Promise<Highlighter> {
       langs: [...SHIKI_LANGS],
     })
   }
+
   return highlighterPromise
 }

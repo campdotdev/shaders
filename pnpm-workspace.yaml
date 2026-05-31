@@ -4,16 +4,6 @@ packages:
   - 'registry'
   - 'tooling/*'
 catalog:
-  vite: npm:@voidzero-dev/vite-plus-core@latest
-  vitest: npm:@voidzero-dev/vite-plus-test@latest
-  vite-plus: latest
-overrides:
-  vite: 'catalog:'
-  vitest: 'catalog:'
-peerDependencyRules:
-  allowAny:
-    - vite
-    - vitest
-  allowedVersions:
-    vite: '*'
-    vitest: '*'
+  vite: ^8.0.14
+  vitest: ^4.1.7
+  oxfmt: ^0.52.0

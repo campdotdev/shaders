@@ -1,7 +1,8 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { runInit } from './init.js'
 
 let dir: string
@@ -19,6 +20,7 @@ describe('runInit', () => {
     await runInit({}, { cwd: dir, log: vi.fn() })
     const raw = await readFile(join(dir, 'matter.config.json'), 'utf-8')
     const cfg = JSON.parse(raw)
+
     expect(cfg.componentsDir).toBe('src/components/matter')
     expect(cfg.registryUrl).toContain('lovo-hq/matter')
     expect(cfg.tsx).toBe(true)
@@ -34,13 +36,16 @@ describe('runInit', () => {
     await runInit({ force: true }, { cwd: dir, log: vi.fn() })
     const raw = await readFile(join(dir, 'matter.config.json'), 'utf-8')
     const cfg = JSON.parse(raw)
+
     expect(cfg.componentsDir).toBe('src/components/matter')
   })
 
   it('logs a confirmation message after writing', async () => {
     const log = vi.fn()
+
     await runInit({}, { cwd: dir, log })
     const output = log.mock.calls.map((c) => c[0]).join('\n')
+
     expect(output).toMatch(/created matter\.config\.json/i)
   })
 })

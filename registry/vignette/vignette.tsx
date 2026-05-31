@@ -1,7 +1,8 @@
 'use client'
 
-import { VignetteShader } from './shader'
 import type { AnimatableProp } from '@lovo/matter-react'
+
+import { VignetteShader } from './shader'
 
 export interface VignetteProps {
   /** How dark the edges go. 0 = no vignette, 1 = full edge color at corners. Default 0.4. */
@@ -25,11 +26,11 @@ export function Vignette({
 }: VignetteProps) {
   return (
     <VignetteShader
-      intensity={intensity}
-      softness={softness}
       center={center}
-      radius={radius}
       color={color}
+      intensity={intensity}
+      radius={radius}
+      softness={softness}
     />
   )
 }

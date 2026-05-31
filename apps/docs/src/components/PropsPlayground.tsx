@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type CSSProperties, type ReactNode } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react'
 
 // Schema entry: a discriminated union keyed on `type`. Adding a new control
 // kind = adding a new union member + a branch in PropRow. The schema is the
@@ -33,11 +33,13 @@ export type PropsState = Record<string, PropValue>
 
 export function initialStateFromSchema(schema: PropSchema): PropsState {
   const out: PropsState = {}
+
   for (const entry of schema) {
     // Clone arrays so callers that mutate state can't reach back into the
     // schema's default literal.
     out[entry.name] = entry.type === 'colors' ? [...entry.default] : entry.default
   }
+
   return out
 }
 
@@ -67,9 +69,9 @@ export function PropsPlayground({ schema, onChange, className, style }: PropsPla
 
   return (
     <form
+      aria-label="Live property controls"
       className={className}
       onSubmit={(e) => e.preventDefault()}
-      aria-label="Live property controls"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -82,12 +84,7 @@ export function PropsPlayground({ schema, onChange, className, style }: PropsPla
       }}
     >
       {schema.map((entry) => (
-        <PropRow
-          key={entry.name}
-          entry={entry}
-          value={state[entry.name] as PropValue}
-          onChange={update}
-        />
+        <PropRow entry={entry} key={entry.name} onChange={update} value={state[entry.name]!} />
       ))}
     </form>
   )
@@ -107,14 +104,15 @@ function PropRow({
 
   if (entry.type === 'color') {
     const v = value as string
+
     return (
       <Field id={id} label={label}>
         <input
           id={id}
-          type="color"
-          value={v}
           onChange={(e) => onChange(entry.name, e.target.value)}
           style={{ width: 40, height: 28, padding: 0, border: 'none', background: 'transparent' }}
+          type="color"
+          value={v}
         />
         <code style={{ fontSize: '0.8rem', color: 'var(--fg-muted)' }}>{v}</code>
       </Field>
@@ -128,17 +126,18 @@ function PropRow({
     // sliders (angle: 1°) show whole numbers and fine-stepped sliders
     // (speed: 0.01) show two decimals.
     const fractionDigits = step >= 1 ? 0 : Math.min(3, -Math.floor(Math.log10(step)))
+
     return (
       <Field id={id} label={label}>
         <input
           id={id}
-          type="range"
-          min={entry.min}
           max={entry.max}
-          step={step}
-          value={v}
+          min={entry.min}
           onChange={(e) => onChange(entry.name, Number(e.target.value))}
+          step={step}
           style={{ flex: 1 }}
+          type="range"
+          value={v}
         />
         <code
           style={{
@@ -156,13 +155,14 @@ function PropRow({
 
   if (entry.type === 'boolean') {
     const v = value as boolean
+
     return (
       <Field id={id} label={label}>
         <input
-          id={id}
-          type="checkbox"
           checked={v}
+          id={id}
           onChange={(e) => onChange(entry.name, e.target.checked)}
+          type="checkbox"
         />
       </Field>
     )
@@ -170,11 +170,11 @@ function PropRow({
 
   if (entry.type === 'enum') {
     const v = value as string
+
     return (
       <Field id={id} label={label}>
         <select
           id={id}
-          value={v}
           onChange={(e) => onChange(entry.name, e.target.value)}
           style={{
             flex: 1,
@@ -184,6 +184,7 @@ function PropRow({
             border: '1px solid var(--border)',
             borderRadius: 4,
           }}
+          value={v}
         >
           {entry.options.map((opt) => (
             <option key={opt} value={opt}>
@@ -197,21 +198,23 @@ function PropRow({
 
   // type === 'colors' — array of hex strings.
   const colors = value as string[]
+
   return (
     <Field id={id} label={label}>
       <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
         {colors.map((c, i) => (
           <input
+            aria-label={`${label} ${i + 1}`}
             key={i}
-            type="color"
-            value={c}
             onChange={(e) => {
               const next = [...colors]
+
               next[i] = e.target.value
               onChange(entry.name, next)
             }}
-            aria-label={`${label} ${i + 1}`}
             style={{ width: 32, height: 28, padding: 0, border: 'none', background: 'transparent' }}
+            type="color"
+            value={c}
           />
         ))}
       </div>

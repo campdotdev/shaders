@@ -1,8 +1,10 @@
 import Link from 'next/link'
+
 import type { DocsBreadcrumb } from '@/content/types'
 
 export function Breadcrumbs({ crumbs }: { crumbs: DocsBreadcrumb[] }) {
   if (crumbs.length === 0) return null
+
   return (
     <nav
       aria-label="Breadcrumb"
@@ -16,7 +18,7 @@ export function Breadcrumbs({ crumbs }: { crumbs: DocsBreadcrumb[] }) {
       {crumbs.map((c, i) => (
         <span key={`${i}-${c.label}`}>
           {i > 0 && (
-            <span style={{ margin: '0 0.5rem', opacity: 0.5 }} aria-hidden>
+            <span aria-hidden style={{ margin: '0 0.5rem', opacity: 0.5 }}>
               /
             </span>
           )}

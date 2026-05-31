@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+
 import { useMatterContext } from './useMatterContext.js'
 
 export type ResizeValue = readonly [width: number, height: number, dpr: number]
@@ -37,6 +38,7 @@ export function useResize(): ResizeSignal {
     if (!ctx) return undefined
 
     const canvas = ctx.renderer.three.domElement
+
     if (!(canvas instanceof HTMLCanvasElement)) return undefined
 
     let value: ResizeValue = [
@@ -49,11 +51,13 @@ export function useResize(): ResizeSignal {
       get: () => value,
       on: (_event, cb) => {
         listeners.add(cb)
+
         return () => {
           listeners.delete(cb)
         }
       },
     }
+
     setSignal(fresh)
 
     const emit = () => {
@@ -62,12 +66,14 @@ export function useResize(): ResizeSignal {
         canvas.clientHeight,
         typeof window !== 'undefined' ? window.devicePixelRatio : 1,
       ]
+
       if (next[0] === value[0] && next[1] === value[1] && next[2] === value[2]) return
       value = next
       for (const cb of listeners) cb(next)
     }
 
     const observer = new ResizeObserver(emit)
+
     observer.observe(canvas)
 
     // Cross-browser DPR-change watch. matchMedia(`(resolution: <dpr>dppx)`)
@@ -87,10 +93,12 @@ export function useResize(): ResizeSignal {
         if (mql && mqlHandler) mql.removeEventListener('change', mqlHandler)
         setupDprWatch()
       }
+
       next.addEventListener('change', handler)
       mql = next
       mqlHandler = handler
     }
+
     setupDprWatch()
 
     return () => {

@@ -1,9 +1,10 @@
 // apps/docs/app/components/mesh-gradient/page.tsx
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
-import dynamic from 'next/dynamic'
+
 import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
@@ -60,9 +61,11 @@ export default function MeshGradientPage() {
 
   useEffect(() => {
     const container = paneContainerRef.current
+
     if (!container) return
     const local: Params = { ...INITIAL }
     const pane = new Pane({ container, title: '<MeshGradient>' })
+
     pane.addBinding(local, 'speed', { min: 0, max: 5, step: 0.01 })
     pane.addBinding(local, 'frequency', { min: 0.5, max: 20, step: 0.1 })
     pane.addBinding(local, 'amplitude', { min: 5, max: 100, step: 0.5 })
@@ -81,6 +84,7 @@ export default function MeshGradientPage() {
     pane.addBlade({ view: 'separator' })
 
     const grainFolder = pane.addFolder({ title: 'FilmGrain overlay' })
+
     grainFolder.addBinding(local, 'grain', { label: 'intensity', min: 0, max: 1, step: 0.01 })
     grainFolder.addBinding(local, 'grainSpeed', {
       label: 'speed',
@@ -90,18 +94,21 @@ export default function MeshGradientPage() {
     })
 
     const aFolder = pane.addFolder({ title: 'Palette A', expanded: false })
+
     aFolder.addBinding(local, 'a0', { label: 'color 0' })
     aFolder.addBinding(local, 'a1', { label: 'color 1' })
     aFolder.addBinding(local, 'a2', { label: 'color 2' })
     aFolder.addBinding(local, 'a3', { label: 'color 3' })
 
     const bFolder = pane.addFolder({ title: 'Palette B', expanded: false })
+
     bFolder.addBinding(local, 'b0', { label: 'color 0' })
     bFolder.addBinding(local, 'b1', { label: 'color 1' })
     bFolder.addBinding(local, 'b2', { label: 'color 2' })
     bFolder.addBinding(local, 'b3', { label: 'color 3' })
 
     pane.on('change', () => setParams({ ...local }))
+
     return () => pane.dispose()
   }, [])
 
@@ -110,13 +117,13 @@ export default function MeshGradientPage() {
       <div style={{ position: 'relative', height: '70vh' }}>
         <MatterScene>
           <MeshGradient
-            speed={params.speed}
-            frequency={params.frequency}
             amplitude={params.amplitude}
-            cycleSpeed={params.cycleSpeed}
             cycleEase={params.cycleEase}
+            cycleSpeed={params.cycleSpeed}
+            frequency={params.frequency}
             paletteA={[params.a0, params.a1, params.a2, params.a3]}
             paletteB={[params.b0, params.b1, params.b2, params.b3]}
+            speed={params.speed}
           />
           <FilmGrain intensity={params.grain} speed={params.grainSpeed} />
           <VisualTestPause />
@@ -127,9 +134,9 @@ export default function MeshGradientPage() {
             aria-hidden-focus. The page content in <section> below is the
             accessible surface. */}
         <div
-          ref={paneContainerRef}
-          data-tweakpane-host
           aria-hidden="true"
+          data-tweakpane-host
+          ref={paneContainerRef}
           style={{
             position: 'absolute',
             top: '1rem',

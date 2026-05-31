@@ -1,8 +1,7 @@
-import { mix, vec3 } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
-
+import { mix, vec3 } from 'three/tsl'
 import { clamp, div, sub } from 'three/tsl'
+import type { Node } from 'three/webgpu'
 
 /**
  * Canonical TSL-node *input* shape used throughout `@lovo/matter`.
@@ -39,15 +38,19 @@ export function colorRamp(t: TSLNode, stops: ColorRampStop[]): ShaderNodeObject<
   //   inner = mix(stop0, stop1, smoothstep(0, 0.5, t))
   //   outer = mix(inner, stop2, smoothstep(0.5, 1, t))
   let result: ShaderNodeObject<Node> = stops[0]!.color as ShaderNodeObject<Node>
-  for (let i = 1; i < stops.length; i++) {
+
+  for (let i = 1; i < stops.length; i += 1) {
     const prev = stops[i - 1]!
     const next = stops[i]!
     const span = next.position - prev.position
+
     if (span <= 0) continue
     // Localize t into the [prev..next] range. `t` is TSLNode (the union),
     // so we use functional-form ops to avoid needing a chain-method receiver.
     const localT = clamp(div(sub(t, prev.position), span), 0, 1)
+
     result = mix(result, next.color, localT)
   }
+
   return result
 }

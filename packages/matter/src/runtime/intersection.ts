@@ -16,8 +16,12 @@ export function createIntersectionWatcher(canvas: HTMLCanvasElement): Intersecti
   if (typeof IntersectionObserver === 'undefined') {
     return {
       isInView: () => true,
-      subscribe: () => () => {},
-      dispose: () => {},
+      subscribe: () => () => {
+        // SSR no-op unsubscribe
+      },
+      dispose: () => {
+        // SSR no-op dispose
+      },
     }
   }
 
@@ -26,18 +30,21 @@ export function createIntersectionWatcher(canvas: HTMLCanvasElement): Intersecti
   const obs = new IntersectionObserver(
     (entries) => {
       const next = entries.some((e) => e.isIntersecting)
+
       if (next === inView) return
       inView = next
       for (const cb of subs) cb(inView)
     },
     { threshold: 0 },
   )
+
   obs.observe(canvas)
 
   return {
     isInView: () => inView,
     subscribe(cb) {
       subs.add(cb)
+
       return () => subs.delete(cb)
     },
     dispose() {

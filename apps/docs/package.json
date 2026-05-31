@@ -1,14 +1,14 @@
 {
   "name": "@matter/docs",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "dev": "next dev -p 3000",
     "build": "next build && pagefind --site out",
     "preview": "serve out -p 3000",
     "typecheck": "tsc --noEmit",
-    "lint": "vp lint src --type-aware --tsconfig ./tsconfig.json",
+    "lint": "eslint src",
     "clean": "rm -rf .next .turbo out *.tsbuildinfo"
   },
   "dependencies": {

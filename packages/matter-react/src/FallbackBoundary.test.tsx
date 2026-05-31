@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vite-plus/test'
-import { render, screen, act } from '@testing-library/react'
+import { act, render, screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+
 import { FallbackBoundary } from './FallbackBoundary.js'
 
 // FallbackBoundary is a client-mount gate: it renders `fallback` until the
@@ -25,6 +26,7 @@ describe('FallbackBoundary', () => {
         <div data-testid="child">child</div>
       </FallbackBoundary>,
     )
+
     // After act (effects run), children replace the fallback.
     act(() => {})
     expect(screen.getByTestId('child')).toBeInTheDocument()

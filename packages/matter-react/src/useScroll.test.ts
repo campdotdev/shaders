@@ -1,4 +1,5 @@
-import { describe, it, expect } from 'vite-plus/test'
+import { describe, expect, it } from 'vitest'
+
 import { useScroll } from './useScroll.js'
 
 describe('useScroll', () => {

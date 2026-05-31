@@ -73,8 +73,10 @@ for (const [hue, steps] of Object.entries(OKLCH)) {
   console.log(`\n${hue}:`)
   for (const [step, oklch] of Object.entries(steps)) {
     const parsed = parse(oklch)
+
     if (!parsed) throw new Error(`culori failed to parse ${oklch}`)
     const hex = formatHex(parsed)
+
     console.log(`  ${step.padEnd(6)} ${oklch.padEnd(32)} -> ${hex}`)
   }
 }

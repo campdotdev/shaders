@@ -1,7 +1,7 @@
 {
   "name": "@matter/registry",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "description": "Source-of-truth Tier 1 components shipped via the @lovo/matter-cli copy-paste flow. Not published to npm.",
   "type": "module",
   "exports": {

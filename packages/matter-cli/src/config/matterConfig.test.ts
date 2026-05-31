@@ -1,12 +1,13 @@
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, beforeEach, describe, expect, it } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+
 import {
   DEFAULT_MATTER_CONFIG,
+  type MatterConfig,
   readMatterConfig,
   writeMatterConfig,
-  type MatterConfig,
 } from './matterConfig.js'
 
 describe('DEFAULT_MATTER_CONFIG.registryUrl', () => {
@@ -38,6 +39,7 @@ describe('matterConfig', () => {
   it('writes the default config when none exists', async () => {
     await writeMatterConfig(dir, DEFAULT_MATTER_CONFIG)
     const raw = await readFile(join(dir, 'matter.config.json'), 'utf-8')
+
     expect(JSON.parse(raw)).toEqual(DEFAULT_MATTER_CONFIG)
   })
 
@@ -46,8 +48,10 @@ describe('matterConfig', () => {
       ...DEFAULT_MATTER_CONFIG,
       componentsDir: 'app/matter',
     }
+
     await writeMatterConfig(dir, cfg)
     const read = await readMatterConfig(dir)
+
     expect(read).toEqual(cfg)
   })
 

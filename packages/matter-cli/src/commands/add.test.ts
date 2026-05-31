@@ -2,8 +2,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { DEFAULT_MATTER_CONFIG, writeMatterConfig } from '../config/matterConfig.js'
+
 import { runAdd } from './add.js'
 
 const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/', import.meta.url))}`
@@ -34,6 +36,7 @@ describe('runAdd (single component, no aliases)', () => {
     await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
     const target = join(dir, 'src/components/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
+
     expect(written).toContain('SyntheticComponent')
     // No alias rewriting yet — the @matter-internal import comes through verbatim.
     expect(written).toContain('@matter-internal/lib')
@@ -44,6 +47,7 @@ describe('runAdd (single component, no aliases)', () => {
     await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
     const target = join(dir, 'app/very/nested/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
+
     expect(written).toContain('SyntheticComponent')
   })
 
@@ -69,6 +73,7 @@ describe('runAdd (single component, no aliases)', () => {
       join(dir, 'src/components/matter/synthetic-component.tsx'),
       'utf-8',
     )
+
     expect(written).toContain('SyntheticComponent')
   })
 
@@ -82,8 +87,10 @@ describe('runAdd (single component, no aliases)', () => {
   it('prints a "Wrote" line and an install hint with the component dependencies', async () => {
     await seedConfig()
     const log = vi.fn()
+
     await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log })
     const output = log.mock.calls.map((c) => c[0]).join('\n')
+
     expect(output).toMatch(/^Wrote .*synthetic-component\.tsx/m)
     expect(output).toContain('This component requires: react')
     expect(output).toMatch(/^npm install react/m)
@@ -95,6 +102,7 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
     // Build an inline two-component registry in a temp dir so we can
     // exercise multi-slug add without bloating the shared fixture.
     const inlineDir = await mkdtemp(join(tmpdir(), 'matter-multi-fixture-'))
+
     await writeFile(
       join(inlineDir, 'registry.json'),
       JSON.stringify({
@@ -111,10 +119,12 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
 
     await seedConfig({ registryUrl: `file://${inlineDir}/` })
     const log = vi.fn()
+
     await runAdd(['alpha', 'beta'], { cliVersion: VERSION }, { cwd: dir, log })
 
     const a = await readFile(join(dir, 'src/components/matter/alpha.tsx'), 'utf-8')
     const b = await readFile(join(dir, 'src/components/matter/beta.tsx'), 'utf-8')
+
     expect(a).toContain('alpha = 1')
     expect(b).toContain('beta = 2')
 
@@ -123,6 +133,7 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
     const output = log.mock.calls.map((c) => c[0]).join('\n')
     const installLine = output.split('\n').find((l) => l.startsWith('npm install '))!
     const args = installLine.replace('npm install ', '').trim().split(/\s+/).sort()
+
     expect(args).toEqual(['react', 'three'])
 
     await rm(inlineDir, { recursive: true, force: true })
@@ -133,6 +144,7 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
     await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() })
     const target = join(dir, 'src/components/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
+
     expect(written).toContain(`from '@/lib/matter/lib'`)
     expect(written).not.toContain('@matter-internal/lib')
   })
@@ -143,6 +155,7 @@ describe('runAdd (--ref handling)', () => {
     // Build a fake "templated" registry URL by parking a fixture under
     // a ref-shaped subdir.
     const inlineDir = await mkdtemp(join(tmpdir(), 'matter-ref-fixture-'))
+
     await mkdir(join(inlineDir, 'main'), { recursive: true })
     await writeFile(
       join(inlineDir, 'main/registry.json'),
@@ -173,6 +186,7 @@ describe('runAdd (--ref handling)', () => {
     )
     const target = join(dir, 'src/components/matter/synthetic-component.tsx')
     const written = await readFile(target, 'utf-8')
+
     expect(written).toContain('function X')
 
     await rm(inlineDir, { recursive: true, force: true })

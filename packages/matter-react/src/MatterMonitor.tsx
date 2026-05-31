@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, useRef, useState, useContext, type CSSProperties } from 'react'
+import { type CSSProperties, useContext, useEffect, useRef, useState } from 'react'
+
 import { MatterContext } from './matter-context.js'
 
 export type MonitorAnchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
@@ -46,9 +47,11 @@ export function MatterMonitor({ anchor = 'top-right' }: MatterMonitorProps) {
     const client = (tick: { now: number }) => {
       ticksRef.current += 1
       const acc = fpsAccumRef.current
+
       acc.frames += 1
       if (acc.lastSampleAt === 0) acc.lastSampleAt = tick.now
       const dt = tick.now - acc.lastSampleAt
+
       if (dt >= 500) {
         acc.fps = Math.round((acc.frames * 1000) / dt)
         acc.frames = 0
@@ -56,7 +59,9 @@ export function MatterMonitor({ anchor = 'top-right' }: MatterMonitorProps) {
       }
       setStats({ fps: acc.fps, ticks: ticksRef.current, frames: acc.frames })
     }
+
     ctx.scheduler.add(client)
+
     return () => ctx.scheduler.remove(client)
   }, [ctx])
 

@@ -2,6 +2,7 @@ import type { DocsHeading } from '@/content/types'
 
 export function TableOfContents({ headings }: { headings: DocsHeading[] }) {
   if (headings.length === 0) return null
+
   return (
     <nav
       aria-label="On this page"

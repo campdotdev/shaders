@@ -1,24 +1,23 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-
+import { noise, time } from '@lovo/matter'
 import {
-  useMatterContext,
-  useAnimatableUniform,
-  useResize,
   type AnimatableProp,
+  useAnimatableUniform,
+  useMatterContext,
+  useResize,
 } from '@lovo/matter-react'
+import { useEffect, useMemo } from 'react'
+import { type ShaderNodeObject, smoothstep, sub, uniform, uv, vec2, vec3, vec4 } from 'three/tsl'
 import {
-  MeshBasicNodeMaterial,
   Mesh,
+  MeshBasicNodeMaterial,
+  type Node,
   PlaneGeometry,
   Vector2,
   Vector3,
-  type Node,
 } from 'three/webgpu'
-import { vec4, uv, vec2, vec3, sub, smoothstep, uniform, type ShaderNodeObject } from 'three/tsl'
 
-import { time, noise } from '@lovo/matter'
 import { parseHex } from '../utils/color'
 
 export interface AuroraLayer {
@@ -68,9 +67,10 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
   const colorVec = useMemo(
     () => {
       const [r, g, b] = parseHex(layer.hex)
+
       return new Vector3(r, g, b)
     },
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
@@ -81,6 +81,7 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
 
   useEffect(() => {
     const [r, g, b] = parseHex(layer.hex)
+
     colorVec.set(r, g, b)
   }, [layer.hex, colorVec])
 
@@ -95,9 +96,10 @@ function useColorUniform(hex: string) {
   const vec = useMemo(
     () => {
       const [r, g, b] = parseHex(hex)
+
       return new Vector3(r, g, b)
     },
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
@@ -105,8 +107,10 @@ function useColorUniform(hex: string) {
 
   useEffect(() => {
     const [r, g, b] = parseHex(hex)
+
     vec.set(r, g, b)
   }, [hex, vec])
+
   return node
 }
 
@@ -125,9 +129,12 @@ export function AuroraShader(props: AuroraShaderProps) {
 
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
   const resNode = useMemo(() => uniform(resVec) as unknown as ShaderNodeObject<Node>, [resVec])
+
   useEffect(() => {
     const [w, h] = resize.get()
+
     if (w > 0 && h > 0) resVec.set(w, h)
+
     return resize.on('change', ([w2, h2]) => resVec.set(w2, h2))
   }, [resize, resVec])
 
@@ -136,9 +143,10 @@ export function AuroraShader(props: AuroraShaderProps) {
   const dirVec = useMemo(
     () => {
       const [x, y, b] = DIRECTION_VECTORS[props.direction]
+
       return new Vector3(x, y, b)
     },
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
@@ -146,6 +154,7 @@ export function AuroraShader(props: AuroraShaderProps) {
 
   useEffect(() => {
     const [x, y, b] = DIRECTION_VECTORS[props.direction]
+
     dirVec.set(x, y, b)
   }, [props.direction, dirVec])
 
@@ -183,7 +192,7 @@ export function AuroraShader(props: AuroraShaderProps) {
 
     let aurora = vec3(0, 0, 0)
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < 4; i += 1) {
       const lu = layerUniforms[i]!
       const variation = variations[i]!
 
@@ -212,9 +221,11 @@ export function AuroraShader(props: AuroraShaderProps) {
       .add(skyNode.mul(sub(1, smoothstep(0.4, 1, fallOff))))
 
     const finalColor = sky.add(aurora.mul(intensityU))
+
     material.colorNode = vec4(finalColor, 1)
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx?.scene.add(mesh)
 
     return () => {

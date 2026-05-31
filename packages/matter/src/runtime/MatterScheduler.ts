@@ -114,9 +114,11 @@ export class MatterScheduler {
     }
     const delta = (now - this.lastTickAt) / 1000
     const elapsed = (now - this.startedAt) / 1000
+
     this.lastTickAt = now
 
     const tick: SchedulerTick = { delta, elapsed, now }
+
     for (const client of this.clients) {
       client(tick)
     }

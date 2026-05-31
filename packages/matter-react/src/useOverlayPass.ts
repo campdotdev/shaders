@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect, type DependencyList } from 'react'
+import { type DependencyList, useEffect } from 'react'
+
 import type { OverlayTransform } from './matter-context.js'
 import { useMatterContext } from './useMatterContext.js'
 
@@ -25,9 +26,10 @@ export function useOverlayPass(transform: OverlayTransform, deps: DependencyList
   useEffect(() => {
     if (!ctx) return
     const unregister = ctx.registerOverlay(transform)
+
     return unregister
     // The transform captures the latest values via the deps array; we re-register
     // when deps change. ctx is included so a remounted MatterScene re-attaches.
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, ...deps])
 }

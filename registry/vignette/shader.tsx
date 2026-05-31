@@ -1,25 +1,24 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { Vector2, Vector3 } from 'three/webgpu'
 import {
+  type AnimatableProp,
+  useAnimatableUniform,
+  useOverlayPass,
+  useResize,
+} from '@lovo/matter-react'
+import { useEffect, useMemo } from 'react'
+import {
+  length,
+  type ShaderNodeObject,
+  smoothstep,
+  mix as tslMix,
+  uniform,
   uv,
   vec2,
   vec4,
-  mix as tslMix,
-  smoothstep,
-  length,
-  uniform,
-  type ShaderNodeObject,
 } from 'three/tsl'
+import { Vector2, Vector3 } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
-
-import {
-  useOverlayPass,
-  useAnimatableUniform,
-  useResize,
-  type AnimatableProp,
-} from '@lovo/matter-react'
 
 import { parseHex } from '../utils/color'
 
@@ -48,7 +47,7 @@ export function VignetteShader({
   // are intentional; the useEffect below handles updates via .set().
   const centerVec = useMemo(
     () => new Vector2(center[0], center[1]),
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
   const centerU = useMemo(
@@ -65,15 +64,18 @@ export function VignetteShader({
   const colorVec = useMemo(
     () => {
       const [r, g, b] = parseHex(color)
+
       return new Vector3(r, g, b)
     },
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
   const colorU = useMemo(() => uniform(colorVec) as unknown as ShaderNodeObject<Node>, [colorVec])
+
   useEffect(() => {
     const [r, g, b] = parseHex(color)
+
     colorVec.set(r, g, b)
   }, [color, colorVec])
 
@@ -82,9 +84,12 @@ export function VignetteShader({
   const resize = useResize()
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
   const resNode = useMemo(() => uniform(resVec) as unknown as ShaderNodeObject<Node>, [resVec])
+
   useEffect(() => {
     const [w, h] = resize.get()
+
     if (w > 0 && h > 0) resVec.set(w, h)
+
     return resize.on('change', ([w2, h2]) => resVec.set(w2, h2))
   }, [resize, resVec])
 
@@ -93,7 +98,7 @@ export function VignetteShader({
       // Aspect-correct, centered uv. Distance in unit space so the
       // falloff ring is a real circle regardless of canvas aspect.
       const aspect = resNode.x.div(resNode.y)
-      const centered = uv().sub(centerU as unknown as ShaderNodeObject<Node>)
+      const centered = uv().sub(centerU)
       const corrected = vec2(centered.x.mul(aspect), centered.y)
       const dist = length(corrected)
 

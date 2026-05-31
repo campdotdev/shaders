@@ -1,5 +1,6 @@
-import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
+
 import { CodeBlock } from '@/components/CodeBlock'
 import { PrimitiveDemo } from '@/components/PrimitiveDemo'
 import { PRIMITIVES } from '@/data/primitives'
@@ -20,6 +21,7 @@ interface PrimitivePageProps {
 export default async function PrimitivePage({ params }: PrimitivePageProps) {
   const { slug } = await params
   const prim = PRIMITIVES.find((p) => p.slug === slug)
+
   if (!prim) notFound()
 
   return (
@@ -29,12 +31,9 @@ export default async function PrimitivePage({ params }: PrimitivePageProps) {
       </p>
       <h1 style={{ marginTop: 0 }}>{prim.name}()</h1>
       <p style={{ color: 'var(--fg-muted)' }}>{prim.description}</p>
-
-      <PrimitiveDemo slug={prim.slug} controls={prim.controls} />
-
+      <PrimitiveDemo controls={prim.controls} slug={prim.slug} />
       <h2 style={{ marginTop: '2rem', fontSize: '1rem' }}>Signature</h2>
-      <CodeBlock source={prim.signature} lang="ts" />
-
+      <CodeBlock lang="ts" source={prim.signature} />
       {prim.usedBy.length > 0 && (
         <>
           <h2 style={{ marginTop: '2rem', fontSize: '1rem' }}>Used by</h2>

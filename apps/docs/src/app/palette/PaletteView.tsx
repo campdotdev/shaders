@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+
 import { palette, paletteOklch } from '@/lib/palette'
 
 const { black, white, gray } = palette
@@ -22,8 +23,17 @@ const {
 
 // ───────────────────────── Accent data ─────────────────────────
 
-type AccentSteps = { light: string; base: string; dark: string }
-type AccentEntry = { name: string; angle: number; steps: AccentSteps; oklch: AccentSteps }
+interface AccentSteps {
+  light: string
+  base: string
+  dark: string
+}
+interface AccentEntry {
+  name: string
+  angle: number
+  steps: AccentSteps
+  oklch: AccentSteps
+}
 
 const ACCENTS: AccentEntry[] = [
   { name: 'red', angle: 25, steps: palette.red, oklch: redOklch },
@@ -42,7 +52,12 @@ const ACCENTS: AccentEntry[] = [
 
 // ───────────────────────── Aurora old → new ─────────────────────────
 
-type AuroraEntry = { name: string; oldHex: string; newRef: string; newColor: string }
+interface AuroraEntry {
+  name: string
+  oldHex: string
+  newRef: string
+  newColor: string
+}
 
 const AURORA: AuroraEntry[] = [
   { name: 'green', oldHex: '#09E24B', newRef: 'green.base', newColor: greenOklch.base },
@@ -66,6 +81,7 @@ function Section({
 }) {
   const fg = bg === 'dark' ? white : black
   const subFg = bg === 'dark' ? gray[7] : gray[6]
+
   return (
     <section style={{ marginBottom: 56 }}>
       <h2 style={{ color: fg, fontSize: 18, fontWeight: 600, margin: '0 0 4px 0' }}>{title}</h2>
@@ -94,6 +110,7 @@ function ScaleRow({
 }) {
   const fg = bg === 'dark' ? white : black
   const subFg = bg === 'dark' ? gray[7] : gray[6]
+
   return (
     <div
       style={{
@@ -115,11 +132,12 @@ function ScaleRow({
         {hexes.map((color, i) => {
           const stepNum = i + 1
           const ringed = brandStep === stepNum
+
           return (
             <div
               key={`${name}-${stepNum}`}
-              title={`${name} / ${stepNum} · ${color}`}
               style={{ display: 'flex', flexDirection: 'column', gap: 2 }}
+              title={`${name} / ${stepNum} · ${color}`}
             >
               <div
                 style={{
@@ -164,6 +182,7 @@ function ColorBlock({
 }) {
   const fg = bg === 'dark' ? white : black
   const subFg = bg === 'dark' ? gray[7] : gray[6]
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div
@@ -196,6 +215,7 @@ function GradientBlock({
   height?: number
 }) {
   const subFg = bg === 'dark' ? gray[7] : gray[6]
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
       <div style={{ fontSize: 12, color: subFg }}>{label}</div>
@@ -213,6 +233,7 @@ function GradientBlock({
 function AccentTriad({ accent, bg }: { accent: AccentEntry; bg: string }) {
   const fg = bg === 'dark' ? white : black
   const subFg = bg === 'dark' ? gray[7] : gray[6]
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
       <div>
@@ -305,21 +326,20 @@ export function PaletteView() {
             {bg === 'dark' ? 'Light bg' : 'Dark bg'}
           </button>
         </header>
-
         {/* ── Brand foundation ── */}
         <Section
-          title="Brand foundation"
-          subtitle="Brand lime and brand gray keep their full 12-step scales because they're used broadly across the site (chrome, type, panels, accents). Brand black/white are the page anchors."
           bg={bg}
+          subtitle="Brand lime and brand gray keep their full 12-step scales because they're used broadly across the site (chrome, type, panels, accents). Brand black/white are the page anchors."
+          title="Brand foundation"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <ScaleRow name="gray" sub="brand" hexes={gray} bg={bg} />
+            <ScaleRow bg={bg} hexes={gray} name="gray" sub="brand" />
             <ScaleRow
-              name="limeScale"
-              sub="brand · h=120 · 12 steps"
-              hexes={limeScaleOklch}
               bg={bg}
               brandStep={10}
+              hexes={limeScaleOklch}
+              name="limeScale"
+              sub="brand · h=120 · 12 steps"
             />
           </div>
           <div
@@ -330,79 +350,77 @@ export function PaletteView() {
               marginTop: 24,
             }}
           >
-            <ColorBlock color={black} label="black" sub={black} bg={bg} />
-            <ColorBlock color={white} label="white" sub={white} bg={bg} />
+            <ColorBlock bg={bg} color={black} label="black" sub={black} />
+            <ColorBlock bg={bg} color={white} label="white" sub={white} />
           </div>
         </Section>
-
         {/* ── Accent palette ── */}
         <Section
-          title="Accent palette — 12 hues × light / base / dark"
-          subtitle="Hand-tuned in OKLCH so `base` lands at or near Aurora's vibrancy. The four Aurora-anchored hues (green/blue/violet/magenta) match Aurora's original hexes within 1 byte by design."
           bg={bg}
+          subtitle="Hand-tuned in OKLCH so `base` lands at or near Aurora's vibrancy. The four Aurora-anchored hues (green/blue/violet/magenta) match Aurora's original hexes within 1 byte by design."
+          title="Accent palette — 12 hues × light / base / dark"
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 28 }}>
             {ACCENTS.map((a) => (
-              <AccentTriad key={a.name} accent={a} bg={bg} />
+              <AccentTriad accent={a} bg={bg} key={a.name} />
             ))}
           </div>
         </Section>
-
         {/* ── Aurora comparison ── */}
         <Section
-          title="Aurora — old vs new defaults"
-          subtitle="The with-depth variant: dark-step picks for blue and violet preserve Aurora's bright-top / deep-bottoms feel."
           bg={bg}
+          subtitle="The with-depth variant: dark-step picks for blue and violet preserve Aurora's bright-top / deep-bottoms feel."
+          title="Aurora — old vs new defaults"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
               {AURORA.map((a) => (
                 <div key={a.name} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <ColorBlock color={a.oldHex} label={`${a.name} (old)`} sub={a.oldHex} bg={bg} />
-                  <ColorBlock color={a.newColor} label="new defaults" sub={a.newRef} bg={bg} />
+                  <ColorBlock bg={bg} color={a.oldHex} label={`${a.name} (old)`} sub={a.oldHex} />
+                  <ColorBlock bg={bg} color={a.newColor} label="new defaults" sub={a.newRef} />
                 </div>
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-              <GradientBlock colors={auroraOld} label="Aurora stack (old)" bg={bg} />
-              <GradientBlock colors={auroraNew} label="Aurora stack (new defaults)" bg={bg} />
+              <GradientBlock bg={bg} colors={auroraOld} label="Aurora stack (old)" />
+              <GradientBlock bg={bg} colors={auroraNew} label="Aurora stack (new defaults)" />
             </div>
           </div>
         </Section>
-
         {/* ── Sample compositions ── */}
         <Section
-          title="Sample compositions"
-          subtitle="A few useful gradients drawn from the palette."
           bg={bg}
+          subtitle="A few useful gradients drawn from the palette."
+          title="Sample compositions"
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             <GradientBlock
+              bg={bg}
               colors={[black, brandLimeMid, white]}
               label="Brand identity: ink → lime → paper"
-              bg={bg}
             />
             <GradientBlock
+              bg={bg}
               colors={[violetOklch.dark, blueOklch.base, brandLimeMid]}
               label="Cool ramp: violet/dark → blue/base → brand lime"
-              bg={bg}
             />
             <GradientBlock
+              bg={bg}
               colors={[magentaOklch.dark, magentaOklch.base, amberOklch.base]}
               label="Warm ramp: magenta/dark → magenta/base → amber/base"
-              bg={bg}
             />
             <GradientBlock
+              bg={bg}
               colors={[blueOklch.light, violetOklch.light, magentaOklch.light]}
               label="Soft pastel: blue/light → violet/light → magenta/light"
-              bg={bg}
             />
             <GradientBlock
+              bg={bg}
               colors={[limeScaleOklch[3], limeScaleOklch[6], limeScaleOklch[9]]}
               label="Brand lime scale ramp (steps 4 → 7 → 10)"
-              bg={bg}
             />
             <GradientBlock
+              bg={bg}
               colors={[
                 redOklch.base,
                 orangeOklch.base,
@@ -419,16 +437,14 @@ export function PaletteView() {
                 magentaOklch.base,
               ]}
               label="All bases around the wheel"
-              bg={bg}
             />
           </div>
         </Section>
-
         {/* ── Stress test ── */}
         <Section
-          title="Bases on ink + paper"
-          subtitle="Stress test — do all 12 base accents and brand lime read on both brand backgrounds?"
           bg={bg}
+          subtitle="Stress test — do all 12 base accents and brand lime read on both brand backgrounds?"
+          title="Bases on ink + paper"
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {([black, white] as const).map((bgColor) => (

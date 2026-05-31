@@ -50,6 +50,7 @@ export function useScroll(): ScrollSignal {
       // case because scrollY is also 0.
       const max = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)
       const progress = Math.max(0, Math.min(1, y / max))
+
       return [y, progress]
     }
 
@@ -59,11 +60,13 @@ export function useScroll(): ScrollSignal {
       get: () => value,
       on: (_event, cb) => {
         listeners.add(cb)
+
         return () => {
           listeners.delete(cb)
         }
       },
     }
+
     setSignal(fresh)
 
     let rafPending = false
@@ -73,11 +76,13 @@ export function useScroll(): ScrollSignal {
       requestAnimationFrame(() => {
         rafPending = false
         const next = compute()
+
         if (next[0] === value[0] && next[1] === value[1]) return
         value = next
         for (const cb of listeners) cb(next)
       })
     }
+
     window.addEventListener('scroll', onScroll, { passive: true })
 
     return () => {

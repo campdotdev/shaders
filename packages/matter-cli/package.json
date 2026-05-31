@@ -2,34 +2,34 @@
   "name": "@lovo/matter-cli",
   "version": "0.3.0",
   "description": "CLI for Matter — copy-paste components from the registry into your project.",
-  "license": "MIT",
   "keywords": [
-    "matter",
-    "shader",
     "cli",
-    "shadcn",
+    "components",
+    "matter",
     "scaffold",
-    "components"
+    "shadcn",
+    "shader"
   ],
+  "homepage": "https://github.com/lovo-hq/matter#readme",
+  "bugs": {
+    "url": "https://github.com/lovo-hq/matter/issues"
+  },
+  "license": "MIT",
+  "author": "lovo-hq",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/lovo-hq/matter.git",
     "directory": "packages/matter-cli"
   },
-  "homepage": "https://github.com/lovo-hq/matter#readme",
-  "bugs": {
-    "url": "https://github.com/lovo-hq/matter/issues"
-  },
-  "author": "lovo-hq",
-  "type": "module",
   "bin": {
     "matter-cli": "./dist/index.js"
   },
-  "main": "./dist/index.js",
   "files": [
     "dist",
     "CHANGELOG.md"
   ],
+  "type": "module",
+  "main": "./dist/index.js",
   "publishConfig": {
     "access": "public"
   },
@@ -37,12 +37,9 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
-    "lint": "vp lint src --type-aware --tsconfig ./tsconfig.json",
-    "test": "vp test run",
+    "lint": "eslint src",
+    "test": "vitest run",
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
-  },
-  "engines": {
-    "node": ">=22"
   },
   "dependencies": {
     "commander": "^12.1.0"
@@ -52,7 +49,10 @@
     "@types/node": "^22.7.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
-    "vitest": "catalog:",
-    "vite-plus": "catalog:"
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "engines": {
+    "node": ">=22"
   }
 }

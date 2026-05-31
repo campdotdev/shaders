@@ -1,4 +1,4 @@
-import { vec2, sin, fract, length } from 'three/tsl'
+import { fract, length, sin, vec2 } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
 

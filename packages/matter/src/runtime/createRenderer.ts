@@ -1,5 +1,5 @@
-import { WebGPURenderer } from 'three/webgpu'
 import { Color } from 'three'
+import { WebGPURenderer } from 'three/webgpu'
 
 export type MatterBackend = 'webgpu' | 'webgl2'
 
@@ -55,17 +55,19 @@ export async function createRenderer(
   await three.init()
 
   three.setPixelRatio(Math.min(window.devicePixelRatio, maxDPR))
-  const resolvedClearColor =
-    clearColor instanceof Color ? clearColor : new Color(clearColor as number | string)
+  const resolvedClearColor = clearColor instanceof Color ? clearColor : new Color(clearColor)
+
   three.setClearColor(resolvedClearColor, clearAlpha)
 
   const resize = () => {
     const w = canvas.clientWidth
     const h = canvas.clientHeight
+
     if (canvas.width !== w * three.getPixelRatio() || canvas.height !== h * three.getPixelRatio()) {
       three.setSize(w, h, false)
     }
   }
+
   resize()
 
   // Detect backend after init. The exact API may differ between three versions;

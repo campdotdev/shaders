@@ -1,8 +1,9 @@
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
-import dynamic from 'next/dynamic'
+
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
 // MatterScene + the registry components pull in three/webgpu, which
@@ -61,6 +62,7 @@ const fmtJsx = (p: VignetteParams) => {
     radius={${fmtNum(p.radius)}}
     color="${p.color}"
   />`
+
   return p.grainOrderFirst
     ? `<MatterScene>
   <LinearGradient />
@@ -89,6 +91,7 @@ export default function VignettePage() {
 
   useEffect(() => {
     const container = paneContainerRef.current
+
     if (!container) return
     const local: VignetteParams = { ...INITIAL }
     const pane = new Pane({ container, title: '<Vignette>' })
@@ -109,10 +112,12 @@ export default function VignettePage() {
       }, 1200)
     }
     const jsxBtn = pane.addButton({ title: 'Copy JSX' })
+
     jsxBtn.on('click', () => {
       void navigator.clipboard.writeText(fmtJsx(local)).then(() => flashCopied(jsxBtn, 'Copy JSX'))
     })
     const paramsBtn = pane.addButton({ title: 'Copy params' })
+
     paramsBtn.on('click', () => {
       void navigator.clipboard
         .writeText(fmtParams(local))
@@ -129,6 +134,7 @@ export default function VignettePage() {
     pane.addBinding(local, 'color')
 
     const stackFolder = pane.addFolder({ title: 'Stack with FilmGrain' })
+
     stackFolder.addBinding(local, 'grainOrderFirst', { label: 'grain first?' })
     stackFolder.addBinding(local, 'grainIntensity', {
       label: 'grain intensity',
@@ -154,11 +160,11 @@ export default function VignettePage() {
 
   const vignetteEl = (
     <Vignette
-      intensity={params.intensity}
-      softness={params.softness}
       center={[params.centerX, params.centerY]}
-      radius={params.radius}
       color={params.color}
+      intensity={params.intensity}
+      radius={params.radius}
+      softness={params.softness}
     />
   )
   const grainEl = <FilmGrain intensity={params.grainIntensity} />
@@ -187,9 +193,9 @@ export default function VignettePage() {
             aria-hidden-focus. The page content in <section> below is the
             accessible surface. */}
         <div
-          ref={paneContainerRef}
-          data-tweakpane-host
           aria-hidden="true"
+          data-tweakpane-host
+          ref={paneContainerRef}
           style={{
             position: 'absolute',
             top: '1rem',

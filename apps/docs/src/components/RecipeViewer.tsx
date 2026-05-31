@@ -31,6 +31,7 @@ export function RecipeViewer({ slug, variant, unframed = false }: RecipeViewerPr
     // mount the scene and let it fill the parent.
     return <RecipeScene slug={slug} variant={variant} />
   }
+
   return (
     <div
       style={{

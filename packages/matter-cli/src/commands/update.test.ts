@@ -2,8 +2,10 @@ import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { DEFAULT_MATTER_CONFIG, writeMatterConfig } from '../config/matterConfig.js'
+
 import { runUpdate } from './update.js'
 
 const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/', import.meta.url))}`
@@ -43,6 +45,7 @@ describe('runUpdate', () => {
       join(dir, 'src/components/matter/synthetic-component.tsx'),
       'utf-8',
     )
+
     expect(written).toContain('SyntheticComponent')
     expect(written).not.toContain('STALE')
   })
@@ -54,6 +57,7 @@ describe('runUpdate', () => {
       join(dir, 'src/components/matter/synthetic-component.tsx'),
       'utf-8',
     )
+
     expect(written).toContain('SyntheticComponent')
   })
 
