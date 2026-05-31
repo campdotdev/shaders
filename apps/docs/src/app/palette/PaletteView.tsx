@@ -6,7 +6,6 @@ import { palette, paletteOklch } from '@/lib/palette'
 const { black, white, gray, lime } = palette
 const {
   lime: limeOklch,
-  crimson: crimsonOklch,
   red: redOklch,
   orange: orangeOklch,
   amber: amberOklch,
@@ -27,7 +26,6 @@ type AccentSteps = { dark: string; mid: string; light: string }
 type AccentEntry = { name: string; angle: number; steps: AccentSteps; oklch: AccentSteps }
 
 const ACCENTS: AccentEntry[] = [
-  { name: 'crimson', angle: 17,  steps: palette.crimson, oklch: crimsonOklch },
   { name: 'red',     angle: 25,  steps: palette.red,     oklch: redOklch },
   { name: 'orange',  angle: 55,  steps: palette.orange,  oklch: orangeOklch },
   { name: 'amber',   angle: 75,  steps: palette.amber,   oklch: amberOklch },
@@ -334,8 +332,8 @@ export function PaletteView() {
 
         {/* ── Accent palette ── */}
         <Section
-          title="Accent palette — 13 hues × 3 steps"
-          subtitle="Sampled from the OKLCH system at dark (step 4), mid (step 10, most vibrant), and light (step 11). All 13 accent hues from the OKLCH color system, in hue-angle order."
+          title="Accent palette — 12 hues × 3 steps"
+          subtitle="Sampled from the OKLCH system at dark (step 4), mid (step 10, most vibrant), and light (step 11). All 12 accent hues from the OKLCH color system, in hue-angle order."
           bg={bg}
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 28 }}>
@@ -406,7 +404,7 @@ export function PaletteView() {
             />
             <GradientBlock
               colors={[
-                crimsonOklch.mid, orangeOklch.mid, amberOklch.mid, limeMid,
+                redOklch.mid, orangeOklch.mid, amberOklch.mid, limeMid,
                 tealOklch.mid, blueOklch.mid, violetOklch.mid, pinkOklch.mid,
               ]}
               label="All mids around the wheel"
@@ -418,7 +416,7 @@ export function PaletteView() {
         {/* ── Stress test ── */}
         <Section
           title="Mids on ink + paper"
-          subtitle="Stress test — do all 13 mid accents and brand lime read on both brand backgrounds?"
+          subtitle="Stress test — do all 12 mid accents and brand lime read on both brand backgrounds?"
           bg={bg}
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
