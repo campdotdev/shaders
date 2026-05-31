@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { MatterScheduler } from './MatterScheduler.js'
 
 describe('MatterScheduler', () => {
@@ -10,6 +11,7 @@ describe('MatterScheduler', () => {
     nextRafId = 0
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)
+
       return ++nextRafId
     })
     vi.stubGlobal('cancelAnimationFrame', (_id: number) => {
@@ -24,6 +26,7 @@ describe('MatterScheduler', () => {
   /** Drive one frame: invoke every queued rAF callback exactly once. */
   const tickFrame = (now = performance.now()) => {
     const callbacks = rafCallbacks
+
     rafCallbacks = []
     for (const cb of callbacks) cb(now)
   }
@@ -31,6 +34,7 @@ describe('MatterScheduler', () => {
   it('invokes registered clients on every tick', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
 
@@ -44,6 +48,7 @@ describe('MatterScheduler', () => {
   it('does not invoke removed clients', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
     tickFrame(0)
@@ -57,6 +62,7 @@ describe('MatterScheduler', () => {
   it('passes the timestamp delta (in seconds) to each client', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
 
@@ -69,6 +75,7 @@ describe('MatterScheduler', () => {
   it('stops invoking clients after pause()', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
     tickFrame(0)
@@ -82,6 +89,7 @@ describe('MatterScheduler', () => {
   it('resumes invoking clients after resume()', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
     scheduler.pause()
@@ -92,12 +100,14 @@ describe('MatterScheduler', () => {
 
   it('does not start the rAF loop when no clients are registered', () => {
     const scheduler = new MatterScheduler()
+
     scheduler.start()
     expect(rafCallbacks.length).toBe(0)
   })
 
   it('starts the rAF loop when the first client is added', () => {
     const scheduler = new MatterScheduler()
+
     scheduler.start()
     scheduler.add(vi.fn())
     expect(rafCallbacks.length).toBe(1)
@@ -113,6 +123,7 @@ describe('setIdle (render-on-demand)', () => {
     nextRafId = 0
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)
+
       return ++nextRafId
     })
     vi.stubGlobal('cancelAnimationFrame', () => {})
@@ -124,6 +135,7 @@ describe('setIdle (render-on-demand)', () => {
 
   const tickFrame = (now = performance.now()) => {
     const callbacks = rafCallbacks
+
     rafCallbacks = []
     for (const cb of callbacks) cb(now)
   }
@@ -131,6 +143,7 @@ describe('setIdle (render-on-demand)', () => {
   it('runs one final tick when setIdle(true) is called, then halts', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
     tickFrame(0)
@@ -149,6 +162,7 @@ describe('setIdle (render-on-demand)', () => {
   it('resumes ticking when setIdle(false) is called', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
     scheduler.setIdle(true)
@@ -167,6 +181,7 @@ describe('setIdle (render-on-demand)', () => {
   it('requestRender() forces one tick while idle', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
     scheduler.setIdle(true)
@@ -194,6 +209,7 @@ describe('dispose invariants', () => {
     cancelled = []
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)
+
       return ++nextRafId
     })
     vi.stubGlobal('cancelAnimationFrame', (id: number) => {
@@ -207,6 +223,7 @@ describe('dispose invariants', () => {
 
   it('cancels the pending rAF on dispose', () => {
     const scheduler = new MatterScheduler()
+
     scheduler.add(vi.fn())
     scheduler.start()
     expect(rafCallbacks.length).toBe(1)
@@ -217,6 +234,7 @@ describe('dispose invariants', () => {
   it('does not invoke clients after dispose', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
     scheduler.dispose()

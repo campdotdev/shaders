@@ -1,9 +1,10 @@
 // apps/docs/app/components/dot-field/page.tsx
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
-import dynamic from 'next/dynamic'
+
 import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
@@ -41,9 +42,11 @@ export default function DotFieldPage() {
 
   useEffect(() => {
     const container = paneContainerRef.current
+
     if (!container) return
     const local = { ...INITIAL }
     const pane = new Pane({ container, title: '<DotField>' })
+
     pane.addBinding(local, 'color')
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'spacing', { min: 8, max: 80, step: 1 })
@@ -56,6 +59,7 @@ export default function DotFieldPage() {
     pane.on('change', () => {
       setParams({ ...local })
     })
+
     return () => {
       pane.dispose()
     }
@@ -67,11 +71,11 @@ export default function DotFieldPage() {
         <MatterScene>
           <DotField
             color={params.color}
-            spacing={params.spacing}
             dotSize={params.dotSize}
-            reach={params.reach}
-            strength={params.strength}
             interactive={params.interactive}
+            reach={params.reach}
+            spacing={params.spacing}
+            strength={params.strength}
           />
           <VisualTestPause />
         </MatterScene>
@@ -83,9 +87,9 @@ export default function DotFieldPage() {
           accessible surface. (`inert` would have blocked mouse input too —
           regression noted 2026-05-13.) */}
       <div
-        ref={paneContainerRef}
-        data-tweakpane-host
         aria-hidden="true"
+        data-tweakpane-host
+        ref={paneContainerRef}
         style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>

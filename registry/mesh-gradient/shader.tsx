@@ -1,30 +1,29 @@
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
+import { noise, time } from '@lovo/matter'
 import {
+  type AnimatableProp,
+  useAnimatableUniform,
+  useMatterContext,
+  useResize,
+} from '@lovo/matter-react'
+import { useEffect, useMemo } from 'react'
+import {
+  abs,
+  cos,
+  mix,
+  pow,
+  type ShaderNodeObject,
+  sign,
+  sin,
+  smoothstep,
+  uniform,
   uv,
   vec2,
   vec4,
-  mix,
-  sign,
-  abs,
-  pow,
-  sin,
-  cos,
-  smoothstep,
-  uniform,
-  type ShaderNodeObject,
 } from 'three/tsl'
-
-import { time, noise } from '@lovo/matter'
-import {
-  useMatterContext,
-  useResize,
-  useAnimatableUniform,
-  type AnimatableProp,
-} from '@lovo/matter-react'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu'
+import type { Node } from 'three/webgpu'
 
 import { parseHex } from '../utils/color'
 
@@ -56,9 +55,10 @@ function useColorUniform(hex: string) {
   const vec = useMemo(
     () => {
       const [r, g, b] = parseHex(hex)
+
       return new Vector3(r, g, b)
     },
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
 
@@ -66,6 +66,7 @@ function useColorUniform(hex: string) {
 
   useEffect(() => {
     const [r, g, b] = parseHex(hex)
+
     vec.set(r, g, b)
   }, [hex, vec])
 
@@ -104,9 +105,12 @@ export function MeshGradientShader({
   // default so the first frame doesn't see (1, 1). Pattern from Aurora.
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
   const resNode = useMemo(() => uniform(resVec) as unknown as ShaderNodeObject<Node>, [resVec])
+
   useEffect(() => {
     const [w, h] = resize.get()
+
     if (w > 0 && h > 0) resVec.set(w, h)
+
     return resize.on('change', ([w2, h2]) => resVec.set(w2, h2))
   }, [resize, resVec])
 
@@ -191,10 +195,13 @@ export function MeshGradientShader({
     const color = layer1.mul(vMix.oneMinus()).add(layer2.mul(vMix))
 
     const material = new MeshBasicNodeMaterial()
+
     material.colorNode = vec4(color, 1)
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
+
     return () => {
       ctx.scene.remove(mesh)
       try {

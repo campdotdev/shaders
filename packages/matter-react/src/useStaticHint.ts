@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+
 import { useMatterContext } from './useMatterContext.js'
 
 /**
@@ -16,9 +17,11 @@ import { useMatterContext } from './useMatterContext.js'
  */
 export function useStaticHint(hint: boolean): void {
   const ctx = useMatterContext()
+
   useEffect(() => {
     if (!ctx) return
     ctx.scheduler.setIdle(hint)
+
     return () => ctx.scheduler.setIdle(false)
   }, [ctx, hint])
 }

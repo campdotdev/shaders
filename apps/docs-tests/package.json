@@ -1,7 +1,7 @@
 {
   "name": "@matter/docs-tests",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "test:visual": "playwright test",
@@ -10,9 +10,9 @@
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.10.0",
     "@matter/tsconfig": "workspace:*",
     "@playwright/test": "^1.48.0",
-    "@axe-core/playwright": "^4.10.0",
     "@types/node": "^22",
     "typescript": "^5"
   }

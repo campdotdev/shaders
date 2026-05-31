@@ -1,8 +1,10 @@
 import { readdir } from 'node:fs/promises'
 import { extname, join } from 'node:path'
+
 import { readMatterConfig } from '../config/matterConfig.js'
 import { fetchRegistry, type Registry } from '../registry/fetchRegistry.js'
 import { resolveRef } from '../registry/ref.js'
+
 import { runAdd } from './add.js'
 
 export interface UpdateOptions {
@@ -36,6 +38,7 @@ export async function runUpdate(
   const registry = await fetchRegistry(registryUrl)
 
   let toUpdate: string[]
+
   if (components.length === 0) {
     if (localSlugs.length === 0) {
       throw new Error(
@@ -50,6 +53,7 @@ export async function runUpdate(
     for (const slug of components) {
       const file = registry.components[slug]?.file
       const present = file !== undefined && localSlugs.includes(slug)
+
       if (!present) {
         throw new Error(
           `Component "${slug}" is not present in ${componentsDir}. Use \`matter-cli add ${slug}\` instead.`,
@@ -88,5 +92,6 @@ async function safeReaddir(path: string): Promise<string[]> {
 // silently get skipped here. The single check guards both invariants.
 function slugIsInRegistry(slug: string, registry: Registry): boolean {
   const entry = registry.components[slug]
-  return entry !== undefined && entry.file.replace(/\.(tsx|ts)$/, '') === slug
+
+  return entry?.file.replace(/\.(tsx|ts)$/, '') === slug
 }

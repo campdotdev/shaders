@@ -1,12 +1,13 @@
 'use client'
 
-import { useCallback, useState, type ReactNode } from 'react'
 import dynamic from 'next/dynamic'
+import { type ReactNode, useCallback, useState } from 'react'
+
 import { LiveDemo } from '@/components/LiveDemo'
 import {
-  PropsPlayground,
   initialStateFromSchema,
   type PropSchema,
+  PropsPlayground,
   type PropsState,
 } from '@/components/PropsPlayground'
 import { VisualTestPause } from '@/lib/visualTestHooks'
@@ -62,17 +63,16 @@ export function PageBody({ schema, code }: PageBodyProps) {
       <LiveDemo>
         <MatterScene>
           <LinearGradient
-            key={remountKey}
-            colors={colors}
             angle={angle}
+            colors={colors}
+            interactive={interactive}
+            key={remountKey}
             speed={speed}
             variant={variant}
-            interactive={interactive}
           />
           <VisualTestPause />
         </MatterScene>
       </LiveDemo>
-
       <div
         style={{
           marginTop: '1.5rem',
@@ -83,7 +83,7 @@ export function PageBody({ schema, code }: PageBodyProps) {
       >
         <div>
           <h2 style={{ fontSize: '1rem', marginTop: 0 }}>Playground</h2>
-          <PropsPlayground schema={schema} onChange={handleChange} />
+          <PropsPlayground onChange={handleChange} schema={schema} />
         </div>
         <div>
           <h2 style={{ fontSize: '1rem', marginTop: 0 }}>Source</h2>

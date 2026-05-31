@@ -20,6 +20,7 @@ export interface Registry {
  */
 export function joinUrl(base: string, file: string): string {
   const trimmed = base.endsWith('/') ? base.slice(0, -1) : base
+
   return `${trimmed}/${file}`
 }
 
@@ -33,6 +34,7 @@ export async function fetchRegistry(baseUrl: string): Promise<Registry> {
   const url = joinUrl(baseUrl, 'registry.json')
   const json = await readUrl(url)
   let parsed: unknown
+
   try {
     parsed = JSON.parse(json)
   } catch (err) {
@@ -41,10 +43,12 @@ export async function fetchRegistry(baseUrl: string): Promise<Registry> {
   if (typeof parsed !== 'object' || parsed === null || !('components' in parsed)) {
     throw new Error(`Registry at ${url} is missing a "components" object`)
   }
-  const components = (parsed as { components: unknown }).components
+  const components = parsed.components
+
   if (typeof components !== 'object' || components === null || Array.isArray(components)) {
     throw new Error(`Registry at ${url} is missing a "components" object`)
   }
+
   return parsed as Registry
 }
 

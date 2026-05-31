@@ -1,4 +1,4 @@
-import { DEFAULT_MATTER_CONFIG, configExists, readMatterConfig } from '../config/matterConfig.js'
+import { configExists, DEFAULT_MATTER_CONFIG, readMatterConfig } from '../config/matterConfig.js'
 import { fetchRegistry } from '../registry/fetchRegistry.js'
 import { resolveRef } from '../registry/ref.js'
 
@@ -22,10 +22,12 @@ export async function runList(
   // config (invalid JSON, missing fields) → propagate so the user sees the
   // problem instead of silently falling back to the GitHub URL.
   let baseUrl: string
+
   if (opts.registry !== undefined && opts.registry !== '') {
     baseUrl = opts.registry
   } else if (await configExists(io.cwd)) {
     const cfg = await readMatterConfig(io.cwd)
+
     baseUrl = cfg.registryUrl
   } else {
     baseUrl = DEFAULT_MATTER_CONFIG.registryUrl
@@ -38,11 +40,13 @@ export async function runList(
 
   if (entries.length === 0) {
     io.log('No components in registry.')
+
     return
   }
 
   for (const [slug, entry] of entries) {
     const description = entry.description ?? '(no description)'
+
     io.log(`${slug} · ${description} · tier ${entry.tier}`)
   }
 }

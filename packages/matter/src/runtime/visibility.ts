@@ -16,22 +16,29 @@ export function createVisibilityWatcher(): VisibilityWatcher {
   if (typeof document === 'undefined') {
     return {
       isVisible: () => true,
-      subscribe: () => () => {},
-      dispose: () => {},
+      subscribe: () => () => {
+        // SSR no-op unsubscribe
+      },
+      dispose: () => {
+        // SSR no-op dispose
+      },
     }
   }
 
   const subs = new Set<(v: boolean) => void>()
   const onChange = () => {
     const v = document.visibilityState === 'visible'
+
     for (const cb of subs) cb(v)
   }
+
   document.addEventListener('visibilitychange', onChange)
 
   return {
     isVisible: () => document.visibilityState === 'visible',
     subscribe(cb) {
       subs.add(cb)
+
       return () => subs.delete(cb)
     },
     dispose() {

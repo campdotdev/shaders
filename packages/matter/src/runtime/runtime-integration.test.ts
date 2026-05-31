@@ -1,7 +1,8 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { createIntersectionWatcher } from './intersection.js'
 import { MatterScheduler } from './MatterScheduler.js'
 import { createVisibilityWatcher } from './visibility.js'
-import { createIntersectionWatcher } from './intersection.js'
 
 describe('runtime integration', () => {
   let rafCallbacks: FrameRequestCallback[] = []
@@ -19,6 +20,7 @@ describe('runtime integration', () => {
 
     vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
       rafCallbacks.push(cb)
+
       return ++nextRafId
     })
     vi.stubGlobal('cancelAnimationFrame', () => {})
@@ -33,6 +35,7 @@ describe('runtime integration', () => {
     vi.spyOn(document, 'removeEventListener').mockImplementation((type, cb) => {
       if (type === 'visibilitychange') {
         const i = visibilityListeners.indexOf(cb as () => void)
+
         if (i >= 0) visibilityListeners.splice(i, 1)
       }
     })
@@ -57,6 +60,7 @@ describe('runtime integration', () => {
 
   const tickFrame = (now = performance.now()) => {
     const callbacks = rafCallbacks
+
     rafCallbacks = []
     for (const cb of callbacks) cb(now)
   }
@@ -64,6 +68,7 @@ describe('runtime integration', () => {
   it('combined gates: scene only ticks when visible AND in-view AND not idle', () => {
     const scheduler = new MatterScheduler()
     const client = vi.fn()
+
     scheduler.add(client)
     scheduler.start()
 
@@ -73,9 +78,11 @@ describe('runtime integration', () => {
 
     const update = () => {
       const should = visibility.isVisible() && intersection.isInView()
+
       if (should) scheduler.resume()
       else scheduler.pause()
     }
+
     visibility.subscribe(update)
     intersection.subscribe(update)
     update()

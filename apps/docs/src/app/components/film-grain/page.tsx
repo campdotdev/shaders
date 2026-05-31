@@ -1,10 +1,11 @@
 'use client'
 
+import type { FilmGrainMode } from '@matter/registry/film-grain'
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
-import dynamic from 'next/dynamic'
+
 import { VisualTestPause } from '@/lib/visualTestHooks'
-import type { FilmGrainMode } from '@matter/registry/film-grain'
 
 // MatterScene + the registry components pull in three/webgpu, which
 // references `self` at module load time and breaks Next's SSR. Load
@@ -55,6 +56,7 @@ export default function FilmGrainPage() {
 
   useEffect(() => {
     const container = paneContainerRef.current
+
     if (!container) return
     const local: FilmGrainParams = { ...INITIAL }
     const pane = new Pane({ container, title: '<FilmGrain>' })
@@ -75,10 +77,12 @@ export default function FilmGrainPage() {
       }, 1200)
     }
     const jsxBtn = pane.addButton({ title: 'Copy JSX' })
+
     jsxBtn.on('click', () => {
       void navigator.clipboard.writeText(fmtJsx(local)).then(() => flashCopied(jsxBtn, 'Copy JSX'))
     })
     const paramsBtn = pane.addButton({ title: 'Copy params' })
+
     paramsBtn.on('click', () => {
       void navigator.clipboard
         .writeText(fmtParams(local))
@@ -112,7 +116,7 @@ export default function FilmGrainPage() {
       <div style={{ position: 'relative', height: '70vh' }}>
         <MatterScene>
           <LinearGradient />
-          <FilmGrain intensity={params.intensity} speed={params.speed} mode={params.mode} />
+          <FilmGrain intensity={params.intensity} mode={params.mode} speed={params.speed} />
           <VisualTestPause />
         </MatterScene>
         {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
@@ -121,9 +125,9 @@ export default function FilmGrainPage() {
             aria-hidden-focus. The page content in <section> below is the
             accessible surface. */}
         <div
-          ref={paneContainerRef}
-          data-tweakpane-host
           aria-hidden="true"
+          data-tweakpane-host
+          ref={paneContainerRef}
           style={{
             position: 'absolute',
             top: '1rem',

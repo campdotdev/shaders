@@ -12,6 +12,7 @@ export async function readUrl(url: string): Promise<string> {
 
   if (parsed.protocol === 'file:') {
     const path = fileURLToPath(parsed)
+
     try {
       return await readFile(path, 'utf-8')
     } catch (err) {
@@ -24,6 +25,7 @@ export async function readUrl(url: string): Promise<string> {
 
   if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
     let res: Response
+
     try {
       res = await fetch(url)
     } catch (err) {
@@ -32,6 +34,7 @@ export async function readUrl(url: string): Promise<string> {
     if (!res.ok) {
       throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`)
     }
+
     return await res.text()
   }
 

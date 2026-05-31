@@ -6,12 +6,12 @@
 // `@lovo/matter` and `@lovo/matter-react`) reference `self` at module load
 // and break Next's prerender pass (CLAUDE.md gotcha #10).
 
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu'
-import { vec2, vec3, uv, uniform } from 'three/tsl'
-import { time, colorRamp, type ColorRampStop, fbm } from '@lovo/matter'
+import { colorRamp, type ColorRampStop, fbm, time } from '@lovo/matter'
 import { MatterScene, useMatterContext } from '@lovo/matter-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { uniform, uv, vec2, vec3 } from 'three/tsl'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu'
+import { Pane } from 'tweakpane'
 
 interface Params {
   octaves: number
@@ -55,21 +55,19 @@ function FbmMesh({
 
     // p = uv() * scale + time * timeSpeed (broadcast time scalar to vec2)
     const animatedUv = uv()
-      .mul(scaleUniform as unknown as number)
-      .add(
-        vec2(
-          time.mul(timeSpeedUniform as unknown as number),
-          time.mul(timeSpeedUniform as unknown as number),
-        ),
-      )
+      .mul(scaleUniform)
+      .add(vec2(time.mul(timeSpeedUniform), time.mul(timeSpeedUniform)))
     const t = fbm(animatedUv, { octaves, lacunarity, gain })
     // Normalize fbm's [-1..1]-ish range into [0..1] for colorRamp.
     const tNorm = (t as unknown as { add(n: number): { mul(n: number): unknown } }).add(1).mul(0.5)
 
     const material = new MeshBasicNodeMaterial()
-    material.colorNode = colorRamp(tNorm as never, STOPS) as never
+
+    material.colorNode = colorRamp(tNorm as never, STOPS)
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
+
     return () => {
       ctx.scene.remove(mesh)
       try {
@@ -101,6 +99,7 @@ export default function FbmPlayground() {
 
   useEffect(() => {
     const container = paneContainerRef.current
+
     if (!container) return
 
     const local = { ...INITIAL }
@@ -120,6 +119,7 @@ export default function FbmPlayground() {
 
     pane.on('change', (ev) => {
       const key = (ev.target as { key?: keyof Params }).key
+
       if (key === 'scale') {
         ;(scaleUniform as unknown as { value: number }).value = local.scale
       } else if (key === 'timeSpeed') {
@@ -138,9 +138,9 @@ export default function FbmPlayground() {
       <div style={{ position: 'relative', height: '70vh' }}>
         <MatterScene key={instanceKey}>
           <FbmMesh
-            octaves={params.octaves}
-            lacunarity={params.lacunarity}
             gain={params.gain}
+            lacunarity={params.lacunarity}
+            octaves={params.octaves}
             scaleUniform={scaleUniform}
             timeSpeedUniform={timeSpeedUniform}
           />

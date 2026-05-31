@@ -11,6 +11,7 @@ import { vec3 } from 'three/tsl'
  */
 export const parseHex = (hex: string): [number, number, number] => {
   const c = hex.replace('#', '')
+
   return [
     parseInt(c.slice(0, 2), 16) / 255,
     parseInt(c.slice(2, 4), 16) / 255,
@@ -27,5 +28,6 @@ export const parseHex = (hex: string): [number, number, number] => {
  */
 export const color = (hex: string) => {
   const [r, g, b] = parseHex(hex)
+
   return vec3(r, g, b)
 }

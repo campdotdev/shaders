@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, type ReactNode } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 
 export interface FallbackBoundaryProps {
   /** Rendered until WebGPU/WebGL is available on the client. */
@@ -15,8 +15,10 @@ export interface FallbackBoundaryProps {
  */
 export function FallbackBoundary({ fallback, children }: FallbackBoundaryProps) {
   const [mounted, setMounted] = useState(false)
+
   useEffect(() => {
     setMounted(true)
   }, [])
+
   return <>{mounted ? children : (fallback ?? null)}</>
 }

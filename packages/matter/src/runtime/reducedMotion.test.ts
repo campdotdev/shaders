@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import {
   __resetReducedMotionForTests,
   createReducedMotionWatcher,
@@ -16,6 +17,7 @@ interface MockMQL {
 
 const makeMQL = (initial: boolean): MockMQL => {
   const listeners: MockMQL['listeners'] = []
+
   return {
     get matches() {
       return initial
@@ -27,6 +29,7 @@ const makeMQL = (initial: boolean): MockMQL => {
     addEventListener: (_t, cb) => listeners.push(cb),
     removeEventListener: (_t, cb) => {
       const i = listeners.indexOf(cb)
+
       if (i >= 0) listeners.splice(i, 1)
     },
     dispatch(matches) {
@@ -40,6 +43,7 @@ const makeMQL = (initial: boolean): MockMQL => {
 
 describe('reducedMotion watcher', () => {
   let mql: MockMQL
+
   beforeEach(() => {
     mql = makeMQL(false)
     vi.stubGlobal('matchMedia', () => mql)
@@ -52,6 +56,7 @@ describe('reducedMotion watcher', () => {
 
   it('returns scale 1 when system reduce is off and policy is auto', () => {
     const w = createReducedMotionWatcher()
+
     expect(w.scale()).toBe(1)
     w.dispose()
   })
@@ -59,6 +64,7 @@ describe('reducedMotion watcher', () => {
   it('returns scale 0.3 when system reduce is on and policy is auto', () => {
     mql.matches = true
     const w = createReducedMotionWatcher()
+
     expect(w.scale()).toBe(0.3)
     w.dispose()
   })
@@ -66,6 +72,7 @@ describe('reducedMotion watcher', () => {
   it('emits change when matchMedia toggles', () => {
     const w = createReducedMotionWatcher()
     const cb = vi.fn()
+
     w.subscribe(cb)
     mql.dispatch(true)
     expect(cb).toHaveBeenCalledWith(0.3)
@@ -78,6 +85,7 @@ describe('reducedMotion watcher', () => {
     mql.matches = true
     setReducedMotionPolicy('off')
     const w = createReducedMotionWatcher()
+
     expect(w.scale()).toBe(1)
     w.dispose()
   })
@@ -85,6 +93,7 @@ describe('reducedMotion watcher', () => {
   it('honors explicit policy override "paused" (scale 0)', () => {
     setReducedMotionPolicy('paused')
     const w = createReducedMotionWatcher()
+
     expect(w.scale()).toBe(0)
     w.dispose()
   })
@@ -92,6 +101,7 @@ describe('reducedMotion watcher', () => {
   it('honors explicit policy override "slow" (scale 0.3 regardless of mql)', () => {
     setReducedMotionPolicy('slow')
     const w = createReducedMotionWatcher()
+
     expect(w.scale()).toBe(0.3)
     w.dispose()
   })
@@ -99,6 +109,7 @@ describe('reducedMotion watcher', () => {
   it('emits when policy changes', () => {
     const w = createReducedMotionWatcher()
     const cb = vi.fn()
+
     w.subscribe(cb)
     setReducedMotionPolicy('paused')
     expect(cb).toHaveBeenLastCalledWith(0)
@@ -109,6 +120,7 @@ describe('reducedMotion watcher', () => {
 
   it('removes listeners on dispose', () => {
     const w = createReducedMotionWatcher()
+
     expect(mql.listeners.length).toBe(1)
     w.dispose()
     expect(mql.listeners.length).toBe(0)
@@ -117,10 +129,12 @@ describe('reducedMotion watcher', () => {
   it('survives a strict-mode create-dispose-recreate cycle', () => {
     const w1 = createReducedMotionWatcher()
     const cb = vi.fn()
+
     w1.subscribe(cb)
     w1.dispose()
 
     const w2 = createReducedMotionWatcher()
+
     w2.subscribe(cb)
     setReducedMotionPolicy('paused')
     // Only w2 is live; cb should be called exactly once (from w2's recompute).
@@ -142,9 +156,11 @@ describe('reducedMotion watcher — SSR fallback', () => {
 
   it('returns a no-op watcher when matchMedia is undefined', () => {
     const w = createReducedMotionWatcher()
+
     expect(w.scale()).toBe(1)
     const cb = vi.fn()
     const unsub = w.subscribe(cb)
+
     unsub()
     w.dispose()
     // No throw, no error — that's the contract.
@@ -153,6 +169,7 @@ describe('reducedMotion watcher — SSR fallback', () => {
   it('respects policy override on the SSR watcher', () => {
     setReducedMotionPolicy('paused')
     const w = createReducedMotionWatcher()
+
     expect(w.scale()).toBe(0)
     setReducedMotionPolicy('slow')
     // Note: SSR watcher does not emit on policy change (it's not in state.watchers).
@@ -180,12 +197,14 @@ describe('reducedMotion uniform', () => {
 
   it('exposes a TSL uniform whose value matches the current scale', () => {
     const u = getReducedMotionTimeScale()
+
     setReducedMotionPolicy('slow')
     expect((u as unknown as { value: number }).value).toBe(0.3)
   })
 
   it('updates the uniform value when policy changes', () => {
     const u = getReducedMotionTimeScale()
+
     setReducedMotionPolicy('off')
     expect((u as unknown as { value: number }).value).toBe(1)
     setReducedMotionPolicy('paused')

@@ -4,6 +4,7 @@ declare const __VERSION__: string
 
 function fail(err: unknown): never {
   const message = err instanceof Error ? err.message : String(err)
+
   process.stderr.write(`error: ${message}\n`)
   process.exit(1)
 }
@@ -22,6 +23,7 @@ program
   .action(async (opts: { force?: boolean }) => {
     try {
       const { runInit } = await import('./commands/init.js')
+
       await runInit(opts)
     } catch (err) {
       fail(err)
@@ -36,6 +38,7 @@ program
   .action(async (opts: { registry?: string; ref?: string }) => {
     try {
       const { runList } = await import('./commands/list.js')
+
       await runList({ ...opts, cliVersion: __VERSION__ })
     } catch (err) {
       fail(err)
@@ -53,6 +56,7 @@ program
     async (components: string[], opts: { registry?: string; ref?: string; force?: boolean }) => {
       try {
         const { runAdd } = await import('./commands/add.js')
+
         await runAdd(components, { ...opts, cliVersion: __VERSION__ })
       } catch (err) {
         fail(err)
@@ -71,6 +75,7 @@ program
     async (components: string[], opts: { registry?: string; ref?: string; force?: boolean }) => {
       try {
         const { runUpdate } = await import('./commands/update.js')
+
         await runUpdate(components ?? [], { ...opts, cliVersion: __VERSION__ })
       } catch (err) {
         fail(err)

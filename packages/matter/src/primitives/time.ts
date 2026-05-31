@@ -9,6 +9,7 @@
 import { time as _builtinTime } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
+
 import { getReducedMotionTimeScale } from '../runtime/reducedMotion.js'
 
 export const time: ShaderNodeObject<Node> = _builtinTime.mul(getReducedMotionTimeScale())

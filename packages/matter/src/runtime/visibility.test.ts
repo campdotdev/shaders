@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { createVisibilityWatcher } from './visibility.js'
 
 describe('visibility watcher', () => {
@@ -18,6 +19,7 @@ describe('visibility watcher', () => {
     vi.spyOn(document, 'removeEventListener').mockImplementation((type, cb) => {
       if (type === 'visibilitychange') {
         const i = listeners.indexOf(cb as () => void)
+
         if (i >= 0) listeners.splice(i, 1)
       }
     })
@@ -29,6 +31,7 @@ describe('visibility watcher', () => {
 
   it('reports visible by default', () => {
     const w = createVisibilityWatcher()
+
     expect(w.isVisible()).toBe(true)
     w.dispose()
   })
@@ -36,6 +39,7 @@ describe('visibility watcher', () => {
   it('emits change when visibility flips to hidden and back', () => {
     const w = createVisibilityWatcher()
     const cb = vi.fn()
+
     w.subscribe(cb)
     visibilityState = 'hidden'
     listeners.forEach((l) => l())
@@ -48,6 +52,7 @@ describe('visibility watcher', () => {
 
   it('removes the document listener on dispose', () => {
     const w = createVisibilityWatcher()
+
     expect(listeners.length).toBe(1)
     w.dispose()
     expect(listeners.length).toBe(0)
@@ -56,11 +61,13 @@ describe('visibility watcher', () => {
   it('survives a strict-mode create-dispose-recreate cycle', () => {
     const w1 = createVisibilityWatcher()
     const cb = vi.fn()
+
     w1.subscribe(cb)
     w1.dispose()
     expect(listeners.length).toBe(0)
 
     const w2 = createVisibilityWatcher()
+
     w2.subscribe(cb)
     expect(listeners.length).toBe(1)
     // After w1 disposal, only w2's callback should fire
@@ -76,8 +83,10 @@ describe('visibility watcher — SSR fallback', () => {
     vi.stubGlobal('document', undefined)
     try {
       const w = createVisibilityWatcher()
+
       expect(w.isVisible()).toBe(true)
       const unsub = w.subscribe(() => {})
+
       unsub()
       w.dispose()
       // No throw — that's the contract.

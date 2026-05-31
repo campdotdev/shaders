@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
 
 interface LiveDemoProps {
   children: ReactNode
@@ -31,7 +31,9 @@ export function LiveDemo({
     const handler = () => {
       setIsFullscreen(document.fullscreenElement === ref.current)
     }
+
     document.addEventListener('fullscreenchange', handler)
+
     return () => {
       document.removeEventListener('fullscreenchange', handler)
     }
@@ -47,8 +49,8 @@ export function LiveDemo({
 
   return (
     <div
-      ref={ref}
       className={className}
+      ref={ref}
       style={{
         position: 'relative',
         height: isFullscreen ? '100vh' : height,
@@ -67,8 +69,8 @@ export function LiveDemo({
         {children}
       </div>
       <button
-        onClick={toggleFullscreen}
         aria-label={isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'}
+        onClick={toggleFullscreen}
         style={{
           position: 'absolute',
           top: '0.5rem',

@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import { CursorInput, type CursorInputOptions, type Vec2 } from '@lovo/matter'
+import { useEffect, useState } from 'react'
+
 import { useMatterContext } from './useMatterContext.js'
 
 export interface CursorSignal {
@@ -41,11 +42,14 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     const canvas = ctx?.renderer.three.domElement
     const elementOpt = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined)
     const fresh = new CursorInput({ ...opts, element: elementOpt })
+
     setInput(fresh)
 
     let detach: (() => void) | null = null
+
     if (ctx?.scheduler) {
       const client = ({ delta }: { delta: number }) => fresh.tick(delta)
+
       ctx.scheduler.add(client)
       detach = () => ctx.scheduler.remove(client)
     } else {
@@ -53,10 +57,12 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
       let lastNow = performance.now()
       const loop = (now: number) => {
         const delta = (now - lastNow) / 1000
+
         lastNow = now
         fresh.tick(delta)
         raf = requestAnimationFrame(loop)
       }
+
       raf = requestAnimationFrame(loop)
       detach = () => {
         if (raf !== null) cancelAnimationFrame(raf)
@@ -71,7 +77,7 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     // We intentionally only re-create on ctx change, not opts (which is a
     // fresh object literal each render). Smoothing tweaks during dev are
     // applied by remounting the parent component.
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx])
 
   return input ?? STUB_SIGNAL

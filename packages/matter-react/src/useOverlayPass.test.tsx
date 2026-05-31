@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from 'vite-plus/test'
-import { render, cleanup } from '@testing-library/react'
+import { cleanup, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
+import { describe, expect, it, vi } from 'vitest'
+
 import { MatterContext, type MatterContextValue, type OverlayTransform } from './matter-context.js'
 import { useOverlayPass } from './useOverlayPass.js'
 
@@ -14,11 +15,13 @@ function makeCtx(): { ctx: MatterContextValue; registered: OverlayTransform[]; c
     scheduler: {} as MatterContextValue['scheduler'],
     registerOverlay: (transform: OverlayTransform) => {
       registered.push(transform)
+
       return () => {
         cleanups++
       }
     },
-  } as unknown as MatterContextValue
+  }
+
   return { ctx, registered, cleanups }
 }
 
@@ -31,10 +34,13 @@ const identityTransform: OverlayTransform = (input) => input
 describe('useOverlayPass', () => {
   it('registers the transform on mount', () => {
     const { ctx, registered } = makeCtx()
+
     function Probe() {
       useOverlayPass(identityTransform, [])
+
       return null
     }
+
     render(
       <Wrapper ctx={ctx}>
         <Probe />
@@ -56,28 +62,35 @@ describe('useOverlayPass', () => {
 
     function Probe() {
       useOverlayPass(identityTransform, [])
+
       return null
     }
+
     const { unmount } = render(
       <Wrapper ctx={ctx}>
         <Probe />
       </Wrapper>,
     )
+
     unmount()
     expect(cleanupFn).toHaveBeenCalledTimes(1)
   })
 
   it('re-registers when a value in deps changes', () => {
     const { ctx, registered } = makeCtx()
+
     function Probe({ mode }: { mode: 'a' | 'b' }) {
       useOverlayPass(identityTransform, [mode])
+
       return null
     }
+
     const { rerender } = render(
       <Wrapper ctx={ctx}>
         <Probe mode="a" />
       </Wrapper>,
     )
+
     expect(registered).toHaveLength(1)
     rerender(
       <Wrapper ctx={ctx}>
@@ -91,8 +104,10 @@ describe('useOverlayPass', () => {
   it('is a no-op when called outside a MatterScene provider', () => {
     function Probe() {
       useOverlayPass(identityTransform, [])
+
       return null
     }
+
     // Render without a provider. No throw expected.
     expect(() => render(<Probe />)).not.toThrow()
     cleanup()

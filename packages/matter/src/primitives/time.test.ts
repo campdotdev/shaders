@@ -1,6 +1,8 @@
-import { describe, expect, it, beforeEach } from 'vite-plus/test'
+import { beforeEach, describe, expect, it } from 'vitest'
+
+import { __resetReducedMotionForTests, setReducedMotionPolicy } from '../runtime/reducedMotion.js'
+
 import { time } from './time.js'
-import { setReducedMotionPolicy, __resetReducedMotionForTests } from '../runtime/reducedMotion.js'
 
 describe('gated time', () => {
   beforeEach(() => {

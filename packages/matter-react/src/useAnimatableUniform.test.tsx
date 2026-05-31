@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vite-plus/test'
 import { renderHook } from '@testing-library/react'
-import { useAnimatableUniform, type MatterSignal } from './useAnimatableUniform.js'
+import { describe, expect, it } from 'vitest'
+
+import { type MatterSignal, useAnimatableUniform } from './useAnimatableUniform.js'
 
 const makeSignal = <T,>(initial: T) => {
   let value = initial
@@ -9,6 +10,7 @@ const makeSignal = <T,>(initial: T) => {
     get: () => value,
     on: (_event, cb) => {
       subs.add(cb)
+
       return () => subs.delete(cb)
     },
   }
@@ -16,12 +18,14 @@ const makeSignal = <T,>(initial: T) => {
     value = next
     for (const cb of subs) cb(next)
   }
+
   return { signal: sig, set }
 }
 
 describe('useAnimatableUniform', () => {
   it('initializes a uniform with the plain prop value', () => {
     const { result } = renderHook(() => useAnimatableUniform(0.5))
+
     expect((result.current as unknown as { value: number }).value).toBe(0.5)
   })
 
@@ -29,6 +33,7 @@ describe('useAnimatableUniform', () => {
     const { result, rerender } = renderHook(({ v }) => useAnimatableUniform(v), {
       initialProps: { v: 0.5 },
     })
+
     rerender({ v: 0.9 })
     expect((result.current as unknown as { value: number }).value).toBe(0.9)
   })
@@ -36,6 +41,7 @@ describe('useAnimatableUniform', () => {
   it('subscribes to a signal and writes value imperatively', () => {
     const { signal, set } = makeSignal(0.1)
     const { result } = renderHook(() => useAnimatableUniform(signal))
+
     expect((result.current as unknown as { value: number }).value).toBe(0.1)
     set(0.7)
     expect((result.current as unknown as { value: number }).value).toBe(0.7)
@@ -44,6 +50,7 @@ describe('useAnimatableUniform', () => {
   it('unsubscribes from signal on unmount', () => {
     const { signal, set } = makeSignal(0.1)
     const { result, unmount } = renderHook(() => useAnimatableUniform(signal))
+
     expect((result.current as unknown as { value: number }).value).toBe(0.1)
     unmount()
     set(0.9)
@@ -56,6 +63,7 @@ describe('useAnimatableUniform', () => {
       initialProps: { v: 0.5 },
     })
     const first = result.current
+
     rerender({ v: 0.9 })
     expect(result.current).toBe(first)
   })

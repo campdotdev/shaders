@@ -29,11 +29,13 @@ export type RegistrySlug =
 
 export const readRegistrySource = cache(async (slug: RegistrySlug): Promise<string> => {
   const path = resolve(REGISTRY_DIR, `${slug}.tsx`)
+
   // Defense in depth: even though `RegistrySlug` is a closed union, a future
   // caller might widen the type with `as RegistrySlug`. Refuse any path that
   // escapes the registry dir.
   if (!path.startsWith(REGISTRY_DIR + sep)) {
     throw new Error(`Registry path escapes registry dir: ${slug}`)
   }
+
   return readFile(path, 'utf8')
 })

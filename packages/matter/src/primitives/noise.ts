@@ -2,6 +2,7 @@
 import { mx_noise_float } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
+
 import type { TSLNode } from './colorRamp.js'
 
 /**

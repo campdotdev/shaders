@@ -1,4 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vite-plus/test'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { createIntersectionWatcher } from './intersection.js'
 
 interface MockObserver {
@@ -20,7 +21,7 @@ describe('intersection watcher', () => {
         disconnect = vi.fn()
         constructor(cb: IntersectionObserverCallback) {
           this.callback = cb
-          observers.push(this as unknown as MockObserver)
+          observers.push(this)
         }
         observe(el: Element) {
           this.observed.push(el)
@@ -39,6 +40,7 @@ describe('intersection watcher', () => {
   it('reports the canvas as in-view by default until the first callback', () => {
     const canvas = document.createElement('canvas')
     const w = createIntersectionWatcher(canvas)
+
     expect(w.isInView()).toBe(true)
     w.dispose()
   })
@@ -47,8 +49,10 @@ describe('intersection watcher', () => {
     const canvas = document.createElement('canvas')
     const w = createIntersectionWatcher(canvas)
     const cb = vi.fn()
+
     w.subscribe(cb)
     const obs = observers[0]!
+
     obs.callback(
       [{ isIntersecting: false } as IntersectionObserverEntry],
       obs as unknown as IntersectionObserver,
@@ -68,6 +72,7 @@ describe('intersection watcher', () => {
     const canvas = document.createElement('canvas')
     const w = createIntersectionWatcher(canvas)
     const obs = observers[0]!
+
     w.dispose()
     expect(obs.disconnect).toHaveBeenCalledTimes(1)
   })
@@ -76,13 +81,16 @@ describe('intersection watcher', () => {
     const canvas = document.createElement('canvas')
     const w1 = createIntersectionWatcher(canvas)
     const cb = vi.fn()
+
     w1.subscribe(cb)
     w1.dispose()
 
     const w2 = createIntersectionWatcher(canvas)
+
     w2.subscribe(cb)
     // After w1 disposal, only w2's observer should fire its callback
     const obs = observers[1]! // w2's observer (observers[0] was w1's)
+
     obs.callback(
       [{ isIntersecting: false } as IntersectionObserverEntry],
       obs as unknown as IntersectionObserver,
@@ -103,8 +111,10 @@ describe('intersection watcher — SSR fallback', () => {
   it('returns a no-op watcher when IntersectionObserver is undefined', () => {
     const canvas = document.createElement('canvas')
     const w = createIntersectionWatcher(canvas)
+
     expect(w.isInView()).toBe(true)
     const unsub = w.subscribe(() => {})
+
     unsub()
     w.dispose()
     // No throw — that's the contract.

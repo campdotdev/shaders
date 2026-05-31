@@ -1,9 +1,10 @@
 'use client'
 
+import { MatterScene, useCursor, useMatterContext } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
 import { uniform } from 'three/tsl'
-import { MatterScene, useMatterContext, useCursor } from '@lovo/matter-react'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
+
 import { RECIPE_BUILDS } from '@/app/recipes/_builds'
 
 interface RecipeSceneProps {
@@ -54,14 +55,18 @@ function RecipeMesh({ slug, variant }: { slug: string; variant: string }) {
     if (!ctx) return
     const key = `${slug}.${variant}`
     const build = RECIPE_BUILDS[key]
+
     if (!build) return
 
     const colorNode = build({ cursorUniform })
     const material = new MeshBasicNodeMaterial()
+
     material.colorNode = colorNode
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
+
     return () => {
       ctx.scene.remove(mesh)
       try {

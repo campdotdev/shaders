@@ -1,4 +1,5 @@
 import Link from 'next/link'
+
 import { RECIPES } from '@/data/recipes'
 
 // Server Component — static index of all Tier 3 recipes.

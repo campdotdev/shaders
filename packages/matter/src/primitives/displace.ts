@@ -1,7 +1,8 @@
 import { add } from 'three/tsl'
-import type { TSLNode } from './colorRamp.js'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
+
+import type { TSLNode } from './colorRamp.js'
 
 /**
  * Naive vector addition: returns `p + by`.

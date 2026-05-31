@@ -1,9 +1,10 @@
 // packages/matter/src/primitives/fbm.ts
 import { add, mul } from 'three/tsl'
-import { noise } from './noise.js'
-import type { TSLNode } from './colorRamp.js'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
+
+import type { TSLNode } from './colorRamp.js'
+import { noise } from './noise.js'
 
 export interface FBMOptions {
   /** Number of octaves to sum. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */
@@ -46,7 +47,8 @@ export function fbm(p: TSLNode, opts: FBMOptions = {}): ShaderNodeObject<Node> {
   let amp = 1
   let freq = 1
   let total = amp
-  for (let i = 1; i < octaves; i++) {
+
+  for (let i = 1; i < octaves; i += 1) {
     freq *= lacunarity
     amp *= gain
     total += amp
@@ -62,8 +64,10 @@ export function fbm(p: TSLNode, opts: FBMOptions = {}): ShaderNodeObject<Node> {
     // functional form on this hop.
     const pAtFreq = add(mul(p, freq), i * 100)
     const layer = noise(pAtFreq).mul(amp)
+
     sum = sum.add(layer)
   }
+
   // Normalize to approximate [-1..1] regardless of octave count / gain.
   return sum.div(total)
 }

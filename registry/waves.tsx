@@ -1,19 +1,19 @@
 // registry/waves.tsx
 'use client'
 
-import { useEffect, useMemo } from 'react'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
-import type { ShaderNodeObject } from 'three/tsl'
-import { vec2, vec3, vec4, sin, mix, smoothstep, uv, uniform } from 'three/tsl'
-import { time, cursorRipple } from '@lovo/matter'
+import { cursorRipple, time } from '@lovo/matter'
 import {
-  useMatterContext,
-  useAnimatableUniform,
-  useCursor,
   type AnimatableProp,
   type CursorSignal,
+  useAnimatableUniform,
+  useCursor,
+  useMatterContext,
 } from '@lovo/matter-react'
+import { useEffect, useMemo } from 'react'
+import type { ShaderNodeObject } from 'three/tsl'
+import { mix, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl'
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
+import type { Node } from 'three/webgpu'
 
 export interface WavesProps {
   amplitude?: AnimatableProp<number>
@@ -35,6 +35,7 @@ const DEFAULTS = {
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const clean = hex.replace('#', '')
+
   return [
     parseInt(clean.slice(0, 2), 16) / 255,
     parseInt(clean.slice(2, 4), 16) / 255,
@@ -63,9 +64,11 @@ export function Waves(props: WavesProps) {
   // only need the y-flip here.
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
+
   useEffect(() => {
     if (cursor) return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y))
     cursorVec.set(0.5, 0.5)
+
     return undefined
   }, [cursor, cursorVec])
 
@@ -76,23 +79,22 @@ export function Waves(props: WavesProps) {
     // freqUniform / speedUniform as ARGUMENTS (not chain receivers), which
     // is the gotcha #12 fix. Hoisted outside the loop so the literal node
     // is built once.
-    const zeroScalar = (vec2(0) as ShaderNodeObject<Node>).x
-    const uvX = uv().x as ShaderNodeObject<Node>
-    const tNode = time as ShaderNodeObject<Node>
+    const zeroScalar = vec2(0).x
+    const uvX = uv().x
+    const tNode = time
 
     // Sum `layers` sine waves at increasing frequency / decreasing amplitude.
     // Each layer gets a small phase offset so peaks don't all align.
-    let waveSum: ShaderNodeObject<Node> = sin(
-      uvX.mul(freqUniform).add(tNode.mul(speedUniform)),
-    ) as ShaderNodeObject<Node>
+    let waveSum: ShaderNodeObject<Node> = sin(uvX.mul(freqUniform).add(tNode.mul(speedUniform)))
     let totalAmp = 1
+
     // Per-layer detuning: each successive layer gets a slightly higher
     // frequency, faster phase, and a phase-offset to keep peaks from aligning
     // across layers (which would just look like a louder fundamental). The
     // 0.7 / 0.4 / 1.3 magic numbers are chosen to give a "harmonic-ish but
     // not exact" stack — small enough that low-default freq=5 doesn't alias
     // at i=5, large enough that you can hear the layer count grow visually.
-    for (let i = 1; i < layers; i++) {
+    for (let i = 1; i < layers; i += 1) {
       // Anchor the per-layer freq/speed in zeroScalar so freqUniform /
       // speedUniform appear only as arguments to .add() — never as the
       // receiver of a .mul(...) chain (gotcha #12).
@@ -103,7 +105,8 @@ export function Waves(props: WavesProps) {
       const layer = sin(
         uvX.mul(layerFreq).add(tNode.mul(layerSpeed).add(phase)),
       ) as ShaderNodeObject<Node>
-      waveSum = waveSum.add(layer.mul(layerAmp)) as ShaderNodeObject<Node>
+
+      waveSum = waveSum.add(layer.mul(layerAmp))
       totalAmp += layerAmp
     }
     const baseWave = waveSum.div(totalAmp).mul(ampUniform) as ShaderNodeObject<Node>
@@ -112,31 +115,29 @@ export function Waves(props: WavesProps) {
     // cursorUniform are passed as args; cursorRipple builds its own chain
     // rooted in its `p` (uv()-derived) parameter.
     const fullWave: ShaderNodeObject<Node> = cursor
-      ? (baseWave.add(
-          cursorRipple(uv(), cursorUniform) as ShaderNodeObject<Node>,
-        ) as ShaderNodeObject<Node>)
+      ? baseWave.add(cursorRipple(uv(), cursorUniform))
       : baseWave
 
     // Render the wave as a soft band: distance from `y - 0.5` to the wave
     // value, then a smoothstep around 0 picks the band thickness.
-    const distFromBand = (uv().y as ShaderNodeObject<Node>)
-      .sub(0.5)
-      .sub(fullWave)
-      .abs() as ShaderNodeObject<Node>
-    const mask = smoothstep(0.04, 0.0, distFromBand as never) as ShaderNodeObject<Node>
+    const distFromBand = uv().y.sub(0.5).sub(fullWave).abs() as ShaderNodeObject<Node>
+    const mask = smoothstep(0.04, 0.0, distFromBand) as ShaderNodeObject<Node>
 
     const colorVec = vec3(cr, cg, cb)
     const baseColor = vec3(0, 0, 0)
     // Compute mix() once and reuse — the prior listing rebuilt the mix tree
     // three times across .x/.y/.z fields. vec4(vec3, scalar) is supported by
     // TSL's ConvertType signature.
-    const waveColor = mix(baseColor, colorVec, mask as never)
+    const waveColor = mix(baseColor, colorVec, mask)
 
     const material = new MeshBasicNodeMaterial()
-    material.colorNode = vec4(waveColor as never, mask as never) as never
+
+    material.colorNode = vec4(waveColor, mask)
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
+
     return () => {
       ctx.scene.remove(mesh)
       // three's WebGPURenderer can throw inside `material.dispose()` when the

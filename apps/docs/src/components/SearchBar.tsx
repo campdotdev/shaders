@@ -37,10 +37,12 @@ async function createPagefindBackend(): Promise<SearchBackend | null> {
   try {
     const path = '/pagefind/pagefind.js'
     const mod = (await import(/* webpackIgnore: true */ path)) as PagefindModule
+
     return async (query) => {
       if (!query.trim()) return []
       const search = await mod.search(query)
       const items = await Promise.all(search.results.slice(0, 20).map((r) => r.data()))
+
       return items.map((d) => ({
         url: d.url.replace(/\.html$/, '').replace(/\/index$/, '/'),
         title: d.meta?.title ?? d.url,
@@ -65,11 +67,15 @@ function matches(doc: SearchDoc, q: string): boolean {
 async function createFallbackBackend(): Promise<SearchBackend | null> {
   try {
     const res = await fetch('/api/search')
+
     if (!res.ok) return null
     const docs = (await res.json()) as SearchDoc[]
+
     return async (query) => {
       const q = query.toLowerCase().trim()
+
       if (!q) return []
+
       return docs
         .filter((d) => matches(d, q))
         .slice(0, 20)
@@ -95,12 +101,15 @@ export function SearchBar() {
   useEffect(() => {
     if (!open || backendRef.current) return
     let cancelled = false
+
     void (async () => {
       const backend = (await createPagefindBackend()) ?? (await createFallbackBackend())
+
       if (cancelled) return
       backendRef.current = backend
       setBackendState(backend ? 'ready' : 'unavailable')
     })()
+
     return () => {
       cancelled = true
     }
@@ -111,9 +120,11 @@ export function SearchBar() {
     if (!open || backendState !== 'ready' || !backendRef.current) return
     const backend = backendRef.current
     let cancelled = false
+
     void backend(query).then((r) => {
       if (!cancelled) setResults(r)
     })
+
     return () => {
       cancelled = true
     }
@@ -129,7 +140,9 @@ export function SearchBar() {
         setOpen(false)
       }
     }
+
     window.addEventListener('keydown', onKey)
+
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
@@ -165,6 +178,7 @@ export function SearchBar() {
       setSelectedIndex((i) => Math.max(0, i - 1))
     } else if (e.key === 'Enter') {
       const target = results[selectedIndex]
+
       if (target) {
         e.preventDefault()
         navigate(target.url)
@@ -175,17 +189,18 @@ export function SearchBar() {
   // Scroll selected into view
   useEffect(() => {
     const list = listRef.current
+
     if (!list) return
     const selected = list.children[selectedIndex] as HTMLElement | undefined
+
     selected?.scrollIntoView({ block: 'nearest' })
   }, [selectedIndex])
 
   return (
     <>
       <button
-        type="button"
-        onClick={() => setOpen(true)}
         aria-label="Open search"
+        onClick={() => setOpen(true)}
         style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -201,6 +216,7 @@ export function SearchBar() {
           minWidth: 200,
           justifyContent: 'space-between',
         }}
+        type="button"
       >
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
           <SearchIcon />
@@ -219,13 +235,12 @@ export function SearchBar() {
           ⌘K
         </kbd>
       </button>
-
       {open && (
         <div
-          role="dialog"
           aria-label="Search"
           aria-modal="true"
           onClick={() => setOpen(false)}
+          role="dialog"
           style={{
             position: 'fixed',
             inset: 0,
@@ -259,13 +274,11 @@ export function SearchBar() {
             >
               <SearchIcon />
               <input
-                ref={inputRef}
-                type="text"
-                value={query}
+                aria-label="Search query"
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onInputKey}
                 placeholder="Search docs…"
-                aria-label="Search query"
+                ref={inputRef}
                 style={{
                   flex: 1,
                   border: 'none',
@@ -275,6 +288,8 @@ export function SearchBar() {
                   fontSize: '0.9375rem',
                   fontFamily: 'inherit',
                 }}
+                type="text"
+                value={query}
               />
               <kbd
                 style={{
@@ -288,7 +303,6 @@ export function SearchBar() {
                 Esc
               </kbd>
             </div>
-
             <ul
               ref={listRef}
               role="listbox"
@@ -335,11 +349,11 @@ export function SearchBar() {
               )}
               {results.map((r, i) => (
                 <li
-                  key={r.url}
-                  role="option"
                   aria-selected={i === selectedIndex}
-                  onMouseEnter={() => setSelectedIndex(i)}
+                  key={r.url}
                   onClick={() => navigate(r.url)}
+                  onMouseEnter={() => setSelectedIndex(i)}
+                  role="option"
                   style={{
                     padding: '0.625rem 1rem',
                     cursor: 'pointer',
@@ -373,15 +387,15 @@ export function SearchBar() {
 function SearchIcon() {
   return (
     <svg
-      width="14"
+      aria-hidden
+      fill="none"
       height="14"
       viewBox="0 0 16 16"
-      fill="none"
+      width="14"
       xmlns="http://www.w3.org/2000/svg"
-      aria-hidden
     >
       <circle cx="7" cy="7" r="5" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M11 11L14 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+      <path d="M11 11L14 14" stroke="currentColor" strokeLinecap="round" strokeWidth="1.5" />
     </svg>
   )
 }

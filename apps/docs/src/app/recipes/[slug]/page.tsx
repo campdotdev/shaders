@@ -1,5 +1,6 @@
-import { notFound } from 'next/navigation'
 import Link from 'next/link'
+import { notFound } from 'next/navigation'
+
 import { CodeBlock } from '@/components/CodeBlock'
 import { RecipeViewer } from '@/components/RecipeViewer'
 import { RECIPES } from '@/data/recipes'
@@ -26,6 +27,7 @@ interface RecipePageProps {
 export default async function RecipePage({ params }: RecipePageProps) {
   const { slug } = await params
   const recipe = RECIPES.find((r) => r.slug === slug)
+
   if (!recipe) notFound()
 
   // The first variant is canonical and matches recipe.source verbatim. We
@@ -34,6 +36,7 @@ export default async function RecipePage({ params }: RecipePageProps) {
   // The data file guarantees >= 1 variant per recipe; the explicit guard
   // is for TS's noUncheckedIndexedAccess.
   const canonicalVariant = recipe.variants[0]
+
   if (!canonicalVariant) notFound()
 
   return (
@@ -43,12 +46,9 @@ export default async function RecipePage({ params }: RecipePageProps) {
       </p>
       <h1 style={{ marginTop: 0 }}>{recipe.name}</h1>
       <p style={{ color: 'var(--fg-muted)' }}>{recipe.description}</p>
-
       <RecipeViewer slug={recipe.slug} variant={canonicalVariant.key} />
-
       <h2 style={{ marginTop: '2rem', fontSize: '1rem' }}>Source</h2>
-      <CodeBlock source={recipe.source} lang="tsx" />
-
+      <CodeBlock lang="tsx" source={recipe.source} />
       {recipe.variants.length > 1 && (
         <section style={{ marginTop: '2rem' }}>
           <h2 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>Variants</h2>
@@ -84,7 +84,7 @@ export default async function RecipePage({ params }: RecipePageProps) {
                     marginBottom: '0.5rem',
                   }}
                 >
-                  <RecipeViewer slug={recipe.slug} variant={v.key} unframed />
+                  <RecipeViewer slug={recipe.slug} unframed variant={v.key} />
                 </div>
                 <h3 style={{ fontSize: '0.95rem', margin: 0 }}>{v.label}</h3>
                 <p
@@ -101,7 +101,6 @@ export default async function RecipePage({ params }: RecipePageProps) {
           </div>
         </section>
       )}
-
       {recipe.primitivesUsed.length > 0 && (
         <>
           <h2 style={{ marginTop: '2rem', fontSize: '1rem' }}>Primitives used</h2>

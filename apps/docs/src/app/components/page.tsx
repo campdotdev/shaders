@@ -1,4 +1,5 @@
 import Link from 'next/link'
+
 import { getComponentsCatalog } from '@/content/catalog'
 
 export const metadata = {
@@ -8,6 +9,7 @@ export const metadata = {
 
 export default async function ComponentsIndex() {
   const components = await getComponentsCatalog()
+
   return (
     <article style={{ lineHeight: 1.65 }}>
       <h1 style={{ marginTop: 0 }}>Components</h1>

@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react'
 export function ThemeToggle() {
   const { theme, setTheme, resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
+
   useEffect(() => setMounted(true), [])
 
   // Avoid hydration mismatch — render a stable placeholder until mounted
@@ -28,6 +29,7 @@ export function ThemeToggle() {
 
   const cycle = () => {
     const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'
+
     setTheme(next)
   }
 
@@ -36,9 +38,8 @@ export function ThemeToggle() {
 
   return (
     <button
-      onClick={cycle}
       aria-label={`Theme: ${label} (click to cycle)`}
-      title={`Theme: ${label}`}
+      onClick={cycle}
       style={{
         width: 32,
         height: 32,
@@ -49,6 +50,7 @@ export function ThemeToggle() {
         cursor: 'pointer',
         fontSize: '0.85rem',
       }}
+      title={`Theme: ${label}`}
     >
       {icon}
     </button>

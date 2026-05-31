@@ -32,8 +32,9 @@ export function useAnimatableUniform<T>(value: AnimatableProp<T>): ShaderNodeObj
   // through the effect below (either via signal subscription or direct write).
   const uniformNode = useMemo(() => {
     const initial = isSignal(value) ? value.get() : value
+
     return uniform(initial) as unknown as ShaderNodeObject<Node>
-    // oxlint-disable-next-line react/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   useEffect(() => {
@@ -41,9 +42,11 @@ export function useAnimatableUniform<T>(value: AnimatableProp<T>): ShaderNodeObj
       const unsub = value.on('change', (next) => {
         ;(uniformNode as unknown as { value: T }).value = next
       })
+
       return unsub
     }
     ;(uniformNode as unknown as { value: T }).value = value
+
     return undefined
   }, [value, uniformNode])
 

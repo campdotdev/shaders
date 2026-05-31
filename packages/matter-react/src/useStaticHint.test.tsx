@@ -1,9 +1,10 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vite-plus/test'
-import { renderHook } from '@testing-library/react'
 import { MatterScheduler } from '@lovo/matter'
+import { renderHook } from '@testing-library/react'
+import type { ReactNode } from 'react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { MatterContext } from './matter-context.js'
 import { useStaticHint } from './useStaticHint.js'
-import type { ReactNode } from 'react'
 
 // Minimal MatterContextValue stub — only `scheduler` is exercised here.
 const makeWrapper = (scheduler: MatterScheduler) => {
@@ -21,6 +22,7 @@ const makeWrapper = (scheduler: MatterScheduler) => {
       </MatterContext.Provider>
     )
   }
+
   return Wrapper
 }
 
@@ -36,6 +38,7 @@ describe('useStaticHint', () => {
   it('marks the scheduler idle when hint=true', () => {
     const scheduler = new MatterScheduler()
     const setIdle = vi.spyOn(scheduler, 'setIdle')
+
     renderHook(() => useStaticHint(true), { wrapper: makeWrapper(scheduler) })
     expect(setIdle).toHaveBeenLastCalledWith(true)
   })
@@ -43,6 +46,7 @@ describe('useStaticHint', () => {
   it('marks the scheduler not idle when hint=false', () => {
     const scheduler = new MatterScheduler()
     const setIdle = vi.spyOn(scheduler, 'setIdle')
+
     renderHook(() => useStaticHint(false), { wrapper: makeWrapper(scheduler) })
     expect(setIdle).toHaveBeenLastCalledWith(false)
   })
@@ -53,6 +57,7 @@ describe('useStaticHint', () => {
     const { unmount } = renderHook(() => useStaticHint(true), {
       wrapper: makeWrapper(scheduler),
     })
+
     unmount()
     expect(setIdle).toHaveBeenLastCalledWith(false)
   })
@@ -65,6 +70,7 @@ describe('useStaticHint', () => {
       wrapper: makeWrapper(scheduler),
       initialProps: { hint: true },
     })
+
     rerender({ hint: true })
     rerender({ hint: true })
     expect(requestRender).not.toHaveBeenCalled()

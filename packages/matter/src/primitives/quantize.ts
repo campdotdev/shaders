@@ -16,6 +16,7 @@ export function quantize(t: ShaderNodeObject<Node>, steps: number): ShaderNodeOb
     return t.mul(0)
   }
   const denom = steps - 1
+
   // floor(t * (steps-1) + 0.5) / (steps-1)
   // Using floor(x + 0.5) instead of round() for TSL portability.
   return t.mul(denom).add(0.5).floor().div(denom)

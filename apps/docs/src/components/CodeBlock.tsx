@@ -1,4 +1,4 @@
-import { getHighlighter, type CodeLang } from '@/lib/shiki'
+import { type CodeLang, getHighlighter } from '@/lib/shiki'
 
 interface CodeBlockProps {
   source: string

@@ -1,8 +1,9 @@
 import type { Metadata } from 'next'
-import { notFound } from 'next/navigation'
 import { MDXRemote } from 'next-mdx-remote/rsc'
+import { notFound } from 'next/navigation'
 import rehypeSlug from 'rehype-slug'
 import remarkGfm from 'remark-gfm'
+
 import { Breadcrumbs } from '@/components/docs/Breadcrumbs'
 import { PrevNext } from '@/components/docs/PrevNext'
 import { TableOfContents } from '@/components/docs/TableOfContents'
@@ -23,7 +24,9 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params
   const page = await getDocsPage(slug)
+
   if (!page) return {}
+
   return {
     title: page.frontmatter.title,
     description: page.frontmatter.description,
@@ -33,6 +36,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 export default async function DocsPage({ params }: PageProps) {
   const { slug } = await params
   const page = await getDocsPage(slug)
+
   if (!page) notFound()
 
   const [crumbs, prevNext] = await Promise.all([getDocsBreadcrumbs(page), getDocsPrevNext(page)])
@@ -49,7 +53,6 @@ export default async function DocsPage({ params }: PageProps) {
       <article style={{ minWidth: 0, lineHeight: 1.65 }}>
         <Breadcrumbs crumbs={crumbs} />
         <MDXRemote
-          source={page.body}
           components={mdxComponents}
           options={{
             mdxOptions: {
@@ -57,8 +60,9 @@ export default async function DocsPage({ params }: PageProps) {
               rehypePlugins: [rehypeSlug],
             },
           }}
+          source={page.body}
         />
-        <PrevNext prev={prevNext.prev} next={prevNext.next} />
+        <PrevNext next={prevNext.next} prev={prevNext.prev} />
       </article>
       <aside>
         <TableOfContents headings={page.headings} />

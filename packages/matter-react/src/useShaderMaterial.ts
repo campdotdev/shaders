@@ -1,9 +1,9 @@
 'use client'
 
 import { useEffect, useMemo } from 'react'
+import type { ShaderNodeObject } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
-import type { ShaderNodeObject } from 'three/tsl'
 
 /** A TSL fragment that produces a color. Accept any Node or TSL-wrapped node. */
 export type ColorTSL = Node | ShaderNodeObject<Node>
@@ -19,7 +19,9 @@ export type ColorTSL = Node | ShaderNodeObject<Node>
 export function useShaderMaterial(build: () => ColorTSL): MeshBasicNodeMaterial {
   const material = useMemo(() => {
     const m = new MeshBasicNodeMaterial()
-    m.colorNode = build() as Node
+
+    m.colorNode = build()
+
     return m
   }, [build])
 

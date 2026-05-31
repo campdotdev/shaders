@@ -1,6 +1,6 @@
 import { getDocsNavTree } from '@/content/nav'
-import { getMdxDocsPages } from '@/content/source'
 import { getDocsSearchDocuments } from '@/content/search'
+import { getMdxDocsPages } from '@/content/source'
 
 export default async function DocsGraphPage() {
   const pages = await getMdxDocsPages()
@@ -40,17 +40,14 @@ export default async function DocsGraphPage() {
         Phase 8.1 diagnostics — inspect the resolved page graph, nav tree, and search documents.
         Safe to delete once Phase 8.3 ships the real sidebar.
       </p>
-
       <section style={sectionStyle}>
         <h2>Pages ({pages.length})</h2>
         <pre style={preStyle}>{JSON.stringify(pageSummary, null, 2)}</pre>
       </section>
-
       <section style={sectionStyle}>
         <h2>Nav tree</h2>
         <pre style={preStyle}>{JSON.stringify(nav, null, 2)}</pre>
       </section>
-
       <section style={sectionStyle}>
         <h2>Search documents ({search.length})</h2>
         <pre style={preStyle}>{JSON.stringify(search, null, 2)}</pre>

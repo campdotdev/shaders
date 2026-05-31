@@ -1,9 +1,9 @@
+import { MatterScene, useMatterContext } from '@lovo/matter-react'
 import { useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Mesh, PlaneGeometry } from 'three'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
 import { vec3 } from 'three/tsl'
-import { MatterScene, useMatterContext } from '@lovo/matter-react'
+import { MeshBasicNodeMaterial } from 'three/webgpu'
 
 function MagentaPlane() {
   const ctx = useMatterContext()
@@ -11,9 +11,12 @@ function MagentaPlane() {
   useEffect(() => {
     if (!ctx) return
     const material = new MeshBasicNodeMaterial()
+
     material.colorNode = vec3(1, 0, 1)
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+
     ctx.scene.add(mesh)
+
     return () => {
       ctx.scene.remove(mesh)
       material.dispose()
@@ -35,4 +38,5 @@ function App() {
 }
 
 const root = createRoot(document.getElementById('root')!)
+
 root.render(<App />)

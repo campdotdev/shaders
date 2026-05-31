@@ -1,9 +1,10 @@
 // apps/docs/app/components/waves/page.tsx
 'use client'
 
+import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
-import dynamic from 'next/dynamic'
+
 import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
@@ -39,9 +40,11 @@ export default function WavesPage() {
 
   useEffect(() => {
     const container = paneContainerRef.current
+
     if (!container) return
     const local = { ...INITIAL }
     const pane = new Pane({ container, title: '<Waves>' })
+
     pane.addBinding(local, 'color')
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'amplitude', { min: 0, max: 0.5, step: 0.005 })
@@ -62,9 +65,11 @@ export default function WavesPage() {
     })
     pane.on('change', (ev) => {
       const key = (ev.target as { key?: keyof Params }).key
+
       if (key === 'layers' || key === 'interactive') return
       setParams({ ...local })
     })
+
     return () => {
       pane.dispose()
     }
@@ -75,12 +80,12 @@ export default function WavesPage() {
       <div style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
         <MatterScene>
           <Waves
-            color={params.color}
             amplitude={params.amplitude}
+            color={params.color}
             frequency={params.frequency}
-            speed={params.speed}
-            layers={params.layers}
             interactive={params.interactive}
+            layers={params.layers}
+            speed={params.speed}
           />
           <VisualTestPause />
         </MatterScene>
@@ -92,9 +97,9 @@ export default function WavesPage() {
           accessible surface. (`inert` would have blocked mouse input too —
           regression noted 2026-05-13.) */}
       <div
-        ref={paneContainerRef}
-        data-tweakpane-host
         aria-hidden="true"
+        data-tweakpane-host
+        ref={paneContainerRef}
         style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>

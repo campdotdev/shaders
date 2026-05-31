@@ -1,7 +1,8 @@
 'use client'
 
-import { AuroraShader, type AuroraDirection, type AuroraLayer } from './shader'
 import type { AnimatableProp } from '@lovo/matter-react'
+
+import { type AuroraDirection, type AuroraLayer, AuroraShader } from './shader'
 
 export type { AuroraDirection, AuroraLayer } from './shader'
 
@@ -65,18 +66,18 @@ export function Aurora({
 }: AuroraProps) {
   return (
     <AuroraShader
-      intensity={intensity}
-      speed={speed}
       densityX={densityX}
       densityY={densityY}
-      falloff={falloff}
+      direction={direction}
       driftX={driftX}
       driftY={driftY}
-      turbulence={turbulence}
-      direction={direction}
+      falloff={falloff}
       horizonColor={horizonColor}
-      skyColor={skyColor}
+      intensity={intensity}
       layers={layers}
+      skyColor={skyColor}
+      speed={speed}
+      turbulence={turbulence}
     />
   )
 }

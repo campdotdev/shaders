@@ -1,14 +1,16 @@
 'use client'
 
-import { useCallback, useState } from 'react'
 import dynamic from 'next/dynamic'
+import { useCallback, useState } from 'react'
+
+import type { PrimitiveControl } from '@/data/primitives'
+
 import {
-  PropsPlayground,
   initialStateFromSchema,
   type PropSchema,
+  PropsPlayground,
   type PropsState,
 } from './PropsPlayground'
-import type { PrimitiveControl } from '@/data/primitives'
 
 interface PrimitiveDemoProps {
   slug: string
@@ -58,11 +60,11 @@ export function PrimitiveDemo({ slug, controls }: PrimitiveDemoProps) {
           border: '1px solid var(--border)',
         }}
       >
-        <PrimitiveScene slug={slug} params={params} />
+        <PrimitiveScene params={params} slug={slug} />
       </div>
       {schema.length > 0 && (
         <div style={{ marginTop: '1rem' }}>
-          <PropsPlayground schema={schema} onChange={handleChange} />
+          <PropsPlayground onChange={handleChange} schema={schema} />
         </div>
       )}
     </div>

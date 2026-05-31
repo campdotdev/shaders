@@ -29,6 +29,7 @@ export function configPath(projectRoot: string): string {
 export async function configExists(projectRoot: string): Promise<boolean> {
   try {
     await access(configPath(projectRoot))
+
     return true
   } catch {
     return false
@@ -38,6 +39,7 @@ export async function configExists(projectRoot: string): Promise<boolean> {
 export async function readMatterConfig(projectRoot: string): Promise<MatterConfig> {
   const path = configPath(projectRoot)
   let raw: string
+
   try {
     raw = await readFile(path, 'utf-8')
   } catch (err) {
@@ -49,17 +51,20 @@ export async function readMatterConfig(projectRoot: string): Promise<MatterConfi
     throw err
   }
   let parsed: unknown
+
   try {
     parsed = JSON.parse(raw)
   } catch (err) {
     throw new Error(`${path} is not valid JSON: ${(err as Error).message}`)
   }
+
   return validateMatterConfig(parsed, path)
 }
 
 export async function writeMatterConfig(projectRoot: string, cfg: MatterConfig): Promise<void> {
   const path = configPath(projectRoot)
   const json = `${JSON.stringify(cfg, null, 2)}\n`
+
   await writeFile(path, json, 'utf-8')
 }
 
@@ -68,6 +73,7 @@ function validateMatterConfig(parsed: unknown, path: string): MatterConfig {
     throw new Error(`${path}: expected an object`)
   }
   const obj = parsed as Record<string, unknown>
+
   if (typeof obj.componentsDir !== 'string' || obj.componentsDir === '') {
     throw new Error(`${path}: missing or empty "componentsDir" string`)
   }
@@ -81,12 +87,14 @@ function validateMatterConfig(parsed: unknown, path: string): MatterConfig {
     throw new Error(`${path}: missing "tsx" boolean`)
   }
   const aliases: Record<string, string> = {}
+
   for (const [k, v] of Object.entries(obj.aliases as Record<string, unknown>)) {
     if (typeof v !== 'string') {
       throw new Error(`${path}: aliases.${k} must be a string`)
     }
     aliases[k] = v
   }
+
   return {
     componentsDir: obj.componentsDir,
     registryUrl: obj.registryUrl,

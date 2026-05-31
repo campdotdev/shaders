@@ -1,17 +1,18 @@
 'use client'
 
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
-import { Scene, OrthographicCamera } from 'three'
-import { PostProcessing } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
+import {
+  createIntersectionWatcher,
+  createRenderer,
+  createVisibilityWatcher,
+  MatterScheduler,
+} from '@lovo/matter'
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
+import { OrthographicCamera, Scene } from 'three'
 import { pass } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
-import {
-  createRenderer,
-  MatterScheduler,
-  createVisibilityWatcher,
-  createIntersectionWatcher,
-} from '@lovo/matter'
+import { PostProcessing } from 'three/webgpu'
+import type { Node } from 'three/webgpu'
+
 import { MatterContext, type MatterContextValue, type OverlayTransform } from './matter-context.js'
 
 export interface MatterSceneProps {
@@ -45,6 +46,7 @@ export function MatterScene(props: MatterSceneProps) {
 
   useEffect(() => {
     const canvas = canvasRef.current
+
     if (!canvas) return
 
     let cancelled = false
@@ -53,12 +55,15 @@ export function MatterScene(props: MatterSceneProps) {
     const setup = async () => {
       try {
         const renderer = await createRenderer(canvas, { maxDPR })
+
         if (cancelled) {
           renderer.dispose()
+
           return
         }
         const scene = new Scene()
         const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10)
+
         camera.position.z = 1
         const postProcessing = new PostProcessing(renderer.three)
         const scheduler = new MatterScheduler()
@@ -72,6 +77,7 @@ export function MatterScene(props: MatterSceneProps) {
 
         const rebuildOutputNode = () => {
           const transforms = Array.from(overlays.values())
+
           postProcessing.outputNode = transforms.reduce(
             (node, transform) => transform(node),
             basePass,
@@ -83,8 +89,10 @@ export function MatterScene(props: MatterSceneProps) {
 
         const registerOverlay = (transform: OverlayTransform): (() => void) => {
           const key = Symbol('overlay')
+
           overlays.set(key, transform)
           rebuildOutputNode()
+
           return () => {
             overlays.delete(key)
             rebuildOutputNode()
@@ -99,15 +107,18 @@ export function MatterScene(props: MatterSceneProps) {
 
         const updatePauseState = () => {
           const shouldRun = visibility.isVisible() && intersection.isInView()
+
           if (shouldRun) scheduler.resume()
           else scheduler.pause()
         }
+
         updatePauseState()
 
         const unsubVisibility = visibility.subscribe(updatePauseState)
         const unsubIntersection = intersection.subscribe(updatePauseState)
 
         const onResize = () => renderer.resize()
+
         window.addEventListener('resize', onResize)
 
         cleanup = () => {
@@ -124,12 +135,14 @@ export function MatterScene(props: MatterSceneProps) {
       } catch (err) {
         if (cancelled) return
         const e = err instanceof Error ? err : new Error(String(err))
+
         console.error('[MatterScene] renderer init failed:', e)
         setError(e)
       }
     }
 
     void setup()
+
     return () => {
       cancelled = true
       cleanup?.()

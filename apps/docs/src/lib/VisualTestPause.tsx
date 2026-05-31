@@ -5,10 +5,10 @@
 // a page — use the dynamic re-export in visualTestHooks.ts instead so that
 // Next.js does not attempt to prerender it on the server.
 
-import { useEffect } from 'react'
-import { useMatterContext } from '@lovo/matter-react'
 import { setReducedMotionPolicy } from '@lovo/matter'
-import type { SchedulerTick, ReducedMotionPolicy } from '@lovo/matter'
+import type { ReducedMotionPolicy, SchedulerTick } from '@lovo/matter'
+import { useMatterContext } from '@lovo/matter-react'
+import { useEffect } from 'react'
 
 // Number of renderer frames to wait after context init before screenshotting.
 // 2 frames is enough for the TSL material to compile and produce a stable
@@ -61,9 +61,11 @@ const VALID_POLICIES: ReducedMotionPolicy[] = ['auto', 'off', 'slow', 'paused']
  */
 export function useVisualTestPause(): void {
   const ctx = useMatterContext()
+
   useEffect(() => {
     if (typeof window === 'undefined') return
     const params = new URLSearchParams(window.location.search)
+
     if (params.get(QUERY_FLAG) !== '1') return
     if (!ctx) return
 
@@ -77,12 +79,17 @@ export function useVisualTestPause(): void {
       policyParam && (VALID_POLICIES as string[]).includes(policyParam)
         ? (policyParam as ReducedMotionPolicy)
         : 'paused'
+
     setReducedMotionPolicy(policy)
 
     // Wake the scheduler in case a static component has already idled it.
     ctx.scheduler.setIdle(false)
 
-    type NodeFrameInternal = { time?: number; deltaTime?: number; lastTime?: number }
+    interface NodeFrameInternal {
+      time?: number
+      deltaTime?: number
+      lastTime?: number
+    }
     const getNodeFrame = (): NodeFrameInternal | undefined =>
       (
         ctx.renderer.three as unknown as {
@@ -102,12 +109,14 @@ export function useVisualTestPause(): void {
         // nodeFrame is null at effect-fire time (Three.js populates it lazily
         // on the first render call).
         const nodeFrame = getNodeFrame()
+
         if (nodeFrame) {
           nodeFrame.time = 0
           nodeFrame.deltaTime = 0
           // Reset lastTime so the next update() recomputes delta from now.
-          nodeFrame.lastTime = undefined as unknown as number
+          nodeFrame.lastTime = undefined
         }
+
         return
       }
 
@@ -117,6 +126,7 @@ export function useVisualTestPause(): void {
         ;(window as unknown as { __matterTestReady: boolean }).__matterTestReady = true
       }
     }
+
     ctx.scheduler.add(client)
 
     return () => {
@@ -131,5 +141,6 @@ export function useVisualTestPause(): void {
  */
 export default function VisualTestPause(): null {
   useVisualTestPause()
+
   return null
 }

@@ -1,9 +1,9 @@
 'use client'
 
-import { vec4, mix as tslMix } from 'three/tsl'
-import { useOverlayPass, useAnimatableUniform } from '@lovo/matter-react'
+import { useAnimatableUniform, useOverlayPass } from '@lovo/matter-react'
 import { useMemo } from 'react'
 import { Color } from 'three'
+import { mix as tslMix, vec4 } from 'three/tsl'
 
 export interface TintOverlayProps {
   color: string
@@ -17,6 +17,7 @@ export interface TintOverlayProps {
 export function TintOverlay({ color, intensity }: TintOverlayProps) {
   const tintColor = useMemo(() => {
     const c = new Color(color)
+
     return vec4(c.r, c.g, c.b, 1)
   }, [color])
   const intensityU = useAnimatableUniform<number>(intensity)

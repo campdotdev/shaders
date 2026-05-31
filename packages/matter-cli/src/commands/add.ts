@@ -1,5 +1,6 @@
 import { access, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+
 import { readMatterConfig } from '../config/matterConfig.js'
 import {
   fetchComponentSource,
@@ -45,6 +46,7 @@ export async function runAdd(
   if (!opts.force) {
     for (const r of resolved) {
       const targetPath = join(io.cwd, cfg.componentsDir, r.entry.file)
+
       if (await fileExists(targetPath)) {
         throw new Error(`${targetPath} already exists. Pass --force to overwrite.`)
       }
@@ -56,6 +58,7 @@ export async function runAdd(
   const fetched = await Promise.all(
     resolved.map(async (r) => {
       const source = await fetchComponentSource(registryUrl, r.entry.file)
+
       return { ...r, source }
     }),
   )
@@ -63,9 +66,11 @@ export async function runAdd(
   // Now write sequentially (mkdir + writeFile per target). Sequential
   // here is fine: the bottleneck has already passed.
   const allDeps = new Set<string>()
+
   for (const f of fetched) {
     const targetPath = join(io.cwd, cfg.componentsDir, f.entry.file)
     const rewritten = rewriteImports(f.source, cfg.aliases)
+
     await mkdir(dirname(targetPath), { recursive: true })
     await writeFile(targetPath, rewritten, 'utf-8')
     io.log(`Wrote ${targetPath}`)
@@ -74,6 +79,7 @@ export async function runAdd(
 
   // Dedup + alphabetize install hint.
   const sortedDeps = [...allDeps].sort()
+
   io.log('')
   io.log(`This component requires: ${sortedDeps.join(', ')}`)
   io.log('Install with your package manager, e.g.:')
@@ -86,17 +92,20 @@ function resolveComponent(
   registryUrl: string,
 ): { slug: string; entry: RegistryEntry } {
   const entry = registry.components[slug]
+
   if (!entry) {
     throw new Error(
       `Component "${slug}" not found in registry at ${registryUrl}. Run \`matter-cli list\` to see available components.`,
     )
   }
+
   return { slug, entry }
 }
 
 async function fileExists(p: string): Promise<boolean> {
   try {
     await access(p)
+
     return true
   } catch (err) {
     if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false

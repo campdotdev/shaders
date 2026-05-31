@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vite-plus/test'
 import { uv, vec2 } from 'three/tsl'
+import { describe, expect, it } from 'vitest'
+
 import { cursorRipple } from './cursorRipple.js'
 import { time as gatedTime } from './time.js'
 
@@ -27,6 +28,7 @@ describe('cursorRipple — reduced-motion gating', () => {
     // is what the engine exposes, and that cursorRipple is in the same
     // module graph as the gated time. This regression-guards the import line.
     const builtin = (await import('three/tsl')).time
+
     expect(gatedTime).not.toBe(builtin)
   })
 })

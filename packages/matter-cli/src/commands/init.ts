@@ -1,7 +1,7 @@
 import {
-  DEFAULT_MATTER_CONFIG,
   configExists,
   configPath,
+  DEFAULT_MATTER_CONFIG,
   writeMatterConfig,
 } from '../config/matterConfig.js'
 
@@ -19,6 +19,7 @@ export async function runInit(
   io: InitIO = { cwd: process.cwd(), log: console.log },
 ): Promise<void> {
   const exists = await configExists(io.cwd)
+
   if (exists && !opts.force) {
     throw new Error(`matter.config.json already exists in ${io.cwd}. Pass --force to overwrite.`)
   }

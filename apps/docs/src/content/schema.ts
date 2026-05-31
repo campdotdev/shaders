@@ -1,4 +1,5 @@
 import { z } from 'zod'
+
 import type { DocsFrontmatter } from './types'
 
 const sectionEnum = z.enum(['overview', 'guides', 'react.guides', 'react.api', 'reference'])
@@ -16,13 +17,16 @@ export const rawFrontmatterSchema = z.object({
 
 export function parseFrontmatter(data: unknown, sourcePath: string): DocsFrontmatter {
   const result = rawFrontmatterSchema.safeParse(data)
+
   if (!result.success) {
     const issues = result.error.issues
       .map((i) => `  - ${i.path.join('.') || '<root>'}: ${i.message}`)
       .join('\n')
+
     throw new Error(`Invalid frontmatter in ${sourcePath}:\n${issues}`)
   }
   const v = result.data
+
   return {
     title: v.title,
     description: v.description,
@@ -53,11 +57,14 @@ export type RegistryComponent = z.infer<typeof registryComponentSchema>
 
 export function parseRegistry(data: unknown, sourcePath: string): RegistryFile {
   const result = registrySchema.safeParse(data)
+
   if (!result.success) {
     const issues = result.error.issues
       .map((i) => `  - ${i.path.join('.') || '<root>'}: ${i.message}`)
       .join('\n')
+
     throw new Error(`Invalid registry file at ${sourcePath}:\n${issues}`)
   }
+
   return result.data
 }

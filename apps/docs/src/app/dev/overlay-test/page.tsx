@@ -1,9 +1,8 @@
 'use client'
 
-import { useState } from 'react'
-import dynamic from 'next/dynamic'
-
 import type { FilmGrainMode } from '@matter/registry/film-grain'
+import dynamic from 'next/dynamic'
+import { useState } from 'react'
 
 const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
   ssr: false,
@@ -52,23 +51,23 @@ export default function OverlayTestPage() {
         <label>
           Intensity: {intensity.toFixed(2)}{' '}
           <input
-            type="range"
-            min={0}
             max={1}
-            step={0.01}
-            value={intensity}
+            min={0}
             onChange={(e) => setIntensity(Number(e.target.value))}
+            step={0.01}
+            type="range"
+            value={intensity}
           />
         </label>
         <label>
           Speed: {speed.toFixed(2)}{' '}
           <input
-            type="range"
-            min={0}
             max={1}
-            step={0.01}
-            value={speed}
+            min={0}
             onChange={(e) => setSpeed(Number(e.target.value))}
+            step={0.01}
+            type="range"
+            value={speed}
           />
         </label>
         <button onClick={() => setMode((m) => (m === 'additive' ? 'subtractive' : 'additive'))}>
@@ -78,7 +77,7 @@ export default function OverlayTestPage() {
       <div style={{ position: 'relative', width: '100%', height: '400px' }}>
         <MatterScene>
           <MeshGradient />
-          <FilmGrain intensity={intensity} speed={speed} mode={mode} />
+          <FilmGrain intensity={intensity} mode={mode} speed={speed} />
         </MatterScene>
       </div>
     </div>

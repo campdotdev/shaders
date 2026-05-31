@@ -1,9 +1,8 @@
 'use client'
 
-import { uv, vec4, floor } from 'three/tsl'
-
-import { time, filmGrain } from '@lovo/matter'
-import { useOverlayPass, useAnimatableUniform, type AnimatableProp } from '@lovo/matter-react'
+import { filmGrain, time } from '@lovo/matter'
+import { type AnimatableProp, useAnimatableUniform, useOverlayPass } from '@lovo/matter-react'
+import { floor, uv, vec4 } from 'three/tsl'
 
 export type FilmGrainMode = 'additive' | 'subtractive'
 
@@ -35,6 +34,7 @@ export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps
       // primitive's negative half also contributes to darkening instead of
       // brightening half the pixels.
       const positive = grain.abs()
+
       return input.sub(vec4(positive, positive, positive, 0))
     },
     [intensityU, speedU, mode],

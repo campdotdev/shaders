@@ -1,5 +1,6 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vite-plus/test'
-import { renderHook, act } from '@testing-library/react'
+import { act, renderHook } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { useCursor } from './useCursor.js'
 
 // useCursor uses requestAnimationFrame for its free-running tick (no MatterScene context).
@@ -23,6 +24,7 @@ describe('useCursor', () => {
     // On first render the STUB_SIGNAL is returned (effect not yet run); its
     // get() returns the center position.
     const [x, y] = result.current.get()
+
     expect(x).toBe(0.5)
     expect(y).toBe(0.5)
   })
@@ -42,6 +44,7 @@ describe('useCursor', () => {
     const signal = result.current
     // Subscribe to changes; invoke tick manually to drive the smoothing.
     let lastChange: readonly [number, number] | undefined
+
     signal.on('change', (v) => {
       lastChange = v
     })
@@ -70,6 +73,7 @@ describe('useCursor', () => {
     // Verifies the lifecycle pattern from CLAUDE.md gotcha #14: collapse
     // create+dispose into one effect so Strict Mode's extra cycle is clean.
     const { unmount } = renderHook(() => useCursor())
+
     act(() => {})
     // Should not throw on unmount even before the async setup resolves.
     expect(() => unmount()).not.toThrow()
