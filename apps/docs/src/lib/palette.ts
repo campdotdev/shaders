@@ -1,7 +1,7 @@
 // Matter example color palette.
 //
 // Brand foundation (gray + lime full 12-step scales) defines the chrome.
-// Accent palette (13 hues × dark/mid/light) gives example components 39 vibrant
+// Accent palette (12 hues × dark/mid/light) gives example components 36 vibrant
 // picks sampled from a shared OKLCH master at perceptually-equivalent steps.
 //
 // Hex values for the accent palette are sRGB conversions of OKLCH definitions;
@@ -30,16 +30,6 @@ export const lime = [
 
 /** Canonical brand lime alias. Equivalent to `lime[9]`. */
 export const brandLime = lime[9]
-
-/** Accent: crimson (h=17, deep red). */
-export const crimson = {
-  /** oklch(0.348 0.111 17) */
-  dark:  '#681924',
-  /** oklch(0.699 0.166 17) — vibrant peak */
-  mid:   '#f36c78',
-  /** oklch(0.863 0.102 17) — soft tint */
-  light: '#ffb7ba',
-} as const
 
 /** Accent: red (h=25, warm red). */
 export const red = {
@@ -164,7 +154,7 @@ export const pink = {
 /** Convenience grouping for iteration. */
 export const palette = {
   black, white, gray, lime, brandLime,
-  crimson, red, orange, amber, gold,
+  red, orange, amber, gold,
   green, emerald, teal, sky, blue,
   indigo, violet, pink,
 } as const
@@ -186,11 +176,6 @@ export const paletteOklch = {
     'oklch(0.496 0.184 120)', 'oklch(0.585 0.205 120)', 'oklch(0.703 0.205 120)',
     'oklch(0.761 0.186 120)', 'oklch(0.875 0.117 120)', 'oklch(0.933 0.068 120)',
   ] as const,
-  crimson: {
-    dark:  'oklch(0.348 0.111 17)',
-    mid:   'oklch(0.699 0.166 17)',
-    light: 'oklch(0.863 0.102 17)',
-  },
   red: {
     dark:  'oklch(0.338 0.106 25)',
     mid:   'oklch(0.712 0.172 25)',

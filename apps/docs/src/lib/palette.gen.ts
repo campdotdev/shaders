@@ -3,11 +3,6 @@
 import { formatHex, parse } from 'culori'
 
 const OKLCH = {
-  crimson: {
-    dark:  'oklch(0.348 0.111 17)',
-    mid:   'oklch(0.699 0.166 17)',
-    light: 'oklch(0.863 0.102 17)',
-  },
   red: {
     dark:  'oklch(0.338 0.106 25)',
     mid:   'oklch(0.712 0.172 25)',
