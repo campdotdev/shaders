@@ -57,8 +57,8 @@ const INITIAL: AuroraParams = {
   skyColor: palette.blue.dark,
   layers: [
     { hex: palette.lime[9], speed: 0.07, intensity: 0.6, variation: 0 },
-    { hex: palette.blue.dark, speed: 0.1, intensity: 0, variation: 5 },
-    { hex: palette.violet.dark, speed: 0.15, intensity: 0.3, variation: 11 },
+    { hex: palette.blue.mid, speed: 0.1, intensity: 0, variation: 5 },
+    { hex: palette.violet.mid, speed: 0.15, intensity: 0.3, variation: 11 },
     { hex: palette.pink.mid, speed: 0.07, intensity: 0, variation: 17 },
   ],
 }

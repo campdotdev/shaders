@@ -44,8 +44,8 @@ export interface AuroraProps {
  */
 export const DEFAULT_LAYERS: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer] = [
   { hex: '#A3C100', speed: 0.07, intensity: 0.6, variation: 0 },  // palette.lime[9] — brand lime
-  { hex: '#003569', speed: 0.1, intensity: 0, variation: 5 },     // palette.blue.dark
-  { hex: '#3b2664', speed: 0.15, intensity: 0.3, variation: 11 }, // palette.violet.dark
+  { hex: '#359bff', speed: 0.1, intensity: 0, variation: 5 },     // palette.blue.mid
+  { hex: '#a581fa', speed: 0.15, intensity: 0.3, variation: 11 }, // palette.violet.mid
   { hex: '#e36ab9', speed: 0.07, intensity: 0, variation: 17 },   // palette.pink.mid
 ]
 
