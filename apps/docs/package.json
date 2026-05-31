@@ -37,10 +37,12 @@
   "devDependencies": {
     "@matter/tsconfig": "workspace:*",
     "@tweakpane/core": "^2.0.5",
+    "@types/culori": "^4.0.1",
     "@types/node": "^22.7.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
     "@types/three": "^0.170.0",
+    "culori": "^4.0.2",
     "pagefind": "^1.5.2",
     "serve": "^14.2.6",
     "typescript": "^5.6.0"
