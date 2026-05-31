@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
 import { VisualTestPause } from '@/lib/visualTestHooks'
+import { palette } from '@/lib/palette'
 import type { AuroraDirection } from '@matter/registry/aurora'
 
 // Plain (non-signal) per-layer state for tweakpane. Numbers are assignable
@@ -52,13 +53,13 @@ const INITIAL: AuroraParams = {
   driftY: -3.15,
   turbulence: 1.3,
   direction: 'top',
-  horizonColor: '#040009',
-  skyColor: '#146389',
+  horizonColor: palette.black,
+  skyColor: palette.blue.dark,
   layers: [
-    { hex: '#09e24b', speed: 0.07, intensity: 0.6, variation: 0 },
-    { hex: '#1837e6', speed: 0.1, intensity: 0, variation: 5 },
-    { hex: '#661acc', speed: 0.15, intensity: 0.3, variation: 11 },
-    { hex: '#cc1a99', speed: 0.07, intensity: 0, variation: 17 },
+    { hex: palette.lime[9], speed: 0.07, intensity: 0.6, variation: 0 },
+    { hex: palette.blue.dark, speed: 0.1, intensity: 0, variation: 5 },
+    { hex: palette.violet.dark, speed: 0.15, intensity: 0.3, variation: 11 },
+    { hex: palette.pink.mid, speed: 0.07, intensity: 0, variation: 17 },
   ],
 }
 
