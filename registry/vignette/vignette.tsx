@@ -21,7 +21,7 @@ export function Vignette({
   softness = 0.5,
   center = [0.5, 0.5],
   radius = 0.7,
-  color = '#0B0F0D',  // palette.black
+  color = '#0B0F0D', // palette.black
 }: VignetteProps) {
   return (
     <VignetteShader

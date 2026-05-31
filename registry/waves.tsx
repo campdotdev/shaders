@@ -29,7 +29,7 @@ const DEFAULTS = {
   amplitude: 0.1,
   frequency: 5,
   speed: 1,
-  color: '#00cda6',  // palette.teal.base
+  color: '#00cda6', // palette.teal.base
   layers: 3,
 } as const
 
