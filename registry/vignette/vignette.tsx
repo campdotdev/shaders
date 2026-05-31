@@ -12,7 +12,7 @@ export interface VignetteProps {
   center?: [number, number]
   /** Distance from center where darkening begins. Default 0.7. */
   radius?: AnimatableProp<number>
-  /** What color to fade edges toward. Default '#000000'. */
+  /** What color to fade edges toward. Default brand black (palette.black). */
   color?: string
 }
 
@@ -21,7 +21,7 @@ export function Vignette({
   softness = 0.5,
   center = [0.5, 0.5],
   radius = 0.7,
-  color = '#000000',
+  color = '#0B0F0D',  // palette.black
 }: VignetteProps) {
   return (
     <VignetteShader

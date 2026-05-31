@@ -26,7 +26,7 @@ export interface DotFieldProps {
   inputs?: { cursor?: CursorSignal }
 }
 
-const DEFAULTS = { spacing: 30, dotSize: 2, color: '#888888', reach: 100, strength: 1 } as const
+const DEFAULTS = { spacing: 30, dotSize: 2, color: '#8B918C', reach: 100, strength: 1 } as const  // color: palette.gray[8]
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const clean = hex.replace('#', '')

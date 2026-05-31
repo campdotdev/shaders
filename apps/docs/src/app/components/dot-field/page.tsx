@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
+import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
 // Both MatterScene and DotField pull in three/webgpu (via createRenderer),
@@ -26,7 +27,7 @@ interface Params {
 }
 
 const INITIAL: Params = {
-  color: '#888888',
+  color: palette.gray[8],
   spacing: 30,
   dotSize: 2,
   reach: 100,
