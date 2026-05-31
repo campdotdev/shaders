@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
+import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
 // Both MatterScene and Waves pull in three/webgpu (via createRenderer),
@@ -24,7 +25,7 @@ interface Params {
 }
 
 const INITIAL: Params = {
-  color: '#77eecc',
+  color: palette.teal.base,
   amplitude: 0.1,
   frequency: 5,
   speed: 1,

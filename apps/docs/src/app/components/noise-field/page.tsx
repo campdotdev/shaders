@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
+import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
 // Both MatterScene and NoiseField pull in three/webgpu (via createRenderer),
@@ -27,8 +28,8 @@ interface Params {
 }
 
 const INITIAL: Params = {
-  color0: '#0a0a0a',
-  color1: '#f5f5f5',
+  color0: palette.gray[2],
+  color1: palette.gray[11],
   scale: 3,
   speed: 0.4,
   octaves: 4,
@@ -122,7 +123,7 @@ import { NoiseField } from '@/components/matter/noise-field'
     variant="organic"
     scale={3}
     speed={0.4}
-    colors={['#0a0a0a', '#f5f5f5']}
+    colors={['#202421', '#E7E9E7']}
   />
 </MatterScene>`}
         </pre>
