@@ -1,6 +1,7 @@
 import { CodeBlock } from '@/components/CodeBlock'
 import { readRegistrySource } from '@/lib/registrySources'
 import type { PropSchema } from '@/components/PropsPlayground'
+import { palette } from '@/lib/palette'
 import { PageBody } from './PageBody'
 
 // Schema declared inline here for 4.2.a (the prototype phase). Phase 4.2.b
@@ -11,7 +12,7 @@ import { PageBody } from './PageBody'
 // defaults where they exist; speed starts at 0 so the gradient is static
 // on first paint and the user can scrub up to feel the animation kick in.
 const SCHEMA: PropSchema = [
-  { name: 'colors', type: 'colors', default: ['#ff7b72', '#7b9cff'] },
+  { name: 'colors', type: 'colors', default: [palette.brandLime, palette.blue.base] },
   { name: 'angle', type: 'number', default: 90, min: 0, max: 360, step: 1 },
   { name: 'speed', type: 'number', default: 0, min: 0, max: 2, step: 0.01 },
   { name: 'interactive', type: 'boolean', default: false },

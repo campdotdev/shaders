@@ -23,7 +23,7 @@ export interface LinearGradientProps {
   inputs?: { cursor?: CursorSignal }
 }
 
-const DEFAULT_COLORS = ['#ff7b72', '#7b9cff']
+const DEFAULT_COLORS = ['#A3C100', '#1837e6']  // palette.brandLime → palette.blue.base
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const clean = hex.replace('#', '')

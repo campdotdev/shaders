@@ -4,6 +4,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 import dynamic from 'next/dynamic'
+import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
 const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
@@ -43,14 +44,14 @@ const INITIAL: Params = {
   cycleEase: 0.6,
   grain: 0.08,
   grainSpeed: 1,
-  a0: '#ffba89',
-  a1: '#3162ee',
-  a2: '#f69292',
-  a3: '#59b5f3',
-  b0: '#6931f5',
-  b1: '#202a32',
-  b2: '#e93334',
-  b3: '#e9a04b',
+  a0: palette.amber.base,
+  a1: palette.blue.base,
+  a2: palette.magenta.base,
+  a3: palette.lime.base,
+  b0: palette.violet.dark,
+  b1: palette.gray[1],
+  b2: palette.magenta.base,
+  b3: palette.amber.dark,
 }
 
 export default function MeshGradientPage() {

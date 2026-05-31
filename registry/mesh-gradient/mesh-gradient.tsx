@@ -20,20 +20,20 @@ export interface MeshGradientProps {
   paletteB?: [string, string, string, string]
 }
 
-// Light palette from the ShaderToy reference.
+// Vibrant rainbow palette — amber + blue + magenta + lime around the wheel.
 const DEFAULT_PALETTE_A: [string, string, string, string] = [
-  '#ffba89', // amberYellow (source had R=299/255 → clamps to 1.0; #ffba89 is the visible result)
-  '#3162ee', // deepBlue
-  '#f69292', // pink
-  '#59b5f3', // blue
+  '#ecb100', // palette.amber.base
+  '#1837e6', // palette.blue.base
+  '#cc1a99', // palette.magenta.base
+  '#bcdc33', // palette.lime.base
 ]
 
-// Dark palette from the ShaderToy reference.
+// Moody warm palette — deep purple, near-black, vivid magenta, dark amber.
 const DEFAULT_PALETTE_B: [string, string, string, string] = [
-  '#6931f5', // purpleHaze
-  '#202a32', // swampyBlack
-  '#e93334', // persimmonOrange
-  '#e9a04b', // darkAmber
+  '#43008e', // palette.violet.dark
+  '#131614', // palette.gray[1]
+  '#cc1a99', // palette.magenta.base
+  '#b38400', // palette.amber.dark
 ]
 
 export function MeshGradient({
