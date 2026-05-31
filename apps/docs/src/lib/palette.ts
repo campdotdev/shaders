@@ -23,14 +23,18 @@ export const gray = [
   '#535A55', '#6D736E', '#8B918C', '#A1A6A1', '#D0D3CF', '#E7E9E7',
 ] as const
 
-/** Brand lime scale (h=120). Index 9 (#A3C100) is the canonical brand lime. */
-export const lime = [
+/**
+ * Brand lime full 12-step scale (h=120). Index 9 (#A3C100) is the canonical
+ * brand lime. Used for chrome/foundation contexts that need fine-grained
+ * lightness control across the lime hue.
+ */
+export const limeScale = [
   '#111505', '#171C04', '#242E00', '#2F3C00', '#3A4A00', '#465900',
   '#576E00', '#6E8A00', '#91AF00', '#A3C100', '#CCE288', '#E3F0BD',
 ] as const
 
-/** Canonical brand lime alias. Equivalent to `lime[9]`. */
-export const brandLime = lime[9]
+/** Canonical brand lime alias. Equivalent to `limeScale[9]`. */
+export const brandLime = limeScale[9]
 
 // Accent palette — { light, base, dark } per hue. All values are OKLCH-derived
 // (see palette.gen.ts). `base` is the vibrant peak — at the Aurora-anchored
@@ -67,14 +71,14 @@ export const amber = {
   dark:  '#b38400',
 } as const
 
-/** Accent: yellowGreen (h=115). */
-export const yellowGreen = {
-  /** oklch(0.922 0.140 115) */
-  light: '#e2f07e',
-  /** oklch(0.842 0.185 115) */
-  base:  '#c8d81e',
-  /** oklch(0.692 0.160 115) */
-  dark:  '#9aa600',
+/** Accent: lime (h=120, brand hue). Sits at the brand's chartreuse hue angle. */
+export const lime = {
+  /** oklch(0.922 0.140 120) */
+  light: '#d9f384',
+  /** oklch(0.842 0.185 120) */
+  base:  '#bcdc33',
+  /** oklch(0.692 0.160 120) */
+  dark:  '#90a913',
 } as const
 
 /** Accent: green (h=145.897). Base matches Aurora's original spring green. */
@@ -159,8 +163,8 @@ export const magenta = {
 
 /** Convenience grouping for iteration. */
 export const palette = {
-  black, white, gray, lime, brandLime,
-  red, orange, amber, yellowGreen,
+  black, white, gray, limeScale, brandLime,
+  red, orange, amber, lime,
   green, teal, cyan, sky,
   blue, violet, purple, magenta,
 } as const
@@ -175,13 +179,19 @@ export const paletteOklch = {
   black: '#0B0F0D',
   white: '#E7E9E7',
   gray, // hex array — brand source
-  // Lime scale's canonical form: OKLCH at h=120.
-  lime: [
+  // Brand lime scale's canonical form: OKLCH at h=120 (12-step).
+  limeScale: [
     'oklch(0.185 0.031 120)', 'oklch(0.216 0.043 120)', 'oklch(0.280 0.080 120)',
     'oklch(0.331 0.111 120)', 'oklch(0.377 0.137 120)', 'oklch(0.428 0.161 120)',
     'oklch(0.496 0.184 120)', 'oklch(0.585 0.205 120)', 'oklch(0.703 0.205 120)',
     'oklch(0.761 0.186 120)', 'oklch(0.875 0.117 120)', 'oklch(0.933 0.068 120)',
   ] as const,
+  // Accent lime triad at h=120 (3-step).
+  lime: {
+    light: 'oklch(0.922 0.140 120)',
+    base:  'oklch(0.842 0.185 120)',
+    dark:  'oklch(0.692 0.160 120)',
+  },
   red: {
     light: 'oklch(0.748 0.200 25)',
     base:  'oklch(0.628 0.258 25)',
@@ -196,11 +206,6 @@ export const paletteOklch = {
     light: 'oklch(0.892 0.120 85)',
     base:  'oklch(0.792 0.168 85)',
     dark:  'oklch(0.642 0.140 85)',
-  },
-  yellowGreen: {
-    light: 'oklch(0.922 0.140 115)',
-    base:  'oklch(0.842 0.185 115)',
-    dark:  'oklch(0.692 0.160 115)',
   },
   green: {
     light: 'oklch(0.892 0.180 145.897)',
