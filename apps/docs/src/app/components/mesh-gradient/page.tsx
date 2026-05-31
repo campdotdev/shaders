@@ -44,14 +44,14 @@ const INITIAL: Params = {
   cycleEase: 0.6,
   grain: 0.08,
   grainSpeed: 1,
-  a0: palette.amber.base,
-  a1: palette.blue.base,
-  a2: palette.magenta.base,
-  a3: palette.lime.base,
-  b0: palette.violet.dark,
-  b1: palette.gray[1],
-  b2: palette.magenta.base,
-  b3: palette.amber.dark,
+  a0: palette.lime.base,
+  a1: palette.green.base,
+  a2: palette.teal.base,
+  a3: palette.sky.base,
+  b0: palette.amber.base,
+  b1: palette.orange.base,
+  b2: palette.red.base,
+  b3: palette.magenta.base,
 }
 
 export default function MeshGradientPage() {

@@ -12,7 +12,7 @@ import { PageBody } from './PageBody'
 // defaults where they exist; speed starts at 0 so the gradient is static
 // on first paint and the user can scrub up to feel the animation kick in.
 const SCHEMA: PropSchema = [
-  { name: 'colors', type: 'colors', default: [palette.brandLime, palette.blue.base] },
+  { name: 'colors', type: 'colors', default: [palette.lime.light, palette.green.dark] },
   { name: 'angle', type: 'number', default: 90, min: 0, max: 360, step: 1 },
   { name: 'speed', type: 'number', default: 0, min: 0, max: 2, step: 0.01 },
   { name: 'interactive', type: 'boolean', default: false },
