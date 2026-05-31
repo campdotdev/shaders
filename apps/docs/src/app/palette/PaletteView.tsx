@@ -3,11 +3,20 @@
 import { useState } from 'react'
 import { palette, paletteOklch } from '@/lib/palette'
 
-const { black, white, gray, lime, amber, blue, violet, pink } = palette
+const { black, white, gray, lime } = palette
 const {
   lime: limeOklch,
+  crimson: crimsonOklch,
+  red: redOklch,
+  orange: orangeOklch,
   amber: amberOklch,
+  gold: goldOklch,
+  green: greenOklch,
+  emerald: emeraldOklch,
+  teal: tealOklch,
+  sky: skyOklch,
   blue: blueOklch,
+  indigo: indigoOklch,
   violet: violetOklch,
   pink: pinkOklch,
 } = paletteOklch
@@ -18,10 +27,19 @@ type AccentSteps = { dark: string; mid: string; light: string }
 type AccentEntry = { name: string; angle: number; steps: AccentSteps; oklch: AccentSteps }
 
 const ACCENTS: AccentEntry[] = [
-  { name: 'amber',  angle: 75,  steps: amber,  oklch: amberOklch },
-  { name: 'blue',   angle: 252, steps: blue,   oklch: blueOklch },
-  { name: 'violet', angle: 295, steps: violet, oklch: violetOklch },
-  { name: 'pink',   angle: 343, steps: pink,   oklch: pinkOklch },
+  { name: 'crimson', angle: 17,  steps: palette.crimson, oklch: crimsonOklch },
+  { name: 'red',     angle: 25,  steps: palette.red,     oklch: redOklch },
+  { name: 'orange',  angle: 55,  steps: palette.orange,  oklch: orangeOklch },
+  { name: 'amber',   angle: 75,  steps: palette.amber,   oklch: amberOklch },
+  { name: 'gold',    angle: 91,  steps: palette.gold,    oklch: goldOklch },
+  { name: 'green',   angle: 145, steps: palette.green,   oklch: greenOklch },
+  { name: 'emerald', angle: 165, steps: palette.emerald, oklch: emeraldOklch },
+  { name: 'teal',    angle: 180, steps: palette.teal,    oklch: tealOklch },
+  { name: 'sky',     angle: 210, steps: palette.sky,     oklch: skyOklch },
+  { name: 'blue',    angle: 252, steps: palette.blue,    oklch: blueOklch },
+  { name: 'indigo',  angle: 275, steps: palette.indigo,  oklch: indigoOklch },
+  { name: 'violet',  angle: 295, steps: palette.violet,  oklch: violetOklch },
+  { name: 'pink',    angle: 343, steps: palette.pink,    oklch: pinkOklch },
 ]
 
 // ───────────────────────── Aurora old → new (with-depth / "new defaults") ─────────────────────────
@@ -316,11 +334,11 @@ export function PaletteView() {
 
         {/* ── Accent palette ── */}
         <Section
-          title="Accent palette — 4 hues × 3 steps"
-          subtitle="Sampled from the OKLCH system at dark (step 4), mid (step 10, brand-lime equivalence — the most vibrant), and light (step 11). 4 hues feels like the right mix: one warm, two cool, one accent."
+          title="Accent palette — 13 hues × 3 steps"
+          subtitle="Sampled from the OKLCH system at dark (step 4), mid (step 10, most vibrant), and light (step 11). All 13 accent hues from the OKLCH color system, in hue-angle order."
           bg={bg}
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 28 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 28 }}>
             {ACCENTS.map((a) => (
               <AccentTriad key={a.name} accent={a} bg={bg} />
             ))}
@@ -357,7 +375,7 @@ export function PaletteView() {
         {/* ── Sample compositions ── */}
         <Section
           title="Sample compositions"
-          subtitle="A few useful gradients drawn from the slim palette."
+          subtitle="A few useful gradients drawn from the palette."
           bg={bg}
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
@@ -387,8 +405,11 @@ export function PaletteView() {
               bg={bg}
             />
             <GradientBlock
-              colors={[amberOklch.mid, limeMid, blueOklch.mid, violetOklch.mid, pinkOklch.mid]}
-              label="All mids: amber → lime → blue → violet → pink"
+              colors={[
+                crimsonOklch.mid, orangeOklch.mid, amberOklch.mid, limeMid,
+                tealOklch.mid, blueOklch.mid, violetOklch.mid, pinkOklch.mid,
+              ]}
+              label="All mids around the wheel"
               bg={bg}
             />
           </div>
@@ -397,7 +418,7 @@ export function PaletteView() {
         {/* ── Stress test ── */}
         <Section
           title="Mids on ink + paper"
-          subtitle="Stress test — do the four mid accents and brand lime read on both brand backgrounds?"
+          subtitle="Stress test — do all 13 mid accents and brand lime read on both brand backgrounds?"
           bg={bg}
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
@@ -409,12 +430,12 @@ export function PaletteView() {
                   borderRadius: 10,
                   padding: 20,
                   display: 'grid',
-                  gridTemplateColumns: 'repeat(5, 1fr)',
+                  gridTemplateColumns: 'repeat(7, 1fr)',
                   gap: 10,
                 }}
               >
                 {[
-                  { name: 'lime',   color: limeMid },
+                  { name: 'lime',    color: limeMid },
                   ...ACCENTS.map((a) => ({ name: a.name, color: a.oklch.mid })),
                 ].map(({ name: chipName, color }) => (
                   <div
@@ -427,7 +448,7 @@ export function PaletteView() {
                       alignItems: 'center',
                       justifyContent: 'center',
                       fontFamily: 'ui-monospace, monospace',
-                      fontSize: 11,
+                      fontSize: 10,
                       color: bgColor === black ? black : white,
                       fontWeight: 600,
                     }}
