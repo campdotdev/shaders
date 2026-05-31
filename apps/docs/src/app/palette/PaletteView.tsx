@@ -3,13 +3,13 @@
 import { useState } from 'react'
 import { palette, paletteOklch } from '@/lib/palette'
 
-const { black, white, gray, lime } = palette
+const { black, white, gray, limeScale, lime } = palette
 const {
+  limeScale: limeScaleOklch,
   lime: limeOklch,
   red: redOklch,
   orange: orangeOklch,
   amber: amberOklch,
-  yellowGreen: yellowGreenOklch,
   green: greenOklch,
   teal: tealOklch,
   cyan: cyanOklch,
@@ -29,7 +29,7 @@ const ACCENTS: AccentEntry[] = [
   { name: 'red',         angle: 25,      steps: palette.red,         oklch: redOklch },
   { name: 'orange',      angle: 55,      steps: palette.orange,      oklch: orangeOklch },
   { name: 'amber',       angle: 85,      steps: palette.amber,       oklch: amberOklch },
-  { name: 'yellowGreen', angle: 115,     steps: palette.yellowGreen, oklch: yellowGreenOklch },
+  { name: 'lime',        angle: 120,     steps: palette.lime,        oklch: limeOklch },
   { name: 'green',       angle: 145.897, steps: palette.green,       oklch: greenOklch },
   { name: 'teal',        angle: 175,     steps: palette.teal,        oklch: tealOklch },
   { name: 'cyan',        angle: 205,     steps: palette.cyan,        oklch: cyanOklch },
@@ -259,8 +259,8 @@ export function PaletteView() {
   const auroraOld = AURORA.map((a) => a.oldHex)
   const auroraNew = AURORA.map((a) => a.newColor)
 
-  // Grab OKLCH lime[9] for sample compositions (brand step)
-  const limeMid = limeOklch[9]
+  // Brand lime mid step (index 9 of the 12-step brand scale = #A3C100)
+  const brandLimeMid = limeScaleOklch[9]
 
   return (
     <div
@@ -317,9 +317,9 @@ export function PaletteView() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <ScaleRow name="gray" sub="brand" hexes={gray} bg={bg} />
             <ScaleRow
-              name="lime"
-              sub="brand · h=120"
-              hexes={limeOklch}
+              name="limeScale"
+              sub="brand · h=120 · 12 steps"
+              hexes={limeScaleOklch}
               bg={bg}
               brandStep={10}
             />
@@ -378,12 +378,12 @@ export function PaletteView() {
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             <GradientBlock
-              colors={[black, limeMid, white]}
+              colors={[black, brandLimeMid, white]}
               label="Brand identity: ink → lime → paper"
               bg={bg}
             />
             <GradientBlock
-              colors={[violetOklch.dark, blueOklch.base, limeMid]}
+              colors={[violetOklch.dark, blueOklch.base, brandLimeMid]}
               label="Cool ramp: violet/dark → blue/base → brand lime"
               bg={bg}
             />
@@ -398,13 +398,13 @@ export function PaletteView() {
               bg={bg}
             />
             <GradientBlock
-              colors={[limeOklch[3], limeOklch[6], limeOklch[9]]}
-              label="Brand lime ramp (full scale, steps 4 → 7 → 10)"
+              colors={[limeScaleOklch[3], limeScaleOklch[6], limeScaleOklch[9]]}
+              label="Brand lime scale ramp (steps 4 → 7 → 10)"
               bg={bg}
             />
             <GradientBlock
               colors={[
-                redOklch.base, orangeOklch.base, amberOklch.base, yellowGreenOklch.base, limeMid,
+                redOklch.base, orangeOklch.base, amberOklch.base, limeOklch.base, brandLimeMid,
                 greenOklch.base, tealOklch.base, cyanOklch.base, skyOklch.base,
                 blueOklch.base, violetOklch.base, purpleOklch.base, magentaOklch.base,
               ]}
@@ -434,7 +434,7 @@ export function PaletteView() {
                 }}
               >
                 {[
-                  { name: 'lime',    color: limeMid },
+                  { name: 'lime',    color: brandLimeMid },
                   ...ACCENTS.map((a) => ({ name: a.name, color: a.oklch.base })),
                 ].map(({ name: chipName, color }) => (
                   <div

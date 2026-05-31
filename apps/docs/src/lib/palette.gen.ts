@@ -22,10 +22,10 @@ const OKLCH = {
     base:  'oklch(0.792 0.168 85)',
     dark:  'oklch(0.642 0.140 85)',
   },
-  yellowGreen: {
-    light: 'oklch(0.922 0.140 115)',
-    base:  'oklch(0.842 0.185 115)',
-    dark:  'oklch(0.692 0.160 115)',
+  lime: {
+    light: 'oklch(0.922 0.140 120)',
+    base:  'oklch(0.842 0.185 120)',
+    dark:  'oklch(0.692 0.160 120)',
   },
   green: {
     light: 'oklch(0.892 0.180 145.897)',
