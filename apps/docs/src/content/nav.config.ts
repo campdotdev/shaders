@@ -14,6 +14,7 @@ export const NAV: NavGroup[] = [
       { kind: 'page', slug: '/cli' },
       { kind: 'page', slug: '/changelog' },
       { kind: 'page', slug: '/examples' },
+      { kind: 'link', label: 'Palette', url: '/palette' },
     ],
   },
   {
