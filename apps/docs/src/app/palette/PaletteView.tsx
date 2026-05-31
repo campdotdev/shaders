@@ -9,46 +9,46 @@ const {
   red: redOklch,
   orange: orangeOklch,
   amber: amberOklch,
-  gold: goldOklch,
+  yellowGreen: yellowGreenOklch,
   green: greenOklch,
-  emerald: emeraldOklch,
   teal: tealOklch,
+  cyan: cyanOklch,
   sky: skyOklch,
   blue: blueOklch,
-  indigo: indigoOklch,
   violet: violetOklch,
-  pink: pinkOklch,
+  purple: purpleOklch,
+  magenta: magentaOklch,
 } = paletteOklch
 
 // ───────────────────────── Accent data ─────────────────────────
 
-type AccentSteps = { dark: string; mid: string; light: string }
+type AccentSteps = { light: string; base: string; dark: string }
 type AccentEntry = { name: string; angle: number; steps: AccentSteps; oklch: AccentSteps }
 
 const ACCENTS: AccentEntry[] = [
-  { name: 'red',     angle: 25,  steps: palette.red,     oklch: redOklch },
-  { name: 'orange',  angle: 55,  steps: palette.orange,  oklch: orangeOklch },
-  { name: 'amber',   angle: 75,  steps: palette.amber,   oklch: amberOklch },
-  { name: 'gold',    angle: 91,  steps: palette.gold,    oklch: goldOklch },
-  { name: 'green',   angle: 145, steps: palette.green,   oklch: greenOklch },
-  { name: 'emerald', angle: 165, steps: palette.emerald, oklch: emeraldOklch },
-  { name: 'teal',    angle: 180, steps: palette.teal,    oklch: tealOklch },
-  { name: 'sky',     angle: 210, steps: palette.sky,     oklch: skyOklch },
-  { name: 'blue',    angle: 252, steps: palette.blue,    oklch: blueOklch },
-  { name: 'indigo',  angle: 275, steps: palette.indigo,  oklch: indigoOklch },
-  { name: 'violet',  angle: 295, steps: palette.violet,  oklch: violetOklch },
-  { name: 'pink',    angle: 343, steps: palette.pink,    oklch: pinkOklch },
+  { name: 'red',         angle: 25,      steps: palette.red,         oklch: redOklch },
+  { name: 'orange',      angle: 55,      steps: palette.orange,      oklch: orangeOklch },
+  { name: 'amber',       angle: 85,      steps: palette.amber,       oklch: amberOklch },
+  { name: 'yellowGreen', angle: 115,     steps: palette.yellowGreen, oklch: yellowGreenOklch },
+  { name: 'green',       angle: 145.897, steps: palette.green,       oklch: greenOklch },
+  { name: 'teal',        angle: 175,     steps: palette.teal,        oklch: tealOklch },
+  { name: 'cyan',        angle: 205,     steps: palette.cyan,        oklch: cyanOklch },
+  { name: 'sky',         angle: 235,     steps: palette.sky,         oklch: skyOklch },
+  { name: 'blue',        angle: 265.847, steps: palette.blue,        oklch: blueOklch },
+  { name: 'violet',      angle: 293.328, steps: palette.violet,      oklch: violetOklch },
+  { name: 'purple',      angle: 320,     steps: palette.purple,      oklch: purpleOklch },
+  { name: 'magenta',     angle: 343.895, steps: palette.magenta,     oklch: magentaOklch },
 ]
 
-// ───────────────────────── Aurora old → new (with-depth / "new defaults") ─────────────────────────
+// ───────────────────────── Aurora old → new ─────────────────────────
 
 type AuroraEntry = { name: string; oldHex: string; newRef: string; newColor: string }
 
 const AURORA: AuroraEntry[] = [
-  { name: 'green',  oldHex: '#09E24B', newRef: 'lime[9]',     newColor: limeOklch[9] },
-  { name: 'blue',   oldHex: '#1837E6', newRef: 'blue.dark',   newColor: blueOklch.dark },
-  { name: 'violet', oldHex: '#661ACC', newRef: 'violet.dark', newColor: violetOklch.dark },
-  { name: 'pink',   oldHex: '#CC1A99', newRef: 'pink.mid',    newColor: pinkOklch.mid },
+  { name: 'green',   oldHex: '#09E24B', newRef: 'green.base',   newColor: greenOklch.base },
+  { name: 'blue',    oldHex: '#1837E6', newRef: 'blue.base',    newColor: blueOklch.base },
+  { name: 'violet',  oldHex: '#661ACC', newRef: 'violet.base',  newColor: violetOklch.base },
+  { name: 'magenta', oldHex: '#CC1A99', newRef: 'magenta.base', newColor: magentaOklch.base },
 ]
 
 // ───────────────────────── Components ─────────────────────────
@@ -224,9 +224,9 @@ function AccentTriad({ accent, bg }: { accent: AccentEntry; bg: string }) {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
         {(
           [
-            { label: 'dark',  color: accent.oklch.dark },
-            { label: 'mid',   color: accent.oklch.mid },
             { label: 'light', color: accent.oklch.light },
+            { label: 'base',  color: accent.oklch.base },
+            { label: 'dark',  color: accent.oklch.dark },
           ] as const
         ).map(({ label, color }) => (
           <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -332,8 +332,8 @@ export function PaletteView() {
 
         {/* ── Accent palette ── */}
         <Section
-          title="Accent palette — 12 hues × 3 steps"
-          subtitle="Sampled from the OKLCH system at dark (step 4), mid (step 10, most vibrant), and light (step 11). All 12 accent hues from the OKLCH color system, in hue-angle order."
+          title="Accent palette — 12 hues × light / base / dark"
+          subtitle="Hand-tuned in OKLCH so `base` lands at or near Aurora's vibrancy. The four Aurora-anchored hues (green/blue/violet/magenta) match Aurora's original hexes within 1 byte by design."
           bg={bg}
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 28 }}>
@@ -383,18 +383,18 @@ export function PaletteView() {
               bg={bg}
             />
             <GradientBlock
-              colors={[violetOklch.dark, blueOklch.mid, limeMid]}
-              label="Cool ramp: violet/dark → blue/mid → lime/mid"
+              colors={[violetOklch.dark, blueOklch.base, limeMid]}
+              label="Cool ramp: violet/dark → blue/base → brand lime"
               bg={bg}
             />
             <GradientBlock
-              colors={[pinkOklch.dark, pinkOklch.mid, amberOklch.mid]}
-              label="Warm ramp: pink/dark → pink/mid → amber/mid"
+              colors={[magentaOklch.dark, magentaOklch.base, amberOklch.base]}
+              label="Warm ramp: magenta/dark → magenta/base → amber/base"
               bg={bg}
             />
             <GradientBlock
-              colors={[blueOklch.light, violetOklch.light, pinkOklch.light]}
-              label="Soft pastel: blue/light → violet/light → pink/light"
+              colors={[blueOklch.light, violetOklch.light, magentaOklch.light]}
+              label="Soft pastel: blue/light → violet/light → magenta/light"
               bg={bg}
             />
             <GradientBlock
@@ -404,10 +404,11 @@ export function PaletteView() {
             />
             <GradientBlock
               colors={[
-                redOklch.mid, orangeOklch.mid, amberOklch.mid, limeMid,
-                tealOklch.mid, blueOklch.mid, violetOklch.mid, pinkOklch.mid,
+                redOklch.base, orangeOklch.base, amberOklch.base, yellowGreenOklch.base, limeMid,
+                greenOklch.base, tealOklch.base, cyanOklch.base, skyOklch.base,
+                blueOklch.base, violetOklch.base, purpleOklch.base, magentaOklch.base,
               ]}
-              label="All mids around the wheel"
+              label="All bases around the wheel"
               bg={bg}
             />
           </div>
@@ -415,8 +416,8 @@ export function PaletteView() {
 
         {/* ── Stress test ── */}
         <Section
-          title="Mids on ink + paper"
-          subtitle="Stress test — do all 12 mid accents and brand lime read on both brand backgrounds?"
+          title="Bases on ink + paper"
+          subtitle="Stress test — do all 12 base accents and brand lime read on both brand backgrounds?"
           bg={bg}
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
@@ -434,7 +435,7 @@ export function PaletteView() {
               >
                 {[
                   { name: 'lime',    color: limeMid },
-                  ...ACCENTS.map((a) => ({ name: a.name, color: a.oklch.mid })),
+                  ...ACCENTS.map((a) => ({ name: a.name, color: a.oklch.base })),
                 ].map(({ name: chipName, color }) => (
                   <div
                     key={chipName}
