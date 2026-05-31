@@ -1,166 +1,127 @@
 # Matter example color palette — design
 
-**Date:** 2026-05-30
-**Status:** Approved (brainstorming complete; awaiting spec review before planning)
+**Date:** 2026-05-30 (original) · revised 2026-05-31 to reflect final implementation.
+**Status:** Implemented on branch `hunter/mat-13-set-a-side-wide-color-palette`.
 
 ## Intent
 
 Establish a single named color palette that every Matter example — registry component defaults, docs-site demos, MDX snippets — pulls from. The goal is consistency: when a visitor moves between the Aurora demo, the mesh-gradient demo, and the linear-gradient demo, the examples should feel like they belong to the same family rather than like seven artists made seven palettes.
 
-The palette is **brand-anchored**: it builds on an existing OKLCH-based color system that already drives site chrome and branding. Brand lime (`oklch(0.761 0.186 120)`, the `lime/10` step) is the lead. Brand gray and brand black/white are the neutrals. Examples pull a small curated set of accent hues at a small number of named steps.
+The palette is **brand-anchored**: it builds on an existing OKLCH-based color system that drives site chrome and branding. Brand lime (`#A3C100`, `oklch(0.761 0.186 120)`, step 10 of the 12-step brand scale) is the lead. Brand gray and brand black/white are the neutrals. The accent palette adds 12 vibrant hues sampled around the wheel, hand-tuned in OKLCH so the `base` step lands at (or near) Aurora's original chroma where applicable.
 
-## The palette
+## The palette as shipped
 
-Three groups: brand foundation (full 12-step scales), accent palette (4 hues × 3 named steps), brand anchors (black + white).
+The TypeScript module at [`apps/docs/src/lib/palette.ts`](../../apps/docs/src/lib/palette.ts) exports:
 
-### Brand foundation — full 12-step scales
+### Brand foundation
 
-Used broadly across the site (chrome, type, panels, accents). Examples may use any step.
-
-**Gray scale** (brand, near-zero chroma — explicit hex, used as-is):
-
-| Step | Hex |
-| --- | --- |
-| 1 | `#0B0F0D` |
-| 2 | `#131614` |
-| 3 | `#202421` |
-| 4 | `#2B302D` |
-| 5 | `#363B38` |
-| 6 | `#424844` |
-| 7 | `#535A55` |
-| 8 | `#6D736E` |
-| 9 | `#8B918C` |
-| 10 | `#A1A6A1` |
-| 11 | `#D0D3CF` |
-| 12 | `#E7E9E7` |
-
-**Lime scale** (brand, h=120, OKLCH-defined):
-
-| Step | OKLCH | Hex (approx) |
+| Export | Shape | Description |
 | --- | --- | --- |
-| 1 | `oklch(0.185 0.031 120)` | `#111505` |
-| 2 | `oklch(0.216 0.043 120)` | `#171C04` |
-| 3 | `oklch(0.280 0.080 120)` | `#242E00` |
-| 4 | `oklch(0.331 0.111 120)` | `#2F3C00` |
-| 5 | `oklch(0.377 0.137 120)` | `#3A4A00` |
-| 6 | `oklch(0.428 0.161 120)` | `#465900` |
-| 7 | `oklch(0.496 0.184 120)` | `#576E00` |
-| 8 | `oklch(0.585 0.205 120)` | `#6E8A00` |
-| 9 | `oklch(0.703 0.205 120)` | `#91AF00` |
-| **10** | `oklch(0.761 0.186 120)` | `#A3C100` ← **brand lime** |
-| 11 | `oklch(0.875 0.117 120)` | `#CCE288` |
-| 12 | `oklch(0.933 0.068 120)` | `#E3F0BD` |
+| `black` | string | `#0B0F0D` — brand black anchor (= `gray[0]`) |
+| `white` | string | `#E7E9E7` — brand white anchor (= `gray[11]`) |
+| `gray` | 12-step array | Full brand gray scale, deep ink → paper, hex-canonical |
+| `limeScale` | 12-step array | Full brand lime scale at h=120, hex-canonical |
+| `brandLime` | string | `#A3C100` — `limeScale[9]`, canonical brand lime |
 
-### Accent palette — 4 hues × 3 steps
+### Accent palette — 12 hues × {light, base, dark}
 
-Sampled from the same OKLCH master used to generate the brand lime scale. Three steps per hue:
+Each accent is exported as a named const object. All values are OKLCH-derived (see [`palette.gen.ts`](../../apps/docs/src/lib/palette.gen.ts) for the conversion script).
 
-- **dark** = step 4 (L ≈ 0.33) — deep, hue-tinted
-- **mid** = step 10 (L ≈ 0.69) — most vibrant, brand-lime equivalence
-- **light** = step 11 (L ≈ 0.85) — light tint
+| Name | Hue (°) | light L/C | base L/C | dark L/C | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `red` | 25 | 0.748 / 0.200 | 0.628 / 0.258 | 0.478 / 0.210 | |
+| `orange` | 55 | 0.788 / 0.155 | 0.668 / 0.205 | 0.518 / 0.165 | |
+| `amber` | 85 | 0.892 / 0.120 | 0.792 / 0.168 | 0.642 / 0.140 | |
+| `lime` | 120 | 0.922 / 0.140 | 0.842 / 0.185 | 0.692 / 0.160 | Brand hue — `lime.base` is `#bcdc33` |
+| `green` | 145.897 | 0.892 / 0.180 | 0.795 / 0.242 | 0.645 / 0.200 | **Aurora-anchored.** `base` = `#0ae24b` (within 1 byte of Aurora's `#09e24b`) |
+| `teal` | 175 | 0.865 / 0.115 | 0.745 / 0.165 | 0.595 / 0.140 | |
+| `cyan` | 205 | 0.748 / 0.095 | 0.628 / 0.135 | 0.478 / 0.115 | |
+| `sky` | 235 | 0.665 / 0.135 | 0.545 / 0.175 | 0.395 / 0.145 | |
+| `blue` | 265.847 | 0.585 / 0.200 | 0.465 / 0.258 | 0.345 / 0.200 | **Aurora-anchored.** `base` = `#1837e6` (Aurora's cobalt exact) |
+| `violet` | 293.328 | 0.580 / 0.185 | 0.460 / 0.238 | 0.340 / 0.190 | **Aurora-anchored.** `base` = `#661acc` (Aurora's violet exact) |
+| `purple` | 320 | 0.630 / 0.190 | 0.510 / 0.245 | 0.360 / 0.200 | |
+| `magenta` | 343.895 | 0.693 / 0.185 | 0.573 / 0.232 | 0.423 / 0.190 | **Aurora-anchored.** `base` = `#cc1a99` (Aurora's magenta exact) |
 
-| Hue | Angle | dark | mid | light |
-| --- | --- | --- | --- | --- |
-| `amber` | 75 | `oklch(0.338 0.100 75)` | `oklch(0.788 0.177 75)` | `oklch(0.894 0.110 75)` |
-| `blue` | 252 | `oklch(0.328 0.107 252)` | `oklch(0.682 0.176 252)` | `oklch(0.849 0.107 252)` |
-| `violet` | 295 | `oklch(0.330 0.105 295)` | `oklch(0.690 0.174 295)` | `oklch(0.853 0.107 295)` |
-| `pink` | 343 | `oklch(0.333 0.103 343)` | `oklch(0.694 0.174 343)` | `oklch(0.857 0.107 343)` |
+The four **Aurora-anchored** hues have their hue angles tuned so the OKLCH base step (at the chroma values shown) lands at or within 1 byte of Aurora's original hexes. This means Aurora's iconic neon colors literally are `palette.green.base` / `blue.base` / `violet.base` / `magenta.base` — Aurora is the canonical example of "what `base` looks like at full vibrancy" for these hues.
 
-One warm (amber), two cool (blue, violet), one accent (pink). Each step is perceptually equivalent across hues — picking `blue/mid` and `pink/mid` together gives matched visual weight.
+### Naming conventions
 
-### Brand anchors
-
-| Name | Hex |
-| --- | --- |
-| `black` | `#0B0F0D` (= `gray/1`) |
-| `white` | `#E7E9E7` (= `gray/12`) |
-
-Aliases for clarity at usage sites; they live in the gray scale.
+- **Step names** are `light` / `base` / `dark`. `base` is always the most vibrant peak.
+- **Aggregate export** `palette` groups everything for iteration (see [`palette.ts:160-166`](../../apps/docs/src/lib/palette.ts)).
+- **OKLCH source** is exported as `paletteOklch` for the reference page to render with browser-native `oklch()` strings (more accurate than the sRGB hex conversion).
 
 ## Where the tokens live
 
-A single TypeScript module — `apps/docs/src/lib/palette.ts` — exports the named constants:
+A single TypeScript module: [`apps/docs/src/lib/palette.ts`](../../apps/docs/src/lib/palette.ts).
+
+Docs-site demos `import { palette } from '@/lib/palette'` and reference colors by name (e.g. `palette.green.base`, `palette.amber.dark`, `palette.brandLime`).
+
+**Registry components remain dependency-free** — they're shadcn-style copy-paste artifacts shipped to user projects via the CLI. They inline hex literals with `// palette.*` comments noting provenance:
 
 ```ts
-export const palette = {
-  black: '#0B0F0D',
-  white: '#E7E9E7',
-  gray: ['#0B0F0D', '#131614', /* ... 12 steps ... */] as const,
-  lime: [
-    'oklch(0.185 0.031 120)',
-    /* ... 12 steps ... */
-    'oklch(0.761 0.186 120)', // step 10 — brand lime
-    /* ... */
-  ] as const,
-  amber: {
-    dark:  'oklch(0.338 0.100 75)',
-    mid:   'oklch(0.788 0.177 75)',
-    light: 'oklch(0.894 0.110 75)',
-  },
-  blue:   { dark: '...', mid: '...', light: '...' },
-  violet: { dark: '...', mid: '...', light: '...' },
-  pink:   { dark: '...', mid: '...', light: '...' },
-} as const
-
-// Convenience alias matching most-common pick:
-export const brandLime = palette.lime[9] // step 10
+// registry/aurora/aurora.tsx
+export const DEFAULT_LAYERS: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer] = [
+  { hex: '#0ae24b', speed: 0.07, intensity: 0.6, variation: 0 },  // palette.green.base
+  { hex: '#1837e6', speed: 0.1, intensity: 0, variation: 5 },     // palette.blue.base
+  { hex: '#661acc', speed: 0.15, intensity: 0.3, variation: 11 }, // palette.violet.base
+  { hex: '#cc1a99', speed: 0.07, intensity: 0, variation: 17 },   // palette.magenta.base
+]
 ```
 
-Docs-site demos `import { palette }` and reference colors by name. **The registry components do not import this module** — they're copy-paste artifacts shipped to user projects via the CLI and must remain dependency-free. Instead, when a registry component's default colors are updated, the OKLCH values are copied verbatim from this module with a comment noting the palette name (e.g., `// palette.blue.dark`).
+## Reference page
 
-## Application guidance
+Live at [`/palette`](../../apps/docs/src/app/palette/PaletteView.tsx). Renders:
+- Brand foundation (full `gray` + `limeScale` 12-step scales, brand black/white anchors)
+- Accent palette (12 triads in hue-angle order)
+- Aurora old vs new defaults (now visually identical — kept as documentation of the palette-anchoring)
+- Sample compositions (cool ramp, warm ramp, soft pastel, full-wheel `base` rainbow)
+- Stress test (all 12 `base` accents + brand lime on brand ink and brand paper)
 
-| Component | Recommended picks | Notes |
+Linked from the docs sidebar under the Overview group.
+
+## Component defaults as shipped
+
+All seven existing registry components pivoted to palette-anchored defaults. Visual baselines in `apps/docs-tests/visual/` regenerated where needed.
+
+| Component | Defaults | Picks |
 | --- | --- | --- |
-| `aurora` | `lime/10`, `blue/dark`, `violet/dark`, `pink/mid` | "with-depth" variant — preserves bright-top / deep-bottoms feel. Replaces current `#09e24b / #1837e6 / #661acc / #cc1a99` |
-| `mesh-gradient` | mix of `amber/mid`, `pink/mid`, `blue/mid`, `lime/9` or `10` | Warm + cool mix; multiple ramps available — at least one ramp keeps a warm look |
-| `linear-gradient` | default pair: `lime/10` + `blue/mid` (or similar two-mid pair) | Replaces current `#ff7b72 → #7b9cff` |
-| `dot-field` | `gray/9` dots on `gray/2` bg (default); add `lime/mid` or accent `/mid` for highlight variants | Effect is already busy; vibrant peaks reserved for accent variants |
-| `noise-field` | `gray/7` to `gray/11` ramp (default); accent variants use any `dark → mid` ramp | Same reasoning |
-| `waves` | `blue/dark → lime/10` ramp (default); also viable: `violet/dark → pink/mid` | Same reasoning |
-| `film-grain` | `gray` only | Effect is intentionally monochrome |
-| `vignette` | `black` + `gray/2` only | Same reasoning |
+| `aurora` | 4 layers + horizon + sky | `green.base`, `blue.base`, `violet.base`, `magenta.base` (visually identical to original); `horizonColor` and `skyColor` preserved from original |
+| `linear-gradient` | 2 stops | `lime.light` → `green.dark` — analogous chartreuse-to-emerald sweep, L 0.92 → 0.65 for depth |
+| `mesh-gradient` palette A | 4 corners (cool spring) | `lime.base`, `green.base`, `teal.base`, `sky.base` — 115° analogous span |
+| `mesh-gradient` palette B | 4 corners (warm sunset) | `amber.base`, `orange.base`, `red.base`, `magenta.base` — ~100° warm analogous span |
+| `dot-field` | 1 dot color | `gray[8]` (#8B918C) — brand-tinted mid-gray |
+| `noise-field` | 2-color ramp | `gray[1]` → `gray[11]` (deep ink → brand white) |
+| `waves` | 1 color | `teal.base` (#00cda6) — water-like accent, distinct from Aurora's lime-led palette |
+| `vignette` | fade color | brand black (`#0B0F0D`) |
+| `film-grain` | (none) | Monochrome by design; no color defaults |
 
-This is **guidance, not law** — example authors can deviate when an effect benefits from a different pick, but the named palette is the only source of color values.
+The gradient-family picks (linear-gradient and mesh-gradient) explicitly follow analogous-hue + lightness-depth rules saved as a behavioral preference in [`feedback_gradient_design.md`](../../../../.claude/projects/-Users-hunter-garrett-Documents--personal-matter/memory/feedback_gradient_design.md).
 
-## Roll-out scope
+## Non-goals (still firm)
 
-What this spec covers:
-
-1. **The palette module** — `apps/docs/src/lib/palette.ts` with brand foundation, accent palette, and brand anchors as named exports. OKLCH strings are the canonical form; hex is computed once where needed (for the gray scale, hex is canonical since the brand gray is defined as explicit hex).
-2. **A palette reference page** — replaces the `/dev/palette` demo with a permanent reference at `/palette` (or under a docs subroute — final location decided during planning), surfaced from docs navigation. Shows brand foundation scales, accent triads, and usage guidance.
-3. **Registry component defaults rewrite** — update default colors in:
-   - `registry/aurora/aurora.tsx` (the four color stops shift to with-depth variant)
-   - `registry/mesh-gradient/mesh-gradient.tsx` (ramps rewritten using palette picks)
-   - `registry/linear-gradient.tsx` (default pair pivots to palette)
-   - `registry/dot-field.tsx`, `registry/noise-field.tsx`, `registry/waves.tsx` (default colors pivot to gray + accent picks)
-   - `registry/vignette/vignette.tsx` (default colors pivot to brand black + gray)
-   - `registry/film-grain` already grayscale — verify alignment with brand gray
-4. **Docs-site demo updates** — any demo pages or MDX snippets that hardcode hex values switch to `palette.*` imports
-5. **Visual regression baselines refresh** — Playwright baselines re-captured for all affected components
-
-## Non-goals
-
-- **No CSS custom properties added by this spec.** Palette is a TS constant. The docs site has existing `--bg`/`--fg`/etc. for theme — those keep working; CSS-var theming is out of scope.
-- **No runtime palette switching.** Users can't theme Matter components via this palette — it's a curated set baked into defaults, not a knob.
-- **No additional accent steps (yet).** A `deep` step at step 7 (L≈0.49) might be useful — Aurora's with-depth blue/dark is moodier than the original — but adding it is deferred to a v2 if real usage demands more lightness range. YAGNI for v1.
-- **No more accent hues.** 4 hues + lime + gray covers v1. Adding red/teal/sky/indigo/etc. waits for demonstrated need.
+- **No CSS custom properties added by this spec.** Palette is a TS constant. The docs site's existing `--bg`/`--fg`/etc. for theme stay as-is.
+- **No runtime palette switching.** Users can't theme Matter components via this palette — it's a curated set baked into defaults.
 - **No published `@matter/palette` package.** The palette is a docs-site internal. Registry components remain copy-paste-clean.
 - **No font / radius / spacing tokens.** Just colors.
 - **No chrome migration.** The docs site's globals.css `--bg`/`--fg` may eventually pivot to the brand foundation, but that's a separate effort outside this spec.
 
-## Open questions
+## Future work (deferred to separate efforts)
 
-None outstanding at spec time. OKLCH values are revisable; the named structure (`lime[1..12]`, `amber.{dark,mid,light}`, etc.) is the load-bearing API.
+Captured in [`project_color_features.md`](../../../../.claude/projects/-Users-hunter-garrett-Documents--personal-matter/memory/project_color_features.md):
 
-## Roll-out phasing (sketch — actual plan written separately)
+- **`colorSpace` prop on gradient/ramp components** (`<LinearGradient>`, `<MeshGradient>`, `<NoiseField>`) — controls the interpolation working space. Once shipped, the through-gray rule in the gradient guidelines partially relaxes for OKLCH-mixed gradients.
+- **`gamut` prop on `<MatterScene>`** — controls the output color space (sRGB vs display-p3). Orthogonal to `colorSpace`. P3 support enables wider-saturation rendering on capable displays.
 
-Honoring the project's "many small phases with stop-and-play gates" pacing preference, ~5 phases:
+## Evolution (for historical context)
 
-1. **Palette module + reference page** — define the tokens, ship a public reference page. Validation: open the reference page, scroll, feel.
-2. **Apply to Aurora** — Aurora's four stops shift to with-depth variant. Validation: open Aurora demo, compare to old screenshot.
-3. **Apply to gradient-family components** — `linear-gradient` + `mesh-gradient` defaults rewritten. Validation: open both demos.
-4. **Apply to noise-family + monochrome components** — `dot-field`, `noise-field`, `waves`, `film-grain`, `vignette` defaults rewritten. Validation: open all five demos.
-5. **Visual regression refresh** — re-record Playwright baselines for all changed components. Validation: `pnpm test:visual` passes on the new baselines.
+The design went through ~7 substantive iterations during brainstorming + implementation:
 
-Each phase is 1–2 days. The reference page from phase 1 doubles as the validation surface for phases 2–4 (visitor checks the swatches and the demos side-by-side).
+1. **Initial proposal** (4 hues): Aurora's 4 colors + 4 new complementary hues at `dark/mid/light` tiers.
+2. **Brand pivot**: User shared brand lime + brand gray 12-step scales; palette restructured around those.
+3. **Full OKLCH system**: Expanded to 14 hue scales × 12 steps each (perceptually-uniform Radix-style).
+4. **Slim down**: Per user, kept brand foundation full 12-step but reduced accents to 4 hues × 3 steps.
+5. **Expand accents**: Per user, expanded back to ~13 accent hues at 3 steps each.
+6. **Drop crimson**: Hue at 17° too close to red at 25°.
+7. **Re-tune for vibrancy**: Aurora's original `#09e24b` etc. felt more vivid than the OKLCH-derived values. Final design tuned OKLCH base step to match Aurora's chroma; renamed `pink → magenta`; renamed `yellowGreen → lime` at brand hue 120; the 12-step brand lime scale was renamed to `limeScale` to free up `lime` for the accent triad.
+
+Each iteration's commits are on the branch. The "Future work" section above captures planned features that didn't ship as part of MAT-13.

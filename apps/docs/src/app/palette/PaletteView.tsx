@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { palette, paletteOklch } from '@/lib/palette'
 
-const { black, white, gray, limeScale, lime } = palette
+const { black, white, gray } = palette
 const {
   limeScale: limeScaleOklch,
   lime: limeOklch,
