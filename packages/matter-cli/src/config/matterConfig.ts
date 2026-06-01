@@ -43,7 +43,7 @@ export async function readMatterConfig(projectRoot: string): Promise<MatterConfi
   try {
     raw = await readFile(path, 'utf-8')
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
       throw new Error(
         `matter.config.json not found in ${projectRoot}. Run \`matter-cli init\` first.`,
       )
@@ -55,7 +55,9 @@ export async function readMatterConfig(projectRoot: string): Promise<MatterConfi
   try {
     parsed = JSON.parse(raw)
   } catch (err) {
-    throw new Error(`${path} is not valid JSON: ${(err as Error).message}`)
+    throw new Error(
+      `${path} is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+    )
   }
 
   return validateMatterConfig(parsed, path)
@@ -68,11 +70,15 @@ export async function writeMatterConfig(projectRoot: string, cfg: MatterConfig):
   await writeFile(path, json, 'utf-8')
 }
 
+function isRecord(x: unknown): x is Record<string, unknown> {
+  return typeof x === 'object' && x !== null
+}
+
 function validateMatterConfig(parsed: unknown, path: string): MatterConfig {
-  if (typeof parsed !== 'object' || parsed === null) {
+  if (!isRecord(parsed)) {
     throw new Error(`${path}: expected an object`)
   }
-  const obj = parsed as Record<string, unknown>
+  const obj = parsed
 
   if (typeof obj.componentsDir !== 'string' || obj.componentsDir === '') {
     throw new Error(`${path}: missing or empty "componentsDir" string`)
@@ -80,7 +86,7 @@ function validateMatterConfig(parsed: unknown, path: string): MatterConfig {
   if (typeof obj.registryUrl !== 'string' || obj.registryUrl === '') {
     throw new Error(`${path}: missing or empty "registryUrl" string`)
   }
-  if (typeof obj.aliases !== 'object' || obj.aliases === null) {
+  if (!isRecord(obj.aliases)) {
     throw new Error(`${path}: missing "aliases" object`)
   }
   if (typeof obj.tsx !== 'boolean') {
@@ -88,7 +94,7 @@ function validateMatterConfig(parsed: unknown, path: string): MatterConfig {
   }
   const aliases: Record<string, string> = {}
 
-  for (const [k, v] of Object.entries(obj.aliases as Record<string, unknown>)) {
+  for (const [k, v] of Object.entries(obj.aliases)) {
     if (typeof v !== 'string') {
       throw new Error(`${path}: aliases.${k} must be a string`)
     }

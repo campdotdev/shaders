@@ -70,7 +70,7 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     }
 
     return () => {
-      detach?.()
+      detach()
       fresh.dispose()
       setInput(null)
     }

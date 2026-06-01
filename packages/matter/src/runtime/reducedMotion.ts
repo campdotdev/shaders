@@ -138,7 +138,7 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
   return watcher
 }
 
-let globalScaleUniform: ShaderNodeObject<Node> | null = null
+let globalScaleUniform: ReturnType<typeof uniform<number>> | null = null
 let globalWatcher: ReducedMotionWatcher | null = null
 
 /**
@@ -150,14 +150,18 @@ let globalWatcher: ReducedMotionWatcher | null = null
 export function getReducedMotionTimeScale(): ShaderNodeObject<Node> {
   if (globalScaleUniform === null) {
     globalWatcher = createReducedMotionWatcher()
-    globalScaleUniform = uniform(globalWatcher.scale()) as unknown as ShaderNodeObject<Node>
+    globalScaleUniform = uniform(globalWatcher.scale())
     globalWatcher.subscribe((s) => {
       if (globalScaleUniform === null) return
-      ;(globalScaleUniform as unknown as { value: number }).value = s
+      globalScaleUniform.value = s
     })
   }
 
-  return globalScaleUniform
+  // ShaderNodeObject<UniformNode<number>> isn't structurally assignable to
+  // ShaderNodeObject<Node> (invariant generic methods); chains work the same
+  // at runtime, so widen at the return boundary.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  return globalScaleUniform as unknown as ShaderNodeObject<Node>
 }
 
 // Keep a typed reference for tests that may want to re-init between tests.

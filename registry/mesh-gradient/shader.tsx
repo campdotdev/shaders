@@ -8,22 +8,8 @@ import {
   useResize,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
-import {
-  abs,
-  cos,
-  mix,
-  pow,
-  type ShaderNodeObject,
-  sign,
-  sin,
-  smoothstep,
-  uniform,
-  uv,
-  vec2,
-  vec4,
-} from 'three/tsl'
+import { abs, cos, mix, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
 
 import { parseHex } from '../utils/color'
 
@@ -104,7 +90,7 @@ export function MeshGradientShader({
   // Resolution uniform — drives aspect correction. Seed with a sane large
   // default so the first frame doesn't see (1, 1). Pattern from Aurora.
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
-  const resNode = useMemo(() => uniform(resVec) as unknown as ShaderNodeObject<Node>, [resVec])
+  const resNode = useMemo(() => uniform(resVec), [resVec])
 
   useEffect(() => {
     const [w, h] = resize.get()

@@ -16,7 +16,7 @@ export async function readUrl(url: string): Promise<string> {
     try {
       return await readFile(path, 'utf-8')
     } catch (err) {
-      if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
         throw new Error(`File not found: ${path}`)
       }
       throw err
@@ -29,7 +29,7 @@ export async function readUrl(url: string): Promise<string> {
     try {
       res = await fetch(url)
     } catch (err) {
-      throw new Error(`Failed to fetch ${url}: ${(err as Error).message}`)
+      throw new Error(`Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`)
     }
     if (!res.ok) {
       throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`)

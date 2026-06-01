@@ -20,13 +20,14 @@
 // arguments inside `uv().x.sub(...)` chains, which is uv-rooted and safe.
 
 import { colorRamp, type ColorRampStop, fbm, quantize, time, voronoi } from '@lovo/matter'
+import type UniformNode from 'three/src/nodes/core/UniformNode.js'
 import { length, max, sin, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl'
-import type { uniform } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
+import type { Vector2 } from 'three/webgpu'
 
 export type RecipeBuild = (deps: {
-  cursorUniform: ReturnType<typeof uniform>
+  cursorUniform: ShaderNodeObject<UniformNode<Vector2>>
 }) => ShaderNodeObject<Node>
 
 export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
@@ -109,17 +110,16 @@ export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
   // ARGUMENT to .sub(). They are not chain receivers. Verified by
   // matching Aurora's pattern: receiver is uv-rooted; uniform is an arg.
   //
-  // The `as unknown as { x: ... }` cast is unavoidable because
-  // ReturnType<typeof uniform> is `ShaderNodeObject<UniformNode<unknown>>`
-  // and TS doesn't expose `.x`/`.y` swizzle on the unknown-typed inner
-  // node. Runtime IS a vec2 because RecipeScene wraps a Vector2.
+  // The cursorUniform is typed as ShaderNodeObject<UniformNode<Vector2>> via
+  // RecipeBuild, so `.x` and `.y` swizzles are exposed by ShaderNodeObject's
+  // proxy without a cast.
   'cursor-glow.square': ({ cursorUniform }) => {
-    const cu = cursorUniform as unknown as {
-      x: ShaderNodeObject<Node>
-      y: ShaderNodeObject<Node>
-    }
-    const dx = (uv() as ShaderNodeObject<Node>).x.sub(cu.x).abs() as ShaderNodeObject<Node>
-    const dy = (uv() as ShaderNodeObject<Node>).y.sub(cu.y).abs() as ShaderNodeObject<Node>
+    const dx = (uv() as ShaderNodeObject<Node>).x
+      .sub(cursorUniform.x)
+      .abs() as ShaderNodeObject<Node>
+    const dy = (uv() as ShaderNodeObject<Node>).y
+      .sub(cursorUniform.y)
+      .abs() as ShaderNodeObject<Node>
     const dist = max(dx, dy) as ShaderNodeObject<Node>
     const glow = smoothstep(0.3, 0, dist) as ShaderNodeObject<Node>
 

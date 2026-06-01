@@ -4,6 +4,7 @@
   "private": true,
   "description": "Monorepo root for Matter — React shader components on WebGPU + TSL",
   "license": "MIT",
+  "type": "module",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",

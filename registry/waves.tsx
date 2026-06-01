@@ -31,7 +31,7 @@ const DEFAULTS = {
   speed: 1,
   color: '#00cda6', // palette.teal.base
   layers: 3,
-} as const
+}
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const clean = hex.replace('#', '')
@@ -47,7 +47,7 @@ export function Waves(props: WavesProps) {
   const ctx = useMatterContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
-  const cursor = cursorFromInputs ?? (props.interactive ? cursorAuto : null)
+  const cursor = cursorFromInputs ?? (props.interactive === true ? cursorAuto : null)
   // Floor at 1: a non-positive `layers` would still render the always-on base
   // wave (visually identical to layers=1) but reads as "no waves please."
   // Clamping keeps the public API honest about what the visible minimum is.
@@ -102,14 +102,12 @@ export function Waves(props: WavesProps) {
       const layerSpeed = zeroScalar.add(speedUniform).mul(1 + i * 0.4)
       const layerAmp = 1 / (i + 1)
       const phase = i * 1.3
-      const layer = sin(
-        uvX.mul(layerFreq).add(tNode.mul(layerSpeed).add(phase)),
-      ) as ShaderNodeObject<Node>
+      const layer = sin(uvX.mul(layerFreq).add(tNode.mul(layerSpeed).add(phase)))
 
       waveSum = waveSum.add(layer.mul(layerAmp))
       totalAmp += layerAmp
     }
-    const baseWave = waveSum.div(totalAmp).mul(ampUniform) as ShaderNodeObject<Node>
+    const baseWave = waveSum.div(totalAmp).mul(ampUniform)
 
     // Optional cursor ripple — added on top of the base wave field. uv() and
     // cursorUniform are passed as args; cursorRipple builds its own chain
@@ -120,8 +118,8 @@ export function Waves(props: WavesProps) {
 
     // Render the wave as a soft band: distance from `y - 0.5` to the wave
     // value, then a smoothstep around 0 picks the band thickness.
-    const distFromBand = uv().y.sub(0.5).sub(fullWave).abs() as ShaderNodeObject<Node>
-    const mask = smoothstep(0.04, 0.0, distFromBand) as ShaderNodeObject<Node>
+    const distFromBand = uv().y.sub(0.5).sub(fullWave).abs()
+    const mask = smoothstep(0.04, 0.0, distFromBand)
 
     const colorVec = vec3(cr, cg, cb)
     const baseColor = vec3(0, 0, 0)

@@ -3,9 +3,9 @@ import { Mesh, OrthographicCamera, PlaneGeometry, Scene } from 'three'
 import { vec3 } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 
-const canvas = document.getElementById('c') as HTMLCanvasElement
+const canvas = document.getElementById('c')
 
-if (!canvas) throw new Error('canvas#c not found')
+if (!(canvas instanceof HTMLCanvasElement)) throw new Error('canvas#c not found')
 
 const matter = await createRenderer(canvas)
 

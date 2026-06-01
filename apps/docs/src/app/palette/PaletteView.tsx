@@ -85,7 +85,7 @@ function Section({
   return (
     <section style={{ marginBottom: 56 }}>
       <h2 style={{ color: fg, fontSize: 18, fontWeight: 600, margin: '0 0 4px 0' }}>{title}</h2>
-      {subtitle ? (
+      {subtitle !== undefined && subtitle !== '' ? (
         <p style={{ color: subFg, fontSize: 13, margin: '0 0 20px 0' }}>{subtitle}</p>
       ) : (
         <div style={{ height: 16 }} />
@@ -122,7 +122,7 @@ function ScaleRow({
     >
       <div>
         <div style={{ fontSize: 13, fontWeight: 600, color: fg }}>{name}</div>
-        {sub ? (
+        {sub !== undefined && sub !== '' ? (
           <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: subFg }}>
             {sub}
           </div>
@@ -194,7 +194,7 @@ function ColorBlock({
         }}
       />
       <div style={{ fontSize: 13, fontWeight: 600, color: fg }}>{label}</div>
-      {sub ? (
+      {sub !== undefined && sub !== '' ? (
         <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: subFg }}>
           {sub}
         </div>

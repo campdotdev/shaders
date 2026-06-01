@@ -70,13 +70,11 @@ export async function createRenderer(
 
   resize()
 
-  // Detect backend after init. The exact API may differ between three versions;
-  // probe the renderer's backend symbol if present, fall back to a property check.
-  const backend: MatterBackend =
-    forceWebGL ||
-    (three as unknown as { backend?: { isWebGLBackend?: boolean } }).backend?.isWebGLBackend
-      ? 'webgl2'
-      : 'webgpu'
+  // Detect backend after init. `isWebGLBackend` is an internal duck-type flag
+  // not declared in three's public Backend type — probe via `in` rather than
+  // a property access that would trip strict typing.
+  const isWebGL = 'isWebGLBackend' in three.backend && three.backend.isWebGLBackend === true
+  const backend: MatterBackend = forceWebGL || isWebGL ? 'webgl2' : 'webgpu'
 
   return {
     three,

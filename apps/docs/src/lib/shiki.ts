@@ -11,12 +11,10 @@ export type CodeLang = (typeof SHIKI_LANGS)[number]
 let highlighterPromise: Promise<Highlighter> | null = null
 
 export function getHighlighter(): Promise<Highlighter> {
-  if (!highlighterPromise) {
-    highlighterPromise = createHighlighter({
-      themes: ['github-light', 'github-dark'],
-      langs: [...SHIKI_LANGS],
-    })
-  }
+  highlighterPromise ??= createHighlighter({
+    themes: ['github-light', 'github-dark'],
+    langs: [...SHIKI_LANGS],
+  })
 
   return highlighterPromise
 }

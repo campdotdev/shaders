@@ -76,7 +76,7 @@ program
       try {
         const { runUpdate } = await import('./commands/update.js')
 
-        await runUpdate(components ?? [], { ...opts, cliVersion: __VERSION__ })
+        await runUpdate(components, { ...opts, cliVersion: __VERSION__ })
       } catch (err) {
         fail(err)
       }

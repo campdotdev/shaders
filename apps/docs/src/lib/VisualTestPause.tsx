@@ -35,6 +35,15 @@ const QUERY_FLAG = 'visualTest'
 const REDUCED_MOTION_FLAG = 'reducedMotion'
 const VALID_POLICIES: ReducedMotionPolicy[] = ['auto', 'off', 'slow', 'paused']
 
+const isReducedMotionPolicy = (p: string): p is ReducedMotionPolicy =>
+  (VALID_POLICIES as readonly string[]).includes(p)
+
+declare global {
+  interface Window {
+    __matterTestReady?: boolean
+  }
+}
+
 /**
  * If the page is loaded with `?visualTest=1`, pauses the scheduler after
  * `TARGET_FRAME` renderer ticks and sets `window.__matterTestReady = true`.
@@ -76,9 +85,7 @@ export function useVisualTestPause(): void {
     // Explicit `?reducedMotion=<policy>` overrides this default.
     const policyParam = params.get(REDUCED_MOTION_FLAG)
     const policy: ReducedMotionPolicy =
-      policyParam && (VALID_POLICIES as string[]).includes(policyParam)
-        ? (policyParam as ReducedMotionPolicy)
-        : 'paused'
+      policyParam !== null && isReducedMotionPolicy(policyParam) ? policyParam : 'paused'
 
     setReducedMotionPolicy(policy)
 
@@ -90,12 +97,21 @@ export function useVisualTestPause(): void {
       deltaTime?: number
       lastTime?: number
     }
-    const getNodeFrame = (): NodeFrameInternal | undefined =>
-      (
-        ctx.renderer.three as unknown as {
-          _nodes?: { nodeFrame?: NodeFrameInternal }
-        }
-      )._nodes?.nodeFrame
+    const getNodeFrame = (): NodeFrameInternal | undefined => {
+      // _nodes is a private Three.js internal not declared in the public types.
+      // Probing via `in` checks keeps the access type-safe at the lint layer.
+      const three: unknown = ctx.renderer.three
+
+      if (!(typeof three === 'object' && three !== null && '_nodes' in three)) return undefined
+      const nodes = three._nodes
+
+      if (!(typeof nodes === 'object' && nodes !== null && 'nodeFrame' in nodes)) return undefined
+      const frame = nodes.nodeFrame
+
+      if (typeof frame !== 'object' || frame === null) return undefined
+
+      return frame
+    }
 
     let frame = 0
     const client = (_tick: SchedulerTick) => {
@@ -123,7 +139,7 @@ export function useVisualTestPause(): void {
       if (frame > TARGET_FRAME) {
         ctx.scheduler.remove(client)
         ctx.scheduler.pause()
-        ;(window as unknown as { __matterTestReady: boolean }).__matterTestReady = true
+        window.__matterTestReady = true
       }
     }
 

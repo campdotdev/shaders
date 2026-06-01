@@ -27,13 +27,13 @@ export function ThemeToggle() {
     )
   }
 
+  const THEME_CYCLE: Record<string, string> = { system: 'light', light: 'dark', dark: 'system' }
+  const THEME_LABEL: Record<string, string> = { system: 'Auto', light: 'Light', dark: 'Dark' }
   const cycle = () => {
-    const next = theme === 'system' ? 'light' : theme === 'light' ? 'dark' : 'system'
-
-    setTheme(next)
+    setTheme(THEME_CYCLE[theme ?? 'system'] ?? 'system')
   }
 
-  const label = theme === 'system' ? 'Auto' : theme === 'light' ? 'Light' : 'Dark'
+  const label = THEME_LABEL[theme ?? 'system'] ?? 'Auto'
   const icon = resolvedTheme === 'dark' ? '○' : '●'
 
   return (

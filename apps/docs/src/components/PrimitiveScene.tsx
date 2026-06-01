@@ -21,9 +21,94 @@ import type { Node } from 'three/webgpu'
 
 import type { PropsState } from './PropsPlayground'
 
+// Discriminated union of every primitive's parameter shape. Adding a primitive
+// is a four-touch change that TypeScript enforces:
+//   1. Add a variant here
+//   2. Add a builder function
+//   3. Add a case to the dispatch in PrimitiveMesh
+//   4. Add a case to buildPrimitiveParams (the runtime boundary validator)
+// The `_exhaustive: never` line in the dispatch's default branch causes TS to
+// fail compilation if you skip step 3, and the switch in buildPrimitiveParams
+// catches a missed step 4 at the dev/build seam.
+export type PrimitiveParams =
+  | { slug: 'color-ramp'; position: number }
+  | { slug: 'noise'; scale: number; speed: number }
+  | {
+      slug: 'fbm'
+      scale: number
+      speed: number
+      octaves: number
+      lacunarity: number
+      gain: number
+    }
+  | { slug: 'voronoi'; scale: number; speed: number }
+  | { slug: 'quantize'; bins: number }
+  | { slug: 'sdf-circle'; radius: number; cx: number; cy: number }
+  | { slug: 'displace'; x: number; y: number }
+  | { slug: 'cursor-ripple'; amplitude: number; falloff: number; speed: number }
+  | { slug: 'time' }
+
+// Per-variant alias so builder signatures stay short.
+type ParamsFor<S extends PrimitiveParams['slug']> = Extract<PrimitiveParams, { slug: S }>
+
 interface PrimitiveSceneProps {
-  slug: string
-  params: PropsState
+  primitive: PrimitiveParams
+}
+
+// Runtime boundary: convert PropsPlayground's loose state (Record<string, PropValue>)
+// into the strict PrimitiveParams union. Throws if a primitive's controls in
+// @/data/primitives.ts have drifted from this validator (a programmer error,
+// caught at the dev seam instead of silently rendering NaN downstream).
+//
+// This is the ONLY place that does dynamic-shape-to-typed-shape narrowing —
+// downstream builders never need `as number` or `?? default`.
+export function buildPrimitiveParams(slug: string, raw: PropsState): PrimitiveParams {
+  const num = (k: string): number => {
+    const v = raw[k]
+
+    if (typeof v !== 'number') {
+      throw new Error(
+        `primitive '${slug}': missing or non-number param '${k}' (got ${typeof v}). Check @/data/primitives.ts.`,
+      )
+    }
+
+    return v
+  }
+
+  switch (slug) {
+    case 'color-ramp':
+      return { slug, position: num('position') }
+    case 'noise':
+      return { slug, scale: num('scale'), speed: num('speed') }
+    case 'fbm':
+      return {
+        slug,
+        scale: num('scale'),
+        speed: num('speed'),
+        octaves: num('octaves'),
+        lacunarity: num('lacunarity'),
+        gain: num('gain'),
+      }
+    case 'voronoi':
+      return { slug, scale: num('scale'), speed: num('speed') }
+    case 'quantize':
+      return { slug, bins: num('bins') }
+    case 'sdf-circle':
+      return { slug, radius: num('radius'), cx: num('cx'), cy: num('cy') }
+    case 'displace':
+      return { slug, x: num('x'), y: num('y') }
+    case 'cursor-ripple':
+      return {
+        slug,
+        amplitude: num('amplitude'),
+        falloff: num('falloff'),
+        speed: num('speed'),
+      }
+    case 'time':
+      return { slug: 'time' }
+    default:
+      throw new Error(`Unknown primitive slug: '${slug}'`)
+  }
 }
 
 // Structural key for PrimitiveMesh: param values are read directly into the
@@ -32,23 +117,158 @@ interface PrimitiveSceneProps {
 // change. Per-control AnimatableProp hooks would require conditional hook
 // calls — illegal under the rules of hooks. Remount-on-key is the simpler,
 // gotcha-#12-safe answer for the prototype demo.
-const buildStructuralKey = (slug: string, params: PropsState): string => {
-  const keys = Object.keys(params).sort()
+//
+// JSON.stringify with an explicit sorted key list keeps the output
+// deterministic across runtimes (object key order is implementation-defined
+// in older specs).
+const buildStructuralKey = (primitive: PrimitiveParams): string =>
+  JSON.stringify(primitive, Object.keys(primitive).sort())
 
-  return `${slug}|${keys.map((k) => `${k}=${String(params[k])}`).join('|')}`
+// === Primitive demo builders ===
+// One per variant. Each takes its narrowly-typed slice of PrimitiveParams
+// (and `staticCursor` where needed) and returns the colorNode for the demo.
+// No `?? default` and no `as`-casts — the variant tells us every field exists
+// with the right type.
+
+function buildColorRamp(p: ParamsFor<'color-ramp'>): ShaderNodeObject<Node> {
+  const stops: ColorRampStop[] = [
+    { color: vec3(1, 0.4, 0.4), position: 0 },
+    { color: vec3(0.4, 1, 0.4), position: 0.5 },
+    { color: vec3(0.4, 0.4, 1), position: 1 },
+  ]
+  // Vary t across the canvas so the user can SEE the gradient AND scrub
+  // a "cursor" (the visualized sample line) by moving the position
+  // slider. We render the full ramp (uv.x) underneath, then overlay a
+  // brighter readout where uv.x ≈ position.
+  const baseColor = colorRamp(uv().x, stops)
+  const distFromMarker = uv().x.sub(p.position).abs()
+  const marker = smoothstep(0.01, 0, distFromMarker)
+  // Brighten the band at the marker position so the user can see the
+  // sampled color "pin" against the background ramp.
+  const lit = mix(baseColor, vec3(1, 1, 1), marker.mul(0.6))
+
+  return vec4(lit, 1)
 }
 
-export function PrimitiveScene({ slug, params }: PrimitiveSceneProps) {
-  const remountKey = buildStructuralKey(slug, params)
+function buildNoise(p: ParamsFor<'noise'>): ShaderNodeObject<Node> {
+  const t = time.mul(p.speed)
+  const pNode = uv().mul(p.scale).add(vec2(t, t))
+  const n = noise(pNode)
+  // noise returns ~[-1, 1]; map to [0, 1] grayscale.
+  const g = n.mul(0.5).add(0.5).clamp(0, 1)
+
+  return vec4(g, g, g, 1)
+}
+
+function buildFbm(p: ParamsFor<'fbm'>): ShaderNodeObject<Node> {
+  const t = time.mul(p.speed)
+  const pNode = uv().mul(p.scale).add(vec2(t, t))
+  const f = fbm(pNode, { octaves: p.octaves, lacunarity: p.lacunarity, gain: p.gain })
+  const g = f.mul(0.5).add(0.5).clamp(0, 1)
+
+  return vec4(g, g, g, 1)
+}
+
+function buildVoronoi(p: ParamsFor<'voronoi'>): ShaderNodeObject<Node> {
+  const t = time.mul(p.speed)
+  const pNode = uv().mul(p.scale).add(vec2(t, t))
+  const v = voronoi(pNode)
+  // voronoi (mx_worley_noise_float) is roughly [0, 1]; clamp to be safe.
+  const g = v.clamp(0, 1)
+
+  return vec4(g, g, g, 1)
+}
+
+function buildQuantize(p: ParamsFor<'quantize'>): ShaderNodeObject<Node> {
+  // bins is a JS number we read directly. Source uv.x through quantize(...)
+  // to show discrete bands. Color via a fixed 3-stop ramp so the bins read
+  // as colors, not just gray strips.
+  const bins = Math.max(2, Math.round(p.bins))
+  const q = quantize(uv().x, bins)
+  const stops: ColorRampStop[] = [
+    { color: vec3(0.15, 0.2, 0.4), position: 0 },
+    { color: vec3(0.6, 0.4, 0.9), position: 0.5 },
+    { color: vec3(1, 0.7, 0.4), position: 1 },
+  ]
+  const c = colorRamp(q, stops)
+
+  return vec4(c, 1)
+}
+
+function buildSdfCircle(p: ParamsFor<'sdf-circle'>): ShaderNodeObject<Node> {
+  // SDF translation: rendering at +center evaluates at (p - center).
+  // pNode is uv()-derived, center is a JS-number vec2 baked into the chain.
+  const pNode = uv().sub(vec2(p.cx, p.cy))
+  const sdf = sdfCircle(pNode, p.radius)
+  // Soft-edged disk via smoothstep across [+aa, -aa].
+  const aa = 0.005
+  const mask = smoothstep(aa, -aa, sdf)
+  // Render disk in white, background in dark blue.
+  const c = mix(vec3(0.05, 0.05, 0.1), vec3(1, 1, 1), mask)
+
+  return vec4(c, 1)
+}
+
+function buildDisplace(p: ParamsFor<'displace'>): ShaderNodeObject<Node> {
+  // displace has no inherent visual without something to sample at the
+  // displaced point. We sample noise(uv * 4 + animated_t) at the
+  // displaced UV so the user can SEE the offset shift the noise field.
+  // The animated_t keeps it visually alive even at zero displacement.
+  const t = time.mul(0.2)
+  const dUv = displace(uv(), vec2(p.x, p.y))
+  const samplePoint = dUv.mul(4).add(vec2(t, t))
+  const n = noise(samplePoint)
+  const g = n.mul(0.5).add(0.5).clamp(0, 1)
+
+  return vec4(g, g, g, 1)
+}
+
+function buildCursorRipple(
+  p: ParamsFor<'cursor-ripple'>,
+  staticCursor: Parameters<typeof cursorRipple>[1],
+): ShaderNodeObject<Node> {
+  // Hardcoded cursor at (0.5, 0.5) — see staticCursor in PrimitiveMesh. Real
+  // cursor wiring is orthogonal to demonstrating the primitive's shape; we
+  // just need to show the ripple pattern.
+  //
+  // Map 'falloff' (1..10, higher=sharper) onto cursorRipple's `reach`
+  // (radius beyond which ripple decays) and `frequency` (ring spacing).
+  // High falloff → small reach + high frequency = many tight rings.
+  const reach = 1 / p.falloff
+  const frequency = p.falloff * 8
+  const ripple = cursorRipple(uv(), staticCursor, {
+    amplitude: p.amplitude,
+    frequency,
+    reach,
+    speed: p.speed * 6,
+  })
+  // ripple is in roughly [-amplitude, +amplitude]; map to [0, 1] gray.
+  const g = ripple
+    .div(p.amplitude * 2 + 0.0001)
+    .add(0.5)
+    .clamp(0, 1)
+
+  return vec4(g, g, g, 1)
+}
+
+function buildTime(): ShaderNodeObject<Node> {
+  // No controls. sin(time * 2) → [-1, 1] → grayscale pulse.
+  const v = sin(time.mul(2)).mul(0.5).add(0.5)
+
+  return vec4(v, v, v, 1)
+}
+
+export function PrimitiveScene({ primitive }: PrimitiveSceneProps) {
+  const remountKey = buildStructuralKey(primitive)
 
   return (
     <MatterScene>
-      <PrimitiveMesh key={remountKey} params={params} slug={slug} />
+      <PrimitiveMesh key={remountKey} primitive={primitive} />
     </MatterScene>
   )
 }
 
-function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
+function PrimitiveMesh({ primitive }: PrimitiveSceneProps) {
   const ctx = useMatterContext()
 
   // Static cursor uniform for the cursor-ripple demo. Hardcoded to (0.5, 0.5)
@@ -64,175 +284,41 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
 
     let colorNode: ShaderNodeObject<Node>
 
-    switch (slug) {
-      case 'color-ramp': {
-        // Sample a fixed 3-stop ramp at a position the user controls.
-        // colorRamp's `t` is a TSL node, but here we feed a uniform-wrapped
-        // scalar — built by adding to a vec2(0).x literal so the chain stays
-        // rooted on a TSL-built node, not a raw uniform receiver (gotcha #12).
-        const position = (params.position as number | undefined) ?? 0.5
-        const stops: ColorRampStop[] = [
-          { color: vec3(1, 0.4, 0.4), position: 0 },
-          { color: vec3(0.4, 1, 0.4), position: 0.5 },
-          { color: vec3(0.4, 0.4, 1), position: 1 },
-        ]
-        // Vary t across the canvas so the user can SEE the gradient AND scrub
-        // a "cursor" (the visualized sample line) by moving the position
-        // slider. We render the full ramp (uv.x) underneath, then overlay a
-        // brighter readout where uv.x ≈ position.
-        const baseColor = colorRamp(uv().x, stops)
-        const distFromMarker = uv().x.sub(position).abs()
-        const marker = smoothstep(0.01, 0, distFromMarker) as ShaderNodeObject<Node>
-        // Brighten the band at the marker position so the user can see the
-        // sampled color "pin" against the background ramp.
-        const lit = mix(baseColor, vec3(1, 1, 1), marker.mul(0.6)) as ShaderNodeObject<Node>
-
-        colorNode = vec4(lit, 1)
+    switch (primitive.slug) {
+      case 'color-ramp':
+        colorNode = buildColorRamp(primitive)
         break
-      }
-
-      case 'noise': {
-        const scale = (params.scale as number | undefined) ?? 3
-        const speed = (params.speed as number | undefined) ?? 0.3
-        const t = time.mul(speed)
-        const p = (uv() as ShaderNodeObject<Node>)
-          .mul(scale)
-          .add(vec2(t, t)) as ShaderNodeObject<Node>
-        const n = noise(p)
-        // noise returns ~[-1, 1]; map to [0, 1] grayscale.
-        const g = (n.mul(0.5).add(0.5) as ShaderNodeObject<Node>).clamp(0, 1)
-
-        colorNode = vec4(g, g, g, 1)
+      case 'noise':
+        colorNode = buildNoise(primitive)
         break
-      }
-
-      case 'fbm': {
-        const scale = (params.scale as number | undefined) ?? 3
-        const octaves = (params.octaves as number | undefined) ?? 4
-        const lacunarity = (params.lacunarity as number | undefined) ?? 2
-        const gain = (params.gain as number | undefined) ?? 0.5
-        const speed = (params.speed as number | undefined) ?? 0.3
-
-        const t = time.mul(speed)
-        const p = (uv() as ShaderNodeObject<Node>)
-          .mul(scale)
-          .add(vec2(t, t)) as ShaderNodeObject<Node>
-        const f = fbm(p, { octaves, lacunarity, gain })
-        const g = (f.mul(0.5).add(0.5) as ShaderNodeObject<Node>).clamp(0, 1)
-
-        colorNode = vec4(g, g, g, 1)
+      case 'fbm':
+        colorNode = buildFbm(primitive)
         break
-      }
-
-      case 'voronoi': {
-        const scale = (params.scale as number | undefined) ?? 4
-        const speed = (params.speed as number | undefined) ?? 0.2
-        const t = time.mul(speed)
-        const p = (uv() as ShaderNodeObject<Node>)
-          .mul(scale)
-          .add(vec2(t, t)) as ShaderNodeObject<Node>
-        const v = voronoi(p)
-        // voronoi (mx_worley_noise_float) is roughly [0, 1]; clamp to be safe.
-        const g = v.clamp(0, 1)
-
-        colorNode = vec4(g, g, g, 1)
+      case 'voronoi':
+        colorNode = buildVoronoi(primitive)
         break
-      }
-
-      case 'quantize': {
-        // bins is an integer — we read it directly as a JS number. Source uv.x
-        // through quantize(...) to show discrete bands. Color via a fixed
-        // 3-stop ramp so the bins read as colors, not just gray strips.
-        const bins = Math.max(2, Math.round((params.bins as number | undefined) ?? 4))
-        const q = quantize(uv().x, bins)
-        const stops: ColorRampStop[] = [
-          { color: vec3(0.15, 0.2, 0.4), position: 0 },
-          { color: vec3(0.6, 0.4, 0.9), position: 0.5 },
-          { color: vec3(1, 0.7, 0.4), position: 1 },
-        ]
-        const c = colorRamp(q, stops)
-
-        colorNode = vec4(c, 1)
+      case 'quantize':
+        colorNode = buildQuantize(primitive)
         break
-      }
-
-      case 'sdf-circle': {
-        const radius = (params.radius as number | undefined) ?? 0.25
-        const cx = (params.cx as number | undefined) ?? 0.5
-        const cy = (params.cy as number | undefined) ?? 0.5
-        // SDF translation: rendering at +center evaluates at (p - center).
-        // p is uv()-derived, center is a JS-number vec2 baked into the chain.
-        const p = (uv() as ShaderNodeObject<Node>).sub(vec2(cx, cy)) as ShaderNodeObject<Node>
-        const sdf = sdfCircle(p, radius)
-        // Soft-edged disk via smoothstep across [+aa, -aa].
-        const aa = 0.005
-        const mask = smoothstep(aa, -aa, sdf) as ShaderNodeObject<Node>
-        // Render disk in white, background in dark blue.
-        const c = mix(vec3(0.05, 0.05, 0.1), vec3(1, 1, 1), mask) as ShaderNodeObject<Node>
-
-        colorNode = vec4(c, 1)
+      case 'sdf-circle':
+        colorNode = buildSdfCircle(primitive)
         break
-      }
-
-      case 'displace': {
-        // displace has no inherent visual without something to sample at the
-        // displaced point. We sample noise(uv * 4 + animated_t) at the
-        // displaced UV so the user can SEE the offset shift the noise field.
-        // The animated_t keeps it visually alive even at zero displacement.
-        const x = (params.x as number | undefined) ?? 0.1
-        const y = (params.y as number | undefined) ?? 0.05
-        const t = time.mul(0.2)
-        const dUv = displace(uv(), vec2(x, y))
-        const samplePoint = dUv.mul(4).add(vec2(t, t)) as ShaderNodeObject<Node>
-        const n = noise(samplePoint)
-        const g = (n.mul(0.5).add(0.5) as ShaderNodeObject<Node>).clamp(0, 1)
-
-        colorNode = vec4(g, g, g, 1)
+      case 'displace':
+        colorNode = buildDisplace(primitive)
         break
-      }
-
-      case 'cursor-ripple': {
-        // Hardcoded cursor at (0.5, 0.5) — see staticCursor at the top of the
-        // hook. Real cursor wiring is orthogonal to demonstrating the
-        // primitive's shape; we just need to show the ripple pattern.
-        const amplitude = (params.amplitude as number | undefined) ?? 0.05
-        const falloff = (params.falloff as number | undefined) ?? 4
-        const speed = (params.speed as number | undefined) ?? 1
-        // Map 'falloff' (1..10, higher=sharper) onto cursorRipple's `reach`
-        // (radius beyond which ripple decays) and `frequency` (ring spacing).
-        // High falloff → small reach + high frequency = many tight rings.
-        const reach = 1 / falloff
-        const frequency = falloff * 8
-        const ripple = cursorRipple(uv(), staticCursor, {
-          amplitude,
-          frequency,
-          reach,
-          speed: speed * 6,
-        })
-        // ripple is in roughly [-amplitude, +amplitude]; map to [0, 1] gray.
-        const g = (ripple.div(amplitude * 2 + 0.0001).add(0.5) as ShaderNodeObject<Node>).clamp(
-          0,
-          1,
-        )
-
-        colorNode = vec4(g, g, g, 1)
+      case 'cursor-ripple':
+        colorNode = buildCursorRipple(primitive, staticCursor)
         break
-      }
-
-      case 'time': {
-        // No controls. sin(time * 2) → [-1, 1] → grayscale pulse.
-        const v = (sin(time.mul(2)) as ShaderNodeObject<Node>)
-          .mul(0.5)
-          .add(0.5) as ShaderNodeObject<Node>
-
-        colorNode = vec4(v, v, v, 1)
+      case 'time':
+        colorNode = buildTime()
         break
-      }
+      default: {
+        // Exhaustiveness check: if a new variant is added to PrimitiveParams
+        // and not handled above, `primitive` here is not `never` and TS errors.
+        const _exhaustive: never = primitive
 
-      default:
-        // Magenta = error sentinel. If you see this, the slug list in
-        // primitives.ts and the switch here have drifted apart.
-        colorNode = vec4(1, 0, 1, 1)
+        throw new Error(`Unhandled primitive variant: ${JSON.stringify(_exhaustive)}`)
+      }
     }
 
     const material = new MeshBasicNodeMaterial()
@@ -259,7 +345,7 @@ function PrimitiveMesh({ slug, params }: PrimitiveSceneProps) {
         /* same */
       }
     }
-  }, [ctx, slug, params, staticCursor])
+  }, [ctx, primitive, staticCursor])
 
   return null
 }
