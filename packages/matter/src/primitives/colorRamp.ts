@@ -30,18 +30,26 @@ export interface ColorRampStop {
  * Falls back to the first/last stop's color outside the bracketing positions.
  */
 export function colorRamp(t: TSLNode, stops: ColorRampStop[]): ShaderNodeObject<Node> {
-  if (stops.length === 0) return vec3(0, 0, 0)
-  if (stops.length === 1) return stops[0]!.color as ShaderNodeObject<Node>
+  // TSLNode is wider than ShaderNodeObject<Node> in TSL's published types
+  // (see CLAUDE.md gotcha #5). Wrapping with mix(node, node, 0) yields a
+  // chainable ShaderNodeObject<Node> without a cast — the GPU shader compiler
+  // folds the no-op interpolation away.
+  const first = stops[0]
+
+  if (first === undefined) return vec3(0, 0, 0)
+  if (stops.length === 1) return mix(first.color, first.color, 0)
 
   // Build a chain of nested mixes, one per adjacent pair of stops.
   // For three stops at positions 0, 0.5, 1:
   //   inner = mix(stop0, stop1, smoothstep(0, 0.5, t))
   //   outer = mix(inner, stop2, smoothstep(0.5, 1, t))
-  let result: ShaderNodeObject<Node> = stops[0]!.color as ShaderNodeObject<Node>
+  let result = mix(first.color, first.color, 0)
 
   for (let i = 1; i < stops.length; i += 1) {
-    const prev = stops[i - 1]!
-    const next = stops[i]!
+    const prev = stops[i - 1]
+    const next = stops[i]
+
+    if (prev === undefined || next === undefined) continue
     const span = next.position - prev.position
 
     if (span <= 0) continue

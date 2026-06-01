@@ -74,10 +74,7 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
     [],
   )
 
-  const colorNode = useMemo(
-    () => uniform(colorVec) as unknown as ShaderNodeObject<Node>,
-    [colorVec],
-  )
+  const colorNode = useMemo(() => uniform(colorVec), [colorVec])
 
   useEffect(() => {
     const [r, g, b] = parseHex(layer.hex)
@@ -85,9 +82,15 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
     colorVec.set(r, g, b)
   }, [layer.hex, colorVec])
 
+  // colorNode is ShaderNodeObject<UniformNode<Vector3>>; LayerUniforms
+  // wants the widened ShaderNodeObject<Node>. Same TSL invariant-generic
+  // story as useAnimatableUniform — runtime is identical, types are not.
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  const widenedColor = colorNode as unknown as ShaderNodeObject<Node>
+
   return useMemo(
-    () => ({ color: colorNode, speed: speedU, intensity: intensityU }),
-    [colorNode, speedU, intensityU],
+    () => ({ color: widenedColor, speed: speedU, intensity: intensityU }),
+    [widenedColor, speedU, intensityU],
   )
 }
 
@@ -103,7 +106,7 @@ function useColorUniform(hex: string) {
     [],
   )
 
-  const node = useMemo(() => uniform(vec) as unknown as ShaderNodeObject<Node>, [vec])
+  const node = useMemo(() => uniform(vec), [vec])
 
   useEffect(() => {
     const [r, g, b] = parseHex(hex)
@@ -128,7 +131,7 @@ export function AuroraShader(props: AuroraShaderProps) {
   const turbulenceU = useAnimatableUniform<number>(props.turbulence)
 
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
-  const resNode = useMemo(() => uniform(resVec) as unknown as ShaderNodeObject<Node>, [resVec])
+  const resNode = useMemo(() => uniform(resVec), [resVec])
 
   useEffect(() => {
     const [w, h] = resize.get()
@@ -150,7 +153,7 @@ export function AuroraShader(props: AuroraShaderProps) {
     [],
   )
 
-  const dirNode = useMemo(() => uniform(dirVec) as unknown as ShaderNodeObject<Node>, [dirVec])
+  const dirNode = useMemo(() => uniform(dirVec), [dirVec])
 
   useEffect(() => {
     const [x, y, b] = DIRECTION_VECTORS[props.direction]
@@ -193,8 +196,10 @@ export function AuroraShader(props: AuroraShaderProps) {
     let aurora = vec3(0, 0, 0)
 
     for (let i = 0; i < 4; i += 1) {
-      const lu = layerUniforms[i]!
-      const variation = variations[i]!
+      const lu = layerUniforms[i]
+      const variation = variations[i]
+
+      if (lu === undefined || variation === undefined) continue
 
       const t = time.mul(speedU).mul(lu.speed)
 

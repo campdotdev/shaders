@@ -58,7 +58,8 @@ export class CursorInput {
     this.element = element
 
     this.handleMouseMove = (e: Event) => {
-      const me = e as MouseEvent
+      if (!(e instanceof MouseEvent)) return
+      const me = e
 
       if (this.element) {
         // Normalize to 0..1 across the element's bounding rect. Reading the

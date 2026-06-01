@@ -23,11 +23,7 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck
-      # TEMPORARY (M8): lint is non-blocking while we work through ~135 findings
-      # surfaced by the Oxlint → ESLint 9 switch. Remove `continue-on-error`
-      # once the follow-up cleanup PRs land.
       - run: pnpm lint
-        continue-on-error: true
       - run: pnpm format:check
       - run: pnpm build
 

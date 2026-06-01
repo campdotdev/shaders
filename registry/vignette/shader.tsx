@@ -7,18 +7,8 @@ import {
   useResize,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
-import {
-  length,
-  type ShaderNodeObject,
-  smoothstep,
-  mix as tslMix,
-  uniform,
-  uv,
-  vec2,
-  vec4,
-} from 'three/tsl'
+import { length, smoothstep, mix as tslMix, uniform, uv, vec2, vec4 } from 'three/tsl'
 import { Vector2, Vector3 } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
 
 import { parseHex } from '../utils/color'
 
@@ -50,10 +40,7 @@ export function VignetteShader({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   )
-  const centerU = useMemo(
-    () => uniform(centerVec) as unknown as ShaderNodeObject<Node>,
-    [centerVec],
-  )
+  const centerU = useMemo(() => uniform(centerVec), [centerVec])
 
   useEffect(() => {
     centerVec.set(center[0], center[1])
@@ -71,7 +58,7 @@ export function VignetteShader({
     [],
   )
 
-  const colorU = useMemo(() => uniform(colorVec) as unknown as ShaderNodeObject<Node>, [colorVec])
+  const colorU = useMemo(() => uniform(colorVec), [colorVec])
 
   useEffect(() => {
     const [r, g, b] = parseHex(color)
@@ -83,7 +70,7 @@ export function VignetteShader({
   // circle, not an ellipse stretched by the canvas aspect ratio.
   const resize = useResize()
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
-  const resNode = useMemo(() => uniform(resVec) as unknown as ShaderNodeObject<Node>, [resVec])
+  const resNode = useMemo(() => uniform(resVec), [resVec])
 
   useEffect(() => {
     const [w, h] = resize.get()

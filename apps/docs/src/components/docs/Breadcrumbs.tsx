@@ -22,7 +22,7 @@ export function Breadcrumbs({ crumbs }: { crumbs: DocsBreadcrumb[] }) {
               /
             </span>
           )}
-          {c.url ? (
+          {c.url !== null && c.url !== '' ? (
             <Link href={c.url} style={{ color: 'var(--fg-muted)' }}>
               {c.label}
             </Link>

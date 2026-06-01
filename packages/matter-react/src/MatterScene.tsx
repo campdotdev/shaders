@@ -73,14 +73,19 @@ export function MatterScene(props: MatterSceneProps) {
         // Allocate the base PassNode once per setup so rebuilds reuse the same
         // node identity instead of churning a fresh one (and a fresh render
         // target binding) on every register/unregister.
-        const basePass = pass(scene, camera) as unknown as ShaderNodeObject<Node>
+        const basePass = pass(scene, camera)
 
         const rebuildOutputNode = () => {
-          const transforms = Array.from(overlays.values())
+          // ShaderNodeObject<PassNode> isn't structurally assignable to
+          // ShaderNodeObject<Node> (invariant generic methods); a runtime
+          // PassNode is still a Node, so the cast at the reduce seed boundary
+          // is safe. See CLAUDE.md gotcha #5.
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+          const seed = basePass as unknown as ShaderNodeObject<Node>
 
-          postProcessing.outputNode = transforms.reduce(
+          postProcessing.outputNode = Array.from(overlays.values()).reduce(
             (node, transform) => transform(node),
-            basePass,
+            seed,
           )
           postProcessing.needsUpdate = true
         }
@@ -151,34 +156,40 @@ export function MatterScene(props: MatterSceneProps) {
     }
   }, [maxDPR])
 
+  let content: ReactNode
+
+  if (error) {
+    content = (
+      <div
+        style={{
+          position: 'absolute',
+          inset: 0,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '1rem',
+          color: '#fff',
+          background: 'rgba(120, 30, 30, 0.85)',
+          font: '0.85rem ui-monospace, monospace',
+          whiteSpace: 'pre-wrap',
+          textAlign: 'center',
+        }}
+      >
+        MatterScene init failed:
+        {'\n'}
+        {error.message}
+      </div>
+    )
+  } else if (ctx) {
+    content = <MatterContext.Provider value={ctx}>{children}</MatterContext.Provider>
+  } else {
+    content = fallback ?? null
+  }
+
   return (
     <div className={className} style={{ ...defaultStyle, ...style }}>
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
-      {error ? (
-        <div
-          style={{
-            position: 'absolute',
-            inset: 0,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: '1rem',
-            color: '#fff',
-            background: 'rgba(120, 30, 30, 0.85)',
-            font: '0.85rem ui-monospace, monospace',
-            whiteSpace: 'pre-wrap',
-            textAlign: 'center',
-          }}
-        >
-          MatterScene init failed:
-          {'\n'}
-          {error.message}
-        </div>
-      ) : ctx ? (
-        <MatterContext.Provider value={ctx}>{children}</MatterContext.Provider>
-      ) : (
-        (fallback ?? null)
-      )}
+      {content}
     </div>
   )
 }

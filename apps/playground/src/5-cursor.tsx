@@ -82,6 +82,9 @@ function App() {
   )
 }
 
-const root = createRoot(document.getElementById('root')!)
+const rootEl = document.getElementById('root')
+
+if (rootEl === null) throw new Error('div#root not found')
+const root = createRoot(rootEl)
 
 root.render(<App />)

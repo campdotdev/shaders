@@ -35,7 +35,10 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
 }
 
 const isSignalLike = (v: unknown): v is { get(): unknown } =>
-  typeof v === 'object' && v !== null && typeof (v as { get?: unknown }).get === 'function'
+  typeof v === 'object' && v !== null && 'get' in v && typeof v.get === 'function'
+
+const isPoint = (v: unknown): v is readonly [number, number] =>
+  Array.isArray(v) && v.length === 2 && typeof v[0] === 'number' && typeof v[1] === 'number'
 
 const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => {
   if (prop === undefined) return DEFAULT_COLORS
@@ -48,13 +51,14 @@ export function LinearGradient(props: LinearGradientProps) {
   const ctx = useMatterContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
-  const cursor = cursorFromInputs ?? (props.interactive ? cursorAuto : null)
+  const cursor = cursorFromInputs ?? (props.interactive === true ? cursorAuto : null)
 
   const isStatic = typeof props.speed === 'number' && props.speed === 0
 
   useStaticHint(isStatic)
 
   const colors = resolveColors(props.colors)
+  const colorsKey = colors.join('|')
 
   // The angle/speed/focal props are animatable; bind them to uniforms.
   // In M1 these uniforms are read once at material-build time (snapshot
@@ -81,8 +85,8 @@ export function LinearGradient(props: LinearGradientProps) {
     }
     const fp = props.focalPoint
 
-    if (Array.isArray(fp)) {
-      cursorVec.set(fp[0] ?? 0.5, 1 - (fp[1] ?? 0.5))
+    if (isPoint(fp)) {
+      cursorVec.set(fp[0], 1 - fp[1])
     } else {
       cursorVec.set(0.5, 0.5)
     }
@@ -116,7 +120,7 @@ export function LinearGradient(props: LinearGradientProps) {
     } else {
       // Linear: project (uv - cursor) along the gradient direction so
       // the bands flow toward where the cursor is.
-      const angleRad = (angleUniform as unknown as { value: number }).value * (Math.PI / 180)
+      const angleRad = angleUniform.value * (Math.PI / 180)
       const dirX = Math.cos(angleRad)
       const dirY = Math.sin(angleRad)
 
@@ -126,7 +130,7 @@ export function LinearGradient(props: LinearGradientProps) {
     // Animate the gradient drift via TSL `time`. A naive `mod(t, 1)` wraps
     // hard and shows a seam at the boundary. Use a triangle wave that
     // ping-pongs t between 0 and 1: 1 - |1 - mod(t, 2)|. Smooth, seamless.
-    const speedScalar = (speedUniform as unknown as { value: number }).value
+    const speedScalar = speedUniform.value
     const tAnimated =
       speedScalar === 0
         ? tNode
@@ -155,22 +159,24 @@ export function LinearGradient(props: LinearGradientProps) {
       } catch (err) {
         // Known benign three.js webgpu race during rapid material churn —
         // see CLAUDE.md gotchas. Demoted to debug so it doesn't spam logs.
-        // eslint-disable-next-line no-console
         console.debug('[LinearGradient] material.dispose ignored:', err)
       }
       try {
         mesh.geometry.dispose()
       } catch (err) {
-        // eslint-disable-next-line no-console
         console.debug('[LinearGradient] geometry.dispose ignored:', err)
       }
     }
     // Re-run when structural inputs change. Animatable uniforms (incl.
     // cursorUniform) are mutated in place and don't re-trigger this effect.
+    // `colors` is unstable by reference across renders; `colorsKey` is the
+    // stable string proxy for its contents, so the effect remounts only when
+    // the actual sequence of hexes changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     ctx,
     props.variant,
-    colors.join('|'),
+    colorsKey,
     cursor,
     angleUniform,
     speedUniform,

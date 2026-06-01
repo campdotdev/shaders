@@ -36,10 +36,14 @@ interface PagefindModule {
 async function createPagefindBackend(): Promise<SearchBackend | null> {
   try {
     const path = '/pagefind/pagefind.js'
+    // Dynamic external import returns `any` — there's no module declaration
+    // for the runtime-fetched pagefind script. We validated the shape by
+    // hand against the pagefind docs (PagefindModule above).
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     const mod = (await import(/* webpackIgnore: true */ path)) as PagefindModule
 
     return async (query) => {
-      if (!query.trim()) return []
+      if (query.trim() === '') return []
       const search = await mod.search(query)
       const items = await Promise.all(search.results.slice(0, 20).map((r) => r.data()))
 
@@ -69,12 +73,17 @@ async function createFallbackBackend(): Promise<SearchBackend | null> {
     const res = await fetch('/api/search')
 
     if (!res.ok) return null
+    // `/api/search` is our own endpoint serving the catalog as SearchDoc[].
+    // Response.json() returns `any` from the DOM lib types; the shape is
+    // controlled at the producer side.
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     const docs = (await res.json()) as SearchDoc[]
 
+    // eslint-disable-next-line @typescript-eslint/require-await -- conforms to SearchBackend interface (pagefind backend is genuinely async)
     return async (query) => {
       const q = query.toLowerCase().trim()
 
-      if (!q) return []
+      if (q === '') return []
 
       return docs
         .filter((d) => matches(d, q))
@@ -100,18 +109,18 @@ export function SearchBar() {
   // Lazy-load the backend on first open. Pagefind first, /api/search fallback.
   useEffect(() => {
     if (!open || backendRef.current) return
-    let cancelled = false
+    const ac = new AbortController()
 
     void (async () => {
       const backend = (await createPagefindBackend()) ?? (await createFallbackBackend())
 
-      if (cancelled) return
+      if (ac.signal.aborted) return
       backendRef.current = backend
       setBackendState(backend ? 'ready' : 'unavailable')
     })()
 
     return () => {
-      cancelled = true
+      ac.abort()
     }
   }, [open])
 
@@ -191,9 +200,9 @@ export function SearchBar() {
     const list = listRef.current
 
     if (!list) return
-    const selected = list.children[selectedIndex] as HTMLElement | undefined
+    const selected = list.children[selectedIndex]
 
-    selected?.scrollIntoView({ block: 'nearest' })
+    if (selected instanceof HTMLElement) selected.scrollIntoView({ block: 'nearest' })
   }, [selectedIndex])
 
   return (
@@ -344,7 +353,7 @@ export function SearchBar() {
                     fontSize: '0.875rem',
                   }}
                 >
-                  {query.trim() ? `No results for "${query}"` : 'Type to search.'}
+                  {query.trim() !== '' ? `No results for "${query}"` : 'Type to search.'}
                 </li>
               )}
               {results.map((r, i) => (
@@ -363,16 +372,16 @@ export function SearchBar() {
                 >
                   <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{r.title}</div>
                   <div
+                    // Pagefind excerpts contain sanitized HTML with <mark>.
+                    // Fallback excerpts are plain text (no HTML in our
+                    // descriptions). Both render safely via innerHTML.
+                    dangerouslySetInnerHTML={{ __html: r.excerpt }}
                     style={{
                       fontSize: '0.8125rem',
                       color: 'var(--fg-muted)',
                       marginTop: '0.25rem',
                       lineHeight: 1.4,
                     }}
-                    // Pagefind excerpts contain sanitized HTML with <mark>.
-                    // Fallback excerpts are plain text (no HTML in our
-                    // descriptions). Both render safely via innerHTML.
-                    dangerouslySetInnerHTML={{ __html: r.excerpt }}
                   />
                 </li>
               ))}

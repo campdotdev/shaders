@@ -82,7 +82,7 @@ async function safeReaddir(path: string): Promise<string[]> {
   try {
     return await readdir(path)
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return []
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return []
     throw err
   }
 }

@@ -36,11 +36,11 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
 }
 
 const isSignalLike = (v: unknown): v is { get(): unknown } =>
-  typeof v === 'object' && v !== null && typeof (v as { get?: unknown }).get === 'function'
+  typeof v === 'object' && v !== null && 'get' in v && typeof v.get === 'function'
 
 const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => {
   if (prop === undefined) return DEFAULT_COLORS
-  if (isSignalLike(prop)) return (prop as { get(): string[] }).get()
+  if (isSignalLike(prop)) return prop.get()
 
   return prop
 }
@@ -48,12 +48,13 @@ const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => 
 export function NoiseField(props: NoiseFieldProps) {
   const ctx = useMatterContext()
   const colors = resolveColors(props.colors)
+  const colorsKey = colors.join('|')
   const octaves = props.octaves ?? 4
   const variant = props.variant ?? 'organic'
 
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
-  const cursor = cursorFromInputs ?? (props.interactive ? cursorAuto : null)
+  const cursor = cursorFromInputs ?? (props.interactive === true ? cursorAuto : null)
 
   const scaleUniform = useAnimatableUniform<number>(props.scale ?? 1)
   const speedUniform = useAnimatableUniform<number>(props.speed ?? 0.5)
@@ -108,20 +109,18 @@ export function NoiseField(props: NoiseFieldProps) {
       t = voronoi(animatedUv)
     } else if (variant === 'grid') {
       const raw = fbm(animatedUv, { octaves })
-      const norm = (raw as unknown as { add(n: number): { mul(n: number): unknown } })
-        .add(1)
-        .mul(0.5)
+      const norm = raw.add(1).mul(0.5)
 
-      t = quantize(norm as never, GRID_STEPS)
+      t = quantize(norm, GRID_STEPS)
     } else {
       const raw = fbm(animatedUv, { octaves })
 
-      t = (raw as unknown as { add(n: number): { mul(n: number): unknown } }).add(1).mul(0.5)
+      t = raw.add(1).mul(0.5)
     }
 
     const material = new MeshBasicNodeMaterial()
 
-    material.colorNode = colorRamp(t as never, stops)
+    material.colorNode = colorRamp(t, stops)
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 
     ctx.scene.add(mesh)
@@ -144,7 +143,10 @@ export function NoiseField(props: NoiseFieldProps) {
         /* same */
       }
     }
-  }, [ctx, colors.join('|'), octaves, variant, scaleUniform, speedUniform])
+    // `colors` is unstable by reference across renders; `colorsKey` is the
+    // stable string proxy for its contents.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx, colorsKey, octaves, variant, scaleUniform, speedUniform])
 
   return null
 }

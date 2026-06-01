@@ -43,7 +43,7 @@ export async function runAdd(
   const resolved = components.map((slug) => resolveComponent(slug, registry, registryUrl))
 
   // Pre-flight overwrite check on every target.
-  if (!opts.force) {
+  if (opts.force !== true) {
     for (const r of resolved) {
       const targetPath = join(io.cwd, cfg.componentsDir, r.entry.file)
 
@@ -108,7 +108,7 @@ async function fileExists(p: string): Promise<boolean> {
 
     return true
   } catch (err) {
-    if ((err as NodeJS.ErrnoException).code === 'ENOENT') return false
+    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return false
     throw err
   }
 }

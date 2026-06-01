@@ -20,7 +20,7 @@ export interface CatalogRecord {
 function prettifySlug(slug: string): string {
   return slug
     .split('-')
-    .map((s) => (s.length > 0 ? s[0]!.toUpperCase() + s.slice(1) : s))
+    .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
     .join(' ')
 }
 
@@ -38,6 +38,7 @@ export const getComponentsCatalog = cache(async (): Promise<CatalogRecord[]> => 
   }))
 })
 
+// eslint-disable-next-line @typescript-eslint/require-await -- kept async for parity with getComponentsCatalog and to allow future async additions
 export const getPrimitivesCatalog = cache(async (): Promise<CatalogRecord[]> => {
   return PRIMITIVES.map((p, i) => ({
     url: `/primitives/${p.slug}`,

@@ -23,13 +23,105 @@ export type PropSchemaEntry =
       step?: number
     }
   | { name: string; label?: string; type: 'boolean'; default: boolean }
-  | { name: string; label?: string; type: 'enum'; default: string; options: readonly string[] }
-  | { name: string; label?: string; type: 'colors'; default: string[]; min?: number; max?: number }
+  | {
+      name: string
+      label?: string
+      type: 'enum'
+      default: string
+      options: readonly string[]
+    }
+  | {
+      name: string
+      label?: string
+      type: 'colors'
+      default: string[]
+      min?: number
+      max?: number
+    }
 
 export type PropSchema = readonly PropSchemaEntry[]
 
 export type PropValue = string | number | boolean | string[]
 export type PropsState = Record<string, PropValue>
+
+// A schema entry paired with its current value. Each variant locks the entry
+// type to the matching value type — narrowing the top-level `type` discriminant
+// narrows both `entry` and `value` together. This is what PropRow consumes so
+// it can read `live.value` without any `as` casts.
+//
+// We duplicate `type` at the top level (it also lives on `entry.type`) because
+// TypeScript narrows reliably on top-level discriminants but is fragile on
+// nested ones — the duplication is the price of stable narrowing.
+type LiveEntry =
+  | {
+      type: 'color'
+      entry: Extract<PropSchemaEntry, { type: 'color' }>
+      value: string
+    }
+  | {
+      type: 'enum'
+      entry: Extract<PropSchemaEntry, { type: 'enum' }>
+      value: string
+    }
+  | {
+      type: 'number'
+      entry: Extract<PropSchemaEntry, { type: 'number' }>
+      value: number
+    }
+  | {
+      type: 'boolean'
+      entry: Extract<PropSchemaEntry, { type: 'boolean' }>
+      value: boolean
+    }
+  | {
+      type: 'colors'
+      entry: Extract<PropSchemaEntry, { type: 'colors' }>
+      value: string[]
+    }
+
+// Runtime boundary: zip a schema entry with its state value into the strict
+// LiveEntry union. Throws if state and schema have drifted (programmer error)
+// or if the key is missing from state — caught at the dev seam instead of
+// silently rendering the wrong widget. Mirrors the buildPrimitiveParams pattern
+// in PrimitiveScene.tsx.
+function toLiveEntry(entry: PropSchemaEntry, value: PropValue | undefined): LiveEntry {
+  if (value === undefined) {
+    throw new Error(`PropRow: missing state value for '${entry.name}'`)
+  }
+
+  switch (entry.type) {
+    case 'color':
+      if (typeof value !== 'string') {
+        throw new Error(`PropRow: expected string for '${entry.name}', got ${typeof value}`)
+      }
+
+      return { type: 'color', entry, value }
+    case 'enum':
+      if (typeof value !== 'string') {
+        throw new Error(`PropRow: expected string for '${entry.name}', got ${typeof value}`)
+      }
+
+      return { type: 'enum', entry, value }
+    case 'number':
+      if (typeof value !== 'number') {
+        throw new Error(`PropRow: expected number for '${entry.name}', got ${typeof value}`)
+      }
+
+      return { type: 'number', entry, value }
+    case 'boolean':
+      if (typeof value !== 'boolean') {
+        throw new Error(`PropRow: expected boolean for '${entry.name}', got ${typeof value}`)
+      }
+
+      return { type: 'boolean', entry, value }
+    case 'colors':
+      if (!Array.isArray(value)) {
+        throw new Error(`PropRow: expected array for '${entry.name}', got ${typeof value}`)
+      }
+
+      return { type: 'colors', entry, value }
+  }
+}
 
 export function initialStateFromSchema(schema: PropSchema): PropsState {
   const out: PropsState = {}
@@ -84,149 +176,154 @@ export function PropsPlayground({ schema, onChange, className, style }: PropsPla
       }}
     >
       {schema.map((entry) => (
-        <PropRow entry={entry} key={entry.name} onChange={update} value={state[entry.name]!} />
+        <PropRow key={entry.name} live={toLiveEntry(entry, state[entry.name])} onChange={update} />
       ))}
     </form>
   )
 }
 
 function PropRow({
-  entry,
-  value,
+  live,
   onChange,
 }: {
-  entry: PropSchemaEntry
-  value: PropValue
+  live: LiveEntry
   onChange: (name: string, value: PropValue) => void
 }) {
-  const label = entry.label ?? entry.name
-  const id = `prop-${entry.name}`
+  const label = live.entry.label ?? live.entry.name
+  const id = `prop-${live.entry.name}`
 
-  if (entry.type === 'color') {
-    const v = value as string
-
-    return (
-      <Field id={id} label={label}>
-        <input
-          id={id}
-          onChange={(e) => onChange(entry.name, e.target.value)}
-          style={{ width: 40, height: 28, padding: 0, border: 'none', background: 'transparent' }}
-          type="color"
-          value={v}
-        />
-        <code style={{ fontSize: '0.8rem', color: 'var(--fg-muted)' }}>{v}</code>
-      </Field>
-    )
-  }
-
-  if (entry.type === 'number') {
-    const v = value as number
-    const step = entry.step ?? 0.01
-    // Decimal places for the readout — derived from step so integer-stepped
-    // sliders (angle: 1°) show whole numbers and fine-stepped sliders
-    // (speed: 0.01) show two decimals.
-    const fractionDigits = step >= 1 ? 0 : Math.min(3, -Math.floor(Math.log10(step)))
-
-    return (
-      <Field id={id} label={label}>
-        <input
-          id={id}
-          max={entry.max}
-          min={entry.min}
-          onChange={(e) => onChange(entry.name, Number(e.target.value))}
-          step={step}
-          style={{ flex: 1 }}
-          type="range"
-          value={v}
-        />
-        <code
-          style={{
-            width: 60,
-            textAlign: 'right',
-            fontSize: '0.8rem',
-            color: 'var(--fg-muted)',
-          }}
-        >
-          {v.toFixed(fractionDigits)}
-        </code>
-      </Field>
-    )
-  }
-
-  if (entry.type === 'boolean') {
-    const v = value as boolean
-
-    return (
-      <Field id={id} label={label}>
-        <input
-          checked={v}
-          id={id}
-          onChange={(e) => onChange(entry.name, e.target.checked)}
-          type="checkbox"
-        />
-      </Field>
-    )
-  }
-
-  if (entry.type === 'enum') {
-    const v = value as string
-
-    return (
-      <Field id={id} label={label}>
-        <select
-          id={id}
-          onChange={(e) => onChange(entry.name, e.target.value)}
-          style={{
-            flex: 1,
-            padding: '0.25rem 0.5rem',
-            background: 'var(--bg)',
-            color: 'var(--fg)',
-            border: '1px solid var(--border)',
-            borderRadius: 4,
-          }}
-          value={v}
-        >
-          {entry.options.map((opt) => (
-            <option key={opt} value={opt}>
-              {opt}
-            </option>
-          ))}
-        </select>
-      </Field>
-    )
-  }
-
-  // type === 'colors' — array of hex strings.
-  const colors = value as string[]
-
-  return (
-    <Field id={id} label={label}>
-      <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-        {colors.map((c, i) => (
+  switch (live.type) {
+    case 'color':
+      return (
+        <Field id={id} label={label}>
           <input
-            aria-label={`${label} ${i + 1}`}
-            key={i}
-            onChange={(e) => {
-              const next = [...colors]
-
-              next[i] = e.target.value
-              onChange(entry.name, next)
+            id={id}
+            onChange={(e) => onChange(live.entry.name, e.target.value)}
+            style={{
+              width: 40,
+              height: 28,
+              padding: 0,
+              border: 'none',
+              background: 'transparent',
             }}
-            style={{ width: 32, height: 28, padding: 0, border: 'none', background: 'transparent' }}
             type="color"
-            value={c}
+            value={live.value}
           />
-        ))}
-      </div>
-    </Field>
-  )
+          <code style={{ fontSize: '0.8rem', color: 'var(--fg-muted)' }}>{live.value}</code>
+        </Field>
+      )
+
+    case 'number': {
+      const step = live.entry.step ?? 0.01
+      // Decimal places for the readout — derived from step so integer-stepped
+      // sliders (angle: 1°) show whole numbers and fine-stepped sliders
+      // (speed: 0.01) show two decimals.
+      const fractionDigits = step >= 1 ? 0 : Math.min(3, -Math.floor(Math.log10(step)))
+
+      return (
+        <Field id={id} label={label}>
+          <input
+            id={id}
+            max={live.entry.max}
+            min={live.entry.min}
+            onChange={(e) => onChange(live.entry.name, e.target.value)}
+            step={step}
+            style={{ flex: 1 }}
+            type="range"
+            value={live.value}
+          />
+          <code
+            style={{
+              width: 60,
+              textAlign: 'right',
+              fontSize: '0.8rem',
+              color: 'var(--fg-muted)',
+            }}
+          >
+            {live.value.toFixed(fractionDigits)}
+          </code>
+        </Field>
+      )
+    }
+
+    case 'boolean':
+      return (
+        <Field id={id} label={label}>
+          <input
+            checked={live.value}
+            id={id}
+            onChange={(e) => onChange(live.entry.name, e.target.checked)}
+            type="checkbox"
+          />
+        </Field>
+      )
+
+    case 'enum':
+      return (
+        <Field id={id} label={label}>
+          <select
+            id={id}
+            onChange={(e) => onChange(live.entry.name, e.target.value)}
+            style={{
+              flex: 1,
+              padding: '0.25rem 0.5rem',
+              background: 'var(--bg)',
+              color: 'var(--fg)',
+              border: '1px solid var(--border)',
+              borderRadius: 4,
+            }}
+            value={live.value}
+          >
+            {live.entry.options.map((opt) => (
+              <option key={opt} value={opt}>
+                {opt}
+              </option>
+            ))}
+          </select>
+        </Field>
+      )
+
+    case 'colors':
+      return (
+        <Field id={id} label={label}>
+          <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
+            {live.value.map((c, i) => (
+              <input
+                aria-label={`${label} ${i + 1}`}
+                key={i}
+                onChange={(e) => {
+                  const next = [...live.value]
+
+                  next[i] = e.target.value
+                  onChange(live.entry.name, next)
+                }}
+                style={{
+                  width: 32,
+                  height: 28,
+                  padding: 0,
+                  border: 'none',
+                  background: 'transparent',
+                }}
+                type="color"
+                value={c}
+              />
+            ))}
+          </div>
+        </Field>
+      )
+  }
 }
 
 function Field({ id, label, children }: { id: string; label: string; children: ReactNode }) {
   return (
     <label
       htmlFor={id}
-      style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.85rem' }}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '0.5rem',
+        fontSize: '0.85rem',
+      }}
     >
       <span style={{ width: 100, color: 'var(--fg-muted)' }}>{label}</span>
       {children}

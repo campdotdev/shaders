@@ -59,11 +59,11 @@ function FbmMesh({
       .add(vec2(time.mul(timeSpeedUniform), time.mul(timeSpeedUniform)))
     const t = fbm(animatedUv, { octaves, lacunarity, gain })
     // Normalize fbm's [-1..1]-ish range into [0..1] for colorRamp.
-    const tNorm = (t as unknown as { add(n: number): { mul(n: number): unknown } }).add(1).mul(0.5)
+    const tNorm = t.add(1).mul(0.5)
 
     const material = new MeshBasicNodeMaterial()
 
-    material.colorNode = colorRamp(tNorm as never, STOPS)
+    material.colorNode = colorRamp(tNorm, STOPS)
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 
     ctx.scene.add(mesh)
@@ -110,7 +110,12 @@ export default function FbmPlayground() {
     pane.addBinding(local, 'gain', { min: 0, max: 1, step: 0.01 })
     pane.addBlade({ view: 'separator' })
     pane.addBinding(local, 'scale', { min: 0.5, max: 10, step: 0.1 })
-    pane.addBinding(local, 'timeSpeed', { label: 'time speed', min: 0, max: 2, step: 0.01 })
+    pane.addBinding(local, 'timeSpeed', {
+      label: 'time speed',
+      min: 0,
+      max: 2,
+      step: 0.01,
+    })
     pane.addBlade({ view: 'separator' })
     pane.addButton({ title: 'Apply octaves / lacunarity / gain' }).on('click', () => {
       setParams({ ...local })
@@ -118,12 +123,13 @@ export default function FbmPlayground() {
     })
 
     pane.on('change', (ev) => {
-      const key = (ev.target as { key?: keyof Params }).key
+      if (!('key' in ev.target)) return
+      const key = ev.target.key
 
       if (key === 'scale') {
-        ;(scaleUniform as unknown as { value: number }).value = local.scale
+        scaleUniform.value = local.scale
       } else if (key === 'timeSpeed') {
-        ;(timeSpeedUniform as unknown as { value: number }).value = local.timeSpeed
+        timeSpeedUniform.value = local.timeSpeed
       }
       // octaves/lacunarity/gain wait for the Apply button.
     })
@@ -148,7 +154,13 @@ export default function FbmPlayground() {
       </div>
       <div
         ref={paneContainerRef}
-        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 10,
+          width: '320px',
+        }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>FBM playground</h1>

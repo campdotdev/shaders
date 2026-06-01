@@ -51,11 +51,11 @@ export function PageBody({ schema, code }: PageBodyProps) {
   // and CLAUDE.md). Changing colors / angle / speed / variant requires a
   // remount to apply. The cursor (when `interactive`) is wired to a live
   // uniform and updates per-frame, so the toggle alone doesn't need a key.
-  const colors = params.colors as string[]
-  const angle = params.angle as number
-  const speed = params.speed as number
-  const variant = params.variant as 'linear' | 'radial'
-  const interactive = params.interactive as boolean
+  const colors = Array.isArray(params.colors) ? params.colors : []
+  const angle = typeof params.angle === 'number' ? params.angle : 0
+  const speed = typeof params.speed === 'number' ? params.speed : 0
+  const variant: 'linear' | 'radial' = params.variant === 'radial' ? 'radial' : 'linear'
+  const interactive = params.interactive === true
   const remountKey = `${colors.join('|')}|${angle}|${speed}|${variant}`
 
   return (

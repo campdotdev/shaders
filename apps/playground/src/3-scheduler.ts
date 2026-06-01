@@ -3,10 +3,11 @@ import { Mesh, OrthographicCamera, PlaneGeometry, Scene } from 'three'
 import { mix, sin, uv, vec3 } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 
-const canvas = document.getElementById('c') as HTMLCanvasElement
-const log = document.getElementById('log') as HTMLDivElement
+const canvas = document.getElementById('c')
+const log = document.getElementById('log')
 
-if (!canvas) throw new Error('canvas#c not found')
+if (!(canvas instanceof HTMLCanvasElement)) throw new Error('canvas#c not found')
+if (!(log instanceof HTMLDivElement)) throw new Error('log#log not found')
 
 const matter = await createRenderer(canvas)
 

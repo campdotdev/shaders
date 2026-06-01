@@ -64,9 +64,9 @@ export default function WavesPage() {
       setParams({ ...local })
     })
     pane.on('change', (ev) => {
-      const key = (ev.target as { key?: keyof Params }).key
-
-      if (key === 'layers' || key === 'interactive') return
+      if ('key' in ev.target && (ev.target.key === 'layers' || ev.target.key === 'interactive')) {
+        return
+      }
       setParams({ ...local })
     })
 

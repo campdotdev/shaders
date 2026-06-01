@@ -20,7 +20,11 @@ export function parseFrontmatter(data: unknown, sourcePath: string): DocsFrontma
 
   if (!result.success) {
     const issues = result.error.issues
-      .map((i) => `  - ${i.path.join('.') || '<root>'}: ${i.message}`)
+      .map((i) => {
+        const path = i.path.join('.')
+
+        return `  - ${path === '' ? '<root>' : path}: ${i.message}`
+      })
       .join('\n')
 
     throw new Error(`Invalid frontmatter in ${sourcePath}:\n${issues}`)
@@ -60,7 +64,11 @@ export function parseRegistry(data: unknown, sourcePath: string): RegistryFile {
 
   if (!result.success) {
     const issues = result.error.issues
-      .map((i) => `  - ${i.path.join('.') || '<root>'}: ${i.message}`)
+      .map((i) => {
+        const path = i.path.join('.')
+
+        return `  - ${path === '' ? '<root>' : path}: ${i.message}`
+      })
       .join('\n')
 
     throw new Error(`Invalid registry file at ${sourcePath}:\n${issues}`)

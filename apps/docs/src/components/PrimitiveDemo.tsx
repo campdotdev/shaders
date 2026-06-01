@@ -1,10 +1,11 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 import type { PrimitiveControl } from '@/data/primitives'
 
+import { buildPrimitiveParams } from './PrimitiveScene'
 import {
   initialStateFromSchema,
   type PropSchema,
@@ -42,6 +43,11 @@ export function PrimitiveDemo({ slug, controls }: PrimitiveDemoProps) {
   const schema = buildSchema(controls)
   const [params, setParams] = useState<PropsState>(() => initialStateFromSchema(schema))
 
+  // Convert the loose PropsState (Record<string, PropValue>) into the strict
+  // PrimitiveParams union exactly once, here at the boundary. Memoize so the
+  // identity is stable between renders that don't change slug/params.
+  const primitive = useMemo(() => buildPrimitiveParams(slug, params), [slug, params])
+
   // Stable callback so PropsPlayground's useEffect dep on onChange doesn't
   // re-fire every render. Mirrors the pattern from LinearGradient's PageBody.
   const handleChange = useCallback((next: PropsState) => {
@@ -60,7 +66,7 @@ export function PrimitiveDemo({ slug, controls }: PrimitiveDemoProps) {
           border: '1px solid var(--border)',
         }}
       >
-        <PrimitiveScene params={params} slug={slug} />
+        <PrimitiveScene primitive={primitive} />
       </div>
       {schema.length > 0 && (
         <div style={{ marginTop: '1rem' }}>

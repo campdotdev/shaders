@@ -131,10 +131,10 @@ export default function AuroraPage() {
 
     if (!container) return
     // Tweakpane mutates `local` in place; we sync to React state on `change`.
-    const local: AuroraParams = JSON.parse(JSON.stringify(INITIAL))
+    const local: AuroraParams = structuredClone(INITIAL)
 
     const pane = new Pane({ container, title: '<Aurora>' })
-    const syncToReact = () => setParams(JSON.parse(JSON.stringify(local)))
+    const syncToReact = () => setParams(structuredClone(local))
 
     // Remembered pre-mute intensity per layer, so Unmute can restore.
     const savedIntensities: number[] = INITIAL.layers.map((l) => l.intensity)
@@ -155,8 +155,12 @@ export default function AuroraPage() {
     }
 
     const resetLayer = (i: number) => {
-      Object.assign(local.layers[i]!, INITIAL.layers[i]!)
-      savedIntensities[i] = INITIAL.layers[i]!.intensity
+      const layer = local.layers[i]
+      const initial = INITIAL.layers[i]
+
+      if (layer === undefined || initial === undefined) return
+      Object.assign(layer, initial)
+      savedIntensities[i] = initial.intensity
       const btn = muteBtns[i]
 
       if (btn) btn.title = 'Mute layer'
@@ -212,11 +216,15 @@ export default function AuroraPage() {
     globals.addBinding(local, 'skyColor', { label: 'sky' })
 
     for (let i = 0; i < 4; i += 1) {
+      const title = LAYER_TITLES[i]
+      const layer = local.layers[i]
+      const initial = INITIAL.layers[i]
+
+      if (title === undefined || layer === undefined || initial === undefined) continue
       const folder = pane.addFolder({
-        title: LAYER_TITLES[i]!,
+        title,
         expanded: i === 0,
       })
-      const layer = local.layers[i]!
 
       const muteBtn = folder.addButton({
         title: layer.intensity > 0 ? 'Mute layer' : 'Unmute layer',
@@ -229,9 +237,9 @@ export default function AuroraPage() {
           layer.intensity = 0
           muteBtn.title = 'Unmute layer'
         } else {
-          const restore = savedIntensities[i] ?? INITIAL.layers[i]!.intensity
+          const restore = savedIntensities[i] ?? initial.intensity
 
-          layer.intensity = restore > 0 ? restore : INITIAL.layers[i]!.intensity
+          layer.intensity = restore > 0 ? restore : initial.intensity
           muteBtn.title = 'Mute layer'
         }
         pane.refresh()

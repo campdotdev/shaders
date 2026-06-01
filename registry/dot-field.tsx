@@ -11,10 +11,8 @@ import {
   useResize,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
-import type { ShaderNodeObject } from 'three/tsl'
 import { length, mix, mod, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
 
 export interface DotFieldProps {
   spacing?: AnimatableProp<number>
@@ -26,7 +24,13 @@ export interface DotFieldProps {
   inputs?: { cursor?: CursorSignal }
 }
 
-const DEFAULTS = { spacing: 30, dotSize: 2, color: '#8B918C', reach: 100, strength: 1 } as const // color: palette.gray[8]
+const DEFAULTS = {
+  spacing: 30,
+  dotSize: 2,
+  color: '#8B918C',
+  reach: 100,
+  strength: 1,
+} // color: palette.gray[8]
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const clean = hex.replace('#', '')
@@ -98,10 +102,7 @@ export function DotField(props: DotFieldProps) {
     // Cell→cursor in pixel space, computed once and reused for the influence
     // curve and the displacement direction. Root in cellCenterUv (uv-derived)
     // so the chain is gotcha-#12-clean: uniforms appear only as arguments.
-    const cellToCursorPx = (cellCenterUv as ShaderNodeObject<Node>)
-      .sub(cursorUniform)
-      .mul(-1)
-      .mul(resUniform)
+    const cellToCursorPx = cellCenterUv.sub(cursorUniform).mul(-1).mul(resUniform)
     const distToCursorPx = length(cellToCursorPx)
     // Cursor influence: 1 at cursor, 0 at `reach` px away.
     const influence = smoothstep(reachUniform, 0, distToCursorPx)
@@ -109,9 +110,7 @@ export function DotField(props: DotFieldProps) {
     // Unit direction from cell toward cursor. Adding 0.001 to the divisor
     // avoids div-by-zero at the cursor itself; the influence weight forces
     // the offset to ~0 there anyway so the small bias is invisible.
-    const dirToCursor = (cellToCursorPx as ShaderNodeObject<Node>).div(
-      (distToCursorPx as ShaderNodeObject<Node>).add(0.001),
-    )
+    const dirToCursor = cellToCursorPx.div(distToCursorPx.add(0.001))
 
     // Offset in CELL-LOCAL units. dirToCursor is a dimensionless unit vector,
     // so multiplying by the 0.4 cap means "shift up to 40% of a cell width
@@ -120,15 +119,12 @@ export function DotField(props: DotFieldProps) {
     // magnitude scaled with screen size, so on a 1000px canvas the visible
     // shift at default reach=100 / strength=1 was only a few pixels (you had
     // to max both sliders to see anything). Normalizing fixes the feel.
-    const offset = (dirToCursor as ShaderNodeObject<Node>)
-      .mul(influence)
-      .mul(strengthUniform)
-      .mul(0.4)
+    const offset = dirToCursor.mul(influence).mul(strengthUniform).mul(0.4)
     // SDF translation: rendering a disk at +v means evaluating the SDF at
     // (p - v), not (p + v). `displace` is naive vector addition, so we
     // negate `offset` here — otherwise dots visibly push AWAY from the
     // cursor instead of pulling toward it.
-    const displacedLocal = displace(cellLocal, (offset as ShaderNodeObject<Node>).mul(-1))
+    const displacedLocal = displace(cellLocal, offset.mul(-1))
 
     // dotSize is in CSS px; convert to cell-local fraction:
     // radius = dotSize / (spacing * 2). Root this chain in vec2(0).x —
