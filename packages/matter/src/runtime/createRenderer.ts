@@ -1,7 +1,7 @@
 import { Color } from 'three'
 import { WebGPURenderer } from 'three/webgpu'
 
-export type MatterBackend = 'webgpu' | 'webgl2'
+export type GpuBackend = 'webgpu' | 'webgl2'
 
 export interface CreateRendererOptions {
   /** Anti-alias the framebuffer. Default: true. */
@@ -16,11 +16,11 @@ export interface CreateRendererOptions {
   maxDPR?: number
 }
 
-export interface MatterRenderer {
+export interface GpuRenderer {
   /** The underlying Three.js WebGPURenderer (which may be running on a WebGL2 backend). */
   three: WebGPURenderer
   /** Which backend the renderer initialized with. */
-  backend: MatterBackend
+  backend: GpuBackend
   /** Tear down the renderer and release GPU resources. */
   dispose: () => void
   /** Resize the renderer to the canvas's current client dimensions. */
@@ -37,7 +37,7 @@ export interface MatterRenderer {
 export async function createRenderer(
   canvas: HTMLCanvasElement,
   opts: CreateRendererOptions = {},
-): Promise<MatterRenderer> {
+): Promise<GpuRenderer> {
   const {
     antialias = true,
     forceWebGL = false,
@@ -74,7 +74,7 @@ export async function createRenderer(
   // not declared in three's public Backend type — probe via `in` rather than
   // a property access that would trip strict typing.
   const isWebGL = 'isWebGLBackend' in three.backend && three.backend.isWebGLBackend === true
-  const backend: MatterBackend = forceWebGL || isWebGL ? 'webgl2' : 'webgpu'
+  const backend: GpuBackend = forceWebGL || isWebGL ? 'webgl2' : 'webgpu'
 
   return {
     three,
@@ -83,3 +83,8 @@ export async function createRenderer(
     resize,
   }
 }
+
+/** @deprecated Use GpuBackend — alias removed in 0.5.0 */
+export type MatterBackend = GpuBackend
+/** @deprecated Use GpuRenderer — alias removed in 0.5.0 */
+export type MatterRenderer = GpuRenderer
