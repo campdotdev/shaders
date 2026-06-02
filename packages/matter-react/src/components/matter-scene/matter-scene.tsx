@@ -4,7 +4,7 @@ import {
   createIntersectionWatcher,
   createRenderer,
   createVisibilityWatcher,
-  MatterScheduler,
+  FrameScheduler,
 } from '@lovo/matter'
 import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
 import { OrthographicCamera, Scene } from 'three'
@@ -14,12 +14,12 @@ import { PostProcessing } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 
 import {
-  MatterContext,
-  type MatterContextValue,
+  ShaderContext,
+  type ShaderContextValue,
   type OverlayTransform,
 } from '../../context/matter-context.js'
 
-export interface MatterSceneProps {
+export interface ShaderSceneProps {
   children?: ReactNode
   /** Rendered server-side and during WebGPU init. Default: empty. */
   fallback?: ReactNode
@@ -40,12 +40,12 @@ const defaultStyle: CSSProperties = {
 /**
  * Owns a canvas, a Three.js renderer (WebGPU + WebGL2 fallback), an
  * orthographic camera covering the canvas, an empty Scene, and a
- * MatterScheduler. Children consume these via useMatterContext().
+ * FrameScheduler. Children consume these via useShaderContext().
  */
-export function MatterScene(props: MatterSceneProps) {
+export function ShaderScene(props: ShaderSceneProps) {
   const { children, fallback, className, style, maxDPR } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
-  const [ctx, setCtx] = useState<MatterContextValue | null>(null)
+  const [ctx, setCtx] = useState<ShaderContextValue | null>(null)
   const [error, setError] = useState<Error | null>(null)
 
   useEffect(() => {
@@ -70,7 +70,7 @@ export function MatterScene(props: MatterSceneProps) {
 
         camera.position.z = 1
         const postProcessing = new PostProcessing(renderer.three)
-        const scheduler = new MatterScheduler()
+        const scheduler = new FrameScheduler()
 
         const overlays = new Map<symbol, OverlayTransform>()
 
@@ -145,7 +145,7 @@ export function MatterScene(props: MatterSceneProps) {
         if (cancelled) return
         const e = err instanceof Error ? err : new Error(String(err))
 
-        console.error('[MatterScene] renderer init failed:', e)
+        console.error('[ShaderScene] renderer init failed:', e)
         setError(e)
       }
     }
@@ -179,13 +179,13 @@ export function MatterScene(props: MatterSceneProps) {
           textAlign: 'center',
         }}
       >
-        MatterScene init failed:
+        ShaderScene init failed:
         {'\n'}
         {error.message}
       </div>
     )
   } else if (ctx) {
-    content = <MatterContext.Provider value={ctx}>{children}</MatterContext.Provider>
+    content = <ShaderContext.Provider value={ctx}>{children}</ShaderContext.Provider>
   } else {
     content = fallback ?? null
   }
@@ -197,3 +197,8 @@ export function MatterScene(props: MatterSceneProps) {
     </div>
   )
 }
+
+/** @deprecated Use ShaderScene — alias removed in 0.5.0 */
+export const MatterScene = ShaderScene
+/** @deprecated Use ShaderSceneProps — alias removed in 0.5.0 */
+export type MatterSceneProps = ShaderSceneProps

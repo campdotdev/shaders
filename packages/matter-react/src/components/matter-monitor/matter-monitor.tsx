@@ -2,7 +2,7 @@
 
 import { type CSSProperties, useContext, useEffect, useRef, useState } from 'react'
 
-import { MatterContext } from '../../context/matter-context.js'
+import { ShaderContext } from '../../context/matter-context.js'
 
 export type MonitorAnchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 
@@ -26,18 +26,18 @@ const baseStyle: CSSProperties = {
   whiteSpace: 'pre',
 }
 
-export interface MatterMonitorProps {
+export interface ShaderMonitorProps {
   anchor?: MonitorAnchor
 }
 
 /**
  * Dev-only overlay that displays the current scene's FPS, tick count, and
- * paused/idle state. Reads from the surrounding `<MatterScene>` via context
+ * paused/idle state. Reads from the surrounding `<ShaderScene>` via context
  * and subscribes to its scheduler. Renders nothing useful if mounted outside
  * a scene.
  */
-export function MatterMonitor({ anchor = 'top-right' }: MatterMonitorProps) {
-  const ctx = useContext(MatterContext)
+export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
+  const ctx = useContext(ShaderContext)
   const [stats, setStats] = useState({ fps: 0, ticks: 0, frames: 0 })
   const ticksRef = useRef(0)
   const fpsAccumRef = useRef({ frames: 0, lastSampleAt: 0, fps: 0 })
@@ -81,3 +81,8 @@ export function MatterMonitor({ anchor = 'top-right' }: MatterMonitorProps) {
     </div>
   )
 }
+
+/** @deprecated Use ShaderMonitor — alias removed in 0.5.0 */
+export const MatterMonitor = ShaderMonitor
+/** @deprecated Use ShaderMonitorProps — alias removed in 0.5.0 */
+export type MatterMonitorProps = ShaderMonitorProps

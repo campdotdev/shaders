@@ -1,12 +1,14 @@
 import { useContext } from 'react'
 
-import { MatterContext, type MatterContextValue } from '../../context/matter-context.js'
+import { ShaderContext, type ShaderContextValue } from '../../context/matter-context.js'
 
 /**
- * Read the matter scene context. Returns null when called outside a
- * <MatterScene>; useShaderMaterial and similar hooks check this and
- * auto-provision a scene if missing (auto-wrap behavior).
+ * Read the shader scene context. Returns null when called outside a
+ * <ShaderScene>; useShaderMaterial and similar hooks check this.
  */
-export function useMatterContext(): MatterContextValue | null {
-  return useContext(MatterContext)
+export function useShaderContext(): ShaderContextValue | null {
+  return useContext(ShaderContext)
 }
+
+/** @deprecated Use useShaderContext — alias removed in 0.5.0 */
+export const useMatterContext = useShaderContext

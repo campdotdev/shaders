@@ -3,4 +3,9 @@
 export * from './components/index.js'
 export * from './hooks/index.js'
 
-export type { MatterContextValue, OverlayTransform } from './context/matter-context.js'
+export type {
+  ShaderContextValue,
+  OverlayTransform,
+  // deprecated
+  MatterContextValue,
+} from './context/matter-context.js'

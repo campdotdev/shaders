@@ -1,26 +1,26 @@
-import { MatterScheduler } from '@lovo/matter'
+import { FrameScheduler } from '@lovo/matter'
 import { renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { MatterContext } from '../../context/matter-context.js'
+import { ShaderContext } from '../../context/matter-context.js'
 
 import { useStaticHint } from './use-static-hint.js'
 
-// Minimal MatterContextValue stub — only `scheduler` is exercised here.
-const makeWrapper = (scheduler: MatterScheduler) => {
+// Minimal ShaderContextValue stub — only `scheduler` is exercised here.
+const makeWrapper = (scheduler: FrameScheduler) => {
   function Wrapper({ children }: { children: ReactNode }) {
     return (
-      <MatterContext.Provider
+      <ShaderContext.Provider
         value={
           {
             scheduler,
             // The other context fields aren't read by useStaticHint — cast.
-          } as unknown as React.ContextType<typeof MatterContext>
+          } as unknown as React.ContextType<typeof ShaderContext>
         }
       >
         {children}
-      </MatterContext.Provider>
+      </ShaderContext.Provider>
     )
   }
 
@@ -37,7 +37,7 @@ describe('useStaticHint', () => {
   })
 
   it('marks the scheduler idle when hint=true', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const setIdle = vi.spyOn(scheduler, 'setIdle')
 
     renderHook(() => useStaticHint(true), { wrapper: makeWrapper(scheduler) })
@@ -45,7 +45,7 @@ describe('useStaticHint', () => {
   })
 
   it('marks the scheduler not idle when hint=false', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const setIdle = vi.spyOn(scheduler, 'setIdle')
 
     renderHook(() => useStaticHint(false), { wrapper: makeWrapper(scheduler) })
@@ -53,7 +53,7 @@ describe('useStaticHint', () => {
   })
 
   it('reverts to non-idle on unmount', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const setIdle = vi.spyOn(scheduler, 'setIdle')
     const { unmount } = renderHook(() => useStaticHint(true), {
       wrapper: makeWrapper(scheduler),
@@ -65,7 +65,7 @@ describe('useStaticHint', () => {
 
   it('does not call requestRender on render when hint is unchanged', () => {
     // Sanity: the hook does not spuriously call requestRender on every render.
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const requestRender = vi.spyOn(scheduler, 'requestRender')
     const { rerender } = renderHook(({ hint }) => useStaticHint(hint), {
       wrapper: makeWrapper(scheduler),
