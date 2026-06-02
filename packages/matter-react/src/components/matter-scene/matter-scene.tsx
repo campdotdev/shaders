@@ -14,9 +14,9 @@ import { PostProcessing } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 
 import {
+  type OverlayTransform,
   ShaderContext,
   type ShaderContextValue,
-  type OverlayTransform,
 } from '../../context/matter-context.js'
 
 export interface ShaderSceneProps {

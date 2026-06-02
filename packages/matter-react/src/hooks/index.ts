@@ -2,13 +2,14 @@ export { useAnimatableUniform } from './use-animatable-uniform/use-animatable-un
 export type {
   AnimatableProp,
   AnimatableSignal,
-  // deprecated
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   MatterSignal,
 } from './use-animatable-uniform/use-animatable-uniform.js'
 
 export { useCursor } from './use-cursor/use-cursor.js'
 export type { CursorSignal } from './use-cursor/use-cursor.js'
 
+// eslint-disable-next-line @typescript-eslint/no-deprecated
 export { useShaderContext, useMatterContext } from './use-matter-context/use-matter-context.js'
 
 export { useOverlayPass } from './use-overlay-pass/use-overlay-pass.js'
