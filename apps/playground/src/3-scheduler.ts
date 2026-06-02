@@ -40,7 +40,7 @@ const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 
 scene.add(mesh)
 
-// Use MatterScheduler instead of an inline requestAnimationFrame.
+// Use FrameScheduler instead of an inline requestAnimationFrame.
 const scheduler = new FrameScheduler()
 let frameCount = 0
 
