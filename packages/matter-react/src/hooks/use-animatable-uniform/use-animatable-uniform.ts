@@ -68,6 +68,3 @@ export function useAnimatableUniform<T>(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   return uniformNode as unknown as ShaderNodeObject<Node> & { value: T }
 }
-
-/** @deprecated Use AnimatableSignal — alias removed in 0.5.0 */
-export type MatterSignal<T> = AnimatableSignal<T>

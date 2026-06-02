@@ -81,8 +81,3 @@ export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
     </div>
   )
 }
-
-/** @deprecated Use ShaderMonitor — alias removed in 0.5.0 */
-export const MatterMonitor = ShaderMonitor
-/** @deprecated Use ShaderMonitorProps — alias removed in 0.5.0 */
-export type MatterMonitorProps = ShaderMonitorProps

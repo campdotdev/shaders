@@ -15,8 +15,3 @@ export interface ShaderContextValue {
 }
 
 export const ShaderContext = createContext<ShaderContextValue | null>(null)
-
-/** @deprecated Use ShaderContextValue — alias removed in 0.5.0 */
-export type MatterContextValue = ShaderContextValue
-/** @deprecated Use ShaderContext — alias removed in 0.5.0 */
-export const MatterContext = ShaderContext

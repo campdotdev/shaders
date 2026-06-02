@@ -127,6 +127,3 @@ export class FrameScheduler {
     this.maybeQueue()
   }
 }
-
-/** @deprecated Use FrameScheduler — alias removed in 0.5.0 */
-export { FrameScheduler as MatterScheduler }

@@ -5,13 +5,9 @@ export type {
   GpuRenderer,
   GpuBackend,
   CreateRendererOptions,
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  MatterRenderer,
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  MatterBackend,
 } from './runtime/createRenderer.js'
 
-export { FrameScheduler, MatterScheduler } from './runtime/MatterScheduler.js'
+export { FrameScheduler } from './runtime/MatterScheduler.js'
 export type { SchedulerTick, SchedulerClient } from './runtime/MatterScheduler.js'
 
 export { CursorInput } from './inputs/CursorInput.js'

@@ -83,8 +83,3 @@ export async function createRenderer(
     resize,
   }
 }
-
-/** @deprecated Use GpuBackend — alias removed in 0.5.0 */
-export type MatterBackend = GpuBackend
-/** @deprecated Use GpuRenderer — alias removed in 0.5.0 */
-export type MatterRenderer = GpuRenderer

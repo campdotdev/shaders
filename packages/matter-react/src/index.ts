@@ -6,6 +6,4 @@ export * from './hooks/index.js'
 export type {
   ShaderContextValue,
   OverlayTransform,
-  // eslint-disable-next-line @typescript-eslint/no-deprecated
-  MatterContextValue,
 } from './context/matter-context.js'
