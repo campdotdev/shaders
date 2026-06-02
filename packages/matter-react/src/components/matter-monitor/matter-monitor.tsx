@@ -2,7 +2,7 @@
 
 import { type CSSProperties, useContext, useEffect, useRef, useState } from 'react'
 
-import { MatterContext } from './matter-context.js'
+import { MatterContext } from '../../context/matter-context.js'
 
 export type MonitorAnchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 

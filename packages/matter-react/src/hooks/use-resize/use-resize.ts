@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { useMatterContext } from './useMatterContext.js'
+import { useMatterContext } from '../use-matter-context/use-matter-context.js'
 
 export type ResizeValue = readonly [width: number, height: number, dpr: number]
 

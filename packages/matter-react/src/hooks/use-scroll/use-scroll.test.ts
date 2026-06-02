@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { useScroll } from './useScroll.js'
+import { useScroll } from './use-scroll.js'
 
 describe('useScroll', () => {
   it('exports a function', () => {

@@ -2,8 +2,8 @@
 
 import { type DependencyList, useEffect } from 'react'
 
-import type { OverlayTransform } from './matter-context.js'
-import { useMatterContext } from './useMatterContext.js'
+import type { OverlayTransform } from '../../context/matter-context.js'
+import { useMatterContext } from '../use-matter-context/use-matter-context.js'
 
 /**
  * Register a TSL transform as an overlay pass on the parent <MatterScene>.

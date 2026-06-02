@@ -2,8 +2,8 @@ import { cleanup, render } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
-import { MatterContext, type MatterContextValue, type OverlayTransform } from './matter-context.js'
-import { useOverlayPass } from './useOverlayPass.js'
+import { MatterContext, type MatterContextValue, type OverlayTransform } from '../../context/matter-context.js'
+import { useOverlayPass } from './use-overlay-pass.js'
 
 function makeCtx(): { ctx: MatterContextValue; registered: OverlayTransform[]; cleanups: number } {
   const registered: OverlayTransform[] = []
