@@ -12,7 +12,7 @@ interface RecipeSceneProps {
   variant: string
 }
 
-// Inner scene — wraps <MatterScene> and dispatches the live build callback by
+// Inner scene — wraps <ShaderScene> and dispatches the live build callback by
 // composite key '<slug>.<variant>'. Lives in a separate file from
 // RecipeViewer because three/webgpu pulls in `self` at module load (breaks
 // SSR). The Server page can't ssr-disable a dynamic import directly anymore

@@ -20,7 +20,7 @@ const STUB_SIGNAL: ResizeSignal = {
 }
 
 /**
- * Track the parent <MatterScene>'s canvas size + DPR. Exposes a MatterSignal
+ * Track the parent <ShaderScene>'s canvas size + DPR. Exposes an AnimatableSignal
  * that components can pass into a TSL uniform to make pixel-aware effects
  * (e.g., DotField's pixel-spacing math).
  *

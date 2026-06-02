@@ -6,7 +6,7 @@ import type { OverlayTransform } from '../../context/matter-context.js'
 import { useShaderContext } from '../use-matter-context/use-matter-context.js'
 
 /**
- * Register a TSL transform as an overlay pass on the parent <MatterScene>.
+ * Register a TSL transform as an overlay pass on the parent <ShaderScene>.
  *
  * The transform takes the "color so far" — base scene + any earlier
  * overlays as a TSL vec4 node — and returns a modified vec4. Registration
@@ -17,7 +17,7 @@ import { useShaderContext } from '../use-matter-context/use-matter-context.js'
  * inside the transform mutate in place, so uniform value changes do
  * NOT need to be in deps.
  *
- * When called outside a <MatterScene> provider, this hook is a no-op.
+ * When called outside a <ShaderScene> provider, this hook is a no-op.
  * Matches the existing useShaderContext convention.
  */
 export function useOverlayPass(transform: OverlayTransform, deps: DependencyList): void {
@@ -29,7 +29,7 @@ export function useOverlayPass(transform: OverlayTransform, deps: DependencyList
 
     return unregister
     // The transform captures the latest values via the deps array; we re-register
-    // when deps change. ctx is included so a remounted MatterScene re-attaches.
+    // when deps change. ctx is included so a remounted ShaderScene re-attaches.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, ...deps])
 }

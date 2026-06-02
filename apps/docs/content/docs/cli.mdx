@@ -68,7 +68,7 @@ Without `--force`, `update` refuses to overwrite a file you've modified — you 
 
 ## Why not a runtime dependency?
 
-Tier 1 components (`<LinearGradient>`, `<Aurora>`, etc.) aren't published to npm. They live in [the registry](https://github.com/lovo-hq/matter/tree/main/registry) and get copied into your project, where you can edit the shader, swap props, or refactor the JSX freely. The two packages you do depend on at runtime — `@lovo/matter` and `@lovo/matter-react` — provide the primitives, hooks, and `<MatterScene>` that those components call into.
+Tier 1 components (`<LinearGradient>`, `<Aurora>`, etc.) aren't published to npm. They live in [the registry](https://github.com/lovo-hq/matter/tree/main/registry) and get copied into your project, where you can edit the shader, swap props, or refactor the JSX freely. The two packages you do depend on at runtime — `@lovo/matter` and `@lovo/matter-react` — provide the primitives, hooks, and `<ShaderScene>` that those components call into.
 
 <Callout>
   There is no hosted registry endpoint. The CLI fetches sources from GitHub raw URLs at the pinned `${ref}`. If you want to host your own fork, change `registryUrl` in `matter.config.json` to point at your fork's raw URL.

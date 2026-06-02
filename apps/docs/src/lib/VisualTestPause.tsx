@@ -65,8 +65,8 @@ declare global {
  * - Uses scheduler ticks (not raw rAF) so the frame count is tied to actual
  *   renderer frames.
  *
- * Must be rendered as a child of a registry component (inside its MatterScene)
- * so that useMatterContext() can find the scene context.
+ * Must be rendered as a child of a registry component (inside its ShaderScene)
+ * so that useShaderContext() can find the scene context.
  */
 export function useVisualTestPause(): void {
   const ctx = useShaderContext()

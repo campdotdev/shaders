@@ -1,27 +1,27 @@
 ---
 title: Shared scenes
-description: Use one MatterScene with multiple components. When to share, when to split.
+description: Use one ShaderScene with multiple components. When to share, when to split.
 section: guides
 order: 30
 ---
 
 # Shared scenes
 
-Every Matter component renders to a WebGPU canvas owned by its parent `<MatterScene>`. Components are bare — they don't bring their own canvas. To compose multiple effects, you stack them as children of the same `<MatterScene>`.
+Every Matter component renders to a WebGPU canvas owned by its parent `<ShaderScene>`. Components are bare — they don't bring their own canvas. To compose multiple effects, you stack them as children of the same `<ShaderScene>`.
 
 ## The pattern
 
 ```tsx
-import { MatterScene } from '@lovo/matter-react'
+import { ShaderScene } from '@lovo/matter-react'
 import { Aurora } from './components/matter/aurora'
 import { DotField } from './components/matter/dot-field'
 
 export function Hero() {
   return (
-    <MatterScene style={{ position: 'absolute', inset: 0 }}>
+    <ShaderScene style={{ position: 'absolute', inset: 0 }}>
       <Aurora />
       <DotField interactive />
-    </MatterScene>
+    </ShaderScene>
   )
 }
 ```
@@ -30,7 +30,7 @@ Both components render into the same canvas, share the same WebGPU device, and p
 
 ## When to share
 
-Combine into one `<MatterScene>` when:
+Combine into one `<ShaderScene>` when:
 
 - The effects occupy the same visual region (e.g. a hero with a gradient background and an overlay dot field).
 - You want them to pause / resume together.
@@ -38,7 +38,7 @@ Combine into one `<MatterScene>` when:
 
 ## When to split
 
-Use separate `<MatterScene>` instances when:
+Use separate `<ShaderScene>` instances when:
 
 - The effects are visually unrelated and live in different page sections.
 - One needs to pause independently of the other (e.g. a hero shader and a footer shader — the hero pauses while the footer is in view, and vice versa).
@@ -49,18 +49,18 @@ Use separate `<MatterScene>` instances when:
 Children render back-to-front in JSX order. The first child is the background; later children draw on top. To put `<DotField>` behind `<Aurora>`, list it first:
 
 ```tsx
-<MatterScene>
+<ShaderScene>
   <DotField interactive />  {/* drawn first */}
   <Aurora />                {/* drawn on top */}
-</MatterScene>
+</ShaderScene>
 ```
 
 Each component renders to its own quad in the scene — there's no built-in blend-mode prop yet, so visual mixing happens by virtue of transparent pixels at the edges of each layer.
 
 <Callout>
-  Heavy multi-component compositions can saturate the GPU on mobile. If you're stacking three or more effects in one scene, run the [MatterMonitor](/guides/perf#monitoring-at-dev-time) overlay on a slow device before shipping.
+  Heavy multi-component compositions can saturate the GPU on mobile. If you're stacking three or more effects in one scene, run the [ShaderMonitor](/guides/perf#monitoring-at-dev-time) overlay on a slow device before shipping.
 </Callout>
 
 ## Multiple scenes on one page
 
-There's no restriction on how many `<MatterScene>` instances a page can host. Each owns its own WebGPU device, so they're truly independent. The home-page mock for Matter uses four scenes (hero, feature row, section divider, footer) and pauses each one when it scrolls out of view.
+There's no restriction on how many `<ShaderScene>` instances a page can host. Each owns its own WebGPU device, so they're truly independent. The home-page mock for Matter uses four scenes (hero, feature row, section divider, footer) and pauses each one when it scrolls out of view.

@@ -19,7 +19,7 @@ interface PlainAuroraLayer {
   variation: number
 }
 
-// Both MatterScene and Aurora pull in three/webgpu (via createRenderer),
+// Both ShaderScene and Aurora pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
@@ -79,7 +79,7 @@ const fmtLayer = (l: PlainAuroraLayer) =>
   `{ hex: '${l.hex}', speed: ${fmtNum(l.speed)}, intensity: ${fmtNum(l.intensity)}, variation: ${fmtNum(l.variation)} }`
 
 const fmtJsx = (p: AuroraParams) =>
-  `<MatterScene>
+  `<ShaderScene>
   <Aurora
     intensity={${fmtNum(p.intensity)}}
     speed={${fmtNum(p.speed)}}
@@ -99,7 +99,7 @@ const fmtJsx = (p: AuroraParams) =>
       ${fmtLayer(p.layers[3])},
     ]}
   />
-</MatterScene>`
+</ShaderScene>`
 
 const fmtParams = (p: AuroraParams) =>
   `{
@@ -325,9 +325,9 @@ export default function AuroraPage() {
             whiteSpace: 'pre-wrap',
           }}
         >
-          {`<MatterScene>
+          {`<ShaderScene>
   <Aurora intensity={1} falloff={0.6} layers={[...]} />
-</MatterScene>`}
+</ShaderScene>`}
         </pre>
       </section>
     </main>

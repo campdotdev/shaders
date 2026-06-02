@@ -44,8 +44,8 @@ import { time as rawTime } from 'three/tsl'
 
 ## Runtime
 
-- **`createRenderer(opts)`** → `MatterRenderer`. Allocates a WebGPU renderer. Used internally by `<MatterScene>`; you rarely call it directly.
-- **`MatterScheduler`** — the render-frame coordinator. Components register as `SchedulerClient`s; the scheduler ticks them when their scene is visible and not reduced-motion-paused.
+- **`createRenderer(opts)`** → `GpuRenderer`. Allocates a WebGPU renderer. Used internally by `<ShaderScene>`; you rarely call it directly.
+- **`FrameScheduler`** — the render-frame coordinator. Components register as `SchedulerClient`s; the scheduler ticks them when their scene is visible and not reduced-motion-paused.
 - **Visibility / intersection watchers** — `createVisibilityWatcher()`, `createIntersectionWatcher()`. Low-level utilities behind the offscreen-pause behavior.
 
 ## Inputs
@@ -61,8 +61,8 @@ import { time as rawTime } from 'three/tsl'
 
 ## Type exports
 
-The engine exports types for everything above: `MatterRenderer`, `CreateRendererOptions`, `MatterBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vec2`, `ColorRampStop`, `TSLNode`, `FBMOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`.
+The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vec2`, `ColorRampStop`, `TSLNode`, `FBMOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`.
 
 <Callout>
-  For React-specific exports (`<MatterScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@lovo/matter`.
+  For React-specific exports (`<ShaderScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@lovo/matter`.
 </Callout>

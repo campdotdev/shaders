@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCursor } from './use-cursor.js'
 
-// useCursor uses requestAnimationFrame for its free-running tick (no MatterScene context).
+// useCursor uses requestAnimationFrame for its free-running tick (no ShaderScene context).
 // Stub rAF so the effect doesn't hang in happy-dom.
 beforeEach(() => {
   vi.stubGlobal('requestAnimationFrame', () => 0)

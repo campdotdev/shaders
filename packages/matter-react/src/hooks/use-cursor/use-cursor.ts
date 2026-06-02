@@ -20,7 +20,7 @@ const STUB_SIGNAL: CursorSignal = {
 }
 
 /**
- * React wrapper for CursorInput. Auto-attaches to the parent <MatterScene>'s
+ * React wrapper for CursorInput. Auto-attaches to the parent <ShaderScene>'s
  * scheduler if available; otherwise creates a free-running rAF tick.
  *
  * Lifecycle is in a single effect so React 19 Strict Mode's intentional
@@ -33,7 +33,7 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
   const [input, setInput] = useState<CursorInput | null>(null)
 
   useEffect(() => {
-    // Plumb the parent <MatterScene>'s canvas as the cursor's normalization
+    // Plumb the parent <ShaderScene>'s canvas as the cursor's normalization
     // element. Without this, cursor coords are viewport-normalized — fine for
     // a full-page scene but visibly offset when the canvas sits inside a
     // smaller wrapper (e.g., 70vh hero). DotField's cell tiling makes the

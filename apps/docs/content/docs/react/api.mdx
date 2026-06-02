@@ -1,6 +1,6 @@
 ---
 title: React API
-description: Public exports from @lovo/matter-react — MatterScene, hooks, fallbacks, dev tools.
+description: Public exports from @lovo/matter-react — ShaderScene, hooks, fallbacks, dev tools.
 section: react.api
 order: 10
 ---
@@ -9,20 +9,20 @@ order: 10
 
 Everything exported from `@lovo/matter-react`. This page is hand-written for the launch milestone; a generated reference from TypeDoc lands post-launch.
 
-## `<MatterScene>`
+## `<ShaderScene>`
 
 The scene wrapper. Owns the WebGPU canvas, creates the renderer, runs the scheduler. Every Tier 1 Matter component must render inside one.
 
 ```tsx
-import { MatterScene } from '@lovo/matter-react'
+import { ShaderScene } from '@lovo/matter-react'
 
-<MatterScene
+<ShaderScene
   style={{ height: '100vh' }}
   dprMax={2}
   pauseOffscreen
 >
   <Aurora />
-</MatterScene>
+</ShaderScene>
 ```
 
 **Props:**
@@ -60,7 +60,7 @@ All three return signal-shaped objects compatible with [animation props](/guides
 - **`useScroll()`** → `ScrollSignal` with normalized scroll progress for the page.
 - **`useResize()`** → `ResizeSignal` with current canvas dimensions in pixels.
 
-All three are Strict-Mode-safe (no leaked listeners on dev double-mount) and must be called inside a `<MatterScene>` subtree so they can plumb to the canvas.
+All three are Strict-Mode-safe (no leaked listeners on dev double-mount) and must be called inside a `<ShaderScene>` subtree so they can plumb to the canvas.
 
 ## `useAnimatableUniform`
 
@@ -86,9 +86,9 @@ Renders fallback content when WebGPU is unavailable or initialization fails. Wra
 
 ```tsx
 <FallbackBoundary fallback={<img src="/hero-fallback.png" />}>
-  <MatterScene>
+  <ShaderScene>
     <Aurora />
-  </MatterScene>
+  </ShaderScene>
 </FallbackBoundary>
 ```
 
@@ -105,16 +105,16 @@ function Hero() {
 }
 ```
 
-## `useMatterContext`
+## `useShaderContext`
 
-Returns the current `MatterContextValue` — renderer, scheduler, canvas refs. Internal-ish; you rarely need it directly. Tier 1 components use it under the hood.
+Returns the current `ShaderContextValue` — renderer, scheduler, canvas refs. Internal-ish; you rarely need it directly. Tier 1 components use it under the hood.
 
-## `<MatterMonitor>`
+## `<ShaderMonitor>`
 
 Dev overlay showing FPS, active component count, scheduler state, and per-component frame budget. Not for production:
 
 ```tsx
-{process.env.NODE_ENV === 'development' && <MatterMonitor anchor="bottom-right" />}
+{process.env.NODE_ENV === 'development' && <ShaderMonitor anchor="bottom-right" />}
 ```
 
 **Props:**

@@ -65,15 +65,15 @@ This forces every `three` import to resolve to the unified bundle. Same idea app
 Some browsers (Firefox stable, Safari < 18, older Chrome) don't ship WebGPU yet. Wrap any Matter subtree in `<FallbackBoundary>`:
 
 ```tsx
-import { FallbackBoundary, MatterScene } from '@lovo/matter-react'
+import { FallbackBoundary, ShaderScene } from '@lovo/matter-react'
 import { Aurora } from './components/matter/aurora'
 
 export function Hero() {
   return (
     <FallbackBoundary fallback={<img src="/hero-fallback.png" alt="" />}>
-      <MatterScene style={{ height: '60vh' }}>
+      <ShaderScene style={{ height: '60vh' }}>
         <Aurora />
-      </MatterScene>
+      </ShaderScene>
     </FallbackBoundary>
   )
 }

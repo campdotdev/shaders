@@ -13,7 +13,7 @@ interface LiveDemoProps {
 // Frames a shader child with a fixed-height container, a dark default
 // background (so the shader has a sane backdrop pre-init), and a fullscreen
 // toggle button. Play/pause is intentionally not wired in 4.1 — that's an M5
-// concern once MatterScheduler exposes a control surface.
+// concern once FrameScheduler exposes a control surface.
 export function LiveDemo({
   children,
   height = '70vh',

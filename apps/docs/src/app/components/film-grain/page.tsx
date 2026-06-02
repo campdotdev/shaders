@@ -7,7 +7,7 @@ import { Pane } from 'tweakpane'
 
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// MatterScene + the registry components pull in three/webgpu, which
+// ShaderScene + the registry components pull in three/webgpu, which
 // references `self` at module load time and breaks Next's SSR. Load
 // everything client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
@@ -34,14 +34,14 @@ const INITIAL: FilmGrainParams = { intensity: 0.45, speed: 1, mode: 'additive' }
 const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
 
 const fmtJsx = (p: FilmGrainParams) =>
-  `<MatterScene>
+  `<ShaderScene>
   <LinearGradient />
   <FilmGrain
     intensity={${fmtNum(p.intensity)}}
     speed={${fmtNum(p.speed)}}
     mode="${p.mode}"
   />
-</MatterScene>`
+</ShaderScene>`
 
 const fmtParams = (p: FilmGrainParams) =>
   `{
@@ -142,7 +142,7 @@ export default function FilmGrainPage() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;FilmGrain /&gt;</h1>
         <p>
-          Standalone film grain overlay. Stacks inside any <code>&lt;MatterScene&gt;</code> on top
+          Standalone film grain overlay. Stacks inside any <code>&lt;ShaderScene&gt;</code> on top
           of whatever base component you want — gradients, noise fields, mesh gradients — and
           applies a layer of animated grain via the post-processing pipeline.
         </p>
@@ -168,10 +168,10 @@ export default function FilmGrainPage() {
             whiteSpace: 'pre-wrap',
           }}
         >
-          {`<MatterScene>
+          {`<ShaderScene>
   <LinearGradient />
   <FilmGrain intensity={0.45} speed={1} mode="additive" />
-</MatterScene>`}
+</ShaderScene>`}
         </pre>
       </section>
     </main>

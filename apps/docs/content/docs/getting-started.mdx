@@ -1,6 +1,6 @@
 ---
 title: Get Started
-description: Install Matter, copy your first component, and render it inside MatterScene.
+description: Install Matter, copy your first component, and render it inside ShaderScene.
 section: overview
 order: 10
 ---
@@ -61,22 +61,22 @@ Requirements:
 
 ## Render it
 
-Every Matter component is bare — it needs a `<MatterScene>` parent to provide the WebGPU canvas. The simplest valid usage:
+Every Matter component is bare — it needs a `<ShaderScene>` parent to provide the WebGPU canvas. The simplest valid usage:
 
 ```tsx
-import { MatterScene } from '@lovo/matter-react'
+import { ShaderScene } from '@lovo/matter-react'
 import { LinearGradient } from './components/matter/linear-gradient'
 
 export function Hero() {
   return (
-    <MatterScene style={{ height: '60vh' }}>
+    <ShaderScene style={{ height: '60vh' }}>
       <LinearGradient />
-    </MatterScene>
+    </ShaderScene>
   )
 }
 ```
 
-`<MatterScene>` owns the canvas and the WebGPU renderer. Multiple Matter components can share the same scene — just stack them as children. See [Shared scenes](/guides/shared-scenes).
+`<ShaderScene>` owns the canvas and the WebGPU renderer. Multiple Matter components can share the same scene — just stack them as children. See [Shared scenes](/guides/shared-scenes).
 
 ## What's next
 

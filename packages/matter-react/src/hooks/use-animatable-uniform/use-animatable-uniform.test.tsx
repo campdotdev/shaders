@@ -1,12 +1,12 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { type MatterSignal, useAnimatableUniform } from './use-animatable-uniform.js'
+import { type AnimatableSignal, useAnimatableUniform } from './use-animatable-uniform.js'
 
 const makeSignal = <T,>(initial: T) => {
   let value = initial
   const subs = new Set<(v: T) => void>()
-  const sig: MatterSignal<T> = {
+  const sig: AnimatableSignal<T> = {
     get: () => value,
     on: (_event, cb) => {
       subs.add(cb)
