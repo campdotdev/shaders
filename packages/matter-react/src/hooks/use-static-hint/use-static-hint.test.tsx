@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { MatterContext } from '../../context/matter-context.js'
+
 import { useStaticHint } from './use-static-hint.js'
 
 // Minimal MatterContextValue stub — only `scheduler` is exercised here.

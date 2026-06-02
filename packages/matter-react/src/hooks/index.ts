@@ -1,5 +1,8 @@
 export { useAnimatableUniform } from './use-animatable-uniform/use-animatable-uniform.js'
-export type { AnimatableProp, MatterSignal } from './use-animatable-uniform/use-animatable-uniform.js'
+export type {
+  AnimatableProp,
+  MatterSignal,
+} from './use-animatable-uniform/use-animatable-uniform.js'
 
 export { useCursor } from './use-cursor/use-cursor.js'
 export type { CursorSignal } from './use-cursor/use-cursor.js'
