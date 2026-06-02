@@ -3,21 +3,21 @@ import type { ReactNode } from 'react'
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  MatterContext,
-  type MatterContextValue,
+  ShaderContext,
+  type ShaderContextValue,
   type OverlayTransform,
 } from '../../context/matter-context.js'
 
 import { useOverlayPass } from './use-overlay-pass.js'
 
-function makeCtx(): { ctx: MatterContextValue; registered: OverlayTransform[]; cleanups: number } {
+function makeCtx(): { ctx: ShaderContextValue; registered: OverlayTransform[]; cleanups: number } {
   const registered: OverlayTransform[] = []
   let cleanups = 0
   const ctx = {
-    renderer: {} as MatterContextValue['renderer'],
-    scene: {} as MatterContextValue['scene'],
-    camera: {} as MatterContextValue['camera'],
-    scheduler: {} as MatterContextValue['scheduler'],
+    renderer: {} as ShaderContextValue['renderer'],
+    scene: {} as ShaderContextValue['scene'],
+    camera: {} as ShaderContextValue['camera'],
+    scheduler: {} as ShaderContextValue['scheduler'],
     registerOverlay: (transform: OverlayTransform) => {
       registered.push(transform)
 
@@ -30,8 +30,8 @@ function makeCtx(): { ctx: MatterContextValue; registered: OverlayTransform[]; c
   return { ctx, registered, cleanups }
 }
 
-function Wrapper({ ctx, children }: { ctx: MatterContextValue | null; children: ReactNode }) {
-  return <MatterContext.Provider value={ctx}>{children}</MatterContext.Provider>
+function Wrapper({ ctx, children }: { ctx: ShaderContextValue | null; children: ReactNode }) {
+  return <ShaderContext.Provider value={ctx}>{children}</ShaderContext.Provider>
 }
 
 const identityTransform: OverlayTransform = (input) => input
@@ -58,12 +58,12 @@ describe('useOverlayPass', () => {
   it('calls the cleanup returned by registerOverlay on unmount', () => {
     const cleanupFn = vi.fn()
     const ctx = {
-      renderer: {} as MatterContextValue['renderer'],
-      scene: {} as MatterContextValue['scene'],
-      camera: {} as MatterContextValue['camera'],
-      scheduler: {} as MatterContextValue['scheduler'],
+      renderer: {} as ShaderContextValue['renderer'],
+      scene: {} as ShaderContextValue['scene'],
+      camera: {} as ShaderContextValue['camera'],
+      scheduler: {} as ShaderContextValue['scheduler'],
       registerOverlay: () => cleanupFn,
-    } as unknown as MatterContextValue
+    } as unknown as ShaderContextValue
 
     function Probe() {
       useOverlayPass(identityTransform, [])
@@ -106,7 +106,7 @@ describe('useOverlayPass', () => {
     cleanup()
   })
 
-  it('is a no-op when called outside a MatterScene provider', () => {
+  it('is a no-op when called outside a ShaderScene provider', () => {
     function Probe() {
       useOverlayPass(identityTransform, [])
 

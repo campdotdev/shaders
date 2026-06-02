@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { useMatterContext } from '../use-matter-context/use-matter-context.js'
+import { useShaderContext } from '../use-matter-context/use-matter-context.js'
 
 export type ResizeValue = readonly [width: number, height: number, dpr: number]
 
@@ -31,7 +31,7 @@ const STUB_SIGNAL: ResizeSignal = {
  * Falls back to the stub signal until the parent context is ready.
  */
 export function useResize(): ResizeSignal {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const [signal, setSignal] = useState<ResizeSignal | null>(null)
 
   useEffect(() => {

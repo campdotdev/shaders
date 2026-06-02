@@ -3,7 +3,7 @@
 import { type DependencyList, useEffect } from 'react'
 
 import type { OverlayTransform } from '../../context/matter-context.js'
-import { useMatterContext } from '../use-matter-context/use-matter-context.js'
+import { useShaderContext } from '../use-matter-context/use-matter-context.js'
 
 /**
  * Register a TSL transform as an overlay pass on the parent <MatterScene>.
@@ -21,7 +21,7 @@ import { useMatterContext } from '../use-matter-context/use-matter-context.js'
  * Matches the existing useMatterContext convention.
  */
 export function useOverlayPass(transform: OverlayTransform, deps: DependencyList): void {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
 
   useEffect(() => {
     if (!ctx) return

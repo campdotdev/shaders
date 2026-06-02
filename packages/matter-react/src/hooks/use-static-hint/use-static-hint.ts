@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-import { useMatterContext } from '../use-matter-context/use-matter-context.js'
+import { useShaderContext } from '../use-matter-context/use-matter-context.js'
 
 /**
  * Opt a component out of the rAF loop while it has no dynamic uniforms.
@@ -16,7 +16,7 @@ import { useMatterContext } from '../use-matter-context/use-matter-context.js'
  * include `time`, e.g. `<LinearGradient speed={0}>` with no `interactive`.
  */
 export function useStaticHint(hint: boolean): void {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
 
   useEffect(() => {
     if (!ctx) return

@@ -2,10 +2,10 @@ import type * as MatterModule from '@lovo/matter'
 import { render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { MatterScene } from './matter-scene.js'
+import { ShaderScene } from './matter-scene.js'
 
 // Mock createRenderer because happy-dom cannot initialize WebGPU.
-// The other @lovo/matter exports (MatterScheduler, createVisibilityWatcher,
+// The other @lovo/matter exports (FrameScheduler, createVisibilityWatcher,
 // createIntersectionWatcher) work fine in happy-dom and don't need mocking.
 vi.mock('@lovo/matter', async (importOriginal) => {
   const actual = await importOriginal<typeof MatterModule>()
@@ -27,7 +27,7 @@ vi.mock('@lovo/matter', async (importOriginal) => {
   }
 })
 
-describe('MatterScene', () => {
+describe('ShaderScene', () => {
   beforeEach(() => {
     vi.stubGlobal('requestAnimationFrame', () => 0)
     vi.stubGlobal('cancelAnimationFrame', () => {})
@@ -37,7 +37,7 @@ describe('MatterScene', () => {
   })
 
   it('mounts a canvas element', () => {
-    const { container } = render(<MatterScene />)
+    const { container } = render(<ShaderScene />)
 
     expect(container.querySelector('canvas')).toBeInTheDocument()
   })
@@ -45,13 +45,13 @@ describe('MatterScene', () => {
   it('renders the fallback before the async context resolves', () => {
     // createRenderer is async; on the initial render ctx is null so the
     // fallback prop is shown.
-    const { container } = render(<MatterScene fallback={<div data-testid="fb">loading</div>} />)
+    const { container } = render(<ShaderScene fallback={<div data-testid="fb">loading</div>} />)
 
     expect(container.querySelector('[data-testid="fb"]')).toBeInTheDocument()
   })
 
   it('does not throw on unmount', async () => {
-    const { unmount } = render(<MatterScene />)
+    const { unmount } = render(<ShaderScene />)
 
     // Allow a tick for the async setup to run (or be cancelled).
     await waitFor(() => {})

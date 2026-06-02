@@ -1,13 +1,15 @@
 export { useAnimatableUniform } from './use-animatable-uniform/use-animatable-uniform.js'
 export type {
   AnimatableProp,
+  AnimatableSignal,
+  // deprecated
   MatterSignal,
 } from './use-animatable-uniform/use-animatable-uniform.js'
 
 export { useCursor } from './use-cursor/use-cursor.js'
 export type { CursorSignal } from './use-cursor/use-cursor.js'
 
-export { useMatterContext } from './use-matter-context/use-matter-context.js'
+export { useShaderContext, useMatterContext } from './use-matter-context/use-matter-context.js'
 
 export { useOverlayPass } from './use-overlay-pass/use-overlay-pass.js'
 

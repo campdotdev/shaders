@@ -5,14 +5,14 @@ import { uniform } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
 
-export interface MatterSignal<T> {
+export interface AnimatableSignal<T> {
   get(): T
   on(event: 'change', cb: (value: T) => void): () => void
 }
 
-export type AnimatableProp<T> = T | MatterSignal<T>
+export type AnimatableProp<T> = T | AnimatableSignal<T>
 
-const isSignal = <T>(value: AnimatableProp<T>): value is MatterSignal<T> => {
+const isSignal = <T>(value: AnimatableProp<T>): value is AnimatableSignal<T> => {
   if (typeof value !== 'object' || value === null) return false
 
   return (
@@ -68,3 +68,6 @@ export function useAnimatableUniform<T>(
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   return uniformNode as unknown as ShaderNodeObject<Node> & { value: T }
 }
+
+/** @deprecated Use AnimatableSignal — alias removed in 0.5.0 */
+export type MatterSignal<T> = AnimatableSignal<T>

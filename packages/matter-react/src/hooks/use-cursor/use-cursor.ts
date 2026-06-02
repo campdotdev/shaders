@@ -3,7 +3,7 @@
 import { CursorInput, type CursorInputOptions, type Vec2 } from '@lovo/matter'
 import { useEffect, useState } from 'react'
 
-import { useMatterContext } from '../use-matter-context/use-matter-context.js'
+import { useShaderContext } from '../use-matter-context/use-matter-context.js'
 
 export interface CursorSignal {
   /** Current smoothed cursor position (Vec2 in 0..1 viewport space). */
@@ -29,7 +29,7 @@ const STUB_SIGNAL: CursorSignal = {
  * window mousemove listener and the smoothing tick).
  */
 export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const [input, setInput] = useState<CursorInput | null>(null)
 
   useEffect(() => {
