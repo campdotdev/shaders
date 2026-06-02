@@ -8,7 +8,7 @@ import { Pane } from 'tweakpane'
 import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
 const MeshGradient = dynamic(
@@ -115,7 +115,7 @@ export default function MeshGradientPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh' }}>
-        <MatterScene>
+        <ShaderScene>
           <MeshGradient
             amplitude={params.amplitude}
             cycleEase={params.cycleEase}
@@ -127,7 +127,7 @@ export default function MeshGradientPage() {
           />
           <FilmGrain intensity={params.grain} speed={params.grainSpeed} />
           <VisualTestPause />
-        </MatterScene>
+        </ShaderScene>
         {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
             hides the pane from screen readers; the axe test excludes the
             `.tp-dfwv` subtree so the unlabeled internal controls don't trip

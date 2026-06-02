@@ -1,6 +1,6 @@
 'use client'
 
-import { MatterScene, useCursor, useMatterContext } from '@lovo/matter-react'
+import { ShaderScene, useCursor, useShaderContext } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
 import { uniform } from 'three/tsl'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
@@ -20,14 +20,14 @@ interface RecipeSceneProps {
 // module.
 export function RecipeScene({ slug, variant }: RecipeSceneProps) {
   return (
-    <MatterScene>
+    <ShaderScene>
       <RecipeMesh slug={slug} variant={variant} />
-    </MatterScene>
+    </ShaderScene>
   )
 }
 
 function RecipeMesh({ slug, variant }: { slug: string; variant: string }) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const cursor = useCursor()
 
   // Cursor uniform — UV-space, y flipped from DOM-space. Pattern lifted from

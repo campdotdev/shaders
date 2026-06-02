@@ -22,7 +22,7 @@ interface PlainAuroraLayer {
 // Both MatterScene and Aurora pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
-const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
 const Aurora = dynamic(() => import('@matter/registry/aurora').then((m) => m.Aurora), {
@@ -272,7 +272,7 @@ export default function AuroraPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
-        <MatterScene>
+        <ShaderScene>
           <Aurora
             densityX={params.densityX}
             densityY={params.densityY}
@@ -288,7 +288,7 @@ export default function AuroraPage() {
             turbulence={params.turbulence}
           />
           <VisualTestPause />
-        </MatterScene>
+        </ShaderScene>
         {/* Tweakpane lives inside the preview so it's part of the same
             stacking context — fullscreening the preview takes the panel
             with it. `absolute` positions against the preview's top-right.

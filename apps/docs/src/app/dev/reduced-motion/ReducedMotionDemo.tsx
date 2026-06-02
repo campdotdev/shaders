@@ -1,7 +1,7 @@
 'use client'
 
 import { type ReducedMotionPolicy, setReducedMotionPolicy } from '@lovo/matter'
-import { MatterScene } from '@lovo/matter-react'
+import { ShaderScene } from '@lovo/matter-react'
 import { LinearGradient } from '@matter/registry/linear-gradient'
 import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
@@ -44,9 +44,9 @@ export function ReducedMotionDemo() {
             LinearGradient
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
-            <MatterScene style={{ borderRadius: 8 }}>
+            <ShaderScene style={{ borderRadius: 8 }}>
               <LinearGradient angle={45} colors={['#ff7b72', '#7b9cff', '#7bff9c']} speed={1} />
-            </MatterScene>
+            </ShaderScene>
           </div>
         </div>
         <div>
@@ -56,7 +56,7 @@ export function ReducedMotionDemo() {
             is paused.
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
-            <MatterScene style={{ borderRadius: 8 }}>
+            <ShaderScene style={{ borderRadius: 8 }}>
               <Waves
                 amplitude={0.1}
                 color="#77eecc"
@@ -65,7 +65,7 @@ export function ReducedMotionDemo() {
                 layers={3}
                 speed={1}
               />
-            </MatterScene>
+            </ShaderScene>
           </div>
         </div>
         <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#666' }}>
