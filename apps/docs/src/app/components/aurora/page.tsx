@@ -17,6 +17,7 @@ interface PlainAuroraLayer {
   speed: number
   intensity: number
   variation: number
+  falloff: number
 }
 
 // Both ShaderScene and Aurora pull in three/webgpu (via createRenderer),
@@ -57,14 +58,14 @@ const INITIAL: AuroraParams = {
   horizonColor: '#040009',
   skyColor: '#146389',
   layers: [
-    { hex: palette.green.base, speed: 0.07, intensity: 0.6, variation: 0 },
-    { hex: palette.blue.base, speed: 0.1, intensity: 0, variation: 5 },
-    { hex: palette.violet.base, speed: 0.15, intensity: 0.3, variation: 11 },
-    { hex: palette.magenta.base, speed: 0.07, intensity: 0, variation: 17 },
+    { hex: palette.green.base, speed: 0.07, intensity: 0.6, variation: 0, falloff: 1 },
+    { hex: palette.blue.base, speed: 0.1, intensity: 0.2, variation: 5, falloff: 1 },
+    { hex: palette.violet.base, speed: 0.15, intensity: 0.3, variation: 11, falloff: 1 },
+    { hex: palette.magenta.base, speed: 0.07, intensity: 0.2, variation: 17, falloff: 1 },
   ],
 }
 
-const LAYER_TITLES = ['Layer 0 (back)', 'Layer 1', 'Layer 2', 'Layer 3 (front)']
+const LAYER_TITLES = ['Layer 0', 'Layer 1', 'Layer 2', 'Layer 3']
 
 // Round to 4 decimals so slider noise (e.g. 0.30000000000000004) doesn't
 // leak into the copied snippet, but stop short of losing precision the
@@ -76,7 +77,7 @@ const fmtNum = (n: number) => {
 }
 
 const fmtLayer = (l: PlainAuroraLayer) =>
-  `{ hex: '${l.hex}', speed: ${fmtNum(l.speed)}, intensity: ${fmtNum(l.intensity)}, variation: ${fmtNum(l.variation)} }`
+  `{ hex: '${l.hex}', speed: ${fmtNum(l.speed)}, intensity: ${fmtNum(l.intensity)}, variation: ${fmtNum(l.variation)}, falloff: ${fmtNum(l.falloff)} }`
 
 const fmtJsx = (p: AuroraParams) =>
   `<ShaderScene>
@@ -249,6 +250,7 @@ export default function AuroraPage() {
       folder.addBinding(layer, 'hex', { label: 'color' })
       folder.addBinding(layer, 'speed', { min: 0, max: 0.5, step: 0.005 })
       folder.addBinding(layer, 'intensity', { min: 0, max: 1, step: 0.01 })
+      folder.addBinding(layer, 'falloff', { label: 'falloff ×', min: 0.1, max: 3, step: 0.01 })
 
       folder.addButton({ title: 'Reset layer' }).on('click', () => {
         resetLayer(i)
