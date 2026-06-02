@@ -4,8 +4,8 @@ import { noise, time } from '@lovo/matter'
 import {
   type AnimatableProp,
   useAnimatableUniform,
-  useShaderContext,
   useResize,
+  useShaderContext,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
 import { type ShaderNodeObject, smoothstep, sub, uniform, uv, vec2, vec3, vec4 } from 'three/tsl'
