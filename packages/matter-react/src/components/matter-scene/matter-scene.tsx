@@ -197,8 +197,3 @@ export function ShaderScene(props: ShaderSceneProps) {
     </div>
   )
 }
-
-/** @deprecated Use ShaderScene — alias removed in 0.5.0 */
-export const MatterScene = ShaderScene
-/** @deprecated Use ShaderSceneProps — alias removed in 0.5.0 */
-export type MatterSceneProps = ShaderSceneProps
