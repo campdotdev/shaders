@@ -13,6 +13,6 @@ export default defineConfig({
     globals: false,
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     passWithNoTests: true,
-    setupFiles: ['./test-setup.ts'],
+    setupFiles: ['./src/test-setup.ts'],
   },
 })
