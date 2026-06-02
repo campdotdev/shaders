@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createIntersectionWatcher } from './intersection.js'
-import { MatterScheduler } from './MatterScheduler.js'
+import { FrameScheduler } from './MatterScheduler.js'
 import { createVisibilityWatcher } from './visibility.js'
 
 describe('runtime integration', () => {
@@ -66,7 +66,7 @@ describe('runtime integration', () => {
   }
 
   it('combined gates: scene only ticks when visible AND in-view AND not idle', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)

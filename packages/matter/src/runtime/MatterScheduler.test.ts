@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { MatterScheduler } from './MatterScheduler.js'
+import { FrameScheduler } from './MatterScheduler.js'
 
 describe('MatterScheduler', () => {
   let rafCallbacks: FrameRequestCallback[] = []
@@ -32,7 +32,7 @@ describe('MatterScheduler', () => {
   }
 
   it('invokes registered clients on every tick', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)
@@ -46,7 +46,7 @@ describe('MatterScheduler', () => {
   })
 
   it('does not invoke removed clients', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)
@@ -60,7 +60,7 @@ describe('MatterScheduler', () => {
   })
 
   it('passes the timestamp delta (in seconds) to each client', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)
@@ -73,7 +73,7 @@ describe('MatterScheduler', () => {
   })
 
   it('stops invoking clients after pause()', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)
@@ -87,7 +87,7 @@ describe('MatterScheduler', () => {
   })
 
   it('resumes invoking clients after resume()', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)
@@ -99,14 +99,14 @@ describe('MatterScheduler', () => {
   })
 
   it('does not start the rAF loop when no clients are registered', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
 
     scheduler.start()
     expect(rafCallbacks.length).toBe(0)
   })
 
   it('starts the rAF loop when the first client is added', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
 
     scheduler.start()
     scheduler.add(vi.fn())
@@ -141,7 +141,7 @@ describe('setIdle (render-on-demand)', () => {
   }
 
   it('runs one final tick when setIdle(true) is called, then halts', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)
@@ -160,7 +160,7 @@ describe('setIdle (render-on-demand)', () => {
   })
 
   it('resumes ticking when setIdle(false) is called', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)
@@ -179,7 +179,7 @@ describe('setIdle (render-on-demand)', () => {
   })
 
   it('requestRender() forces one tick while idle', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)
@@ -222,7 +222,7 @@ describe('dispose invariants', () => {
   })
 
   it('cancels the pending rAF on dispose', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
 
     scheduler.add(vi.fn())
     scheduler.start()
@@ -232,7 +232,7 @@ describe('dispose invariants', () => {
   })
 
   it('does not invoke clients after dispose', () => {
-    const scheduler = new MatterScheduler()
+    const scheduler = new FrameScheduler()
     const client = vi.fn()
 
     scheduler.add(client)

@@ -14,7 +14,7 @@ export type SchedulerClient = (tick: SchedulerTick) => void
  * a single scheduler. One scheduler is created per <MatterScene>; clients
  * are typically a Three.js renderer's render call.
  */
-export class MatterScheduler {
+export class FrameScheduler {
   private readonly clients = new Set<SchedulerClient>()
   private rafId: number | null = null
   private running = false
@@ -127,3 +127,6 @@ export class MatterScheduler {
     this.maybeQueue()
   }
 }
+
+/** @deprecated Use FrameScheduler — alias removed in 0.5.0 */
+export { FrameScheduler as MatterScheduler }
