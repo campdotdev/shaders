@@ -1,7 +1,11 @@
 // @lovo/matter — engine package public API.
 
 export { createRenderer } from './runtime/create-renderer/create-renderer.js'
-export type { GpuRenderer, GpuBackend, CreateRendererOptions } from './runtime/create-renderer/create-renderer.js'
+export type {
+  GpuRenderer,
+  GpuBackend,
+  CreateRendererOptions,
+} from './runtime/create-renderer/create-renderer.js'
 
 export { CursorInput } from './inputs/cursor-input/cursor-input.js'
 export type { CursorInputOptions, Vec2 } from './inputs/cursor-input/cursor-input.js'
@@ -35,7 +39,10 @@ export {
   getReducedMotionTimeScale,
   createReducedMotionWatcher,
 } from './runtime/reduced-motion/reduced-motion.js'
-export type { ReducedMotionPolicy, ReducedMotionWatcher } from './runtime/reduced-motion/reduced-motion.js'
+export type {
+  ReducedMotionPolicy,
+  ReducedMotionWatcher,
+} from './runtime/reduced-motion/reduced-motion.js'
 
 export { createVisibilityWatcher } from './runtime/visibility/visibility.js'
 export type { VisibilityWatcher } from './runtime/visibility/visibility.js'
