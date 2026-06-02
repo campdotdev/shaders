@@ -1,7 +1,7 @@
 import { uv, vec2 } from 'three/tsl'
 import { describe, expect, it } from 'vitest'
 
-import { sdfCircle } from './sdfCircle.js'
+import { sdfCircle } from './sdf-circle.js'
 
 describe('sdfCircle', () => {
   it('returns a TSL node with a numeric radius', () => {

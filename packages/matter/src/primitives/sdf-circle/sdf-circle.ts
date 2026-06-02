@@ -2,7 +2,7 @@ import { length } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
 
-import type { TSLNode } from './colorRamp.js'
+import type { TSLNode } from '../color-ramp/color-ramp.js'
 
 /**
  * Signed distance field for a circle centered at the origin.
