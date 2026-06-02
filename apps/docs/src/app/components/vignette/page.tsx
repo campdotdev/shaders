@@ -6,7 +6,7 @@ import { Pane } from 'tweakpane'
 
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// MatterScene + the registry components pull in three/webgpu, which
+// ShaderScene + the registry components pull in three/webgpu, which
 // references `self` at module load time and breaks Next's SSR. Load
 // everything client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
@@ -64,16 +64,16 @@ const fmtJsx = (p: VignetteParams) => {
   />`
 
   return p.grainOrderFirst
-    ? `<MatterScene>
+    ? `<ShaderScene>
   <LinearGradient />
   ${grain}
   ${vignette}
-</MatterScene>`
-    : `<MatterScene>
+</ShaderScene>`
+    : `<ShaderScene>
   <LinearGradient />
   ${vignette}
   ${grain}
-</MatterScene>`
+</ShaderScene>`
 }
 
 const fmtParams = (p: VignetteParams) =>
@@ -147,8 +147,8 @@ export default function VignettePage() {
       // Vignette + FilmGrain uniforms are stable — useAnimatableUniform
       // mutates the uniform .value on prop change, no material recompile.
       // `grainOrderFirst` IS structural: it reorders the children inside
-      // <MatterScene>, which changes the post-processing pass sequence
-      // (grain-then-vignette vs vignette-then-grain). The MatterScene
+      // <ShaderScene>, which changes the post-processing pass sequence
+      // (grain-then-vignette vs vignette-then-grain). The ShaderScene
       // pipeline rebuilds when its overlay set changes order.
       syncToReact()
     })
@@ -210,7 +210,7 @@ export default function VignettePage() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;Vignette /&gt;</h1>
         <p>
-          Radial darkening at the canvas edges. Stacks inside any <code>&lt;MatterScene&gt;</code>{' '}
+          Radial darkening at the canvas edges. Stacks inside any <code>&lt;ShaderScene&gt;</code>{' '}
           on top of whatever base component you want and fades the upstream pixels toward an edge
           color along a soft falloff ring. Unlike <code>&lt;FilmGrain /&gt;</code>, which generates
           new noise from <code>uv</code>, Vignette reads the upstream pixel and mixes it toward{' '}
@@ -239,10 +239,10 @@ export default function VignettePage() {
             whiteSpace: 'pre-wrap',
           }}
         >
-          {`<MatterScene>
+          {`<ShaderScene>
   <LinearGradient />
   <Vignette intensity={0.5} radius={0.6} softness={0.5} />
-</MatterScene>`}
+</ShaderScene>`}
         </pre>
       </section>
     </main>

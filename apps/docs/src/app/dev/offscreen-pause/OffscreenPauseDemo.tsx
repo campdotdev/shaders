@@ -25,7 +25,7 @@ export function OffscreenPauseDemo() {
     <main style={{ maxWidth: 800, margin: '0 auto', padding: '2rem' }}>
       <h1>Offscreen pause</h1>
       <p>
-        Watch the <code>MatterMonitor</code> overlay (top-right of the gradient). Scroll until the
+        Watch the <code>ShaderMonitor</code> overlay (top-right of the gradient). Scroll until the
         gradient is fully off the top or bottom of the viewport &mdash; fps should drop to 0. Scroll
         back into view &mdash; fps resumes. The DevTools Performance Monitor still works as a
         corroborating CPU indicator (Chrome DevTools &rarr; Performance Monitor &rarr;{' '}

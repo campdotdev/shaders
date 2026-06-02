@@ -11,7 +11,7 @@ export type SchedulerClient = (tick: SchedulerTick) => void
 
 /**
  * Batches `requestAnimationFrame` calls across all clients registered with
- * a single scheduler. One scheduler is created per <MatterScene>; clients
+ * a single scheduler. One scheduler is created per <ShaderScene>; clients
  * are typically a Three.js renderer's render call.
  */
 export class FrameScheduler {

@@ -9,7 +9,7 @@ order: 20
 
 Matter has two rendering modes:
 
-- **Mode 1: Matter-managed scene.** `<MatterScene>` owns the canvas. Tier 1 components (`<Aurora>`, `<LinearGradient>`, etc.) only work in Mode 1. This is what [Get Started](/getting-started) covers.
+- **Mode 1: Matter-managed scene.** `<ShaderScene>` owns the canvas. Tier 1 components (`<Aurora>`, `<LinearGradient>`, etc.) only work in Mode 1. This is what [Get Started](/getting-started) covers.
 - **Mode 2: Bring your own Canvas.** You already have an `@react-three/fiber` `<Canvas>` for a 3D scene, and you want Matter's TSL primitives in a material. This page is for Mode 2.
 
 Mode 2 doesn't auto-detect r3f — it's an explicit opt-in via the `useShaderMaterial` hook.
@@ -54,14 +54,14 @@ The material plays by r3f's rules — dispose, frameloop, demand-rendering all w
 
 ## What you lose in Mode 2
 
-- **No `<MatterScene>` defaults.** Pause-when-offscreen, DPR clamping, the scheduler — none of that is wired up by `useShaderMaterial`. You manage r3f's lifecycle yourself (or use r3f's `frameloop="demand"`).
-- **No Tier 1 components.** `<Aurora>`, `<LinearGradient>`, etc. are bound to Mode 1. The CLI delivers them assuming `<MatterScene>` is the parent. You'd need to extract their TSL math by hand if you want it in Mode 2.
-- **No `useCursor` / `useScroll` / `useResize`.** Those hooks require a `<MatterScene>` to plumb the canvas; in Mode 2, use r3f's `useThree()` and write your own cursor/scroll wiring.
+- **No `<ShaderScene>` defaults.** Pause-when-offscreen, DPR clamping, the scheduler — none of that is wired up by `useShaderMaterial`. You manage r3f's lifecycle yourself (or use r3f's `frameloop="demand"`).
+- **No Tier 1 components.** `<Aurora>`, `<LinearGradient>`, etc. are bound to Mode 1. The CLI delivers them assuming `<ShaderScene>` is the parent. You'd need to extract their TSL math by hand if you want it in Mode 2.
+- **No `useCursor` / `useScroll` / `useResize`.** Those hooks require a `<ShaderScene>` to plumb the canvas; in Mode 2, use r3f's `useThree()` and write your own cursor/scroll wiring.
 
 ## The recommendation
 
-Default to Mode 1. Mode 2 exists for the case where you already have an r3f scene and the alternative is duplicating shader work in two canvases. If you're not building a 3D scene, you don't need Mode 2 — `<MatterScene>` does everything you want.
+Default to Mode 1. Mode 2 exists for the case where you already have an r3f scene and the alternative is duplicating shader work in two canvases. If you're not building a 3D scene, you don't need Mode 2 — `<ShaderScene>` does everything you want.
 
 <Callout>
-  Matter and r3f can coexist on the same page in separate canvases — one `<MatterScene>` for your hero shader, one r3f `<Canvas>` for a 3D model below it. They don't interfere. Mode 2 is only relevant when you want to *combine* them in one canvas.
+  Matter and r3f can coexist on the same page in separate canvases — one `<ShaderScene>` for your hero shader, one r3f `<Canvas>` for a 3D model below it. They don't interfere. Mode 2 is only relevant when you want to *combine* them in one canvas.
 </Callout>

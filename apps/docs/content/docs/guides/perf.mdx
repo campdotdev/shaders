@@ -11,24 +11,24 @@ Matter applies five engine-level defaults you don't have to wire up yourself. Th
 
 ## Pause when offscreen
 
-Every `<MatterScene>` registers an `IntersectionObserver` on its canvas. When the canvas leaves the viewport, the scheduler unsubscribes the scene — no GPU frames are produced. When the canvas re-enters, rendering resumes from where it left off.
+Every `<ShaderScene>` registers an `IntersectionObserver` on its canvas. When the canvas leaves the viewport, the scheduler unsubscribes the scene — no GPU frames are produced. When the canvas re-enters, rendering resumes from where it left off.
 
 This is on by default and applies to all Matter components without per-component code. You don't need to do anything.
 
 <Callout>
-  If you depend on continuous rendering — for example, you're capturing the canvas as a texture for another effect — opt out of offscreen pause by setting `pauseOffscreen={false}` on `<MatterScene>`.
+  If you depend on continuous rendering — for example, you're capturing the canvas as a texture for another effect — opt out of offscreen pause by setting `pauseOffscreen={false}` on `<ShaderScene>`.
 </Callout>
 
 ## DPR clamping
 
 WebGPU honors `window.devicePixelRatio` by default, so a Retina display at DPR 3 means rendering 9× the pixels of DPR 1. That's overkill for most shader work.
 
-`<MatterScene>` clamps DPR to a sensible ceiling (currently 2.0). You can override it:
+`<ShaderScene>` clamps DPR to a sensible ceiling (currently 2.0). You can override it:
 
 ```tsx
-<MatterScene dprMax={1.5}>
+<ShaderScene dprMax={1.5}>
   <Aurora />
-</MatterScene>
+</ShaderScene>
 ```
 
 Drop to `dprMax={1}` for the cheapest possible render, or set `dprMax={Infinity}` if you need full native resolution.
@@ -54,14 +54,14 @@ This is global to the page and runs once at module init. The hook `useStaticHint
 For decorative shaders that don't actually need to animate every frame, you can hint to Matter that the scene is "static" — it renders once on mount, then only on prop / signal changes.
 
 ```tsx
-import { MatterScene, useStaticHint } from '@lovo/matter-react'
+import { ShaderScene, useStaticHint } from '@lovo/matter-react'
 
 function Hero() {
   useStaticHint(true)
   return (
-    <MatterScene>
+    <ShaderScene>
       <LinearGradient />
-    </MatterScene>
+    </ShaderScene>
   )
 }
 ```
@@ -70,14 +70,14 @@ Use this for hero backgrounds where the gradient doesn't need a `time` uniform. 
 
 ## Visibility watcher
 
-Beyond intersection-based pausing, `<MatterScene>` also listens to `document.visibilitychange` — when the tab is backgrounded, rendering stops; when it comes back, it resumes. Combined with offscreen pause, this means an inactive shader effectively costs zero GPU time.
+Beyond intersection-based pausing, `<ShaderScene>` also listens to `document.visibilitychange` — when the tab is backgrounded, rendering stops; when it comes back, it resumes. Combined with offscreen pause, this means an inactive shader effectively costs zero GPU time.
 
 ## Monitoring at dev time
 
-Drop `<MatterMonitor />` into your dev pages to get a corner overlay showing FPS, active component count, and scheduler state. It's a dev tool — not for production — and tree-shakes out when guarded behind `import.meta.env.DEV` or similar.
+Drop `<ShaderMonitor />` into your dev pages to get a corner overlay showing FPS, active component count, and scheduler state. It's a dev tool — not for production — and tree-shakes out when guarded behind `import.meta.env.DEV` or similar.
 
 ```tsx
-import { MatterMonitor } from '@lovo/matter-react'
+import { ShaderMonitor } from '@lovo/matter-react'
 
-{process.env.NODE_ENV === 'development' && <MatterMonitor anchor="bottom-right" />}
+{process.env.NODE_ENV === 'development' && <ShaderMonitor anchor="bottom-right" />}
 ```

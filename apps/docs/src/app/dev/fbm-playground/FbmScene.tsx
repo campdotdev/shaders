@@ -34,7 +34,7 @@ const STOPS: ColorRampStop[] = [
   { color: vec3(1, 1, 1), position: 1 },
 ]
 
-// Inner mesh — must run inside <MatterScene> so the context is available.
+// Inner mesh — must run inside <ShaderScene> so the context is available.
 function FbmMesh({
   octaves,
   lacunarity,

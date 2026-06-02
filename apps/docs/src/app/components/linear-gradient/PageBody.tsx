@@ -12,7 +12,7 @@ import {
 } from '@/components/PropsPlayground'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Both MatterScene and LinearGradient pull in three/webgpu (via
+// Both ShaderScene and LinearGradient pull in three/webgpu (via
 // createRenderer), which references `self` at module load time and breaks
 // Next's SSR. `ssr: false` requires this to live in a Client Component
 // (Next 15 forbids it in Server Components).

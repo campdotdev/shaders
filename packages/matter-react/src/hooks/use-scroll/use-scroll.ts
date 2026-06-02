@@ -18,7 +18,7 @@ const STUB_SIGNAL: ScrollSignal = {
 }
 
 /**
- * Track window scroll position. Exposes a MatterSignal of `[scrollY, progress]`
+ * Track window scroll position. Exposes an AnimatableSignal of `[scrollY, progress]`
  * where `progress` is `scrollY / max(documentHeight - innerHeight, 1)` clamped
  * to [0, 1]. Listener is rAF-throttled and `passive: true` so it never blocks
  * scrolling.

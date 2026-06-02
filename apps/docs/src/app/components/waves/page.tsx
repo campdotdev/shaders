@@ -8,7 +8,7 @@ import { Pane } from 'tweakpane'
 import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Both MatterScene and Waves pull in three/webgpu (via createRenderer),
+// Both ShaderScene and Waves pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
@@ -113,9 +113,9 @@ export default function WavesPage() {
             fontSize: '0.85rem',
           }}
         >
-          {`<MatterScene>
+          {`<ShaderScene>
   <Waves amplitude={0.1} frequency={5} speed={1} layers={3} interactive />
-</MatterScene>`}
+</ShaderScene>`}
         </pre>
       </section>
     </main>

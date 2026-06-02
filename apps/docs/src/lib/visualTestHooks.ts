@@ -8,7 +8,7 @@ import dynamic from 'next/dynamic'
 
 /**
  * A no-op component that, when rendered as a child of a registry component
- * (inside its MatterScene), pauses the scheduler at frame 60 when
+ * (inside its ShaderScene), pauses the scheduler at frame 60 when
  * `?visualTest=1` is in the URL and sets `window.__matterTestReady = true`.
  *
  * Import this from visualTestHooks — not directly from VisualTestPause.tsx —

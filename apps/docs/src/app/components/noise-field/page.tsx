@@ -8,7 +8,7 @@ import { Pane } from 'tweakpane'
 import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Both MatterScene and NoiseField pull in three/webgpu (via createRenderer),
+// Both ShaderScene and NoiseField pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
@@ -117,17 +117,17 @@ export default function NoiseFieldPage() {
             fontSize: '0.85rem',
           }}
         >
-          {`import { MatterScene } from '@lovo/matter-react'
+          {`import { ShaderScene } from '@lovo/matter-react'
 import { NoiseField } from '@/components/matter/noise-field'
 
-<MatterScene>
+<ShaderScene>
   <NoiseField
     variant="organic"
     scale={3}
     speed={0.4}
     colors={['#131614', '#E7E9E7']}
   />
-</MatterScene>`}
+</ShaderScene>`}
         </pre>
       </section>
     </main>

@@ -34,7 +34,7 @@ type ChangeListener = (value: Vec2) => void
 
 /**
  * Smoothed pointer tracker emitting a normalized (0..1) Vec2 position.
- * Implements the MatterSignal protocol (`get()` + `on('change', cb)`)
+ * Implements the AnimatableSignal protocol (`get()` + `on('change', cb)`)
  * so it composes with Motion's `useTransform` and similar tools.
  */
 export class CursorInput {
@@ -75,7 +75,7 @@ export class CursorInput {
       } else {
         // Fallback: viewport-normalized. Used when no element is supplied —
         // mostly the standalone-API case for users not consuming through
-        // <MatterScene>'s context.
+        // <ShaderScene>'s context.
         const w = (typeof window !== 'undefined' && window.innerWidth) || 1
         const h = (typeof window !== 'undefined' && window.innerHeight) || 1
 
@@ -87,7 +87,7 @@ export class CursorInput {
     this.eventTarget.addEventListener('mousemove', this.handleMouseMove)
   }
 
-  /** Current smoothed position. Implements MatterSignal protocol. */
+  /** Current smoothed position. Implements AnimatableSignal protocol. */
   get(): Vec2 {
     return this.value
   }

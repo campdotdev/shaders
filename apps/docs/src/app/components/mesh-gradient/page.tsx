@@ -151,7 +151,7 @@ export default function MeshGradientPage() {
         <p>
           Animated four-color mesh gradient with a time-cycling palette crossfade and a sine domain
           warp for organic motion. Pure gradient — grain is supplied separately by{' '}
-          <code>&lt;FilmGrain&gt;</code>, stacked inside the same <code>&lt;MatterScene&gt;</code>.
+          <code>&lt;FilmGrain&gt;</code>, stacked inside the same <code>&lt;ShaderScene&gt;</code>.
           Drag grain to <code>0</code> in the panel to see the gradient on its own.
         </p>
         <pre
@@ -164,10 +164,10 @@ export default function MeshGradientPage() {
             whiteSpace: 'pre-wrap',
           }}
         >
-          {`<MatterScene>
+          {`<ShaderScene>
   <MeshGradient />
   <FilmGrain intensity={0.08} speed={1} />
-</MatterScene>`}
+</ShaderScene>`}
         </pre>
       </section>
     </main>

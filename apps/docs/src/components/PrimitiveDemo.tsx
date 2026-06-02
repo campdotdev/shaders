@@ -19,7 +19,7 @@ interface PrimitiveDemoProps {
 }
 
 // PrimitiveScene pulls in three/webgpu transitively (via @lovo/matter-react's
-// MatterScene), and three/webgpu touches `self` at module load — that breaks
+// ShaderScene), and three/webgpu touches `self` at module load — that breaks
 // SSR. `ssr: false` requires a Client Component host, which is why this file
 // (the host of the dynamic import) carries the 'use client' directive.
 const PrimitiveScene = dynamic(() => import('./PrimitiveScene').then((m) => m.PrimitiveScene), {

@@ -8,7 +8,7 @@ import { Pane } from 'tweakpane'
 import { palette } from '@/lib/palette'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Both MatterScene and DotField pull in three/webgpu (via createRenderer),
+// Both ShaderScene and DotField pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
@@ -103,9 +103,9 @@ export default function DotFieldPage() {
             fontSize: '0.85rem',
           }}
         >
-          {`<MatterScene>
+          {`<ShaderScene>
   <DotField spacing={30} dotSize={2} color="#888" reach={100} strength={1} />
-</MatterScene>`}
+</ShaderScene>`}
         </pre>
       </section>
     </main>
