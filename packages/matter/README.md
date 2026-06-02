@@ -39,6 +39,10 @@ For polished drop-in components like `<LinearGradient>` and `<Aurora>`, install 
 
 Full docs and live demos: <https://github.com/lovo-hq/matter>
 
+## Migration from 0.3.x
+
+`MatterScheduler`, `MatterRenderer`, and `MatterBackend` have been renamed to `FrameScheduler`, `GpuRenderer`, and `GpuBackend`. The old names are deprecated and still work — remove them at your leisure before 0.5.0.
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).
