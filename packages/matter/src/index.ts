@@ -1,11 +1,7 @@
 // @lovo/matter — engine package public API.
 
 export { createRenderer } from './runtime/createRenderer.js'
-export type {
-  GpuRenderer,
-  GpuBackend,
-  CreateRendererOptions,
-} from './runtime/createRenderer.js'
+export type { GpuRenderer, GpuBackend, CreateRendererOptions } from './runtime/createRenderer.js'
 
 export { CursorInput } from './inputs/CursorInput.js'
 export type { CursorInputOptions, Vec2 } from './inputs/CursorInput.js'
