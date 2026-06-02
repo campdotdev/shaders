@@ -7,7 +7,7 @@ export type {
 export { useCursor } from './use-cursor/use-cursor.js'
 export type { CursorSignal } from './use-cursor/use-cursor.js'
 
-export { useShaderContext } from './use-matter-context/use-matter-context.js'
+export { useShaderContext } from './use-shader-context/use-shader-context.js'
 
 export { useOverlayPass } from './use-overlay-pass/use-overlay-pass.js'
 

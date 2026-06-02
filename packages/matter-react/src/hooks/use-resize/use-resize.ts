@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-import { useShaderContext } from '../use-matter-context/use-matter-context.js'
+import { useShaderContext } from '../use-shader-context/use-shader-context.js'
 
 export type ResizeValue = readonly [width: number, height: number, dpr: number]
 

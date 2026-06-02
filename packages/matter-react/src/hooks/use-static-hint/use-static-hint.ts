@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-import { useShaderContext } from '../use-matter-context/use-matter-context.js'
+import { useShaderContext } from '../use-shader-context/use-shader-context.js'
 
 /**
  * Opt a component out of the rAF loop while it has no dynamic uniforms.

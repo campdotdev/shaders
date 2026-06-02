@@ -17,7 +17,7 @@ import {
   type OverlayTransform,
   ShaderContext,
   type ShaderContextValue,
-} from '../../context/matter-context.js'
+} from '../../context/shader-context.js'
 
 export interface ShaderSceneProps {
   children?: ReactNode

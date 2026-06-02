@@ -2,8 +2,8 @@
 
 import { type DependencyList, useEffect } from 'react'
 
-import type { OverlayTransform } from '../../context/matter-context.js'
-import { useShaderContext } from '../use-matter-context/use-matter-context.js'
+import type { OverlayTransform } from '../../context/shader-context.js'
+import { useShaderContext } from '../use-shader-context/use-shader-context.js'
 
 /**
  * Register a TSL transform as an overlay pass on the parent <ShaderScene>.

@@ -3,7 +3,7 @@ import { renderHook } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ShaderContext } from '../../context/matter-context.js'
+import { ShaderContext } from '../../context/shader-context.js'
 
 import { useStaticHint } from './use-static-hint.js'
 

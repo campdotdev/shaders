@@ -6,4 +6,4 @@ export * from './hooks/index.js'
 export type {
   ShaderContextValue,
   OverlayTransform,
-} from './context/matter-context.js'
+} from './context/shader-context.js'
