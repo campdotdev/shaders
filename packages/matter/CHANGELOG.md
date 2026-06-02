@@ -1,5 +1,11 @@
 # @lovo/matter
 
+## 0.4.1
+
+### Patch Changes
+
+- b4ecdda: Reorganize engine source into kebab-case module folders under `inputs/`, `primitives/`, and `runtime/` (matching `matter-react` and `registry` layout). No public API changes.
+
 ## 0.4.0
 
 ### Minor Changes
