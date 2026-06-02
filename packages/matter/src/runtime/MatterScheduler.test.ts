@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FrameScheduler } from './MatterScheduler.js'
 
-describe('MatterScheduler', () => {
+describe('FrameScheduler', () => {
   let rafCallbacks: FrameRequestCallback[] = []
   let nextRafId = 0
 
