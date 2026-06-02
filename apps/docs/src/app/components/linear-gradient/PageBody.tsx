@@ -16,7 +16,7 @@ import { VisualTestPause } from '@/lib/visualTestHooks'
 // createRenderer), which references `self` at module load time and breaks
 // Next's SSR. `ssr: false` requires this to live in a Client Component
 // (Next 15 forbids it in Server Components).
-const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
 const LinearGradient = dynamic(
@@ -61,7 +61,7 @@ export function PageBody({ schema, code }: PageBodyProps) {
   return (
     <>
       <LiveDemo>
-        <MatterScene>
+        <ShaderScene>
           <LinearGradient
             angle={angle}
             colors={colors}
@@ -71,7 +71,7 @@ export function PageBody({ schema, code }: PageBodyProps) {
             variant={variant}
           />
           <VisualTestPause />
-        </MatterScene>
+        </ShaderScene>
       </LiveDemo>
       <div
         style={{

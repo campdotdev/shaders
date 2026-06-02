@@ -11,7 +11,7 @@ import { VisualTestPause } from '@/lib/visualTestHooks'
 // Both MatterScene and NoiseField pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
-const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
 const NoiseField = dynamic(() => import('@matter/registry/noise-field').then((m) => m.NoiseField), {
@@ -80,7 +80,7 @@ export default function NoiseFieldPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh' }}>
-        <MatterScene>
+        <ShaderScene>
           <NoiseField
             colors={[params.color0, params.color1]}
             interactive={params.interactive}
@@ -91,7 +91,7 @@ export default function NoiseFieldPage() {
             variant={params.variant}
           />
           <VisualTestPause />
-        </MatterScene>
+        </ShaderScene>
       </div>
       {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
           hides the pane from screen readers; the axe test excludes the

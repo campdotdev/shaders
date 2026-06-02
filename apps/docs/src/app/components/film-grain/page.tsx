@@ -10,7 +10,7 @@ import { VisualTestPause } from '@/lib/visualTestHooks'
 // MatterScene + the registry components pull in three/webgpu, which
 // references `self` at module load time and breaks Next's SSR. Load
 // everything client-only.
-const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
 const LinearGradient = dynamic(
@@ -114,11 +114,11 @@ export default function FilmGrainPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh' }}>
-        <MatterScene>
+        <ShaderScene>
           <LinearGradient />
           <FilmGrain intensity={params.intensity} mode={params.mode} speed={params.speed} />
           <VisualTestPause />
-        </MatterScene>
+        </ShaderScene>
         {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
             hides the pane from screen readers; the axe test excludes the
             `.tp-dfwv` subtree so the unlabeled internal controls don't trip

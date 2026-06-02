@@ -1,6 +1,6 @@
 'use client'
 
-import { MatterMonitor, MatterScene } from '@lovo/matter-react'
+import { ShaderMonitor, ShaderScene } from '@lovo/matter-react'
 import { LinearGradient } from '@matter/registry/linear-gradient'
 import { useState } from 'react'
 
@@ -22,10 +22,10 @@ export function PerfMonitorDemo() {
         <code style={{ marginLeft: 8 }}>{speed.toFixed(1)}</code>
       </label>
       <div style={{ position: 'relative', width: 600, height: 400 }}>
-        <MatterScene>
+        <ShaderScene>
           <LinearGradient angle={45} colors={['#ff7b72', '#7b9cff']} speed={speed} />
-          <MatterMonitor anchor="top-right" />
-        </MatterScene>
+          <ShaderMonitor anchor="top-right" />
+        </ShaderScene>
       </div>
       <p style={{ marginTop: 12, color: '#666' }}>
         Set <code>speed</code> to 0 &mdash; fps should drop to 0 after one final flush tick

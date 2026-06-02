@@ -4,7 +4,7 @@ import type { FilmGrainMode } from '@matter/registry/film-grain'
 import dynamic from 'next/dynamic'
 import { useState } from 'react'
 
-const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
 const MeshGradient = dynamic(
@@ -75,10 +75,10 @@ export default function OverlayTestPage() {
         </button>
       </div>
       <div style={{ position: 'relative', width: '100%', height: '400px' }}>
-        <MatterScene>
+        <ShaderScene>
           <MeshGradient />
           <FilmGrain intensity={intensity} mode={mode} speed={speed} />
-        </MatterScene>
+        </ShaderScene>
       </div>
     </div>
   )

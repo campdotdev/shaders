@@ -7,7 +7,7 @@
 // and break Next's prerender pass (CLAUDE.md gotcha #10).
 
 import { colorRamp, type ColorRampStop, fbm, time } from '@lovo/matter'
-import { MatterScene, useMatterContext } from '@lovo/matter-react'
+import { ShaderScene, useShaderContext } from '@lovo/matter-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { uniform, uv, vec2, vec3 } from 'three/tsl'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu'
@@ -48,7 +48,7 @@ function FbmMesh({
   scaleUniform: ReturnType<typeof uniform>
   timeSpeedUniform: ReturnType<typeof uniform>
 }) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
 
   useEffect(() => {
     if (!ctx) return
@@ -142,7 +142,7 @@ export default function FbmPlayground() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh' }}>
-        <MatterScene key={instanceKey}>
+        <ShaderScene key={instanceKey}>
           <FbmMesh
             gain={params.gain}
             lacunarity={params.lacunarity}
@@ -150,7 +150,7 @@ export default function FbmPlayground() {
             scaleUniform={scaleUniform}
             timeSpeedUniform={timeSpeedUniform}
           />
-        </MatterScene>
+        </ShaderScene>
       </div>
       <div
         ref={paneContainerRef}

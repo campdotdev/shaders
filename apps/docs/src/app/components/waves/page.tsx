@@ -11,7 +11,7 @@ import { VisualTestPause } from '@/lib/visualTestHooks'
 // Both MatterScene and Waves pull in three/webgpu (via createRenderer),
 // which references `self` at module load time and breaks Next's SSR. Load
 // both client-only.
-const MatterScene = dynamic(() => import('@lovo/matter-react').then((m) => m.MatterScene), {
+const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
 const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false })
@@ -78,7 +78,7 @@ export default function WavesPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
-        <MatterScene>
+        <ShaderScene>
           <Waves
             amplitude={params.amplitude}
             color={params.color}
@@ -88,7 +88,7 @@ export default function WavesPage() {
             speed={params.speed}
           />
           <VisualTestPause />
-        </MatterScene>
+        </ShaderScene>
       </div>
       {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
           hides the pane from screen readers; the axe test excludes the

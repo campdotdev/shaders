@@ -7,7 +7,7 @@
 
 import { setReducedMotionPolicy } from '@lovo/matter'
 import type { ReducedMotionPolicy, SchedulerTick } from '@lovo/matter'
-import { useMatterContext } from '@lovo/matter-react'
+import { useShaderContext } from '@lovo/matter-react'
 import { useEffect } from 'react'
 
 // Number of renderer frames to wait after context init before screenshotting.
@@ -69,7 +69,7 @@ declare global {
  * so that useMatterContext() can find the scene context.
  */
 export function useVisualTestPause(): void {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
 
   useEffect(() => {
     if (typeof window === 'undefined') return

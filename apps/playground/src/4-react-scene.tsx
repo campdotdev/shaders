@@ -1,4 +1,4 @@
-import { MatterScene, useMatterContext } from '@lovo/matter-react'
+import { ShaderScene, useShaderContext } from '@lovo/matter-react'
 import { useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Mesh, PlaneGeometry } from 'three'
@@ -6,7 +6,7 @@ import { vec3 } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 
 function MagentaPlane() {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
 
   useEffect(() => {
     if (!ctx) return
@@ -29,11 +29,11 @@ function MagentaPlane() {
 
 function App() {
   return (
-    <MatterScene
+    <ShaderScene
       fallback={<div style={{ color: '#888', padding: '1rem' }}>Initializing renderer…</div>}
     >
       <MagentaPlane />
-    </MatterScene>
+    </ShaderScene>
   )
 }
 

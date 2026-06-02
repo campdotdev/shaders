@@ -1,4 +1,4 @@
-import { createRenderer, MatterScheduler } from '@lovo/matter'
+import { createRenderer, FrameScheduler } from '@lovo/matter'
 import { Mesh, OrthographicCamera, PlaneGeometry, Scene } from 'three'
 import { mix, sin, uv, vec3 } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
@@ -41,7 +41,7 @@ const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 scene.add(mesh)
 
 // Use MatterScheduler instead of an inline requestAnimationFrame.
-const scheduler = new MatterScheduler()
+const scheduler = new FrameScheduler()
 let frameCount = 0
 
 scheduler.add(({ delta, elapsed }) => {

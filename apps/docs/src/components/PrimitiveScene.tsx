@@ -12,7 +12,7 @@ import {
   time,
   voronoi,
 } from '@lovo/matter'
-import { MatterScene, useMatterContext } from '@lovo/matter-react'
+import { ShaderScene, useShaderContext } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
 import type { ShaderNodeObject } from 'three/tsl'
 import { mix, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl'
@@ -262,14 +262,14 @@ export function PrimitiveScene({ primitive }: PrimitiveSceneProps) {
   const remountKey = buildStructuralKey(primitive)
 
   return (
-    <MatterScene>
+    <ShaderScene>
       <PrimitiveMesh key={remountKey} primitive={primitive} />
-    </MatterScene>
+    </ShaderScene>
   )
 }
 
 function PrimitiveMesh({ primitive }: PrimitiveSceneProps) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
 
   // Static cursor uniform for the cursor-ripple demo. Hardcoded to (0.5, 0.5)
   // so the ripple emits from the center — pulling in real cursor tracking
