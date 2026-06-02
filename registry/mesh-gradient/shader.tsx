@@ -4,7 +4,7 @@ import { noise, time } from '@lovo/matter'
 import {
   type AnimatableProp,
   useAnimatableUniform,
-  useMatterContext,
+  useShaderContext,
   useResize,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
@@ -68,7 +68,7 @@ export function MeshGradientShader({
   paletteA,
   paletteB,
 }: MeshGradientShaderProps) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const resize = useResize()
 
   const cycleSpeedU = useAnimatableUniform<number>(cycleSpeed)

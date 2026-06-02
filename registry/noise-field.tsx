@@ -7,7 +7,7 @@ import {
   type CursorSignal,
   useAnimatableUniform,
   useCursor,
-  useMatterContext,
+  useShaderContext,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
 import { uniform, uv, vec2, vec3 } from 'three/tsl'
@@ -46,7 +46,7 @@ const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => 
 }
 
 export function NoiseField(props: NoiseFieldProps) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const colors = resolveColors(props.colors)
   const colorsKey = colors.join('|')
   const octaves = props.octaves ?? 4

@@ -6,7 +6,7 @@ import {
   type CursorSignal,
   useAnimatableUniform,
   useCursor,
-  useMatterContext,
+  useShaderContext,
   useStaticHint,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
@@ -48,7 +48,7 @@ const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => 
 }
 
 export function LinearGradient(props: LinearGradientProps) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
   const cursor = cursorFromInputs ?? (props.interactive === true ? cursorAuto : null)

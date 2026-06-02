@@ -4,7 +4,7 @@ import { noise, time } from '@lovo/matter'
 import {
   type AnimatableProp,
   useAnimatableUniform,
-  useMatterContext,
+  useShaderContext,
   useResize,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
@@ -118,7 +118,7 @@ function useColorUniform(hex: string) {
 }
 
 export function AuroraShader(props: AuroraShaderProps) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const resize = useResize()
 
   const intensityU = useAnimatableUniform<number>(props.intensity)
