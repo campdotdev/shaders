@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { __resetReducedMotionForTests, setReducedMotionPolicy } from '../../runtime/reduced-motion/reduced-motion.js'
+import {
+  __resetReducedMotionForTests,
+  setReducedMotionPolicy,
+} from '../../runtime/reduced-motion/reduced-motion.js'
 
 import { time } from './time.js'
 
