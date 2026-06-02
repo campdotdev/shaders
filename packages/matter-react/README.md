@@ -2,7 +2,7 @@
 
 React binding for **Matter** — shader components on WebGPU + Three.js TSL.
 
-This package wraps the engine ([`@lovo/matter`](https://www.npmjs.com/package/@lovo/matter)) with React-friendly primitives: a shared `<MatterScene>` canvas, a `useShaderMaterial` hook for `@react-three/fiber` integration, and input hooks (`useCursor`, `useScroll`).
+This package wraps the engine ([`@lovo/matter`](https://www.npmjs.com/package/@lovo/matter)) with React-friendly primitives: a shared `<ShaderScene>` canvas, a `useShaderMaterial` hook for `@react-three/fiber` integration, and input hooks (`useCursor`, `useScroll`).
 
 ## Install
 
@@ -23,15 +23,15 @@ Matter components work in three configurations:
 ## Minimal usage (Mode 2: shared scene)
 
 ```tsx
-import { MatterScene } from '@lovo/matter-react'
+import { ShaderScene } from '@lovo/matter-react'
 // LinearGradient is copy-pasted into your project via @lovo/matter-cli
 import { LinearGradient } from '@/components/matter/linear-gradient'
 
 export default function Hero() {
   return (
-    <MatterScene>
+    <ShaderScene>
       <LinearGradient colors={['#0b0c2a', '#1d1f57', '#7d2dff']} angle={120} />
-    </MatterScene>
+    </ShaderScene>
   )
 }
 ```
@@ -51,6 +51,10 @@ The component lands in `src/components/matter/linear-gradient.tsx` and is yours 
 ## Docs
 
 <https://github.com/lovo-hq/matter>
+
+## Migration from 0.3.x
+
+`MatterScene`, `MatterMonitor`, `useMatterContext`, and related types have been renamed to `ShaderScene`, `ShaderMonitor`, `useShaderContext`, `ShaderContextValue`, etc. The old names are deprecated and still work — remove them at your leisure before 0.5.0.
 
 ## License
 
