@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 
-import { ShaderContext, type ShaderContextValue } from '../../context/matter-context.js'
+import { ShaderContext, type ShaderContextValue } from '../../context/shader-context.js'
 
 /**
  * Read the shader scene context. Returns null when called outside a

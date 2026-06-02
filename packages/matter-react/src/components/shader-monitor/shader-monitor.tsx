@@ -2,7 +2,7 @@
 
 import { type CSSProperties, useContext, useEffect, useRef, useState } from 'react'
 
-import { ShaderContext } from '../../context/matter-context.js'
+import { ShaderContext } from '../../context/shader-context.js'
 
 export type MonitorAnchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
 

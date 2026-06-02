@@ -2,7 +2,7 @@ import type * as MatterModule from '@lovo/matter'
 import { render, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ShaderScene } from './matter-scene.js'
+import { ShaderScene } from './shader-scene.js'
 
 // Mock createRenderer because happy-dom cannot initialize WebGPU.
 // The other @lovo/matter exports (FrameScheduler, createVisibilityWatcher,

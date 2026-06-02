@@ -7,9 +7,6 @@ export type {
   CreateRendererOptions,
 } from './runtime/createRenderer.js'
 
-export { FrameScheduler } from './runtime/MatterScheduler.js'
-export type { SchedulerTick, SchedulerClient } from './runtime/MatterScheduler.js'
-
 export { CursorInput } from './inputs/CursorInput.js'
 export type { CursorInputOptions, Vec2 } from './inputs/CursorInput.js'
 
@@ -49,3 +46,6 @@ export type { VisibilityWatcher } from './runtime/visibility.js'
 
 export { createIntersectionWatcher } from './runtime/intersection.js'
 export type { IntersectionWatcher } from './runtime/intersection.js'
+
+export { FrameScheduler } from './runtime/frame-scheduler.js'
+export type { SchedulerTick, SchedulerClient } from './runtime/frame-scheduler.js'

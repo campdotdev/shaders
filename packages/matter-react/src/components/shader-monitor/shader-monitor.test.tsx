@@ -3,9 +3,9 @@ import { render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { describe, expect, it } from 'vitest'
 
-import { ShaderContext } from '../../context/matter-context.js'
+import { ShaderContext } from '../../context/shader-context.js'
 
-import { ShaderMonitor } from './matter-monitor.js'
+import { ShaderMonitor } from './shader-monitor.js'
 
 const wrap = (scheduler: FrameScheduler) =>
   function Wrapper({ children }: { children: ReactNode }) {

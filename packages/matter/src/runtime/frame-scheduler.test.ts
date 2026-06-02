@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { FrameScheduler } from './MatterScheduler.js'
+import { FrameScheduler } from './frame-scheduler.js'
 
 describe('FrameScheduler', () => {
   let rafCallbacks: FrameRequestCallback[] = []

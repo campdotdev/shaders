@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { FrameScheduler } from './frame-scheduler.js'
 import { createIntersectionWatcher } from './intersection.js'
-import { FrameScheduler } from './MatterScheduler.js'
 import { createVisibilityWatcher } from './visibility.js'
 
 describe('runtime integration', () => {
