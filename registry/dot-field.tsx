@@ -7,7 +7,7 @@ import {
   type CursorSignal,
   useAnimatableUniform,
   useCursor,
-  useMatterContext,
+  useShaderContext,
   useResize,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
@@ -42,7 +42,7 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
 }
 
 export function DotField(props: DotFieldProps) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
   const cursor = cursorFromInputs ?? ((props.interactive ?? true) ? cursorAuto : null)

@@ -7,7 +7,7 @@ import {
   type CursorSignal,
   useAnimatableUniform,
   useCursor,
-  useMatterContext,
+  useShaderContext,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
 import type { ShaderNodeObject } from 'three/tsl'
@@ -44,7 +44,7 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
 }
 
 export function Waves(props: WavesProps) {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const cursorFromInputs = props.inputs?.cursor
   const cursorAuto = useCursor()
   const cursor = cursorFromInputs ?? (props.interactive === true ? cursorAuto : null)
