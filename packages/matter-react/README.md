@@ -17,7 +17,7 @@ npm install @lovo/matter @lovo/matter-react react three
 Matter components work in three configurations:
 
 1. **Drop-in** — each component manages its own canvas. Simplest path; one canvas per effect.
-2. **Shared scene** — wrap multiple Matter components in a single `<MatterScene>` to share one canvas (faster, layered effects).
+2. **Shared scene** — wrap multiple Matter components in a single `<ShaderScene>` to share one canvas (faster, layered effects).
 3. **Inside `@react-three/fiber`** — use `useShaderMaterial` directly inside a r3f `<Canvas>` you already own.
 
 ## Minimal usage (Mode 2: shared scene)

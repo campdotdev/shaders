@@ -2,7 +2,7 @@
 
 Framework-agnostic engine for **Matter** — React shader components on WebGPU + Three.js TSL.
 
-This package contains the TSL primitives, the renderer, and the scheduler. It has no React dependency. If you're using React, install [`@lovo/matter-react`](https://www.npmjs.com/package/@lovo/matter-react) alongside this package — it adds React-friendly wrappers (a shared `<MatterScene>`, input hooks, and `@react-three/fiber` integration) on top of this engine.
+This package contains the TSL primitives, the renderer, and the scheduler. It has no React dependency. If you're using React, install [`@lovo/matter-react`](https://www.npmjs.com/package/@lovo/matter-react) alongside this package — it adds React-friendly wrappers (a shared `<ShaderScene>`, input hooks, and `@react-three/fiber` integration) on top of this engine.
 
 ## Install
 
