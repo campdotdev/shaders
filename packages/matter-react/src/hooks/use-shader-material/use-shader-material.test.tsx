@@ -2,7 +2,7 @@ import { renderHook } from '@testing-library/react'
 import { vec3 } from 'three/tsl'
 import { describe, expect, it } from 'vitest'
 
-import { useShaderMaterial } from './useShaderMaterial.js'
+import { useShaderMaterial } from './use-shader-material.js'
 
 describe('useShaderMaterial', () => {
   it('returns a MeshBasicNodeMaterial with colorNode set', () => {

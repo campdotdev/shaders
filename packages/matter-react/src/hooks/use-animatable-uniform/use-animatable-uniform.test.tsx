@@ -1,7 +1,7 @@
 import { renderHook } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { type MatterSignal, useAnimatableUniform } from './useAnimatableUniform.js'
+import { type MatterSignal, useAnimatableUniform } from './use-animatable-uniform.js'
 
 const makeSignal = <T,>(initial: T) => {
   let value = initial

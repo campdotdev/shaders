@@ -1,6 +1,6 @@
 import { useContext } from 'react'
 
-import { MatterContext, type MatterContextValue } from './matter-context.js'
+import { MatterContext, type MatterContextValue } from '../../context/matter-context.js'
 
 /**
  * Read the matter scene context. Returns null when called outside a

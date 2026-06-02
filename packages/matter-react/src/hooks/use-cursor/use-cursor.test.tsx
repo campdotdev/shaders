@@ -1,7 +1,7 @@
 import { act, renderHook } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useCursor } from './useCursor.js'
+import { useCursor } from './use-cursor.js'
 
 // useCursor uses requestAnimationFrame for its free-running tick (no MatterScene context).
 // Stub rAF so the effect doesn't hang in happy-dom.

@@ -70,7 +70,7 @@ The user wants **many small phases (1–3 day execution units) with explicit "st
 - Don't bundle "engine + binding + component + docs page" into one phase. Break each layer out.
 - When proposing a roadmap, explicitly name the validation/learning beat at the end of each phase.
 
-This is captured in `feedback_pacing.md` in memory — but it's important enough to repeat here.
+This is captured in `MEMORY.md` under "Phase gates" — but it's important enough to repeat here.
 
 ### User's shader experience level
 

@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { FallbackBoundary } from './FallbackBoundary.js'
+import { FallbackBoundary } from './fallback-boundary.js'
 
 // FallbackBoundary is a client-mount gate: it renders `fallback` until the
 // component mounts on the client (useEffect fires), then swaps to children.
