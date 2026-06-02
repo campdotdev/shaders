@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import { describe, expect, it } from 'vitest'
 
 import { MatterContext } from '../../context/matter-context.js'
+
 import { MatterMonitor } from './matter-monitor.js'
 
 const wrap = (scheduler: MatterScheduler) =>

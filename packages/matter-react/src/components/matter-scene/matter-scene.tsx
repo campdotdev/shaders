@@ -13,7 +13,11 @@ import type { ShaderNodeObject } from 'three/tsl'
 import { PostProcessing } from 'three/webgpu'
 import type { Node } from 'three/webgpu'
 
-import { MatterContext, type MatterContextValue, type OverlayTransform } from '../../context/matter-context.js'
+import {
+  MatterContext,
+  type MatterContextValue,
+  type OverlayTransform,
+} from '../../context/matter-context.js'
 
 export interface MatterSceneProps {
   children?: ReactNode
