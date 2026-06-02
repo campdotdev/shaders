@@ -7,8 +7,8 @@ import {
   type CursorSignal,
   useAnimatableUniform,
   useCursor,
-  useShaderContext,
   useResize,
+  useShaderContext,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
 import { length, mix, mod, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl'

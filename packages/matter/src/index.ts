@@ -5,8 +5,9 @@ export type {
   GpuRenderer,
   GpuBackend,
   CreateRendererOptions,
-  // deprecated aliases
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   MatterRenderer,
+  // eslint-disable-next-line @typescript-eslint/no-deprecated
   MatterBackend,
 } from './runtime/createRenderer.js'
 
