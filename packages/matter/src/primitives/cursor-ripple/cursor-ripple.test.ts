@@ -1,8 +1,9 @@
 import { uv, vec2 } from 'three/tsl'
 import { describe, expect, it } from 'vitest'
 
-import { cursorRipple } from './cursorRipple.js'
-import { time as gatedTime } from './time.js'
+import { time as gatedTime } from '../time/time.js'
+
+import { cursorRipple } from './cursor-ripple.js'
 
 describe('cursorRipple', () => {
   it('returns a TSL node with default options', () => {

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { CursorInput } from './CursorInput.js'
+import { CursorInput } from './cursor-input.js'
 
 describe('CursorInput', () => {
   beforeEach(() => {

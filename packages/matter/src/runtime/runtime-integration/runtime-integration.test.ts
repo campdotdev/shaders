@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { FrameScheduler } from './frame-scheduler.js'
-import { createIntersectionWatcher } from './intersection.js'
-import { createVisibilityWatcher } from './visibility.js'
+import { FrameScheduler } from '../frame-scheduler/frame-scheduler.js'
+import { createIntersectionWatcher } from '../intersection/intersection.js'
+import { createVisibilityWatcher } from '../visibility/visibility.js'
 
 describe('runtime integration', () => {
   let rafCallbacks: FrameRequestCallback[] = []

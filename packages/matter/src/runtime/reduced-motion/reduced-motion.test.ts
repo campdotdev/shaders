@@ -5,7 +5,7 @@ import {
   createReducedMotionWatcher,
   getReducedMotionTimeScale,
   setReducedMotionPolicy,
-} from './reducedMotion.js'
+} from './reduced-motion.js'
 
 interface MockMQL {
   matches: boolean

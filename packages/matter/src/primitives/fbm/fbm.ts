@@ -1,10 +1,10 @@
-// packages/matter/src/primitives/fbm.ts
+// packages/matter/src/primitives/fbm/fbm.ts
 import { add, mul } from 'three/tsl'
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
 
-import type { TSLNode } from './colorRamp.js'
-import { noise } from './noise.js'
+import type { TSLNode } from '../color-ramp/color-ramp.js'
+import { noise } from '../noise/noise.js'
 
 export interface FBMOptions {
   /** Number of octaves to sum. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */

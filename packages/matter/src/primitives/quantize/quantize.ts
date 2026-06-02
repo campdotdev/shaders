@@ -1,4 +1,4 @@
-// packages/matter/src/primitives/quantize.ts
+// packages/matter/src/primitives/quantize/quantize.ts
 import type { ShaderNodeObject } from 'three/tsl'
 import type { Node } from 'three/webgpu'
 
