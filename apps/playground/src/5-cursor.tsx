@@ -1,4 +1,4 @@
-import { MatterScene, useCursor, useMatterContext } from '@lovo/matter-react'
+import { ShaderScene, useCursor, useShaderContext } from '@lovo/matter-react'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Mesh, PlaneGeometry, Vector2 } from 'three'
@@ -6,7 +6,7 @@ import { length, mix, uniform, uv, vec3 } from 'three/tsl'
 import { MeshBasicNodeMaterial } from 'three/webgpu'
 
 function CursorGradient() {
-  const ctx = useMatterContext()
+  const ctx = useShaderContext()
   const cursor = useCursor({ smoothing: 0.1 })
   const [smoothing, setSmoothing] = useState(0.1)
 
@@ -76,9 +76,9 @@ function CursorGradient() {
 
 function App() {
   return (
-    <MatterScene>
+    <ShaderScene>
       <CursorGradient />
-    </MatterScene>
+    </ShaderScene>
   )
 }
 

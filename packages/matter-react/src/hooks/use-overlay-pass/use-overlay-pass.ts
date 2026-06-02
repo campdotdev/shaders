@@ -18,7 +18,7 @@ import { useShaderContext } from '../use-matter-context/use-matter-context.js'
  * NOT need to be in deps.
  *
  * When called outside a <MatterScene> provider, this hook is a no-op.
- * Matches the existing useMatterContext convention.
+ * Matches the existing useShaderContext convention.
  */
 export function useOverlayPass(transform: OverlayTransform, deps: DependencyList): void {
   const ctx = useShaderContext()
