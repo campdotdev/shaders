@@ -69,6 +69,9 @@ function buildLinearGradientMaterial(
   let tNode
 
   if (variant === 'radial') {
+    // cursorU consumed as an argument to uv().sub() — not as a chained
+    // receiver. Chaining math starting from a raw uniform node doesn't
+    // propagate the value through the GPU pipeline reliably. See CLAUDE.md gotcha #12.
     tNode = length(uv().sub(cursorU))
   } else {
     // Read angle at build time — direction vector is baked into the TSL graph,
@@ -80,7 +83,9 @@ function buildLinearGradientMaterial(
     tNode = uv().sub(cursorU).dot(vec2(dirX, dirY)).add(0.5)
   }
 
-  // Read speed at build time to decide whether to apply time-based animation
+  // Read speed at build time to decide whether to apply time-based animation.
+  // Triangle wave: 1 - |1 - mod(t, 2)| ping-pongs t between 0 and 1 with no
+  // seam (naive mod(t, 1) produces a hard jump at the wrap boundary).
   const speedScalar = speedU.value
   const tAnimated =
     speedScalar === 0
@@ -109,11 +114,7 @@ export function LinearGradient(props: LinearGradientProps) {
 
   // Memoized so colors array identity is stable; colorsKey used in effect deps
   // to avoid rebuilding on every render when values haven't changed
-  const colors = useMemo(
-    () => resolveColors(props.colors),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [props.colors],
-  )
+  const colors = useMemo(() => resolveColors(props.colors), [props.colors])
   const colorsKey = colors.join('|')
 
   const angleUniform = useAnimatableUniform<number>(props.angle ?? 0)
@@ -160,6 +161,10 @@ export function LinearGradient(props: LinearGradientProps) {
       ctx.scene.remove(mesh)
 
       try {
+        // three's WebGPURenderer can throw inside dispose() during rapid rebuild
+        // cycles when Nodes bookkeeping has already cleaned up the node tree.
+        // Swallowing the error is intentional — GPU resources are reaped when
+        // the parent renderer disposes. See CLAUDE.md gotcha #13.
         material.dispose()
       } catch (err) {
         console.debug('[LinearGradient] material.dispose ignored:', err)
@@ -170,6 +175,11 @@ export function LinearGradient(props: LinearGradientProps) {
         console.debug('[LinearGradient] geometry.dispose ignored:', err)
       }
     }
+    // `colors` is unstable by reference across renders; `colorsKey` is the
+    // stable string proxy for its contents so the effect remounts only when
+    // the actual hex sequence changes. Animatable uniforms are mutated in
+    // place and intentionally omitted from deps — they don't trigger rebuild.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     ctx,
     props.variant,
