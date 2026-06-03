@@ -1,23 +1,7 @@
-#!/usr/bin/env bash
-# Regenerate Playwright visual regression baselines for both macOS and Linux.
-#
-# Linux runs through Docker because Chromium rasterizes fonts and applies
-# sub-pixel anti-aliasing differently per OS — see
-# docs/development/visual-regression.md for the full rationale.
-#
-# Usage:
-#   vp run snap                 # regenerate ALL baselines (every component)
-#   vp run snap mesh-gradient   # regenerate only the named spec
-#
-# The argument is the kebab-case component name and maps to
-# apps/docs-tests/visual/<name>.spec.ts.
-
 set -euo pipefail
 
 NAME="${1:-}"
-# Use --update-snapshots=all (explicit form) because the bare --update-snapshots
-# greedily consumes the next positional as its optional mode argument in newer
-# Playwright versions.
+
 PW_ARGS=(--update-snapshots=all)
 if [[ -n "$NAME" ]]; then
   PW_ARGS+=("visual/${NAME}.spec.ts")
@@ -50,8 +34,7 @@ PLAYWRIGHT_VERSION=$(node -p \
 IMAGE="mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy"
 docker pull "$IMAGE"
 
-# Build the inner playwright arg list, shell-escaped, for the bash -lc command
-# that runs inside the container.
+
 PW_ARGS_INNER=""
 for arg in "${PW_ARGS[@]}"; do
   PW_ARGS_INNER+=" $(printf %q "$arg")"

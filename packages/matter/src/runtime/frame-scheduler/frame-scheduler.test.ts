@@ -2,7 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { FrameScheduler } from './frame-scheduler.js'
 
-describe('FrameScheduler', () => {
+/** Stubs requestAnimationFrame/cancelAnimationFrame and returns shared state for tests. */
+function setupRafMocks() {
   let rafCallbacks: FrameRequestCallback[] = []
   let nextRafId = 0
 
@@ -14,9 +15,7 @@ describe('FrameScheduler', () => {
 
       return ++nextRafId
     })
-    vi.stubGlobal('cancelAnimationFrame', (_id: number) => {
-      // no-op for these tests
-    })
+    vi.stubGlobal('cancelAnimationFrame', () => {})
   })
 
   afterEach(() => {
@@ -30,6 +29,15 @@ describe('FrameScheduler', () => {
     rafCallbacks = []
     for (const cb of callbacks) cb(now)
   }
+
+  return {
+    getRafCallbacks: () => rafCallbacks,
+    tickFrame,
+  }
+}
+
+describe('FrameScheduler', () => {
+  const { getRafCallbacks, tickFrame } = setupRafMocks()
 
   it('invokes registered clients on every tick', () => {
     const scheduler = new FrameScheduler()
@@ -102,7 +110,7 @@ describe('FrameScheduler', () => {
     const scheduler = new FrameScheduler()
 
     scheduler.start()
-    expect(rafCallbacks.length).toBe(0)
+    expect(getRafCallbacks().length).toBe(0)
   })
 
   it('starts the rAF loop when the first client is added', () => {
@@ -110,35 +118,12 @@ describe('FrameScheduler', () => {
 
     scheduler.start()
     scheduler.add(vi.fn())
-    expect(rafCallbacks.length).toBe(1)
+    expect(getRafCallbacks().length).toBe(1)
   })
 })
 
 describe('setIdle (render-on-demand)', () => {
-  let rafCallbacks: FrameRequestCallback[] = []
-  let nextRafId = 0
-
-  beforeEach(() => {
-    rafCallbacks = []
-    nextRafId = 0
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      rafCallbacks.push(cb)
-
-      return ++nextRafId
-    })
-    vi.stubGlobal('cancelAnimationFrame', () => {})
-  })
-
-  afterEach(() => {
-    vi.unstubAllGlobals()
-  })
-
-  const tickFrame = (now = performance.now()) => {
-    const callbacks = rafCallbacks
-
-    rafCallbacks = []
-    for (const cb of callbacks) cb(now)
-  }
+  const { tickFrame } = setupRafMocks()
 
   it('runs one final tick when setIdle(true) is called, then halts', () => {
     const scheduler = new FrameScheduler()

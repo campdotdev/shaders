@@ -7,42 +7,20 @@ import { type AuroraDirection, type AuroraLayer, AuroraShader } from './shader'
 export type { AuroraDirection, AuroraLayer } from './shader'
 
 export interface AuroraProps {
-  /** Global brightness multiplier. 0 = invisible, 1 = default, 3 = blown out. */
   intensity?: AnimatableProp<number>
-  /** Global animation rate. 1 = default, 0 = frozen, 2 = double speed. */
   speed?: AnimatableProp<number>
-  /** Horizontal feature density. Higher = more ribbons packed across the frame. */
   densityX?: AnimatableProp<number>
-  /** Vertical feature density. Higher = more vertical detail in each ribbon. */
   densityY?: AnimatableProp<number>
-  /** How quickly the curtains fade out toward the top. Higher = shorter reach. */
   falloff?: AnimatableProp<number>
-  /** Horizontal wind speed. */
   driftX?: AnimatableProp<number>
-  /** Vertical wind speed. */
   driftY?: AnimatableProp<number>
-  /**
-   * How much each ribbon curls in place. 0 = straight flowing noise,
-   * 1 = default curl, 2-3 = turbulent. Independent of `densityX`/`densityY`
-   * which control feature density.
-   */
   turbulence?: AnimatableProp<number>
-  /** Which edge the aurora rises from. Default `'bottom'`. */
   direction?: AuroraDirection
-  /** Horizon color concentrated near the bottom of the frame. */
   horizonColor?: string
-  /** Mid-sky color covering the lower 60% of the frame. */
   skyColor?: string
-  /** Four curtain layers blended additively. */
   layers?: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer]
 }
 
-/**
- * Default curtain layers — colors and rates lifted from the Shadertoy
- * reference (green/blue/violet/magenta cycling at distinct drift speeds).
- * Each layer runs identical noise math; what makes them feel different is
- * just color, rate, and the color-seeded warp.
- */
 export const DEFAULT_LAYERS: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer] = [
   { hex: '#0ae24b', speed: 0.07, intensity: 0.6, variation: 0 }, // palette.green.base
   { hex: '#1837e6', speed: 0.1, intensity: 0.2, variation: 5 }, // palette.blue.base

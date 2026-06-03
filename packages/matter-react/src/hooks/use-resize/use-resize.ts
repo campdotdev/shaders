@@ -2,34 +2,21 @@
 
 import { useEffect, useState } from 'react'
 
+import { createSignal } from '../../internal/create-signal.js'
 import { useShaderContext } from '../use-shader-context/use-shader-context.js'
 
 export type ResizeValue = readonly [width: number, height: number, dpr: number]
 
 export interface ResizeSignal {
-  /** Current size in CSS pixels + devicePixelRatio. */
   get(): ResizeValue
   on(event: 'change', cb: (value: ResizeValue) => void): () => void
 }
 
-// Inert stub returned on the first render before the lifecycle effect has
-// observed the canvas. Subscribing to it returns a no-op unsubscribe.
 const STUB_SIGNAL: ResizeSignal = {
   get: () => [0, 0, 1] as const,
   on: () => () => undefined,
 }
 
-/**
- * Track the parent <ShaderScene>'s canvas size + DPR. Exposes an AnimatableSignal
- * that components can pass into a TSL uniform to make pixel-aware effects
- * (e.g., DotField's pixel-spacing math).
- *
- * Strict-Mode-safe: lifecycle is in one effect, so React 19's intentional
- * mount→unmount→mount cycle creates a fresh ResizeObserver per real mount
- * (CLAUDE.md gotcha #14).
- *
- * Falls back to the stub signal until the parent context is ready.
- */
 export function useResize(): ResizeSignal {
   const ctx = useShaderContext()
   const [signal, setSignal] = useState<ResizeSignal | null>(null)
@@ -46,17 +33,7 @@ export function useResize(): ResizeSignal {
       canvas.clientHeight,
       typeof window !== 'undefined' ? window.devicePixelRatio : 1,
     ]
-    const listeners = new Set<(v: ResizeValue) => void>()
-    const fresh: ResizeSignal = {
-      get: () => value,
-      on: (_event, cb) => {
-        listeners.add(cb)
-
-        return () => {
-          listeners.delete(cb)
-        }
-      },
-    }
+    const { signal: fresh, listeners } = createSignal<ResizeValue>(() => value)
 
     setSignal(fresh)
 
@@ -76,12 +53,6 @@ export function useResize(): ResizeSignal {
 
     observer.observe(canvas)
 
-    // Cross-browser DPR-change watch. matchMedia(`(resolution: <dpr>dppx)`)
-    // matches at the *current* DPR; when the user zooms the page the query
-    // stops matching, fires `change`, and we re-arm the watch at the new DPR.
-    // We track the current MQL + handler so we can fully detach in cleanup
-    // (the handler is captured by the listener — passing a fresh closure to
-    // removeEventListener wouldn't actually unregister it).
     let mql: MediaQueryList | null = null
     let mqlHandler: (() => void) | null = null
     const setupDprWatch = () => {

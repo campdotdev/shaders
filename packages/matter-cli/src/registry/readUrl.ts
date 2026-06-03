@@ -28,10 +28,6 @@ async function readHttpUrl(url: string): Promise<string> {
   return res.text()
 }
 
-/**
- * Fetch the text content of a URL. Supports `file://` (dev/testing),
- * `http://`, and `https://` (production registry on raw.githubusercontent.com).
- */
 export async function readUrl(url: string): Promise<string> {
   const parsed = new URL(url)
 

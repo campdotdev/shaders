@@ -1,0 +1,25 @@
+{
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  "duplicates": {
+    "ignore": [
+      "registry/**",
+      "apps/docs/src/app/components/**",
+      "apps/docs/src/app/dev/**",
+      "**/*.test.ts",
+      "**/*.test.tsx"
+    ]
+  },
+  "ignorePatterns": [
+    "apps/docs/content/**",
+    "**/*.mdx",
+    "apps/playground/**",
+    "apps/docs/src/lib/palette.gen.ts",
+    "packages/matter-cli/src/test-fixtures/**"
+  ],
+  "ignoreDependencies": [
+    "@tweakpane/core",
+    "eslint-import-resolver-typescript",
+    "@matter-internal/lib",
+    "react"
+  ]
+}

@@ -8,7 +8,9 @@ import { DEFAULT_MATTER_CONFIG, writeMatterConfig } from '../config/matterConfig
 
 import { runAdd } from './add.js'
 
-const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/', import.meta.url))}`
+const FIXTURE_BASE = `file://${fileURLToPath(
+  new URL('../test-fixtures/registry/', import.meta.url),
+)}`
 const VERSION = '0.0.0'
 
 let dir: string
@@ -38,7 +40,6 @@ describe('runAdd (single component, no aliases)', () => {
     const written = await readFile(target, 'utf-8')
 
     expect(written).toContain('SyntheticComponent')
-    // No alias rewriting yet — the @matter-internal import comes through verbatim.
     expect(written).toContain('@matter-internal/lib')
   })
 
@@ -99,8 +100,6 @@ describe('runAdd (single component, no aliases)', () => {
 
 describe('runAdd (multi-component + dedup + alias rewriting)', () => {
   it('writes multiple components in one invocation against a custom registry', async () => {
-    // Build an inline two-component registry in a temp dir so we can
-    // exercise multi-slug add without bloating the shared fixture.
     const inlineDir = await mkdtemp(join(tmpdir(), 'matter-multi-fixture-'))
 
     await writeFile(
@@ -128,8 +127,6 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
     expect(a).toContain('alpha = 1')
     expect(b).toContain('beta = 2')
 
-    // Dedup install hint: both depend on react; only one comes through.
-    // The install line is now flush-left "npm install ..." (Phase 2.5 polish).
     const output = log.mock.calls.map((c) => c[0]).join('\n')
     const installLine = output.split('\n').find((l) => l.startsWith('npm install '))!
     const args = installLine.replace('npm install ', '').trim().split(/\s+/).sort()
@@ -152,8 +149,6 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
 
 describe('runAdd (--ref handling)', () => {
   it('substitutes ${ref} into the registry URL when present', async () => {
-    // Build a fake "templated" registry URL by parking a fixture under
-    // a ref-shaped subdir.
     const inlineDir = await mkdtemp(join(tmpdir(), 'matter-ref-fixture-'))
 
     await mkdir(join(inlineDir, 'main'), { recursive: true })

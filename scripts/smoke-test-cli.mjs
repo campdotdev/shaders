@@ -1,8 +1,3 @@
-#!/usr/bin/env node
-// End-to-end smoke test for @lovo/matter-cli.
-// Runs the CLI as a packed tarball against a fresh project in /tmp.
-// Returns exit code 0 on success, non-zero on failure.
-
 import { execSync } from 'node:child_process'
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -24,7 +19,10 @@ function run(cmd, opts = {}) {
 }
 
 function runQuiet(cmd, opts = {}) {
-  return execSync(cmd, { stdio: ['ignore', 'pipe', 'pipe'], ...opts }).toString()
+  return execSync(cmd, {
+    stdio: ['ignore', 'pipe', 'pipe'],
+    ...opts,
+  }).toString()
 }
 
 const smokeDir = mkdtempSync(join(tmpdir(), 'matter-cli-smoke-'))
@@ -35,9 +33,10 @@ try {
   run('pnpm --filter @lovo/matter-cli build', { cwd: repoRoot })
 
   step(`Pack the CLI from ${cliDir}`)
-  const packOutput = runQuiet(`pnpm pack --pack-destination "${smokeDir}"`, { cwd: cliDir })
+  const packOutput = runQuiet(`pnpm pack --pack-destination "${smokeDir}"`, {
+    cwd: cliDir,
+  })
   console.log(packOutput)
-  // Find the .tgz that pnpm just produced.
   const tarball = runQuiet(`ls "${smokeDir}"/*.tgz | head -1`).trim()
   if (!tarball) throw new Error('No tarball produced by pnpm pack')
   console.log(`  tarball: ${tarball}`)
@@ -52,7 +51,9 @@ try {
   run(`npm install --no-save "${tarball}"`, { cwd: smokeDir })
 
   step(`Run \`matter-cli init\``)
-  run(`node node_modules/@lovo/matter-cli/dist/index.js init`, { cwd: smokeDir })
+  run(`node node_modules/@lovo/matter-cli/dist/index.js init`, {
+    cwd: smokeDir,
+  })
 
   step(`Point matter.config.json at the local registry (no GitHub remote yet)`)
   const cfgPath = join(smokeDir, 'matter.config.json')
@@ -61,10 +62,14 @@ try {
   writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n')
 
   step(`Run \`matter-cli list\``)
-  run(`node node_modules/@lovo/matter-cli/dist/index.js list`, { cwd: smokeDir })
+  run(`node node_modules/@lovo/matter-cli/dist/index.js list`, {
+    cwd: smokeDir,
+  })
 
   step(`Run \`matter-cli add linear-gradient\``)
-  run(`node node_modules/@lovo/matter-cli/dist/index.js add linear-gradient`, { cwd: smokeDir })
+  run(`node node_modules/@lovo/matter-cli/dist/index.js add linear-gradient`, {
+    cwd: smokeDir,
+  })
 
   step(`Verify the copied file matches the registry source`)
   const expected = readFileSync(join(repoRoot, 'registry/linear-gradient.tsx'), 'utf-8')

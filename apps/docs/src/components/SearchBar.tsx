@@ -36,9 +36,6 @@ interface PagefindModule {
 async function createPagefindBackend(): Promise<SearchBackend | null> {
   try {
     const path = '/pagefind/pagefind.js'
-    // Dynamic external import returns `any` — there's no module declaration
-    // for the runtime-fetched pagefind script. We validated the shape by
-    // hand against the pagefind docs (PagefindModule above).
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     const mod = (await import(/* webpackIgnore: true */ path)) as PagefindModule
 
@@ -73,9 +70,6 @@ async function createFallbackBackend(): Promise<SearchBackend | null> {
     const res = await fetch('/api/search')
 
     if (!res.ok) return null
-    // `/api/search` is our own endpoint serving the catalog as SearchDoc[].
-    // Response.json() returns `any` from the DOM lib types; the shape is
-    // controlled at the producer side.
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
     const docs = (await res.json()) as SearchDoc[]
 
@@ -106,7 +100,6 @@ export function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null)
   const listRef = useRef<HTMLUListElement>(null)
 
-  // Lazy-load the backend on first open. Pagefind first, /api/search fallback.
   useEffect(() => {
     if (!open || backendRef.current) return
     const ac = new AbortController()
@@ -124,7 +117,6 @@ export function SearchBar() {
     }
   }, [open])
 
-  // Run a query through the active backend
   useEffect(() => {
     if (!open || backendState !== 'ready' || !backendRef.current) return
     const backend = backendRef.current
@@ -139,7 +131,6 @@ export function SearchBar() {
     }
   }, [open, query, backendState])
 
-  // Cmd+K / Ctrl+K to toggle, Esc to close
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -155,7 +146,6 @@ export function SearchBar() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
-  // Focus input when modal opens
   useEffect(() => {
     if (open) inputRef.current?.focus()
     if (!open) {
@@ -165,7 +155,6 @@ export function SearchBar() {
     }
   }, [open])
 
-  // Clamp selected index when results change
   useEffect(() => {
     if (selectedIndex >= results.length) setSelectedIndex(0)
   }, [results.length, selectedIndex])
@@ -195,7 +184,6 @@ export function SearchBar() {
     }
   }
 
-  // Scroll selected into view
   useEffect(() => {
     const list = listRef.current
 
@@ -227,7 +215,13 @@ export function SearchBar() {
         }}
         type="button"
       >
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem' }}>
+        <span
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.5rem',
+          }}
+        >
           <SearchIcon />
           Search docs
         </span>

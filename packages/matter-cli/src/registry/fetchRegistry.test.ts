@@ -6,7 +6,9 @@ import { describe, expect, it } from 'vitest'
 
 import { fetchComponentSource, fetchRegistry } from './fetchRegistry.js'
 
-const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/', import.meta.url))}`
+const FIXTURE_BASE = `file://${fileURLToPath(
+  new URL('../test-fixtures/registry/', import.meta.url),
+)}`
 
 describe('fetchRegistry', () => {
   it('parses registry.json from a base URL', async () => {
@@ -17,15 +19,12 @@ describe('fetchRegistry', () => {
   })
 
   it('throws when the registry JSON is malformed', async () => {
-    // Pointing at a non-JSON file (the README) gives invalid JSON.
     const bad = `file://${fileURLToPath(new URL('../test-fixtures/', import.meta.url))}`
 
     await expect(fetchRegistry(bad)).rejects.toThrow()
   })
 
   it('joins base URL + filename without losing the trailing slash', async () => {
-    // Whether the user supplies "…/registry" or "…/registry/", fetchRegistry
-    // should both succeed at locating registry.json.
     const noTrailingSlash = FIXTURE_BASE.replace(/\/$/, '')
     const reg = await fetchRegistry(noTrailingSlash)
 

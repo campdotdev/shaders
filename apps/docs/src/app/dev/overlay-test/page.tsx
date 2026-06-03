@@ -11,9 +11,7 @@ const MeshGradient = dynamic(
   () => import('@matter/registry/mesh-gradient').then((m) => m.MeshGradient),
   { ssr: false },
 )
-// FilmGrain imports `three/tsl` at module load, which Next's webpack alias
-// resolves to `three.webgpu.js` — a bundle that references `self` at parse
-// time and cannot SSR (CLAUDE.md gotcha #10). Load client-only.
+
 const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
   ssr: false,
 })

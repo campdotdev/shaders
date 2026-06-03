@@ -4,11 +4,6 @@ import { getDocsNavTree } from '@/content/nav'
 
 import { DocsSidebar } from './DocsSidebar'
 
-/**
- * Docs shell — 2-column desktop layout (sidebar + content).
- * Mobile/responsive treatment intentionally deferred; the user's Figma
- * design pass will refine. For now, narrow viewports just get cramped.
- */
 export async function DocsShell({ children }: { children: ReactNode }) {
   const tree = await getDocsNavTree()
 

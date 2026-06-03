@@ -2,15 +2,12 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
+import { useState } from 'react'
 
 import { palette } from '@/lib/palette'
+import { useTweakpane } from '@/lib/useTweakpane'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Both ShaderScene and NoiseField pull in three/webgpu (via createRenderer),
-// which references `self` at module load time and breaks Next's SSR. Load
-// both client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
@@ -39,43 +36,31 @@ const INITIAL: Params = {
 }
 
 export default function NoiseFieldPage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useState<Params>(INITIAL)
   const [instanceKey, setInstanceKey] = useState(0)
+  const [params, paneContainerRef] = useTweakpane<Params>(
+    '<NoiseField>',
+    INITIAL,
+    (pane, local, sync) => {
+      pane.addBinding(local, 'color0', { label: 'color 0' })
+      pane.addBinding(local, 'color1', { label: 'color 1' })
+      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'variant', {
+        options: { organic: 'organic', cellular: 'cellular', grid: 'grid' },
+      })
+      pane.addBinding(local, 'scale', { min: 0.5, max: 10, step: 0.1 })
+      pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 })
+      pane.addBinding(local, 'octaves', { min: 1, max: 8, step: 1 })
+      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' })
+      pane.addBlade({ view: 'separator' })
+      pane.addButton({ title: 'Apply octaves / variant' }).on('click', () => {
+        sync()
+        setInstanceKey((k) => k + 1)
+      })
 
-  useEffect(() => {
-    const container = paneContainerRef.current
-
-    if (!container) return
-
-    const local = { ...INITIAL }
-    const pane = new Pane({ container, title: '<NoiseField>' })
-
-    pane.addBinding(local, 'color0', { label: 'color 0' })
-    pane.addBinding(local, 'color1', { label: 'color 1' })
-    pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'variant', {
-      options: { organic: 'organic', cellular: 'cellular', grid: 'grid' },
-    })
-    pane.addBinding(local, 'scale', { min: 0.5, max: 10, step: 0.1 })
-    pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 })
-    pane.addBinding(local, 'octaves', { min: 1, max: 8, step: 1 })
-    pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' })
-    pane.addBlade({ view: 'separator' })
-    pane.addButton({ title: 'Apply octaves / variant' }).on('click', () => {
-      setParams({ ...local })
-      setInstanceKey((k) => k + 1)
-    })
-
-    pane.on('change', () => {
-      setParams({ ...local })
-    })
-
-    return () => {
-      pane.dispose()
-    }
-  }, [])
+      pane.on('change', sync)
+    },
+  )
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -93,17 +78,17 @@ export default function NoiseFieldPage() {
           <VisualTestPause />
         </ShaderScene>
       </div>
-      {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
-          hides the pane from screen readers; the axe test excludes the
-          `.tp-dfwv` subtree so the unlabeled internal controls don't trip
-          aria-hidden-focus. The page content in <section> below is the
-          accessible surface. (`inert` would have blocked mouse input too —
-          regression noted 2026-05-13.) */}
       <div
         aria-hidden="true"
         data-tweakpane-host
         ref={paneContainerRef}
-        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 10,
+          width: '320px',
+        }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;NoiseField /&gt;</h1>

@@ -1,7 +1,7 @@
 import { readdir } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 
-import { readMatterConfig } from '../config/matterConfig.js'
+import { readMatterConfig, resolveRegistryUrl } from '../config/matterConfig.js'
 import { fetchRegistry, type Registry } from '../registry/fetchRegistry.js'
 import { resolveRef } from '../registry/ref.js'
 
@@ -25,9 +25,8 @@ export async function runUpdate(
   io: UpdateIO = { cwd: process.cwd(), log: console.log },
 ): Promise<void> {
   const cfg = await readMatterConfig(io.cwd)
-  const baseUrl = opts.registry ?? cfg.registryUrl
   const ref = resolveRef(opts.ref, opts.cliVersion)
-  const registryUrl = baseUrl.replace('${ref}', ref)
+  const registryUrl = resolveRegistryUrl(cfg, { registry: opts.registry, ref })
 
   const componentsDir = join(io.cwd, cfg.componentsDir)
   const localFiles = await safeReaddir(componentsDir)
@@ -64,8 +63,7 @@ export async function runUpdate(
   }
 
   io.log(`Updating ${toUpdate.length} component(s) from ${registryUrl}…`)
-  // registryUrl already has ${ref} substituted above; pass ref: undefined so
-  // runAdd doesn't try to resolve again over an already-substituted URL.
+
   await runAdd(
     toUpdate,
     {
@@ -87,9 +85,6 @@ async function safeReaddir(path: string): Promise<string[]> {
   }
 }
 
-// Convention in v1: slug equals the basename of entry.file. update keys off
-// the local filename, so a registry whose slug and filename diverge would
-// silently get skipped here. The single check guards both invariants.
 function slugIsInRegistry(slug: string, registry: Registry): boolean {
   const entry = registry.components[slug]
 

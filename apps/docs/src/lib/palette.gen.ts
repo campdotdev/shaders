@@ -1,9 +1,3 @@
-// One-shot generator. Run via `npx tsx apps/docs/src/lib/palette.gen.ts`.
-// Output is hand-copied into apps/docs/src/lib/palette.ts. Committed for reproducibility.
-//
-// 12 accent hues × { light, base, dark }. Hue angles and L/C values were
-// hand-tuned by the user so `base` lands at or near Aurora's vibrancy
-// (chroma up to ~0.26 at the Aurora-anchored hues — green/blue/violet/magenta).
 import { formatHex, parse } from 'culori'
 
 const OKLCH = {

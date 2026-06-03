@@ -7,13 +7,7 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": [
-    "@matter/registry",
-    "@matter/tsconfig",
-    "@matter/docs",
-    "@matter/docs-tests",
-    "@matter/playground"
-  ],
+  "ignore": ["@matter/registry", "@matter/tsconfig", "@matter/docs", "@matter/docs-tests"],
   "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
     "onlyUpdatePeerDependentsWhenOutOfRange": true
   }

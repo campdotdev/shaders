@@ -21,11 +21,9 @@ import {
 
 export interface ShaderSceneProps {
   children?: ReactNode
-  /** Rendered server-side and during WebGPU init. Default: empty. */
   fallback?: ReactNode
   className?: string
   style?: CSSProperties
-  /** Cap on devicePixelRatio. Default: 2. */
   maxDPR?: number
 }
 
@@ -37,11 +35,6 @@ const defaultStyle: CSSProperties = {
   height: '100%',
 }
 
-/**
- * Owns a canvas, a Three.js renderer (WebGPU + WebGL2 fallback), an
- * orthographic camera covering the canvas, an empty Scene, and a
- * FrameScheduler. Children consume these via useShaderContext().
- */
 export function ShaderScene(props: ShaderSceneProps) {
   const { children, fallback, className, style, maxDPR } = props
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -74,16 +67,9 @@ export function ShaderScene(props: ShaderSceneProps) {
 
         const overlays = new Map<symbol, OverlayTransform>()
 
-        // Allocate the base PassNode once per setup so rebuilds reuse the same
-        // node identity instead of churning a fresh one (and a fresh render
-        // target binding) on every register/unregister.
         const basePass = pass(scene, camera)
 
         const rebuildOutputNode = () => {
-          // ShaderNodeObject<PassNode> isn't structurally assignable to
-          // ShaderNodeObject<Node> (invariant generic methods); a runtime
-          // PassNode is still a Node, so the cast at the reduce seed boundary
-          // is safe. See CLAUDE.md gotcha #5.
           // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
           const seed = basePass as unknown as ShaderNodeObject<Node>
 

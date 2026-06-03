@@ -8,7 +8,7 @@ import { parseRegistry } from './schema'
 
 const REGISTRY_JSON = resolve(process.cwd(), '..', '..', 'registry', 'registry.json')
 
-export interface CatalogRecord {
+interface CatalogRecord {
   url: string
   label: string
   description: string

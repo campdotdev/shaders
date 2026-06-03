@@ -1,10 +1,3 @@
-// Tier 2 primitive metadata — one entry per documented primitive. Descriptions
-// are intentionally one sentence (light-M4 scope: docs site as a "test space",
-// not a teaching surface). The cross-link list under `usedBy` is verified by
-// hand against actual `import { ... } from '@lovo/matter'` calls in
-// registry/*.tsx — don't add a slug here unless that registry component
-// genuinely calls the primitive.
-
 export interface PrimitiveControl {
   name: string
   min: number

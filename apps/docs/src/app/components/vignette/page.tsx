@@ -1,14 +1,11 @@
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
 
+import { addCopyButtons } from '@/lib/paneUtils'
+import { useTweakpane } from '@/lib/useTweakpane'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// ShaderScene + the registry components pull in three/webgpu, which
-// references `self` at module load time and breaks Next's SSR. Load
-// everything client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
@@ -42,15 +39,9 @@ const INITIAL: VignetteParams = {
   radius: 0.6,
   color: '#000000',
   grainOrderFirst: true,
-  // Default grain is intentionally prominent so the stacking-order
-  // toggle is visibly different: at low grain (~0.06) the difference
-  // between vignette-attenuated grain and full-amplitude grain is
-  // real but imperceptible.
   grainIntensity: 0.3,
 }
 
-// Round to 4 decimals so slider noise (e.g. 0.30000000000000004) doesn't
-// leak into the copied snippet.
 const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
 
 const fmtJsx = (p: VignetteParams) => {
@@ -86,77 +77,54 @@ const fmtParams = (p: VignetteParams) =>
 }`
 
 export default function VignettePage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useState<VignetteParams>(INITIAL)
-
-  useEffect(() => {
-    const container = paneContainerRef.current
-
-    if (!container) return
-    const local: VignetteParams = { ...INITIAL }
-    const pane = new Pane({ container, title: '<Vignette>' })
-    const syncToReact = () => setParams({ ...local })
-
-    pane.addButton({ title: 'Reset all' }).on('click', () => {
-      Object.assign(local, INITIAL)
-      pane.refresh()
-      syncToReact()
-    })
-
-    const flashCopied = (btn: { title: string }, original: string) => {
-      btn.title = 'Copied!'
-      pane.refresh()
-      setTimeout(() => {
-        btn.title = original
+  const [params, paneContainerRef] = useTweakpane<VignetteParams>(
+    '<Vignette>',
+    INITIAL,
+    (pane, local, sync) => {
+      pane.addButton({ title: 'Reset all' }).on('click', () => {
+        Object.assign(local, INITIAL)
         pane.refresh()
-      }, 1200)
-    }
-    const jsxBtn = pane.addButton({ title: 'Copy JSX' })
+        sync()
+      })
 
-    jsxBtn.on('click', () => {
-      void navigator.clipboard.writeText(fmtJsx(local)).then(() => flashCopied(jsxBtn, 'Copy JSX'))
-    })
-    const paramsBtn = pane.addButton({ title: 'Copy params' })
+      addCopyButtons(
+        pane,
+        () => fmtJsx(local),
+        () => fmtParams(local),
+      )
 
-    paramsBtn.on('click', () => {
-      void navigator.clipboard
-        .writeText(fmtParams(local))
-        .then(() => flashCopied(paramsBtn, 'Copy params'))
-    })
+      pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 })
+      pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 })
+      pane.addBinding(local, 'centerX', {
+        min: 0,
+        max: 1,
+        step: 0.01,
+        label: 'center.x',
+      })
+      pane.addBinding(local, 'centerY', {
+        min: 0,
+        max: 1,
+        step: 0.01,
+        label: 'center.y',
+      })
+      pane.addBinding(local, 'radius', { min: 0, max: 1.5, step: 0.01 })
+      pane.addBinding(local, 'color')
 
-    pane.addBlade({ view: 'separator' })
+      const stackFolder = pane.addFolder({ title: 'Stack with FilmGrain' })
 
-    pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 })
-    pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 })
-    pane.addBinding(local, 'centerX', { min: 0, max: 1, step: 0.01, label: 'center.x' })
-    pane.addBinding(local, 'centerY', { min: 0, max: 1, step: 0.01, label: 'center.y' })
-    pane.addBinding(local, 'radius', { min: 0, max: 1.5, step: 0.01 })
-    pane.addBinding(local, 'color')
+      stackFolder.addBinding(local, 'grainOrderFirst', {
+        label: 'grain first?',
+      })
+      stackFolder.addBinding(local, 'grainIntensity', {
+        label: 'grain intensity',
+        min: 0,
+        max: 0.5,
+        step: 0.005,
+      })
 
-    const stackFolder = pane.addFolder({ title: 'Stack with FilmGrain' })
-
-    stackFolder.addBinding(local, 'grainOrderFirst', { label: 'grain first?' })
-    stackFolder.addBinding(local, 'grainIntensity', {
-      label: 'grain intensity',
-      min: 0,
-      max: 0.5,
-      step: 0.005,
-    })
-
-    pane.on('change', () => {
-      // Vignette + FilmGrain uniforms are stable — useAnimatableUniform
-      // mutates the uniform .value on prop change, no material recompile.
-      // `grainOrderFirst` IS structural: it reorders the children inside
-      // <ShaderScene>, which changes the post-processing pass sequence
-      // (grain-then-vignette vs vignette-then-grain). The ShaderScene
-      // pipeline rebuilds when its overlay set changes order.
-      syncToReact()
-    })
-
-    return () => {
-      pane.dispose()
-    }
-  }, [])
+      pane.on('change', sync)
+    },
+  )
 
   const vignetteEl = (
     <Vignette
@@ -187,11 +155,6 @@ export default function VignettePage() {
           )}
           <VisualTestPause />
         </ShaderScene>
-        {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
-            hides the pane from screen readers; the axe test excludes the
-            `.tp-dfwv` subtree so the unlabeled internal controls don't trip
-            aria-hidden-focus. The page content in <section> below is the
-            accessible surface. */}
         <div
           aria-hidden="true"
           data-tweakpane-host

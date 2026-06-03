@@ -4,9 +4,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ShaderScene } from './shader-scene.js'
 
-// Mock createRenderer because happy-dom cannot initialize WebGPU.
-// The other @lovo/matter exports (FrameScheduler, createVisibilityWatcher,
-// createIntersectionWatcher) work fine in happy-dom and don't need mocking.
 vi.mock('@lovo/matter', async (importOriginal) => {
   const actual = await importOriginal<typeof MatterModule>()
 
@@ -43,8 +40,6 @@ describe('ShaderScene', () => {
   })
 
   it('renders the fallback before the async context resolves', () => {
-    // createRenderer is async; on the initial render ctx is null so the
-    // fallback prop is shown.
     const { container } = render(<ShaderScene fallback={<div data-testid="fb">loading</div>} />)
 
     expect(container.querySelector('[data-testid="fb"]')).toBeInTheDocument()

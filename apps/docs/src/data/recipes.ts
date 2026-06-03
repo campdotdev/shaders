@@ -1,20 +1,6 @@
-// Tier 3 recipe metadata — short TSL snippets that combine primitives. Each
-// entry has a `source` string (what the user copy-pastes) AND a corresponding
-// set of `build` callbacks in `apps/docs/app/recipes/_builds.ts` that produce
-// the equivalent live previews. The `source` matches the FIRST variant
-// (canonical); subsequent variants are described by a one-line `note`
-// telling the reader what to change in the source to reach that look.
-//
-// Build callbacks are looked up by composite key '<recipe-slug>.<variant-key>'.
-// The slugs in `primitivesUsed` MUST match entries in `src/data/primitives.ts`
-// so the cross-links resolve.
-
 export interface RecipeVariant {
-  /** Stable identifier composed with the recipe slug to look up RECIPE_BUILDS. */
   key: string
-  /** Displayed under the preview card. */
   label: string
-  /** One-line "to get this, change X to Y" prose under the label. */
   note: string
 }
 
@@ -23,9 +9,7 @@ export interface RecipeEntry {
   name: string
   description: string
   primitivesUsed: readonly string[]
-  /** Canonical source the user copy-pastes. Matches variants[0]. */
   source: string
-  /** First entry is canonical (its build matches `source`). 2-3 entries. */
   variants: readonly RecipeVariant[]
 }
 

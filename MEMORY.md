@@ -124,6 +124,12 @@ From `docs/superpowers/ideas-backlog.md` — not commitments, just orientation:
 
 ---
 
+## Code style preferences
+
+- **No comments or JSDoc unless asked.** The user adds comments and documentation themselves. Do not add JSDoc (`/** */`), inline explanatory comments, or `// ...` notes when writing or editing code. Only add a comment if the user explicitly requests it or the specific line contains non-obvious behaviour that would otherwise be invisible (e.g. a required workaround for a named gotcha in CLAUDE.md).
+
+---
+
 ## Key gotchas (additions beyond CLAUDE.md)
 
 - **`pnpm smoke`** runs the CLI end-to-end in a fresh `/tmp` project. Always run it after touching `packages/matter-cli/` or `registry/package.json`/`registry/registry.json`.

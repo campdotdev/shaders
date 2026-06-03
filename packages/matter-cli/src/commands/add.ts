@@ -1,7 +1,7 @@
 import { access, mkdir, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 
-import { readMatterConfig } from '../config/matterConfig.js'
+import { readMatterConfig, resolveRegistryUrl } from '../config/matterConfig.js'
 import {
   fetchComponentSource,
   fetchRegistry,
@@ -33,16 +33,12 @@ export async function runAdd(
   }
 
   const cfg = await readMatterConfig(io.cwd)
-  const baseUrl = opts.registry ?? cfg.registryUrl
   const ref = resolveRef(opts.ref, opts.cliVersion)
-  const registryUrl = baseUrl.replace('${ref}', ref)
+  const registryUrl = resolveRegistryUrl(cfg, { registry: opts.registry, ref })
   const registry = await fetchRegistry(registryUrl)
 
-  // Resolve every component up front so we fail fast on missing slugs
-  // before any disk write.
   const resolved = components.map((slug) => resolveComponent(slug, registry, registryUrl))
 
-  // Pre-flight overwrite check on every target.
   if (opts.force !== true) {
     for (const r of resolved) {
       const targetPath = join(io.cwd, cfg.componentsDir, r.entry.file)
@@ -53,8 +49,6 @@ export async function runAdd(
     }
   }
 
-  // Fetch all sources concurrently. If any fetch fails, the throw
-  // propagates before we touch disk — no partial-write states.
   const fetched = await Promise.all(
     resolved.map(async (r) => {
       const source = await fetchComponentSource(registryUrl, r.entry.file)
@@ -63,8 +57,6 @@ export async function runAdd(
     }),
   )
 
-  // Now write sequentially (mkdir + writeFile per target). Sequential
-  // here is fine: the bottleneck has already passed.
   const allDeps = new Set<string>()
 
   for (const f of fetched) {
@@ -77,7 +69,6 @@ export async function runAdd(
     for (const dep of f.entry.dependencies) allDeps.add(dep)
   }
 
-  // Dedup + alphabetize install hint.
   const sortedDeps = [...allDeps].sort()
 
   io.log('')

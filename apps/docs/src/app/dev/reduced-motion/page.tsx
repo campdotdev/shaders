@@ -2,10 +2,6 @@
 
 import dynamic from 'next/dynamic'
 
-// ReducedMotionDemo imports three/webgpu (transitively via @lovo/matter and
-// @matter/registry), which references `self` at module load and breaks
-// Next's SSR pass. Load it client-only. (CLAUDE.md gotcha #10 — same pattern
-// as fbm-playground/page.tsx and mesh-gradient-playground/page.tsx.)
 const ReducedMotionDemo = dynamic(
   () => import('./ReducedMotionDemo').then((m) => m.ReducedMotionDemo),
   { ssr: false },
