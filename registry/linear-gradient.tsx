@@ -10,8 +10,10 @@ import {
   useStaticHint,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
+import type { ShaderNodeObject } from 'three/tsl'
 import { length, mod, uniform, uv, vec2, vec3 } from 'three/tsl'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
+import type { Node } from 'three/webgpu'
 
 export interface LinearGradientProps {
   colors?: AnimatableProp<string[]>
@@ -23,7 +25,7 @@ export interface LinearGradientProps {
   inputs?: { cursor?: CursorSignal }
 }
 
-const DEFAULT_COLORS = ['#d9f384', '#00ab34'] // palette.lime.light → palette.green.dark (analogous, L 0.92 → 0.65)
+const DEFAULT_COLORS = ['#d9f384', '#00ab34']
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const clean = hex.replace('#', '')
@@ -47,6 +49,54 @@ const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => 
   return prop
 }
 
+function buildLinearGradientMaterial(
+  // angleU and speedU are read via .value for JS-side direction/animation decisions
+  angleU: ShaderNodeObject<Node> & { value: number },
+  speedU: ShaderNodeObject<Node> & { value: number },
+  cursorU: ShaderNodeObject<Node>,
+  colors: string[],
+  variant: 'linear' | 'radial' | undefined,
+): MeshBasicNodeMaterial {
+  const stops: ColorRampStop[] = colors.map((hex, i) => {
+    const [r, g, b] = hexToVec3(hex)
+
+    return {
+      color: vec3(r, g, b),
+      position: i / Math.max(colors.length - 1, 1),
+    }
+  })
+
+  let tNode
+
+  if (variant === 'radial') {
+    tNode = length(uv().sub(cursorU))
+  } else {
+    // Read angle at build time — direction vector is baked into the TSL graph,
+    // not reactive. To animate the angle, the effect dep array re-triggers the build.
+    const angleRad = angleU.value * (Math.PI / 180)
+    const dirX = Math.cos(angleRad)
+    const dirY = Math.sin(angleRad)
+
+    tNode = uv().sub(cursorU).dot(vec2(dirX, dirY)).add(0.5)
+  }
+
+  // Read speed at build time to decide whether to apply time-based animation
+  const speedScalar = speedU.value
+  const tAnimated =
+    speedScalar === 0
+      ? tNode
+      : mod(tNode.add(time.mul(speedScalar)), 2)
+          .sub(1)
+          .abs()
+          .oneMinus()
+
+  const material = new MeshBasicNodeMaterial()
+
+  material.colorNode = colorRamp(tAnimated, stops)
+
+  return material
+}
+
 export function LinearGradient(props: LinearGradientProps) {
   const ctx = useShaderContext()
   const cursorFromInputs = props.inputs?.cursor
@@ -57,28 +107,24 @@ export function LinearGradient(props: LinearGradientProps) {
 
   useStaticHint(isStatic)
 
-  const colors = resolveColors(props.colors)
+  // Memoized so colors array identity is stable; colorsKey used in effect deps
+  // to avoid rebuilding on every render when values haven't changed
+  const colors = useMemo(
+    () => resolveColors(props.colors),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.colors],
+  )
   const colorsKey = colors.join('|')
 
-  // The angle/speed/focal props are animatable; bind them to uniforms.
-  // In M1 these uniforms are read once at material-build time (snapshot
-  // semantics) — fully live AnimatableProp semantics on these specific
-  // props ship in M3 alongside the richer interactive components.
   const angleUniform = useAnimatableUniform<number>(props.angle ?? 0)
   const speedUniform = useAnimatableUniform<number>(props.speed ?? 0)
   const focalUniform = useAnimatableUniform<readonly [number, number]>(
     props.focalPoint ?? [0.5, 0.5],
   )
 
-  // Cursor uniform — a real Vector2 we mutate in place from the cursor
-  // signal so the GPU sees the new value every frame without a remount.
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
 
-  // Drive cursorVec from the cursor signal when interactive; otherwise
-  // park it on the static focalPoint prop (or screen center). The TSL
-  // math reads cursorUniform either way, so both modes use one path.
-  // y is inverted: DOM y=0 is top, UV y=0 is bottom of the geometry.
   useEffect(() => {
     if (cursor) {
       return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y))
@@ -86,6 +132,7 @@ export function LinearGradient(props: LinearGradientProps) {
     const fp = props.focalPoint
 
     if (isPoint(fp)) {
+      // y-flip: focalPoint is in UV space (0,0 = bottom-left), cursor y is DOM space (down = +y)
       cursorVec.set(fp[0], 1 - fp[1])
     } else {
       cursorVec.set(0.5, 0.5)
@@ -97,68 +144,24 @@ export function LinearGradient(props: LinearGradientProps) {
   useEffect(() => {
     if (!ctx) return
 
-    const stops: ColorRampStop[] = colors.map((hex, i) => {
-      const [r, g, b] = hexToVec3(hex)
-
-      return {
-        color: vec3(r, g, b),
-        position: i / Math.max(colors.length - 1, 1),
-      }
-    })
-
-    // The cursor uniform is consumed via `uv().sub(cursorUniform)` (the
-    // arg form, not chained receiver) — this matches the playground
-    // harness's working pattern. Chained .sub/.mul/.dot starting from a
-    // raw uniform node didn't propagate the value through the GPU
-    // pipeline reliably; the arg form does.
-    let tNode
-
-    if (props.variant === 'radial') {
-      // Radial: t is distance from focal. When interactive, the focal
-      // tracks the cursor (DOM-y already inverted in the change handler).
-      tNode = length(uv().sub(cursorUniform))
-    } else {
-      // Linear: project (uv - cursor) along the gradient direction so
-      // the bands flow toward where the cursor is.
-      const angleRad = angleUniform.value * (Math.PI / 180)
-      const dirX = Math.cos(angleRad)
-      const dirY = Math.sin(angleRad)
-
-      tNode = uv().sub(cursorUniform).dot(vec2(dirX, dirY)).add(0.5)
-    }
-
-    // Animate the gradient drift via TSL `time`. A naive `mod(t, 1)` wraps
-    // hard and shows a seam at the boundary. Use a triangle wave that
-    // ping-pongs t between 0 and 1: 1 - |1 - mod(t, 2)|. Smooth, seamless.
-    const speedScalar = speedUniform.value
-    const tAnimated =
-      speedScalar === 0
-        ? tNode
-        : mod(tNode.add(time.mul(speedScalar)), 2)
-            .sub(1)
-            .abs()
-            .oneMinus()
-
-    const material = new MeshBasicNodeMaterial()
-
-    material.colorNode = colorRamp(tAnimated, stops)
-
+    const material = buildLinearGradientMaterial(
+      angleUniform,
+      speedUniform,
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+      cursorUniform as unknown as ShaderNodeObject<Node>,
+      colors,
+      props.variant,
+    )
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 
     ctx.scene.add(mesh)
 
     return () => {
       ctx.scene.remove(mesh)
-      // three's WebGPURenderer can throw inside `material.dispose()` when
-      // the renderer's Nodes bookkeeping has already cleaned up the node
-      // tree (typically during rapid rebuild cycles). Swallowing the
-      // dispose error prevents a page crash; the underlying GPU resources
-      // will be reaped when the parent renderer is disposed at unmount.
+
       try {
         material.dispose()
       } catch (err) {
-        // Known benign three.js webgpu race during rapid material churn —
-        // see CLAUDE.md gotchas. Demoted to debug so it doesn't spam logs.
         console.debug('[LinearGradient] material.dispose ignored:', err)
       }
       try {
@@ -167,12 +170,6 @@ export function LinearGradient(props: LinearGradientProps) {
         console.debug('[LinearGradient] geometry.dispose ignored:', err)
       }
     }
-    // Re-run when structural inputs change. Animatable uniforms (incl.
-    // cursorUniform) are mutated in place and don't re-trigger this effect.
-    // `colors` is unstable by reference across renders; `colorsKey` is the
-    // stable string proxy for its contents, so the effect remounts only when
-    // the actual sequence of hexes changes.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     ctx,
     props.variant,
