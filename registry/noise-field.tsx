@@ -1,4 +1,3 @@
-// registry/noise-field.tsx
 'use client'
 
 import { colorRamp, type ColorRampStop, fbm, quantize, time, voronoi } from '@lovo/matter'
@@ -10,21 +9,23 @@ import {
   useShaderContext,
 } from '@lovo/matter-react'
 import { useEffect, useMemo } from 'react'
+import type { ShaderNodeObject } from 'three/tsl'
 import { uniform, uv, vec2, vec3 } from 'three/tsl'
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu'
+import type { Node } from 'three/webgpu'
 
 export interface NoiseFieldProps {
   scale?: AnimatableProp<number>
   speed?: AnimatableProp<number>
   colors?: AnimatableProp<string[]>
-  octaves?: number // JS-side; baked into TSL fragment at mount.
+  octaves?: number
   variant?: 'organic' | 'cellular' | 'grid'
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
 }
 
-const DEFAULT_COLORS = ['#131614', '#E7E9E7'] // palette.gray[1] → palette.gray[11]
-const GRID_STEPS = 6 // hardcoded for variant="grid"; promotable to a prop in v2.
+const DEFAULT_COLORS = ['#131614', '#E7E9E7']
+const GRID_STEPS = 6
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {
   const clean = hex.replace('#', '')
@@ -45,9 +46,49 @@ const resolveColors = (prop: AnimatableProp<string[]> | undefined): string[] => 
   return prop
 }
 
+function buildNoiseFieldMaterial(
+  scaleU: ShaderNodeObject<Node>,
+  speedU: ShaderNodeObject<Node>,
+  stops: ColorRampStop[],
+  variant: 'organic' | 'cellular' | 'grid',
+  octaves: number,
+): MeshBasicNodeMaterial {
+  const baseUv = uv().mul(scaleU)
+  const tOff = time.mul(speedU)
+  const animatedUv = baseUv.add(vec2(tOff, tOff))
+
+  let t
+
+  if (variant === 'cellular') {
+    t = voronoi(animatedUv)
+  } else if (variant === 'grid') {
+    const raw = fbm(animatedUv, { octaves })
+    const norm = raw.add(1).mul(0.5)
+
+    t = quantize(norm, GRID_STEPS)
+  } else {
+    // 'organic': raw fbm normalized to [0, 1]
+    const raw = fbm(animatedUv, { octaves })
+
+    t = raw.add(1).mul(0.5)
+  }
+
+  const material = new MeshBasicNodeMaterial()
+
+  material.colorNode = colorRamp(t, stops)
+
+  return material
+}
+
 export function NoiseField(props: NoiseFieldProps) {
   const ctx = useShaderContext()
-  const colors = resolveColors(props.colors)
+
+  // resolveColors handles signal-like (MotionValue) and plain array props
+  const colors = useMemo(
+    () => resolveColors(props.colors),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.colors],
+  )
   const colorsKey = colors.join('|')
   const octaves = props.octaves ?? 4
   const variant = props.variant ?? 'organic'
@@ -59,16 +100,7 @@ export function NoiseField(props: NoiseFieldProps) {
   const scaleUniform = useAnimatableUniform<number>(props.scale ?? 1)
   const speedUniform = useAnimatableUniform<number>(props.speed ?? 0.5)
 
-  // Cursor wiring is kept here as future-enhancement scaffolding (the spec
-  // marks UV displacement near cursor as optional). cursorVec is mutated in
-  // place from the cursor signal so the GPU sees the new value every frame
-  // when the TSL fragment eventually consumes cursorUniform. Today the TSL
-  // path doesn't read it — that's fine, the wiring is silent until used.
-  // Keeping it declared documents the contract with the cursor signal.
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
-  // TODO: when cursor-displace wires up, consume _cursorUniform in the TSL
-  // chain (root from uv()/vec2, pass _cursorUniform as arg per gotcha #12)
-  // and rename it back to cursorUniform.
   const _cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
 
   useEffect(() => {
@@ -92,46 +124,14 @@ export function NoiseField(props: NoiseFieldProps) {
       }
     })
 
-    // Build the input UV starting from `uv()` and pass uniforms in as args
-    // (gotcha #12). scaleUniform is the only animatable on the UV path here;
-    // cursor-displace is a future enhancement (see cursor wiring above).
-    const baseUv = uv().mul(scaleUniform)
-    // Pre-compute the time-driven offset once and reuse on both UV axes —
-    // identical scrolling on x and y reads as the noise field "drifting"
-    // diagonally without per-axis variation, which is the desired feel for
-    // a uniform background pattern.
-    const tOff = time.mul(speedUniform)
-    const animatedUv = baseUv.add(vec2(tOff, tOff))
-
-    let t
-
-    if (variant === 'cellular') {
-      t = voronoi(animatedUv)
-    } else if (variant === 'grid') {
-      const raw = fbm(animatedUv, { octaves })
-      const norm = raw.add(1).mul(0.5)
-
-      t = quantize(norm, GRID_STEPS)
-    } else {
-      const raw = fbm(animatedUv, { octaves })
-
-      t = raw.add(1).mul(0.5)
-    }
-
-    const material = new MeshBasicNodeMaterial()
-
-    material.colorNode = colorRamp(t, stops)
+    const material = buildNoiseFieldMaterial(scaleUniform, speedUniform, stops, variant, octaves)
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 
     ctx.scene.add(mesh)
 
     return () => {
       ctx.scene.remove(mesh)
-      // three's WebGPURenderer can throw inside `material.dispose()` when
-      // the renderer's Nodes bookkeeping has already cleaned up the node
-      // tree (typically during rapid rebuild cycles). Swallowing the
-      // dispose error prevents a page crash; the underlying GPU resources
-      // will be reaped when the parent renderer is disposed at unmount.
+
       try {
         material.dispose()
       } catch {
@@ -143,8 +143,6 @@ export function NoiseField(props: NoiseFieldProps) {
         /* same */
       }
     }
-    // `colors` is unstable by reference across renders; `colorsKey` is the
-    // stable string proxy for its contents.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ctx, colorsKey, octaves, variant, scaleUniform, speedUniform])
 
