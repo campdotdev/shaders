@@ -84,11 +84,7 @@ export function NoiseField(props: NoiseFieldProps) {
   const ctx = useShaderContext()
 
   // resolveColors handles signal-like (MotionValue) and plain array props
-  const colors = useMemo(
-    () => resolveColors(props.colors),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [props.colors],
-  )
+  const colors = useMemo(() => resolveColors(props.colors), [props.colors])
   // colorsKey is in the effect dep array instead of `colors` (array ref) to avoid
   // rebuilding the material on every render when color values haven't changed
   const colorsKey = colors.join('|')

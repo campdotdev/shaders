@@ -20,7 +20,7 @@ export interface WavesProps {
   frequency?: AnimatableProp<number>
   speed?: AnimatableProp<number>
   color?: string
-  layers?: number
+  layers?: number // JS-side; baked into the TSL fragment at material build time, not animatable
   interactive?: boolean
   inputs?: { cursor?: CursorSignal }
 }
