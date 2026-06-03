@@ -72,6 +72,7 @@ function buildDotFieldMaterial(
   const distToCursorPx = length(cellToCursorPx)
   const influence = smoothstep(reachU, 0, distToCursorPx)
 
+  // +0.001 avoids div-by-zero when cursor is exactly over a cell center
   const dirToCursor = cellToCursorPx.div(distToCursorPx.add(0.001))
   const offset = dirToCursor.mul(influence).mul(strengthU).mul(0.4)
   const displacedLocal = displace(cellLocal, offset.mul(-1))
@@ -103,18 +104,20 @@ export function DotField(props: DotFieldProps) {
   const reachUniform = useAnimatableUniform<number>(props.reach ?? DEFAULTS.reach)
   const strengthUniform = useAnimatableUniform<number>(props.strength ?? DEFAULTS.strength)
 
-  const color = hexToVec3(props.color ?? DEFAULTS.color)
+  const color = useMemo(() => hexToVec3(props.color ?? DEFAULTS.color), [props.color])
 
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
 
   useEffect(() => {
+    // y-flip: cursor y is in DOM space (down = +y); shader UV y is up = +y
     if (cursor) return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y))
     cursorVec.set(0.5, 0.5)
 
     return undefined
   }, [cursor, cursorVec])
 
+  // Seed with a plausible resolution; ResizeObserver fires on mount to correct it
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
   const resUniform = useMemo(() => uniform(resVec), [resVec])
 
