@@ -7,7 +7,6 @@ import { ShaderContext } from '../../context/shader-context.js'
 
 import { useStaticHint } from './use-static-hint.js'
 
-// Minimal ShaderContextValue stub — only `scheduler` is exercised here.
 const makeWrapper = (scheduler: FrameScheduler) => {
   function Wrapper({ children }: { children: ReactNode }) {
     return (
@@ -15,7 +14,6 @@ const makeWrapper = (scheduler: FrameScheduler) => {
         value={
           {
             scheduler,
-            // The other context fields aren't read by useStaticHint — cast.
           } as unknown as React.ContextType<typeof ShaderContext>
         }
       >

@@ -5,16 +5,11 @@ import { CodeBlock } from '@/components/CodeBlock'
 import { PrimitiveDemo } from '@/components/PrimitiveDemo'
 import { PRIMITIVES } from '@/data/primitives'
 
-// Server Component — generates one static route per primitive at build time
-// and renders the page chrome (signature CodeBlock, cross-links). The
-// interactive demo is a Client child (PrimitiveDemo).
-
 export function generateStaticParams() {
   return PRIMITIVES.map((p) => ({ slug: p.slug }))
 }
 
 interface PrimitivePageProps {
-  // Next 15: dynamic-route params is a Promise.
   params: Promise<{ slug: string }>
 }
 

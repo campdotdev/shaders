@@ -2,41 +2,20 @@
 
 import { useEffect, useState } from 'react'
 
+import { createSignal } from '../../internal/create-signal.js'
+
 export type ScrollValue = readonly [scrollY: number, progress: number]
 
 export interface ScrollSignal {
-  /** Current scroll Y (px) and normalized progress in [0,1]. */
   get(): ScrollValue
   on(event: 'change', cb: (value: ScrollValue) => void): () => void
 }
 
-// Inert stub returned during SSR + on the first client render before the
-// lifecycle effect attaches. Subscribing to it returns a no-op unsubscribe.
 const STUB_SIGNAL: ScrollSignal = {
   get: () => [0, 0] as const,
   on: () => () => undefined,
 }
 
-/**
- * Track window scroll position. Exposes an AnimatableSignal of `[scrollY, progress]`
- * where `progress` is `scrollY / max(documentHeight - innerHeight, 1)` clamped
- * to [0, 1]. Listener is rAF-throttled and `passive: true` so it never blocks
- * scrolling.
- *
- * No v1 Tier 1 component consumes this hook; it ships so users can pass
- * `inputs={{ scroll: useScroll() }}` to any Matter component.
- *
- * Strict-Mode-safe: lifecycle is in one effect, so React 19's intentional
- * mount→unmount→mount cycle in dev creates a fresh listener pair per real
- * mount and tears down cleanly on each pseudo-unmount (CLAUDE.md gotcha #14).
- *
- * **Known limitation (v1):** `progress` is computed against whichever
- * `documentHeight` was current when the last scroll fired. If the page grows
- * after mount (async content, font load reflow, expanding panels) without
- * the user scrolling, the denominator goes stale. A future ResizeObserver/
- * MutationObserver pass would close the gap; deferred until a v1 component
- * consumes scroll input.
- */
 export function useScroll(): ScrollSignal {
   const [signal, setSignal] = useState<ScrollSignal | null>(null)
 
@@ -45,9 +24,7 @@ export function useScroll(): ScrollSignal {
 
     const compute = (): ScrollValue => {
       const y = window.scrollY
-      // For pages shorter than the viewport, `documentHeight - innerHeight` is
-      // <= 0; clamp to 1 to avoid div-by-zero. Progress stays at 0 in that
-      // case because scrollY is also 0.
+
       const max = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1)
       const progress = Math.max(0, Math.min(1, y / max))
 
@@ -55,17 +32,7 @@ export function useScroll(): ScrollSignal {
     }
 
     let value: ScrollValue = compute()
-    const listeners = new Set<(v: ScrollValue) => void>()
-    const fresh: ScrollSignal = {
-      get: () => value,
-      on: (_event, cb) => {
-        listeners.add(cb)
-
-        return () => {
-          listeners.delete(cb)
-        }
-      },
-    }
+    const { signal: fresh, listeners } = createSignal<ScrollValue>(() => value)
 
     setSignal(fresh)
 

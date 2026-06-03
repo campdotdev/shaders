@@ -10,7 +10,11 @@ import {
 
 import { useOverlayPass } from './use-overlay-pass.js'
 
-function makeCtx(): { ctx: ShaderContextValue; registered: OverlayTransform[]; cleanups: number } {
+function makeCtx(): {
+  ctx: ShaderContextValue
+  registered: OverlayTransform[]
+  cleanups: number
+} {
   const registered: OverlayTransform[] = []
   let cleanups = 0
   const ctx = {
@@ -113,7 +117,6 @@ describe('useOverlayPass', () => {
       return null
     }
 
-    // Render without a provider. No throw expected.
     expect(() => render(<Probe />)).not.toThrow()
     cleanup()
   })

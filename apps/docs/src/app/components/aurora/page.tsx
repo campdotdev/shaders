@@ -1,4 +1,3 @@
-// apps/docs/app/components/aurora/page.tsx
 'use client'
 
 import type { AuroraDirection } from '@matter/registry/aurora'
@@ -7,11 +6,9 @@ import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 
 import { palette } from '@/lib/palette'
+import { addCopyButtons } from '@/lib/paneUtils'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Plain (non-signal) per-layer state for tweakpane. Numbers are assignable
-// to AnimatableProp<number> at the prop boundary so we hand this straight
-// to <Aurora> without conversion.
 interface PlainAuroraLayer {
   hex: string
   speed: number
@@ -20,9 +17,6 @@ interface PlainAuroraLayer {
   falloff: number
 }
 
-// Both ShaderScene and Aurora pull in three/webgpu (via createRenderer),
-// which references `self` at module load time and breaks Next's SSR. Load
-// both client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
@@ -58,18 +52,39 @@ const INITIAL: AuroraParams = {
   horizonColor: '#040009',
   skyColor: '#146389',
   layers: [
-    { hex: palette.green.base, speed: 0.07, intensity: 0.6, variation: 0, falloff: 1 },
-    { hex: palette.blue.base, speed: 0.1, intensity: 0.2, variation: 5, falloff: 1 },
-    { hex: palette.violet.base, speed: 0.15, intensity: 0.3, variation: 11, falloff: 1 },
-    { hex: palette.magenta.base, speed: 0.07, intensity: 0.2, variation: 17, falloff: 1 },
+    {
+      hex: palette.green.base,
+      speed: 0.07,
+      intensity: 0.6,
+      variation: 0,
+      falloff: 1,
+    },
+    {
+      hex: palette.blue.base,
+      speed: 0.1,
+      intensity: 0.2,
+      variation: 5,
+      falloff: 1,
+    },
+    {
+      hex: palette.violet.base,
+      speed: 0.15,
+      intensity: 0.3,
+      variation: 11,
+      falloff: 1,
+    },
+    {
+      hex: palette.magenta.base,
+      speed: 0.07,
+      intensity: 0.2,
+      variation: 17,
+      falloff: 1,
+    },
   ],
 }
 
 const LAYER_TITLES = ['Layer 0', 'Layer 1', 'Layer 2', 'Layer 3']
 
-// Round to 4 decimals so slider noise (e.g. 0.30000000000000004) doesn't
-// leak into the copied snippet, but stop short of losing precision the
-// user actually cares about.
 const fmtNum = (n: number) => {
   const r = Math.round(n * 10000) / 10000
 
@@ -77,7 +92,9 @@ const fmtNum = (n: number) => {
 }
 
 const fmtLayer = (l: PlainAuroraLayer) =>
-  `{ hex: '${l.hex}', speed: ${fmtNum(l.speed)}, intensity: ${fmtNum(l.intensity)}, variation: ${fmtNum(l.variation)}, falloff: ${fmtNum(l.falloff)} }`
+  `{ hex: '${l.hex}', speed: ${fmtNum(l.speed)}, intensity: ${fmtNum(
+    l.intensity,
+  )}, variation: ${fmtNum(l.variation)}, falloff: ${fmtNum(l.falloff)} }`
 
 const fmtJsx = (p: AuroraParams) =>
   `<ShaderScene>
@@ -174,40 +191,41 @@ export default function AuroraPage() {
       syncToReact()
     })
 
-    // Briefly toast "Copied!" on the button itself after a successful copy.
-    // Clipboard API works in secure contexts (localhost is secure in dev).
-    const flashCopied = (btn: { title: string }, original: string) => {
-      btn.title = 'Copied!'
-      pane.refresh()
-      setTimeout(() => {
-        btn.title = original
-        pane.refresh()
-      }, 1200)
-    }
-    const jsxBtn = pane.addButton({ title: 'Copy JSX' })
-
-    jsxBtn.on('click', () => {
-      void navigator.clipboard.writeText(fmtJsx(local)).then(() => flashCopied(jsxBtn, 'Copy JSX'))
-    })
-    const paramsBtn = pane.addButton({ title: 'Copy params' })
-
-    paramsBtn.on('click', () => {
-      void navigator.clipboard
-        .writeText(fmtParams(local))
-        .then(() => flashCopied(paramsBtn, 'Copy params'))
-    })
-
-    pane.addBlade({ view: 'separator' })
+    addCopyButtons(
+      pane,
+      () => fmtJsx(local),
+      () => fmtParams(local),
+    )
 
     const globals = pane.addFolder({ title: 'Global' })
 
     globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 })
     globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 })
-    globals.addBinding(local, 'densityX', { label: 'density X', min: 0.5, max: 10, step: 0.05 })
-    globals.addBinding(local, 'densityY', { label: 'density Y', min: 0.5, max: 10, step: 0.05 })
+    globals.addBinding(local, 'densityX', {
+      label: 'density X',
+      min: 0.5,
+      max: 10,
+      step: 0.05,
+    })
+    globals.addBinding(local, 'densityY', {
+      label: 'density Y',
+      min: 0.5,
+      max: 10,
+      step: 0.05,
+    })
     globals.addBinding(local, 'falloff', { min: 0, max: 2, step: 0.01 })
-    globals.addBinding(local, 'driftX', { label: 'drift X', min: -5, max: 5, step: 0.05 })
-    globals.addBinding(local, 'driftY', { label: 'drift Y', min: -5, max: 5, step: 0.05 })
+    globals.addBinding(local, 'driftX', {
+      label: 'drift X',
+      min: -5,
+      max: 5,
+      step: 0.05,
+    })
+    globals.addBinding(local, 'driftY', {
+      label: 'drift Y',
+      min: -5,
+      max: 5,
+      step: 0.05,
+    })
     globals.addBinding(local, 'turbulence', { min: 0, max: 3, step: 0.01 })
     globals.addBinding(local, 'direction', {
       label: 'from',
@@ -250,7 +268,12 @@ export default function AuroraPage() {
       folder.addBinding(layer, 'hex', { label: 'color' })
       folder.addBinding(layer, 'speed', { min: 0, max: 0.5, step: 0.005 })
       folder.addBinding(layer, 'intensity', { min: 0, max: 1, step: 0.01 })
-      folder.addBinding(layer, 'falloff', { label: 'falloff ×', min: 0.1, max: 3, step: 0.01 })
+      folder.addBinding(layer, 'falloff', {
+        label: 'falloff ×',
+        min: 0.1,
+        max: 3,
+        step: 0.01,
+      })
 
       folder.addButton({ title: 'Reset layer' }).on('click', () => {
         resetLayer(i)
@@ -260,9 +283,6 @@ export default function AuroraPage() {
     }
 
     pane.on('change', () => {
-      // Sync to React. Aurora's uniforms are stable across re-renders;
-      // useAnimatableUniform mutates the uniform .value when the prop
-      // changes, so the material is never rebuilt for a slider tick.
       syncToReact()
     })
 
@@ -291,15 +311,6 @@ export default function AuroraPage() {
           />
           <VisualTestPause />
         </ShaderScene>
-        {/* Tweakpane lives inside the preview so it's part of the same
-            stacking context — fullscreening the preview takes the panel
-            with it. `absolute` positions against the preview's top-right.
-            Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
-            hides the pane from screen readers; the axe test excludes the
-            `.tp-dfwv` subtree so the unlabeled internal controls don't trip
-            aria-hidden-focus. The page content in <section> below is the
-            accessible surface. (`inert` would have blocked mouse input too —
-            regression noted 2026-05-13.) */}
         <div
           aria-hidden="true"
           data-tweakpane-host

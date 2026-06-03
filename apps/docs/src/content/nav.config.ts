@@ -1,11 +1,5 @@
 import type { NavGroup } from './types'
 
-/**
- * Single source of truth for sidebar structure and ordering.
- *
- * Adding a framework later: add an MDX page with the right `section`,
- * then append a nested group under `Frameworks` here. No component changes.
- */
 export const NAV: NavGroup[] = [
   {
     label: 'Overview',

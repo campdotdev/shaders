@@ -1,11 +1,9 @@
-// apps/docs/app/components/mesh-gradient/page.tsx
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
 
 import { palette } from '@/lib/palette'
+import { useTweakpane } from '@/lib/useTweakpane'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
@@ -56,61 +54,59 @@ const INITIAL: Params = {
 }
 
 export default function MeshGradientPage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useState<Params>(INITIAL)
+  const [params, paneContainerRef] = useTweakpane<Params>(
+    '<MeshGradient>',
+    INITIAL,
+    (pane, local, sync) => {
+      pane.addBinding(local, 'speed', { min: 0, max: 5, step: 0.01 })
+      pane.addBinding(local, 'frequency', { min: 0.5, max: 20, step: 0.1 })
+      pane.addBinding(local, 'amplitude', { min: 5, max: 100, step: 0.5 })
+      pane.addBinding(local, 'cycleSpeed', {
+        label: 'palette cycle',
+        min: 0,
+        max: 2,
+        step: 0.01,
+      })
+      pane.addBinding(local, 'cycleEase', {
+        label: 'cycle ease',
+        min: 0.1,
+        max: 3,
+        step: 0.01,
+      })
+      pane.addBlade({ view: 'separator' })
 
-  useEffect(() => {
-    const container = paneContainerRef.current
+      const grainFolder = pane.addFolder({ title: 'FilmGrain overlay' })
 
-    if (!container) return
-    const local: Params = { ...INITIAL }
-    const pane = new Pane({ container, title: '<MeshGradient>' })
+      grainFolder.addBinding(local, 'grain', {
+        label: 'intensity',
+        min: 0,
+        max: 1,
+        step: 0.01,
+      })
+      grainFolder.addBinding(local, 'grainSpeed', {
+        label: 'speed',
+        min: 0,
+        max: 5,
+        step: 0.01,
+      })
 
-    pane.addBinding(local, 'speed', { min: 0, max: 5, step: 0.01 })
-    pane.addBinding(local, 'frequency', { min: 0.5, max: 20, step: 0.1 })
-    pane.addBinding(local, 'amplitude', { min: 5, max: 100, step: 0.5 })
-    pane.addBinding(local, 'cycleSpeed', {
-      label: 'palette cycle',
-      min: 0,
-      max: 2,
-      step: 0.01,
-    })
-    pane.addBinding(local, 'cycleEase', {
-      label: 'cycle ease',
-      min: 0.1,
-      max: 3,
-      step: 0.01,
-    })
-    pane.addBlade({ view: 'separator' })
+      const aFolder = pane.addFolder({ title: 'Palette A', expanded: false })
 
-    const grainFolder = pane.addFolder({ title: 'FilmGrain overlay' })
+      aFolder.addBinding(local, 'a0', { label: 'color 0' })
+      aFolder.addBinding(local, 'a1', { label: 'color 1' })
+      aFolder.addBinding(local, 'a2', { label: 'color 2' })
+      aFolder.addBinding(local, 'a3', { label: 'color 3' })
 
-    grainFolder.addBinding(local, 'grain', { label: 'intensity', min: 0, max: 1, step: 0.01 })
-    grainFolder.addBinding(local, 'grainSpeed', {
-      label: 'speed',
-      min: 0,
-      max: 5,
-      step: 0.01,
-    })
+      const bFolder = pane.addFolder({ title: 'Palette B', expanded: false })
 
-    const aFolder = pane.addFolder({ title: 'Palette A', expanded: false })
+      bFolder.addBinding(local, 'b0', { label: 'color 0' })
+      bFolder.addBinding(local, 'b1', { label: 'color 1' })
+      bFolder.addBinding(local, 'b2', { label: 'color 2' })
+      bFolder.addBinding(local, 'b3', { label: 'color 3' })
 
-    aFolder.addBinding(local, 'a0', { label: 'color 0' })
-    aFolder.addBinding(local, 'a1', { label: 'color 1' })
-    aFolder.addBinding(local, 'a2', { label: 'color 2' })
-    aFolder.addBinding(local, 'a3', { label: 'color 3' })
-
-    const bFolder = pane.addFolder({ title: 'Palette B', expanded: false })
-
-    bFolder.addBinding(local, 'b0', { label: 'color 0' })
-    bFolder.addBinding(local, 'b1', { label: 'color 1' })
-    bFolder.addBinding(local, 'b2', { label: 'color 2' })
-    bFolder.addBinding(local, 'b3', { label: 'color 3' })
-
-    pane.on('change', () => setParams({ ...local }))
-
-    return () => pane.dispose()
-  }, [])
+      pane.on('change', sync)
+    },
+  )
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -128,11 +124,6 @@ export default function MeshGradientPage() {
           <FilmGrain intensity={params.grain} speed={params.grainSpeed} />
           <VisualTestPause />
         </ShaderScene>
-        {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
-            hides the pane from screen readers; the axe test excludes the
-            `.tp-dfwv` subtree so the unlabeled internal controls don't trip
-            aria-hidden-focus. The page content in <section> below is the
-            accessible surface. */}
         <div
           aria-hidden="true"
           data-tweakpane-host

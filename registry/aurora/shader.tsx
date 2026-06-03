@@ -64,9 +64,6 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
   const intensityU = useAnimatableUniform<number>(layer.intensity)
   const falloffU = useAnimatableUniform<number>(layer.falloff ?? 1)
 
-  // Stable instance — the useEffect below mutates it via .set() on hex
-  // changes, keeping the uniform node identity stable so the material
-  // doesn't recompile on every color-picker drag.
   const colorVec = useMemo(
     () => {
       const [r, g, b] = parseHex(layer.hex)
@@ -85,9 +82,6 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
     colorVec.set(r, g, b)
   }, [layer.hex, colorVec])
 
-  // colorNode is ShaderNodeObject<UniformNode<Vector3>>; LayerUniforms
-  // wants the widened ShaderNodeObject<Node>. Same TSL invariant-generic
-  // story as useAnimatableUniform — runtime is identical, types are not.
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   const widenedColor = colorNode as unknown as ShaderNodeObject<Node>
 
@@ -103,7 +97,6 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
 }
 
 function useColorUniform(hex: string) {
-  // Stable instance — see colorVec in useLayerUniforms above.
   const vec = useMemo(
     () => {
       const [r, g, b] = parseHex(hex)
@@ -149,8 +142,6 @@ export function AuroraShader(props: AuroraShaderProps) {
     return resize.on('change', ([w2, h2]) => resVec.set(w2, h2))
   }, [resize, resVec])
 
-  // Stable instance — the useEffect below mutates it via .set() when the
-  // direction prop changes, keeping the uniform node identity stable.
   const dirVec = useMemo(
     () => {
       const [x, y, b] = DIRECTION_VECTORS[props.direction]

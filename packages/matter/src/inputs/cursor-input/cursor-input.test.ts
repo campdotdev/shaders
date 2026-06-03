@@ -2,6 +2,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CursorInput } from './cursor-input.js'
 
+function simulateMouseAt(x: number, y: number, size = 1000) {
+  Object.defineProperty(window, 'innerWidth', {
+    value: size,
+    configurable: true,
+  })
+  Object.defineProperty(window, 'innerHeight', {
+    value: size,
+    configurable: true,
+  })
+  window.dispatchEvent(new MouseEvent('mousemove', { clientX: x, clientY: y }))
+}
+
 describe('CursorInput', () => {
   beforeEach(() => {
     // happy-dom provides window/document; we just need a clean event slate.
@@ -22,8 +34,14 @@ describe('CursorInput', () => {
   it('updates target on mousemove (in normalized 0..1 coordinates)', () => {
     const cursor = new CursorInput({ smoothing: 0 }) // no smoothing — read raw target
 
-    Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true })
-    Object.defineProperty(window, 'innerHeight', { value: 500, configurable: true })
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1000,
+      configurable: true,
+    })
+    Object.defineProperty(window, 'innerHeight', {
+      value: 500,
+      configurable: true,
+    })
 
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 500, clientY: 250 }))
     cursor.tick(1) // advance one full second; with smoothing 0, value snaps to target instantly
@@ -35,8 +53,14 @@ describe('CursorInput', () => {
   it('approaches the target gradually when smoothing > 0', () => {
     const cursor = new CursorInput({ smoothing: 0.5, initial: [0, 0] })
 
-    Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true })
-    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true })
+    Object.defineProperty(window, 'innerWidth', {
+      value: 1000,
+      configurable: true,
+    })
+    Object.defineProperty(window, 'innerHeight', {
+      value: 1000,
+      configurable: true,
+    })
 
     window.dispatchEvent(new MouseEvent('mousemove', { clientX: 1000, clientY: 1000 }))
 
@@ -58,10 +82,7 @@ describe('CursorInput', () => {
     const sub = vi.fn()
 
     cursor.on('change', sub)
-
-    Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true })
-    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true })
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 500, clientY: 500 }))
+    simulateMouseAt(500, 500)
     cursor.tick(1)
 
     expect(sub).toHaveBeenCalled()
@@ -75,10 +96,7 @@ describe('CursorInput', () => {
 
     cursor.on('change', sub)
     cursor.dispose()
-
-    Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true })
-    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true })
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 500, clientY: 500 }))
+    simulateMouseAt(500, 500)
     cursor.tick(1)
 
     expect(sub).not.toHaveBeenCalled()
@@ -88,7 +106,12 @@ describe('CursorInput', () => {
     // Element at viewport (100, 200) sized 400x300. Cursor at viewport (300, 350)
     // is at element-relative (200, 150) → element-normalized (0.5, 0.5).
     const fakeElement = {
-      getBoundingClientRect: () => ({ left: 100, top: 200, width: 400, height: 300 }),
+      getBoundingClientRect: () => ({
+        left: 100,
+        top: 200,
+        width: 400,
+        height: 300,
+      }),
     }
     const cursor = new CursorInput({ smoothing: 0, element: fakeElement })
 

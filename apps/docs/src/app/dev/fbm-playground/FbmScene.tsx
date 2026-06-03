@@ -1,17 +1,12 @@
 'use client'
 
-// Heavy client-only scene + tweakpane controls. Split out from the page so
-// the page module can `dynamic({ ssr: false })` import this whole subtree —
-// its top-level imports of `three/webgpu` (directly and transitively via
-// `@lovo/matter` and `@lovo/matter-react`) reference `self` at module load
-// and break Next's prerender pass (CLAUDE.md gotcha #10).
-
 import { colorRamp, type ColorRampStop, fbm, time } from '@lovo/matter'
 import { ShaderScene, useShaderContext } from '@lovo/matter-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { uniform, uv, vec2, vec3 } from 'three/tsl'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu'
 import { Pane } from 'tweakpane'
+
+import { addPlaneMesh } from '@/lib/meshUtils'
 
 interface Params {
   octaves: number
@@ -34,7 +29,6 @@ const STOPS: ColorRampStop[] = [
   { color: vec3(1, 1, 1), position: 1 },
 ]
 
-// Inner mesh — must run inside <ShaderScene> so the context is available.
 function FbmMesh({
   octaves,
   lacunarity,
@@ -53,34 +47,13 @@ function FbmMesh({
   useEffect(() => {
     if (!ctx) return
 
-    // p = uv() * scale + time * timeSpeed (broadcast time scalar to vec2)
     const animatedUv = uv()
       .mul(scaleUniform)
       .add(vec2(time.mul(timeSpeedUniform), time.mul(timeSpeedUniform)))
     const t = fbm(animatedUv, { octaves, lacunarity, gain })
-    // Normalize fbm's [-1..1]-ish range into [0..1] for colorRamp.
     const tNorm = t.add(1).mul(0.5)
 
-    const material = new MeshBasicNodeMaterial()
-
-    material.colorNode = colorRamp(tNorm, STOPS)
-    const mesh = new Mesh(new PlaneGeometry(2, 2), material)
-
-    ctx.scene.add(mesh)
-
-    return () => {
-      ctx.scene.remove(mesh)
-      try {
-        material.dispose()
-      } catch {
-        /* gotcha #13-adjacent benign race */
-      }
-      try {
-        mesh.geometry.dispose()
-      } catch {
-        /* same */
-      }
-    }
+    return addPlaneMesh(ctx, colorRamp(tNorm, STOPS))
   }, [ctx, octaves, lacunarity, gain, scaleUniform, timeSpeedUniform])
 
   return null
@@ -89,11 +62,9 @@ function FbmMesh({
 export default function FbmPlayground() {
   const paneContainerRef = useRef<HTMLDivElement>(null)
   const [params, setParams] = useState<Params>(INITIAL)
-  // Remount the inner mesh when octaves/lacunarity/gain change because they
-  // bake into the TSL fragment at material-build time.
+
   const [instanceKey, setInstanceKey] = useState(0)
 
-  // Live uniforms for the parameters that survive on the GPU as uniforms.
   const scaleUniform = useMemo(() => uniform(INITIAL.scale), [])
   const timeSpeedUniform = useMemo(() => uniform(INITIAL.timeSpeed), [])
 
@@ -131,7 +102,6 @@ export default function FbmPlayground() {
       } else if (key === 'timeSpeed') {
         timeSpeedUniform.value = local.timeSpeed
       }
-      // octaves/lacunarity/gain wait for the Apply button.
     })
 
     return () => {

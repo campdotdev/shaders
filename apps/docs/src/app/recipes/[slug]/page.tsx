@@ -5,16 +5,6 @@ import { CodeBlock } from '@/components/CodeBlock'
 import { RecipeViewer } from '@/components/RecipeViewer'
 import { RECIPES } from '@/data/recipes'
 
-// Server Component — generates one static route per recipe at build time.
-// Each /recipes/<slug> renders ONE canonical source block (the user
-// copy-pastes this) plus a grid of 2-3 variant preview cards demonstrating
-// different parameterizations. Each card's `note` describes the one-line
-// modification that produces that variant from the canonical source.
-//
-// RecipeViewer is itself a Client Component that dynamic-imports the actual
-// three/webgpu scene with ssr:false (Next 15 disallows ssr:false in Server
-// Components, so the dynamic-import wrapper has to live one layer down).
-
 export function generateStaticParams() {
   return RECIPES.map((r) => ({ slug: r.slug }))
 }
@@ -30,11 +20,6 @@ export default async function RecipePage({ params }: RecipePageProps) {
 
   if (!recipe) notFound()
 
-  // The first variant is canonical and matches recipe.source verbatim. We
-  // render it as the main preview at the top so the page still feels like
-  // it leads with a hero, then the variant grid below shows the spread.
-  // The data file guarantees >= 1 variant per recipe; the explicit guard
-  // is for TS's noUncheckedIndexedAccess.
   const canonicalVariant = recipe.variants[0]
 
   if (!canonicalVariant) notFound()
@@ -52,7 +37,13 @@ export default async function RecipePage({ params }: RecipePageProps) {
       {recipe.variants.length > 1 && (
         <section style={{ marginTop: '2rem' }}>
           <h2 style={{ fontSize: '1rem', marginBottom: '0.25rem' }}>Variants</h2>
-          <p style={{ color: 'var(--fg-muted)', marginTop: 0, fontSize: '0.9rem' }}>
+          <p
+            style={{
+              color: 'var(--fg-muted)',
+              marginTop: 0,
+              fontSize: '0.9rem',
+            }}
+          >
             Same recipe, different parameters. Each card&apos;s caption describes the one-line
             change to the source above.
           </p>

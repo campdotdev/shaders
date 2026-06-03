@@ -1,14 +1,10 @@
-import { test, expect } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+
+import { waitForShader } from './helpers'
 
 test('LinearGradient — default story', async ({ page }) => {
   await page.goto('/components/linear-gradient?visualTest=1')
-  await page.waitForFunction(
-    () => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true,
-    undefined,
-    { timeout: 15_000 },
-  )
-  await page.waitForTimeout(50)
-
+  await waitForShader(page)
   const canvas = page.locator('canvas').first()
   await expect(canvas).toHaveScreenshot('linear-gradient-default.png')
 })
@@ -17,11 +13,7 @@ test('LinearGradient — reduced motion paused', async ({ browser }) => {
   const ctx = await browser.newContext({ reducedMotion: 'reduce' })
   const page = await ctx.newPage()
   await page.goto('/components/linear-gradient?visualTest=1&reducedMotion=paused')
-  await page.waitForFunction(
-    () => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true,
-    undefined,
-    { timeout: 15_000 },
-  )
+  await waitForShader(page)
 
   // Capture two screenshots one second apart. With policy=paused the scheduler
   // is frozen — the canvas should produce byte-identical frames.

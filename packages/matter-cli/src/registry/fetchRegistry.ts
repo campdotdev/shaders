@@ -13,23 +13,12 @@ export interface Registry {
   components: Record<string, RegistryEntry>
 }
 
-/**
- * Join a base URL with a relative filename, normalizing the trailing slash.
- * `joinUrl("https://x/registry", "foo.tsx")` and `joinUrl("https://x/registry/", "foo.tsx")`
- * both return `https://x/registry/foo.tsx`.
- */
-export function joinUrl(base: string, file: string): string {
+function joinUrl(base: string, file: string): string {
   const trimmed = base.endsWith('/') ? base.slice(0, -1) : base
 
   return `${trimmed}/${file}`
 }
 
-/**
- * Fetch and parse `registry.json` from a base registry URL.
- * The base URL points at the directory containing registry.json
- * (e.g. `file:///.../registry/` or
- * `https://raw.githubusercontent.com/lovo/matter/main/registry`).
- */
 export async function fetchRegistry(baseUrl: string): Promise<Registry> {
   const url = joinUrl(baseUrl, 'registry.json')
   const json = await readUrl(url)

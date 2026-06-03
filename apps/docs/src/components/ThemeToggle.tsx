@@ -9,8 +9,6 @@ export function ThemeToggle() {
 
   useEffect(() => setMounted(true), [])
 
-  // Avoid hydration mismatch — render a stable placeholder until mounted
-  // (theme is unknown on the server).
   if (!mounted) {
     return (
       <button
@@ -27,8 +25,16 @@ export function ThemeToggle() {
     )
   }
 
-  const THEME_CYCLE: Record<string, string> = { system: 'light', light: 'dark', dark: 'system' }
-  const THEME_LABEL: Record<string, string> = { system: 'Auto', light: 'Light', dark: 'Dark' }
+  const THEME_CYCLE: Record<string, string> = {
+    system: 'light',
+    light: 'dark',
+    dark: 'system',
+  }
+  const THEME_LABEL: Record<string, string> = {
+    system: 'Auto',
+    light: 'Light',
+    dark: 'Dark',
+  }
   const cycle = () => {
     setTheme(THEME_CYCLE[theme ?? 'system'] ?? 'system')
   }

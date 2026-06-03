@@ -1,16 +1,11 @@
-// apps/docs/app/components/dot-field/page.tsx
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
 
 import { palette } from '@/lib/palette'
+import { useTweakpane } from '@/lib/useTweakpane'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Both ShaderScene and DotField pull in three/webgpu (via createRenderer),
-// which references `self` at module load time and breaks Next's SSR. Load
-// both client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
@@ -37,33 +32,27 @@ const INITIAL: Params = {
 }
 
 export default function DotFieldPage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useState<Params>(INITIAL)
-
-  useEffect(() => {
-    const container = paneContainerRef.current
-
-    if (!container) return
-    const local = { ...INITIAL }
-    const pane = new Pane({ container, title: '<DotField>' })
-
-    pane.addBinding(local, 'color')
-    pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'spacing', { min: 8, max: 80, step: 1 })
-    pane.addBinding(local, 'dotSize', { label: 'dot size', min: 1, max: 8, step: 0.5 })
-    pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'reach', { min: 10, max: 400, step: 5 })
-    pane.addBinding(local, 'strength', { min: 0, max: 3, step: 0.05 })
-    pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' })
-    pane.on('change', () => {
-      setParams({ ...local })
-    })
-
-    return () => {
-      pane.dispose()
-    }
-  }, [])
+  const [params, paneContainerRef] = useTweakpane<Params>(
+    '<DotField>',
+    INITIAL,
+    (pane, local, sync) => {
+      pane.addBinding(local, 'color')
+      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'spacing', { min: 8, max: 80, step: 1 })
+      pane.addBinding(local, 'dotSize', {
+        label: 'dot size',
+        min: 1,
+        max: 8,
+        step: 0.5,
+      })
+      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'reach', { min: 10, max: 400, step: 5 })
+      pane.addBinding(local, 'strength', { min: 0, max: 3, step: 0.05 })
+      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' })
+      pane.on('change', sync)
+    },
+  )
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -80,17 +69,17 @@ export default function DotFieldPage() {
           <VisualTestPause />
         </ShaderScene>
       </div>
-      {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
-          hides the pane from screen readers; the axe test excludes the
-          `.tp-dfwv` subtree so the unlabeled internal controls don't trip
-          aria-hidden-focus. The page content in <section> below is the
-          accessible surface. (`inert` would have blocked mouse input too —
-          regression noted 2026-05-13.) */}
       <div
         aria-hidden="true"
         data-tweakpane-host
         ref={paneContainerRef}
-        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 10,
+          width: '320px',
+        }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;DotField /&gt;</h1>

@@ -12,10 +12,6 @@ import {
 } from '@/components/PropsPlayground'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Both ShaderScene and LinearGradient pull in three/webgpu (via
-// createRenderer), which references `self` at module load time and breaks
-// Next's SSR. `ssr: false` requires this to live in a Client Component
-// (Next 15 forbids it in Server Components).
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
@@ -26,31 +22,16 @@ const LinearGradient = dynamic(
 
 interface PageBodyProps {
   schema: PropSchema
-  // Server-rendered CodeBlock passed in as a prop. Next 15 supports passing
-  // Server Components into Client Components via children/props — the host
-  // page resolves it on the server and we just slot it into our layout.
   code: ReactNode
 }
 
-// Owns the playground state shared between the live shader and the controls.
-// Splitting this out of the page lets the page itself be a Server Component
-// (which is required to call readRegistrySource).
 export function PageBody({ schema, code }: PageBodyProps) {
   const [params, setParams] = useState<PropsState>(() => initialStateFromSchema(schema))
 
-  // Stable callback so PropsPlayground's useEffect dep on onChange doesn't
-  // re-fire every render. (PropsPlayground intentionally depends on the
-  // callback identity to avoid missing newly-bound handlers; we keep it
-  // stable here.)
   const handleChange = useCallback((next: PropsState) => {
     setParams(next)
   }, [])
 
-  // Stringify props for the remount key — LinearGradient snapshots several
-  // props into TSL at material-build time (see registry/linear-gradient.tsx
-  // and CLAUDE.md). Changing colors / angle / speed / variant requires a
-  // remount to apply. The cursor (when `interactive`) is wired to a live
-  // uniform and updates per-frame, so the toggle alone doesn't need a key.
   const colors = Array.isArray(params.colors) ? params.colors : []
   const angle = typeof params.angle === 'number' ? params.angle : 0
   const speed = typeof params.speed === 'number' ? params.speed : 0

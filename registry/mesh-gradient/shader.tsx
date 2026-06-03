@@ -14,30 +14,18 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'th
 import { parseHex } from '../utils/color'
 
 export interface MeshGradientShaderProps {
-  /** Global animation rate. Multiplies the time the warp uses. */
   speed: AnimatableProp<number>
-  /** Sine warp frequency. Higher = more wobbles per gradient. */
   frequency: AnimatableProp<number>
-  /** Sine warp amplitude divisor. Higher = subtler wobble. */
   amplitude: AnimatableProp<number>
-  /** Palette A ↔ B crossfade rate. 0 = freeze, higher = faster. */
   cycleSpeed: AnimatableProp<number>
-  /** Crossfade shape. <1 = linger at extremes, 1 = pure sine, >1 = linger at midpoint. Default 0.6. */
   cycleEase: AnimatableProp<number>
-  /** Light palette: 4 hex strings. */
   paletteA: [string, string, string, string]
-  /** Dark palette: 4 hex strings. */
   paletteB: [string, string, string, string]
 }
 
-// -5° in radians; baked into the layer-x sample rotation. Could be promoted
-// to a prop later, but is fine as a stylistic constant for now.
 const LAYER_ROT_RAD = (-5 * Math.PI) / 180
 
 function useColorUniform(hex: string) {
-  // Stable instance — the useEffect below mutates via .set() on hex
-  // changes so the uniform identity stays put and the material doesn't
-  // recompile on every color-picker drag.
   const vec = useMemo(
     () => {
       const [r, g, b] = parseHex(hex)
@@ -87,8 +75,6 @@ export function MeshGradientShader({
   const frequencyU = useAnimatableUniform<number>(frequency)
   const amplitudeU = useAnimatableUniform<number>(amplitude)
 
-  // Resolution uniform — drives aspect correction. Seed with a sane large
-  // default so the first frame doesn't see (1, 1). Pattern from Aurora.
   const resVec = useMemo(() => new Vector2(1920, 1080), [])
   const resNode = useMemo(() => uniform(resVec), [resVec])
 
@@ -104,13 +90,9 @@ export function MeshGradientShader({
     if (!ctx) return
 
     // ---- Centered UVs --------------------------------------------------
-    // tuv = uv - 0.5  puts (0,0) at the center, range [-0.5, 0.5].
     const tuvRaw = uv().sub(vec2(0.5, 0.5))
 
     // ---- Noise-driven rotation angle ----------------------------------
-    // ShaderToy uses noise(vec2(time*0.05, tuv.x*tuv.y)) which is per-pixel
-    // (rotation varies across the screen). Engine noise returns ~[-1, 1];
-    // remap to [0, 1] to match the source.
     const tSlow = time.mul(0.05)
     const noiseInput = vec2(tSlow, tuvRaw.x.mul(tuvRaw.y))
     const degree01 = noise(noiseInput).mul(0.5).add(0.5) // [0, 1]
@@ -121,10 +103,6 @@ export function MeshGradientShader({
     const angle = degree01.sub(0.5).mul(TWO_TURNS_RAD).add(ROT_BIAS_RAD)
 
     // ---- Aspect-corrected rotation -----------------------------------
-    // Pre-divide y by aspect so the rotation operates in unit space, then
-    // restore y after. (CLAUDE.md gotcha #12: `.x` produces a fresh node
-    // derived from the resNode uniform, which then safely participates
-    // in further chains.)
     const aspect = resNode.x.div(resNode.y)
     const ty = tuvRaw.y.div(aspect)
     const c = cos(angle)
@@ -136,22 +114,12 @@ export function MeshGradientShader({
     const tuvRotated = vec2(rx, ry)
 
     // ---- Sine domain warp --------------------------------------------
-    // Push each pixel by a sine of its own coordinates. The y-axis uses
-    // 1.5x frequency and 2x amplitude (relative to x) to de-correlate the
-    // two warps so the result doesn't look like a single shear.
     const tspeed = time.mul(speedU)
     const warpX = sin(tuvRotated.y.mul(frequencyU).add(tspeed)).div(amplitudeU)
     const warpY = sin(tuvRotated.x.mul(frequencyU).mul(1.5).add(tspeed)).div(amplitudeU).mul(2)
     const tuv = vec2(tuvRotated.x.add(warpX), tuvRotated.y.add(warpY))
 
     // ---- Time-cycling palette ----------------------------------------
-    // c = sin(time * cycleSpeed)        smooth oscillator in [-1, 1]
-    // eased = (sign(c) * |c|^cycleEase + 1) / 2
-    //                                   S-curve in [0, 1]. cycleEase < 1
-    //                                   lingers at ±1 (palettes A and B);
-    //                                   cycleEase = 1 is a pure sine;
-    //                                   cycleEase > 1 lingers at the
-    //                                   midpoint.
     const cycleTime = time.mul(cycleSpeedU)
     const cycle = sin(cycleTime)
     const eased = sign(cycle)
@@ -165,10 +133,6 @@ export function MeshGradientShader({
     const color3 = mix(a3, b3, eased)
 
     // ---- Two-layer smoothstep blend ---------------------------------
-    // Sample tuv through a small additional rotation (-5°) and use the
-    // resulting x to pick a smooth horizontal gradient per "layer". The
-    // vertical blend uses un-rotated tuv.y. Reversed smoothstep edges
-    // (0.5 -> -0.3) flip the direction so top of canvas reads layer1.
     const lc = Math.cos(LAYER_ROT_RAD)
     const ls = Math.sin(LAYER_ROT_RAD)
     const layerX = tuv.x.mul(lc).sub(tuv.y.mul(ls))

@@ -7,11 +7,8 @@ import dynamic from 'next/dynamic'
 import { useEffect, useRef, useState } from 'react'
 import { Pane } from 'tweakpane'
 
-// Waves pulls in three/webgpu, which references `self` at module load time
-// and breaks Next's SSR. Load it client-only.
 const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false })
 
-// Tweakpane mutates this object directly; React state tracks the display value.
 const INITIAL_PARAMS: { policy: ReducedMotionPolicy } = { policy: 'auto' }
 
 export function ReducedMotionDemo() {
@@ -20,9 +17,12 @@ export function ReducedMotionDemo() {
 
   useEffect(() => {
     if (!paneRef.current) return
-    // Shallow-copy so each Strict Mode cycle gets a fresh params object.
+
     const params = { ...INITIAL_PARAMS }
-    const pane = new Pane({ container: paneRef.current, title: 'Reduced motion' })
+    const pane = new Pane({
+      container: paneRef.current,
+      title: 'Reduced motion',
+    })
 
     pane
       .addBinding(params, 'policy', {
@@ -40,7 +40,13 @@ export function ReducedMotionDemo() {
     <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         <div>
-          <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>
+          <p
+            style={{
+              margin: '0 0 0.5rem',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+            }}
+          >
             LinearGradient
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
@@ -50,7 +56,15 @@ export function ReducedMotionDemo() {
           </div>
         </div>
         <div>
-          <p style={{ margin: '0 0 0.5rem', fontSize: '0.875rem', fontWeight: 600 }}>Waves</p>
+          <p
+            style={{
+              margin: '0 0 0.5rem',
+              fontSize: '0.875rem',
+              fontWeight: 600,
+            }}
+          >
+            Waves
+          </p>
           <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#666' }}>
             Hover over the canvas to trigger the cursor ripple — it should also freeze when policy
             is paused.

@@ -23,24 +23,9 @@ const isSignal = <T>(value: AnimatableProp<T>): value is AnimatableSignal<T> => 
   )
 }
 
-/**
- * Bind an AnimatableProp<T> to a TSL uniform. Plain values create a
- * static uniform that updates only when the prop changes (React render
- * path). Signals subscribe via .on('change') and write into the uniform
- * imperatively without re-rendering.
- *
- * Returns a chainable TSL node with `.value: T` exposed for callers that
- * need to read the current uniform value imperatively (e.g., to compute
- * derived JS-side math). The runtime object is a UniformNode<T>; we
- * present it as `ShaderNodeObject<Node> & { value: T }` because TSL's
- * generic invariance blocks the more precise type from flowing through
- * downstream consumers like OverlayTransform.
- */
 export function useAnimatableUniform<T>(
   value: AnimatableProp<T>,
 ): ShaderNodeObject<Node> & { value: T } {
-  // Create the uniform once with the initial value; subsequent updates flow
-  // through the effect below (either via signal subscription or direct write).
   const uniformNode = useMemo(() => {
     const initial = isSignal(value) ? value.get() : value
 
@@ -61,10 +46,6 @@ export function useAnimatableUniform<T>(
     return undefined
   }, [value, uniformNode])
 
-  // TSL's ShaderNodeObject<UniformNode<T>> isn't structurally assignable to
-  // ShaderNodeObject<Node> because the ShaderNodeObject proxy has invariant
-  // generic methods (label/etc.). Consumers chain `.mul()`/`.add()` which
-  // work on either at runtime; the narrower return type is fine to widen.
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   return uniformNode as unknown as ShaderNodeObject<Node> & { value: T }
 }

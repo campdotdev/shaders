@@ -1,16 +1,11 @@
-// apps/docs/app/components/waves/page.tsx
 'use client'
 
 import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
 
 import { palette } from '@/lib/palette'
+import { useTweakpane } from '@/lib/useTweakpane'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// Both ShaderScene and Waves pull in three/webgpu (via createRenderer),
-// which references `self` at module load time and breaks Next's SSR. Load
-// both client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
@@ -35,45 +30,30 @@ const INITIAL: Params = {
 }
 
 export default function WavesPage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useState<Params>(INITIAL)
-
-  useEffect(() => {
-    const container = paneContainerRef.current
-
-    if (!container) return
-    const local = { ...INITIAL }
-    const pane = new Pane({ container, title: '<Waves>' })
-
-    pane.addBinding(local, 'color')
-    pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'amplitude', { min: 0, max: 0.5, step: 0.005 })
-    pane.addBinding(local, 'frequency', { min: 1, max: 30, step: 0.1 })
-    pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 })
-    pane.addBinding(local, 'layers', { min: 1, max: 6, step: 1 })
-    pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'interactive', { label: 'interactive (cursor ripple)' })
-    pane.addBlade({ view: 'separator' })
-    // `layers` and `interactive` bake into the TSL fragment shape (loop length
-    // and conditional ripple branch). Each change rebuilds the material via
-    // the mesh effect's dep array. The Apply button defers their commit so a
-    // user dragging the layers slider 1→6 doesn't trigger 5 mid-drag rebuilds;
-    // they get one rebuild on click. Live-uniform props (color/amplitude/
-    // frequency/speed) flow through the per-tick `change` handler below.
-    pane.addButton({ title: 'Apply layers / interactive' }).on('click', () => {
-      setParams({ ...local })
-    })
-    pane.on('change', (ev) => {
-      if ('key' in ev.target && (ev.target.key === 'layers' || ev.target.key === 'interactive')) {
-        return
-      }
-      setParams({ ...local })
-    })
-
-    return () => {
-      pane.dispose()
-    }
-  }, [])
+  const [params, paneContainerRef] = useTweakpane<Params>(
+    '<Waves>',
+    INITIAL,
+    (pane, local, sync) => {
+      pane.addBinding(local, 'color')
+      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'amplitude', { min: 0, max: 0.5, step: 0.005 })
+      pane.addBinding(local, 'frequency', { min: 1, max: 30, step: 0.1 })
+      pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 })
+      pane.addBinding(local, 'layers', { min: 1, max: 6, step: 1 })
+      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'interactive', {
+        label: 'interactive (cursor ripple)',
+      })
+      pane.addBlade({ view: 'separator' })
+      pane.addButton({ title: 'Apply layers / interactive' }).on('click', sync)
+      pane.on('change', (ev) => {
+        if ('key' in ev.target && (ev.target.key === 'layers' || ev.target.key === 'interactive')) {
+          return
+        }
+        sync()
+      })
+    },
+  )
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -90,17 +70,17 @@ export default function WavesPage() {
           <VisualTestPause />
         </ShaderScene>
       </div>
-      {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
-          hides the pane from screen readers; the axe test excludes the
-          `.tp-dfwv` subtree so the unlabeled internal controls don't trip
-          aria-hidden-focus. The page content in <section> below is the
-          accessible surface. (`inert` would have blocked mouse input too —
-          regression noted 2026-05-13.) */}
       <div
         aria-hidden="true"
         data-tweakpane-host
         ref={paneContainerRef}
-        style={{ position: 'fixed', top: '1rem', right: '1rem', zIndex: 10, width: '320px' }}
+        style={{
+          position: 'fixed',
+          top: '1rem',
+          right: '1rem',
+          zIndex: 10,
+          width: '320px',
+        }}
       />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;Waves /&gt;</h1>

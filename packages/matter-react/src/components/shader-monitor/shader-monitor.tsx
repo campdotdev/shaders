@@ -30,12 +30,6 @@ export interface ShaderMonitorProps {
   anchor?: MonitorAnchor
 }
 
-/**
- * Dev-only overlay that displays the current scene's FPS, tick count, and
- * paused/idle state. Reads from the surrounding `<ShaderScene>` via context
- * and subscribes to its scheduler. Renders nothing useful if mounted outside
- * a scene.
- */
 export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
   const ctx = useContext(ShaderContext)
   const [stats, setStats] = useState({ fps: 0, ticks: 0, frames: 0 })

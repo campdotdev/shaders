@@ -2,14 +2,11 @@
 
 import type { FilmGrainMode } from '@matter/registry/film-grain'
 import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
 
+import { addCopyButtons } from '@/lib/paneUtils'
+import { useTweakpane } from '@/lib/useTweakpane'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
-// ShaderScene + the registry components pull in three/webgpu, which
-// references `self` at module load time and breaks Next's SSR. Load
-// everything client-only.
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
 })
@@ -27,10 +24,12 @@ interface FilmGrainParams {
   mode: FilmGrainMode
 }
 
-const INITIAL: FilmGrainParams = { intensity: 0.45, speed: 1, mode: 'additive' }
+const INITIAL: FilmGrainParams = {
+  intensity: 0.45,
+  speed: 1,
+  mode: 'additive',
+}
 
-// Round to 4 decimals so slider noise (e.g. 0.30000000000000004) doesn't
-// leak into the copied snippet.
 const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
 
 const fmtJsx = (p: FilmGrainParams) =>
@@ -51,65 +50,31 @@ const fmtParams = (p: FilmGrainParams) =>
 }`
 
 export default function FilmGrainPage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useState<FilmGrainParams>(INITIAL)
-
-  useEffect(() => {
-    const container = paneContainerRef.current
-
-    if (!container) return
-    const local: FilmGrainParams = { ...INITIAL }
-    const pane = new Pane({ container, title: '<FilmGrain>' })
-    const syncToReact = () => setParams({ ...local })
-
-    pane.addButton({ title: 'Reset all' }).on('click', () => {
-      Object.assign(local, INITIAL)
-      pane.refresh()
-      syncToReact()
-    })
-
-    const flashCopied = (btn: { title: string }, original: string) => {
-      btn.title = 'Copied!'
-      pane.refresh()
-      setTimeout(() => {
-        btn.title = original
+  const [params, paneContainerRef] = useTweakpane<FilmGrainParams>(
+    '<FilmGrain>',
+    INITIAL,
+    (pane, local, sync) => {
+      pane.addButton({ title: 'Reset all' }).on('click', () => {
+        Object.assign(local, INITIAL)
         pane.refresh()
-      }, 1200)
-    }
-    const jsxBtn = pane.addButton({ title: 'Copy JSX' })
+        sync()
+      })
 
-    jsxBtn.on('click', () => {
-      void navigator.clipboard.writeText(fmtJsx(local)).then(() => flashCopied(jsxBtn, 'Copy JSX'))
-    })
-    const paramsBtn = pane.addButton({ title: 'Copy params' })
+      addCopyButtons(
+        pane,
+        () => fmtJsx(local),
+        () => fmtParams(local),
+      )
 
-    paramsBtn.on('click', () => {
-      void navigator.clipboard
-        .writeText(fmtParams(local))
-        .then(() => flashCopied(paramsBtn, 'Copy params'))
-    })
+      pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 })
+      pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 })
+      pane.addBinding(local, 'mode', {
+        options: { Additive: 'additive', Subtractive: 'subtractive' },
+      })
 
-    pane.addBlade({ view: 'separator' })
-
-    pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 })
-    pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 })
-    pane.addBinding(local, 'mode', {
-      options: { Additive: 'additive', Subtractive: 'subtractive' },
-    })
-
-    pane.on('change', () => {
-      // FilmGrain's uniforms are stable across re-renders; useAnimatableUniform
-      // mutates the uniform .value when the prop changes, so toggling sliders
-      // doesn't rebuild the overlay pass. The `mode` binding is structural —
-      // it changes the TSL transform shape and triggers a useOverlayPass
-      // re-registration via the deps array.
-      syncToReact()
-    })
-
-    return () => {
-      pane.dispose()
-    }
-  }, [])
+      pane.on('change', sync)
+    },
+  )
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -119,11 +84,6 @@ export default function FilmGrainPage() {
           <FilmGrain intensity={params.intensity} mode={params.mode} speed={params.speed} />
           <VisualTestPause />
         </ShaderScene>
-        {/* Tweakpane manages its own DOM without ARIA labels. `aria-hidden`
-            hides the pane from screen readers; the axe test excludes the
-            `.tp-dfwv` subtree so the unlabeled internal controls don't trip
-            aria-hidden-focus. The page content in <section> below is the
-            accessible surface. */}
         <div
           aria-hidden="true"
           data-tweakpane-host

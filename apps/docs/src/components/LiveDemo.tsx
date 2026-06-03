@@ -10,10 +10,6 @@ interface LiveDemoProps {
   style?: CSSProperties
 }
 
-// Frames a shader child with a fixed-height container, a dark default
-// background (so the shader has a sane backdrop pre-init), and a fullscreen
-// toggle button. Play/pause is intentionally not wired in 4.1 — that's an M5
-// concern once FrameScheduler exposes a control surface.
 export function LiveDemo({
   children,
   height = '70vh',
@@ -24,9 +20,6 @@ export function LiveDemo({
   const ref = useRef<HTMLDivElement>(null)
   const [isFullscreen, setIsFullscreen] = useState(false)
 
-  // Single useEffect owns the listener for the lifetime of the mounted
-  // component; React Strict Mode's mount/cleanup/mount pattern is fine here
-  // because the listener is just observation — no heavy resource to dispose.
   useEffect(() => {
     const handler = () => {
       setIsFullscreen(document.fullscreenElement === ref.current)
@@ -61,10 +54,6 @@ export function LiveDemo({
         ...style,
       }}
     >
-      {/* The shader canvas is purely decorative — hide it from the a11y tree
-          so screen readers don't attempt to describe raw pixel output. The
-          fullscreen button is kept outside this subtree so it remains
-          keyboard-accessible. */}
       <div aria-hidden="true" role="presentation" style={{ position: 'absolute', inset: 0 }}>
         {children}
       </div>

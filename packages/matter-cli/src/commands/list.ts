@@ -17,10 +17,6 @@ export async function runList(
   opts: ListOptions,
   io: ListIO = { cwd: process.cwd(), log: console.log },
 ): Promise<void> {
-  // URL resolution: --registry > matter.config.json > built-in default.
-  // Missing config → default (lets users `list` before `init`). Malformed
-  // config (invalid JSON, missing fields) → propagate so the user sees the
-  // problem instead of silently falling back to the GitHub URL.
   let baseUrl: string
 
   if (opts.registry !== undefined && opts.registry !== '') {
