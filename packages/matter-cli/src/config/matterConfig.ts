@@ -1,6 +1,8 @@
 import { access, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { validateMatterConfig } from './validate.js'
+
 export interface MatterConfig {
   componentsDir: string
   registryUrl: string
@@ -8,11 +10,6 @@ export interface MatterConfig {
   tsx: boolean
 }
 
-/**
- * Defaults align with spec §4.3. componentsDir mirrors shadcn's
- * `src/components/ui` convention but namespaced under `matter` so a project
- * using both shadcn and matter doesn't collide.
- */
 export const DEFAULT_MATTER_CONFIG: MatterConfig = {
   componentsDir: 'src/components/matter',
   registryUrl: 'https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry',
@@ -63,48 +60,18 @@ export async function readMatterConfig(projectRoot: string): Promise<MatterConfi
   return validateMatterConfig(parsed, path)
 }
 
+export function resolveRegistryUrl(
+  cfg: MatterConfig,
+  opts: { registry?: string; ref: string },
+): string {
+  const baseUrl = opts.registry ?? cfg.registryUrl
+
+  return baseUrl.replace('${ref}', opts.ref)
+}
+
 export async function writeMatterConfig(projectRoot: string, cfg: MatterConfig): Promise<void> {
   const path = configPath(projectRoot)
   const json = `${JSON.stringify(cfg, null, 2)}\n`
 
   await writeFile(path, json, 'utf-8')
-}
-
-function isRecord(x: unknown): x is Record<string, unknown> {
-  return typeof x === 'object' && x !== null
-}
-
-function validateMatterConfig(parsed: unknown, path: string): MatterConfig {
-  if (!isRecord(parsed)) {
-    throw new Error(`${path}: expected an object`)
-  }
-  const obj = parsed
-
-  if (typeof obj.componentsDir !== 'string' || obj.componentsDir === '') {
-    throw new Error(`${path}: missing or empty "componentsDir" string`)
-  }
-  if (typeof obj.registryUrl !== 'string' || obj.registryUrl === '') {
-    throw new Error(`${path}: missing or empty "registryUrl" string`)
-  }
-  if (!isRecord(obj.aliases)) {
-    throw new Error(`${path}: missing "aliases" object`)
-  }
-  if (typeof obj.tsx !== 'boolean') {
-    throw new Error(`${path}: missing "tsx" boolean`)
-  }
-  const aliases: Record<string, string> = {}
-
-  for (const [k, v] of Object.entries(obj.aliases)) {
-    if (typeof v !== 'string') {
-      throw new Error(`${path}: aliases.${k} must be a string`)
-    }
-    aliases[k] = v
-  }
-
-  return {
-    componentsDir: obj.componentsDir,
-    registryUrl: obj.registryUrl,
-    aliases,
-    tsx: obj.tsx,
-  }
 }
