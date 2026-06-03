@@ -89,6 +89,8 @@ export function NoiseField(props: NoiseFieldProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [props.colors],
   )
+  // colorsKey is in the effect dep array instead of `colors` (array ref) to avoid
+  // rebuilding the material on every render when color values haven't changed
   const colorsKey = colors.join('|')
   const octaves = props.octaves ?? 4
   const variant = props.variant ?? 'organic'
@@ -101,6 +103,7 @@ export function NoiseField(props: NoiseFieldProps) {
   const speedUniform = useAnimatableUniform<number>(props.speed ?? 0.5)
 
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
+  // Cursor uniform wired for future cursor-reactive shader work; not yet consumed by the shader graph
   const _cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
 
   useEffect(() => {
