@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic'
 
 import { palette } from '@/lib/palette'
+import { addCopyButtons } from '@/lib/paneUtils'
 import { useTweakpane } from '@/lib/useTweakpane'
 import { VisualTestPause } from '@/lib/visualTestHooks'
 
@@ -53,11 +54,55 @@ const INITIAL: Params = {
   b3: palette.magenta.base,
 }
 
+const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
+
+const fmtPalette = (p: Params, k: 'a' | 'b') =>
+  `['${p[`${k}0`]}', '${p[`${k}1`]}', '${p[`${k}2`]}', '${p[`${k}3`]}']`
+
+const fmtJsx = (p: Params) =>
+  `<ShaderScene>
+  <MeshGradient
+    speed={${fmtNum(p.speed)}}
+    frequency={${fmtNum(p.frequency)}}
+    amplitude={${fmtNum(p.amplitude)}}
+    cycleSpeed={${fmtNum(p.cycleSpeed)}}
+    cycleEase={${fmtNum(p.cycleEase)}}
+    paletteA={${fmtPalette(p, 'a')}}
+    paletteB={${fmtPalette(p, 'b')}}
+  />
+  <FilmGrain intensity={${fmtNum(p.grain)}} speed={${fmtNum(p.grainSpeed)}} />
+</ShaderScene>`
+
+const fmtParams = (p: Params) =>
+  `{
+  speed: ${fmtNum(p.speed)},
+  frequency: ${fmtNum(p.frequency)},
+  amplitude: ${fmtNum(p.amplitude)},
+  cycleSpeed: ${fmtNum(p.cycleSpeed)},
+  cycleEase: ${fmtNum(p.cycleEase)},
+  paletteA: ${fmtPalette(p, 'a')},
+  paletteB: ${fmtPalette(p, 'b')},
+  grain: ${fmtNum(p.grain)},
+  grainSpeed: ${fmtNum(p.grainSpeed)},
+}`
+
 export default function MeshGradientPage() {
   const [params, paneContainerRef] = useTweakpane<Params>(
     '<MeshGradient>',
     INITIAL,
     (pane, local, sync) => {
+      pane.addButton({ title: 'Reset all' }).on('click', () => {
+        Object.assign(local, INITIAL)
+        pane.refresh()
+        sync()
+      })
+
+      addCopyButtons(
+        pane,
+        () => fmtJsx(local),
+        () => fmtParams(local),
+      )
+
       pane.addBinding(local, 'speed', { min: 0, max: 5, step: 0.01 })
       pane.addBinding(local, 'frequency', { min: 0.5, max: 20, step: 0.1 })
       pane.addBinding(local, 'amplitude', { min: 5, max: 100, step: 0.5 })
