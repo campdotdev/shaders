@@ -12,8 +12,18 @@ type RegistrySlug =
   | 'mesh-gradient'
   | 'aurora'
 
+const SLUG_FILES: Record<RegistrySlug, string> = {
+  'linear-gradient': 'linear-gradient/linear-gradient.tsx',
+  'noise-field': 'noise-field.tsx',
+  'dot-field': 'dot-field.tsx',
+  waves: 'waves.tsx',
+  'mesh-gradient': 'mesh-gradient/mesh-gradient.tsx',
+  aurora: 'aurora/aurora.tsx',
+}
+
 export const readRegistrySource = cache(async (slug: RegistrySlug): Promise<string> => {
-  const path = resolve(REGISTRY_DIR, `${slug}.tsx`)
+  const relPath = SLUG_FILES[slug]
+  const path = resolve(REGISTRY_DIR, relPath)
 
   if (!path.startsWith(REGISTRY_DIR + sep)) {
     throw new Error(`Registry path escapes registry dir: ${slug}`)
