@@ -5,7 +5,7 @@
   "description": "Source-of-truth Tier 1 components shipped via the @lovo/matter-cli copy-paste flow. Not published to npm.",
   "type": "module",
   "exports": {
-    "./linear-gradient": "./linear-gradient.tsx",
+    "./linear-gradient": "./linear-gradient/linear-gradient.tsx",
     "./noise-field": "./noise-field.tsx",
     "./dot-field": "./dot-field.tsx",
     "./film-grain": "./film-grain/film-grain.tsx",

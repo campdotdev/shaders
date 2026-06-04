@@ -1,5 +1,6 @@
+import type { Dirent } from 'node:fs'
 import { readdir } from 'node:fs/promises'
-import { extname, join } from 'node:path'
+import { basename, extname, join } from 'node:path'
 
 import { readMatterConfig, resolveRegistryUrl } from '../config/matterConfig.js'
 import { fetchRegistry, type Registry } from '../registry/fetchRegistry.js'
@@ -29,10 +30,17 @@ export async function runUpdate(
   const registryUrl = resolveRegistryUrl(cfg, { registry: opts.registry, ref })
 
   const componentsDir = join(io.cwd, cfg.componentsDir)
-  const localFiles = await safeReaddir(componentsDir)
-  const localSlugs = localFiles
-    .filter((f) => extname(f) === '.tsx' || extname(f) === '.ts')
-    .map((f) => f.replace(/\.(tsx|ts)$/, ''))
+  const localEntries = await safeReaddir(componentsDir)
+  // Recognize both layouts: top-level `<slug>.tsx` AND subdir `<slug>/<slug>.tsx`
+  // (the latter is how multi-file components like aurora and linear-gradient live).
+  const localSlugs = localEntries.flatMap((entry) => {
+    if (entry.isFile() && (extname(entry.name) === '.tsx' || extname(entry.name) === '.ts')) {
+      return [entry.name.replace(/\.(tsx|ts)$/, '')]
+    }
+    if (entry.isDirectory()) return [entry.name]
+
+    return []
+  })
 
   const registry = await fetchRegistry(registryUrl)
 
@@ -76,9 +84,9 @@ export async function runUpdate(
   )
 }
 
-async function safeReaddir(path: string): Promise<string[]> {
+async function safeReaddir(path: string): Promise<Dirent[]> {
   try {
-    return await readdir(path)
+    return await readdir(path, { withFileTypes: true })
   } catch (err) {
     if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return []
     throw err
@@ -88,5 +96,9 @@ async function safeReaddir(path: string): Promise<string[]> {
 function slugIsInRegistry(slug: string, registry: Registry): boolean {
   const entry = registry.components[slug]
 
-  return entry?.file.replace(/\.(tsx|ts)$/, '') === slug
+  if (entry === undefined) return false
+
+  // Registry `file` is either `<slug>.tsx` (flat) or `<slug>/<slug>.tsx` (subdir).
+  // Match the basename without extension against the slug.
+  return basename(entry.file).replace(/\.(tsx|ts)$/, '') === slug
 }
