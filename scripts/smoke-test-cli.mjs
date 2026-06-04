@@ -72,8 +72,14 @@ try {
   })
 
   step(`Verify the copied file matches the registry source`)
-  const expected = readFileSync(join(repoRoot, 'registry/linear-gradient.tsx'), 'utf-8')
-  const actual = readFileSync(join(smokeDir, 'src/components/matter/linear-gradient.tsx'), 'utf-8')
+  const expected = readFileSync(
+    join(repoRoot, 'registry/linear-gradient/linear-gradient.tsx'),
+    'utf-8',
+  )
+  const actual = readFileSync(
+    join(smokeDir, 'src/components/matter/linear-gradient/linear-gradient.tsx'),
+    'utf-8',
+  )
   if (expected !== actual) {
     throw new Error('Copied component does not match registry source')
   }
@@ -81,14 +87,14 @@ try {
 
   step(`Edit the copied component and run \`matter-cli update --force\``)
   writeFileSync(
-    join(smokeDir, 'src/components/matter/linear-gradient.tsx'),
+    join(smokeDir, 'src/components/matter/linear-gradient/linear-gradient.tsx'),
     'export const stale = true\n',
   )
   run(`node node_modules/@lovo/matter-cli/dist/index.js update linear-gradient --force`, {
     cwd: smokeDir,
   })
   const refreshed = readFileSync(
-    join(smokeDir, 'src/components/matter/linear-gradient.tsx'),
+    join(smokeDir, 'src/components/matter/linear-gradient/linear-gradient.tsx'),
     'utf-8',
   )
   if (refreshed !== expected) {
