@@ -32,7 +32,14 @@ PLAYWRIGHT_VERSION=$(node -p \
   "require('./apps/docs-tests/node_modules/@playwright/test/package.json').version")
 
 IMAGE="mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy"
-docker pull "$IMAGE"
+
+# Force amd64 so locally-generated "linux" baselines match CI (ubuntu-latest =
+# amd64). Without this, Docker on Apple Silicon transparently pulls the arm64
+# variant of the multi-arch image, and the resulting Chromium/SwiftShader pixels
+# drift from CI just enough to push noise-heavy shaders (film-grain) past the
+# 0.02 maxDiffPixelRatio threshold.
+PLATFORM_FLAG=(--platform linux/amd64)
+docker pull "${PLATFORM_FLAG[@]}" "$IMAGE"
 
 
 PW_ARGS_INNER=""
@@ -51,6 +58,7 @@ for dir in apps/docs apps/docs-tests packages/matter packages/matter-react \
 done
 
 docker run --rm \
+  "${PLATFORM_FLAG[@]}" \
   -v "$REPO_ROOT":/work -w /work \
   "${NM_MOUNTS[@]}" \
   -e CI=1 \
