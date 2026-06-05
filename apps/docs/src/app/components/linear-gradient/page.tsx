@@ -155,11 +155,10 @@ export default function LinearGradientPage() {
 
   const colors = params.stops.map((s) => s.color)
   const stops = params.stops.map((s) => s.position)
-  // angle, speed, colors, and positions are all baked into the TSL graph at
-  // material-build time today, so changing any of them requires a remount.
-  // Phase 4 will switch angle + speed to live uniforms; for now this key
-  // forces the gradient to rebuild.
-  const remountKey = `${params.angle}|${params.speed}|${colors.join('|')}|${stops.join('|')}`
+  // angle and speed are live uniforms now — only color count / hex values /
+  // stop positions still require a material rebuild because they're baked
+  // into the TSL graph as JS literals (vec3 colors, position scalars).
+  const remountKey = `${colors.join('|')}|${stops.join('|')}`
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
