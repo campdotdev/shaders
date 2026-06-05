@@ -16,6 +16,7 @@ import { parseHex } from '../utils/color'
 
 export interface LinearGradientShaderProps {
   colors: string[]
+  stops: number[] | undefined
   angle: AnimatableProp<number>
   focalPoint: AnimatableProp<readonly [number, number]>
   speed: AnimatableProp<number>
@@ -27,6 +28,7 @@ const isPoint = (v: unknown): v is readonly [number, number] =>
 
 export function LinearGradientShader({
   colors,
+  stops,
   angle,
   focalPoint,
   speed,
@@ -41,10 +43,10 @@ export function LinearGradientShader({
   useStaticHint(isStatic)
 
   const colorsKey = colors.join('|')
+  const stopsKey = stops?.join('|') ?? ''
 
   const angleUniform = useAnimatableUniform<number>(angle)
   const speedUniform = useAnimatableUniform<number>(speed)
-  const focalUniform = useAnimatableUniform<readonly [number, number]>(focalPoint)
 
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
@@ -70,12 +72,16 @@ export function LinearGradientShader({
   useEffect(() => {
     if (!ctx) return
 
-    const stops: ColorRampStop[] = colors.map((hex, i) => {
+    const evenAt = (i: number) => i / Math.max(colors.length - 1, 1)
+
+    const rampStops: ColorRampStop[] = colors.map((hex, i) => {
       const [r, g, b] = parseHex(hex)
+      const userPos = stops?.[i]
+      const position = typeof userPos === 'number' ? Math.min(Math.max(userPos, 0), 1) : evenAt(i)
 
       return {
         color: vec3(r, g, b),
-        position: i / Math.max(colors.length - 1, 1),
+        position,
       }
     })
 
@@ -85,9 +91,6 @@ export function LinearGradientShader({
 
     const tNode = uv().sub(cursorUniform).dot(vec2(dirX, dirY)).add(0.5)
 
-    // Cosine-smoothed ping-pong: (1 - cos(π·x)) / 2 has period 2 in x, peaks
-    // at x=1, troughs at x=0/2 — same range and rhythm as a triangle wave but
-    // C∞ smooth, so the apex doesn't show as a visible band.
     const speedScalar = speedUniform.value
     const tAnimated =
       speedScalar === 0
@@ -96,7 +99,7 @@ export function LinearGradientShader({
 
     const material = new MeshBasicNodeMaterial()
 
-    material.colorNode = colorRamp(tAnimated, stops)
+    material.colorNode = colorRamp(tAnimated, rampStops)
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material)
 
@@ -116,7 +119,11 @@ export function LinearGradientShader({
         console.debug('[LinearGradient] geometry.dispose ignored:', err)
       }
     }
-  }, [ctx, colorsKey, cursor, angleUniform, speedUniform, focalUniform, cursorUniform, colors])
+    // colorsKey and stopsKey are stable string proxies for the prop arrays;
+    // the arrays themselves are intentionally omitted to avoid rebuilds on
+    // identity-only changes. Animatable uniforms are mutated in place.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ctx, colorsKey, stopsKey, cursor, angleUniform, speedUniform, cursorUniform])
 
   return null
 }

@@ -18,6 +18,7 @@ const LinearGradient = dynamic(
 
 interface Stop {
   color: string
+  position: number
 }
 
 interface Params {
@@ -37,9 +38,9 @@ const INITIAL: Params = {
   focalX: 0.5,
   focalY: 0.5,
   stops: [
-    { color: palette.violet.base },
-    { color: palette.purple.base },
-    { color: palette.magenta.dark },
+    { color: palette.violet.base, position: 0 },
+    { color: palette.purple.base, position: 0.5 },
+    { color: palette.magenta.dark, position: 1 },
   ],
 }
 
@@ -47,10 +48,13 @@ const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
 
 const fmtColors = (stops: Stop[]) => stops.map((s) => `'${s.color}'`).join(', ')
 
+const fmtStops = (stops: Stop[]) => stops.map((s) => fmtNum(s.position)).join(', ')
+
 const fmtJsx = (p: Params) =>
   `<ShaderScene>
   <LinearGradient
     colors={[${fmtColors(p.stops)}]}
+    stops={[${fmtStops(p.stops)}]}
     angle={${fmtNum(p.angle)}}
     speed={${fmtNum(p.speed)}}
     focalPoint={[${fmtNum(p.focalX)}, ${fmtNum(p.focalY)}]}
@@ -60,6 +64,7 @@ const fmtJsx = (p: Params) =>
 const fmtParams = (p: Params) =>
   `{
   colors: [${fmtColors(p.stops)}],
+  stops: [${fmtStops(p.stops)}],
   angle: ${fmtNum(p.angle)},
   speed: ${fmtNum(p.speed)},
   focalPoint: [${fmtNum(p.focalX)}, ${fmtNum(p.focalY)}],
@@ -110,6 +115,7 @@ export default function LinearGradientPage() {
         const row = stopsFolder.addFolder({ title: `Stop ${i}`, expanded: true })
 
         row.addBinding(stop, 'color', { label: 'color' })
+        row.addBinding(stop, 'position', { label: 'position', min: 0, max: 1, step: 0.01 })
 
         const removeBtn = row.addButton({ title: 'Remove stop' })
 
@@ -125,9 +131,14 @@ export default function LinearGradientPage() {
 
       if (local.stops.length >= MAX_STOPS) addBtn.disabled = true
       addBtn.on('click', () => {
-        const last = local.stops[local.stops.length - 1]?.color ?? '#888888'
+        const last = local.stops[local.stops.length - 1]
+        // New stop slots in halfway between the current last position and 1.0.
+        // Color duplicates the last stop's color so the new stop is visible
+        // and immediately editable rather than appearing as a random hex.
+        const nextColor = last?.color ?? '#888888'
+        const nextPosition = last !== undefined ? (last.position + 1) / 2 : 1
 
-        local.stops.push({ color: last })
+        local.stops.push({ color: nextColor, position: nextPosition })
         rebuildStops()
         sync()
       })
@@ -143,10 +154,12 @@ export default function LinearGradientPage() {
   }, [])
 
   const colors = params.stops.map((s) => s.color)
-  // angle and the colors array are baked into the TSL graph at material-build
-  // time today, so changing them requires a remount. Phase 4 will switch angle
-  // to a live uniform; for now this key forces the gradient to rebuild.
-  const remountKey = `${params.angle}|${colors.join('|')}`
+  const stops = params.stops.map((s) => s.position)
+  // angle, speed, colors, and positions are all baked into the TSL graph at
+  // material-build time today, so changing any of them requires a remount.
+  // Phase 4 will switch angle + speed to live uniforms; for now this key
+  // forces the gradient to rebuild.
+  const remountKey = `${params.angle}|${params.speed}|${colors.join('|')}|${stops.join('|')}`
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -158,6 +171,7 @@ export default function LinearGradientPage() {
             focalPoint={[params.focalX, params.focalY]}
             key={remountKey}
             speed={params.speed}
+            stops={stops}
           />
           <VisualTestPause />
         </ShaderScene>
