@@ -6,7 +6,7 @@ const REGISTRY_DIR = resolve(process.cwd(), '..', '..', 'registry')
 
 type RegistrySlug =
   | 'linear-gradient'
-  | 'noise-field'
+  | 'simplex-noise'
   | 'dot-field'
   | 'waves'
   | 'mesh-gradient'
@@ -14,7 +14,7 @@ type RegistrySlug =
 
 const SLUG_FILES: Record<RegistrySlug, string> = {
   'linear-gradient': 'linear-gradient/linear-gradient.tsx',
-  'noise-field': 'noise-field.tsx',
+  'simplex-noise': 'simplex-noise/simplex-noise.tsx',
   'dot-field': 'dot-field.tsx',
   waves: 'waves.tsx',
   'mesh-gradient': 'mesh-gradient/mesh-gradient.tsx',

@@ -9,17 +9,17 @@
       "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "time", "uniform"],
       "tier": 1
     },
-    "noise-field": {
-      "file": "noise-field.tsx",
-      "description": "Pure noise pattern in three flavors: organic (fbm), cellular (voronoi), grid (quantized fbm).",
+    "simplex-noise": {
+      "file": "simplex-noise/simplex-noise.tsx",
+      "description": "Evolving 3D simplex noise with color ramp, contour bands, and brightness/contrast histogram shaping.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "colorRamp",
-        "fbm",
-        "voronoi",
+        "noise",
         "quantize",
+        "clamp",
+        "mix",
         "uv",
-        "vec2",
         "vec3",
         "time",
         "uniform"

@@ -47,6 +47,16 @@ a:hover {
   text-decoration: underline;
 }
 
+[data-shader-demo] {
+  overflow: hidden;
+  isolation: isolate;
+}
+
+[data-tweakpane-host] {
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+}
+
 .codeblock {
   margin: 1rem 0;
 }

@@ -78,7 +78,7 @@ export default function FilmGrainPage() {
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div style={{ position: 'relative', height: '70vh' }}>
+      <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
         <ShaderScene>
           <LinearGradient />
           <FilmGrain intensity={params.intensity} mode={params.mode} speed={params.speed} />

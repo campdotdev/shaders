@@ -7,7 +7,7 @@ const routes = [
   '/components/mesh-gradient',
   '/components/aurora',
   '/components/dot-field',
-  '/components/noise-field',
+  '/components/simplex-noise',
   '/components/waves',
   '/recipes',
 ]

@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 const COMPONENTS = [
   { slug: 'linear-gradient', label: '<LinearGradient>' },
-  { slug: 'noise-field', label: '<NoiseField>' },
+  { slug: 'simplex-noise', label: '<SimplexNoise>' },
   { slug: 'dot-field', label: '<DotField>' },
   { slug: 'waves', label: '<Waves>' },
   { slug: 'mesh-gradient', label: '<MeshGradient>' },
