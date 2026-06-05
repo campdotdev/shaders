@@ -40,8 +40,19 @@ for arg in "${PW_ARGS[@]}"; do
   PW_ARGS_INNER+=" $(printf %q "$arg")"
 done
 
+# Mask every node_modules with an anonymous volume so the container's Linux
+# install does not overwrite the host's darwin-arm64 binaries (e.g. pagefind,
+# esbuild). Without this, the next host-side `pnpm snap` fails because the
+# .pnpm store ends up populated with the wrong-platform binaries.
+NM_MOUNTS=(-v /work/node_modules)
+for dir in apps/docs apps/docs-tests packages/matter packages/matter-react \
+           packages/matter-cli registry tooling/eslint-config tooling/tsconfig; do
+  NM_MOUNTS+=(-v "/work/$dir/node_modules")
+done
+
 docker run --rm \
   -v "$REPO_ROOT":/work -w /work \
+  "${NM_MOUNTS[@]}" \
   -e CI=1 \
   "$IMAGE" \
   bash -lc "
