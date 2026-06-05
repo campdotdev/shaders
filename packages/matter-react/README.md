@@ -38,7 +38,7 @@ export default function Hero() {
 
 ## Getting components
 
-Polished drop-in components (`<LinearGradient>`, `<Aurora>`, `<DotField>`, `<NoiseField>`, `<MeshGradient>`, `<Waves>`) ship via the shadcn-style copy-paste CLI. Install it once:
+Polished drop-in components (`<LinearGradient>`, `<Aurora>`, `<DotField>`, `<SimplexNoise>`, `<MeshGradient>`, `<Waves>`) ship via the shadcn-style copy-paste CLI. Install it once:
 
 ```bash
 npm install -D @lovo/matter-cli

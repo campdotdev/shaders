@@ -60,7 +60,7 @@ npx matter-cli update --force
 
 ## v1 components
 
-`linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, `waves`.
+`linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `waves`.
 
 Each component depends on `@lovo/matter` and `@lovo/matter-react`, which you install separately:
 

@@ -57,7 +57,7 @@ export default function WavesPage() {
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
+      <div data-shader-demo style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
         <ShaderScene>
           <Waves
             amplitude={params.amplitude}
@@ -69,19 +69,19 @@ export default function WavesPage() {
           />
           <VisualTestPause />
         </ShaderScene>
+        <div
+          aria-hidden="true"
+          data-tweakpane-host
+          ref={paneContainerRef}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            zIndex: 10,
+            width: '320px',
+          }}
+        />
       </div>
-      <div
-        aria-hidden="true"
-        data-tweakpane-host
-        ref={paneContainerRef}
-        style={{
-          position: 'fixed',
-          top: '1rem',
-          right: '1rem',
-          zIndex: 10,
-          width: '320px',
-        }}
-      />
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;Waves /&gt;</h1>
         <pre

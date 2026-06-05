@@ -29,7 +29,7 @@ interface ColorRampStop {
   color: TSLNode  // typically vec3(r, g, b)
   position: number  // 0..1
 }`,
-    usedBy: ['linear-gradient', 'noise-field', 'aurora'],
+    usedBy: ['linear-gradient', 'simplex-noise', 'aurora'],
     controls: [{ name: 'position', min: 0, max: 1, step: 0.01, default: 0.5 }],
   },
   {
@@ -38,7 +38,7 @@ interface ColorRampStop {
     description: 'Single-octave perlin noise.',
     signature: `function noise(p: TSLNode): TSLNode
 // p is a vec2 TSL node; returns a scalar roughly in [-1, 1].`,
-    usedBy: ['noise-field', 'mesh-gradient', 'aurora'],
+    usedBy: ['simplex-noise', 'mesh-gradient', 'aurora'],
     controls: [
       { name: 'scale', min: 0.5, max: 10, step: 0.1, default: 3 },
       { name: 'speed', min: 0, max: 2, step: 0.01, default: 0.3 },
@@ -58,7 +58,7 @@ interface FBMOptions {
   lacunarity?: number  // default 2
   gain?: number        // default 0.5
 }`,
-    usedBy: ['noise-field', 'aurora'],
+    usedBy: ['aurora'],
     controls: [
       { name: 'scale', min: 0.5, max: 10, step: 0.1, default: 3 },
       { name: 'octaves', min: 1, max: 8, step: 1, default: 4 },
@@ -73,7 +73,7 @@ interface FBMOptions {
     description: 'Cellular distance field (Worley noise).',
     signature: `function voronoi(p: TSLNode): TSLNode
 // p is a vec2 TSL node; returns a scalar roughly in [0, 1].`,
-    usedBy: ['noise-field'],
+    usedBy: [],
     controls: [
       { name: 'scale', min: 0.5, max: 10, step: 0.1, default: 4 },
       { name: 'speed', min: 0, max: 2, step: 0.01, default: 0.2 },
@@ -85,7 +85,7 @@ interface FBMOptions {
     description: 'Step a scalar into a fixed number of discrete bins.',
     signature: `function quantize(t: TSLNode, steps: number): TSLNode
 // steps is JS-side (baked into TSL at build time).`,
-    usedBy: ['noise-field'],
+    usedBy: ['simplex-noise'],
     controls: [{ name: 'bins', min: 2, max: 16, step: 1, default: 4 }],
   },
   {
@@ -148,7 +148,7 @@ interface CursorRippleOptions {
 // prefers-reduced-motion and any setReducedMotionPolicy override.
 // Import from '@lovo/matter'. For raw uncapped time, import from
 // 'three/tsl' directly.`,
-    usedBy: ['linear-gradient', 'noise-field', 'waves', 'mesh-gradient', 'aurora'],
+    usedBy: ['linear-gradient', 'simplex-noise', 'waves', 'mesh-gradient', 'aurora'],
     controls: [],
   },
 ]

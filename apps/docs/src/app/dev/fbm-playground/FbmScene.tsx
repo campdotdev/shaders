@@ -137,7 +137,7 @@ export default function FbmPlayground() {
         <p>
           Internal Matter dev surface — not part of the public component catalog. Use this to feel
           out good defaults for <code>octaves</code>, <code>lacunarity</code>, and <code>gain</code>{' '}
-          before <code>&lt;NoiseField&gt;</code> locks the prop API in 3.1.b.
+          when prototyping FBM-based shaders.
         </p>
       </section>
     </main>
