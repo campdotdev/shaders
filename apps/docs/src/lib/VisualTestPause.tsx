@@ -36,7 +36,7 @@ function useVisualTestPause(): void {
 
     setReducedMotionPolicy(policy)
 
-    ctx.scheduler.setIdle(false)
+    const releaseAnimated = ctx.scheduler.setIdle(false)
 
     interface NodeFrameInternal {
       time?: number
@@ -84,6 +84,7 @@ function useVisualTestPause(): void {
 
     return () => {
       ctx.scheduler.remove(client)
+      releaseAnimated()
     }
   }, [ctx])
 }

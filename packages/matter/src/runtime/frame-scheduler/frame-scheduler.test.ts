@@ -181,6 +181,33 @@ describe('setIdle (render-on-demand)', () => {
     tickFrame(48) // back to idle
     expect(client).toHaveBeenCalledTimes(2)
   })
+
+  it('does not halt when an animated vote counteracts a static vote', () => {
+    const scheduler = new FrameScheduler()
+    const client = vi.fn()
+
+    scheduler.add(client)
+    scheduler.start()
+
+    const releaseStatic = scheduler.setIdle(true)
+    const releaseAnimated = scheduler.setIdle(false)
+
+    tickFrame(0)
+    tickFrame(16)
+    tickFrame(32)
+
+    expect(client).toHaveBeenCalledTimes(3)
+
+    releaseAnimated()
+    tickFrame(48) // final flush after animated vote removed
+    expect(client).toHaveBeenCalledTimes(4)
+    tickFrame(64) // halted — static vote wins now
+    expect(client).toHaveBeenCalledTimes(4)
+
+    releaseStatic()
+    tickFrame(80) // no more votes → runs again
+    expect(client).toHaveBeenCalledTimes(5)
+  })
 })
 
 describe('dispose invariants', () => {

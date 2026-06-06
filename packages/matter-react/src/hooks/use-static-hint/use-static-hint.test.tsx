@@ -52,13 +52,13 @@ describe('useStaticHint', () => {
 
   it('reverts to non-idle on unmount', () => {
     const scheduler = new FrameScheduler()
-    const setIdle = vi.spyOn(scheduler, 'setIdle')
     const { unmount } = renderHook(() => useStaticHint(true), {
       wrapper: makeWrapper(scheduler),
     })
 
+    expect(scheduler.idle).toBe(true)
     unmount()
-    expect(setIdle).toHaveBeenLastCalledWith(false)
+    expect(scheduler.idle).toBe(false)
   })
 
   it('does not call requestRender on render when hint is unchanged', () => {
