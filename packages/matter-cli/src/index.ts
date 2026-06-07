@@ -83,4 +83,38 @@ program
     },
   )
 
+program
+  .command('poster')
+  .description('render a Matter component tree to a static PNG for use as <ShaderScene fallback>')
+  .requiredOption('--from <file>', 'path to a .tsx/.ts file exporting the component to render')
+  .requiredOption('--out <path>', 'where to write the PNG')
+  .option('--export <name>', 'named export to render', 'default')
+  .option('--time <seconds>', 'wait this long after first non-blank frame', '0')
+  .option('--width <px>', 'render width', '1280')
+  .option('--height <px>', 'render height', '720')
+  .action(
+    async (opts: {
+      from: string
+      out: string
+      export: string
+      time: string
+      width: string
+      height: string
+    }) => {
+      try {
+        const { runPoster } = await import('./commands/poster.js')
+        await runPoster({
+          from: opts.from,
+          out: opts.out,
+          exportName: opts.export,
+          timeSeconds: Number.parseFloat(opts.time),
+          width: Number.parseInt(opts.width, 10),
+          height: Number.parseInt(opts.height, 10),
+        })
+      } catch (err) {
+        fail(err)
+      }
+    },
+  )
+
 await program.parseAsync(process.argv)
