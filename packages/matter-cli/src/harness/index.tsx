@@ -23,10 +23,9 @@ if (typeof Component !== 'function') {
 const rootEl = document.getElementById('root')
 if (!rootEl) throw new Error('matter poster: #root missing from harness HTML')
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const C = Component as any
 const root = createRoot(rootEl)
-root.render(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  <(Component as any) />,
-)
+root.render(<C />)
 
 installFrameReadyWatcher()
