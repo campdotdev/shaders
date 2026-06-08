@@ -58,6 +58,50 @@ npx matter-cli update linear-gradient
 npx matter-cli update --force
 ```
 
+### Render a static fallback image
+
+Render a Matter component tree to a PNG for use as a `<ShaderScene fallback>` — eliminates the visible blank canvas during WebGPU initialization.
+
+```bash
+npx matter-cli poster --from <file> --out <path> [options]
+```
+
+| Flag               | Default    | Description                                                                                          |
+| ------------------ | ---------- | ---------------------------------------------------------------------------------------------------- |
+| `--from <file>`    | (required) | Path to a `.tsx`/`.ts` file whose chosen export renders the full tree (must include `<ShaderScene>`) |
+| `--out <path>`     | (required) | Where to write the PNG. Parent directories are created automatically.                                |
+| `--export <name>`  | `default`  | Named export to render.                                                                              |
+| `--time <seconds>` | `0`        | Wait this long after the first non-blank frame before snapshotting.                                  |
+| `--width <px>`     | `1280`     | Render width.                                                                                        |
+| `--height <px>`    | `720`      | Render height.                                                                                       |
+
+**Requires Playwright** as a peer dependency:
+
+```bash
+pnpm add -D playwright
+pnpm exec playwright install chromium
+```
+
+**Example:**
+
+```bash
+npx matter-cli poster --from ./src/components/matter/hero.tsx --out ./public/hero.png
+```
+
+Wire it up:
+
+```tsx
+<ShaderScene fallback={<img src="/hero.png" alt="" />}>
+  <LinearGradient ... />
+</ShaderScene>
+```
+
+**Limitations:**
+
+- The component you point at must render the entire tree (including `<ShaderScene>`); the CLI doesn't wrap.
+- Components that depend on app-context hooks (`useTheme`, `useRouter`, etc.) won't render in the headless harness. Extract a presentational child.
+- Output is always PNG (animated formats, JPG, WebP are out of scope for v1).
+
 ## v1 components
 
 `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `waves`.
