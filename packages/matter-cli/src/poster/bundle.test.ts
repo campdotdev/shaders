@@ -1,3 +1,7 @@
+import { mkdtemp, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { bundlePoster } from './bundle.js'
@@ -23,5 +27,18 @@ describe('bundlePoster', () => {
         projectRoot: new URL('../../', import.meta.url).pathname,
       }),
     ).rejects.toThrow()
+  })
+})
+
+describe('bundlePoster — error messages', () => {
+  it('surfaces a TS/JSX syntax error with the user file path', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'matter-bundle-err-'))
+    await writeFile(join(dir, 'package.json'), '{}')
+    const bad = join(dir, 'bad.tsx')
+    await writeFile(bad, 'export default function Bad() { return <div></span> }')
+
+    await expect(
+      bundlePoster({ from: bad, exportName: 'default', projectRoot: dir }),
+    ).rejects.toThrow(/bad\.tsx/)
   })
 })
