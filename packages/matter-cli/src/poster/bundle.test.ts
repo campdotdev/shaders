@@ -1,7 +1,6 @@
 import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
 import { bundlePoster } from './bundle.js'
@@ -15,6 +14,7 @@ describe('bundlePoster', () => {
       exportName: 'default',
       projectRoot: new URL('../../', import.meta.url).pathname, // matter-cli's own root, has react installed
     })
+
     expect(result.js).toContain('hello')
     expect(result.js.length).toBeGreaterThan(1000)
   })
@@ -33,8 +33,10 @@ describe('bundlePoster', () => {
 describe('bundlePoster — error messages', () => {
   it('surfaces a TS/JSX syntax error with the user file path', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'matter-bundle-err-'))
+
     await writeFile(join(dir, 'package.json'), '{}')
     const bad = join(dir, 'bad.tsx')
+
     await writeFile(bad, 'export default function Bad() { return <div></span> }')
 
     await expect(

@@ -13,9 +13,9 @@ const base = {
 
 describe('runPoster — flag validation', () => {
   it('rejects width <= 0', async () => {
-    await expect(
-      runPoster({ ...base, width: 0 }, { cwd: '/tmp', log: vi.fn() }),
-    ).rejects.toThrow(/--width.*must be a positive integer ≤ 4096/)
+    await expect(runPoster({ ...base, width: 0 }, { cwd: '/tmp', log: vi.fn() })).rejects.toThrow(
+      /--width.*must be a positive integer ≤ 4096/,
+    )
   })
 
   it('rejects width > 4096', async () => {
@@ -25,9 +25,9 @@ describe('runPoster — flag validation', () => {
   })
 
   it('rejects height <= 0', async () => {
-    await expect(
-      runPoster({ ...base, height: -1 }, { cwd: '/tmp', log: vi.fn() }),
-    ).rejects.toThrow(/--height.*must be a positive integer ≤ 4096/)
+    await expect(runPoster({ ...base, height: -1 }, { cwd: '/tmp', log: vi.fn() })).rejects.toThrow(
+      /--height.*must be a positive integer ≤ 4096/,
+    )
   })
 
   it('rejects timeSeconds < 0', async () => {

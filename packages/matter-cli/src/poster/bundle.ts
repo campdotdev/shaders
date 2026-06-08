@@ -1,8 +1,7 @@
+import { build } from 'esbuild'
 import { access, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-
-import { build } from 'esbuild'
 
 export interface BundlePosterOpts {
   from: string
@@ -34,15 +33,22 @@ async function locateHarnessDir(): Promise<string> {
   if (harnessDirPromise) return harnessDirPromise
   harnessDirPromise = (async () => {
     let dir = dirname(fileURLToPath(import.meta.url))
-    while (true) {
+
+    for (;;) {
       try {
         const pkgRaw = await readFile(join(dir, 'package.json'), 'utf-8')
-        const pkg = JSON.parse(pkgRaw) as { name?: string }
+        const parsed: unknown = JSON.parse(pkgRaw)
+        const pkg = (typeof parsed === 'object' && parsed !== null ? parsed : {}) as {
+          name?: string
+        }
+
         if (pkg.name === '@lovo/matter-cli') {
           for (const candidate of ['dist/harness', 'src/harness']) {
             const harnessPath = join(dir, candidate)
+
             try {
               await access(join(harnessPath, 'index.html'))
+
               return harnessPath
             } catch {
               // try next candidate
@@ -60,15 +66,16 @@ async function locateHarnessDir(): Promise<string> {
         // Otherwise, package.json missing or wrong name; walk up
       }
       const parent = dirname(dir)
+
       if (parent === dir) {
         throw new Error(
-          'Could not locate @lovo/matter-cli package root from ' +
-            fileURLToPath(import.meta.url),
+          'Could not locate @lovo/matter-cli package root from ' + fileURLToPath(import.meta.url),
         )
       }
       dir = parent
     }
   })()
+
   return harnessDirPromise
 }
 
@@ -94,9 +101,10 @@ export async function bundlePoster(opts: BundlePosterOpts): Promise<BundlePoster
     logLevel: 'silent',
   })
 
-  const out =
-    result.outputFiles?.find((f) => f.path.endsWith('index.js')) ?? result.outputFiles?.[0]
+  const out = result.outputFiles.find((f) => f.path.endsWith('index.js')) ?? result.outputFiles[0]
+
   if (!out) throw new Error('bundlePoster: esbuild produced no output')
   const html = await readFile(join(harnessDir, 'index.html'), 'utf-8')
+
   return { js: out.text, html }
 }

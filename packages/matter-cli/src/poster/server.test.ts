@@ -24,6 +24,7 @@ describe('createPosterServer', () => {
 
   it('serves the harness HTML at /', async () => {
     const res = await fetch(`${server.url}/`)
+
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toMatch(/text\/html/)
     expect(await res.text()).toContain('ok')
@@ -31,6 +32,7 @@ describe('createPosterServer', () => {
 
   it('serves the harness JS at /harness.js', async () => {
     const res = await fetch(`${server.url}/harness.js`)
+
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toMatch(/javascript/)
     expect(await res.text()).toContain('bundle')
@@ -38,14 +40,17 @@ describe('createPosterServer', () => {
 
   it('serves the render config as JSON at /config.json', async () => {
     const res = await fetch(`${server.url}/config.json`)
+
     expect(res.status).toBe(200)
     const json = (await res.json()) as { width: number; height: number }
+
     expect(json.width).toBe(1280)
     expect(json.height).toBe(720)
   })
 
   it('404s unknown paths', async () => {
     const res = await fetch(`${server.url}/nope`)
+
     expect(res.status).toBe(404)
   })
 })

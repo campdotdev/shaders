@@ -68,6 +68,7 @@ export async function runPoster(
       outPath: outAbs,
       projectRoot,
     })
+
     io.log(`Wrote poster: ${opts.out} (${opts.width}×${opts.height}, ${formatBytes(bytes)})`)
     io.log('')
     io.log(`Wire it up inside ${opts.from}:`)
@@ -82,12 +83,15 @@ export async function runPoster(
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
+
   return `${(n / 1024 / 1024).toFixed(2)} MB`
 }
 
 function posterPublicSrc(outPath: string): string {
   // Best-effort hint: if the path goes through `/public/`, suggest the served form.
   const idx = outPath.replace(/\\/g, '/').indexOf('/public/')
+
   if (idx >= 0) return outPath.replace(/\\/g, '/').slice(idx + '/public'.length)
+
   return outPath
 }

@@ -103,6 +103,7 @@ program
     }) => {
       try {
         const { runPoster } = await import('./commands/poster.js')
+
         await runPoster({
           from: opts.from,
           out: opts.out,
