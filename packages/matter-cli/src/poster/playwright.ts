@@ -1,21 +1,20 @@
 import { access } from 'node:fs/promises'
 import { writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
+import { pathToFileURL } from 'node:url'
 
 import type * as Playwright from 'playwright'
 
 /**
- * Walk up the directory tree from `startDir` looking for
- * `node_modules/playwright/index.js`, the same search Node's module
- * resolution uses — but explicitly, so NODE_PATH (set by Vitest/pnpm at
- * process start) does not leak packages from outside the project tree.
+ * Walk up the directory tree from `startDir` looking for a `playwright`
+ * package directory. Avoids NODE_PATH leakage from the host process.
  */
-async function findPlaywrightPath(startDir: string): Promise<string | null> {
+async function findPlaywrightDir(startDir: string): Promise<string | null> {
   let dir = startDir
   while (true) {
-    const candidate = join(dir, 'node_modules', 'playwright', 'index.js')
+    const candidate = join(dir, 'node_modules', 'playwright')
     try {
-      await access(candidate)
+      await access(join(candidate, 'package.json'))
       return candidate
     } catch {
       // not here; keep walking up
@@ -27,15 +26,33 @@ async function findPlaywrightPath(startDir: string): Promise<string | null> {
 }
 
 export async function resolvePlaywright(projectRoot: string): Promise<typeof Playwright> {
-  const pwPath = await findPlaywrightPath(projectRoot)
-  if (pwPath === null) {
+  const pwDir = await findPlaywrightDir(projectRoot)
+  if (pwDir === null) {
     throw new Error(
       `Install playwright to use this command: pnpm add -D playwright && pnpm exec playwright install chromium`,
     )
   }
-  // Import via the resolved absolute path so we get the project's own copy.
-  const mod = (await import(pwPath)) as typeof Playwright
-  return mod
+  // Prefer ESM entry; fall back to CJS with .default unwrap.
+  for (const entry of ['index.mjs', 'index.js']) {
+    const filePath = join(pwDir, entry)
+    try {
+      await access(filePath)
+      const mod = (await import(pathToFileURL(filePath).href)) as Record<string, unknown> & {
+        default?: Record<string, unknown>
+      }
+      // ESM (index.mjs): named exports are on `mod` directly.
+      // CJS-via-ESM (index.js): exports may end up under `mod.default`.
+      const ns = (mod.chromium ? mod : mod.default ?? mod) as unknown as typeof Playwright
+      if (typeof ns.chromium?.launch !== 'function') {
+        throw new Error(`Resolved ${filePath} but it does not expose chromium.launch`)
+      }
+      return ns
+    } catch (err) {
+      if (entry === 'index.js') throw err
+      // else: try the next entry
+    }
+  }
+  throw new Error(`Unable to import playwright from ${pwDir}`)
 }
 
 export interface ScreenshotOpts {
