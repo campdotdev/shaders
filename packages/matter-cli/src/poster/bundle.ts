@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { access, readFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -15,12 +15,66 @@ export interface BundlePosterResult {
   html: string
 }
 
-// In dev: this file is at <pkg>/src/poster/bundle.ts → HARNESS_DIR = <pkg>/src/harness
-// In dist: this file is at <pkg>/dist/poster/bundle.js → HARNESS_DIR = <pkg>/dist/harness
-const HARNESS_DIR = dirname(fileURLToPath(import.meta.url)).replace(/\/poster$/, '/harness')
+// HARNESS_DIR resolution is intentionally async and memoized.
+//
+// The old synchronous approach used a regex replace on `import.meta.url` to derive the harness
+// path. That worked when the file was at `src/poster/bundle.ts` (dev) or `dist/poster/bundle.js`
+// (a per-directory dist layout), but tsup's code-splitting emits the actual implementation into
+// `dist/chunk-XXXX.js` at the dist root — not under `dist/poster/` — so the `/poster$/` regex
+// never matched and HARNESS_DIR collapsed to `<pkg>/dist`, causing esbuild to look for
+// `dist/index.tsx` instead of `dist/harness/index.tsx`.
+//
+// The fix: walk up the directory tree from `import.meta.url` until we find a `package.json`
+// with `name === '@lovo/matter-cli'`, then try `dist/harness` then `src/harness` in order.
+// This is robust to any output chunk location tsup chooses.
+
+let harnessDirPromise: Promise<string> | undefined
+
+async function locateHarnessDir(): Promise<string> {
+  if (harnessDirPromise) return harnessDirPromise
+  harnessDirPromise = (async () => {
+    let dir = dirname(fileURLToPath(import.meta.url))
+    while (true) {
+      try {
+        const pkgRaw = await readFile(join(dir, 'package.json'), 'utf-8')
+        const pkg = JSON.parse(pkgRaw) as { name?: string }
+        if (pkg.name === '@lovo/matter-cli') {
+          for (const candidate of ['dist/harness', 'src/harness']) {
+            const harnessPath = join(dir, candidate)
+            try {
+              await access(join(harnessPath, 'index.html'))
+              return harnessPath
+            } catch {
+              // try next candidate
+            }
+          }
+          throw new Error(
+            `Found @lovo/matter-cli at ${dir} but neither dist/harness nor src/harness contains index.html`,
+          )
+        }
+      } catch (err) {
+        // Re-throw if we found the package but harness is missing
+        if (err instanceof Error && err.message.startsWith('Found @lovo/matter-cli')) {
+          throw err
+        }
+        // Otherwise, package.json missing or wrong name; walk up
+      }
+      const parent = dirname(dir)
+      if (parent === dir) {
+        throw new Error(
+          'Could not locate @lovo/matter-cli package root from ' +
+            fileURLToPath(import.meta.url),
+        )
+      }
+      dir = parent
+    }
+  })()
+  return harnessDirPromise
+}
 
 export async function bundlePoster(opts: BundlePosterOpts): Promise<BundlePosterResult> {
-  const harnessEntry = join(HARNESS_DIR, 'index.tsx')
+  const harnessDir = await locateHarnessDir()
+  const harnessEntry = join(harnessDir, 'index.tsx')
   const result = await build({
     entryPoints: [harnessEntry],
     bundle: true,
@@ -43,6 +97,6 @@ export async function bundlePoster(opts: BundlePosterOpts): Promise<BundlePoster
   const out =
     result.outputFiles?.find((f) => f.path.endsWith('index.js')) ?? result.outputFiles?.[0]
   if (!out) throw new Error('bundlePoster: esbuild produced no output')
-  const html = await readFile(join(HARNESS_DIR, 'index.html'), 'utf-8')
+  const html = await readFile(join(harnessDir, 'index.html'), 'utf-8')
   return { js: out.text, html }
 }
