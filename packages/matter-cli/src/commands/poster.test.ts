@@ -36,3 +36,14 @@ describe('runPoster — flag validation', () => {
     ).rejects.toThrow(/--time.*must be ≥ 0/)
   })
 })
+
+describe('runPoster — --from validation', () => {
+  it('throws if --from file does not exist', async () => {
+    await expect(
+      runPoster(
+        { ...base, from: '/tmp/__matter_test_missing__.tsx' },
+        { cwd: '/tmp', log: vi.fn() },
+      ),
+    ).rejects.toThrow(/--from .* file not found/)
+  })
+})
