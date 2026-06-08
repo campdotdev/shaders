@@ -4,58 +4,29 @@ declare global {
   }
 }
 
-const NOISE_FLOOR = 2
-const SAMPLE_SIZE = 4
+// Number of rAF ticks to wait after the canvas is mounted AND sized before
+// signaling ready. Three ticks (~50ms at 60Hz) is enough for ShaderScene's
+// renderer to size the canvas, compile the TSL graph, queue the first frame,
+// and have it composite. The actual pixel readback isn't accessible to JS on
+// WebGPU canvases — Playwright captures the GPU surface directly via Chromium's
+// DevTools Protocol, which works regardless.
+const STABLE_FRAMES = 3
 
 export function installFrameReadyWatcher(): void {
-  let inflight = false
-  const tick = async (): Promise<void> => {
+  let stableCount = 0
+  const tick = (): void => {
     if (window.__matterReady) return
-    if (!inflight) {
-      const canvas = document.querySelector('canvas')
-      if (canvas && canvas.width > 0 && canvas.height > 0) {
-        inflight = true
-        try {
-          if (await isNonBlank(canvas)) {
-            window.__matterReady = true
-            return
-          }
-        } finally {
-          inflight = false
-        }
+    const canvas = document.querySelector('canvas')
+    if (canvas && canvas.width > 0 && canvas.height > 0) {
+      stableCount++
+      if (stableCount >= STABLE_FRAMES) {
+        window.__matterReady = true
+        return
       }
+    } else {
+      stableCount = 0
     }
-    requestAnimationFrame(() => {
-      void tick()
-    })
+    requestAnimationFrame(tick)
   }
-  requestAnimationFrame(() => {
-    void tick()
-  })
-}
-
-async function isNonBlank(canvas: HTMLCanvasElement): Promise<boolean> {
-  try {
-    const sx = Math.max(0, Math.floor(canvas.width / 2) - SAMPLE_SIZE / 2)
-    const sy = Math.max(0, Math.floor(canvas.height / 2) - SAMPLE_SIZE / 2)
-    // createImageBitmap works for WebGPU canvases (drawImage does not).
-    const bitmap = await createImageBitmap(canvas, sx, sy, SAMPLE_SIZE, SAMPLE_SIZE)
-    const off = document.createElement('canvas')
-    off.width = SAMPLE_SIZE
-    off.height = SAMPLE_SIZE
-    const ctx = off.getContext('2d')
-    if (!ctx) return false
-    ctx.drawImage(bitmap, 0, 0)
-    bitmap.close()
-    const { data } = ctx.getImageData(0, 0, SAMPLE_SIZE, SAMPLE_SIZE)
-    for (let i = 0; i < data.length; i += 4) {
-      const r = data[i] ?? 0
-      const g = data[i + 1] ?? 0
-      const b = data[i + 2] ?? 0
-      if (r > NOISE_FLOOR || g > NOISE_FLOOR || b > NOISE_FLOOR) return true
-    }
-    return false
-  } catch {
-    return false
-  }
+  requestAnimationFrame(tick)
 }
