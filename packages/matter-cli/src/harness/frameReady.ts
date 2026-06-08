@@ -15,12 +15,14 @@ const STABLE_FRAMES = 3
 export function installFrameReadyWatcher(): void {
   let stableCount = 0
   const tick = (): void => {
-    if (window.__matterReady) return
+    if (window.__matterReady === true) return
     const canvas = document.querySelector('canvas')
+
     if (canvas && canvas.width > 0 && canvas.height > 0) {
-      stableCount++
+      stableCount += 1
       if (stableCount >= STABLE_FRAMES) {
         window.__matterReady = true
+
         return
       }
     } else {
@@ -28,5 +30,6 @@ export function installFrameReadyWatcher(): void {
     }
     requestAnimationFrame(tick)
   }
+
   requestAnimationFrame(tick)
 }

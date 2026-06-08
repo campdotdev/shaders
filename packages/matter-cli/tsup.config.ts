@@ -1,6 +1,5 @@
-import { copyFile, mkdir } from 'node:fs/promises'
 import { readFileSync } from 'node:fs'
-
+import { copyFile, mkdir } from 'node:fs/promises'
 import { defineConfig } from 'tsup'
 
 const pkg = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf-8')) as {

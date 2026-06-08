@@ -34,6 +34,7 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
   for (const c of cases) {
     it(`produces a PNG for ${c.name}`, async () => {
       const out = join(outDir, `${c.name}.png`)
+
       await runPoster(
         {
           from: join(FIXTURES, c.file),
@@ -47,6 +48,7 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
         { cwd: process.cwd(), log: vi.fn() },
       )
       const s = await stat(out)
+
       expect(s.size).toBeGreaterThan(1024) // > 1 KB
       expect(s.size).toBeLessThan(5 * 1024 * 1024) // < 5 MB
     }, 30_000)

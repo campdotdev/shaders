@@ -26,16 +26,19 @@ export async function createPosterServer(opts: {
     if (url === '/' || url === '/index.html') {
       res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' })
       res.end(opts.bundle.html)
+
       return
     }
     if (url === '/harness.js') {
       res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' })
       res.end(opts.bundle.js)
+
       return
     }
     if (url === '/config.json') {
       res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' })
       res.end(JSON.stringify(opts.config))
+
       return
     }
     res.writeHead(404, { 'content-type': 'text/plain' })
@@ -46,7 +49,12 @@ export async function createPosterServer(opts: {
     server.listen(0, '127.0.0.1', resolve)
   })
 
-  const addr = server.address() as AddressInfo
+  const addrRaw = server.address()
+
+  if (addrRaw === null || typeof addrRaw === 'string') {
+    throw new Error('matter poster: expected server to bind a TCP address')
+  }
+  const addr: AddressInfo = addrRaw
   const url = `http://127.0.0.1:${addr.port}`
 
   return {
