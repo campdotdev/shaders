@@ -238,6 +238,9 @@ importers:
       '@lovo/matter-react':
         specifier: workspace:*
         version: link:../matter-react
+      '@matter/registry':
+        specifier: workspace:*
+        version: link:../../registry
       '@matter/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
