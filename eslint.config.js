@@ -22,6 +22,7 @@ export default defineConfig([
     '.fallow/**',
     'apps/docs/out/**',
     'apps/docs/.next/**',
+    'apps/docs/next-env.d.ts',
     'packages/matter-cli/src/test-fixtures/**',
   ]),
   {
@@ -42,9 +43,11 @@ export default defineConfig([
   },
   {
     files: [
-      'packages/*/src/**/*.{ts,tsx}',
-      'apps/*/src/**/*.{ts,tsx}',
-      'apps/docs-tests/**/*.{ts,tsx}',
+      // All TS/TSX in apps and packages, not just src/ — covers per-package
+      // config files (tsup.config.ts, vitest.config.ts), poster scaffolding,
+      // Next config, and the docs-tests workspace.
+      'packages/**/*.{ts,tsx}',
+      'apps/**/*.{ts,tsx}',
       'registry/**/*.{ts,tsx}',
     ],
     plugins: {
@@ -56,7 +59,21 @@ export default defineConfig([
     languageOptions: {
       parser: tsParser,
       parserOptions: {
-        projectService: true,
+        projectService: {
+          // Files outside any package tsconfig's includes (config files,
+          // poster scaffolding) fall back to tsconfig.eslint.json so they
+          // still get linted instead of erroring with "not found by the
+          // project service".
+          // Files NOT in any tsconfig include. Files already in a tsconfig
+          // (e.g. apps/docs/next.config.ts) must NOT appear here or the
+          // parser errors with "included by allowDefaultProject but also
+          // was found in the project service".
+          allowDefaultProject: [
+            'packages/*/*.config.{ts,mts,cts}',
+            'packages/*/posters/*.{ts,tsx}',
+          ],
+          defaultProject: 'tsconfig.eslint.json',
+        },
         tsconfigRootDir: import.meta.dirname,
         ecmaVersion: 'latest',
         sourceType: 'module',
