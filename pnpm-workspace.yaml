@@ -6,4 +6,3 @@ packages:
 catalog:
   vite: ^8.0.14
   vitest: ^4.1.7
-  oxfmt: ^0.52.0
