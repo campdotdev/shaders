@@ -85,9 +85,11 @@ program
 
 program
   .command('poster')
-  .description('render a Matter component tree to a static PNG for use as <ShaderScene fallback>')
+  .description('render a Matter component tree to a static image for use as <ShaderScene fallback>')
   .requiredOption('--from <file>', 'path to a .tsx/.ts file exporting the component to render')
-  .requiredOption('--out <path>', 'where to write the PNG')
+  .requiredOption('--out <path>', 'where to write the image (extension optional; --type wins)')
+  .option('--type <format>', 'output format: png or jpg', 'jpg')
+  .option('--quality <n>', 'JPEG quality 1–100 (default 80, ignored for PNG)')
   .option('--export <name>', 'named export to render', 'default')
   .option('--time <seconds>', 'wait this long after first non-blank frame', '0')
   .option('--width <px>', 'render width', '1280')
@@ -96,6 +98,8 @@ program
     async (opts: {
       from: string;
       out: string;
+      type: string;
+      quality?: string;
       export: string;
       time: string;
       width: string;
@@ -107,6 +111,9 @@ program
         await runPoster({
           from: opts.from,
           out: opts.out,
+          // runPoster validates --type at runtime; commander hands us a string.
+          type: opts.type,
+          quality: opts.quality === undefined ? undefined : Number.parseInt(opts.quality, 10),
           exportName: opts.export,
           timeSeconds: Number.parseFloat(opts.time),
           width: Number.parseInt(opts.width, 10),

@@ -10,14 +10,22 @@ const E2E_ENABLED = process.env.MATTER_E2E === '1';
 const FIXTURES = new URL('../test-fixtures/posters/', import.meta.url).pathname;
 
 const cases = [
-  { name: 'single-linear-gradient', file: 'single-linear-gradient.tsx', extra: {} },
-  { name: 'gradient-plus-grain', file: 'gradient-plus-grain.tsx', extra: {} },
-  { name: 'aurora-with-time', file: 'aurora-with-time.tsx', extra: { timeSeconds: 2 } },
+  { name: 'single-linear-gradient', file: 'single-linear-gradient.tsx', type: 'png', extra: {} },
+  { name: 'gradient-plus-grain', file: 'gradient-plus-grain.tsx', type: 'png', extra: {} },
+  {
+    name: 'aurora-with-time',
+    file: 'aurora-with-time.tsx',
+    type: 'png',
+    extra: { timeSeconds: 2 },
+  },
   {
     name: 'named-export',
     file: 'named-export.tsx',
+    type: 'png',
     extra: { exportName: 'NamedExport' },
   },
+  // Exercises the default JPEG path and verifies the magic-byte header.
+  { name: 'jpeg-default', file: 'single-linear-gradient.tsx', type: 'jpg', extra: {} },
 ] as const;
 
 describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
@@ -32,13 +40,14 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
   });
 
   for (const c of cases) {
-    it(`produces a PNG for ${c.name}`, async () => {
-      const out = join(outDir, `${c.name}.png`);
+    it(`produces a ${c.type.toUpperCase()} for ${c.name}`, async () => {
+      const out = join(outDir, `${c.name}.${c.type === 'jpg' ? 'jpg' : 'png'}`);
 
       await runPoster(
         {
           from: join(FIXTURES, c.file),
           out,
+          type: c.type,
           exportName: 'default',
           timeSeconds: 0,
           width: 800,
@@ -51,6 +60,26 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
 
       expect(s.size).toBeGreaterThan(1024); // > 1 KB
       expect(s.size).toBeLessThan(5 * 1024 * 1024); // < 5 MB
+
+      // Header sniff: confirm the format matches the requested type. PNG starts
+      // 89 50 4E 47; JPEG starts FF D8 FF.
+      const { open } = await import('node:fs/promises');
+      const fh = await open(out, 'r');
+
+      try {
+        const head = Buffer.alloc(4);
+
+        await fh.read(head, 0, 4, 0);
+        if (c.type === 'png') {
+          expect(head[0]).toBe(0x89);
+          expect(head[1]).toBe(0x50);
+        } else {
+          expect(head[0]).toBe(0xff);
+          expect(head[1]).toBe(0xd8);
+        }
+      } finally {
+        await fh.close();
+      }
     }, 30_000);
   }
 });

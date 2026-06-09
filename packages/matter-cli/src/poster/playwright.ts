@@ -78,6 +78,9 @@ export interface ScreenshotOpts {
   readyTimeoutMs: number;
   outPath: string;
   projectRoot: string;
+  format: 'jpeg' | 'png';
+  // 1–100. Only meaningful for JPEG; ignored for PNG.
+  quality: number | undefined;
 }
 
 export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes: number }> {
@@ -115,7 +118,10 @@ export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes
       await page.waitForTimeout(opts.timeSeconds * 1000);
     }
     const canvas = page.locator('canvas').first();
-    const buf = await canvas.screenshot({ type: 'png' });
+    const buf =
+      opts.format === 'jpeg'
+        ? await canvas.screenshot({ type: 'jpeg', quality: opts.quality })
+        : await canvas.screenshot({ type: 'png' });
 
     await writeFile(opts.outPath, buf);
 
