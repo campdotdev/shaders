@@ -1,14 +1,14 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
-import { getComponentsCatalog } from '@/content/catalog'
+import { getComponentsCatalog } from '@/content/catalog';
 
 export const metadata = {
   title: 'Components',
   description: 'Tier 1 shader components delivered shadcn-style via matter-cli add <name>.',
-}
+};
 
 export default async function ComponentsIndex() {
-  const components = await getComponentsCatalog()
+  const components = await getComponentsCatalog();
 
   return (
     <article style={{ lineHeight: 1.65 }}>
@@ -36,5 +36,5 @@ export default async function ComponentsIndex() {
         ))}
       </ul>
     </article>
-  )
+  );
 }

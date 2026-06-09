@@ -1,6 +1,6 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
-import type { DocsNeighbor } from '@/content/types'
+import type { DocsNeighbor } from '@/content/types';
 
 const cardStyle = {
   display: 'block',
@@ -9,7 +9,7 @@ const cardStyle = {
   borderRadius: '0.5rem',
   color: 'var(--fg)',
   textDecoration: 'none',
-} as const
+} as const;
 
 const labelStyle = {
   display: 'block',
@@ -18,16 +18,16 @@ const labelStyle = {
   textTransform: 'uppercase',
   letterSpacing: '0.06em',
   marginBottom: '0.25rem',
-} as const
+} as const;
 
 const titleStyle = {
   display: 'block',
   fontWeight: 500,
   fontSize: '0.9375rem',
-} as const
+} as const;
 
 export function PrevNext({ prev, next }: { prev: DocsNeighbor | null; next: DocsNeighbor | null }) {
-  if (!prev && !next) return null
+  if (!prev && !next) return null;
 
   return (
     <nav
@@ -59,5 +59,5 @@ export function PrevNext({ prev, next }: { prev: DocsNeighbor | null; next: Docs
         <span />
       )}
     </nav>
-  )
+  );
 }

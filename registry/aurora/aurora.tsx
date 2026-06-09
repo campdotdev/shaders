@@ -1,24 +1,24 @@
-'use client'
+'use client';
 
-import type { AnimatableProp } from '@lovo/matter-react'
+import type { AnimatableProp } from '@lovo/matter-react';
 
-import { type AuroraDirection, type AuroraLayer, AuroraShader } from './shader'
+import { type AuroraDirection, type AuroraLayer, AuroraShader } from './shader';
 
-export type { AuroraDirection, AuroraLayer } from './shader'
+export type { AuroraDirection, AuroraLayer } from './shader';
 
 export interface AuroraProps {
-  intensity?: AnimatableProp<number>
-  speed?: AnimatableProp<number>
-  densityX?: AnimatableProp<number>
-  densityY?: AnimatableProp<number>
-  falloff?: AnimatableProp<number>
-  driftX?: AnimatableProp<number>
-  driftY?: AnimatableProp<number>
-  turbulence?: AnimatableProp<number>
-  direction?: AuroraDirection
-  horizonColor?: string
-  skyColor?: string
-  layers?: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer]
+  intensity?: AnimatableProp<number>;
+  speed?: AnimatableProp<number>;
+  densityX?: AnimatableProp<number>;
+  densityY?: AnimatableProp<number>;
+  falloff?: AnimatableProp<number>;
+  driftX?: AnimatableProp<number>;
+  driftY?: AnimatableProp<number>;
+  turbulence?: AnimatableProp<number>;
+  direction?: AuroraDirection;
+  horizonColor?: string;
+  skyColor?: string;
+  layers?: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer];
 }
 
 export const DEFAULT_LAYERS: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer] = [
@@ -26,7 +26,7 @@ export const DEFAULT_LAYERS: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer
   { hex: '#1837e6', speed: 0.1, intensity: 0.2, variation: 5 }, // palette.blue.base
   { hex: '#661acc', speed: 0.15, intensity: 0.3, variation: 11 }, // palette.violet.base
   { hex: '#cc1a99', speed: 0.07, intensity: 0.2, variation: 17 }, // palette.magenta.base
-]
+];
 
 export function Aurora({
   intensity = 1,
@@ -57,5 +57,5 @@ export function Aurora({
       speed={speed}
       turbulence={turbulence}
     />
-  )
+  );
 }

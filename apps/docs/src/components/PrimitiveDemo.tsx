@@ -1,26 +1,26 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
-import { useCallback, useMemo, useState } from 'react'
+import dynamic from 'next/dynamic';
+import { useCallback, useMemo, useState } from 'react';
 
-import type { PrimitiveControl } from '@/data/primitives'
+import type { PrimitiveControl } from '@/data/primitives';
 
-import { buildPrimitiveParams } from './PrimitiveScene'
+import { buildPrimitiveParams } from './PrimitiveScene';
 import {
   initialStateFromSchema,
   type PropSchema,
   PropsPlayground,
   type PropsState,
-} from './PropsPlayground'
+} from './PropsPlayground';
 
 interface PrimitiveDemoProps {
-  slug: string
-  controls: readonly PrimitiveControl[]
+  slug: string;
+  controls: readonly PrimitiveControl[];
 }
 
 const PrimitiveScene = dynamic(() => import('./PrimitiveScene').then((m) => m.PrimitiveScene), {
   ssr: false,
-})
+});
 
 const buildSchema = (controls: readonly PrimitiveControl[]): PropSchema =>
   controls.map((c) => ({
@@ -30,17 +30,17 @@ const buildSchema = (controls: readonly PrimitiveControl[]): PropSchema =>
     min: c.min,
     max: c.max,
     step: c.step,
-  }))
+  }));
 
 export function PrimitiveDemo({ slug, controls }: PrimitiveDemoProps) {
-  const schema = buildSchema(controls)
-  const [params, setParams] = useState<PropsState>(() => initialStateFromSchema(schema))
+  const schema = buildSchema(controls);
+  const [params, setParams] = useState<PropsState>(() => initialStateFromSchema(schema));
 
-  const primitive = useMemo(() => buildPrimitiveParams(slug, params), [slug, params])
+  const primitive = useMemo(() => buildPrimitiveParams(slug, params), [slug, params]);
 
   const handleChange = useCallback((next: PropsState) => {
-    setParams(next)
-  }, [])
+    setParams(next);
+  }, []);
 
   return (
     <div>
@@ -62,5 +62,5 @@ export function PrimitiveDemo({ slug, controls }: PrimitiveDemoProps) {
         </div>
       )}
     </div>
-  )
+  );
 }

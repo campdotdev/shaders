@@ -1,9 +1,9 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
-import type { DocsBreadcrumb } from '@/content/types'
+import type { DocsBreadcrumb } from '@/content/types';
 
 export function Breadcrumbs({ crumbs }: { crumbs: DocsBreadcrumb[] }) {
-  if (crumbs.length === 0) return null
+  if (crumbs.length === 0) return null;
 
   return (
     <nav
@@ -32,5 +32,5 @@ export function Breadcrumbs({ crumbs }: { crumbs: DocsBreadcrumb[] }) {
         </span>
       ))}
     </nav>
-  )
+  );
 }

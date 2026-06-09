@@ -1,25 +1,25 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
-import { palette } from '@/lib/palette'
-import { useTweakpane } from '@/lib/useTweakpane'
-import { VisualTestPause } from '@/lib/visualTestHooks'
+import { palette } from '@/lib/palette';
+import { useTweakpane } from '@/lib/useTweakpane';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
-})
+});
 const DotField = dynamic(() => import('@matter/registry/dot-field').then((m) => m.DotField), {
   ssr: false,
-})
+});
 
 interface Params {
-  color: string
-  spacing: number
-  dotSize: number
-  reach: number
-  strength: number
-  interactive: boolean
+  color: string;
+  spacing: number;
+  dotSize: number;
+  reach: number;
+  strength: number;
+  interactive: boolean;
 }
 
 const INITIAL: Params = {
@@ -29,30 +29,30 @@ const INITIAL: Params = {
   reach: 100,
   strength: 1,
   interactive: true,
-}
+};
 
 export default function DotFieldPage() {
   const [params, paneContainerRef] = useTweakpane<Params>(
     '<DotField>',
     INITIAL,
     (pane, local, sync) => {
-      pane.addBinding(local, 'color')
-      pane.addBlade({ view: 'separator' })
-      pane.addBinding(local, 'spacing', { min: 8, max: 80, step: 1 })
+      pane.addBinding(local, 'color');
+      pane.addBlade({ view: 'separator' });
+      pane.addBinding(local, 'spacing', { min: 8, max: 80, step: 1 });
       pane.addBinding(local, 'dotSize', {
         label: 'dot size',
         min: 1,
         max: 8,
         step: 0.5,
-      })
-      pane.addBlade({ view: 'separator' })
-      pane.addBinding(local, 'reach', { min: 10, max: 400, step: 5 })
-      pane.addBinding(local, 'strength', { min: 0, max: 3, step: 0.05 })
-      pane.addBlade({ view: 'separator' })
-      pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' })
-      pane.on('change', sync)
+      });
+      pane.addBlade({ view: 'separator' });
+      pane.addBinding(local, 'reach', { min: 10, max: 400, step: 5 });
+      pane.addBinding(local, 'strength', { min: 0, max: 3, step: 0.05 });
+      pane.addBlade({ view: 'separator' });
+      pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' });
+      pane.on('change', sync);
     },
-  )
+  );
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -98,5 +98,5 @@ export default function DotFieldPage() {
         </pre>
       </section>
     </main>
-  )
+  );
 }

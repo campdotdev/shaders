@@ -1,18 +1,18 @@
-'use client'
+'use client';
 
-import type { AnimatableProp } from '@lovo/matter-react'
+import type { AnimatableProp } from '@lovo/matter-react';
 
-import { SimplexNoiseShader } from './shader'
+import { SimplexNoiseShader } from './shader';
 
 export interface SimplexNoiseProps {
-  colors?: string[]
-  stops?: number[]
-  scale?: AnimatableProp<number>
-  speed?: AnimatableProp<number>
-  focus?: AnimatableProp<number>
-  bias?: AnimatableProp<number>
-  softness?: AnimatableProp<number>
-  variant?: number
+  colors?: string[];
+  stops?: number[];
+  scale?: AnimatableProp<number>;
+  speed?: AnimatableProp<number>;
+  focus?: AnimatableProp<number>;
+  bias?: AnimatableProp<number>;
+  softness?: AnimatableProp<number>;
+  variant?: number;
 }
 
 const DEFAULT_COLORS = [
@@ -21,7 +21,7 @@ const DEFAULT_COLORS = [
   '#9e00ba', // palette.purple.base
   '#cc1a99', // palette.magenta.base
   '#00cda6', // palette.teal.base
-]
+];
 
 export function SimplexNoise({
   colors = DEFAULT_COLORS,
@@ -44,5 +44,5 @@ export function SimplexNoise({
       stops={stops}
       variant={variant}
     />
-  )
+  );
 }

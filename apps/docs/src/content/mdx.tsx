@@ -1,4 +1,4 @@
-import type { HTMLAttributes, ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react';
 
 function Callout({ children }: { children: ReactNode }) {
   return (
@@ -13,7 +13,7 @@ function Callout({ children }: { children: ReactNode }) {
     >
       {children}
     </div>
-  )
+  );
 }
 
 function Steps({ children }: { children: ReactNode }) {
@@ -29,7 +29,7 @@ function Steps({ children }: { children: ReactNode }) {
     >
       {children}
     </ol>
-  )
+  );
 }
 
 function Pre(props: HTMLAttributes<HTMLPreElement>) {
@@ -46,11 +46,11 @@ function Pre(props: HTMLAttributes<HTMLPreElement>) {
         ...props.style,
       }}
     />
-  )
+  );
 }
 
 export const mdxComponents = {
   Callout,
   Steps,
   pre: Pre,
-}
+};

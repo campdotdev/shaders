@@ -1,18 +1,18 @@
 export interface PrimitiveControl {
-  name: string
-  min: number
-  max: number
-  step: number
-  default: number
+  name: string;
+  min: number;
+  max: number;
+  step: number;
+  default: number;
 }
 
 export interface PrimitiveEntry {
-  slug: string
-  name: string
-  description: string
-  signature: string
-  usedBy: readonly string[]
-  controls: readonly PrimitiveControl[]
+  slug: string;
+  name: string;
+  description: string;
+  signature: string;
+  usedBy: readonly string[];
+  controls: readonly PrimitiveControl[];
 }
 
 export const PRIMITIVES: readonly PrimitiveEntry[] = [
@@ -151,4 +151,4 @@ interface CursorRippleOptions {
     usedBy: ['linear-gradient', 'simplex-noise', 'waves', 'mesh-gradient', 'aurora'],
     controls: [],
   },
-]
+];

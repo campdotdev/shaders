@@ -1,16 +1,17 @@
-'use client'
+'use client';
 
-import { ShaderScene, useCursor, useShaderContext } from '@lovo/matter-react'
-import { useEffect, useMemo } from 'react'
-import { uniform } from 'three/tsl'
-import { Vector2 } from 'three/webgpu'
+import { useEffect, useMemo } from 'react';
 
-import { RECIPE_BUILDS } from '@/app/recipes/_builds'
-import { addPlaneMesh } from '@/lib/meshUtils'
+import { ShaderScene, useCursor, useShaderContext } from '@lovo/matter-react';
+import { uniform } from 'three/tsl';
+import { Vector2 } from 'three/webgpu';
+
+import { RECIPE_BUILDS } from '@/app/recipes/_builds';
+import { addPlaneMesh } from '@/lib/meshUtils';
 
 interface RecipeSceneProps {
-  slug: string
-  variant: string
+  slug: string;
+  variant: string;
 }
 
 export function RecipeScene({ slug, variant }: RecipeSceneProps) {
@@ -18,31 +19,31 @@ export function RecipeScene({ slug, variant }: RecipeSceneProps) {
     <ShaderScene>
       <RecipeMesh slug={slug} variant={variant} />
     </ShaderScene>
-  )
+  );
 }
 
 function RecipeMesh({ slug, variant }: { slug: string; variant: string }) {
-  const ctx = useShaderContext()
-  const cursor = useCursor()
+  const ctx = useShaderContext();
+  const cursor = useCursor();
 
-  const cursorVec = useMemo(() => new Vector2(0.5, 0.5), [])
-  const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec])
-
-  useEffect(() => {
-    return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y))
-  }, [cursor, cursorVec])
+  const cursorVec = useMemo(() => new Vector2(0.5, 0.5), []);
+  const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec]);
 
   useEffect(() => {
-    if (!ctx) return
-    const key = `${slug}.${variant}`
-    const build = RECIPE_BUILDS[key]
+    return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y));
+  }, [cursor, cursorVec]);
 
-    if (!build) return
+  useEffect(() => {
+    if (!ctx) return;
+    const key = `${slug}.${variant}`;
+    const build = RECIPE_BUILDS[key];
 
-    const colorNode = build({ cursorUniform })
+    if (!build) return;
 
-    return addPlaneMesh(ctx, colorNode)
-  }, [ctx, slug, variant, cursorUniform])
+    const colorNode = build({ cursorUniform });
 
-  return null
+    return addPlaneMesh(ctx, colorNode);
+  }, [ctx, slug, variant, cursorUniform]);
+
+  return null;
 }

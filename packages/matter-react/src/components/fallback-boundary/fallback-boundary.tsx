@@ -1,18 +1,18 @@
-'use client'
+'use client';
 
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react';
 
 export interface FallbackBoundaryProps {
-  fallback?: ReactNode
-  children: ReactNode
+  fallback?: ReactNode;
+  children: ReactNode;
 }
 
 export function FallbackBoundary({ fallback, children }: FallbackBoundaryProps) {
-  const [mounted, setMounted] = useState(false)
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true)
-  }, [])
+    setMounted(true);
+  }, []);
 
-  return <>{mounted ? children : (fallback ?? null)}</>
+  return <>{mounted ? children : (fallback ?? null)}</>;
 }

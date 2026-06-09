@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
+import { useState } from 'react';
 
-import { palette, paletteOklch } from '@/lib/palette'
+import { palette, paletteOklch } from '@/lib/palette';
 
-const { black, white, gray } = palette
+const { black, white, gray } = palette;
 const {
   limeScale: limeScaleOklch,
   lime: limeOklch,
@@ -19,20 +19,20 @@ const {
   violet: violetOklch,
   purple: purpleOklch,
   magenta: magentaOklch,
-} = paletteOklch
+} = paletteOklch;
 
 // ───────────────────────── Accent data ─────────────────────────
 
 interface AccentSteps {
-  light: string
-  base: string
-  dark: string
+  light: string;
+  base: string;
+  dark: string;
 }
 interface AccentEntry {
-  name: string
-  angle: number
-  steps: AccentSteps
-  oklch: AccentSteps
+  name: string;
+  angle: number;
+  steps: AccentSteps;
+  oklch: AccentSteps;
 }
 
 const ACCENTS: AccentEntry[] = [
@@ -48,15 +48,15 @@ const ACCENTS: AccentEntry[] = [
   { name: 'violet', angle: 293.328, steps: palette.violet, oklch: violetOklch },
   { name: 'purple', angle: 320, steps: palette.purple, oklch: purpleOklch },
   { name: 'magenta', angle: 343.895, steps: palette.magenta, oklch: magentaOklch },
-]
+];
 
 // ───────────────────────── Aurora old → new ─────────────────────────
 
 interface AuroraEntry {
-  name: string
-  oldHex: string
-  newRef: string
-  newColor: string
+  name: string;
+  oldHex: string;
+  newRef: string;
+  newColor: string;
 }
 
 const AURORA: AuroraEntry[] = [
@@ -64,7 +64,7 @@ const AURORA: AuroraEntry[] = [
   { name: 'blue', oldHex: '#1837E6', newRef: 'blue.base', newColor: blueOklch.base },
   { name: 'violet', oldHex: '#661ACC', newRef: 'violet.base', newColor: violetOklch.base },
   { name: 'magenta', oldHex: '#CC1A99', newRef: 'magenta.base', newColor: magentaOklch.base },
-]
+];
 
 // ───────────────────────── Components ─────────────────────────
 
@@ -74,13 +74,13 @@ function Section({
   children,
   bg,
 }: {
-  title: string
-  subtitle?: string
-  children: React.ReactNode
-  bg: string
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+  bg: string;
 }) {
-  const fg = bg === 'dark' ? white : black
-  const subFg = bg === 'dark' ? gray[7] : gray[6]
+  const fg = bg === 'dark' ? white : black;
+  const subFg = bg === 'dark' ? gray[7] : gray[6];
 
   return (
     <section style={{ marginBottom: 56 }}>
@@ -92,7 +92,7 @@ function Section({
       )}
       {children}
     </section>
-  )
+  );
 }
 
 function ScaleRow({
@@ -102,14 +102,14 @@ function ScaleRow({
   bg,
   brandStep,
 }: {
-  name: string
-  sub?: string
-  hexes: readonly string[]
-  bg: string
-  brandStep?: number
+  name: string;
+  sub?: string;
+  hexes: readonly string[];
+  bg: string;
+  brandStep?: number;
 }) {
-  const fg = bg === 'dark' ? white : black
-  const subFg = bg === 'dark' ? gray[7] : gray[6]
+  const fg = bg === 'dark' ? white : black;
+  const subFg = bg === 'dark' ? gray[7] : gray[6];
 
   return (
     <div
@@ -130,8 +130,8 @@ function ScaleRow({
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 4 }}>
         {hexes.map((color, i) => {
-          const stepNum = i + 1
-          const ringed = brandStep === stepNum
+          const stepNum = i + 1;
+          const ringed = brandStep === stepNum;
 
           return (
             <div
@@ -160,11 +160,11 @@ function ScaleRow({
                 {stepNum}
               </div>
             </div>
-          )
+          );
         })}
       </div>
     </div>
-  )
+  );
 }
 
 function ColorBlock({
@@ -174,14 +174,14 @@ function ColorBlock({
   bg,
   height = 88,
 }: {
-  color: string
-  label: string
-  sub?: string
-  bg: string
-  height?: number
+  color: string;
+  label: string;
+  sub?: string;
+  bg: string;
+  height?: number;
 }) {
-  const fg = bg === 'dark' ? white : black
-  const subFg = bg === 'dark' ? gray[7] : gray[6]
+  const fg = bg === 'dark' ? white : black;
+  const subFg = bg === 'dark' ? gray[7] : gray[6];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -200,7 +200,7 @@ function ColorBlock({
         </div>
       ) : null}
     </div>
-  )
+  );
 }
 
 function GradientBlock({
@@ -209,12 +209,12 @@ function GradientBlock({
   bg,
   height = 110,
 }: {
-  colors: string[]
-  label: string
-  bg: string
-  height?: number
+  colors: string[];
+  label: string;
+  bg: string;
+  height?: number;
 }) {
-  const subFg = bg === 'dark' ? gray[7] : gray[6]
+  const subFg = bg === 'dark' ? gray[7] : gray[6];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -227,12 +227,12 @@ function GradientBlock({
         }}
       />
     </div>
-  )
+  );
 }
 
 function AccentTriad({ accent, bg }: { accent: AccentEntry; bg: string }) {
-  const fg = bg === 'dark' ? white : black
-  const subFg = bg === 'dark' ? gray[7] : gray[6]
+  const fg = bg === 'dark' ? white : black;
+  const subFg = bg === 'dark' ? gray[7] : gray[6];
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -265,23 +265,23 @@ function AccentTriad({ accent, bg }: { accent: AccentEntry; bg: string }) {
         ))}
       </div>
     </div>
-  )
+  );
 }
 
 // ───────────────────────── Page ─────────────────────────
 
 export function PaletteView() {
-  const [bg, setBg] = useState<'dark' | 'light'>('dark')
-  const pageBg = bg === 'dark' ? black : white
-  const fg = bg === 'dark' ? white : black
-  const subFg = bg === 'dark' ? gray[7] : gray[6]
-  const border = bg === 'dark' ? gray[2] : gray[10]
+  const [bg, setBg] = useState<'dark' | 'light'>('dark');
+  const pageBg = bg === 'dark' ? black : white;
+  const fg = bg === 'dark' ? white : black;
+  const subFg = bg === 'dark' ? gray[7] : gray[6];
+  const border = bg === 'dark' ? gray[2] : gray[10];
 
-  const auroraOld = AURORA.map((a) => a.oldHex)
-  const auroraNew = AURORA.map((a) => a.newColor)
+  const auroraOld = AURORA.map((a) => a.oldHex);
+  const auroraNew = AURORA.map((a) => a.newColor);
 
   // Brand lime mid step (index 9 of the 12-step brand scale = #A3C100)
-  const brandLimeMid = limeScaleOklch[9]
+  const brandLimeMid = limeScaleOklch[9];
 
   return (
     <div
@@ -311,7 +311,7 @@ export function PaletteView() {
           </div>
           <button
             onClick={() => {
-              setBg(bg === 'dark' ? 'light' : 'dark')
+              setBg(bg === 'dark' ? 'light' : 'dark');
             }}
             style={{
               background: 'transparent',
@@ -487,5 +487,5 @@ export function PaletteView() {
         </Section>
       </div>
     </div>
-  )
+  );
 }

@@ -1,11 +1,11 @@
-import type { ReactNode } from 'react'
+import type { ReactNode } from 'react';
 
-import { getDocsNavTree } from '@/content/nav'
+import { getDocsNavTree } from '@/content/nav';
 
-import { DocsSidebar } from './DocsSidebar'
+import { DocsSidebar } from './DocsSidebar';
 
 export async function DocsShell({ children }: { children: ReactNode }) {
-  const tree = await getDocsNavTree()
+  const tree = await getDocsNavTree();
 
   return (
     <div
@@ -21,5 +21,5 @@ export async function DocsShell({ children }: { children: ReactNode }) {
       <DocsSidebar tree={tree} />
       <div style={{ minWidth: 0 }}>{children}</div>
     </div>
-  )
+  );
 }

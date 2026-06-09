@@ -1,25 +1,26 @@
-'use client'
+'use client';
 
-import type { FilmGrainMode } from '@matter/registry/film-grain'
-import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import dynamic from 'next/dynamic';
+import { useState } from 'react';
+
+import type { FilmGrainMode } from '@matter/registry/film-grain';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
-})
+});
 const MeshGradient = dynamic(
   () => import('@matter/registry/mesh-gradient').then((m) => m.MeshGradient),
   { ssr: false },
-)
+);
 
 const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
   ssr: false,
-})
+});
 
 export default function OverlayTestPage() {
-  const [intensity, setIntensity] = useState(0.3)
-  const [speed, setSpeed] = useState(1)
-  const [mode, setMode] = useState<FilmGrainMode>('additive')
+  const [intensity, setIntensity] = useState(0.3);
+  const [speed, setSpeed] = useState(1);
+  const [mode, setMode] = useState<FilmGrainMode>('additive');
 
   return (
     <div
@@ -79,5 +80,5 @@ export default function OverlayTestPage() {
         </ShaderScene>
       </div>
     </div>
-  )
+  );
 }

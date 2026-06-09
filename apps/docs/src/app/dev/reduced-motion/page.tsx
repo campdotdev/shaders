@@ -1,11 +1,11 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
 const ReducedMotionDemo = dynamic(
   () => import('./ReducedMotionDemo').then((m) => m.ReducedMotionDemo),
   { ssr: false },
-)
+);
 
 export default function Page() {
   return (
@@ -19,5 +19,5 @@ export default function Page() {
       </p>
       <ReducedMotionDemo />
     </main>
-  )
+  );
 }

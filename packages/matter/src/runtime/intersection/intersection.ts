@@ -1,8 +1,8 @@
 export interface IntersectionWatcher {
-  isInView(): boolean
+  isInView(): boolean;
   /** Subscribe to changes. Receives the new in-view state. Returns unsubscribe. */
-  subscribe(cb: (inView: boolean) => void): () => void
-  dispose(): void
+  subscribe(cb: (inView: boolean) => void): () => void;
+  dispose(): void;
 }
 
 /**
@@ -22,34 +22,34 @@ export function createIntersectionWatcher(canvas: HTMLCanvasElement): Intersecti
       dispose: () => {
         // SSR no-op dispose
       },
-    }
+    };
   }
 
-  const subs = new Set<(v: boolean) => void>()
-  let inView = true
+  const subs = new Set<(v: boolean) => void>();
+  let inView = true;
   const obs = new IntersectionObserver(
     (entries) => {
-      const next = entries.some((e) => e.isIntersecting)
+      const next = entries.some((e) => e.isIntersecting);
 
-      if (next === inView) return
-      inView = next
-      for (const cb of subs) cb(inView)
+      if (next === inView) return;
+      inView = next;
+      for (const cb of subs) cb(inView);
     },
     { threshold: 0 },
-  )
+  );
 
-  obs.observe(canvas)
+  obs.observe(canvas);
 
   return {
     isInView: () => inView,
     subscribe(cb) {
-      subs.add(cb)
+      subs.add(cb);
 
-      return () => subs.delete(cb)
+      return () => subs.delete(cb);
     },
     dispose() {
-      obs.disconnect()
-      subs.clear()
+      obs.disconnect();
+      subs.clear();
     },
-  }
+  };
 }

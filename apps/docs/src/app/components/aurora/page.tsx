@@ -1,42 +1,43 @@
-'use client'
+'use client';
 
-import type { AuroraDirection } from '@matter/registry/aurora'
-import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
+import dynamic from 'next/dynamic';
+import { useEffect, useRef, useState } from 'react';
 
-import { palette } from '@/lib/palette'
-import { addCopyButtons } from '@/lib/paneUtils'
-import { VisualTestPause } from '@/lib/visualTestHooks'
+import type { AuroraDirection } from '@matter/registry/aurora';
+import { Pane } from 'tweakpane';
+
+import { palette } from '@/lib/palette';
+import { addCopyButtons } from '@/lib/paneUtils';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 interface PlainAuroraLayer {
-  hex: string
-  speed: number
-  intensity: number
-  variation: number
-  falloff: number
+  hex: string;
+  speed: number;
+  intensity: number;
+  variation: number;
+  falloff: number;
 }
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
-})
+});
 const Aurora = dynamic(() => import('@matter/registry/aurora').then((m) => m.Aurora), {
   ssr: false,
-})
+});
 
 interface AuroraParams {
-  intensity: number
-  speed: number
-  densityX: number
-  densityY: number
-  falloff: number
-  driftX: number
-  driftY: number
-  turbulence: number
-  direction: AuroraDirection
-  horizonColor: string
-  skyColor: string
-  layers: [PlainAuroraLayer, PlainAuroraLayer, PlainAuroraLayer, PlainAuroraLayer]
+  intensity: number;
+  speed: number;
+  densityX: number;
+  densityY: number;
+  falloff: number;
+  driftX: number;
+  driftY: number;
+  turbulence: number;
+  direction: AuroraDirection;
+  horizonColor: string;
+  skyColor: string;
+  layers: [PlainAuroraLayer, PlainAuroraLayer, PlainAuroraLayer, PlainAuroraLayer];
 }
 
 const INITIAL: AuroraParams = {
@@ -81,20 +82,20 @@ const INITIAL: AuroraParams = {
       falloff: 1,
     },
   ],
-}
+};
 
-const LAYER_TITLES = ['Layer 0', 'Layer 1', 'Layer 2', 'Layer 3']
+const LAYER_TITLES = ['Layer 0', 'Layer 1', 'Layer 2', 'Layer 3'];
 
 const fmtNum = (n: number) => {
-  const r = Math.round(n * 10000) / 10000
+  const r = Math.round(n * 10000) / 10000;
 
-  return String(r)
-}
+  return String(r);
+};
 
 const fmtLayer = (l: PlainAuroraLayer) =>
   `{ hex: '${l.hex}', speed: ${fmtNum(l.speed)}, intensity: ${fmtNum(
     l.intensity,
-  )}, variation: ${fmtNum(l.variation)}, falloff: ${fmtNum(l.falloff)} }`
+  )}, variation: ${fmtNum(l.variation)}, falloff: ${fmtNum(l.falloff)} }`;
 
 const fmtJsx = (p: AuroraParams) =>
   `<ShaderScene>
@@ -117,7 +118,7 @@ const fmtJsx = (p: AuroraParams) =>
       ${fmtLayer(p.layers[3])},
     ]}
   />
-</ShaderScene>`
+</ShaderScene>`;
 
 const fmtParams = (p: AuroraParams) =>
   `{
@@ -138,158 +139,158 @@ const fmtParams = (p: AuroraParams) =>
     ${fmtLayer(p.layers[2])},
     ${fmtLayer(p.layers[3])},
   ],
-}`
+}`;
 
 export default function AuroraPage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useState<AuroraParams>(INITIAL)
+  const paneContainerRef = useRef<HTMLDivElement>(null);
+  const [params, setParams] = useState<AuroraParams>(INITIAL);
 
   useEffect(() => {
-    const container = paneContainerRef.current
+    const container = paneContainerRef.current;
 
-    if (!container) return
+    if (!container) return;
     // Tweakpane mutates `local` in place; we sync to React state on `change`.
-    const local: AuroraParams = structuredClone(INITIAL)
+    const local: AuroraParams = structuredClone(INITIAL);
 
-    const pane = new Pane({ container, title: '<Aurora>' })
-    const syncToReact = () => setParams(structuredClone(local))
+    const pane = new Pane({ container, title: '<Aurora>' });
+    const syncToReact = () => setParams(structuredClone(local));
 
     // Remembered pre-mute intensity per layer, so Unmute can restore.
-    const savedIntensities: number[] = INITIAL.layers.map((l) => l.intensity)
-    const muteBtns: Array<{ title: string } | null> = [null, null, null, null]
+    const savedIntensities: number[] = INITIAL.layers.map((l) => l.intensity);
+    const muteBtns: Array<{ title: string } | null> = [null, null, null, null];
 
     const resetGlobals = () => {
-      local.intensity = INITIAL.intensity
-      local.speed = INITIAL.speed
-      local.densityX = INITIAL.densityX
-      local.densityY = INITIAL.densityY
-      local.falloff = INITIAL.falloff
-      local.driftX = INITIAL.driftX
-      local.driftY = INITIAL.driftY
-      local.turbulence = INITIAL.turbulence
-      local.direction = INITIAL.direction
-      local.horizonColor = INITIAL.horizonColor
-      local.skyColor = INITIAL.skyColor
-    }
+      local.intensity = INITIAL.intensity;
+      local.speed = INITIAL.speed;
+      local.densityX = INITIAL.densityX;
+      local.densityY = INITIAL.densityY;
+      local.falloff = INITIAL.falloff;
+      local.driftX = INITIAL.driftX;
+      local.driftY = INITIAL.driftY;
+      local.turbulence = INITIAL.turbulence;
+      local.direction = INITIAL.direction;
+      local.horizonColor = INITIAL.horizonColor;
+      local.skyColor = INITIAL.skyColor;
+    };
 
     const resetLayer = (i: number) => {
-      const layer = local.layers[i]
-      const initial = INITIAL.layers[i]
+      const layer = local.layers[i];
+      const initial = INITIAL.layers[i];
 
-      if (layer === undefined || initial === undefined) return
-      Object.assign(layer, initial)
-      savedIntensities[i] = initial.intensity
-      const btn = muteBtns[i]
+      if (layer === undefined || initial === undefined) return;
+      Object.assign(layer, initial);
+      savedIntensities[i] = initial.intensity;
+      const btn = muteBtns[i];
 
-      if (btn) btn.title = 'Mute layer'
-    }
+      if (btn) btn.title = 'Mute layer';
+    };
 
     pane.addButton({ title: 'Reset all' }).on('click', () => {
-      resetGlobals()
-      for (let i = 0; i < 4; i += 1) resetLayer(i)
-      pane.refresh()
-      syncToReact()
-    })
+      resetGlobals();
+      for (let i = 0; i < 4; i += 1) resetLayer(i);
+      pane.refresh();
+      syncToReact();
+    });
 
     addCopyButtons(
       pane,
       () => fmtJsx(local),
       () => fmtParams(local),
-    )
+    );
 
-    const globals = pane.addFolder({ title: 'Global' })
+    const globals = pane.addFolder({ title: 'Global' });
 
-    globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 })
-    globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 })
+    globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
+    globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 });
     globals.addBinding(local, 'densityX', {
       label: 'density X',
       min: 0.5,
       max: 10,
       step: 0.05,
-    })
+    });
     globals.addBinding(local, 'densityY', {
       label: 'density Y',
       min: 0.5,
       max: 10,
       step: 0.05,
-    })
-    globals.addBinding(local, 'falloff', { min: 0, max: 2, step: 0.01 })
+    });
+    globals.addBinding(local, 'falloff', { min: 0, max: 2, step: 0.01 });
     globals.addBinding(local, 'driftX', {
       label: 'drift X',
       min: -5,
       max: 5,
       step: 0.05,
-    })
+    });
     globals.addBinding(local, 'driftY', {
       label: 'drift Y',
       min: -5,
       max: 5,
       step: 0.05,
-    })
-    globals.addBinding(local, 'turbulence', { min: 0, max: 3, step: 0.01 })
+    });
+    globals.addBinding(local, 'turbulence', { min: 0, max: 3, step: 0.01 });
     globals.addBinding(local, 'direction', {
       label: 'from',
       options: { Bottom: 'bottom', Top: 'top', Left: 'left', Right: 'right' },
-    })
-    globals.addBinding(local, 'horizonColor', { label: 'horizon' })
-    globals.addBinding(local, 'skyColor', { label: 'sky' })
+    });
+    globals.addBinding(local, 'horizonColor', { label: 'horizon' });
+    globals.addBinding(local, 'skyColor', { label: 'sky' });
 
     for (let i = 0; i < 4; i += 1) {
-      const title = LAYER_TITLES[i]
-      const layer = local.layers[i]
-      const initial = INITIAL.layers[i]
+      const title = LAYER_TITLES[i];
+      const layer = local.layers[i];
+      const initial = INITIAL.layers[i];
 
-      if (title === undefined || layer === undefined || initial === undefined) continue
+      if (title === undefined || layer === undefined || initial === undefined) continue;
       const folder = pane.addFolder({
         title,
         expanded: i === 0,
-      })
+      });
 
       const muteBtn = folder.addButton({
         title: layer.intensity > 0 ? 'Mute layer' : 'Unmute layer',
-      })
+      });
 
-      muteBtns[i] = muteBtn
+      muteBtns[i] = muteBtn;
       muteBtn.on('click', () => {
         if (layer.intensity > 0) {
-          savedIntensities[i] = layer.intensity
-          layer.intensity = 0
-          muteBtn.title = 'Unmute layer'
+          savedIntensities[i] = layer.intensity;
+          layer.intensity = 0;
+          muteBtn.title = 'Unmute layer';
         } else {
-          const restore = savedIntensities[i] ?? initial.intensity
+          const restore = savedIntensities[i] ?? initial.intensity;
 
-          layer.intensity = restore > 0 ? restore : initial.intensity
-          muteBtn.title = 'Mute layer'
+          layer.intensity = restore > 0 ? restore : initial.intensity;
+          muteBtn.title = 'Mute layer';
         }
-        pane.refresh()
-        syncToReact()
-      })
+        pane.refresh();
+        syncToReact();
+      });
 
-      folder.addBinding(layer, 'hex', { label: 'color' })
-      folder.addBinding(layer, 'speed', { min: 0, max: 0.5, step: 0.005 })
-      folder.addBinding(layer, 'intensity', { min: 0, max: 1, step: 0.01 })
+      folder.addBinding(layer, 'hex', { label: 'color' });
+      folder.addBinding(layer, 'speed', { min: 0, max: 0.5, step: 0.005 });
+      folder.addBinding(layer, 'intensity', { min: 0, max: 1, step: 0.01 });
       folder.addBinding(layer, 'falloff', {
         label: 'falloff ×',
         min: 0.1,
         max: 3,
         step: 0.01,
-      })
+      });
 
       folder.addButton({ title: 'Reset layer' }).on('click', () => {
-        resetLayer(i)
-        pane.refresh()
-        syncToReact()
-      })
+        resetLayer(i);
+        pane.refresh();
+        syncToReact();
+      });
     }
 
     pane.on('change', () => {
-      syncToReact()
-    })
+      syncToReact();
+    });
 
     return () => {
-      pane.dispose()
-    }
-  }, [])
+      pane.dispose();
+    };
+  }, []);
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -344,5 +345,5 @@ export default function AuroraPage() {
         </pre>
       </section>
     </main>
-  )
+  );
 }

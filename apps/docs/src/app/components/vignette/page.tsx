@@ -1,34 +1,34 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
-import { addCopyButtons } from '@/lib/paneUtils'
-import { useTweakpane } from '@/lib/useTweakpane'
-import { VisualTestPause } from '@/lib/visualTestHooks'
+import { addCopyButtons } from '@/lib/paneUtils';
+import { useTweakpane } from '@/lib/useTweakpane';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
-})
+});
 const LinearGradient = dynamic(
   () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
   { ssr: false },
-)
+);
 const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
   ssr: false,
-})
+});
 const Vignette = dynamic(() => import('@matter/registry/vignette').then((m) => m.Vignette), {
   ssr: false,
-})
+});
 
 interface VignetteParams {
-  intensity: number
-  softness: number
-  centerX: number
-  centerY: number
-  radius: number
-  color: string
-  grainOrderFirst: boolean
-  grainIntensity: number
+  intensity: number;
+  softness: number;
+  centerX: number;
+  centerY: number;
+  radius: number;
+  color: string;
+  grainOrderFirst: boolean;
+  grainIntensity: number;
 }
 
 const INITIAL: VignetteParams = {
@@ -40,19 +40,19 @@ const INITIAL: VignetteParams = {
   color: '#000000',
   grainOrderFirst: true,
   grainIntensity: 0.3,
-}
+};
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
+const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
 
 const fmtJsx = (p: VignetteParams) => {
-  const grain = `<FilmGrain intensity={${fmtNum(p.grainIntensity)}} />`
+  const grain = `<FilmGrain intensity={${fmtNum(p.grainIntensity)}} />`;
   const vignette = `<Vignette
     intensity={${fmtNum(p.intensity)}}
     softness={${fmtNum(p.softness)}}
     center={[${fmtNum(p.centerX)}, ${fmtNum(p.centerY)}]}
     radius={${fmtNum(p.radius)}}
     color="${p.color}"
-  />`
+  />`;
 
   return p.grainOrderFirst
     ? `<ShaderScene>
@@ -64,8 +64,8 @@ const fmtJsx = (p: VignetteParams) => {
   <LinearGradient />
   ${vignette}
   ${grain}
-</ShaderScene>`
-}
+</ShaderScene>`;
+};
 
 const fmtParams = (p: VignetteParams) =>
   `{
@@ -74,7 +74,7 @@ const fmtParams = (p: VignetteParams) =>
   center: [${fmtNum(p.centerX)}, ${fmtNum(p.centerY)}],
   radius: ${fmtNum(p.radius)},
   color: '${p.color}',
-}`
+}`;
 
 export default function VignettePage() {
   const [params, paneContainerRef] = useTweakpane<VignetteParams>(
@@ -82,49 +82,49 @@ export default function VignettePage() {
     INITIAL,
     (pane, local, sync) => {
       pane.addButton({ title: 'Reset all' }).on('click', () => {
-        Object.assign(local, INITIAL)
-        pane.refresh()
-        sync()
-      })
+        Object.assign(local, INITIAL);
+        pane.refresh();
+        sync();
+      });
 
       addCopyButtons(
         pane,
         () => fmtJsx(local),
         () => fmtParams(local),
-      )
+      );
 
-      pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 })
-      pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 })
+      pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'centerX', {
         min: 0,
         max: 1,
         step: 0.01,
         label: 'center.x',
-      })
+      });
       pane.addBinding(local, 'centerY', {
         min: 0,
         max: 1,
         step: 0.01,
         label: 'center.y',
-      })
-      pane.addBinding(local, 'radius', { min: 0, max: 1.5, step: 0.01 })
-      pane.addBinding(local, 'color')
+      });
+      pane.addBinding(local, 'radius', { min: 0, max: 1.5, step: 0.01 });
+      pane.addBinding(local, 'color');
 
-      const stackFolder = pane.addFolder({ title: 'Stack with FilmGrain' })
+      const stackFolder = pane.addFolder({ title: 'Stack with FilmGrain' });
 
       stackFolder.addBinding(local, 'grainOrderFirst', {
         label: 'grain first?',
-      })
+      });
       stackFolder.addBinding(local, 'grainIntensity', {
         label: 'grain intensity',
         min: 0,
         max: 0.5,
         step: 0.005,
-      })
+      });
 
-      pane.on('change', sync)
+      pane.on('change', sync);
     },
-  )
+  );
 
   const vignetteEl = (
     <Vignette
@@ -134,8 +134,8 @@ export default function VignettePage() {
       radius={params.radius}
       softness={params.softness}
     />
-  )
-  const grainEl = <FilmGrain intensity={params.grainIntensity} />
+  );
+  const grainEl = <FilmGrain intensity={params.grainIntensity} />;
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -209,5 +209,5 @@ export default function VignettePage() {
         </pre>
       </section>
     </main>
-  )
+  );
 }

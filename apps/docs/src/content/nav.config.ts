@@ -1,4 +1,4 @@
-import type { NavGroup } from './types'
+import type { NavGroup } from './types';
 
 export const NAV: NavGroup[] = [
   {
@@ -45,4 +45,4 @@ export const NAV: NavGroup[] = [
     label: 'Reference',
     items: [{ kind: 'section', collectsFrom: 'reference' }],
   },
-]
+];

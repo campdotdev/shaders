@@ -1,23 +1,23 @@
-'use client'
+'use client';
 
-import type { AnimatableProp } from '@lovo/matter-react'
+import type { AnimatableProp } from '@lovo/matter-react';
 
-import { LinearGradientShader } from './shader'
+import { LinearGradientShader } from './shader';
 
 export interface LinearGradientProps {
-  colors?: string[]
-  stops?: number[]
-  angle?: AnimatableProp<number>
-  focalPoint?: AnimatableProp<readonly [number, number]>
-  speed?: AnimatableProp<number>
-  interactive?: boolean
+  colors?: string[];
+  stops?: number[];
+  angle?: AnimatableProp<number>;
+  focalPoint?: AnimatableProp<readonly [number, number]>;
+  speed?: AnimatableProp<number>;
+  interactive?: boolean;
 }
 
 const DEFAULT_COLORS = [
   '#661acc', // palette.violet.base
   '#9e00ba', // palette.purple.base
   '#8c0067', // palette.magenta.dark
-]
+];
 
 export function LinearGradient({
   colors = DEFAULT_COLORS,
@@ -36,5 +36,5 @@ export function LinearGradient({
       speed={speed}
       stops={stops}
     />
-  )
+  );
 }

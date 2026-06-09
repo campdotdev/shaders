@@ -1,8 +1,8 @@
-import { add } from 'three/tsl'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
+import { add } from 'three/tsl';
+import type { ShaderNodeObject } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 
-import type { TSLNode } from '../color-ramp/color-ramp.js'
+import type { TSLNode } from '../color-ramp/color-ramp.js';
 
 /**
  * Naive vector addition: returns `p + by`.
@@ -21,5 +21,5 @@ import type { TSLNode } from '../color-ramp/color-ramp.js'
  * @param by — Vec2 TSL node (the displacement vector).
  */
 export function displace(p: TSLNode, by: TSLNode): ShaderNodeObject<Node> {
-  return add(p, by)
+  return add(p, by);
 }

@@ -1,6 +1,6 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
-import { RECIPES } from '@/data/recipes'
+import { RECIPES } from '@/data/recipes';
 
 export default function RecipesIndex() {
   return (
@@ -30,5 +30,5 @@ export default function RecipesIndex() {
         ))}
       </ul>
     </div>
-  )
+  );
 }

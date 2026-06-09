@@ -1,133 +1,133 @@
-'use client'
+'use client';
 
-import { type CSSProperties, type ReactNode, useEffect, useState } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
 
 export type PropSchemaEntry =
   | { name: string; label?: string; type: 'color'; default: string }
   | {
-      name: string
-      label?: string
-      type: 'number'
-      default: number
-      min: number
-      max: number
-      step?: number
+      name: string;
+      label?: string;
+      type: 'number';
+      default: number;
+      min: number;
+      max: number;
+      step?: number;
     }
   | { name: string; label?: string; type: 'boolean'; default: boolean }
   | {
-      name: string
-      label?: string
-      type: 'enum'
-      default: string
-      options: readonly string[]
+      name: string;
+      label?: string;
+      type: 'enum';
+      default: string;
+      options: readonly string[];
     }
   | {
-      name: string
-      label?: string
-      type: 'colors'
-      default: string[]
-      min?: number
-      max?: number
-    }
+      name: string;
+      label?: string;
+      type: 'colors';
+      default: string[];
+      min?: number;
+      max?: number;
+    };
 
-export type PropSchema = readonly PropSchemaEntry[]
+export type PropSchema = readonly PropSchemaEntry[];
 
-export type PropValue = string | number | boolean | string[]
-export type PropsState = Record<string, PropValue>
+export type PropValue = string | number | boolean | string[];
+export type PropsState = Record<string, PropValue>;
 
 type LiveEntry =
   | {
-      type: 'color'
-      entry: Extract<PropSchemaEntry, { type: 'color' }>
-      value: string
+      type: 'color';
+      entry: Extract<PropSchemaEntry, { type: 'color' }>;
+      value: string;
     }
   | {
-      type: 'enum'
-      entry: Extract<PropSchemaEntry, { type: 'enum' }>
-      value: string
+      type: 'enum';
+      entry: Extract<PropSchemaEntry, { type: 'enum' }>;
+      value: string;
     }
   | {
-      type: 'number'
-      entry: Extract<PropSchemaEntry, { type: 'number' }>
-      value: number
+      type: 'number';
+      entry: Extract<PropSchemaEntry, { type: 'number' }>;
+      value: number;
     }
   | {
-      type: 'boolean'
-      entry: Extract<PropSchemaEntry, { type: 'boolean' }>
-      value: boolean
+      type: 'boolean';
+      entry: Extract<PropSchemaEntry, { type: 'boolean' }>;
+      value: boolean;
     }
   | {
-      type: 'colors'
-      entry: Extract<PropSchemaEntry, { type: 'colors' }>
-      value: string[]
-    }
+      type: 'colors';
+      entry: Extract<PropSchemaEntry, { type: 'colors' }>;
+      value: string[];
+    };
 
 function toLiveEntry(entry: PropSchemaEntry, value: PropValue | undefined): LiveEntry {
   if (value === undefined) {
-    throw new Error(`PropRow: missing state value for '${entry.name}'`)
+    throw new Error(`PropRow: missing state value for '${entry.name}'`);
   }
 
   switch (entry.type) {
     case 'color':
       if (typeof value !== 'string') {
-        throw new Error(`PropRow: expected string for '${entry.name}', got ${typeof value}`)
+        throw new Error(`PropRow: expected string for '${entry.name}', got ${typeof value}`);
       }
 
-      return { type: 'color', entry, value }
+      return { type: 'color', entry, value };
     case 'enum':
       if (typeof value !== 'string') {
-        throw new Error(`PropRow: expected string for '${entry.name}', got ${typeof value}`)
+        throw new Error(`PropRow: expected string for '${entry.name}', got ${typeof value}`);
       }
 
-      return { type: 'enum', entry, value }
+      return { type: 'enum', entry, value };
     case 'number':
       if (typeof value !== 'number') {
-        throw new Error(`PropRow: expected number for '${entry.name}', got ${typeof value}`)
+        throw new Error(`PropRow: expected number for '${entry.name}', got ${typeof value}`);
       }
 
-      return { type: 'number', entry, value }
+      return { type: 'number', entry, value };
     case 'boolean':
       if (typeof value !== 'boolean') {
-        throw new Error(`PropRow: expected boolean for '${entry.name}', got ${typeof value}`)
+        throw new Error(`PropRow: expected boolean for '${entry.name}', got ${typeof value}`);
       }
 
-      return { type: 'boolean', entry, value }
+      return { type: 'boolean', entry, value };
     case 'colors':
       if (!Array.isArray(value)) {
-        throw new Error(`PropRow: expected array for '${entry.name}', got ${typeof value}`)
+        throw new Error(`PropRow: expected array for '${entry.name}', got ${typeof value}`);
       }
 
-      return { type: 'colors', entry, value }
+      return { type: 'colors', entry, value };
   }
 }
 
 export function initialStateFromSchema(schema: PropSchema): PropsState {
-  const out: PropsState = {}
+  const out: PropsState = {};
 
   for (const entry of schema) {
-    out[entry.name] = entry.type === 'colors' ? [...entry.default] : entry.default
+    out[entry.name] = entry.type === 'colors' ? [...entry.default] : entry.default;
   }
 
-  return out
+  return out;
 }
 
 interface PropsPlaygroundProps {
-  schema: PropSchema
-  onChange: (state: PropsState) => void
-  className?: string
-  style?: CSSProperties
+  schema: PropSchema;
+  onChange: (state: PropsState) => void;
+  className?: string;
+  style?: CSSProperties;
 }
 
 export function PropsPlayground({ schema, onChange, className, style }: PropsPlaygroundProps) {
-  const [state, setState] = useState<PropsState>(() => initialStateFromSchema(schema))
+  const [state, setState] = useState<PropsState>(() => initialStateFromSchema(schema));
 
   useEffect(() => {
-    onChange(state)
-  }, [state, onChange])
+    onChange(state);
+  }, [state, onChange]);
 
   const update = (name: string, value: PropValue) => {
-    setState((prev) => ({ ...prev, [name]: value }))
-  }
+    setState((prev) => ({ ...prev, [name]: value }));
+  };
 
   return (
     <form
@@ -149,18 +149,18 @@ export function PropsPlayground({ schema, onChange, className, style }: PropsPla
         <PropRow key={entry.name} live={toLiveEntry(entry, state[entry.name])} onChange={update} />
       ))}
     </form>
-  )
+  );
 }
 
 function PropRow({
   live,
   onChange,
 }: {
-  live: LiveEntry
-  onChange: (name: string, value: PropValue) => void
+  live: LiveEntry;
+  onChange: (name: string, value: PropValue) => void;
 }) {
-  const label = live.entry.label ?? live.entry.name
-  const id = `prop-${live.entry.name}`
+  const label = live.entry.label ?? live.entry.name;
+  const id = `prop-${live.entry.name}`;
 
   switch (live.type) {
     case 'color':
@@ -181,12 +181,12 @@ function PropRow({
           />
           <code style={{ fontSize: '0.8rem', color: 'var(--fg-muted)' }}>{live.value}</code>
         </Field>
-      )
+      );
 
     case 'number': {
-      const step = live.entry.step ?? 0.01
+      const step = live.entry.step ?? 0.01;
 
-      const fractionDigits = step >= 1 ? 0 : Math.min(3, -Math.floor(Math.log10(step)))
+      const fractionDigits = step >= 1 ? 0 : Math.min(3, -Math.floor(Math.log10(step)));
 
       return (
         <Field id={id} label={label}>
@@ -211,7 +211,7 @@ function PropRow({
             {live.value.toFixed(fractionDigits)}
           </code>
         </Field>
-      )
+      );
     }
 
     case 'boolean':
@@ -224,7 +224,7 @@ function PropRow({
             type="checkbox"
           />
         </Field>
-      )
+      );
 
     case 'enum':
       return (
@@ -249,7 +249,7 @@ function PropRow({
             ))}
           </select>
         </Field>
-      )
+      );
 
     case 'colors':
       return (
@@ -260,10 +260,10 @@ function PropRow({
                 aria-label={`${label} ${i + 1}`}
                 key={i}
                 onChange={(e) => {
-                  const next = [...live.value]
+                  const next = [...live.value];
 
-                  next[i] = e.target.value
-                  onChange(live.entry.name, next)
+                  next[i] = e.target.value;
+                  onChange(live.entry.name, next);
                 }}
                 style={{
                   width: 32,
@@ -278,7 +278,7 @@ function PropRow({
             ))}
           </div>
         </Field>
-      )
+      );
   }
 }
 
@@ -296,5 +296,5 @@ function Field({ id, label, children }: { id: string; label: string; children: R
       <span style={{ width: 100, color: 'var(--fg-muted)' }}>{label}</span>
       {children}
     </label>
-  )
+  );
 }

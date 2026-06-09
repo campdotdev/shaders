@@ -1,23 +1,23 @@
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
-import { CodeBlock } from '@/components/CodeBlock'
-import { PrimitiveDemo } from '@/components/PrimitiveDemo'
-import { PRIMITIVES } from '@/data/primitives'
+import { CodeBlock } from '@/components/CodeBlock';
+import { PrimitiveDemo } from '@/components/PrimitiveDemo';
+import { PRIMITIVES } from '@/data/primitives';
 
 export function generateStaticParams() {
-  return PRIMITIVES.map((p) => ({ slug: p.slug }))
+  return PRIMITIVES.map((p) => ({ slug: p.slug }));
 }
 
 interface PrimitivePageProps {
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }>;
 }
 
 export default async function PrimitivePage({ params }: PrimitivePageProps) {
-  const { slug } = await params
-  const prim = PRIMITIVES.find((p) => p.slug === slug)
+  const { slug } = await params;
+  const prim = PRIMITIVES.find((p) => p.slug === slug);
 
-  if (!prim) notFound()
+  if (!prim) notFound();
 
   return (
     <div style={{ padding: '2rem 1.5rem', maxWidth: 900, margin: '0 auto' }}>
@@ -42,5 +42,5 @@ export default async function PrimitivePage({ params }: PrimitivePageProps) {
         </>
       )}
     </div>
-  )
+  );
 }

@@ -1,20 +1,20 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
 interface RecipeViewerProps {
-  slug: string
-  variant: string
-  unframed?: boolean
+  slug: string;
+  variant: string;
+  unframed?: boolean;
 }
 
 const RecipeScene = dynamic(() => import('./RecipeScene').then((m) => m.RecipeScene), {
   ssr: false,
-})
+});
 
 export function RecipeViewer({ slug, variant, unframed = false }: RecipeViewerProps) {
   if (unframed) {
-    return <RecipeScene slug={slug} variant={variant} />
+    return <RecipeScene slug={slug} variant={variant} />;
   }
 
   return (
@@ -30,5 +30,5 @@ export function RecipeViewer({ slug, variant, unframed = false }: RecipeViewerPr
     >
       <RecipeScene slug={slug} variant={variant} />
     </div>
-  )
+  );
 }

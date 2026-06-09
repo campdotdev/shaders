@@ -1,11 +1,11 @@
-import { getDocsNavTree } from '@/content/nav'
-import { getDocsSearchDocuments } from '@/content/search'
-import { getMdxDocsPages } from '@/content/source'
+import { getDocsNavTree } from '@/content/nav';
+import { getDocsSearchDocuments } from '@/content/search';
+import { getMdxDocsPages } from '@/content/source';
 
 export default async function DocsGraphPage() {
-  const pages = await getMdxDocsPages()
-  const nav = await getDocsNavTree()
-  const search = await getDocsSearchDocuments()
+  const pages = await getMdxDocsPages();
+  const nav = await getDocsNavTree();
+  const search = await getDocsSearchDocuments();
 
   const pageSummary = pages.map((p) => ({
     url: p.url,
@@ -15,16 +15,16 @@ export default async function DocsGraphPage() {
     navTitle: p.frontmatter.navTitle,
     headings: p.headings.length,
     sourcePath: p.sourcePath.replace(process.cwd(), '.'),
-  }))
+  }));
 
-  const sectionStyle = { marginBottom: '2rem' } as const
+  const sectionStyle = { marginBottom: '2rem' } as const;
   const preStyle = {
     background: 'color-mix(in oklab, currentColor 6%, transparent)',
     padding: '1rem',
     borderRadius: '0.5rem',
     overflow: 'auto',
     fontSize: '0.8125rem',
-  } as const
+  } as const;
 
   return (
     <main
@@ -53,5 +53,5 @@ export default async function DocsGraphPage() {
         <pre style={preStyle}>{JSON.stringify(search, null, 2)}</pre>
       </section>
     </main>
-  )
+  );
 }

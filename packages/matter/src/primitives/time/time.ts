@@ -5,11 +5,10 @@
 //
 // If you want raw uncapped time (e.g. for a debug overlay), import `time`
 // from `three/tsl` directly.
+import { time as _builtinTime } from 'three/tsl';
+import type { ShaderNodeObject } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 
-import { time as _builtinTime } from 'three/tsl'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
+import { getReducedMotionTimeScale } from '../../runtime/reduced-motion/reduced-motion.js';
 
-import { getReducedMotionTimeScale } from '../../runtime/reduced-motion/reduced-motion.js'
-
-export const time: ShaderNodeObject<Node> = _builtinTime.mul(getReducedMotionTimeScale())
+export const time: ShaderNodeObject<Node> = _builtinTime.mul(getReducedMotionTimeScale());

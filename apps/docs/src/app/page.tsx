@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
 const COMPONENTS = [
   { slug: 'linear-gradient', label: '<LinearGradient>' },
@@ -7,7 +7,7 @@ const COMPONENTS = [
   { slug: 'waves', label: '<Waves>' },
   { slug: 'mesh-gradient', label: '<MeshGradient>' },
   { slug: 'aurora', label: '<Aurora>' },
-] as const
+] as const;
 
 export default function Home() {
   return (
@@ -29,5 +29,5 @@ export default function Home() {
         ))}
       </ul>
     </main>
-  )
+  );
 }

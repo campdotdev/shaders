@@ -1,6 +1,6 @@
-const black = '#0B0F0D'
+const black = '#0B0F0D';
 
-const white = '#E7E9E7'
+const white = '#E7E9E7';
 
 const gray = [
   '#0B0F0D',
@@ -15,7 +15,7 @@ const gray = [
   '#A1A6A1',
   '#D0D3CF',
   '#E7E9E7',
-] as const
+] as const;
 
 const limeScale = [
   '#111505',
@@ -30,93 +30,93 @@ const limeScale = [
   '#A3C100',
   '#CCE288',
   '#E3F0BD',
-] as const
+] as const;
 
-const brandLime = limeScale[9]
+const brandLime = limeScale[9];
 
 /** Accent: red (h=25). */
 const red = {
   light: '#ff6f6a',
   base: '#ff0029',
   dark: '#b60010',
-} as const
+} as const;
 
 /** Accent: orange (h=55). */
 const orange = {
   light: '#ff9c4d',
   base: '#ee6600',
   dark: '#ac4400',
-} as const
+} as const;
 
 /** Accent: amber (h=85). */
 const amber = {
   light: '#ffd57a',
   base: '#ecb100',
   dark: '#b38400',
-} as const
+} as const;
 
 /** Accent: lime (h=120, brand hue). Sits at the brand's chartreuse hue angle. */
 const lime = {
   light: '#d9f384',
   base: '#bcdc33',
   dark: '#90a913',
-} as const
+} as const;
 
 /** Accent: green (h=145.897). Base matches Aurora's original spring green. */
 const green = {
   light: '#84fa90',
   base: '#0ae24b',
   dark: '#00ab34',
-} as const
+} as const;
 
 /** Accent: teal (h=175). */
 const teal = {
   light: '#77ebce',
   base: '#00cda6',
   dark: '#00987a',
-} as const
+} as const;
 
 /** Accent: cyan (h=205). */
 const cyan = {
   light: '#5abfca',
   base: '#009eaf',
   dark: '#006e7c',
-} as const
+} as const;
 
 /** Accent: sky (h=235). */
 const sky = {
   light: '#1b9fda',
   base: '#007bc6',
   dark: '#004d87',
-} as const
+} as const;
 
 /** Accent: blue (h=265.847). Base matches Aurora's original cobalt. */
 const blue = {
   light: '#4370f0',
   base: '#1837e6',
   dark: '#0b1e9e',
-} as const
+} as const;
 
 /** Accent: violet (h=293.328). Base matches Aurora's original violet. */
 const violet = {
   light: '#825ddb',
   base: '#661acc',
   dark: '#43008e',
-} as const
+} as const;
 
 /** Accent: purple (h=320). */
 const purple = {
   light: '#ba5bcf',
   base: '#9e00ba',
   dark: '#66007b',
-} as const
+} as const;
 
 /** Accent: magenta (h=343.895). Base matches Aurora's original magenta. */
 const magenta = {
   light: '#e765b8',
   base: '#cc1a99',
   dark: '#8c0067',
-} as const
+} as const;
 
 /** Convenience grouping for iteration. */
 export const palette = {
@@ -137,7 +137,7 @@ export const palette = {
   violet,
   purple,
   magenta,
-} as const
+} as const;
 
 export const paletteOklch = {
   black: '#0B0F0D',
@@ -217,4 +217,4 @@ export const paletteOklch = {
     base: 'oklch(0.573 0.232 343.895)',
     dark: 'oklch(0.423 0.190 343.895)',
   },
-} as const
+} as const;

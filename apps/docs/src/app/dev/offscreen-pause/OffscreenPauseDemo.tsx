@@ -1,7 +1,7 @@
-'use client'
+'use client';
 
-import { ShaderMonitor, ShaderScene } from '@lovo/matter-react'
-import { LinearGradient } from '@matter/registry/linear-gradient'
+import { ShaderMonitor, ShaderScene } from '@lovo/matter-react';
+import { LinearGradient } from '@matter/registry/linear-gradient';
 
 const Spacer = ({ label }: { label: string }) => (
   <div
@@ -18,7 +18,7 @@ const Spacer = ({ label }: { label: string }) => (
   >
     {label}
   </div>
-)
+);
 
 export function OffscreenPauseDemo() {
   return (
@@ -40,5 +40,5 @@ export function OffscreenPauseDemo() {
       </div>
       <Spacer label="Keep scrolling — gradient should be off-screen above by now." />
     </main>
-  )
+  );
 }

@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Page } from '@playwright/test';
 
 /**
  * Waits for the shader to finish its first deterministic frame and settle.
@@ -10,6 +10,6 @@ export async function waitForShader(page: Page): Promise<void> {
     () => (window as unknown as { __matterTestReady?: boolean }).__matterTestReady === true,
     undefined,
     { timeout: 15_000 },
-  )
-  await page.waitForTimeout(50)
+  );
+  await page.waitForTimeout(50);
 }
