@@ -1,10 +1,12 @@
 import { mkdir, stat } from 'node:fs/promises';
-import { dirname, resolve } from 'node:path';
+import { dirname, extname, resolve } from 'node:path';
 
 import { bundlePoster } from '../poster/bundle.js';
 import { launchAndScreenshot } from '../poster/playwright.js';
 import { findProjectRoot } from '../poster/projectRoot.js';
 import { createPosterServer } from '../poster/server.js';
+
+export type PosterFormat = 'jpeg' | 'png';
 
 export interface PosterOptions {
   from: string;
@@ -13,6 +15,14 @@ export interface PosterOptions {
   timeSeconds: number;
   width: number;
   height: number;
+  // Format selector. Default 'jpg' — JPEG q80 is the best size/quality
+  // tradeoff for most shaders; switch to 'png' for posterized shaders
+  // (LinearGradient, SimplexNoise) where PNG compresses much smaller.
+  // Accepts a string so the commander → runPoster boundary stays validated
+  // at runtime instead of relying on an unchecked cast.
+  type?: string;
+  // 1–100. Ignored for PNG. Default 80.
+  quality?: number;
 }
 
 export interface PosterIO {
@@ -21,6 +31,42 @@ export interface PosterIO {
 }
 
 const READY_TIMEOUT_MS = 10_000;
+const DEFAULT_JPEG_QUALITY = 80;
+
+function normalizeType(t: string | undefined): PosterFormat {
+  const v = t?.toLowerCase();
+
+  if (v === undefined || v === 'jpg' || v === 'jpeg') return 'jpeg';
+  if (v === 'png') return 'png';
+
+  throw new Error(`--type must be 'png' or 'jpg' (got ${String(t)})`);
+}
+
+function extensionFor(format: PosterFormat): string {
+  return format === 'png' ? '.png' : '.jpg';
+}
+
+// Resolve --out + --type into a final path. --type is authoritative; --out is
+// a filename that may or may not include an extension.
+//   --out hero                     --type=jpg → hero.jpg
+//   --out hero.jpg                 --type=jpg → hero.jpg (extension matches)
+//   --out hero.jpeg                --type=jpg → hero.jpeg (jpeg ≡ jpg)
+//   --out hero.png                 --type=jpg → error (mismatch)
+//   --out hero.txt                 --type=jpg → hero.txt.jpg (preserve unknown ext)
+export function resolveOutPath(out: string, format: PosterFormat): string {
+  const ext = extname(out).toLowerCase();
+  const expected = extensionFor(format);
+
+  if (ext === expected) return out;
+  if (format === 'jpeg' && ext === '.jpeg') return out;
+  if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
+    throw new Error(
+      `--out extension '${ext}' doesn't match --type '${format === 'jpeg' ? 'jpg' : 'png'}'`,
+    );
+  }
+
+  return `${out}${expected}`;
+}
 
 export async function runPoster(
   opts: PosterOptions,
@@ -35,9 +81,23 @@ export async function runPoster(
   if (!Number.isFinite(opts.timeSeconds) || opts.timeSeconds < 0) {
     throw new Error(`--time must be ≥ 0 (got ${opts.timeSeconds})`);
   }
+  if (opts.quality !== undefined) {
+    if (!Number.isInteger(opts.quality) || opts.quality < 1 || opts.quality > 100) {
+      throw new Error(`--quality must be an integer 1–100 (got ${opts.quality})`);
+    }
+  }
+
+  const format = normalizeType(opts.type);
+  const resolvedOut = resolveOutPath(opts.out, format);
+
+  if (format === 'png' && opts.quality !== undefined) {
+    io.log(`warn: --quality is ignored for PNG output (lossless)`);
+  }
+
+  const quality = format === 'jpeg' ? (opts.quality ?? DEFAULT_JPEG_QUALITY) : undefined;
 
   const fromAbs = resolve(io.cwd, opts.from);
-  const outAbs = resolve(io.cwd, opts.out);
+  const outAbs = resolve(io.cwd, resolvedOut);
 
   try {
     await stat(fromAbs);
@@ -67,12 +127,14 @@ export async function runPoster(
       readyTimeoutMs: READY_TIMEOUT_MS,
       outPath: outAbs,
       projectRoot,
+      format,
+      quality,
     });
 
-    io.log(`Wrote poster: ${opts.out} (${opts.width}×${opts.height}, ${formatBytes(bytes)})`);
+    io.log(`Wrote poster: ${resolvedOut} (${opts.width}×${opts.height}, ${formatBytes(bytes)})`);
     io.log('');
     io.log(`Wire it up inside ${opts.from}:`);
-    io.log('  <ShaderScene fallback={<img src="' + posterPublicSrc(opts.out) + '" alt="" />}>');
+    io.log('  <ShaderScene fallback={<img src="' + posterPublicSrc(resolvedOut) + '" alt="" />}>');
     io.log('    ...');
     io.log('  </ShaderScene>');
   } finally {

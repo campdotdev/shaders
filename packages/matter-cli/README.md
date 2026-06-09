@@ -60,7 +60,7 @@ npx matter-cli update --force
 
 ### Render a static fallback image
 
-Render a Matter component tree to a PNG for use as a `<ShaderScene fallback>` — eliminates the visible blank canvas during WebGPU initialization.
+Render a Matter component tree to an image for use as a `<ShaderScene fallback>` — eliminates the visible blank canvas during WebGPU initialization.
 
 ```bash
 npx matter-cli poster --from <file> --out <path> [options]
@@ -69,11 +69,25 @@ npx matter-cli poster --from <file> --out <path> [options]
 | Flag               | Default    | Description                                                                                          |
 | ------------------ | ---------- | ---------------------------------------------------------------------------------------------------- |
 | `--from <file>`    | (required) | Path to a `.tsx`/`.ts` file whose chosen export renders the full tree (must include `<ShaderScene>`) |
-| `--out <path>`     | (required) | Where to write the PNG. Parent directories are created automatically.                                |
+| `--out <path>`     | (required) | Where to write the image. Extension optional — `--type` decides. Parent directories auto-created.    |
+| `--type <format>`  | `jpg`      | Output format: `png` or `jpg`. Default is `jpg` — best size/quality for most shaders.                |
+| `--quality <n>`    | `80`       | JPEG quality 1–100. Ignored for PNG.                                                                 |
 | `--export <name>`  | `default`  | Named export to render.                                                                              |
 | `--time <seconds>` | `0`        | Wait this long after the first non-blank frame before snapshotting.                                  |
 | `--width <px>`     | `1280`     | Render width.                                                                                        |
 | `--height <px>`    | `720`      | Render height.                                                                                       |
+
+#### Which format should I pick?
+
+The default (JPEG q80) handles most shaders well. PNG wins on shaders with large flat-color regions where its lossless palette compression beats JPEG's DCT. As a rule of thumb:
+
+| Use PNG (`--type png`) for…       | Use the default JPEG for…                  |
+| --------------------------------- | ------------------------------------------ |
+| `LinearGradient` with hard stops  | `Aurora` and similar gradient-heavy scenes |
+| `SimplexNoise` with contour bands | `MeshGradient` (smooth color flow)         |
+| Anything with < ~20 unique colors | `FilmGrain` (high-entropy noise)           |
+
+If unsure, run both — the difference can be 3–7× either direction.
 
 **Requires Playwright** as a peer dependency:
 
@@ -82,16 +96,23 @@ pnpm add -D playwright
 pnpm exec playwright install chromium
 ```
 
-**Example:**
+**Examples:**
 
 ```bash
-npx matter-cli poster --from ./src/components/matter/hero.tsx --out ./public/hero.png
+# Default — writes ./public/hero.jpg (JPEG q80)
+npx matter-cli poster --from ./src/components/matter/hero.tsx --out ./public/hero
+
+# Posterized shader — PNG compresses smaller
+npx matter-cli poster --from ./gradient.tsx --out ./public/gradient --type png
+
+# Higher quality JPEG
+npx matter-cli poster --from ./aurora.tsx --out ./public/aurora --quality 92
 ```
 
 Wire it up:
 
 ```tsx
-<ShaderScene fallback={<img src="/hero.png" alt="" />}>
+<ShaderScene fallback={<img src="/hero.jpg" alt="" />}>
   <LinearGradient ... />
 </ShaderScene>
 ```
@@ -100,7 +121,7 @@ Wire it up:
 
 - The component you point at must render the entire tree (including `<ShaderScene>`); the CLI doesn't wrap.
 - Components that depend on app-context hooks (`useTheme`, `useRouter`, etc.) won't render in the headless harness. Extract a presentational child.
-- Output is always PNG (animated formats, JPG, WebP are out of scope for v1).
+- WebP and AVIF are not supported (would require an extra dependency for marginal savings over JPEG).
 
 ## v1 components
 
