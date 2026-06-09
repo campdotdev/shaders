@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import { Pane } from 'tweakpane';
@@ -164,6 +165,14 @@ export default function LinearGradientPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
+        <Image
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          src="/posters/linear-gradient.png"
+          style={{ objectFit: 'cover' }}
+        />
         <ShaderScene>
           <LinearGradient
             angle={params.angle}

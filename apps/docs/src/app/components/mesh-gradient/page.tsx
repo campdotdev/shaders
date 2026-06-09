@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 
 import { palette } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
@@ -156,6 +157,14 @@ export default function MeshGradientPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
+        <Image
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          src="/posters/mesh-gradient.jpg"
+          style={{ objectFit: 'cover' }}
+        />
         <ShaderScene>
           <MeshGradient
             amplitude={params.amplitude}

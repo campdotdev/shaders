@@ -11,6 +11,9 @@ const threeDir = resolve(threeMain, '..', '..');
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: 'export',
+  // `output: 'export'` disables the `/_next/image` proxy; `unoptimized` lets
+  // next/image render plain <img> tags pointing at our pre-encoded assets.
+  images: { unoptimized: true },
   transpilePackages: ['@lovo/matter', '@lovo/matter-react', '@matter/registry'],
   webpack(config) {
     config.resolve = config.resolve ?? {};

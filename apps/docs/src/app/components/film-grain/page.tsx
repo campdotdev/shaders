@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 
 import type { FilmGrainMode } from '@matter/registry/film-grain';
 
@@ -80,6 +81,14 @@ export default function FilmGrainPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
+        <Image
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          src="/posters/film-grain.jpg"
+          style={{ objectFit: 'cover' }}
+        />
         <ShaderScene>
           <LinearGradient />
           <FilmGrain intensity={params.intensity} mode={params.mode} speed={params.speed} />
