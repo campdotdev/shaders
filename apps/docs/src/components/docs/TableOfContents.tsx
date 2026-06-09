@@ -1,7 +1,7 @@
-import type { DocsHeading } from '@/content/types'
+import type { DocsHeading } from '@/content/types';
 
 export function TableOfContents({ headings }: { headings: DocsHeading[] }) {
-  if (headings.length === 0) return null
+  if (headings.length === 0) return null;
 
   return (
     <nav
@@ -51,5 +51,5 @@ export function TableOfContents({ headings }: { headings: DocsHeading[] }) {
         ))}
       </ol>
     </nav>
-  )
+  );
 }

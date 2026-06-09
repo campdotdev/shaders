@@ -1,36 +1,37 @@
-'use client'
+'use client';
 
-import type { FilmGrainMode } from '@matter/registry/film-grain'
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
-import { addCopyButtons } from '@/lib/paneUtils'
-import { useTweakpane } from '@/lib/useTweakpane'
-import { VisualTestPause } from '@/lib/visualTestHooks'
+import type { FilmGrainMode } from '@matter/registry/film-grain';
+
+import { addCopyButtons } from '@/lib/paneUtils';
+import { useTweakpane } from '@/lib/useTweakpane';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
-})
+});
 const LinearGradient = dynamic(
   () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
   { ssr: false },
-)
+);
 const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
   ssr: false,
-})
+});
 
 interface FilmGrainParams {
-  intensity: number
-  speed: number
-  mode: FilmGrainMode
+  intensity: number;
+  speed: number;
+  mode: FilmGrainMode;
 }
 
 const INITIAL: FilmGrainParams = {
   intensity: 0.45,
   speed: 1,
   mode: 'additive',
-}
+};
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
+const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
 
 const fmtJsx = (p: FilmGrainParams) =>
   `<ShaderScene>
@@ -40,14 +41,14 @@ const fmtJsx = (p: FilmGrainParams) =>
     speed={${fmtNum(p.speed)}}
     mode="${p.mode}"
   />
-</ShaderScene>`
+</ShaderScene>`;
 
 const fmtParams = (p: FilmGrainParams) =>
   `{
   intensity: ${fmtNum(p.intensity)},
   speed: ${fmtNum(p.speed)},
   mode: '${p.mode}',
-}`
+}`;
 
 export default function FilmGrainPage() {
   const [params, paneContainerRef] = useTweakpane<FilmGrainParams>(
@@ -55,26 +56,26 @@ export default function FilmGrainPage() {
     INITIAL,
     (pane, local, sync) => {
       pane.addButton({ title: 'Reset all' }).on('click', () => {
-        Object.assign(local, INITIAL)
-        pane.refresh()
-        sync()
-      })
+        Object.assign(local, INITIAL);
+        pane.refresh();
+        sync();
+      });
 
       addCopyButtons(
         pane,
         () => fmtJsx(local),
         () => fmtParams(local),
-      )
+      );
 
-      pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 })
-      pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 })
+      pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
       pane.addBinding(local, 'mode', {
         options: { Additive: 'additive', Subtractive: 'subtractive' },
-      })
+      });
 
-      pane.on('change', sync)
+      pane.on('change', sync);
     },
-  )
+  );
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -135,5 +136,5 @@ export default function FilmGrainPage() {
         </pre>
       </section>
     </main>
-  )
+  );
 }

@@ -1,10 +1,10 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
 const PerfMonitorDemo = dynamic(() => import('./PerfMonitorDemo').then((m) => m.PerfMonitorDemo), {
   ssr: false,
-})
+});
 
 export default function Page() {
   return (
@@ -12,5 +12,5 @@ export default function Page() {
       <h1>Perf monitor</h1>
       <PerfMonitorDemo />
     </main>
-  )
+  );
 }

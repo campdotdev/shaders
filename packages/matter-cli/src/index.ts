@@ -1,20 +1,20 @@
-import { Command } from 'commander'
+import { Command } from 'commander';
 
-declare const __VERSION__: string
+declare const __VERSION__: string;
 
 function fail(err: unknown): never {
-  const message = err instanceof Error ? err.message : String(err)
+  const message = err instanceof Error ? err.message : String(err);
 
-  process.stderr.write(`error: ${message}\n`)
-  process.exit(1)
+  process.stderr.write(`error: ${message}\n`);
+  process.exit(1);
 }
 
-const program = new Command()
+const program = new Command();
 
 program
   .name('matter-cli')
   .description('CLI for Matter — copy-paste components from the registry into your project')
-  .version(__VERSION__)
+  .version(__VERSION__);
 
 program
   .command('init')
@@ -22,13 +22,13 @@ program
   .option('--force', 'overwrite an existing matter.config.json')
   .action(async (opts: { force?: boolean }) => {
     try {
-      const { runInit } = await import('./commands/init.js')
+      const { runInit } = await import('./commands/init.js');
 
-      await runInit(opts)
+      await runInit(opts);
     } catch (err) {
-      fail(err)
+      fail(err);
     }
-  })
+  });
 
 program
   .command('list')
@@ -37,13 +37,13 @@ program
   .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .action(async (opts: { registry?: string; ref?: string }) => {
     try {
-      const { runList } = await import('./commands/list.js')
+      const { runList } = await import('./commands/list.js');
 
-      await runList({ ...opts, cliVersion: __VERSION__ })
+      await runList({ ...opts, cliVersion: __VERSION__ });
     } catch (err) {
-      fail(err)
+      fail(err);
     }
-  })
+  });
 
 program
   .command('add')
@@ -55,14 +55,14 @@ program
   .action(
     async (components: string[], opts: { registry?: string; ref?: string; force?: boolean }) => {
       try {
-        const { runAdd } = await import('./commands/add.js')
+        const { runAdd } = await import('./commands/add.js');
 
-        await runAdd(components, { ...opts, cliVersion: __VERSION__ })
+        await runAdd(components, { ...opts, cliVersion: __VERSION__ });
       } catch (err) {
-        fail(err)
+        fail(err);
       }
     },
-  )
+  );
 
 program
   .command('update')
@@ -74,14 +74,14 @@ program
   .action(
     async (components: string[], opts: { registry?: string; ref?: string; force?: boolean }) => {
       try {
-        const { runUpdate } = await import('./commands/update.js')
+        const { runUpdate } = await import('./commands/update.js');
 
-        await runUpdate(components, { ...opts, cliVersion: __VERSION__ })
+        await runUpdate(components, { ...opts, cliVersion: __VERSION__ });
       } catch (err) {
-        fail(err)
+        fail(err);
       }
     },
-  )
+  );
 
 program
   .command('poster')
@@ -94,15 +94,15 @@ program
   .option('--height <px>', 'render height', '720')
   .action(
     async (opts: {
-      from: string
-      out: string
-      export: string
-      time: string
-      width: string
-      height: string
+      from: string;
+      out: string;
+      export: string;
+      time: string;
+      width: string;
+      height: string;
     }) => {
       try {
-        const { runPoster } = await import('./commands/poster.js')
+        const { runPoster } = await import('./commands/poster.js');
 
         await runPoster({
           from: opts.from,
@@ -111,11 +111,11 @@ program
           timeSeconds: Number.parseFloat(opts.time),
           width: Number.parseInt(opts.width, 10),
           height: Number.parseInt(opts.height, 10),
-        })
+        });
       } catch (err) {
-        fail(err)
+        fail(err);
       }
     },
-  )
+  );
 
-await program.parseAsync(process.argv)
+await program.parseAsync(process.argv);

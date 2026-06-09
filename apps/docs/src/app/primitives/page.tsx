@@ -1,12 +1,12 @@
-import Link from 'next/link'
+import Link from 'next/link';
 
-import { PRIMITIVES } from '@/data/primitives'
+import { PRIMITIVES } from '@/data/primitives';
 
 export const metadata = {
   title: 'Primitives',
   description:
     'Tier 2 — pure TSL functions exported from @lovo/matter. Compose them into your own shaders.',
-}
+};
 
 export default function PrimitivesIndex() {
   return (
@@ -33,5 +33,5 @@ export default function PrimitivesIndex() {
         ))}
       </ul>
     </article>
-  )
+  );
 }

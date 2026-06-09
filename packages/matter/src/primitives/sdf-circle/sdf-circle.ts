@@ -1,8 +1,8 @@
-import { length } from 'three/tsl'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
+import { length } from 'three/tsl';
+import type { ShaderNodeObject } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 
-import type { TSLNode } from '../color-ramp/color-ramp.js'
+import type { TSLNode } from '../color-ramp/color-ramp.js';
 
 /**
  * Signed distance field for a circle centered at the origin.
@@ -16,5 +16,5 @@ import type { TSLNode } from '../color-ramp/color-ramp.js'
  * @param radius — JS-side scalar OR a scalar TSL node.
  */
 export function sdfCircle(p: TSLNode, radius: TSLNode | number): ShaderNodeObject<Node> {
-  return length(p).sub(radius)
+  return length(p).sub(radius);
 }

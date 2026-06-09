@@ -1,16 +1,16 @@
-import './globals.css'
-import Link from 'next/link'
-import type { ReactNode } from 'react'
+import Link from 'next/link';
+import type { ReactNode } from 'react';
 
-import { SearchBar } from '@/components/SearchBar'
-import { ThemeToggle } from '@/components/ThemeToggle'
+import { SearchBar } from '@/components/SearchBar';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
-import { Providers } from './providers'
+import './globals.css';
+import { Providers } from './providers';
 
 export const metadata = {
   title: 'Matter — React shader components',
   description: 'WebGPU + TSL shader components for React.',
-}
+};
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
@@ -43,5 +43,5 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </Providers>
       </body>
     </html>
-  )
+  );
 }

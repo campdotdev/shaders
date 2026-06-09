@@ -1,4 +1,4 @@
-import { formatHex, parse } from 'culori'
+import { formatHex, parse } from 'culori';
 
 const OKLCH = {
   red: {
@@ -61,16 +61,16 @@ const OKLCH = {
     base: 'oklch(0.573 0.232 343.895)',
     dark: 'oklch(0.423 0.190 343.895)',
   },
-} as const
+} as const;
 
 for (const [hue, steps] of Object.entries(OKLCH)) {
-  console.log(`\n${hue}:`)
+  console.log(`\n${hue}:`);
   for (const [step, oklch] of Object.entries(steps)) {
-    const parsed = parse(oklch)
+    const parsed = parse(oklch);
 
-    if (!parsed) throw new Error(`culori failed to parse ${oklch}`)
-    const hex = formatHex(parsed)
+    if (!parsed) throw new Error(`culori failed to parse ${oklch}`);
+    const hex = formatHex(parsed);
 
-    console.log(`  ${step.padEnd(6)} ${oklch.padEnd(32)} -> ${hex}`)
+    console.log(`  ${step.padEnd(6)} ${oklch.padEnd(32)} -> ${hex}`);
   }
 }

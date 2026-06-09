@@ -1,96 +1,97 @@
-'use client'
+'use client';
 
-import { setReducedMotionPolicy } from '@lovo/matter'
-import type { ReducedMotionPolicy, SchedulerTick } from '@lovo/matter'
-import { useShaderContext } from '@lovo/matter-react'
-import { useEffect } from 'react'
+import { useEffect } from 'react';
 
-const TARGET_FRAME = 2
+import { setReducedMotionPolicy } from '@lovo/matter';
+import type { ReducedMotionPolicy, SchedulerTick } from '@lovo/matter';
+import { useShaderContext } from '@lovo/matter-react';
 
-const QUERY_FLAG = 'visualTest'
-const REDUCED_MOTION_FLAG = 'reducedMotion'
-const VALID_POLICIES: ReducedMotionPolicy[] = ['auto', 'off', 'slow', 'paused']
+const TARGET_FRAME = 2;
+
+const QUERY_FLAG = 'visualTest';
+const REDUCED_MOTION_FLAG = 'reducedMotion';
+const VALID_POLICIES: ReducedMotionPolicy[] = ['auto', 'off', 'slow', 'paused'];
 
 const isReducedMotionPolicy = (p: string): p is ReducedMotionPolicy =>
-  (VALID_POLICIES as readonly string[]).includes(p)
+  (VALID_POLICIES as readonly string[]).includes(p);
 
 declare global {
   interface Window {
-    __matterTestReady?: boolean
+    __matterTestReady?: boolean;
   }
 }
 
 function useVisualTestPause(): void {
-  const ctx = useShaderContext()
+  const ctx = useShaderContext();
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-    const params = new URLSearchParams(window.location.search)
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
 
-    if (params.get(QUERY_FLAG) !== '1') return
-    if (!ctx) return
+    if (params.get(QUERY_FLAG) !== '1') return;
+    if (!ctx) return;
 
-    const policyParam = params.get(REDUCED_MOTION_FLAG)
+    const policyParam = params.get(REDUCED_MOTION_FLAG);
     const policy: ReducedMotionPolicy =
-      policyParam !== null && isReducedMotionPolicy(policyParam) ? policyParam : 'paused'
+      policyParam !== null && isReducedMotionPolicy(policyParam) ? policyParam : 'paused';
 
-    setReducedMotionPolicy(policy)
+    setReducedMotionPolicy(policy);
 
-    const releaseAnimated = ctx.scheduler.setIdle(false)
+    const releaseAnimated = ctx.scheduler.setIdle(false);
 
     interface NodeFrameInternal {
-      time?: number
-      deltaTime?: number
-      lastTime?: number
+      time?: number;
+      deltaTime?: number;
+      lastTime?: number;
     }
     const getNodeFrame = (): NodeFrameInternal | undefined => {
-      const three: unknown = ctx.renderer.three
+      const three: unknown = ctx.renderer.three;
 
-      if (!(typeof three === 'object' && three !== null && '_nodes' in three)) return undefined
-      const nodes = three._nodes
+      if (!(typeof three === 'object' && three !== null && '_nodes' in three)) return undefined;
+      const nodes = three._nodes;
 
-      if (!(typeof nodes === 'object' && nodes !== null && 'nodeFrame' in nodes)) return undefined
-      const frame = nodes.nodeFrame
+      if (!(typeof nodes === 'object' && nodes !== null && 'nodeFrame' in nodes)) return undefined;
+      const frame = nodes.nodeFrame;
 
-      if (typeof frame !== 'object' || frame === null) return undefined
+      if (typeof frame !== 'object' || frame === null) return undefined;
 
-      return frame
-    }
+      return frame;
+    };
 
-    let frame = 0
+    let frame = 0;
     const client = (_tick: SchedulerTick) => {
-      frame += 1
+      frame += 1;
 
       if (frame === 1) {
-        const nodeFrame = getNodeFrame()
+        const nodeFrame = getNodeFrame();
 
         if (nodeFrame) {
-          nodeFrame.time = 0
-          nodeFrame.deltaTime = 0
-          nodeFrame.lastTime = undefined
+          nodeFrame.time = 0;
+          nodeFrame.deltaTime = 0;
+          nodeFrame.lastTime = undefined;
         }
 
-        return
+        return;
       }
 
       if (frame > TARGET_FRAME) {
-        ctx.scheduler.remove(client)
-        ctx.scheduler.pause()
-        window.__matterTestReady = true
+        ctx.scheduler.remove(client);
+        ctx.scheduler.pause();
+        window.__matterTestReady = true;
       }
-    }
+    };
 
-    ctx.scheduler.add(client)
+    ctx.scheduler.add(client);
 
     return () => {
-      ctx.scheduler.remove(client)
-      releaseAnimated()
-    }
-  }, [ctx])
+      ctx.scheduler.remove(client);
+      releaseAnimated();
+    };
+  }, [ctx]);
 }
 
 export default function VisualTestPause(): null {
-  useVisualTestPause()
+  useVisualTestPause();
 
-  return null
+  return null;
 }

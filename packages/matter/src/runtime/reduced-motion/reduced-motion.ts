@@ -1,8 +1,8 @@
-import { uniform } from 'three/tsl'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
+import { uniform } from 'three/tsl';
+import type { ShaderNodeObject } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 
-export type ReducedMotionPolicy = 'auto' | 'off' | 'slow' | 'paused'
+export type ReducedMotionPolicy = 'auto' | 'off' | 'slow' | 'paused';
 
 /**
  * Public surface exposed to package consumers. `recompute` is intentionally
@@ -10,11 +10,11 @@ export type ReducedMotionPolicy = 'auto' | 'off' | 'slow' | 'paused'
  */
 export interface ReducedMotionWatcher {
   /** Current time scale: 0, 0.3, or 1. */
-  scale(): number
+  scale(): number;
   /** Subscribe to scale changes. Returns unsubscribe. */
-  subscribe(cb: (scale: number) => void): () => void
+  subscribe(cb: (scale: number) => void): () => void;
   /** Tear down media-query listener. */
-  dispose(): void
+  dispose(): void;
 }
 
 /**
@@ -22,18 +22,18 @@ export interface ReducedMotionWatcher {
  * calls `recompute`; it is never part of the consumer-visible type.
  */
 interface InternalWatcher extends ReducedMotionWatcher {
-  recompute(): void
+  recompute(): void;
 }
 
 interface PolicyState {
-  policy: ReducedMotionPolicy
-  watchers: Set<InternalWatcher>
+  policy: ReducedMotionPolicy;
+  watchers: Set<InternalWatcher>;
 }
 
 const state: PolicyState = {
   policy: 'auto',
   watchers: new Set(),
-}
+};
 
 /**
  * Override Matter's default behavior of honoring `prefers-reduced-motion`.
@@ -43,27 +43,27 @@ const state: PolicyState = {
  * - 'paused' — 0 (animation effectively frozen) regardless of OS setting
  */
 export function setReducedMotionPolicy(policy: ReducedMotionPolicy): void {
-  if (state.policy === policy) return
-  state.policy = policy
-  for (const w of state.watchers) w.recompute()
+  if (state.policy === policy) return;
+  state.policy = policy;
+  for (const w of state.watchers) w.recompute();
 }
 
 export function getReducedMotionPolicy(): ReducedMotionPolicy {
-  return state.policy
+  return state.policy;
 }
 
 const computeScale = (mqlMatches: boolean): number => {
   switch (state.policy) {
     case 'off':
-      return 1
+      return 1;
     case 'slow':
-      return 0.3
+      return 0.3;
     case 'paused':
-      return 0
+      return 0;
     case 'auto':
-      return mqlMatches ? 0.3 : 1
+      return mqlMatches ? 0.3 : 1;
   }
-}
+};
 
 /**
  * Create a watcher that tracks `prefers-reduced-motion: reduce` and the
@@ -83,63 +83,63 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
       subscribe: (cb) => {
         // No-op: SSR watchers are not in state.watchers and will never
         // receive policy-change notifications.
-        void cb
+        void cb;
 
         return () => {
           // SSR no-op unsubscribe
-        }
+        };
       },
       /** SSR watcher does not emit policy-change notifications. */
       dispose: () => {
         // SSR no-op dispose
       },
-    }
+    };
   }
 
-  const mql = matchMedia('(prefers-reduced-motion: reduce)')
-  const subs = new Set<(s: number) => void>()
-  let last = computeScale(mql.matches)
+  const mql = matchMedia('(prefers-reduced-motion: reduce)');
+  const subs = new Set<(s: number) => void>();
+  let last = computeScale(mql.matches);
 
   const onChange = () => {
-    const next = computeScale(mql.matches)
+    const next = computeScale(mql.matches);
 
     if (next !== last) {
-      last = next
-      for (const cb of subs) cb(next)
+      last = next;
+      for (const cb of subs) cb(next);
     }
-  }
+  };
 
-  mql.addEventListener('change', onChange)
+  mql.addEventListener('change', onChange);
 
   const watcher: InternalWatcher = {
     scale: () => last,
     subscribe(cb) {
-      subs.add(cb)
+      subs.add(cb);
 
-      return () => subs.delete(cb)
+      return () => subs.delete(cb);
     },
     recompute() {
-      const next = computeScale(mql.matches)
+      const next = computeScale(mql.matches);
 
       if (next !== last) {
-        last = next
-        for (const cb of subs) cb(next)
+        last = next;
+        for (const cb of subs) cb(next);
       }
     },
     dispose() {
-      mql.removeEventListener('change', onChange)
-      subs.clear()
-      state.watchers.delete(watcher)
+      mql.removeEventListener('change', onChange);
+      subs.clear();
+      state.watchers.delete(watcher);
     },
-  }
+  };
 
-  state.watchers.add(watcher)
+  state.watchers.add(watcher);
 
-  return watcher
+  return watcher;
 }
 
-let globalScaleUniform: ReturnType<typeof uniform<number>> | null = null
-let globalWatcher: ReducedMotionWatcher | null = null
+let globalScaleUniform: ReturnType<typeof uniform<number>> | null = null;
+let globalWatcher: ReducedMotionWatcher | null = null;
 
 /**
  * Returns the engine-shared TSL uniform that `time` is multiplied by. Lazily
@@ -149,24 +149,24 @@ let globalWatcher: ReducedMotionWatcher | null = null
  */
 export function getReducedMotionTimeScale(): ShaderNodeObject<Node> {
   if (globalScaleUniform === null) {
-    globalWatcher = createReducedMotionWatcher()
-    globalScaleUniform = uniform(globalWatcher.scale())
+    globalWatcher = createReducedMotionWatcher();
+    globalScaleUniform = uniform(globalWatcher.scale());
     globalWatcher.subscribe((s) => {
-      if (globalScaleUniform === null) return
-      globalScaleUniform.value = s
-    })
+      if (globalScaleUniform === null) return;
+      globalScaleUniform.value = s;
+    });
   }
 
   // ShaderNodeObject<UniformNode<number>> isn't structurally assignable to
   // ShaderNodeObject<Node> (invariant generic methods); chains work the same
   // at runtime, so widen at the return boundary.
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  return globalScaleUniform as unknown as ShaderNodeObject<Node>
+  return globalScaleUniform as unknown as ShaderNodeObject<Node>;
 }
 
 // Keep a typed reference for tests that may want to re-init between tests.
 export const __resetReducedMotionForTests = () => {
-  globalWatcher?.dispose()
-  globalWatcher = null
-  globalScaleUniform = null
-}
+  globalWatcher?.dispose();
+  globalWatcher = null;
+  globalScaleUniform = null;
+};

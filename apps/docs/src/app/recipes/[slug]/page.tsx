@@ -1,28 +1,28 @@
-import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 
-import { CodeBlock } from '@/components/CodeBlock'
-import { RecipeViewer } from '@/components/RecipeViewer'
-import { RECIPES } from '@/data/recipes'
+import { CodeBlock } from '@/components/CodeBlock';
+import { RecipeViewer } from '@/components/RecipeViewer';
+import { RECIPES } from '@/data/recipes';
 
 export function generateStaticParams() {
-  return RECIPES.map((r) => ({ slug: r.slug }))
+  return RECIPES.map((r) => ({ slug: r.slug }));
 }
 
 interface RecipePageProps {
   // Next 15: dynamic-route params is a Promise.
-  params: Promise<{ slug: string }>
+  params: Promise<{ slug: string }>;
 }
 
 export default async function RecipePage({ params }: RecipePageProps) {
-  const { slug } = await params
-  const recipe = RECIPES.find((r) => r.slug === slug)
+  const { slug } = await params;
+  const recipe = RECIPES.find((r) => r.slug === slug);
 
-  if (!recipe) notFound()
+  if (!recipe) notFound();
 
-  const canonicalVariant = recipe.variants[0]
+  const canonicalVariant = recipe.variants[0];
 
-  if (!canonicalVariant) notFound()
+  if (!canonicalVariant) notFound();
 
   return (
     <div style={{ padding: '2rem 1.5rem', maxWidth: 900, margin: '0 auto' }}>
@@ -105,5 +105,5 @@ export default async function RecipePage({ params }: RecipePageProps) {
         </>
       )}
     </div>
-  )
+  );
 }

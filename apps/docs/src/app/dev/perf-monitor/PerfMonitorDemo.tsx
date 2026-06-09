@@ -1,11 +1,12 @@
-'use client'
+'use client';
 
-import { ShaderMonitor, ShaderScene } from '@lovo/matter-react'
-import { LinearGradient } from '@matter/registry/linear-gradient'
-import { useState } from 'react'
+import { useState } from 'react';
+
+import { ShaderMonitor, ShaderScene } from '@lovo/matter-react';
+import { LinearGradient } from '@matter/registry/linear-gradient';
 
 export function PerfMonitorDemo() {
-  const [speed, setSpeed] = useState(0.5)
+  const [speed, setSpeed] = useState(0.5);
 
   return (
     <div>
@@ -33,5 +34,5 @@ export function PerfMonitorDemo() {
         canvas off-screen &mdash; fps should drop to 0 (intersection pause).
       </p>
     </div>
-  )
+  );
 }

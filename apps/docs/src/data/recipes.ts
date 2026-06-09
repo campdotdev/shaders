@@ -1,16 +1,16 @@
 export interface RecipeVariant {
-  key: string
-  label: string
-  note: string
+  key: string;
+  label: string;
+  note: string;
 }
 
 export interface RecipeEntry {
-  slug: string
-  name: string
-  description: string
-  primitivesUsed: readonly string[]
-  source: string
-  variants: readonly RecipeVariant[]
+  slug: string;
+  name: string;
+  description: string;
+  primitivesUsed: readonly string[];
+  source: string;
+  variants: readonly RecipeVariant[];
 }
 
 export const RECIPES: readonly RecipeEntry[] = [
@@ -141,4 +141,4 @@ material.colorNode = vec4(tiered, tiered.mul(0.7), tiered.mul(0.5), 1)`,
       },
     ],
   },
-]
+];

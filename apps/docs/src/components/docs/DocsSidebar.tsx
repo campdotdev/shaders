@@ -1,12 +1,12 @@
-'use client'
+'use client';
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
-import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types'
+import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types';
 
 function NavItemLink({ item, pathname }: { item: ResolvedNavItem; pathname: string }) {
-  const active = item.url === pathname
+  const active = item.url === pathname;
 
   return (
     <li>
@@ -26,7 +26,7 @@ function NavItemLink({ item, pathname }: { item: ResolvedNavItem; pathname: stri
         {item.label}
       </Link>
     </li>
-  )
+  );
 }
 
 function NavGroupBlock({
@@ -34,9 +34,9 @@ function NavGroupBlock({
   pathname,
   depth = 0,
 }: {
-  group: ResolvedNavGroup
-  pathname: string
-  depth?: number
+  group: ResolvedNavGroup;
+  pathname: string;
+  depth?: number;
 }) {
   return (
     <div
@@ -70,11 +70,11 @@ function NavGroupBlock({
         )}
       </ul>
     </div>
-  )
+  );
 }
 
 export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
-  const pathname = usePathname()
+  const pathname = usePathname();
 
   return (
     <nav
@@ -94,5 +94,5 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
         <NavGroupBlock group={group} key={group.label} pathname={pathname} />
       ))}
     </nav>
-  )
+  );
 }

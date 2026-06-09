@@ -1,8 +1,8 @@
 export interface VisibilityWatcher {
-  isVisible(): boolean
+  isVisible(): boolean;
   /** Subscribe to changes. Receives the new visibility state. Returns unsubscribe. */
-  subscribe(cb: (visible: boolean) => void): () => void
-  dispose(): void
+  subscribe(cb: (visible: boolean) => void): () => void;
+  dispose(): void;
 }
 
 /**
@@ -22,28 +22,28 @@ export function createVisibilityWatcher(): VisibilityWatcher {
       dispose: () => {
         // SSR no-op dispose
       },
-    }
+    };
   }
 
-  const subs = new Set<(v: boolean) => void>()
+  const subs = new Set<(v: boolean) => void>();
   const onChange = () => {
-    const v = document.visibilityState === 'visible'
+    const v = document.visibilityState === 'visible';
 
-    for (const cb of subs) cb(v)
-  }
+    for (const cb of subs) cb(v);
+  };
 
-  document.addEventListener('visibilitychange', onChange)
+  document.addEventListener('visibilitychange', onChange);
 
   return {
     isVisible: () => document.visibilityState === 'visible',
     subscribe(cb) {
-      subs.add(cb)
+      subs.add(cb);
 
-      return () => subs.delete(cb)
+      return () => subs.delete(cb);
     },
     dispose() {
-      document.removeEventListener('visibilitychange', onChange)
-      subs.clear()
+      document.removeEventListener('visibilitychange', onChange);
+      subs.clear();
     },
-  }
+  };
 }

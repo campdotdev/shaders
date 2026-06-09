@@ -1,8 +1,8 @@
-import { z } from 'zod'
+import { z } from 'zod';
 
-import type { DocsFrontmatter } from './types'
+import type { DocsFrontmatter } from './types';
 
-const sectionEnum = z.enum(['overview', 'guides', 'react.guides', 'react.api', 'reference'])
+const sectionEnum = z.enum(['overview', 'guides', 'react.guides', 'react.api', 'reference']);
 
 const rawFrontmatterSchema = z.object({
   title: z.string().min(1),
@@ -13,25 +13,25 @@ const rawFrontmatterSchema = z.object({
   hidden: z.boolean().optional(),
   status: z.enum(['draft', 'ready']).optional(),
   tags: z.array(z.string()).optional(),
-})
+});
 
 function formatZodError(error: z.ZodError): string {
   return error.issues
     .map((i) => {
-      const path = i.path.join('.')
+      const path = i.path.join('.');
 
-      return `  - ${path === '' ? '<root>' : path}: ${i.message}`
+      return `  - ${path === '' ? '<root>' : path}: ${i.message}`;
     })
-    .join('\n')
+    .join('\n');
 }
 
 export function parseFrontmatter(data: unknown, sourcePath: string): DocsFrontmatter {
-  const result = rawFrontmatterSchema.safeParse(data)
+  const result = rawFrontmatterSchema.safeParse(data);
 
   if (!result.success) {
-    throw new Error(`Invalid frontmatter in ${sourcePath}:\n${formatZodError(result.error)}`)
+    throw new Error(`Invalid frontmatter in ${sourcePath}:\n${formatZodError(result.error)}`);
   }
-  const v = result.data
+  const v = result.data;
 
   return {
     title: v.title,
@@ -42,7 +42,7 @@ export function parseFrontmatter(data: unknown, sourcePath: string): DocsFrontma
     hidden: v.hidden ?? false,
     status: v.status ?? 'ready',
     tags: v.tags ?? [],
-  }
+  };
 }
 
 const registryComponentSchema = z.object({
@@ -51,21 +51,21 @@ const registryComponentSchema = z.object({
   file: z.string().optional(),
   dependencies: z.array(z.string()).optional(),
   uses_primitives: z.array(z.string()).optional(),
-})
+});
 
 const registrySchema = z.object({
   version: z.string().min(1),
   components: z.record(z.string(), registryComponentSchema),
-})
+});
 
-export type RegistryFile = z.infer<typeof registrySchema>
+export type RegistryFile = z.infer<typeof registrySchema>;
 
 export function parseRegistry(data: unknown, sourcePath: string): RegistryFile {
-  const result = registrySchema.safeParse(data)
+  const result = registrySchema.safeParse(data);
 
   if (!result.success) {
-    throw new Error(`Invalid registry file at ${sourcePath}:\n${formatZodError(result.error)}`)
+    throw new Error(`Invalid registry file at ${sourcePath}:\n${formatZodError(result.error)}`);
   }
 
-  return result.data
+  return result.data;
 }

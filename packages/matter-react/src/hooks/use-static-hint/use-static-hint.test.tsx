@@ -1,11 +1,11 @@
-import { FrameScheduler } from '@lovo/matter'
-import { renderHook } from '@testing-library/react'
-import type { ReactNode } from 'react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { ReactNode } from 'react';
 
-import { ShaderContext } from '../../context/shader-context.js'
+import { FrameScheduler } from '@lovo/matter';
+import { renderHook } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useStaticHint } from './use-static-hint.js'
+import { ShaderContext } from '../../context/shader-context.js';
+import { useStaticHint } from './use-static-hint.js';
 
 const makeWrapper = (scheduler: FrameScheduler) => {
   function Wrapper({ children }: { children: ReactNode }) {
@@ -19,59 +19,59 @@ const makeWrapper = (scheduler: FrameScheduler) => {
       >
         {children}
       </ShaderContext.Provider>
-    )
+    );
   }
 
-  return Wrapper
-}
+  return Wrapper;
+};
 
 describe('useStaticHint', () => {
   beforeEach(() => {
-    vi.stubGlobal('requestAnimationFrame', () => 0)
-    vi.stubGlobal('cancelAnimationFrame', () => {})
-  })
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+  });
   afterEach(() => {
-    vi.unstubAllGlobals()
-  })
+    vi.unstubAllGlobals();
+  });
 
   it('marks the scheduler idle when hint=true', () => {
-    const scheduler = new FrameScheduler()
-    const setIdle = vi.spyOn(scheduler, 'setIdle')
+    const scheduler = new FrameScheduler();
+    const setIdle = vi.spyOn(scheduler, 'setIdle');
 
-    renderHook(() => useStaticHint(true), { wrapper: makeWrapper(scheduler) })
-    expect(setIdle).toHaveBeenLastCalledWith(true)
-  })
+    renderHook(() => useStaticHint(true), { wrapper: makeWrapper(scheduler) });
+    expect(setIdle).toHaveBeenLastCalledWith(true);
+  });
 
   it('marks the scheduler not idle when hint=false', () => {
-    const scheduler = new FrameScheduler()
-    const setIdle = vi.spyOn(scheduler, 'setIdle')
+    const scheduler = new FrameScheduler();
+    const setIdle = vi.spyOn(scheduler, 'setIdle');
 
-    renderHook(() => useStaticHint(false), { wrapper: makeWrapper(scheduler) })
-    expect(setIdle).toHaveBeenLastCalledWith(false)
-  })
+    renderHook(() => useStaticHint(false), { wrapper: makeWrapper(scheduler) });
+    expect(setIdle).toHaveBeenLastCalledWith(false);
+  });
 
   it('reverts to non-idle on unmount', () => {
-    const scheduler = new FrameScheduler()
+    const scheduler = new FrameScheduler();
     const { unmount } = renderHook(() => useStaticHint(true), {
       wrapper: makeWrapper(scheduler),
-    })
+    });
 
-    expect(scheduler.idle).toBe(true)
-    unmount()
-    expect(scheduler.idle).toBe(false)
-  })
+    expect(scheduler.idle).toBe(true);
+    unmount();
+    expect(scheduler.idle).toBe(false);
+  });
 
   it('does not call requestRender on render when hint is unchanged', () => {
     // Sanity: the hook does not spuriously call requestRender on every render.
-    const scheduler = new FrameScheduler()
-    const requestRender = vi.spyOn(scheduler, 'requestRender')
+    const scheduler = new FrameScheduler();
+    const requestRender = vi.spyOn(scheduler, 'requestRender');
     const { rerender } = renderHook(({ hint }) => useStaticHint(hint), {
       wrapper: makeWrapper(scheduler),
       initialProps: { hint: true },
-    })
+    });
 
-    rerender({ hint: true })
-    rerender({ hint: true })
-    expect(requestRender).not.toHaveBeenCalled()
-  })
-})
+    rerender({ hint: true });
+    rerender({ hint: true });
+    expect(requestRender).not.toHaveBeenCalled();
+  });
+});

@@ -1,23 +1,23 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
-import { palette } from '@/lib/palette'
-import { useTweakpane } from '@/lib/useTweakpane'
-import { VisualTestPause } from '@/lib/visualTestHooks'
+import { palette } from '@/lib/palette';
+import { useTweakpane } from '@/lib/useTweakpane';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
-})
-const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false })
+});
+const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false });
 
 interface Params {
-  color: string
-  amplitude: number
-  frequency: number
-  speed: number
-  layers: number
-  interactive: boolean
+  color: string;
+  amplitude: number;
+  frequency: number;
+  speed: number;
+  layers: number;
+  interactive: boolean;
 }
 
 const INITIAL: Params = {
@@ -27,33 +27,33 @@ const INITIAL: Params = {
   speed: 1,
   layers: 3,
   interactive: true,
-}
+};
 
 export default function WavesPage() {
   const [params, paneContainerRef] = useTweakpane<Params>(
     '<Waves>',
     INITIAL,
     (pane, local, sync) => {
-      pane.addBinding(local, 'color')
-      pane.addBlade({ view: 'separator' })
-      pane.addBinding(local, 'amplitude', { min: 0, max: 0.5, step: 0.005 })
-      pane.addBinding(local, 'frequency', { min: 1, max: 30, step: 0.1 })
-      pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 })
-      pane.addBinding(local, 'layers', { min: 1, max: 6, step: 1 })
-      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'color');
+      pane.addBlade({ view: 'separator' });
+      pane.addBinding(local, 'amplitude', { min: 0, max: 0.5, step: 0.005 });
+      pane.addBinding(local, 'frequency', { min: 1, max: 30, step: 0.1 });
+      pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
+      pane.addBinding(local, 'layers', { min: 1, max: 6, step: 1 });
+      pane.addBlade({ view: 'separator' });
       pane.addBinding(local, 'interactive', {
         label: 'interactive (cursor ripple)',
-      })
-      pane.addBlade({ view: 'separator' })
-      pane.addButton({ title: 'Apply layers / interactive' }).on('click', sync)
+      });
+      pane.addBlade({ view: 'separator' });
+      pane.addButton({ title: 'Apply layers / interactive' }).on('click', sync);
       pane.on('change', (ev) => {
         if ('key' in ev.target && (ev.target.key === 'layers' || ev.target.key === 'interactive')) {
-          return
+          return;
         }
-        sync()
-      })
+        sync();
+      });
     },
-  )
+  );
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -99,5 +99,5 @@ export default function WavesPage() {
         </pre>
       </section>
     </main>
-  )
+  );
 }

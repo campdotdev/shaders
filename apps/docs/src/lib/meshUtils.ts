@@ -1,7 +1,7 @@
-import type { ShaderContextValue } from '@lovo/matter-react'
-import type { ShaderNodeObject } from 'three/tsl'
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
+import type { ShaderContextValue } from '@lovo/matter-react';
+import type { ShaderNodeObject } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
+import type { Node } from 'three/webgpu';
 
 /**
  * Add a fullscreen plane mesh with the given colorNode to the shader scene,
@@ -16,25 +16,25 @@ export function addPlaneMesh(
   ctx: ShaderContextValue,
   colorNode: ShaderNodeObject<Node>,
 ): () => void {
-  const material = new MeshBasicNodeMaterial()
+  const material = new MeshBasicNodeMaterial();
 
-  material.colorNode = colorNode
+  material.colorNode = colorNode;
 
-  const mesh = new Mesh(new PlaneGeometry(2, 2), material)
+  const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
-  ctx.scene.add(mesh)
+  ctx.scene.add(mesh);
 
   return () => {
-    ctx.scene.remove(mesh)
+    ctx.scene.remove(mesh);
     try {
-      material.dispose()
+      material.dispose();
     } catch {
       /* benign during rebuild */
     }
     try {
-      mesh.geometry.dispose()
+      mesh.geometry.dispose();
     } catch {
       /* same */
     }
-  }
+  };
 }

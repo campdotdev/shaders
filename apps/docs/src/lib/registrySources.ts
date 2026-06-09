@@ -1,8 +1,9 @@
-import { readFile } from 'node:fs/promises'
-import { resolve, sep } from 'node:path'
-import { cache } from 'react'
+import { cache } from 'react';
 
-const REGISTRY_DIR = resolve(process.cwd(), '..', '..', 'registry')
+import { readFile } from 'node:fs/promises';
+import { resolve, sep } from 'node:path';
+
+const REGISTRY_DIR = resolve(process.cwd(), '..', '..', 'registry');
 
 type RegistrySlug =
   | 'linear-gradient'
@@ -10,7 +11,7 @@ type RegistrySlug =
   | 'dot-field'
   | 'waves'
   | 'mesh-gradient'
-  | 'aurora'
+  | 'aurora';
 
 const SLUG_FILES: Record<RegistrySlug, string> = {
   'linear-gradient': 'linear-gradient/linear-gradient.tsx',
@@ -19,15 +20,15 @@ const SLUG_FILES: Record<RegistrySlug, string> = {
   waves: 'waves.tsx',
   'mesh-gradient': 'mesh-gradient/mesh-gradient.tsx',
   aurora: 'aurora/aurora.tsx',
-}
+};
 
 export const readRegistrySource = cache(async (slug: RegistrySlug): Promise<string> => {
-  const relPath = SLUG_FILES[slug]
-  const path = resolve(REGISTRY_DIR, relPath)
+  const relPath = SLUG_FILES[slug];
+  const path = resolve(REGISTRY_DIR, relPath);
 
   if (!path.startsWith(REGISTRY_DIR + sep)) {
-    throw new Error(`Registry path escapes registry dir: ${slug}`)
+    throw new Error(`Registry path escapes registry dir: ${slug}`);
   }
 
-  return readFile(path, 'utf8')
-})
+  return readFile(path, 'utf8');
+});

@@ -1,11 +1,11 @@
-import { NextResponse } from 'next/server'
+import { NextResponse } from 'next/server';
 
-import { getDocsSearchDocuments } from '@/content/search'
+import { getDocsSearchDocuments } from '@/content/search';
 
-export const dynamic = 'force-static'
+export const dynamic = 'force-static';
 
 export async function GET() {
-  const docs = await getDocsSearchDocuments()
+  const docs = await getDocsSearchDocuments();
 
-  return NextResponse.json(docs)
+  return NextResponse.json(docs);
 }

@@ -1,19 +1,19 @@
-import { length, sin, smoothstep, sub } from 'three/tsl'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
+import { length, sin, smoothstep, sub } from 'three/tsl';
+import type { ShaderNodeObject } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 
-import type { TSLNode } from '../color-ramp/color-ramp.js'
-import { time } from '../time/time.js'
+import type { TSLNode } from '../color-ramp/color-ramp.js';
+import { time } from '../time/time.js';
 
 export interface CursorRippleOptions {
   /** Decay radius (UV space). Beyond this, the ripple is ~0. Default: 0.4. */
-  reach?: number
+  reach?: number;
   /** Wavelength controls the ripple spacing. Default: 30. Larger = wider rings. */
-  frequency?: number
+  frequency?: number;
   /** Time multiplier on the wave phase. Default: 6. Larger = faster oscillation. */
-  speed?: number
+  speed?: number;
   /** Output amplitude. Default: 0.5. Final result is in roughly [-amplitude, +amplitude]. */
-  amplitude?: number
+  amplitude?: number;
 }
 
 /**
@@ -36,21 +36,21 @@ export function cursorRipple(
   center: TSLNode,
   opts: CursorRippleOptions = {},
 ): ShaderNodeObject<Node> {
-  const reach = opts.reach ?? 0.4
-  const frequency = opts.frequency ?? 30
-  const speed = opts.speed ?? 6
-  const amplitude = opts.amplitude ?? 0.5
+  const reach = opts.reach ?? 0.4;
+  const frequency = opts.frequency ?? 30;
+  const speed = opts.speed ?? 6;
+  const amplitude = opts.amplitude ?? 0.5;
 
   // d = length(p - center). Use functional `sub(p, center)` because both
   // are typed as the broad TSLNode union (no chain receiver). Per gotcha #12,
   // building from a raw `uniform()` receiver silently produces wrong GPU
   // values, so the functional form is also safer for `center` being a uniform.
-  const d = length(sub(p, center))
+  const d = length(sub(p, center));
   // `time` is the engine-gated TSL node (from primitives/time/time.ts);
   // chains rooted in `time` automatically respect `prefers-reduced-motion` and
   // the runtime override set via `setReducedMotionPolicy`.
-  const wave = sin(d.mul(frequency).sub(time.mul(speed)))
-  const decay = smoothstep(reach, 0, d)
+  const wave = sin(d.mul(frequency).sub(time.mul(speed)));
+  const decay = smoothstep(reach, 0, d);
 
-  return wave.mul(amplitude).mul(decay)
+  return wave.mul(amplitude).mul(decay);
 }

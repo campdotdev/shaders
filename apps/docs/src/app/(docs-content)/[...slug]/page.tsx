@@ -1,45 +1,46 @@
-import type { Metadata } from 'next'
-import { MDXRemote } from 'next-mdx-remote/rsc'
-import { notFound } from 'next/navigation'
-import rehypeSlug from 'rehype-slug'
-import remarkGfm from 'remark-gfm'
+import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 
-import { Breadcrumbs } from '@/components/docs/Breadcrumbs'
-import { PrevNext } from '@/components/docs/PrevNext'
-import { TableOfContents } from '@/components/docs/TableOfContents'
-import { mdxComponents } from '@/content/mdx'
-import { getDocsBreadcrumbs, getDocsPrevNext } from '@/content/nav'
-import { getDocsPage, getDocsStaticParams } from '@/content/source'
+import { MDXRemote } from 'next-mdx-remote/rsc';
+import rehypeSlug from 'rehype-slug';
+import remarkGfm from 'remark-gfm';
 
-export const dynamicParams = false
+import { Breadcrumbs } from '@/components/docs/Breadcrumbs';
+import { PrevNext } from '@/components/docs/PrevNext';
+import { TableOfContents } from '@/components/docs/TableOfContents';
+import { mdxComponents } from '@/content/mdx';
+import { getDocsBreadcrumbs, getDocsPrevNext } from '@/content/nav';
+import { getDocsPage, getDocsStaticParams } from '@/content/source';
+
+export const dynamicParams = false;
 
 interface PageProps {
-  params: Promise<{ slug: string[] }>
+  params: Promise<{ slug: string[] }>;
 }
 
 export async function generateStaticParams() {
-  return getDocsStaticParams()
+  return getDocsStaticParams();
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { slug } = await params
-  const page = await getDocsPage(slug)
+  const { slug } = await params;
+  const page = await getDocsPage(slug);
 
-  if (!page) return {}
+  if (!page) return {};
 
   return {
     title: page.frontmatter.title,
     description: page.frontmatter.description,
-  }
+  };
 }
 
 export default async function DocsPage({ params }: PageProps) {
-  const { slug } = await params
-  const page = await getDocsPage(slug)
+  const { slug } = await params;
+  const page = await getDocsPage(slug);
 
-  if (!page) notFound()
+  if (!page) notFound();
 
-  const [crumbs, prevNext] = await Promise.all([getDocsBreadcrumbs(page), getDocsPrevNext(page)])
+  const [crumbs, prevNext] = await Promise.all([getDocsBreadcrumbs(page), getDocsPrevNext(page)]);
 
   return (
     <div
@@ -68,5 +69,5 @@ export default async function DocsPage({ params }: PageProps) {
         <TableOfContents headings={page.headings} />
       </aside>
     </div>
-  )
+  );
 }

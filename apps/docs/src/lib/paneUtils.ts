@@ -1,4 +1,4 @@
-import type { Pane } from 'tweakpane'
+import type { Pane } from 'tweakpane';
 
 export function addCopyButtons(
   pane: Pane,
@@ -6,27 +6,27 @@ export function addCopyButtons(
   getCopyParams: () => string,
 ): void {
   const flashCopied = (btn: { title: string }, original: string) => {
-    btn.title = 'Copied!'
-    pane.refresh()
+    btn.title = 'Copied!';
+    pane.refresh();
     setTimeout(() => {
-      btn.title = original
-      pane.refresh()
-    }, 1200)
-  }
+      btn.title = original;
+      pane.refresh();
+    }, 1200);
+  };
 
-  const jsxBtn = pane.addButton({ title: 'Copy JSX' })
+  const jsxBtn = pane.addButton({ title: 'Copy JSX' });
 
   jsxBtn.on('click', () => {
-    void navigator.clipboard.writeText(getCopyJsx()).then(() => flashCopied(jsxBtn, 'Copy JSX'))
-  })
+    void navigator.clipboard.writeText(getCopyJsx()).then(() => flashCopied(jsxBtn, 'Copy JSX'));
+  });
 
-  const paramsBtn = pane.addButton({ title: 'Copy params' })
+  const paramsBtn = pane.addButton({ title: 'Copy params' });
 
   paramsBtn.on('click', () => {
     void navigator.clipboard
       .writeText(getCopyParams())
-      .then(() => flashCopied(paramsBtn, 'Copy params'))
-  })
+      .then(() => flashCopied(paramsBtn, 'Copy params'));
+  });
 
-  pane.addBlade({ view: 'separator' })
+  pane.addBlade({ view: 'separator' });
 }

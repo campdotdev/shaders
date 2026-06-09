@@ -1,13 +1,13 @@
-'use client'
+'use client';
 
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
 
 interface LiveDemoProps {
-  children: ReactNode
-  height?: string
-  background?: string
-  className?: string
-  style?: CSSProperties
+  children: ReactNode;
+  height?: string;
+  background?: string;
+  className?: string;
+  style?: CSSProperties;
 }
 
 export function LiveDemo({
@@ -17,28 +17,28 @@ export function LiveDemo({
   className,
   style,
 }: LiveDemoProps) {
-  const ref = useRef<HTMLDivElement>(null)
-  const [isFullscreen, setIsFullscreen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   useEffect(() => {
     const handler = () => {
-      setIsFullscreen(document.fullscreenElement === ref.current)
-    }
+      setIsFullscreen(document.fullscreenElement === ref.current);
+    };
 
-    document.addEventListener('fullscreenchange', handler)
+    document.addEventListener('fullscreenchange', handler);
 
     return () => {
-      document.removeEventListener('fullscreenchange', handler)
-    }
-  }, [])
+      document.removeEventListener('fullscreenchange', handler);
+    };
+  }, []);
 
   const toggleFullscreen = () => {
     if (document.fullscreenElement === ref.current) {
-      void document.exitFullscreen()
+      void document.exitFullscreen();
     } else {
-      void ref.current?.requestFullscreen()
+      void ref.current?.requestFullscreen();
     }
-  }
+  };
 
   return (
     <div
@@ -78,5 +78,5 @@ export function LiveDemo({
         {isFullscreen ? '×' : '⛶'}
       </button>
     </div>
-  )
+  );
 }

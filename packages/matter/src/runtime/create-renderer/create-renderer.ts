@@ -1,30 +1,30 @@
-import { Color } from 'three'
-import { WebGPURenderer } from 'three/webgpu'
+import { Color } from 'three';
+import { WebGPURenderer } from 'three/webgpu';
 
-export type GpuBackend = 'webgpu' | 'webgl2'
+export type GpuBackend = 'webgpu' | 'webgl2';
 
 export interface CreateRendererOptions {
   /** Anti-alias the framebuffer. Default: true. */
-  antialias?: boolean
+  antialias?: boolean;
   /** Force WebGL2 even if WebGPU is available (useful for testing fallback). Default: false. */
-  forceWebGL?: boolean
+  forceWebGL?: boolean;
   /** Clear color (hex, CSS string, or THREE.Color). Default: transparent. */
-  clearColor?: number | string | Color
+  clearColor?: number | string | Color;
   /** Clear alpha (0–1). Default: 0 (transparent). */
-  clearAlpha?: number
+  clearAlpha?: number;
   /** Cap on devicePixelRatio. Default: 2. Pass Infinity to disable. */
-  maxDPR?: number
+  maxDPR?: number;
 }
 
 export interface GpuRenderer {
   /** The underlying Three.js WebGPURenderer (which may be running on a WebGL2 backend). */
-  three: WebGPURenderer
+  three: WebGPURenderer;
   /** Which backend the renderer initialized with. */
-  backend: GpuBackend
+  backend: GpuBackend;
   /** Tear down the renderer and release GPU resources. */
-  dispose: () => void
+  dispose: () => void;
   /** Resize the renderer to the canvas's current client dimensions. */
-  resize: () => void
+  resize: () => void;
 }
 
 /**
@@ -44,42 +44,42 @@ export async function createRenderer(
     clearColor = 0x000000,
     clearAlpha = 0,
     maxDPR = 2,
-  } = opts
+  } = opts;
 
   const three = new WebGPURenderer({
     canvas,
     antialias,
     forceWebGL,
-  })
+  });
 
-  await three.init()
+  await three.init();
 
-  three.setPixelRatio(Math.min(window.devicePixelRatio, maxDPR))
-  const resolvedClearColor = clearColor instanceof Color ? clearColor : new Color(clearColor)
+  three.setPixelRatio(Math.min(window.devicePixelRatio, maxDPR));
+  const resolvedClearColor = clearColor instanceof Color ? clearColor : new Color(clearColor);
 
-  three.setClearColor(resolvedClearColor, clearAlpha)
+  three.setClearColor(resolvedClearColor, clearAlpha);
 
   const resize = () => {
-    const w = canvas.clientWidth
-    const h = canvas.clientHeight
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
 
     if (canvas.width !== w * three.getPixelRatio() || canvas.height !== h * three.getPixelRatio()) {
-      three.setSize(w, h, false)
+      three.setSize(w, h, false);
     }
-  }
+  };
 
-  resize()
+  resize();
 
   // Detect backend after init. `isWebGLBackend` is an internal duck-type flag
   // not declared in three's public Backend type — probe via `in` rather than
   // a property access that would trip strict typing.
-  const isWebGL = 'isWebGLBackend' in three.backend && three.backend.isWebGLBackend === true
-  const backend: GpuBackend = forceWebGL || isWebGL ? 'webgl2' : 'webgpu'
+  const isWebGL = 'isWebGLBackend' in three.backend && three.backend.isWebGLBackend === true;
+  const backend: GpuBackend = forceWebGL || isWebGL ? 'webgl2' : 'webgpu';
 
   return {
     three,
     backend,
     dispose: () => three.dispose(),
     resize,
-  }
+  };
 }

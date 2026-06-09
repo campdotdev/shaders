@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   // Vite 8 OXC cannot resolve ${configDir} in our shared tsconfig/library.json.
@@ -11,4 +11,4 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     passWithNoTests: true,
   },
-})
+});

@@ -1,17 +1,18 @@
-import type { FrameScheduler, GpuRenderer } from '@lovo/matter'
-import { createContext } from 'react'
-import type { Camera, Scene } from 'three'
-import type { ShaderNodeObject } from 'three/tsl'
-import type { Node } from 'three/webgpu'
+import { createContext } from 'react';
 
-export type OverlayTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>
+import type { FrameScheduler, GpuRenderer } from '@lovo/matter';
+import type { Camera, Scene } from 'three';
+import type { ShaderNodeObject } from 'three/tsl';
+import type { Node } from 'three/webgpu';
+
+export type OverlayTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
 export interface ShaderContextValue {
-  renderer: GpuRenderer
-  scene: Scene
-  camera: Camera
-  scheduler: FrameScheduler
-  registerOverlay: (transform: OverlayTransform) => () => void
+  renderer: GpuRenderer;
+  scene: Scene;
+  camera: Camera;
+  scheduler: FrameScheduler;
+  registerOverlay: (transform: OverlayTransform) => () => void;
 }
 
-export const ShaderContext = createContext<ShaderContextValue | null>(null)
+export const ShaderContext = createContext<ShaderContextValue | null>(null);

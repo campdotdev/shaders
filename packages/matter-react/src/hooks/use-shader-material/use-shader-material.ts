@@ -1,24 +1,25 @@
-'use client'
+'use client';
 
-import { useEffect, useMemo } from 'react'
-import type { ShaderNodeObject } from 'three/tsl'
-import { MeshBasicNodeMaterial } from 'three/webgpu'
-import type { Node } from 'three/webgpu'
+import { useEffect, useMemo } from 'react';
 
-export type ColorTSL = Node | ShaderNodeObject<Node>
+import type { ShaderNodeObject } from 'three/tsl';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import type { Node } from 'three/webgpu';
+
+export type ColorTSL = Node | ShaderNodeObject<Node>;
 
 export function useShaderMaterial(build: () => ColorTSL): MeshBasicNodeMaterial {
   const material = useMemo(() => {
-    const m = new MeshBasicNodeMaterial()
+    const m = new MeshBasicNodeMaterial();
 
-    m.colorNode = build()
+    m.colorNode = build();
 
-    return m
-  }, [build])
+    return m;
+  }, [build]);
 
   useEffect(() => {
-    return () => material.dispose()
-  }, [material])
+    return () => material.dispose();
+  }, [material]);
 
-  return material
+  return material;
 }

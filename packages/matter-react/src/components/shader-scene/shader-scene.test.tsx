@@ -1,11 +1,11 @@
-import type * as MatterModule from '@lovo/matter'
-import { render, waitFor } from '@testing-library/react'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as MatterModule from '@lovo/matter';
+import { render, waitFor } from '@testing-library/react';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { ShaderScene } from './shader-scene.js'
+import { ShaderScene } from './shader-scene.js';
 
 vi.mock('@lovo/matter', async (importOriginal) => {
-  const actual = await importOriginal<typeof MatterModule>()
+  const actual = await importOriginal<typeof MatterModule>();
 
   return {
     ...actual,
@@ -21,35 +21,35 @@ vi.mock('@lovo/matter', async (importOriginal) => {
       dispose: vi.fn(),
       resize: vi.fn(),
     })),
-  }
-})
+  };
+});
 
 describe('ShaderScene', () => {
   beforeEach(() => {
-    vi.stubGlobal('requestAnimationFrame', () => 0)
-    vi.stubGlobal('cancelAnimationFrame', () => {})
-  })
+    vi.stubGlobal('requestAnimationFrame', () => 0);
+    vi.stubGlobal('cancelAnimationFrame', () => {});
+  });
   afterEach(() => {
-    vi.unstubAllGlobals()
-  })
+    vi.unstubAllGlobals();
+  });
 
   it('mounts a canvas element', () => {
-    const { container } = render(<ShaderScene />)
+    const { container } = render(<ShaderScene />);
 
-    expect(container.querySelector('canvas')).toBeInTheDocument()
-  })
+    expect(container.querySelector('canvas')).toBeInTheDocument();
+  });
 
   it('renders the fallback before the async context resolves', () => {
-    const { container } = render(<ShaderScene fallback={<div data-testid="fb">loading</div>} />)
+    const { container } = render(<ShaderScene fallback={<div data-testid="fb">loading</div>} />);
 
-    expect(container.querySelector('[data-testid="fb"]')).toBeInTheDocument()
-  })
+    expect(container.querySelector('[data-testid="fb"]')).toBeInTheDocument();
+  });
 
   it('does not throw on unmount', async () => {
-    const { unmount } = render(<ShaderScene />)
+    const { unmount } = render(<ShaderScene />);
 
     // Allow a tick for the async setup to run (or be cancelled).
-    await waitFor(() => {})
-    expect(() => unmount()).not.toThrow()
-  })
-})
+    await waitFor(() => {});
+    expect(() => unmount()).not.toThrow();
+  });
+});

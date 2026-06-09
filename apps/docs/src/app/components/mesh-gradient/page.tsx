@@ -1,39 +1,39 @@
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
-import { palette } from '@/lib/palette'
-import { addCopyButtons } from '@/lib/paneUtils'
-import { useTweakpane } from '@/lib/useTweakpane'
-import { VisualTestPause } from '@/lib/visualTestHooks'
+import { palette } from '@/lib/palette';
+import { addCopyButtons } from '@/lib/paneUtils';
+import { useTweakpane } from '@/lib/useTweakpane';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
-})
+});
 const MeshGradient = dynamic(
   () => import('@matter/registry/mesh-gradient').then((m) => m.MeshGradient),
   { ssr: false },
-)
+);
 const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
   ssr: false,
-})
+});
 
 interface Params {
-  speed: number
-  frequency: number
-  amplitude: number
-  cycleSpeed: number
-  cycleEase: number
-  grain: number
-  grainSpeed: number
-  a0: string
-  a1: string
-  a2: string
-  a3: string
-  b0: string
-  b1: string
-  b2: string
-  b3: string
+  speed: number;
+  frequency: number;
+  amplitude: number;
+  cycleSpeed: number;
+  cycleEase: number;
+  grain: number;
+  grainSpeed: number;
+  a0: string;
+  a1: string;
+  a2: string;
+  a3: string;
+  b0: string;
+  b1: string;
+  b2: string;
+  b3: string;
 }
 
 const INITIAL: Params = {
@@ -52,12 +52,12 @@ const INITIAL: Params = {
   b1: palette.orange.base,
   b2: palette.red.base,
   b3: palette.magenta.base,
-}
+};
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
+const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
 
 const fmtPalette = (p: Params, k: 'a' | 'b') =>
-  `['${p[`${k}0`]}', '${p[`${k}1`]}', '${p[`${k}2`]}', '${p[`${k}3`]}']`
+  `['${p[`${k}0`]}', '${p[`${k}1`]}', '${p[`${k}2`]}', '${p[`${k}3`]}']`;
 
 const fmtJsx = (p: Params) =>
   `<ShaderScene>
@@ -71,7 +71,7 @@ const fmtJsx = (p: Params) =>
     paletteB={${fmtPalette(p, 'b')}}
   />
   <FilmGrain intensity={${fmtNum(p.grain)}} speed={${fmtNum(p.grainSpeed)}} />
-</ShaderScene>`
+</ShaderScene>`;
 
 const fmtParams = (p: Params) =>
   `{
@@ -84,7 +84,7 @@ const fmtParams = (p: Params) =>
   paletteB: ${fmtPalette(p, 'b')},
   grain: ${fmtNum(p.grain)},
   grainSpeed: ${fmtNum(p.grainSpeed)},
-}`
+}`;
 
 export default function MeshGradientPage() {
   const [params, paneContainerRef] = useTweakpane<Params>(
@@ -92,66 +92,66 @@ export default function MeshGradientPage() {
     INITIAL,
     (pane, local, sync) => {
       pane.addButton({ title: 'Reset all' }).on('click', () => {
-        Object.assign(local, INITIAL)
-        pane.refresh()
-        sync()
-      })
+        Object.assign(local, INITIAL);
+        pane.refresh();
+        sync();
+      });
 
       addCopyButtons(
         pane,
         () => fmtJsx(local),
         () => fmtParams(local),
-      )
+      );
 
-      pane.addBinding(local, 'speed', { min: 0, max: 5, step: 0.01 })
-      pane.addBinding(local, 'frequency', { min: 0.5, max: 20, step: 0.1 })
-      pane.addBinding(local, 'amplitude', { min: 5, max: 100, step: 0.5 })
+      pane.addBinding(local, 'speed', { min: 0, max: 5, step: 0.01 });
+      pane.addBinding(local, 'frequency', { min: 0.5, max: 20, step: 0.1 });
+      pane.addBinding(local, 'amplitude', { min: 5, max: 100, step: 0.5 });
       pane.addBinding(local, 'cycleSpeed', {
         label: 'palette cycle',
         min: 0,
         max: 2,
         step: 0.01,
-      })
+      });
       pane.addBinding(local, 'cycleEase', {
         label: 'cycle ease',
         min: 0.1,
         max: 3,
         step: 0.01,
-      })
-      pane.addBlade({ view: 'separator' })
+      });
+      pane.addBlade({ view: 'separator' });
 
-      const grainFolder = pane.addFolder({ title: 'FilmGrain overlay' })
+      const grainFolder = pane.addFolder({ title: 'FilmGrain overlay' });
 
       grainFolder.addBinding(local, 'grain', {
         label: 'intensity',
         min: 0,
         max: 1,
         step: 0.01,
-      })
+      });
       grainFolder.addBinding(local, 'grainSpeed', {
         label: 'speed',
         min: 0,
         max: 5,
         step: 0.01,
-      })
+      });
 
-      const aFolder = pane.addFolder({ title: 'Palette A', expanded: false })
+      const aFolder = pane.addFolder({ title: 'Palette A', expanded: false });
 
-      aFolder.addBinding(local, 'a0', { label: 'color 0' })
-      aFolder.addBinding(local, 'a1', { label: 'color 1' })
-      aFolder.addBinding(local, 'a2', { label: 'color 2' })
-      aFolder.addBinding(local, 'a3', { label: 'color 3' })
+      aFolder.addBinding(local, 'a0', { label: 'color 0' });
+      aFolder.addBinding(local, 'a1', { label: 'color 1' });
+      aFolder.addBinding(local, 'a2', { label: 'color 2' });
+      aFolder.addBinding(local, 'a3', { label: 'color 3' });
 
-      const bFolder = pane.addFolder({ title: 'Palette B', expanded: false })
+      const bFolder = pane.addFolder({ title: 'Palette B', expanded: false });
 
-      bFolder.addBinding(local, 'b0', { label: 'color 0' })
-      bFolder.addBinding(local, 'b1', { label: 'color 1' })
-      bFolder.addBinding(local, 'b2', { label: 'color 2' })
-      bFolder.addBinding(local, 'b3', { label: 'color 3' })
+      bFolder.addBinding(local, 'b0', { label: 'color 0' });
+      bFolder.addBinding(local, 'b1', { label: 'color 1' });
+      bFolder.addBinding(local, 'b2', { label: 'color 2' });
+      bFolder.addBinding(local, 'b3', { label: 'color 3' });
 
-      pane.on('change', sync)
+      pane.on('change', sync);
     },
-  )
+  );
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -207,5 +207,5 @@ export default function MeshGradientPage() {
         </pre>
       </section>
     </main>
-  )
+  );
 }

@@ -1,9 +1,9 @@
-import { expect, test } from '@playwright/test'
+import { expect, test } from '@playwright/test';
 
-import { waitForShader } from './helpers'
+import { waitForShader } from './helpers';
 
 test('DotField — default story', async ({ page }) => {
-  await page.goto('/components/dot-field?visualTest=1')
-  await waitForShader(page)
-  await expect(page.locator('canvas').first()).toHaveScreenshot('dot-field-default.png')
-})
+  await page.goto('/components/dot-field?visualTest=1');
+  await waitForShader(page);
+  await expect(page.locator('canvas').first()).toHaveScreenshot('dot-field-default.png');
+});

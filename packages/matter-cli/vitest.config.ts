@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config'
+import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   // @ts-expect-error -- oxc is not in UserConfig types yet; this is the documented workaround
@@ -9,4 +9,4 @@ export default defineConfig({
     include: ['src/**/*.test.ts'],
     passWithNoTests: true,
   },
-})
+});

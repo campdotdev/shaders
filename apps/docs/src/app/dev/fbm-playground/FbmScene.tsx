@@ -1,19 +1,20 @@
-'use client'
+'use client';
 
-import { colorRamp, type ColorRampStop, fbm, time } from '@lovo/matter'
-import { ShaderScene, useShaderContext } from '@lovo/matter-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
-import { uniform, uv, vec2, vec3 } from 'three/tsl'
-import { Pane } from 'tweakpane'
+import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { addPlaneMesh } from '@/lib/meshUtils'
+import { colorRamp, type ColorRampStop, fbm, time } from '@lovo/matter';
+import { ShaderScene, useShaderContext } from '@lovo/matter-react';
+import { uniform, uv, vec2, vec3 } from 'three/tsl';
+import { Pane } from 'tweakpane';
+
+import { addPlaneMesh } from '@/lib/meshUtils';
 
 interface Params {
-  octaves: number
-  lacunarity: number
-  gain: number
-  scale: number
-  timeSpeed: number
+  octaves: number;
+  lacunarity: number;
+  gain: number;
+  scale: number;
+  timeSpeed: number;
 }
 
 const INITIAL: Params = {
@@ -22,12 +23,12 @@ const INITIAL: Params = {
   gain: 0.5,
   scale: 3.0,
   timeSpeed: 0.2,
-}
+};
 
 const STOPS: ColorRampStop[] = [
   { color: vec3(0, 0, 0), position: 0 },
   { color: vec3(1, 1, 1), position: 1 },
-]
+];
 
 function FbmMesh({
   octaves,
@@ -36,78 +37,78 @@ function FbmMesh({
   scaleUniform,
   timeSpeedUniform,
 }: {
-  octaves: number
-  lacunarity: number
-  gain: number
-  scaleUniform: ReturnType<typeof uniform>
-  timeSpeedUniform: ReturnType<typeof uniform>
+  octaves: number;
+  lacunarity: number;
+  gain: number;
+  scaleUniform: ReturnType<typeof uniform>;
+  timeSpeedUniform: ReturnType<typeof uniform>;
 }) {
-  const ctx = useShaderContext()
+  const ctx = useShaderContext();
 
   useEffect(() => {
-    if (!ctx) return
+    if (!ctx) return;
 
     const animatedUv = uv()
       .mul(scaleUniform)
-      .add(vec2(time.mul(timeSpeedUniform), time.mul(timeSpeedUniform)))
-    const t = fbm(animatedUv, { octaves, lacunarity, gain })
-    const tNorm = t.add(1).mul(0.5)
+      .add(vec2(time.mul(timeSpeedUniform), time.mul(timeSpeedUniform)));
+    const t = fbm(animatedUv, { octaves, lacunarity, gain });
+    const tNorm = t.add(1).mul(0.5);
 
-    return addPlaneMesh(ctx, colorRamp(tNorm, STOPS))
-  }, [ctx, octaves, lacunarity, gain, scaleUniform, timeSpeedUniform])
+    return addPlaneMesh(ctx, colorRamp(tNorm, STOPS));
+  }, [ctx, octaves, lacunarity, gain, scaleUniform, timeSpeedUniform]);
 
-  return null
+  return null;
 }
 
 export default function FbmPlayground() {
-  const paneContainerRef = useRef<HTMLDivElement>(null)
-  const [params, setParams] = useState<Params>(INITIAL)
+  const paneContainerRef = useRef<HTMLDivElement>(null);
+  const [params, setParams] = useState<Params>(INITIAL);
 
-  const [instanceKey, setInstanceKey] = useState(0)
+  const [instanceKey, setInstanceKey] = useState(0);
 
-  const scaleUniform = useMemo(() => uniform(INITIAL.scale), [])
-  const timeSpeedUniform = useMemo(() => uniform(INITIAL.timeSpeed), [])
+  const scaleUniform = useMemo(() => uniform(INITIAL.scale), []);
+  const timeSpeedUniform = useMemo(() => uniform(INITIAL.timeSpeed), []);
 
   useEffect(() => {
-    const container = paneContainerRef.current
+    const container = paneContainerRef.current;
 
-    if (!container) return
+    if (!container) return;
 
-    const local = { ...INITIAL }
-    const pane = new Pane({ container, title: 'FBM playground' })
+    const local = { ...INITIAL };
+    const pane = new Pane({ container, title: 'FBM playground' });
 
-    pane.addBinding(local, 'octaves', { min: 1, max: 8, step: 1 })
-    pane.addBinding(local, 'lacunarity', { min: 1, max: 4, step: 0.05 })
-    pane.addBinding(local, 'gain', { min: 0, max: 1, step: 0.01 })
-    pane.addBlade({ view: 'separator' })
-    pane.addBinding(local, 'scale', { min: 0.5, max: 10, step: 0.1 })
+    pane.addBinding(local, 'octaves', { min: 1, max: 8, step: 1 });
+    pane.addBinding(local, 'lacunarity', { min: 1, max: 4, step: 0.05 });
+    pane.addBinding(local, 'gain', { min: 0, max: 1, step: 0.01 });
+    pane.addBlade({ view: 'separator' });
+    pane.addBinding(local, 'scale', { min: 0.5, max: 10, step: 0.1 });
     pane.addBinding(local, 'timeSpeed', {
       label: 'time speed',
       min: 0,
       max: 2,
       step: 0.01,
-    })
-    pane.addBlade({ view: 'separator' })
+    });
+    pane.addBlade({ view: 'separator' });
     pane.addButton({ title: 'Apply octaves / lacunarity / gain' }).on('click', () => {
-      setParams({ ...local })
-      setInstanceKey((k) => k + 1)
-    })
+      setParams({ ...local });
+      setInstanceKey((k) => k + 1);
+    });
 
     pane.on('change', (ev) => {
-      if (!('key' in ev.target)) return
-      const key = ev.target.key
+      if (!('key' in ev.target)) return;
+      const key = ev.target.key;
 
       if (key === 'scale') {
-        scaleUniform.value = local.scale
+        scaleUniform.value = local.scale;
       } else if (key === 'timeSpeed') {
-        timeSpeedUniform.value = local.timeSpeed
+        timeSpeedUniform.value = local.timeSpeed;
       }
-    })
+    });
 
     return () => {
-      pane.dispose()
-    }
-  }, [scaleUniform, timeSpeedUniform])
+      pane.dispose();
+    };
+  }, [scaleUniform, timeSpeedUniform]);
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -141,5 +142,5 @@ export default function FbmPlayground() {
         </p>
       </section>
     </main>
-  )
+  );
 }

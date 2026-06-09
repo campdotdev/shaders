@@ -1,17 +1,17 @@
-'use client'
+'use client';
 
-import { type CSSProperties, useContext, useEffect, useRef, useState } from 'react'
+import { type CSSProperties, useContext, useEffect, useRef, useState } from 'react';
 
-import { ShaderContext } from '../../context/shader-context.js'
+import { ShaderContext } from '../../context/shader-context.js';
 
-export type MonitorAnchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right'
+export type MonitorAnchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 const anchorStyle: Record<MonitorAnchor, CSSProperties> = {
   'top-left': { top: 8, left: 8 },
   'top-right': { top: 8, right: 8 },
   'bottom-left': { bottom: 8, left: 8 },
   'bottom-right': { bottom: 8, right: 8 },
-}
+};
 
 const baseStyle: CSSProperties = {
   position: 'absolute',
@@ -24,47 +24,47 @@ const baseStyle: CSSProperties = {
   lineHeight: 1.4,
   pointerEvents: 'none',
   whiteSpace: 'pre',
-}
+};
 
 export interface ShaderMonitorProps {
-  anchor?: MonitorAnchor
+  anchor?: MonitorAnchor;
 }
 
 export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
-  const ctx = useContext(ShaderContext)
-  const [stats, setStats] = useState({ fps: 0, ticks: 0, frames: 0 })
-  const ticksRef = useRef(0)
-  const fpsAccumRef = useRef({ frames: 0, lastSampleAt: 0, fps: 0 })
+  const ctx = useContext(ShaderContext);
+  const [stats, setStats] = useState({ fps: 0, ticks: 0, frames: 0 });
+  const ticksRef = useRef(0);
+  const fpsAccumRef = useRef({ frames: 0, lastSampleAt: 0, fps: 0 });
 
   useEffect(() => {
-    if (!ctx) return
+    if (!ctx) return;
     const client = (tick: { now: number }) => {
-      ticksRef.current += 1
-      const acc = fpsAccumRef.current
+      ticksRef.current += 1;
+      const acc = fpsAccumRef.current;
 
-      acc.frames += 1
-      if (acc.lastSampleAt === 0) acc.lastSampleAt = tick.now
-      const dt = tick.now - acc.lastSampleAt
+      acc.frames += 1;
+      if (acc.lastSampleAt === 0) acc.lastSampleAt = tick.now;
+      const dt = tick.now - acc.lastSampleAt;
 
       if (dt >= 500) {
-        acc.fps = Math.round((acc.frames * 1000) / dt)
-        acc.frames = 0
-        acc.lastSampleAt = tick.now
+        acc.fps = Math.round((acc.frames * 1000) / dt);
+        acc.frames = 0;
+        acc.lastSampleAt = tick.now;
       }
-      setStats({ fps: acc.fps, ticks: ticksRef.current, frames: acc.frames })
-    }
+      setStats({ fps: acc.fps, ticks: ticksRef.current, frames: acc.frames });
+    };
 
-    ctx.scheduler.add(client)
+    ctx.scheduler.add(client);
 
-    return () => ctx.scheduler.remove(client)
-  }, [ctx])
+    return () => ctx.scheduler.remove(client);
+  }, [ctx]);
 
   if (!ctx) {
     return (
       <div data-testid="matter-monitor" style={{ ...baseStyle, ...anchorStyle[anchor] }}>
         no scene
       </div>
-    )
+    );
   }
 
   return (
@@ -73,5 +73,5 @@ export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
       {'\n'}
       <span data-testid="matter-monitor-ticks">ticks: {stats.ticks}</span>
     </div>
-  )
+  );
 }

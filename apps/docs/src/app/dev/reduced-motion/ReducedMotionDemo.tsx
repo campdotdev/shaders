@@ -1,40 +1,41 @@
-'use client'
+'use client';
 
-import { type ReducedMotionPolicy, setReducedMotionPolicy } from '@lovo/matter'
-import { ShaderScene } from '@lovo/matter-react'
-import { LinearGradient } from '@matter/registry/linear-gradient'
-import dynamic from 'next/dynamic'
-import { useEffect, useRef, useState } from 'react'
-import { Pane } from 'tweakpane'
+import dynamic from 'next/dynamic';
+import { useEffect, useRef, useState } from 'react';
 
-const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false })
+import { type ReducedMotionPolicy, setReducedMotionPolicy } from '@lovo/matter';
+import { ShaderScene } from '@lovo/matter-react';
+import { LinearGradient } from '@matter/registry/linear-gradient';
+import { Pane } from 'tweakpane';
 
-const INITIAL_PARAMS: { policy: ReducedMotionPolicy } = { policy: 'auto' }
+const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false });
+
+const INITIAL_PARAMS: { policy: ReducedMotionPolicy } = { policy: 'auto' };
 
 export function ReducedMotionDemo() {
-  const paneRef = useRef<HTMLDivElement>(null)
-  const [policy, setPolicy] = useState<ReducedMotionPolicy>('auto')
+  const paneRef = useRef<HTMLDivElement>(null);
+  const [policy, setPolicy] = useState<ReducedMotionPolicy>('auto');
 
   useEffect(() => {
-    if (!paneRef.current) return
+    if (!paneRef.current) return;
 
-    const params = { ...INITIAL_PARAMS }
+    const params = { ...INITIAL_PARAMS };
     const pane = new Pane({
       container: paneRef.current,
       title: 'Reduced motion',
-    })
+    });
 
     pane
       .addBinding(params, 'policy', {
         options: { auto: 'auto', off: 'off', slow: 'slow', paused: 'paused' },
       })
       .on('change', (e) => {
-        setPolicy(e.value)
-        setReducedMotionPolicy(e.value)
-      })
+        setPolicy(e.value);
+        setReducedMotionPolicy(e.value);
+      });
 
-    return () => pane.dispose()
-  }, [])
+    return () => pane.dispose();
+  }, []);
 
   return (
     <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
@@ -88,5 +89,5 @@ export function ReducedMotionDemo() {
       </div>
       <div ref={paneRef} style={{ position: 'sticky', top: '1rem', width: 280 }} />
     </div>
-  )
+  );
 }

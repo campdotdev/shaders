@@ -1,15 +1,15 @@
-import { cache } from 'react'
+import { cache } from 'react';
 
-import { getComponentsCatalog, getPrimitivesCatalog } from './catalog'
-import { getMdxDocsPages } from './source'
-import type { DocsSearchDocument } from './types'
+import { getComponentsCatalog, getPrimitivesCatalog } from './catalog';
+import { getMdxDocsPages } from './source';
+import type { DocsSearchDocument } from './types';
 
 export const getDocsSearchDocuments = cache(async (): Promise<DocsSearchDocument[]> => {
   const [pages, components, primitives] = await Promise.all([
     getMdxDocsPages(),
     getComponentsCatalog(),
     getPrimitivesCatalog(),
-  ])
+  ]);
 
   const mdxDocs: DocsSearchDocument[] = pages
     .filter((p) => !p.frontmatter.hidden && p.frontmatter.status !== 'draft')
@@ -20,7 +20,7 @@ export const getDocsSearchDocuments = cache(async (): Promise<DocsSearchDocument
       section: p.frontmatter.section,
       headings: p.headings.map((h) => h.text),
       tags: p.frontmatter.tags,
-    }))
+    }));
 
   const catalogDocs: DocsSearchDocument[] = [
     ...components.map((c) => ({
@@ -39,7 +39,7 @@ export const getDocsSearchDocuments = cache(async (): Promise<DocsSearchDocument
       headings: [],
       tags: p.tags,
     })),
-  ]
+  ];
 
-  return [...mdxDocs, ...catalogDocs]
-})
+  return [...mdxDocs, ...catalogDocs];
+});

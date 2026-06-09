@@ -1,6 +1,6 @@
 declare global {
   interface Window {
-    __matterReady?: boolean
+    __matterReady?: boolean;
   }
 }
 
@@ -10,26 +10,26 @@ declare global {
 // and have it composite. The actual pixel readback isn't accessible to JS on
 // WebGPU canvases — Playwright captures the GPU surface directly via Chromium's
 // DevTools Protocol, which works regardless.
-const STABLE_FRAMES = 3
+const STABLE_FRAMES = 3;
 
 export function installFrameReadyWatcher(): void {
-  let stableCount = 0
+  let stableCount = 0;
   const tick = (): void => {
-    if (window.__matterReady === true) return
-    const canvas = document.querySelector('canvas')
+    if (window.__matterReady === true) return;
+    const canvas = document.querySelector('canvas');
 
     if (canvas && canvas.width > 0 && canvas.height > 0) {
-      stableCount += 1
+      stableCount += 1;
       if (stableCount >= STABLE_FRAMES) {
-        window.__matterReady = true
+        window.__matterReady = true;
 
-        return
+        return;
       }
     } else {
-      stableCount = 0
+      stableCount = 0;
     }
-    requestAnimationFrame(tick)
-  }
+    requestAnimationFrame(tick);
+  };
 
-  requestAnimationFrame(tick)
+  requestAnimationFrame(tick);
 }

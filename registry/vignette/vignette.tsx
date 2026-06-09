@@ -1,15 +1,15 @@
-'use client'
+'use client';
 
-import type { AnimatableProp } from '@lovo/matter-react'
+import type { AnimatableProp } from '@lovo/matter-react';
 
-import { VignetteShader } from './shader'
+import { VignetteShader } from './shader';
 
 export interface VignetteProps {
-  intensity?: AnimatableProp<number>
-  softness?: AnimatableProp<number>
-  center?: [number, number]
-  radius?: AnimatableProp<number>
-  color?: string
+  intensity?: AnimatableProp<number>;
+  softness?: AnimatableProp<number>;
+  center?: [number, number];
+  radius?: AnimatableProp<number>;
+  color?: string;
 }
 
 export function Vignette({
@@ -27,5 +27,5 @@ export function Vignette({
       radius={radius}
       softness={softness}
     />
-  )
+  );
 }
