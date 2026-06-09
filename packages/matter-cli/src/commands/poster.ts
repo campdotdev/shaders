@@ -15,13 +15,7 @@ export interface PosterOptions {
   timeSeconds: number;
   width: number;
   height: number;
-  // Format selector. Default 'jpg' — JPEG q80 is the best size/quality
-  // tradeoff for most shaders; switch to 'png' for posterized shaders
-  // (LinearGradient, SimplexNoise) where PNG compresses much smaller.
-  // Accepts a string so the commander → runPoster boundary stays validated
-  // at runtime instead of relying on an unchecked cast.
   type?: string;
-  // 1–100. Ignored for PNG. Default 80.
   quality?: number;
 }
 
@@ -46,13 +40,6 @@ function extensionFor(format: PosterFormat): string {
   return format === 'png' ? '.png' : '.jpg';
 }
 
-// Resolve --out + --type into a final path. --type is authoritative; --out is
-// a filename that may or may not include an extension.
-//   --out hero                     --type=jpg → hero.jpg
-//   --out hero.jpg                 --type=jpg → hero.jpg (extension matches)
-//   --out hero.jpeg                --type=jpg → hero.jpeg (jpeg ≡ jpg)
-//   --out hero.png                 --type=jpg → error (mismatch)
-//   --out hero.txt                 --type=jpg → hero.txt.jpg (preserve unknown ext)
 export function resolveOutPath(out: string, format: PosterFormat): string {
   const ext = extname(out).toLowerCase();
   const expected = extensionFor(format);
