@@ -33,7 +33,6 @@ const nextConfig: NextConfig = {
 
     return config;
   },
-  /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 };
 
 export default nextConfig;

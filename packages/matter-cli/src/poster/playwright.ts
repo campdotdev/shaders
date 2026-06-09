@@ -43,7 +43,9 @@ export async function resolvePlaywright(projectRoot: string): Promise<typeof Pla
     try {
       await access(filePath);
 
-      type PlaywrightMod = Record<string, unknown> & { default?: Record<string, unknown> };
+      type PlaywrightMod = Record<string, unknown> & {
+        default?: Record<string, unknown>;
+      };
 
       const rawMod: unknown = await import(pathToFileURL(filePath).href);
       // Narrow unknown → PlaywrightMod; the type guard proves object shape,
@@ -79,7 +81,6 @@ export interface ScreenshotOpts {
   outPath: string;
   projectRoot: string;
   format: 'jpeg' | 'png';
-  // 1–100. Only meaningful for JPEG; ignored for PNG.
   quality: number | undefined;
 }
 
@@ -111,7 +112,9 @@ export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes
         );
       }
       throw new Error(
-        `no canvas content detected within ${opts.readyTimeoutMs / 1000}s; does your component render a ShaderScene with a visible base layer?`,
+        `no canvas content detected within ${
+          opts.readyTimeoutMs / 1000
+        }s; does your component render a ShaderScene with a visible base layer?`,
       );
     }
     if (opts.timeSeconds > 0) {

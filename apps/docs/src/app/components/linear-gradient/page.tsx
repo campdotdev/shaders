@@ -166,7 +166,7 @@ export default function LinearGradientPage() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
         <Image
-          alt=""
+          alt="Linear gradient shader preview: vertical gradient from violet to purple to magenta"
           fill
           priority
           sizes="100vw"

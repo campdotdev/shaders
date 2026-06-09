@@ -297,7 +297,7 @@ export default function AuroraPage() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
         <Image
-          alt=""
+          alt="Aurora shader preview: cyan sky over green and blue curtain bands with a dark horizon"
           fill
           priority
           sizes="100vw"

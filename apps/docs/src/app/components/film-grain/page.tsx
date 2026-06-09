@@ -82,7 +82,7 @@ export default function FilmGrainPage() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
         <Image
-          alt=""
+          alt="Film grain shader preview: violet to magenta gradient overlaid with grain"
           fill
           priority
           sizes="100vw"

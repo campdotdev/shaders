@@ -158,7 +158,7 @@ export default function MeshGradientPage() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
         <Image
-          alt=""
+          alt="Mesh gradient shader preview: warped four-color gradient blending pink, magenta, yellow, and orange"
           fill
           priority
           sizes="100vw"

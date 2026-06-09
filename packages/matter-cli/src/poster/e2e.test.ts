@@ -10,8 +10,18 @@ const E2E_ENABLED = process.env.MATTER_E2E === '1';
 const FIXTURES = new URL('../test-fixtures/posters/', import.meta.url).pathname;
 
 const cases = [
-  { name: 'single-linear-gradient', file: 'single-linear-gradient.tsx', type: 'png', extra: {} },
-  { name: 'gradient-plus-grain', file: 'gradient-plus-grain.tsx', type: 'png', extra: {} },
+  {
+    name: 'single-linear-gradient',
+    file: 'single-linear-gradient.tsx',
+    type: 'png',
+    extra: {},
+  },
+  {
+    name: 'gradient-plus-grain',
+    file: 'gradient-plus-grain.tsx',
+    type: 'png',
+    extra: {},
+  },
   {
     name: 'aurora-with-time',
     file: 'aurora-with-time.tsx',
@@ -25,7 +35,12 @@ const cases = [
     extra: { exportName: 'NamedExport' },
   },
   // Exercises the default JPEG path and verifies the magic-byte header.
-  { name: 'jpeg-default', file: 'single-linear-gradient.tsx', type: 'jpg', extra: {} },
+  {
+    name: 'jpeg-default',
+    file: 'single-linear-gradient.tsx',
+    type: 'jpg',
+    extra: {},
+  },
 ] as const;
 
 describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
@@ -61,8 +76,6 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
       expect(s.size).toBeGreaterThan(1024); // > 1 KB
       expect(s.size).toBeLessThan(5 * 1024 * 1024); // < 5 MB
 
-      // Header sniff: confirm the format matches the requested type. PNG starts
-      // 89 50 4E 47; JPEG starts FF D8 FF.
       const { open } = await import('node:fs/promises');
       const fh = await open(out, 'r');
 
