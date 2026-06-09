@@ -1,34 +1,33 @@
-// apps/docs/app/components/simplex-noise/page.tsx
-'use client'
+'use client';
 
-import dynamic from 'next/dynamic'
+import dynamic from 'next/dynamic';
 
-import { palette } from '@/lib/palette'
-import { addCopyButtons } from '@/lib/paneUtils'
-import { useTweakpane } from '@/lib/useTweakpane'
-import { VisualTestPause } from '@/lib/visualTestHooks'
+import { palette } from '@/lib/palette';
+import { addCopyButtons } from '@/lib/paneUtils';
+import { useTweakpane } from '@/lib/useTweakpane';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
-})
+});
 const SimplexNoise = dynamic(
   () => import('@matter/registry/simplex-noise').then((m) => m.SimplexNoise),
   { ssr: false },
-)
+);
 
 interface Params {
-  scale: number
-  speed: number
-  focus: number
-  bias: number
-  softness: number
-  variant: number
-  colorCount: number
-  color0: string
-  color1: string
-  color2: string
-  color3: string
-  color4: string
+  scale: number;
+  speed: number;
+  focus: number;
+  bias: number;
+  softness: number;
+  variant: number;
+  colorCount: number;
+  color0: string;
+  color1: string;
+  color2: string;
+  color3: string;
+  color4: string;
 }
 
 const INITIAL: Params = {
@@ -44,18 +43,18 @@ const INITIAL: Params = {
   color2: palette.purple.base,
   color3: palette.magenta.base,
   color4: palette.teal.base,
-}
+};
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000)
+const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
 
 const fmtColors = (p: Params) => {
-  const all = [p.color0, p.color1, p.color2, p.color3, p.color4]
+  const all = [p.color0, p.color1, p.color2, p.color3, p.color4];
 
   return all
     .slice(0, p.colorCount)
     .map((c) => `'${c}'`)
-    .join(', ')
-}
+    .join(', ');
+};
 
 const fmtJsx = (p: Params) =>
   `<ShaderScene>
@@ -68,7 +67,7 @@ const fmtJsx = (p: Params) =>
     softness={${fmtNum(p.softness)}}
     variant={${p.variant}}
   />
-</ShaderScene>`
+</ShaderScene>`;
 
 const fmtParams = (p: Params) =>
   `{
@@ -79,7 +78,7 @@ const fmtParams = (p: Params) =>
   bias: ${fmtNum(p.bias)},
   softness: ${fmtNum(p.softness)},
   variant: ${p.variant},
-}`
+}`;
 
 export default function SimplexNoisePage() {
   const [params, paneContainerRef] = useTweakpane<Params>(
@@ -87,45 +86,45 @@ export default function SimplexNoisePage() {
     INITIAL,
     (pane, local, sync) => {
       pane.addButton({ title: 'Reset all' }).on('click', () => {
-        Object.assign(local, INITIAL)
-        pane.refresh()
-        sync()
-      })
+        Object.assign(local, INITIAL);
+        pane.refresh();
+        sync();
+      });
 
       addCopyButtons(
         pane,
         () => fmtJsx(local),
         () => fmtParams(local),
-      )
+      );
 
-      pane.addBinding(local, 'scale', { min: 0.5, max: 30, step: 0.1 })
-      pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 })
-      pane.addBinding(local, 'focus', { min: 0, max: 4, step: 0.01 })
-      pane.addBinding(local, 'bias', { min: 0, max: 1, step: 0.01 })
-      pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 })
-      pane.addBinding(local, 'variant', { min: 0, max: 100, step: 1 })
-      pane.addBlade({ view: 'separator' })
+      pane.addBinding(local, 'scale', { min: 0.5, max: 30, step: 0.1 });
+      pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
+      pane.addBinding(local, 'focus', { min: 0, max: 4, step: 0.01 });
+      pane.addBinding(local, 'bias', { min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'variant', { min: 0, max: 100, step: 1 });
+      pane.addBlade({ view: 'separator' });
 
-      const colorsFolder = pane.addFolder({ title: 'Colors' })
+      const colorsFolder = pane.addFolder({ title: 'Colors' });
 
       colorsFolder.addBinding(local, 'colorCount', {
         label: 'count',
         min: 2,
         max: 5,
         step: 1,
-      })
-      colorsFolder.addBinding(local, 'color0', { label: 'color 0' })
-      colorsFolder.addBinding(local, 'color1', { label: 'color 1' })
-      colorsFolder.addBinding(local, 'color2', { label: 'color 2' })
-      colorsFolder.addBinding(local, 'color3', { label: 'color 3' })
-      colorsFolder.addBinding(local, 'color4', { label: 'color 4' })
+      });
+      colorsFolder.addBinding(local, 'color0', { label: 'color 0' });
+      colorsFolder.addBinding(local, 'color1', { label: 'color 1' });
+      colorsFolder.addBinding(local, 'color2', { label: 'color 2' });
+      colorsFolder.addBinding(local, 'color3', { label: 'color 3' });
+      colorsFolder.addBinding(local, 'color4', { label: 'color 4' });
 
-      pane.on('change', sync)
+      pane.on('change', sync);
     },
-  )
+  );
 
-  const allColors = [params.color0, params.color1, params.color2, params.color3, params.color4]
-  const colors = allColors.slice(0, params.colorCount)
+  const allColors = [params.color0, params.color1, params.color2, params.color3, params.color4];
+  const colors = allColors.slice(0, params.colorCount);
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -176,5 +175,5 @@ import { SimplexNoise } from '@/components/matter/simplex-noise'
         </pre>
       </section>
     </main>
-  )
+  );
 }

@@ -29,7 +29,7 @@ ls docs/superpowers/plans/         # which plans exist
 - **Three-tier model**: Tier 1 = polished components (`<LinearGradient>` etc., delivered via shadcn-style CLI copy-paste from `registry/`); Tier 2 = TSL primitives in the engine package (`fbm`, `voronoi`, `cursorRipple`, etc.); Tier 3 = recipes (TSL snippets in the docs site).
 - **Three packages**: `@lovo/matter` (engine, framework-agnostic), `@lovo/matter-react` (React binding), `@lovo/matter-cli` (copy-paste delivery).
 - **Two rendering modes** (no auto-detection of `@react-three/fiber`): Mode 1 Matter-managed scene — every Tier 1 component is bare and requires an explicit `<ShaderScene>` wrap (`<ShaderScene><LinearGradient /></ShaderScene>`); multi-effect composition is just stacking children inside the same scene. Mode 2 use `useShaderMaterial` directly inside user's own r3f `<Canvas>`. (Pre-2026-05-18 there was a third "drop-in" mode where components auto-wrapped their own MatterScene — removed for consistency; see Section 3.4 of the spec.)
-- **Stack**: TypeScript 5 strict mode, pnpm 9 workspaces, Node 22 (`.node-version` 22.22.2), Turborepo (orchestration; **NOT Turbopack**), tsup (bundling, ESM+CJS+types), ESLint 9 flat config + typescript-eslint (linter; replaced Oxlint after the vp removal — see milestone 8 below), Oxfmt (formatter, replaced Prettier in M7), Vite 8 + Vitest 4 (tests; imports use real `vite`/`vitest` packages after vp removal), Next.js 15 (docs site, lives at `apps/docs/`), Tweakpane (interactive shader playground panel on the docs site). Visual regression: Playwright against the docs site routes (M5).
+- **Stack**: TypeScript 5 strict mode, pnpm 9 workspaces, Node 22 (`.node-version` 22.22.2), Turborepo (orchestration; **NOT Turbopack**), tsup (bundling, ESM+CJS+types), ESLint 9 flat config + typescript-eslint (linter; replaced Oxlint after the vp removal — see milestone 8 below), Prettier 3 + `@trivago/prettier-plugin-sort-imports` (formatter; swapped back from Oxfmt because editor defaults disagreed with Oxfmt's config and created a constant edit-then-reformat loop), Vite 8 + Vitest 4 (tests; imports use real `vite`/`vitest` packages after vp removal), Next.js 15 (docs site, lives at `apps/docs/`), Tweakpane (interactive shader playground panel on the docs site). Visual regression: Playwright against the docs site routes (M5).
   - **Note (M1 deviation):** the original plan called for Storybook 10 + Vite. We ripped Storybook out — see [Storybook → Tweakpane pivot memory](../../.claude/projects/-Users-hunter-garrett-Documents--personal-mattermix/memory/project_matter_storybook_pivot.md). Don't reintroduce Storybook in v1; the docs page is the demo surface.
 
 For full architecture, public APIs, the v1 catalog of six components, animation/signal protocol, and the docs site design — read the spec.
@@ -87,8 +87,8 @@ pnpm build                                # build all packages (tsup, ~5s cold, 
 pnpm typecheck                            # tsc --noEmit on all packages
 pnpm lint                                 # eslint on all packages (root eslint.config.js)
 pnpm clean                                # remove all dist/, .turbo/, node_modules/
-pnpm format                               # oxfmt
-pnpm format:check                         # oxfmt --check
+pnpm format                               # prettier --write .
+pnpm format:check                         # prettier --check .
 
 # Watch mode for a single package:
 pnpm --filter @lovo/matter dev            # tsup --watch

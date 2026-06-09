@@ -1,12 +1,12 @@
-import js from '@eslint/js'
-import tsParser from '@typescript-eslint/parser'
-import importPlugin from 'eslint-plugin-import'
-import jsxA11y from 'eslint-plugin-jsx-a11y'
-import reactPlugin from 'eslint-plugin-react'
-import reactHooks from 'eslint-plugin-react-hooks'
-import { defineConfig, globalIgnores } from 'eslint/config'
-import globals from 'globals'
-import tseslint from 'typescript-eslint'
+import js from '@eslint/js';
+import tsParser from '@typescript-eslint/parser';
+import importPlugin from 'eslint-plugin-import';
+import jsxA11y from 'eslint-plugin-jsx-a11y';
+import reactPlugin from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
+import { defineConfig, globalIgnores } from 'eslint/config';
+import globals from 'globals';
+import tseslint from 'typescript-eslint';
 
 export default defineConfig([
   globalIgnores([
@@ -118,14 +118,10 @@ export default defineConfig([
       ],
       complexity: ['error', 20],
       eqeqeq: ['error', 'smart'],
-      'import/order': [
-        'warn',
-        {
-          alphabetize: { caseInsensitive: true, order: 'asc' },
-          groups: [['builtin', 'external'], 'internal', 'parent', 'sibling', 'index'],
-          'newlines-between': 'always',
-        },
-      ],
+      // Prettier (via @trivago/prettier-plugin-sort-imports) owns import
+      // ordering now — eslint and prettier shouldn't fight over the same
+      // concern, so the lint rule is off.
+      'import/order': 'off',
       'no-empty': 'error',
       'no-nested-ternary': 'error',
       'no-plusplus': 'error',
@@ -165,4 +161,4 @@ export default defineConfig([
       'no-plusplus': 'off',
     },
   },
-])
+]);
