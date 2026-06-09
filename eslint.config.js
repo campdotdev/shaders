@@ -42,14 +42,7 @@ export default defineConfig([
     },
   },
   {
-    files: [
-      // All TS/TSX in apps and packages, not just src/ — covers per-package
-      // config files (tsup.config.ts, vitest.config.ts), poster scaffolding,
-      // Next config, and the docs-tests workspace.
-      'packages/**/*.{ts,tsx}',
-      'apps/**/*.{ts,tsx}',
-      'registry/**/*.{ts,tsx}',
-    ],
+    files: ['packages/**/*.{ts,tsx}', 'apps/**/*.{ts,tsx}', 'registry/**/*.{ts,tsx}'],
     plugins: {
       import: importPlugin,
       'jsx-a11y': jsxA11y,
@@ -60,14 +53,6 @@ export default defineConfig([
       parser: tsParser,
       parserOptions: {
         projectService: {
-          // Files outside any package tsconfig's includes (config files,
-          // poster scaffolding) fall back to tsconfig.eslint.json so they
-          // still get linted instead of erroring with "not found by the
-          // project service".
-          // Files NOT in any tsconfig include. Files already in a tsconfig
-          // (e.g. apps/docs/next.config.ts) must NOT appear here or the
-          // parser errors with "included by allowDefaultProject but also
-          // was found in the project service".
           allowDefaultProject: [
             'packages/*/*.config.{ts,mts,cts}',
             'packages/*/posters/*.{ts,tsx}',
@@ -135,9 +120,6 @@ export default defineConfig([
       ],
       complexity: ['error', 20],
       eqeqeq: ['error', 'smart'],
-      // Prettier (via @trivago/prettier-plugin-sort-imports) owns import
-      // ordering now — eslint and prettier shouldn't fight over the same
-      // concern, so the lint rule is off.
       'import/order': 'off',
       'no-empty': 'error',
       'no-nested-ternary': 'error',

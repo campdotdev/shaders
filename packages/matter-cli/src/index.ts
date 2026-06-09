@@ -111,7 +111,6 @@ program
         await runPoster({
           from: opts.from,
           out: opts.out,
-          // runPoster validates --type at runtime; commander hands us a string.
           type: opts.type,
           quality: opts.quality === undefined ? undefined : Number.parseInt(opts.quality, 10),
           exportName: opts.export,

@@ -17,8 +17,6 @@ test('LinearGradient — reduced motion paused', async ({ browser }) => {
   await page.goto('/components/linear-gradient?visualTest=1&reducedMotion=paused');
   await waitForShader(page);
 
-  // Capture two screenshots one second apart. With policy=paused the scheduler
-  // is frozen — the canvas should produce byte-identical frames.
   const buf1 = await page.locator('canvas').first().screenshot();
 
   await page.waitForTimeout(1000);

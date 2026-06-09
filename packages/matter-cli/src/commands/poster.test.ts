@@ -76,8 +76,6 @@ describe('runPoster — PNG + --quality warning', () => {
   it('warns when --quality is set with PNG output', async () => {
     const log = vi.fn();
 
-    // Throws on --from (file missing) but format/quality validation runs first,
-    // so the warning is logged before we bail.
     await expect(
       runPoster(
         {
