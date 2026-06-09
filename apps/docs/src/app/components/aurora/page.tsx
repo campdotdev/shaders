@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import type { AuroraDirection } from '@matter/registry/aurora';
@@ -295,6 +296,14 @@ export default function AuroraPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
+        <Image
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          src="/posters/aurora.jpg"
+          style={{ objectFit: 'cover' }}
+        />
         <ShaderScene>
           <Aurora
             densityX={params.densityX}
