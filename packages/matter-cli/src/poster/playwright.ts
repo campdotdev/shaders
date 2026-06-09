@@ -28,6 +28,26 @@ async function findPlaywrightDir(startDir: string): Promise<string | null> {
   }
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isPlaywrightNamespace(value: unknown): value is typeof Playwright {
+  if (!isRecord(value)) return false;
+
+  const chromium = value.chromium;
+
+  if (!isRecord(chromium)) return false;
+
+  return typeof chromium.launch === 'function';
+}
+
+function getDefaultExport(value: unknown): unknown {
+  if (!isRecord(value)) return undefined;
+
+  return value.default;
+}
+
 export async function resolvePlaywright(projectRoot: string): Promise<typeof Playwright> {
   const pwDir = await findPlaywrightDir(projectRoot);
 
@@ -43,23 +63,10 @@ export async function resolvePlaywright(projectRoot: string): Promise<typeof Pla
     try {
       await access(filePath);
 
-      type PlaywrightMod = Record<string, unknown> & {
-        default?: Record<string, unknown>;
-      };
-
       const rawMod: unknown = await import(pathToFileURL(filePath).href);
-      // Narrow unknown → PlaywrightMod; the type guard proves object shape,
-      // the assertion below spans that same narrowed type — disable is intentional.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const mod = (typeof rawMod === 'object' && rawMod !== null ? rawMod : {}) as PlaywrightMod;
-      // ESM (index.mjs): named exports are on `mod` directly.
-      // CJS-via-ESM (index.js): exports may end up under `mod.default`.
-      const nsRaw = 'chromium' in mod ? mod : (mod.default ?? mod);
-      // Dynamic import of playwright; structure is validated below via chromium.launch check.
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      const ns = nsRaw as unknown as typeof Playwright;
+      const ns = isPlaywrightNamespace(rawMod) ? rawMod : getDefaultExport(rawMod);
 
-      if (typeof ns.chromium.launch !== 'function') {
+      if (!isPlaywrightNamespace(ns)) {
         throw new Error(`Resolved ${filePath} but it does not expose chromium.launch`);
       }
 
