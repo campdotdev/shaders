@@ -1,0 +1,6 @@
+# Tell `git blame` to skip these mechanical, repo-wide reformat commits.
+# Enable locally with: `git config blame.ignoreRevsFile .git-blame-ignore-revs`
+# GitHub honors this file automatically in the web UI.
+
+# chore: format the repo with prettier (Prettier 3 + import-sort plugin)
+6f31ffc
