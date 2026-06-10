@@ -4,8 +4,8 @@ import { useEffect, useMemo } from 'react';
 
 import { time } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
-import { sin, uv, vec2, vec3, vec4 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
+import { cos, type ShaderNodeObject, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
 export interface WavesShaderProps {
   amplitude: AnimatableProp<number>;
@@ -13,6 +13,7 @@ export interface WavesShaderProps {
   speed: AnimatableProp<number>;
   intensity: AnimatableProp<number>;
   sharpness: AnimatableProp<number>;
+  independence: AnimatableProp<number>;
   color: string;
   layers: number;
 }
@@ -27,6 +28,15 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
   ];
 };
 
+// Pseudo-random 1D signal: sum of three cosines at coprime-ish frequencies
+// averaged to [-1, 1]. Feels organic and non-repeating over short windows —
+// the trick the ShaderToy "plasma lines" reference uses in place of pure sin.
+const wobble = (t: ShaderNodeObject<Node>) =>
+  cos(t)
+    .add(cos(t.mul(1.3).add(1.3)))
+    .add(cos(t.mul(1.4).add(1.4)))
+    .div(3);
+
 export function WavesShader(props: WavesShaderProps) {
   const ctx = useShaderContext();
   const layers = Math.max(1, props.layers);
@@ -38,6 +48,7 @@ export function WavesShader(props: WavesShaderProps) {
   const speedUniform = useAnimatableUniform<number>(props.speed);
   const intensityUniform = useAnimatableUniform<number>(props.intensity);
   const sharpnessUniform = useAnimatableUniform<number>(props.sharpness);
+  const independenceUniform = useAnimatableUniform<number>(props.independence);
 
   useEffect(() => {
     if (!ctx) return;
@@ -51,13 +62,14 @@ export function WavesShader(props: WavesShaderProps) {
     let waveColor = vec3(0, 0, 0);
 
     for (let i = 0; i < 10; i += 1) {
+      // Per-layer time multiplier: at independence=0 every layer runs at
+      // speedUniform (locked). At independence=1, layer i runs at
+      // speedUniform * (1 + i/10) — up to 1.9x for the last band. Mixed
+      // values drift slowly in and out of sync.
+      const layerTime = time.mul(speedUniform).mul(independenceUniform.mul(i / 10).add(1));
+
       yRunning = yRunning.add(
-        sin(
-          p.x
-            .mul(freqUniform)
-            .add(i / 7)
-            .add(time.mul(speedUniform)),
-        ).mul(ampUniform),
+        wobble(p.x.mul(freqUniform).add(i / 7).add(layerTime)).mul(ampUniform),
       );
 
       const width = yRunning.mul(sharpnessUniform).abs().reciprocal();
@@ -98,6 +110,7 @@ export function WavesShader(props: WavesShaderProps) {
     speedUniform,
     intensityUniform,
     sharpnessUniform,
+    independenceUniform,
   ]);
 
   return null;
