@@ -17,10 +17,7 @@ interface Params {
   frequency: number;
   speed: number;
   glow: number;
-  independence: number;
-  drift: number;
   baseline: number;
-  layers: number;
 }
 
 const INITIAL: Params = {
@@ -29,10 +26,7 @@ const INITIAL: Params = {
   frequency: 1,
   speed: 1,
   glow: 1,
-  independence: 0.5,
-  drift: 0,
   baseline: 0.1,
-  layers: 10,
 };
 
 export default function WavesPage() {
@@ -46,18 +40,8 @@ export default function WavesPage() {
       pane.addBinding(local, 'frequency', { min: 0.1, max: 10, step: 0.05 });
       pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
       pane.addBinding(local, 'glow', { min: 0, max: 3, step: 0.01 });
-      pane.addBinding(local, 'independence', { min: 0, max: 1, step: 0.01 });
-      pane.addBinding(local, 'drift', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'baseline', { min: -1, max: 1, step: 0.01 });
-      pane.addBlade({ view: 'separator' });
-      pane.addBinding(local, 'layers', { min: 1, max: 20, step: 1 });
-      pane.addButton({ title: 'Apply layers' }).on('click', sync);
-      pane.on('change', (ev) => {
-        if ('key' in ev.target && ev.target.key === 'layers') {
-          return;
-        }
-        sync();
-      });
+      pane.on('change', sync);
     },
   );
 
@@ -69,11 +53,8 @@ export default function WavesPage() {
             amplitude={params.amplitude}
             baseline={params.baseline}
             color={params.color}
-            drift={params.drift}
             frequency={params.frequency}
             glow={params.glow}
-            independence={params.independence}
-            layers={params.layers}
             speed={params.speed}
           />
           <VisualTestPause />
@@ -103,17 +84,7 @@ export default function WavesPage() {
           }}
         >
           {`<ShaderScene>
-  <Waves
-    color="#77ebce"
-    amplitude={0.07}
-    frequency={1}
-    speed={1}
-    glow={1}
-    independence={0.5}
-    drift={0}
-    baseline={0.1}
-    layers={10}
-  />
+  <Waves />
 </ShaderScene>`}
         </pre>
       </section>
