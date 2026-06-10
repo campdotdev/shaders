@@ -17,13 +17,9 @@ export interface WaveLayer {
 
 export interface WavesProps {
   layers?: WaveLayer[];
-
-  // globals — master values for per-layer fields
   amplitude?: AnimatableProp<number>;
   frequency?: AnimatableProp<number>;
   speed?: AnimatableProp<number>;
-
-  // global controls
   glow?: AnimatableProp<number>;
   thickness?: AnimatableProp<number>;
   baseline?: AnimatableProp<number>;

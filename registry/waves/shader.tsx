@@ -8,10 +8,20 @@ import { cos, type ShaderNodeObject, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
 import { parseHex } from '../utils/color';
-import type { WaveLayer } from './waves';
+
+interface WavesShaderLayer {
+  color?: string;
+  amplitude?: number;
+  frequency?: number;
+  speed?: number;
+  glow?: number;
+  thickness?: number;
+  offset?: number;
+  motion?: number;
+}
 
 export interface WavesShaderProps {
-  layers: WaveLayer[];
+  layers: WavesShaderLayer[];
   amplitude: AnimatableProp<number>;
   frequency: AnimatableProp<number>;
   speed: AnimatableProp<number>;
@@ -20,10 +30,6 @@ export interface WavesShaderProps {
   baseline: AnimatableProp<number>;
 }
 
-// Baseline reference for per-layer scaling. MUST match the wrapper's default
-// values for the global props of the same name — when they match, a per-layer
-// value renders as that absolute value when the global is at its default, and
-// scales proportionally as the global moves.
 const DEFAULT_AMPLITUDE = 0.09;
 const DEFAULT_FREQUENCY = 1;
 const DEFAULT_SPEED = 1;
@@ -32,8 +38,6 @@ const DEFAULT_THICKNESS = 0.65;
 const DEFAULT_MOTION = 0.35;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
-// Pseudo-random 1D signal: sum of three cosines at coprime-ish frequencies
-// averaged to [-1, 1]. Feels organic and non-repeating over short windows.
 const wobble = (t: ShaderNodeObject<Node>) =>
   cos(t)
     .add(cos(t.mul(1.3).add(1.3)))
@@ -50,9 +54,6 @@ export function WavesShader(props: WavesShaderProps) {
   const thicknessUniform = useAnimatableUniform<number>(props.thickness);
   const baselineUniform = useAnimatableUniform<number>(props.baseline);
 
-  // Stable stringified proxy of the layers array — used in deps to trigger
-  // material rebuild on any per-layer change. Mirrors LinearGradient's
-  // colorsKey/stopsKey pattern (see registry/linear-gradient/shader.tsx).
   const layersKey = props.layers
     .map(
       (l) =>
