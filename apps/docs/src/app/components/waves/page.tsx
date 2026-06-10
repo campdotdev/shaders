@@ -18,6 +18,7 @@ interface Params {
   glow: number;
   independence: number;
   drift: number;
+  baseline: number;
   layers: number;
 }
 
@@ -29,6 +30,7 @@ const INITIAL: Params = {
   glow: 1,
   independence: 0.5,
   drift: 0,
+  baseline: 0.1,
   layers: 10,
 };
 
@@ -45,6 +47,7 @@ export default function WavesPage() {
       pane.addBinding(local, 'glow', { min: 0, max: 3, step: 0.01 });
       pane.addBinding(local, 'independence', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'drift', { min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'baseline', { min: -1, max: 1, step: 0.01 });
       pane.addBlade({ view: 'separator' });
       pane.addBinding(local, 'layers', { min: 1, max: 20, step: 1 });
       pane.addButton({ title: 'Apply layers' }).on('click', sync);
@@ -63,6 +66,7 @@ export default function WavesPage() {
         <ShaderScene>
           <Waves
             amplitude={params.amplitude}
+            baseline={params.baseline}
             color={params.color}
             drift={params.drift}
             frequency={params.frequency}
