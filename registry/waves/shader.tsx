@@ -14,6 +14,7 @@ export interface WavesShaderProps {
   glow: AnimatableProp<number>;
   independence: AnimatableProp<number>;
   drift: AnimatableProp<number>;
+  baseline: AnimatableProp<number>;
   color: string;
   layers: number;
 }
@@ -49,6 +50,7 @@ export function WavesShader(props: WavesShaderProps) {
   const glowUniform = useAnimatableUniform<number>(props.glow);
   const independenceUniform = useAnimatableUniform<number>(props.independence);
   const driftUniform = useAnimatableUniform<number>(props.drift);
+  const baselineUniform = useAnimatableUniform<number>(props.baseline);
 
   useEffect(() => {
     if (!ctx) return;
@@ -58,7 +60,7 @@ export function WavesShader(props: WavesShaderProps) {
 
     const p = vec2(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1));
 
-    let yRunning = p.y.add(0.1);
+    let yRunning = p.y.add(baselineUniform);
     let waveColor = vec3(0, 0, 0);
 
     for (let i = 0; i < 10; i += 1) {
@@ -117,6 +119,7 @@ export function WavesShader(props: WavesShaderProps) {
     glowUniform,
     independenceUniform,
     driftUniform,
+    baselineUniform,
   ]);
 
   return null;

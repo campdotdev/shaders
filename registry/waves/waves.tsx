@@ -11,6 +11,7 @@ export interface WavesProps {
   glow?: AnimatableProp<number>;
   independence?: AnimatableProp<number>;
   drift?: AnimatableProp<number>;
+  baseline?: AnimatableProp<number>;
   color?: string;
   layers?: number;
 }
@@ -22,12 +23,14 @@ export function Waves({
   glow = 1,
   independence = 0.5,
   drift = 0,
+  baseline = 0.1,
   color = '#77eecc',
   layers = 10,
 }: WavesProps) {
   return (
     <WavesShader
       amplitude={amplitude}
+      baseline={baseline}
       color={color}
       drift={drift}
       frequency={frequency}
