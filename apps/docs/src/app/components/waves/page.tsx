@@ -17,7 +17,6 @@ interface Params {
   frequency: number;
   speed: number;
   layers: number;
-  interactive: boolean;
 }
 
 const INITIAL: Params = {
@@ -26,7 +25,6 @@ const INITIAL: Params = {
   frequency: 5,
   speed: 1,
   layers: 3,
-  interactive: true,
 };
 
 export default function WavesPage() {
@@ -41,13 +39,9 @@ export default function WavesPage() {
       pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
       pane.addBinding(local, 'layers', { min: 1, max: 6, step: 1 });
       pane.addBlade({ view: 'separator' });
-      pane.addBinding(local, 'interactive', {
-        label: 'interactive (cursor ripple)',
-      });
-      pane.addBlade({ view: 'separator' });
-      pane.addButton({ title: 'Apply layers / interactive' }).on('click', sync);
+      pane.addButton({ title: 'Apply layers' }).on('click', sync);
       pane.on('change', (ev) => {
-        if ('key' in ev.target && (ev.target.key === 'layers' || ev.target.key === 'interactive')) {
+        if ('key' in ev.target && ev.target.key === 'layers') {
           return;
         }
         sync();
@@ -63,7 +57,6 @@ export default function WavesPage() {
             amplitude={params.amplitude}
             color={params.color}
             frequency={params.frequency}
-            interactive={params.interactive}
             layers={params.layers}
             speed={params.speed}
           />
@@ -94,7 +87,7 @@ export default function WavesPage() {
           }}
         >
           {`<ShaderScene>
-  <Waves amplitude={0.1} frequency={5} speed={1} layers={3} interactive />
+  <Waves amplitude={0.1} frequency={5} speed={1} layers={3} />
 </ShaderScene>`}
         </pre>
       </section>

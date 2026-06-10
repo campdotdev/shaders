@@ -67,19 +67,11 @@ export function ReducedMotionDemo() {
             Waves
           </p>
           <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#666' }}>
-            Hover over the canvas to trigger the cursor ripple — it should also freeze when policy
-            is paused.
+            The waves should freeze when policy is paused.
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
             <ShaderScene style={{ borderRadius: 8 }}>
-              <Waves
-                amplitude={0.1}
-                color="#77eecc"
-                frequency={5}
-                interactive
-                layers={3}
-                speed={1}
-              />
+              <Waves amplitude={0.1} color="#77eecc" frequency={5} layers={3} speed={1} />
             </ShaderScene>
           </div>
         </div>
