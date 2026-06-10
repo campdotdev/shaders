@@ -11,9 +11,9 @@ export interface WavesShaderProps {
   amplitude: AnimatableProp<number>;
   frequency: AnimatableProp<number>;
   speed: AnimatableProp<number>;
-  intensity: AnimatableProp<number>;
-  sharpness: AnimatableProp<number>;
+  glow: AnimatableProp<number>;
   independence: AnimatableProp<number>;
+  drift: AnimatableProp<number>;
   color: string;
   layers: number;
 }
@@ -46,9 +46,9 @@ export function WavesShader(props: WavesShaderProps) {
   const ampUniform = useAnimatableUniform<number>(props.amplitude);
   const freqUniform = useAnimatableUniform<number>(props.frequency);
   const speedUniform = useAnimatableUniform<number>(props.speed);
-  const intensityUniform = useAnimatableUniform<number>(props.intensity);
-  const sharpnessUniform = useAnimatableUniform<number>(props.sharpness);
+  const glowUniform = useAnimatableUniform<number>(props.glow);
   const independenceUniform = useAnimatableUniform<number>(props.independence);
+  const driftUniform = useAnimatableUniform<number>(props.drift);
 
   useEffect(() => {
     if (!ctx) return;
@@ -62,26 +62,32 @@ export function WavesShader(props: WavesShaderProps) {
     let waveColor = vec3(0, 0, 0);
 
     for (let i = 0; i < 10; i += 1) {
-      // Per-layer time multiplier: at independence=0 every layer runs at
-      // speedUniform (locked). At independence=1, layer i runs at
-      // speedUniform * (1 + i/10) — up to 1.9x for the last band. Mixed
-      // values drift slowly in and out of sync.
-      const layerTime = time.mul(speedUniform).mul(independenceUniform.mul(i / 10).add(1));
+      // independence: static phase spread between layers. Deterministic per
+      // slider value — never depends on elapsed time. independence=0 → all
+      // layers use identical wave input; independence=1 → layer i is offset
+      // by i/7 in phase.
+      const layerPhase = independenceUniform.mul(i / 7);
+      // drift: per-layer time-rate variance. Layers diverge OVER TIME — at
+      // drift>0 the visible state at "drift=X" depends on accumulated wall
+      // clock since animation started, so it's not deterministic across
+      // slider sweeps. Default 0 (locked, deterministic).
+      const layerTime = time.mul(speedUniform).mul(driftUniform.mul(i / 10).add(1));
 
       yRunning = yRunning.add(
-        wobble(p.x.mul(freqUniform).add(i / 7).add(layerTime)).mul(ampUniform),
+        wobble(p.x.mul(freqUniform).add(layerPhase).add(layerTime)).mul(ampUniform),
       );
 
-      const width = yRunning.mul(sharpnessUniform).abs().reciprocal();
+      // width = glow / (150 * |yRunning|). The 150 is a hidden scale constant;
+      // glow=1 matches the original ShaderToy default look, glow=0 = invisible,
+      // glow > 1 = blown out / wider bloom.
+      const width = yRunning.mul(150).abs().reciprocal().mul(glowUniform);
 
       waveColor = waveColor.add(vec3(width.mul(1.9), width, width.mul(1.5)));
     }
 
-    const finalColor = waveColor.mul(intensityUniform);
-
     const material = new MeshBasicNodeMaterial();
 
-    material.colorNode = vec4(finalColor, 1);
+    material.colorNode = vec4(waveColor, 1);
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -108,9 +114,9 @@ export function WavesShader(props: WavesShaderProps) {
     ampUniform,
     freqUniform,
     speedUniform,
-    intensityUniform,
-    sharpnessUniform,
+    glowUniform,
     independenceUniform,
+    driftUniform,
   ]);
 
   return null;
