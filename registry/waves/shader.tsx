@@ -4,9 +4,8 @@ import { useEffect, useMemo } from 'react';
 
 import { time } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
-import type { ShaderNodeObject } from 'three/tsl';
-import { mix, sin, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
+import { sin, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 export interface WavesShaderProps {
   amplitude: AnimatableProp<number>;
@@ -26,46 +25,6 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
   ];
 };
 
-function buildWavesMaterial(
-  ampU: ShaderNodeObject<Node>,
-  freqU: ShaderNodeObject<Node>,
-  speedU: ShaderNodeObject<Node>,
-  layers: number,
-  color: readonly [number, number, number],
-): MeshBasicNodeMaterial {
-  const [cr, cg, cb] = color;
-  const zeroScalar = vec2(0).x;
-  const uvX = uv().x;
-  const tNode = time;
-
-  let waveSum: ShaderNodeObject<Node> = sin(uvX.mul(freqU).add(tNode.mul(speedU)));
-  let totalAmp = 1;
-
-  for (let i = 1; i < layers; i += 1) {
-    const layerFreq = zeroScalar.add(freqU).mul(1 + i * 0.7);
-    const layerSpeed = zeroScalar.add(speedU).mul(1 + i * 0.4);
-    const layerAmp = 1 / (i + 1);
-    const phase = i * 1.3;
-    const layer = sin(uvX.mul(layerFreq).add(tNode.mul(layerSpeed).add(phase)));
-
-    waveSum = waveSum.add(layer.mul(layerAmp));
-    totalAmp += layerAmp;
-  }
-
-  const baseWave = waveSum.div(totalAmp).mul(ampU);
-  const distFromBand = uv().y.sub(0.5).sub(baseWave).abs();
-  const mask = smoothstep(0.04, 0.0, distFromBand);
-
-  const colorVec = vec3(cr, cg, cb);
-  const waveColor = mix(vec3(0, 0, 0), colorVec, mask);
-
-  const material = new MeshBasicNodeMaterial();
-
-  material.colorNode = vec4(waveColor, mask);
-
-  return material;
-}
-
 export function WavesShader(props: WavesShaderProps) {
   const ctx = useShaderContext();
   const layers = Math.max(1, props.layers);
@@ -79,7 +38,42 @@ export function WavesShader(props: WavesShaderProps) {
   useEffect(() => {
     if (!ctx) return;
 
-    const material = buildWavesMaterial(ampUniform, freqUniform, speedUniform, layers, color);
+    // Phase 2: single unrolled iteration. layers/color hardcoded for now.
+    void layers;
+    void color;
+
+    // 1. Remap UV from [0, 1] (sampler space) to [-1, 1] (centered space).
+    //    Now y = 0 is the vertical midline of the canvas.
+    const p = vec2(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1));
+
+    // 2. Initial baseline shift — matches the ShaderToy's `uv.y += 0.1`.
+    //    yRunning mutates per loop iteration (in JS scope), mirroring GLSL's
+    //    `uv.y +=`. TSL nodes are immutable, so we rebind a JS `let` to a new node.
+    let yRunning = p.y.add(0.1);
+
+    // 3. One unrolled iteration of the wave loop with i = 0.
+    //    GLSL: uv.y += 0.07 * sin(uv.x + 0/7 + iTime)
+    const i = 0;
+
+    yRunning = yRunning.add(
+      sin(
+        p.x
+          .mul(freqUniform)
+          .add(i / 7)
+          .add(time.mul(speedUniform)),
+      ).mul(ampUniform),
+    );
+
+    // 4. Proximity glow: width = abs(1 / (150 * yRunning)).
+    const width = yRunning.mul(150).abs().reciprocal();
+
+    // 5. Additive color with hardcoded channel weights matching the ShaderToy.
+    const waveColor = vec3(width.mul(1.9), width, width.mul(1.5));
+
+    const material = new MeshBasicNodeMaterial();
+
+    material.colorNode = vec4(waveColor, 1);
+
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
     ctx.scene.add(mesh);
