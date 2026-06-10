@@ -15,9 +15,9 @@ interface Params {
   amplitude: number;
   frequency: number;
   speed: number;
-  intensity: number;
-  sharpness: number;
+  glow: number;
   independence: number;
+  drift: number;
   layers: number;
 }
 
@@ -26,9 +26,9 @@ const INITIAL: Params = {
   amplitude: 0.07,
   frequency: 1,
   speed: 1,
-  intensity: 1,
-  sharpness: 150,
+  glow: 1,
   independence: 0.5,
+  drift: 0,
   layers: 10,
 };
 
@@ -42,9 +42,9 @@ export default function WavesPage() {
       pane.addBinding(local, 'amplitude', { min: 0, max: 0.3, step: 0.005 });
       pane.addBinding(local, 'frequency', { min: 0.1, max: 10, step: 0.05 });
       pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
-      pane.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
-      pane.addBinding(local, 'sharpness', { min: 20, max: 500, step: 1 });
+      pane.addBinding(local, 'glow', { min: 0, max: 3, step: 0.01 });
       pane.addBinding(local, 'independence', { min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'drift', { min: 0, max: 1, step: 0.01 });
       pane.addBlade({ view: 'separator' });
       pane.addBinding(local, 'layers', { min: 1, max: 20, step: 1 });
       pane.addButton({ title: 'Apply layers' }).on('click', sync);
@@ -64,11 +64,11 @@ export default function WavesPage() {
           <Waves
             amplitude={params.amplitude}
             color={params.color}
+            drift={params.drift}
             frequency={params.frequency}
+            glow={params.glow}
             independence={params.independence}
-            intensity={params.intensity}
             layers={params.layers}
-            sharpness={params.sharpness}
             speed={params.speed}
           />
           <VisualTestPause />
