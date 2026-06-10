@@ -7,6 +7,8 @@ import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lo
 import { cos, type ShaderNodeObject, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
+import { parseHex } from '../utils/color';
+
 export interface WavesShaderProps {
   amplitude: AnimatableProp<number>;
   frequency: AnimatableProp<number>;
@@ -18,16 +20,6 @@ export interface WavesShaderProps {
   color: string;
   layers: number;
 }
-
-const hexToVec3 = (hex: string): readonly [number, number, number] => {
-  const clean = hex.replace('#', '');
-
-  return [
-    parseInt(clean.slice(0, 2), 16) / 255,
-    parseInt(clean.slice(2, 4), 16) / 255,
-    parseInt(clean.slice(4, 6), 16) / 255,
-  ];
-};
 
 // Pseudo-random 1D signal: sum of three cosines at coprime-ish frequencies
 // averaged to [-1, 1]. Feels organic and non-repeating over short windows —
@@ -42,7 +34,7 @@ export function WavesShader(props: WavesShaderProps) {
   const ctx = useShaderContext();
   const layers = Math.max(1, props.layers);
 
-  const color = useMemo(() => hexToVec3(props.color), [props.color]);
+  const color = useMemo(() => parseHex(props.color), [props.color]);
 
   const ampUniform = useAnimatableUniform<number>(props.amplitude);
   const freqUniform = useAnimatableUniform<number>(props.frequency);
@@ -56,7 +48,11 @@ export function WavesShader(props: WavesShaderProps) {
     if (!ctx) return;
 
     void layers;
-    void color;
+
+    // Color baked as JS literals into the TSL graph — changing color triggers
+    // material rebuild via the `color` dep below. Same pattern LinearGradient
+    // uses for its stops (gotcha #17 exception: not interactive frequency).
+    const [cr, cg, cb] = color;
 
     const p = vec2(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1));
 
@@ -84,7 +80,7 @@ export function WavesShader(props: WavesShaderProps) {
       // glow > 1 = blown out / wider bloom.
       const width = yRunning.mul(150).abs().reciprocal().mul(glowUniform);
 
-      waveColor = waveColor.add(vec3(width.mul(1.9), width, width.mul(1.5)));
+      waveColor = waveColor.add(vec3(width.mul(cr), width.mul(cg), width.mul(cb)));
     }
 
     const material = new MeshBasicNodeMaterial();
