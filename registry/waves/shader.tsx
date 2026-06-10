@@ -38,37 +38,28 @@ export function WavesShader(props: WavesShaderProps) {
   useEffect(() => {
     if (!ctx) return;
 
-    // Phase 2: single unrolled iteration. layers/color hardcoded for now.
     void layers;
     void color;
 
-    // 1. Remap UV from [0, 1] (sampler space) to [-1, 1] (centered space).
-    //    Now y = 0 is the vertical midline of the canvas.
     const p = vec2(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1));
 
-    // 2. Initial baseline shift — matches the ShaderToy's `uv.y += 0.1`.
-    //    yRunning mutates per loop iteration (in JS scope), mirroring GLSL's
-    //    `uv.y +=`. TSL nodes are immutable, so we rebind a JS `let` to a new node.
     let yRunning = p.y.add(0.1);
+    let waveColor = vec3(0, 0, 0);
 
-    // 3. One unrolled iteration of the wave loop with i = 0.
-    //    GLSL: uv.y += 0.07 * sin(uv.x + 0/7 + iTime)
-    const i = 0;
+    for (let i = 0; i < 10; i += 1) {
+      yRunning = yRunning.add(
+        sin(
+          p.x
+            .mul(freqUniform)
+            .add(i / 7)
+            .add(time.mul(speedUniform)),
+        ).mul(ampUniform),
+      );
 
-    yRunning = yRunning.add(
-      sin(
-        p.x
-          .mul(freqUniform)
-          .add(i / 7)
-          .add(time.mul(speedUniform)),
-      ).mul(ampUniform),
-    );
+      const width = yRunning.mul(150).abs().reciprocal();
 
-    // 4. Proximity glow: width = abs(1 / (150 * yRunning)).
-    const width = yRunning.mul(150).abs().reciprocal();
-
-    // 5. Additive color with hardcoded channel weights matching the ShaderToy.
-    const waveColor = vec3(width.mul(1.9), width, width.mul(1.5));
+      waveColor = waveColor.add(vec3(width.mul(1.9), width, width.mul(1.5)));
+    }
 
     const material = new MeshBasicNodeMaterial();
 
