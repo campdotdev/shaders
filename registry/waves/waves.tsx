@@ -24,7 +24,7 @@ export function Waves({
   independence = 0.5,
   drift = 0,
   baseline = 0.1,
-  color = '#77eecc',
+  color = '#77ebce', // palette.teal.light
   layers = 10,
 }: WavesProps) {
   return (

@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 
+import { palette } from '@/lib/palette';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
@@ -23,7 +24,7 @@ interface Params {
 }
 
 const INITIAL: Params = {
-  color: '#77eecc',
+  color: palette.teal.light,
   amplitude: 0.07,
   frequency: 1,
   speed: 1,
@@ -103,11 +104,14 @@ export default function WavesPage() {
         >
           {`<ShaderScene>
   <Waves
+    color="#77ebce"
     amplitude={0.07}
     frequency={1}
     speed={1}
-    intensity={1}
-    sharpness={150}
+    glow={1}
+    independence={0.5}
+    drift={0}
+    baseline={0.1}
     layers={10}
   />
 </ShaderScene>`}
