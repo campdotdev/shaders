@@ -71,7 +71,7 @@ export function ReducedMotionDemo() {
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
             <ShaderScene style={{ borderRadius: 8 }}>
-              <Waves amplitude={0.1} color="#77eecc" frequency={5} layers={3} speed={1} />
+              <Waves />
             </ShaderScene>
           </div>
         </div>
