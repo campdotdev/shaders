@@ -17,6 +17,7 @@ interface Params {
   speed: number;
   intensity: number;
   sharpness: number;
+  independence: number;
   layers: number;
 }
 
@@ -27,6 +28,7 @@ const INITIAL: Params = {
   speed: 1,
   intensity: 1,
   sharpness: 150,
+  independence: 0.5,
   layers: 10,
 };
 
@@ -42,6 +44,7 @@ export default function WavesPage() {
       pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
       pane.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
       pane.addBinding(local, 'sharpness', { min: 20, max: 500, step: 1 });
+      pane.addBinding(local, 'independence', { min: 0, max: 1, step: 0.01 });
       pane.addBlade({ view: 'separator' });
       pane.addBinding(local, 'layers', { min: 1, max: 20, step: 1 });
       pane.addButton({ title: 'Apply layers' }).on('click', sync);
@@ -62,10 +65,11 @@ export default function WavesPage() {
             amplitude={params.amplitude}
             color={params.color}
             frequency={params.frequency}
+            independence={params.independence}
             intensity={params.intensity}
             layers={params.layers}
-            speed={params.speed}
             sharpness={params.sharpness}
+            speed={params.speed}
           />
           <VisualTestPause />
         </ShaderScene>
