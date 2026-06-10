@@ -11,6 +11,7 @@ export interface WavesShaderProps {
   amplitude: AnimatableProp<number>;
   frequency: AnimatableProp<number>;
   speed: AnimatableProp<number>;
+  intensity: AnimatableProp<number>;
   color: string;
   layers: number;
 }
@@ -34,6 +35,7 @@ export function WavesShader(props: WavesShaderProps) {
   const ampUniform = useAnimatableUniform<number>(props.amplitude);
   const freqUniform = useAnimatableUniform<number>(props.frequency);
   const speedUniform = useAnimatableUniform<number>(props.speed);
+  const intensityUniform = useAnimatableUniform<number>(props.intensity);
 
   useEffect(() => {
     if (!ctx) return;
@@ -61,9 +63,11 @@ export function WavesShader(props: WavesShaderProps) {
       waveColor = waveColor.add(vec3(width.mul(1.9), width, width.mul(1.5)));
     }
 
+    const finalColor = waveColor.mul(intensityUniform);
+
     const material = new MeshBasicNodeMaterial();
 
-    material.colorNode = vec4(waveColor, 1);
+    material.colorNode = vec4(finalColor, 1);
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -83,7 +87,7 @@ export function WavesShader(props: WavesShaderProps) {
         /* same */
       }
     };
-  }, [ctx, layers, color, ampUniform, freqUniform, speedUniform]);
+  }, [ctx, layers, color, ampUniform, freqUniform, speedUniform, intensityUniform]);
 
   return null;
 }

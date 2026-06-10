@@ -2,7 +2,6 @@
 
 import dynamic from 'next/dynamic';
 
-import { palette } from '@/lib/palette';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
@@ -16,15 +15,17 @@ interface Params {
   amplitude: number;
   frequency: number;
   speed: number;
+  intensity: number;
   layers: number;
 }
 
 const INITIAL: Params = {
-  color: palette.teal.base,
-  amplitude: 0.1,
-  frequency: 5,
+  color: '#77eecc',
+  amplitude: 0.07,
+  frequency: 1,
   speed: 1,
-  layers: 3,
+  intensity: 1,
+  layers: 10,
 };
 
 export default function WavesPage() {
@@ -34,11 +35,12 @@ export default function WavesPage() {
     (pane, local, sync) => {
       pane.addBinding(local, 'color');
       pane.addBlade({ view: 'separator' });
-      pane.addBinding(local, 'amplitude', { min: 0, max: 0.5, step: 0.005 });
-      pane.addBinding(local, 'frequency', { min: 1, max: 30, step: 0.1 });
+      pane.addBinding(local, 'amplitude', { min: 0, max: 0.3, step: 0.005 });
+      pane.addBinding(local, 'frequency', { min: 0.1, max: 10, step: 0.05 });
       pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
-      pane.addBinding(local, 'layers', { min: 1, max: 6, step: 1 });
+      pane.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
       pane.addBlade({ view: 'separator' });
+      pane.addBinding(local, 'layers', { min: 1, max: 20, step: 1 });
       pane.addButton({ title: 'Apply layers' }).on('click', sync);
       pane.on('change', (ev) => {
         if ('key' in ev.target && ev.target.key === 'layers') {
@@ -57,6 +59,7 @@ export default function WavesPage() {
             amplitude={params.amplitude}
             color={params.color}
             frequency={params.frequency}
+            intensity={params.intensity}
             layers={params.layers}
             speed={params.speed}
           />
@@ -87,7 +90,7 @@ export default function WavesPage() {
           }}
         >
           {`<ShaderScene>
-  <Waves amplitude={0.1} frequency={5} speed={1} layers={3} />
+  <Waves amplitude={0.07} frequency={1} speed={1} intensity={1} layers={10} />
 </ShaderScene>`}
         </pre>
       </section>

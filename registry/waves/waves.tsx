@@ -8,22 +8,25 @@ export interface WavesProps {
   amplitude?: AnimatableProp<number>;
   frequency?: AnimatableProp<number>;
   speed?: AnimatableProp<number>;
+  intensity?: AnimatableProp<number>;
   color?: string;
   layers?: number;
 }
 
 export function Waves({
-  amplitude = 0.1,
-  frequency = 5,
+  amplitude = 0.07,
+  frequency = 1,
   speed = 1,
-  color = '#00cda6',
-  layers = 3,
+  intensity = 1,
+  color = '#77eecc',
+  layers = 10,
 }: WavesProps) {
   return (
     <WavesShader
       amplitude={amplitude}
       color={color}
       frequency={frequency}
+      intensity={intensity}
       layers={layers}
       speed={speed}
     />
