@@ -9,6 +9,7 @@ export interface WavesProps {
   frequency?: AnimatableProp<number>;
   speed?: AnimatableProp<number>;
   intensity?: AnimatableProp<number>;
+  sharpness?: AnimatableProp<number>;
   color?: string;
   layers?: number;
 }
@@ -18,6 +19,7 @@ export function Waves({
   frequency = 1,
   speed = 1,
   intensity = 1,
+  sharpness = 150,
   color = '#77eecc',
   layers = 10,
 }: WavesProps) {
@@ -29,6 +31,7 @@ export function Waves({
       intensity={intensity}
       layers={layers}
       speed={speed}
+      sharpness={sharpness}
     />
   );
 }
