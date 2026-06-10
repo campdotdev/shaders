@@ -54,7 +54,7 @@
     },
     "waves": {
       "file": "waves/waves.tsx",
-      "description": "Additive proximity-glow wave field: stacked layers of pseudo-random cosines (wobble) with tunable glow, independence, drift, baseline, color, amplitude, frequency, and speed.",
+      "description": "Additive proximity-glow wave field with per-layer color, amplitude, frequency, speed, glow, thickness, offset, and motion plus global glow, thickness, and baseline controls.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["cos", "uv", "vec2", "vec3", "vec4", "time", "uniform"],
       "tier": 1
