@@ -10,7 +10,7 @@ import {
   useShaderContext,
 } from '@lovo/matter-react';
 import { abs, cos, mix, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 
 import { parseHex } from '../utils/color';
 
@@ -76,16 +76,18 @@ export function MeshGradientShader({
   const frequencyU = useAnimatableUniform<number>(frequency);
   const amplitudeU = useAnimatableUniform<number>(amplitude);
 
-  const resVec = useMemo(() => new Vector2(1920, 1080), []);
-  const resNode = useMemo(() => uniform(resVec), [resVec]);
+  const [iw, ih] = resize.get();
+  const aspectNode = useMemo(() => uniform(ih > 0 ? iw / ih : 16 / 9), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const [w, h] = resize.get();
 
-    if (w > 0 && h > 0) resVec.set(w, h);
+    if (w > 0 && h > 0) aspectNode.value = w / h;
 
-    return resize.on('change', ([w2, h2]) => resVec.set(w2, h2));
-  }, [resize, resVec]);
+    return resize.on('change', ([w2, h2]) => {
+      if (w2 > 0 && h2 > 0) aspectNode.value = w2 / h2;
+    });
+  }, [resize, aspectNode]);
 
   useEffect(() => {
     if (!ctx) return;
@@ -104,7 +106,7 @@ export function MeshGradientShader({
     const angle = degree01.sub(0.5).mul(TWO_TURNS_RAD).add(ROT_BIAS_RAD);
 
     // ---- Aspect-corrected rotation -----------------------------------
-    const aspect = resNode.x.div(resNode.y);
+    const aspect = aspectNode;
     const ty = tuvRaw.y.div(aspect);
     const c = cos(angle);
     const s = sin(angle);
@@ -168,7 +170,7 @@ export function MeshGradientShader({
     };
   }, [
     ctx,
-    resNode,
+    aspectNode,
     speedU,
     frequencyU,
     amplitudeU,
