@@ -15,7 +15,6 @@ import {
   MeshBasicNodeMaterial,
   type Node,
   PlaneGeometry,
-  Vector2,
   Vector3,
 } from 'three/webgpu';
 
@@ -132,16 +131,18 @@ export function AuroraShader(props: AuroraShaderProps) {
   const driftYU = useAnimatableUniform<number>(props.driftY);
   const turbulenceU = useAnimatableUniform<number>(props.turbulence);
 
-  const resVec = useMemo(() => new Vector2(1920, 1080), []);
-  const resNode = useMemo(() => uniform(resVec), [resVec]);
+  const [iw, ih] = resize.get();
+  const aspectNode = useMemo(() => uniform(ih > 0 ? iw / ih : 16 / 9), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const [w, h] = resize.get();
 
-    if (w > 0 && h > 0) resVec.set(w, h);
+    if (w > 0 && h > 0) aspectNode.value = w / h;
 
-    return resize.on('change', ([w2, h2]) => resVec.set(w2, h2));
-  }, [resize, resVec]);
+    return resize.on('change', ([w2, h2]) => {
+      if (w2 > 0 && h2 > 0) aspectNode.value = w2 / h2;
+    });
+  }, [resize, aspectNode]);
 
   const dirVec = useMemo(
     () => {
@@ -188,7 +189,7 @@ export function AuroraShader(props: AuroraShaderProps) {
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
 
-    const aspect = resNode.x.div(resNode.y);
+    const aspect = aspectNode;
     const scaledUv = vec2(uv().x.mul(aspect).mul(densityXU), uv().y.mul(densityYU));
 
     const fallOff = uv().x.mul(dirNode.x).add(uv().y.mul(dirNode.y)).add(dirNode.z);
@@ -255,7 +256,7 @@ export function AuroraShader(props: AuroraShaderProps) {
     turbulenceU,
     horizonNode,
     skyNode,
-    resNode,
+    aspectNode,
     dirNode,
   ]);
 

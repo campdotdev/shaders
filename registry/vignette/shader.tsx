@@ -62,20 +62,22 @@ export function VignetteShader({
   }, [color, colorVec]);
 
   const resize = useResize();
-  const resVec = useMemo(() => new Vector2(1920, 1080), []);
-  const resNode = useMemo(() => uniform(resVec), [resVec]);
+  const [iw, ih] = resize.get();
+  const aspectNode = useMemo(() => uniform(ih > 0 ? iw / ih : 16 / 9), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const [w, h] = resize.get();
 
-    if (w > 0 && h > 0) resVec.set(w, h);
+    if (w > 0 && h > 0) aspectNode.value = w / h;
 
-    return resize.on('change', ([w2, h2]) => resVec.set(w2, h2));
-  }, [resize, resVec]);
+    return resize.on('change', ([w2, h2]) => {
+      if (w2 > 0 && h2 > 0) aspectNode.value = w2 / h2;
+    });
+  }, [resize, aspectNode]);
 
   useOverlayPass(
     (input) => {
-      const aspect = resNode.x.div(resNode.y);
+      const aspect = aspectNode;
       const centered = uv().sub(centerU);
       const corrected = vec2(centered.x.mul(aspect), centered.y);
       const dist = length(corrected);
@@ -86,7 +88,7 @@ export function VignetteShader({
 
       return tslMix(input, vec4(colorU, 1), factor);
     },
-    [intensityU, softnessU, radiusU, centerU, colorU, resNode],
+    [intensityU, softnessU, radiusU, centerU, colorU, aspectNode],
   );
 
   return null;
