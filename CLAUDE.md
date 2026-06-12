@@ -48,7 +48,14 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 | 7   | Vite+ adoption (runtime + pkg mgr + `vp migrate` consolidated with Oxlint + Oxfmt) | ✅ Complete | `m7-complete` |
 | 7.1 | tsup → tsdown (3 packages)                                                         | Cancelled   | (M8 reverted Vite+) |
 | 7.2 | Turborepo → `vp run`                                                               | Cancelled   | (M8 reverted Vite+) |
-| 8   | Vite+ removal — `vp implode`, back to plain pnpm/vite/vitest; Oxlint → ESLint 9   | In progress | —             |
+| 8   | Vite+ removal — `vp implode`, back to plain pnpm/vite/vitest; Oxlint → ESLint 9   | ✅ Complete | —             |
+| 9   | Drop pure TSL re-exports from `@lovo/matter`                                       | ✅ Complete | `m9-complete` / `v0.2.0` |
+| MAT-8  | MeshGradient full rebuild (noise rotation, domain warp, palette cycling, film grain primitive) | ✅ Complete | —             |
+| MAT-16 | FilmGrain + Vignette overlay pipeline; `useOverlayPass`; PostProcessing in MatterScene | ✅ Complete | —             |
+| MAT-13 | Brand-aligned OKLCH palette; `/palette` ref page; all component defaults pivoted | ✅ Complete | `v0.3.0`      |
+| —   | Per-layer `<Waves>` API (`layers: WaveLayer[]` + per-layer Tweakpane UI)           | ✅ Complete | `v0.4.1`      |
+
+> Latest published version: **`v0.4.1`**. M7.1, M7.2 (tsdown, `vp run`) were cancelled when M8 reverted the Vite+ adoption.
 
 Each milestone is its own session and its own implementation plan. Don't try to do multiple milestones in one session.
 
@@ -119,7 +126,7 @@ pnpm smoke
     oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } },
     ```
     This means per-package vitest configs no longer share the tsconfig chain with the rest of the toolchain — a divergence to be aware of. Upstream fix likely arrives when OXC supports TS 5.5's `${configDir}` (track Rolldown/oxc-project).
-16. **`vp build` (without `run`) fails in our monorepo with "no root index.html"** because vp's build command expects an SPA root. Use `vp run build` (note the `run`) — it delegates to each package's build script via Turborepo and matches `pnpm build` behavior. The pnpm scripts (`pnpm build`, `pnpm typecheck`, etc.) all continue to work and are the recommended surface for CI.
+16. **(Historical — Vite+ removed in M8)** `vp` is gone; use the plain `pnpm` scripts (`pnpm build`, `pnpm typecheck`, etc.) for everything. Kept for context: while Vite+ was in use, `vp build` (without `run`) failed in our monorepo with "no root index.html" because vp's build command expected an SPA root, so `vp run build` was required to delegate to each package's build script via Turborepo. None of this applies post-M8.
 17. **Never rebuild a `NodeMaterial` on prop change — push prop values through stable `uniform(...)` nodes instead.** Compiling/linking a TSL material is heavy (~tens of ms on first frame, similar on rebuild); doing it on every Tweakpane drag turns 60Hz interaction into a stutter. The canonical pattern (used in `aurora/shader.tsx`, `mesh-gradient/shader.tsx`, `vignette/shader.tsx`) is: hold the live value in a stable `Vector2`/`Vector3` via `useMemo([])`, wrap it in a stable `uniform(vec)` node, and in a lightweight `useEffect` push prop → `vec.set(...)`. The material-construction `useEffect` then depends only on stable uniform-node references and the `ctx`, so it runs once per mount. **Exceptions where rebuild is unavoidable:** the structural shape of the TSL graph itself changes (color-ramp stop count, layer count, branching mode) — `LinearGradient` and `SimplexNoise` currently rebuild on `colors`/`stops` changes because `colorRamp` bakes positions/colors as literals; acceptable as long as colors don't change at interactive frequency, but if a future feature drives colors live at 60Hz, the ramp would need to accept uniform-node colors.
 18. **`useShaderMaterial(build)` rebuilds the material whenever `build`'s reference changes.** The internal `useMemo([build])` is intentional (it's what propagates structural changes to the TSL graph), so the burden is on the caller: memoize the build callback with `useCallback`, or — better — hoist it outside the component if it doesn't close over props. Passing an inline `() => …` will recreate the material on every render. There's a test that asserts this behavior, so don't "fix" it by removing the dep; instead, callers must memoize.
 19. **Strings/arrays/tuples passed as props need a stable proxy in `useEffect` deps**, or every parent render rebuilds the material. Patterns we use: stringify (`colors.join('|')`, `stops?.join('|') ?? ''`) for arrays whose identity is unstable but content is what matters; route fixed-size tuples through a `Vector2`/`Vector3` uniform (see `vignette/shader.tsx`'s `center` handling) so the dep is the stable uniform node, not the tuple. Don't list raw arrays/tuples in a heavy effect's dep array.
