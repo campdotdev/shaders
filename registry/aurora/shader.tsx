@@ -10,13 +10,7 @@ import {
   useShaderContext,
 } from '@lovo/matter-react';
 import { type ShaderNodeObject, smoothstep, sub, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
-import {
-  Mesh,
-  MeshBasicNodeMaterial,
-  type Node,
-  PlaneGeometry,
-  Vector3,
-} from 'three/webgpu';
+import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry, Vector3 } from 'three/webgpu';
 
 import { parseHex } from '../utils/color';
 

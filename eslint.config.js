@@ -54,7 +54,8 @@ export default defineConfig([
       parserOptions: {
         projectService: {
           allowDefaultProject: [
-            'packages/*/*.config.{ts,mts,cts}',
+            'packages/matter/*.config.{ts,mts,cts}',
+            'packages/matter-react/*.config.{ts,mts,cts}',
             'packages/*/posters/*.{ts,tsx}',
           ],
           defaultProject: 'tsconfig.eslint.json',
