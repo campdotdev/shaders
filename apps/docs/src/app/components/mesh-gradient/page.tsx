@@ -15,9 +15,6 @@ const MeshGradient = dynamic(
   () => import('@matter/registry/mesh-gradient').then((m) => m.MeshGradient),
   { ssr: false },
 );
-const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
-  ssr: false,
-});
 
 interface Params {
   speed: number;
@@ -25,8 +22,6 @@ interface Params {
   amplitude: number;
   cycleSpeed: number;
   cycleEase: number;
-  grain: number;
-  grainSpeed: number;
   a0: string;
   a1: string;
   a2: string;
@@ -43,8 +38,6 @@ const INITIAL: Params = {
   amplitude: 30,
   cycleSpeed: 0.5,
   cycleEase: 0.6,
-  grain: 0.08,
-  grainSpeed: 1,
   a0: palette.lime.base,
   a1: palette.green.base,
   a2: palette.teal.base,
@@ -71,7 +64,6 @@ const fmtJsx = (p: Params) =>
     paletteA={${fmtPalette(p, 'a')}}
     paletteB={${fmtPalette(p, 'b')}}
   />
-  <FilmGrain intensity={${fmtNum(p.grain)}} speed={${fmtNum(p.grainSpeed)}} />
 </ShaderScene>`;
 
 const fmtParams = (p: Params) =>
@@ -83,8 +75,6 @@ const fmtParams = (p: Params) =>
   cycleEase: ${fmtNum(p.cycleEase)},
   paletteA: ${fmtPalette(p, 'a')},
   paletteB: ${fmtPalette(p, 'b')},
-  grain: ${fmtNum(p.grain)},
-  grainSpeed: ${fmtNum(p.grainSpeed)},
 }`;
 
 export default function MeshGradientPage() {
@@ -120,21 +110,6 @@ export default function MeshGradientPage() {
         step: 0.01,
       });
       pane.addBlade({ view: 'separator' });
-
-      const grainFolder = pane.addFolder({ title: 'FilmGrain overlay' });
-
-      grainFolder.addBinding(local, 'grain', {
-        label: 'intensity',
-        min: 0,
-        max: 1,
-        step: 0.01,
-      });
-      grainFolder.addBinding(local, 'grainSpeed', {
-        label: 'speed',
-        min: 0,
-        max: 5,
-        step: 0.01,
-      });
 
       const aFolder = pane.addFolder({ title: 'Palette A', expanded: false });
 
@@ -175,7 +150,6 @@ export default function MeshGradientPage() {
             paletteB={[params.b0, params.b1, params.b2, params.b3]}
             speed={params.speed}
           />
-          <FilmGrain intensity={params.grain} speed={params.grainSpeed} />
           <VisualTestPause />
         </ShaderScene>
         <div
@@ -195,9 +169,7 @@ export default function MeshGradientPage() {
         <h1 style={{ marginTop: 0 }}>&lt;MeshGradient /&gt;</h1>
         <p>
           Animated four-color mesh gradient with a time-cycling palette crossfade and a sine domain
-          warp for organic motion. Pure gradient — grain is supplied separately by{' '}
-          <code>&lt;FilmGrain&gt;</code>, stacked inside the same <code>&lt;ShaderScene&gt;</code>.
-          Drag grain to <code>0</code> in the panel to see the gradient on its own.
+          warp for organic motion.
         </p>
         <pre
           style={{
@@ -211,7 +183,6 @@ export default function MeshGradientPage() {
         >
           {`<ShaderScene>
   <MeshGradient />
-  <FilmGrain intensity={0.08} speed={1} />
 </ShaderScene>`}
         </pre>
       </section>
