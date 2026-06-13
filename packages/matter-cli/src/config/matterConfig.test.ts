@@ -65,7 +65,11 @@ describe('matterConfig', () => {
   });
 
   it('throws when required fields are missing', async () => {
-    await writeFile(join(dir, 'matter.config.json'), JSON.stringify({ tsx: true }), 'utf-8');
+    await writeFile(
+      join(dir, 'matter.config.json'),
+      JSON.stringify({ useTypeScript: true }),
+      'utf-8',
+    );
     await expect(readMatterConfig(dir)).rejects.toThrow(/componentsDir/);
   });
 });

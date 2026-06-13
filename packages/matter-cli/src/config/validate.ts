@@ -19,8 +19,8 @@ export function validateMatterConfig(parsed: unknown, path: string): MatterConfi
   if (!isRecord(obj.aliases)) {
     throw new Error(`${path}: missing "aliases" object`);
   }
-  if (typeof obj.tsx !== 'boolean') {
-    throw new Error(`${path}: missing "tsx" boolean`);
+  if (typeof obj.useTypeScript !== 'boolean') {
+    throw new Error(`${path}: missing "useTypeScript" boolean`);
   }
   const aliases: Record<string, string> = {};
 
@@ -35,6 +35,6 @@ export function validateMatterConfig(parsed: unknown, path: string): MatterConfi
     componentsDir: obj.componentsDir,
     registryUrl: obj.registryUrl,
     aliases,
-    tsx: obj.tsx,
+    useTypeScript: obj.useTypeScript,
   };
 }

@@ -23,7 +23,7 @@ describe('runInit', () => {
 
     expect(matterConfig.componentsDir).toBe('src/components/matter');
     expect(matterConfig.registryUrl).toContain('lovo-hq/matter');
-    expect(matterConfig.tsx).toBe(true);
+    expect(matterConfig.useTypeScript).toBe(true);
   });
 
   it('refuses to overwrite an existing config without --force', async () => {
