@@ -24,12 +24,12 @@ export const RECIPES: readonly RecipeEntry[] = [
 import { time, colorRamp } from '@lovo/matter'
 
 const stripe = sin(uv().x.mul(20).add(time.mul(2)))
-const t = stripe.mul(0.5).add(0.5).clamp(0, 1)
+const normalizedStripe = stripe.mul(0.5).add(0.5).clamp(0, 1)
 const stops = [
   { color: vec3(1, 0.5, 0.4), position: 0 },
   { color: vec3(0.4, 0.6, 1), position: 1 },
 ]
-material.colorNode = vec4(colorRamp(t, stops), 1)`,
+material.colorNode = vec4(colorRamp(normalizedStripe, stops), 1)`,
     variants: [
       {
         key: 'canonical',
@@ -60,8 +60,8 @@ import { Vector2 } from 'three/webgpu'
 // cursorUniform is a uniform(Vector2) updated by useCursor() in your component.
 const cursorUniform = uniform(new Vector2(0.5, 0.5))
 
-const dist = length(uv().sub(cursorUniform))
-const glow = smoothstep(0.3, 0, dist)
+const distance = length(uv().sub(cursorUniform))
+const glow = smoothstep(0.3, 0, distance)
 material.colorNode = vec4(glow, glow.mul(0.7), glow.mul(1.5), 1)`,
     variants: [
       {
@@ -89,15 +89,15 @@ material.colorNode = vec4(glow, glow.mul(0.7), glow.mul(1.5), 1)`,
     source: `import { uv, vec2, vec3, vec4 } from 'three/tsl'
 import { time, fbm, colorRamp } from '@lovo/matter'
 
-const t = time.mul(0.3)
-const p = uv().mul(2).add(vec2(t, t))
-const f = fbm(p, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1)
+const scrolledTime = time.mul(0.3)
+const samplePosition = uv().mul(2).add(vec2(scrolledTime, scrolledTime))
+const fbmValue = fbm(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1)
 const stops = [
   { color: vec3(0.4, 0.0, 0.8), position: 0 },
   { color: vec3(1, 0.4, 0.6), position: 0.5 },
   { color: vec3(0.4, 0.9, 1), position: 1 },
 ]
-material.colorNode = vec4(colorRamp(f, stops), 1)`,
+material.colorNode = vec4(colorRamp(fbmValue, stops), 1)`,
     variants: [
       {
         key: 'canonical',
