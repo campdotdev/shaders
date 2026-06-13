@@ -18,8 +18,8 @@ export interface FilmGrainShaderProps {
 }
 
 export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps) {
-  const intensityU = useAnimatableUniform<number>(intensity);
-  const speedU = useAnimatableUniform<number>(speed);
+  const intensityUniform = useAnimatableUniform<number>(intensity);
+  const speedUniform = useAnimatableUniform<number>(speed);
 
   const isStatic = typeof speed === 'number' && speed === 0;
 
@@ -27,8 +27,8 @@ export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps
 
   useOverlayPass(
     (input) => {
-      const grainTime = floor(time.mul(speedU).mul(60));
-      const grain = filmGrain(intensityU, grainTime);
+      const grainTime = floor(time.mul(speedUniform).mul(60));
+      const grain = filmGrain(intensityUniform, grainTime);
 
       if (mode === 'additive') {
         return input.add(vec4(grain, grain, grain, 0));
@@ -38,7 +38,7 @@ export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps
 
       return input.sub(vec4(positive, positive, positive, 0));
     },
-    [intensityU, speedU, mode],
+    [intensityUniform, speedUniform, mode],
   );
 
   return null;
