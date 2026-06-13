@@ -14,15 +14,15 @@ order: 10
 TSL building blocks for writing shader expressions. Each primitive is documented individually under [/primitives](/primitives) with a live demo and parameter sliders.
 
 - `colorRamp(stops, t)` — multi-stop color gradient sampled at `t` ∈ [0, 1].
-- `noise(uv, opts?)` — single-octave 2D value noise.
-- `fbm(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `scale`, `octaves`, `lacunarity`, `gain`, `speed`.
+- `simplexNoise(uv, opts?)` — single-octave 2D value noise.
+- `fractionalBrownianMotion(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `scale`, `octaves`, `lacunarity`, `gain`, `speed`.
 - `voronoi(uv, opts?)` — distance-to-nearest-feature noise.
 - `quantize(value, bins)` — posterize a float to discrete steps.
-- `sdfCircle(uv, radius, center)` — signed-distance field for a circle. Negative inside, positive outside.
+- `signedDistanceFieldCircle(uv, radius, center)` — signed-distance field for a circle. Negative inside, positive outside.
 - `displace(uv, offset)` — UV displacement helper.
 - `cursorRipple(uv, cursor, opts?)` — cursor-following ripple displacement (used by `<DotField>`).
 
-## Layering and `time`
+## Layering and `elapsedTime`
 
 Matter sits on top of Three.js's TSL. Pure TSL primitives (`uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`) live in `three/tsl` — import them directly from there:
 
@@ -30,17 +30,17 @@ Matter sits on top of Three.js's TSL. Pure TSL primitives (`uv`, `vec2`, `vec3`,
 import { uv, vec3, uniform, mix } from 'three/tsl'
 ```
 
-Matter exports one TSL node of its own: **`time`**. It's the TSL built-in `time` multiplied by an engine-owned reduced-motion scale uniform, so every component that animates against `time` from `@lovo/matter` automatically respects `prefers-reduced-motion` and the policy override set via `setReducedMotionPolicy`.
+Matter exports one TSL node of its own: **`elapsedTime`**. It's the TSL built-in `time` multiplied by an engine-owned reduced-motion scale uniform, so every component that animates against `elapsedTime` from `@lovo/matter` automatically respects `prefers-reduced-motion` and the policy override set via `setReducedMotionPolicy`.
 
 ```ts
-import { time } from '@lovo/matter'
+import { elapsedTime } from '@lovo/matter'
 //  → equivalent to three/tsl's `time.mul(reducedMotionScale)`
 
 // If you specifically want raw uncapped time (e.g. a debug overlay):
 import { time as rawTime } from 'three/tsl'
 ```
 
-> **Migrating from 0.1.x?** Before 0.2.0, `@lovo/matter` re-exported the TSL primitives listed above as a convenience. They're gone in 0.2.0 — replace `import { vec3, uv, … } from '@lovo/matter'` with `import { vec3, uv, … } from 'three/tsl'`. `time` is the only carry-over and stays imported from `@lovo/matter`.
+> **Migrating from 0.1.x?** Before 0.2.0, `@lovo/matter` re-exported the TSL primitives listed above as a convenience. They're gone in 0.2.0 — replace `import { vec3, uv, … } from '@lovo/matter'` with `import { vec3, uv, … } from 'three/tsl'`. `elapsedTime` (named `time` before 0.5.0) is the only carry-over and stays imported from `@lovo/matter`.
 
 ## Runtime
 
@@ -61,7 +61,7 @@ import { time as rawTime } from 'three/tsl'
 
 ## Type exports
 
-The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vec2`, `ColorRampStop`, `TSLNode`, `FBMOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`.
+The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vector2`, `ColorRampStop`, `TSLNode`, `FractionalBrownianMotionOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`.
 
 <Callout>
   For React-specific exports (`<ShaderScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@lovo/matter`.

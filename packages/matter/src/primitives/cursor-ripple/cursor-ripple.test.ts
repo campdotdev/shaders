@@ -1,7 +1,7 @@
 import { uv, vec2 } from 'three/tsl';
 import { describe, expect, it } from 'vitest';
 
-import { time as gatedTime } from '../time/time.js';
+import { elapsedTime as gatedTime } from '../time/time.js';
 import { cursorRipple } from './cursor-ripple.js';
 
 describe('cursorRipple', () => {

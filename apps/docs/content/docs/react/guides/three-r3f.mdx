@@ -21,11 +21,11 @@ Mode 2 doesn't auto-detect r3f — it's an explicit opt-in via the `useShaderMat
 ```tsx
 import { Canvas } from '@react-three/fiber'
 import { useShaderMaterial } from '@lovo/matter-react'
-import { fbm, uv, vec3, mix } from '@lovo/matter'
+import { fractionalBrownianMotion, uv, vec3, mix } from '@lovo/matter'
 
 function ShaderPlane() {
   const material = useShaderMaterial({
-    color: mix(vec3(0.1, 0.2, 0.6), vec3(0.8, 0.6, 0.2), fbm(uv())),
+    color: mix(vec3(0.1, 0.2, 0.6), vec3(0.8, 0.6, 0.2), fractionalBrownianMotion(uv())),
   })
   return (
     <mesh material={material}>
@@ -50,7 +50,7 @@ The material plays by r3f's rules — dispose, frameloop, demand-rendering all w
 
 - You're building a 3D scene (geometry, lights, cameras) that also wants shader-y materials.
 - You need fine control over the render loop (custom frameloop, post-processing chain).
-- You want to use Matter primitives (`fbm`, `voronoi`, `colorRamp`, …) without the constraints of a single full-bleed 2D quad.
+- You want to use Matter primitives (`fractionalBrownianMotion`, `voronoi`, `colorRamp`, …) without the constraints of a single full-bleed 2D quad.
 
 ## What you lose in Mode 2
 

@@ -17,6 +17,6 @@ import type { TSLNode } from '../color-ramp/color-ramp.js';
  * Returns `ShaderNodeObject<Node>` (chainable) rather than the broader
  * `TSLNode` union, so callers can `.add(...)`/`.mul(...)` without casting.
  */
-export function noise(p: TSLNode): ShaderNodeObject<Node> {
+export function simplexNoise(p: TSLNode): ShaderNodeObject<Node> {
   return mx_noise_float(p);
 }

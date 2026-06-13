@@ -21,9 +21,9 @@ export const RECIPES: readonly RecipeEntry[] = [
       'Warm/cool vertical bands that scroll horizontally. Simplest combination of sin, time, and colorRamp.',
     primitivesUsed: ['time', 'color-ramp'],
     source: `import { uv, vec3, vec4, sin } from 'three/tsl'
-import { time, colorRamp } from '@lovo/matter'
+import { elapsedTime, colorRamp } from '@lovo/matter'
 
-const stripe = sin(uv().x.mul(20).add(time.mul(2)))
+const stripe = sin(uv().x.mul(20).add(elapsedTime.mul(2)))
 const normalizedStripe = stripe.mul(0.5).add(0.5).clamp(0, 1)
 const stops = [
   { color: vec3(1, 0.5, 0.4), position: 0 },
@@ -44,7 +44,7 @@ material.colorNode = vec4(colorRamp(normalizedStripe, stops), 1)`,
       {
         key: 'pulse',
         label: 'Pulse',
-        note: 'Replace `time.mul(2)` with `sin(time).mul(2)` for a pulsing rather than scrolling feel.',
+        note: 'Replace `elapsedTime.mul(2)` with `sin(elapsedTime).mul(2)` for a pulsing rather than scrolling feel.',
       },
     ],
   },
@@ -87,11 +87,11 @@ material.colorNode = vec4(glow, glow.mul(0.7), glow.mul(1.5), 1)`,
     description: 'FBM-driven color swirl. The canonical "shader-y" look from one primitive.',
     primitivesUsed: ['fbm', 'time', 'color-ramp'],
     source: `import { uv, vec2, vec3, vec4 } from 'three/tsl'
-import { time, fbm, colorRamp } from '@lovo/matter'
+import { elapsedTime, fractionalBrownianMotion, colorRamp } from '@lovo/matter'
 
-const scrolledTime = time.mul(0.3)
+const scrolledTime = elapsedTime.mul(0.3)
 const samplePosition = uv().mul(2).add(vec2(scrolledTime, scrolledTime))
-const fbmValue = fbm(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1)
+const fbmValue = fractionalBrownianMotion(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1)
 const stops = [
   { color: vec3(0.4, 0.0, 0.8), position: 0 },
   { color: vec3(1, 0.4, 0.6), position: 0.5 },

@@ -4,7 +4,7 @@ import {
   __resetReducedMotionForTests,
   setReducedMotionPolicy,
 } from '../../runtime/reduced-motion/reduced-motion.js';
-import { time } from './time.js';
+import { elapsedTime } from './time.js';
 
 describe('gated time', () => {
   beforeEach(() => {
@@ -13,8 +13,8 @@ describe('gated time', () => {
   });
 
   it('is a TSL node', () => {
-    expect(time).toBeDefined();
-    expect((time as unknown as { isNode?: boolean }).isNode).toBe(true);
+    expect(elapsedTime).toBeDefined();
+    expect((elapsedTime as unknown as { isNode?: boolean }).isNode).toBe(true);
   });
 
   // Note: We can't assert the actual scaled value without running on the GPU.

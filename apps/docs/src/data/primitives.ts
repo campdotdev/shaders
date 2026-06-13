@@ -34,9 +34,9 @@ interface ColorRampStop {
   },
   {
     slug: 'noise',
-    name: 'noise',
+    name: 'simplexNoise',
     description: 'Single-octave perlin noise.',
-    signature: `function noise(p: TSLNode): TSLNode
+    signature: `function simplexNoise(p: TSLNode): TSLNode
 // p is a vec2 TSL node; returns a scalar roughly in [-1, 1].`,
     usedBy: ['simplex-noise', 'mesh-gradient', 'aurora'],
     controls: [
@@ -46,14 +46,14 @@ interface ColorRampStop {
   },
   {
     slug: 'fbm',
-    name: 'fbm',
+    name: 'fractionalBrownianMotion',
     description: 'Fractal Brownian Motion — sums of noise at multiple scales.',
-    signature: `function fbm(
+    signature: `function fractionalBrownianMotion(
   p: TSLNode,
-  opts?: FBMOptions,
+  opts?: FractionalBrownianMotionOptions,
 ): TSLNode
 
-interface FBMOptions {
+interface FractionalBrownianMotionOptions {
   octaves?: number     // default 4
   lacunarity?: number  // default 2
   gain?: number        // default 0.5
@@ -90,9 +90,9 @@ interface FBMOptions {
   },
   {
     slug: 'sdf-circle',
-    name: 'sdfCircle',
+    name: 'signedDistanceFieldCircle',
     description: 'Signed distance field for a disk centered at the origin.',
-    signature: `function sdfCircle(
+    signature: `function signedDistanceFieldCircle(
   p: TSLNode,
   radius: TSLNode | number,
 ): TSLNode
@@ -141,9 +141,9 @@ interface CursorRippleOptions {
   },
   {
     slug: 'time',
-    name: 'time',
+    name: 'elapsedTime',
     description: 'Reduced-motion-gated seconds since the scene mounted.',
-    signature: `const time: TSLNode
+    signature: `const elapsedTime: TSLNode
 // Equals three/tsl's built-in time * reducedMotionScale. Honors
 // prefers-reduced-motion and any setReducedMotionPolicy override.
 // Import from '@lovo/matter'. For raw uncapped time, import from

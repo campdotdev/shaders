@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 
-import { CursorInput, type CursorInputOptions, type Vec2 } from '@lovo/matter';
+import { CursorInput, type CursorInputOptions, type Vector2 } from '@lovo/matter';
 
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 
 export interface CursorSignal {
-  get(): Vec2;
-  on(event: 'change', cb: (value: Vec2) => void): () => void;
+  get(): Vector2;
+  on(event: 'change', cb: (value: Vector2) => void): () => void;
 }
 
 const STUB_SIGNAL: CursorSignal = {

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { displace, sdfCircle } from '@lovo/matter';
+import { displace, signedDistanceFieldCircle } from '@lovo/matter';
 import {
   type AnimatableProp,
   type CursorSignal,
@@ -80,7 +80,7 @@ function buildDotFieldMaterial(
 
   const zeroScalar = vec2(0).x;
   const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
-  const sdf = sdfCircle(displacedLocal, radius);
+  const sdf = signedDistanceFieldCircle(displacedLocal, radius);
 
   const antialiasWidth = 0.01;
   const dotMask = smoothstep(antialiasWidth, -antialiasWidth, sdf);

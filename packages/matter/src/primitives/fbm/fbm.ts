@@ -3,9 +3,9 @@ import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
-import { noise } from '../noise/noise.js';
+import { simplexNoise } from '../noise/noise.js';
 
-export interface FBMOptions {
+export interface FractionalBrownianMotionOptions {
   /** Number of octaves to sum. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */
   octaves?: number;
   /** Per-octave frequency multiplier. JS-side number. Default: 2. */
@@ -37,12 +37,15 @@ export interface FBMOptions {
  * @returns scalar TSL node, normalized to roughly [-1..1] regardless of
  *          octave count thanks to the amplitude-sum division at the end.
  */
-export function fbm(p: TSLNode, opts: FBMOptions = {}): ShaderNodeObject<Node> {
+export function fractionalBrownianMotion(
+  p: TSLNode,
+  opts: FractionalBrownianMotionOptions = {},
+): ShaderNodeObject<Node> {
   const octaves = opts.octaves ?? 4;
   const lacunarity = opts.lacunarity ?? 2;
   const gain = opts.gain ?? 0.5;
 
-  let sum: ShaderNodeObject<Node> = noise(p);
+  let sum: ShaderNodeObject<Node> = simplexNoise(p);
   let amplitude = 1;
   let frequency = 1;
   let total = amplitude;
@@ -62,7 +65,7 @@ export function fbm(p: TSLNode, opts: FBMOptions = {}): ShaderNodeObject<Node> {
     // because `p` is uv-rooted, but the TSLNode union still requires
     // functional form on this hop.
     const pAtFreq = add(mul(p, frequency), i * 100);
-    const layer = noise(pAtFreq).mul(amplitude);
+    const layer = simplexNoise(pAtFreq).mul(amplitude);
 
     sum = sum.add(layer);
   }

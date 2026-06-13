@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { noise, time } from '@lovo/matter';
+import { elapsedTime, simplexNoise } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -100,9 +100,9 @@ export function MeshGradientShader({
     const centeredUv = uv().sub(vec2(0.5, 0.5));
 
     // ---- Noise-driven rotation angle ----------------------------------
-    const slowTime = time.mul(0.05);
+    const slowTime = elapsedTime.mul(0.05);
     const noiseInput = vec2(slowTime, centeredUv.x.mul(centeredUv.y));
-    const degree01 = noise(noiseInput).mul(0.5).add(0.5); // [0, 1]
+    const degree01 = simplexNoise(noiseInput).mul(0.5).add(0.5); // [0, 1]
     // angle = (degree01 - 0.5) * (720° in radians) + 180° in radians
     //       = (degree01 - 0.5) * 4π + π
     const TWO_TURNS_RAD = Math.PI * 4;
@@ -121,7 +121,7 @@ export function MeshGradientShader({
     const rotatedUv = vec2(rotatedX, rotatedY);
 
     // ---- Sine domain warp --------------------------------------------
-    const timeScaledBySpeed = time.mul(speedUniform);
+    const timeScaledBySpeed = elapsedTime.mul(speedUniform);
     const warpX = sin(rotatedUv.y.mul(frequencyUniform).add(timeScaledBySpeed)).div(
       amplitudeUniform,
     );
@@ -131,7 +131,7 @@ export function MeshGradientShader({
     const warpedUv = vec2(rotatedUv.x.add(warpX), rotatedUv.y.add(warpY));
 
     // ---- Time-cycling palette ----------------------------------------
-    const cycleTime = time.mul(cycleSpeedUniform);
+    const cycleTime = elapsedTime.mul(cycleSpeedUniform);
     const cycle = sin(cycleTime);
     const eased = sign(cycle)
       .mul(pow(abs(cycle), cycleEaseUniform))

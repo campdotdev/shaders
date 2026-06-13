@@ -7,11 +7,11 @@ import {
   type ColorRampStop,
   cursorRipple,
   displace,
-  fbm,
-  noise,
+  elapsedTime,
+  fractionalBrownianMotion,
   quantize,
-  sdfCircle,
-  time,
+  signedDistanceFieldCircle,
+  simplexNoise,
   voronoi,
 } from '@lovo/matter';
 import { ShaderScene, useShaderContext } from '@lovo/matter-react';
@@ -120,9 +120,9 @@ function buildColorRamp(params: ParamsFor<'color-ramp'>): ShaderNodeObject<Node>
 }
 
 function buildNoise(params: ParamsFor<'noise'>): ShaderNodeObject<Node> {
-  const scaledTime = time.mul(params.speed);
+  const scaledTime = elapsedTime.mul(params.speed);
   const samplePosition = uv().mul(params.scale).add(vec2(scaledTime, scaledTime));
-  const noiseValue = noise(samplePosition);
+  const noiseValue = simplexNoise(samplePosition);
   // noise returns ~[-1, 1]; map to [0, 1] grayscale.
   const grayscale = noiseValue.mul(0.5).add(0.5).clamp(0, 1);
 
@@ -130,9 +130,9 @@ function buildNoise(params: ParamsFor<'noise'>): ShaderNodeObject<Node> {
 }
 
 function buildFbm(params: ParamsFor<'fbm'>): ShaderNodeObject<Node> {
-  const scaledTime = time.mul(params.speed);
+  const scaledTime = elapsedTime.mul(params.speed);
   const samplePosition = uv().mul(params.scale).add(vec2(scaledTime, scaledTime));
-  const fbmValue = fbm(samplePosition, {
+  const fbmValue = fractionalBrownianMotion(samplePosition, {
     octaves: params.octaves,
     lacunarity: params.lacunarity,
     gain: params.gain,
@@ -143,7 +143,7 @@ function buildFbm(params: ParamsFor<'fbm'>): ShaderNodeObject<Node> {
 }
 
 function buildVoronoi(params: ParamsFor<'voronoi'>): ShaderNodeObject<Node> {
-  const scaledTime = time.mul(params.speed);
+  const scaledTime = elapsedTime.mul(params.speed);
   const samplePosition = uv().mul(params.scale).add(vec2(scaledTime, scaledTime));
   const voronoiValue = voronoi(samplePosition);
   // voronoi (mx_worley_noise_float) is roughly [0, 1]; clamp to be safe.
@@ -167,7 +167,7 @@ function buildQuantize(params: ParamsFor<'quantize'>): ShaderNodeObject<Node> {
 
 function buildSdfCircle(params: ParamsFor<'sdf-circle'>): ShaderNodeObject<Node> {
   const samplePosition = uv().sub(vec2(params.cx, params.cy));
-  const sdf = sdfCircle(samplePosition, params.radius);
+  const sdf = signedDistanceFieldCircle(samplePosition, params.radius);
   const antialiasWidth = 0.005;
   const mask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
   const mixedColor = mix(vec3(0.05, 0.05, 0.1), vec3(1, 1, 1), mask);
@@ -176,10 +176,10 @@ function buildSdfCircle(params: ParamsFor<'sdf-circle'>): ShaderNodeObject<Node>
 }
 
 function buildDisplace(params: ParamsFor<'displace'>): ShaderNodeObject<Node> {
-  const scaledTime = time.mul(0.2);
+  const scaledTime = elapsedTime.mul(0.2);
   const displacedUv = displace(uv(), vec2(params.x, params.y));
   const samplePoint = displacedUv.mul(4).add(vec2(scaledTime, scaledTime));
-  const noiseValue = noise(samplePoint);
+  const noiseValue = simplexNoise(samplePoint);
   const grayscale = noiseValue.mul(0.5).add(0.5).clamp(0, 1);
 
   return vec4(grayscale, grayscale, grayscale, 1);
@@ -207,7 +207,7 @@ function buildCursorRipple(
 
 function buildTime(): ShaderNodeObject<Node> {
   // No controls. sin(time * 2) → [-1, 1] → grayscale pulse.
-  const pulse = sin(time.mul(2)).mul(0.5).add(0.5);
+  const pulse = sin(elapsedTime.mul(2)).mul(0.5).add(0.5);
 
   return vec4(pulse, pulse, pulse, 1);
 }
