@@ -10,8 +10,8 @@ import {
 interface MockMQL {
   matches: boolean;
   listeners: Array<(e: { matches: boolean }) => void>;
-  addEventListener: (type: 'change', cb: (e: { matches: boolean }) => void) => void;
-  removeEventListener: (type: 'change', cb: (e: { matches: boolean }) => void) => void;
+  addEventListener: (type: 'change', listener: (e: { matches: boolean }) => void) => void;
+  removeEventListener: (type: 'change', listener: (e: { matches: boolean }) => void) => void;
   dispatch: (matches: boolean) => void;
 }
 
@@ -22,21 +22,21 @@ const makeMQL = (initial: boolean): MockMQL => {
     get matches() {
       return initial;
     },
-    set matches(v) {
-      initial = v;
+    set matches(value) {
+      initial = value;
     },
     listeners,
-    addEventListener: (_t, cb) => listeners.push(cb),
-    removeEventListener: (_t, cb) => {
-      const i = listeners.indexOf(cb);
+    addEventListener: (_t, listener) => listeners.push(listener),
+    removeEventListener: (_t, listener) => {
+      const listenerIndex = listeners.indexOf(listener);
 
-      if (i >= 0) listeners.splice(i, 1);
+      if (listenerIndex >= 0) listeners.splice(listenerIndex, 1);
     },
     dispatch(matches) {
       this.matches = matches;
       // Snapshot before iterating: a listener may removeEventListener itself,
       // mutating `listeners` mid-loop and skipping the next entry.
-      for (const l of listeners.slice()) l({ matches });
+      for (const listener of listeners.slice()) listener({ matches });
     },
   };
 };
@@ -55,92 +55,92 @@ describe('reducedMotion watcher', () => {
   });
 
   it('returns scale 1 when system reduce is off and policy is auto', () => {
-    const w = createReducedMotionWatcher();
+    const watcher = createReducedMotionWatcher();
 
-    expect(w.scale()).toBe(1);
-    w.dispose();
+    expect(watcher.scale()).toBe(1);
+    watcher.dispose();
   });
 
   it('returns scale 0.3 when system reduce is on and policy is auto', () => {
     mql.matches = true;
-    const w = createReducedMotionWatcher();
+    const watcher = createReducedMotionWatcher();
 
-    expect(w.scale()).toBe(0.3);
-    w.dispose();
+    expect(watcher.scale()).toBe(0.3);
+    watcher.dispose();
   });
 
   it('emits change when matchMedia toggles', () => {
-    const w = createReducedMotionWatcher();
-    const cb = vi.fn();
+    const watcher = createReducedMotionWatcher();
+    const listener = vi.fn();
 
-    w.subscribe(cb);
+    watcher.subscribe(listener);
     mql.dispatch(true);
-    expect(cb).toHaveBeenCalledWith(0.3);
+    expect(listener).toHaveBeenCalledWith(0.3);
     mql.dispatch(false);
-    expect(cb).toHaveBeenLastCalledWith(1);
-    w.dispose();
+    expect(listener).toHaveBeenLastCalledWith(1);
+    watcher.dispose();
   });
 
   it('honors explicit policy override "off" (scale 1)', () => {
     mql.matches = true;
     setReducedMotionPolicy('off');
-    const w = createReducedMotionWatcher();
+    const watcher = createReducedMotionWatcher();
 
-    expect(w.scale()).toBe(1);
-    w.dispose();
+    expect(watcher.scale()).toBe(1);
+    watcher.dispose();
   });
 
   it('honors explicit policy override "paused" (scale 0)', () => {
     setReducedMotionPolicy('paused');
-    const w = createReducedMotionWatcher();
+    const watcher = createReducedMotionWatcher();
 
-    expect(w.scale()).toBe(0);
-    w.dispose();
+    expect(watcher.scale()).toBe(0);
+    watcher.dispose();
   });
 
   it('honors explicit policy override "slow" (scale 0.3 regardless of mql)', () => {
     setReducedMotionPolicy('slow');
-    const w = createReducedMotionWatcher();
+    const watcher = createReducedMotionWatcher();
 
-    expect(w.scale()).toBe(0.3);
-    w.dispose();
+    expect(watcher.scale()).toBe(0.3);
+    watcher.dispose();
   });
 
   it('emits when policy changes', () => {
-    const w = createReducedMotionWatcher();
-    const cb = vi.fn();
+    const watcher = createReducedMotionWatcher();
+    const listener = vi.fn();
 
-    w.subscribe(cb);
+    watcher.subscribe(listener);
     setReducedMotionPolicy('paused');
-    expect(cb).toHaveBeenLastCalledWith(0);
+    expect(listener).toHaveBeenLastCalledWith(0);
     setReducedMotionPolicy('off');
-    expect(cb).toHaveBeenLastCalledWith(1);
-    w.dispose();
+    expect(listener).toHaveBeenLastCalledWith(1);
+    watcher.dispose();
   });
 
   it('removes listeners on dispose', () => {
-    const w = createReducedMotionWatcher();
+    const watcher = createReducedMotionWatcher();
 
     expect(mql.listeners.length).toBe(1);
-    w.dispose();
+    watcher.dispose();
     expect(mql.listeners.length).toBe(0);
   });
 
   it('survives a strict-mode create-dispose-recreate cycle', () => {
-    const w1 = createReducedMotionWatcher();
-    const cb = vi.fn();
+    const firstWatcher = createReducedMotionWatcher();
+    const listener = vi.fn();
 
-    w1.subscribe(cb);
-    w1.dispose();
+    firstWatcher.subscribe(listener);
+    firstWatcher.dispose();
 
-    const w2 = createReducedMotionWatcher();
+    const secondWatcher = createReducedMotionWatcher();
 
-    w2.subscribe(cb);
+    secondWatcher.subscribe(listener);
     setReducedMotionPolicy('paused');
-    // Only w2 is live; cb should be called exactly once (from w2's recompute).
-    expect(cb).toHaveBeenCalledTimes(1);
-    expect(cb).toHaveBeenLastCalledWith(0);
-    w2.dispose();
+    // Only secondWatcher is live; listener should be called exactly once (from secondWatcher's recompute).
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenLastCalledWith(0);
+    secondWatcher.dispose();
   });
 });
 
@@ -155,27 +155,27 @@ describe('reducedMotion watcher — SSR fallback', () => {
   });
 
   it('returns a no-op watcher when matchMedia is undefined', () => {
-    const w = createReducedMotionWatcher();
+    const watcher = createReducedMotionWatcher();
 
-    expect(w.scale()).toBe(1);
-    const cb = vi.fn();
-    const unsub = w.subscribe(cb);
+    expect(watcher.scale()).toBe(1);
+    const listener = vi.fn();
+    const unsub = watcher.subscribe(listener);
 
     unsub();
-    w.dispose();
+    watcher.dispose();
     // No throw, no error — that's the contract.
   });
 
   it('respects policy override on the SSR watcher', () => {
     setReducedMotionPolicy('paused');
-    const w = createReducedMotionWatcher();
+    const watcher = createReducedMotionWatcher();
 
-    expect(w.scale()).toBe(0);
+    expect(watcher.scale()).toBe(0);
     setReducedMotionPolicy('slow');
     // Note: SSR watcher does not emit on policy change (it's not in state.watchers).
     // But scale() at the time of next call should reflect the latest policy.
-    expect(w.scale()).toBe(0.3);
-    w.dispose();
+    expect(watcher.scale()).toBe(0.3);
+    watcher.dispose();
   });
 });
 
@@ -196,18 +196,18 @@ describe('reducedMotion uniform', () => {
   });
 
   it('exposes a TSL uniform whose value matches the current scale', () => {
-    const u = getReducedMotionTimeScale();
+    const timeScaleUniform = getReducedMotionTimeScale();
 
     setReducedMotionPolicy('slow');
-    expect((u as unknown as { value: number }).value).toBe(0.3);
+    expect((timeScaleUniform as unknown as { value: number }).value).toBe(0.3);
   });
 
   it('updates the uniform value when policy changes', () => {
-    const u = getReducedMotionTimeScale();
+    const timeScaleUniform = getReducedMotionTimeScale();
 
     setReducedMotionPolicy('off');
-    expect((u as unknown as { value: number }).value).toBe(1);
+    expect((timeScaleUniform as unknown as { value: number }).value).toBe(1);
     setReducedMotionPolicy('paused');
-    expect((u as unknown as { value: number }).value).toBe(0);
+    expect((timeScaleUniform as unknown as { value: number }).value).toBe(0);
   });
 });

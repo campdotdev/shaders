@@ -18,8 +18,8 @@ describe('runtime integration', () => {
     visibilityListeners.length = 0;
     observerCallback = null;
 
-    vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
-      rafCallbacks.push(cb);
+    vi.stubGlobal('requestAnimationFrame', (frameCallback: FrameRequestCallback) => {
+      rafCallbacks.push(frameCallback);
 
       return ++nextRafId;
     });
@@ -29,22 +29,22 @@ describe('runtime integration', () => {
       configurable: true,
       get: () => visibilityState,
     });
-    vi.spyOn(document, 'addEventListener').mockImplementation((type, cb) => {
-      if (type === 'visibilitychange') visibilityListeners.push(cb as () => void);
+    vi.spyOn(document, 'addEventListener').mockImplementation((type, listener) => {
+      if (type === 'visibilitychange') visibilityListeners.push(listener as () => void);
     });
-    vi.spyOn(document, 'removeEventListener').mockImplementation((type, cb) => {
+    vi.spyOn(document, 'removeEventListener').mockImplementation((type, listener) => {
       if (type === 'visibilitychange') {
-        const i = visibilityListeners.indexOf(cb as () => void);
+        const listenerIndex = visibilityListeners.indexOf(listener as () => void);
 
-        if (i >= 0) visibilityListeners.splice(i, 1);
+        if (listenerIndex >= 0) visibilityListeners.splice(listenerIndex, 1);
       }
     });
 
     vi.stubGlobal(
       'IntersectionObserver',
       class {
-        constructor(cb: IntersectionObserverCallback) {
-          observerCallback = cb;
+        constructor(callback: IntersectionObserverCallback) {
+          observerCallback = callback;
         }
         observe() {}
         unobserve() {}
@@ -62,7 +62,7 @@ describe('runtime integration', () => {
     const callbacks = rafCallbacks;
 
     rafCallbacks = [];
-    for (const cb of callbacks) cb(now);
+    for (const frameCallback of callbacks) frameCallback(now);
   };
 
   it('combined gates: scene only ticks when visible AND in-view AND not idle', () => {
@@ -92,13 +92,13 @@ describe('runtime integration', () => {
 
     // Tab hidden → pause
     visibilityState = 'hidden';
-    visibilityListeners.forEach((l) => l());
+    visibilityListeners.forEach((visibilityListener) => visibilityListener());
     tickFrame(16);
     expect(client).toHaveBeenCalledTimes(1);
 
     // Tab visible again → resume
     visibilityState = 'visible';
-    visibilityListeners.forEach((l) => l());
+    visibilityListeners.forEach((visibilityListener) => visibilityListener());
     tickFrame(32);
     expect(client).toHaveBeenCalledTimes(2);
 

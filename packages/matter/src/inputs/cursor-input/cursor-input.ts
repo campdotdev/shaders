@@ -59,7 +59,7 @@ export class CursorInput {
 
     this.handleMouseMove = (e: Event) => {
       if (!(e instanceof MouseEvent)) return;
-      const me = e;
+      const mouseEvent = e;
 
       if (this.element) {
         // Normalize to 0..1 across the element's bounding rect. Reading the
@@ -67,19 +67,22 @@ export class CursorInput {
         // mousemove is already throttled to ~60Hz by the browser. The benefit
         // is tracking the element's position even if it moved/scrolled since
         // the last frame.
-        const r = this.element.getBoundingClientRect();
-        const w = r.width || 1;
-        const h = r.height || 1;
+        const elementRect = this.element.getBoundingClientRect();
+        const elementWidth = elementRect.width || 1;
+        const elementHeight = elementRect.height || 1;
 
-        this.target = [(me.clientX - r.left) / w, (me.clientY - r.top) / h];
+        this.target = [
+          (mouseEvent.clientX - elementRect.left) / elementWidth,
+          (mouseEvent.clientY - elementRect.top) / elementHeight,
+        ];
       } else {
         // Fallback: viewport-normalized. Used when no element is supplied —
         // mostly the standalone-API case for users not consuming through
         // <ShaderScene>'s context.
-        const w = (typeof window !== 'undefined' && window.innerWidth) || 1;
-        const h = (typeof window !== 'undefined' && window.innerHeight) || 1;
+        const viewportWidth = (typeof window !== 'undefined' && window.innerWidth) || 1;
+        const viewportHeight = (typeof window !== 'undefined' && window.innerHeight) || 1;
 
-        this.target = [me.clientX / w, me.clientY / h];
+        this.target = [mouseEvent.clientX / viewportWidth, mouseEvent.clientY / viewportHeight];
       }
       this.targetDirty = true;
     };
@@ -93,10 +96,10 @@ export class CursorInput {
   }
 
   /** Subscribe to change events. Returns an unsubscribe function. */
-  on(_event: 'change', cb: ChangeListener): () => void {
-    this.listeners.add(cb);
+  on(_eventType: 'change', changeListener: ChangeListener): () => void {
+    this.listeners.add(changeListener);
 
-    return () => this.listeners.delete(cb);
+    return () => this.listeners.delete(changeListener);
   }
 
   /**
@@ -130,5 +133,6 @@ export class CursorInput {
   }
 }
 
-const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
-const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
+const lerp = (startValue: number, endValue: number, blendFactor: number) =>
+  startValue + (endValue - startValue) * blendFactor;

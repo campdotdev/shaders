@@ -5,9 +5,9 @@ import { quantize } from './quantize.js';
 
 describe('quantize', () => {
   it('returns a TSL node for steps > 1', () => {
-    const q = quantize(uv().x, 4);
+    const quantizedValue = quantize(uv().x, 4);
 
-    expect(q).toBeDefined();
+    expect(quantizedValue).toBeDefined();
   });
 
   it('handles steps=1 without throwing', () => {
@@ -15,8 +15,8 @@ describe('quantize', () => {
   });
 
   it('handles steps=2', () => {
-    const q = quantize(uv().x, 2);
+    const quantizedValue = quantize(uv().x, 2);
 
-    expect(q).toBeDefined();
+    expect(quantizedValue).toBeDefined();
   });
 });

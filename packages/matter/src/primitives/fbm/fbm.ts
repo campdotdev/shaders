@@ -43,14 +43,14 @@ export function fbm(p: TSLNode, opts: FBMOptions = {}): ShaderNodeObject<Node> {
   const gain = opts.gain ?? 0.5;
 
   let sum: ShaderNodeObject<Node> = noise(p);
-  let amp = 1;
-  let freq = 1;
-  let total = amp;
+  let amplitude = 1;
+  let frequency = 1;
+  let total = amplitude;
 
   for (let i = 1; i < octaves; i += 1) {
-    freq *= lacunarity;
-    amp *= gain;
-    total += amp;
+    frequency *= lacunarity;
+    amplitude *= gain;
+    total += amplitude;
     // Per-octave decorrelation: translate the sample point by a growing
     // offset so this octave reads from a totally different region of noise
     // space than the previous one. Magnitude 100 is well past simplex
@@ -61,8 +61,8 @@ export function fbm(p: TSLNode, opts: FBMOptions = {}): ShaderNodeObject<Node> {
     // Build the chain functionally from `p`: gotcha #12 doesn't apply
     // because `p` is uv-rooted, but the TSLNode union still requires
     // functional form on this hop.
-    const pAtFreq = add(mul(p, freq), i * 100);
-    const layer = noise(pAtFreq).mul(amp);
+    const pAtFreq = add(mul(p, frequency), i * 100);
+    const layer = noise(pAtFreq).mul(amplitude);
 
     sum = sum.add(layer);
   }

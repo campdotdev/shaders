@@ -5,20 +5,20 @@ import { filmGrain } from './film-grain.js';
 
 describe('filmGrain', () => {
   it('returns a TSL node with a number intensity (static grain)', () => {
-    const n = filmGrain(0.1);
+    const grainValue = filmGrain(0.1);
 
-    expect(n).toBeDefined();
+    expect(grainValue).toBeDefined();
   });
 
   it('accepts a node intensity (for animated intensity)', () => {
-    const n = filmGrain(uv().x);
+    const grainValue = filmGrain(uv().x);
 
-    expect(n).toBeDefined();
+    expect(grainValue).toBeDefined();
   });
 
   it('accepts an optional time-offset node (for twinkling grain)', () => {
-    const n = filmGrain(0.1, uv().x);
+    const grainValue = filmGrain(0.1, uv().x);
 
-    expect(n).toBeDefined();
+    expect(grainValue).toBeDefined();
   });
 });

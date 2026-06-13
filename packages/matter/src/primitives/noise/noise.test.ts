@@ -5,9 +5,9 @@ import { noise } from './noise.js';
 
 describe('noise', () => {
   it('returns a TSL node when called with uv()', () => {
-    const n = noise(uv());
+    const noiseValue = noise(uv());
 
-    expect(n).toBeDefined();
-    expect(n).not.toBeNull();
+    expect(noiseValue).toBeDefined();
+    expect(noiseValue).not.toBeNull();
   });
 });
