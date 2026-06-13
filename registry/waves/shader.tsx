@@ -38,14 +38,14 @@ const DEFAULT_THICKNESS = 0.65;
 const DEFAULT_MOTION = 0.35;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
-const wobble = (t: ShaderNodeObject<Node>) =>
-  cos(t)
-    .add(cos(t.mul(1.3).add(1.3)))
-    .add(cos(t.mul(1.4).add(1.4)))
+const wobble = (phase: ShaderNodeObject<Node>) =>
+  cos(phase)
+    .add(cos(phase.mul(1.3).add(1.3)))
+    .add(cos(phase.mul(1.4).add(1.4)))
     .div(3);
 
 export function WavesShader(props: WavesShaderProps) {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
 
   const ampUniform = useAnimatableUniform<number>(props.amplitude);
   const freqUniform = useAnimatableUniform<number>(props.frequency);
@@ -56,17 +56,17 @@ export function WavesShader(props: WavesShaderProps) {
 
   const layersKey = props.layers
     .map(
-      (l) =>
-        `${l.color ?? ''}|${l.amplitude ?? ''}|${l.frequency ?? ''}|${l.speed ?? ''}|${l.glow ?? ''}|${l.thickness ?? ''}|${l.offset ?? ''}|${l.motion ?? ''}`,
+      (layer) =>
+        `${layer.color ?? ''}|${layer.amplitude ?? ''}|${layer.frequency ?? ''}|${layer.speed ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}|${layer.offset ?? ''}|${layer.motion ?? ''}`,
     )
     .join('||');
 
   useEffect(() => {
-    if (!ctx) return;
+    if (!shaderContext) return;
 
-    const p = vec2(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1));
+    const samplePosition = vec2(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1));
 
-    const yBase = p.y.add(baselineUniform);
+    const yBase = samplePosition.y.add(baselineUniform);
     let waveColor = vec3(0, 0, 0);
 
     for (const layer of props.layers) {
@@ -91,10 +91,10 @@ export function WavesShader(props: WavesShaderProps) {
       const offset = layer.offset ?? 0;
       const motionValue = layer.motion ?? DEFAULT_MOTION;
 
-      const [cr, cg, cb] = parseHex(layer.color ?? DEFAULT_LAYER_COLOR);
+      const [redChannel, greenChannel, blueChannel] = parseHex(layer.color ?? DEFAULT_LAYER_COLOR);
 
       const layerTime = time.mul(speedValue);
-      const waveInput = p.x.mul(freqValue).add(offset);
+      const waveInput = samplePosition.x.mul(freqValue).add(offset);
       const baseWave = wobble(waveInput.add(layerTime));
       const motionWave = cos(waveInput.mul(1.7).sub(layerTime.mul(0.55)))
         .add(cos(waveInput.mul(0.43).add(layerTime.mul(1.35))))
@@ -105,7 +105,9 @@ export function WavesShader(props: WavesShaderProps) {
 
       const width = layerY.mul(150).abs().reciprocal().mul(thicknessValue).mul(glowValue);
 
-      waveColor = waveColor.add(vec3(width.mul(cr), width.mul(cg), width.mul(cb)));
+      waveColor = waveColor.add(
+        vec3(width.mul(redChannel), width.mul(greenChannel), width.mul(blueChannel)),
+      );
     }
 
     const material = new MeshBasicNodeMaterial();
@@ -114,10 +116,10 @@ export function WavesShader(props: WavesShaderProps) {
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
-    ctx.scene.add(mesh);
+    shaderContext.scene.add(mesh);
 
     return () => {
-      ctx.scene.remove(mesh);
+      shaderContext.scene.remove(mesh);
 
       try {
         material.dispose();
@@ -135,7 +137,7 @@ export function WavesShader(props: WavesShaderProps) {
     // LinearGradient's pattern.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
-    ctx,
+    shaderContext,
     layersKey,
     ampUniform,
     freqUniform,
