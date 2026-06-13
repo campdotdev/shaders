@@ -29,9 +29,9 @@ const LAYER_ROT_RAD = (-5 * Math.PI) / 180;
 function useColorUniform(hex: string) {
   const vec = useMemo(
     () => {
-      const [r, g, b] = parseHex(hex);
+      const [redChannel, greenChannel, blueChannel] = parseHex(hex);
 
-      return new Vector3(r, g, b);
+      return new Vector3(redChannel, greenChannel, blueChannel);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
@@ -40,9 +40,9 @@ function useColorUniform(hex: string) {
   const node = useMemo(() => uniform(vec), [vec]);
 
   useEffect(() => {
-    const [r, g, b] = parseHex(hex);
+    const [redChannel, greenChannel, blueChannel] = parseHex(hex);
 
-    vec.set(r, g, b);
+    vec.set(redChannel, greenChannel, blueChannel);
   }, [hex, vec]);
 
   return node;
@@ -57,47 +57,51 @@ export function MeshGradientShader({
   paletteA,
   paletteB,
 }: MeshGradientShaderProps) {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
   const resize = useResize();
 
-  const cycleSpeedU = useAnimatableUniform<number>(cycleSpeed);
-  const cycleEaseU = useAnimatableUniform<number>(cycleEase);
+  const cycleSpeedUniform = useAnimatableUniform<number>(cycleSpeed);
+  const cycleEaseUniform = useAnimatableUniform<number>(cycleEase);
 
-  const a0 = useColorUniform(paletteA[0]);
-  const a1 = useColorUniform(paletteA[1]);
-  const a2 = useColorUniform(paletteA[2]);
-  const a3 = useColorUniform(paletteA[3]);
-  const b0 = useColorUniform(paletteB[0]);
-  const b1 = useColorUniform(paletteB[1]);
-  const b2 = useColorUniform(paletteB[2]);
-  const b3 = useColorUniform(paletteB[3]);
+  const paletteAColor0 = useColorUniform(paletteA[0]);
+  const paletteAColor1 = useColorUniform(paletteA[1]);
+  const paletteAColor2 = useColorUniform(paletteA[2]);
+  const paletteAColor3 = useColorUniform(paletteA[3]);
+  const paletteBColor0 = useColorUniform(paletteB[0]);
+  const paletteBColor1 = useColorUniform(paletteB[1]);
+  const paletteBColor2 = useColorUniform(paletteB[2]);
+  const paletteBColor3 = useColorUniform(paletteB[3]);
 
-  const speedU = useAnimatableUniform<number>(speed);
-  const frequencyU = useAnimatableUniform<number>(frequency);
-  const amplitudeU = useAnimatableUniform<number>(amplitude);
+  const speedUniform = useAnimatableUniform<number>(speed);
+  const frequencyUniform = useAnimatableUniform<number>(frequency);
+  const amplitudeUniform = useAnimatableUniform<number>(amplitude);
 
-  const [iw, ih] = resize.get();
-  const aspectNode = useMemo(() => uniform(ih > 0 ? iw / ih : 16 / 9), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [initialWidth, initialHeight] = resize.get();
+  const aspectNode = useMemo(
+    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   useEffect(() => {
-    const [w, h] = resize.get();
+    const [canvasWidth, canvasHeight] = resize.get();
 
-    if (w > 0 && h > 0) aspectNode.value = w / h;
+    if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
 
-    return resize.on('change', ([w2, h2]) => {
-      if (w2 > 0 && h2 > 0) aspectNode.value = w2 / h2;
+    return resize.on('change', ([updatedWidth, updatedHeight]) => {
+      if (updatedWidth > 0 && updatedHeight > 0) aspectNode.value = updatedWidth / updatedHeight;
     });
   }, [resize, aspectNode]);
 
   useEffect(() => {
-    if (!ctx) return;
+    if (!shaderContext) return;
 
     // ---- Centered UVs --------------------------------------------------
-    const tuvRaw = uv().sub(vec2(0.5, 0.5));
+    const centeredUv = uv().sub(vec2(0.5, 0.5));
 
     // ---- Noise-driven rotation angle ----------------------------------
-    const tSlow = time.mul(0.05);
-    const noiseInput = vec2(tSlow, tuvRaw.x.mul(tuvRaw.y));
+    const slowTime = time.mul(0.05);
+    const noiseInput = vec2(slowTime, centeredUv.x.mul(centeredUv.y));
     const degree01 = noise(noiseInput).mul(0.5).add(0.5); // [0, 1]
     // angle = (degree01 - 0.5) * (720° in radians) + 180° in radians
     //       = (degree01 - 0.5) * 4π + π
@@ -107,45 +111,49 @@ export function MeshGradientShader({
 
     // ---- Aspect-corrected rotation -----------------------------------
     const aspect = aspectNode;
-    const ty = tuvRaw.y.div(aspect);
-    const c = cos(angle);
-    const s = sin(angle);
+    const aspectCorrectedY = centeredUv.y.div(aspect);
+    const cosineValue = cos(angle);
+    const sineValue = sin(angle);
     // Componentwise rotation: (x', y') = (c*x - s*y, s*x + c*y).
-    const rx = tuvRaw.x.mul(c).sub(ty.mul(s));
-    const ryUnit = tuvRaw.x.mul(s).add(ty.mul(c));
-    const ry = ryUnit.mul(aspect);
-    const tuvRotated = vec2(rx, ry);
+    const rotatedX = centeredUv.x.mul(cosineValue).sub(aspectCorrectedY.mul(sineValue));
+    const rotatedYUnit = centeredUv.x.mul(sineValue).add(aspectCorrectedY.mul(cosineValue));
+    const rotatedY = rotatedYUnit.mul(aspect);
+    const rotatedUv = vec2(rotatedX, rotatedY);
 
     // ---- Sine domain warp --------------------------------------------
-    const tspeed = time.mul(speedU);
-    const warpX = sin(tuvRotated.y.mul(frequencyU).add(tspeed)).div(amplitudeU);
-    const warpY = sin(tuvRotated.x.mul(frequencyU).mul(1.5).add(tspeed)).div(amplitudeU).mul(2);
-    const tuv = vec2(tuvRotated.x.add(warpX), tuvRotated.y.add(warpY));
+    const timeScaledBySpeed = time.mul(speedUniform);
+    const warpX = sin(rotatedUv.y.mul(frequencyUniform).add(timeScaledBySpeed)).div(
+      amplitudeUniform,
+    );
+    const warpY = sin(rotatedUv.x.mul(frequencyUniform).mul(1.5).add(timeScaledBySpeed))
+      .div(amplitudeUniform)
+      .mul(2);
+    const warpedUv = vec2(rotatedUv.x.add(warpX), rotatedUv.y.add(warpY));
 
     // ---- Time-cycling palette ----------------------------------------
-    const cycleTime = time.mul(cycleSpeedU);
+    const cycleTime = time.mul(cycleSpeedUniform);
     const cycle = sin(cycleTime);
     const eased = sign(cycle)
-      .mul(pow(abs(cycle), cycleEaseU))
+      .mul(pow(abs(cycle), cycleEaseUniform))
       .add(1)
       .mul(0.5);
 
-    const color0 = mix(a0, b0, eased);
-    const color1 = mix(a1, b1, eased);
-    const color2 = mix(a2, b2, eased);
-    const color3 = mix(a3, b3, eased);
+    const color0 = mix(paletteAColor0, paletteBColor0, eased);
+    const color1 = mix(paletteAColor1, paletteBColor1, eased);
+    const color2 = mix(paletteAColor2, paletteBColor2, eased);
+    const color3 = mix(paletteAColor3, paletteBColor3, eased);
 
     // ---- Two-layer smoothstep blend ---------------------------------
-    const lc = Math.cos(LAYER_ROT_RAD);
-    const ls = Math.sin(LAYER_ROT_RAD);
-    const layerX = tuv.x.mul(lc).sub(tuv.y.mul(ls));
+    const layerCosine = Math.cos(LAYER_ROT_RAD);
+    const layerSine = Math.sin(LAYER_ROT_RAD);
+    const layerX = warpedUv.x.mul(layerCosine).sub(warpedUv.y.mul(layerSine));
 
-    const hMix = smoothstep(-0.3, 0.2, layerX);
-    const layer1 = color2.mul(hMix.oneMinus()).add(color1.mul(hMix));
-    const layer2 = color3.mul(hMix.oneMinus()).add(color0.mul(hMix));
+    const horizontalMix = smoothstep(-0.3, 0.2, layerX);
+    const layer1 = color2.mul(horizontalMix.oneMinus()).add(color1.mul(horizontalMix));
+    const layer2 = color3.mul(horizontalMix.oneMinus()).add(color0.mul(horizontalMix));
 
-    const vMix = smoothstep(0.5, -0.3, tuv.y);
-    const color = layer1.mul(vMix.oneMinus()).add(layer2.mul(vMix));
+    const verticalMix = smoothstep(0.5, -0.3, warpedUv.y);
+    const color = layer1.mul(verticalMix.oneMinus()).add(layer2.mul(verticalMix));
 
     const material = new MeshBasicNodeMaterial();
 
@@ -153,10 +161,10 @@ export function MeshGradientShader({
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
-    ctx.scene.add(mesh);
+    shaderContext.scene.add(mesh);
 
     return () => {
-      ctx.scene.remove(mesh);
+      shaderContext.scene.remove(mesh);
       try {
         material.dispose();
       } catch {
@@ -169,21 +177,21 @@ export function MeshGradientShader({
       }
     };
   }, [
-    ctx,
+    shaderContext,
     aspectNode,
-    speedU,
-    frequencyU,
-    amplitudeU,
-    cycleSpeedU,
-    cycleEaseU,
-    a0,
-    a1,
-    a2,
-    a3,
-    b0,
-    b1,
-    b2,
-    b3,
+    speedUniform,
+    frequencyUniform,
+    amplitudeUniform,
+    cycleSpeedUniform,
+    cycleEaseUniform,
+    paletteAColor0,
+    paletteAColor1,
+    paletteAColor2,
+    paletteAColor3,
+    paletteBColor0,
+    paletteBColor1,
+    paletteBColor2,
+    paletteBColor3,
   ]);
 
   return null;
