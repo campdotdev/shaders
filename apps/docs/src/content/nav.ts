@@ -13,8 +13,8 @@ import type {
   ResolvedNavItem,
 } from './types';
 
-function isNavGroup(x: NavGroup | NavItem): x is NavGroup {
-  return 'label' in x && 'items' in x;
+function isNavGroup(candidate: NavGroup | NavItem): candidate is NavGroup {
+  return 'label' in candidate && 'items' in candidate;
 }
 
 async function resolveItem(
@@ -25,10 +25,10 @@ async function resolveItem(
     const resolvedItems: Array<ResolvedNavGroup | ResolvedNavItem> = [];
 
     for (const child of item.items) {
-      const r = await resolveItem(child, pages);
+      const resolvedChild = await resolveItem(child, pages);
 
-      if (Array.isArray(r)) resolvedItems.push(...r);
-      else resolvedItems.push(r);
+      if (Array.isArray(resolvedChild)) resolvedItems.push(...resolvedChild);
+      else resolvedItems.push(resolvedChild);
     }
 
     return { label: item.label, items: resolvedItems };
@@ -36,7 +36,7 @@ async function resolveItem(
 
   switch (item.kind) {
     case 'page': {
-      const page = pages.find((p) => p.url === item.slug);
+      const page = pages.find((candidatePage) => candidatePage.url === item.slug);
 
       if (!page || page.frontmatter.hidden) return [];
 
@@ -47,13 +47,15 @@ async function resolveItem(
     }
     case 'section': {
       return pages
-        .filter((p) => p.frontmatter.section === item.collectsFrom && !p.frontmatter.hidden)
-        .map((p) => ({ label: p.frontmatter.navTitle, url: p.url }));
+        .filter(
+          (page) => page.frontmatter.section === item.collectsFrom && !page.frontmatter.hidden,
+        )
+        .map((page) => ({ label: page.frontmatter.navTitle, url: page.url }));
     }
     case 'catalog': {
       const records = await getCatalogRecords(item.source);
 
-      return records.map((r) => ({ label: r.label, url: r.url }));
+      return records.map((record) => ({ label: record.label, url: record.url }));
     }
   }
 }

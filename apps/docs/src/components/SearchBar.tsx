@@ -37,17 +37,17 @@ async function createPagefindBackend(): Promise<SearchBackend | null> {
   try {
     const path = '/pagefind/pagefind.js';
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const mod = (await import(/* webpackIgnore: true */ path)) as PagefindModule;
+    const pagefindModule = (await import(/* webpackIgnore: true */ path)) as PagefindModule;
 
     return async (query) => {
       if (query.trim() === '') return [];
-      const search = await mod.search(query);
-      const items = await Promise.all(search.results.slice(0, 20).map((r) => r.data()));
+      const search = await pagefindModule.search(query);
+      const items = await Promise.all(search.results.slice(0, 20).map((result) => result.data()));
 
-      return items.map((d) => ({
-        url: d.url.replace(/\.html$/, '').replace(/\/index$/, '/'),
-        title: d.meta?.title ?? d.url,
-        excerpt: d.excerpt,
+      return items.map((resultData) => ({
+        url: resultData.url.replace(/\.html$/, '').replace(/\/index$/, '/'),
+        title: resultData.meta?.title ?? resultData.url,
+        excerpt: resultData.excerpt,
       }));
     };
   } catch {
@@ -55,34 +55,34 @@ async function createPagefindBackend(): Promise<SearchBackend | null> {
   }
 }
 
-function matches(doc: SearchDoc, q: string): boolean {
+function matches(doc: SearchDoc, normalizedQuery: string): boolean {
   return (
-    doc.title.toLowerCase().includes(q) ||
-    doc.description.toLowerCase().includes(q) ||
-    doc.section.toLowerCase().includes(q) ||
-    doc.headings.some((h) => h.toLowerCase().includes(q)) ||
-    doc.tags.some((t) => t.toLowerCase().includes(q))
+    doc.title.toLowerCase().includes(normalizedQuery) ||
+    doc.description.toLowerCase().includes(normalizedQuery) ||
+    doc.section.toLowerCase().includes(normalizedQuery) ||
+    doc.headings.some((heading) => heading.toLowerCase().includes(normalizedQuery)) ||
+    doc.tags.some((tag) => tag.toLowerCase().includes(normalizedQuery))
   );
 }
 
 async function createFallbackBackend(): Promise<SearchBackend | null> {
   try {
-    const res = await fetch('/api/search');
+    const response = await fetch('/api/search');
 
-    if (!res.ok) return null;
+    if (!response.ok) return null;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const docs = (await res.json()) as SearchDoc[];
+    const docs = (await response.json()) as SearchDoc[];
 
     // eslint-disable-next-line @typescript-eslint/require-await -- conforms to SearchBackend interface (pagefind backend is genuinely async)
     return async (query) => {
-      const q = query.toLowerCase().trim();
+      const normalizedQuery = query.toLowerCase().trim();
 
-      if (q === '') return [];
+      if (normalizedQuery === '') return [];
 
       return docs
-        .filter((d) => matches(d, q))
+        .filter((doc) => matches(doc, normalizedQuery))
         .slice(0, 20)
-        .map((d) => ({ url: d.url, title: d.title, excerpt: d.description }));
+        .map((doc) => ({ url: doc.url, title: doc.title, excerpt: doc.description }));
     };
   } catch {
     return null;
@@ -102,18 +102,18 @@ export function SearchBar() {
 
   useEffect(() => {
     if (!open || backendRef.current) return;
-    const ac = new AbortController();
+    const abortController = new AbortController();
 
     void (async () => {
       const backend = (await createPagefindBackend()) ?? (await createFallbackBackend());
 
-      if (ac.signal.aborted) return;
+      if (abortController.signal.aborted) return;
       backendRef.current = backend;
       setBackendState(backend ? 'ready' : 'unavailable');
     })();
 
     return () => {
-      ac.abort();
+      abortController.abort();
     };
   }, [open]);
 
@@ -122,8 +122,8 @@ export function SearchBar() {
     const backend = backendRef.current;
     let cancelled = false;
 
-    void backend(query).then((r) => {
-      if (!cancelled) setResults(r);
+    void backend(query).then((searchResults) => {
+      if (!cancelled) setResults(searchResults);
     });
 
     return () => {
@@ -132,11 +132,11 @@ export function SearchBar() {
   }, [open, query, backendState]);
 
   useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-        e.preventDefault();
-        setOpen((o) => !o);
-      } else if (e.key === 'Escape' && open) {
+    const onKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+        event.preventDefault();
+        setOpen((isOpen) => !isOpen);
+      } else if (event.key === 'Escape' && open) {
         setOpen(false);
       }
     };
@@ -167,18 +167,18 @@ export function SearchBar() {
     [router],
   );
 
-  const onInputKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.min(i + 1, Math.max(0, results.length - 1)));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedIndex((i) => Math.max(0, i - 1));
-    } else if (e.key === 'Enter') {
+  const onInputKey = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      setSelectedIndex((index) => Math.min(index + 1, Math.max(0, results.length - 1)));
+    } else if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      setSelectedIndex((index) => Math.max(0, index - 1));
+    } else if (event.key === 'Enter') {
       const target = results[selectedIndex];
 
       if (target) {
-        e.preventDefault();
+        event.preventDefault();
         navigate(target.url);
       }
     }
@@ -256,7 +256,7 @@ export function SearchBar() {
           }}
         >
           <div
-            onClick={(e) => e.stopPropagation()}
+            onClick={(event) => event.stopPropagation()}
             style={{
               width: 'min(640px, calc(100vw - 2rem))',
               background: 'var(--bg)',
@@ -278,7 +278,7 @@ export function SearchBar() {
               <SearchIcon />
               <input
                 aria-label="Search query"
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={onInputKey}
                 placeholder="Search docs…"
                 ref={inputRef}
@@ -350,26 +350,26 @@ export function SearchBar() {
                   {query.trim() !== '' ? `No results for "${query}"` : 'Type to search.'}
                 </li>
               )}
-              {results.map((r, i) => (
+              {results.map((result, resultIndex) => (
                 <li
-                  aria-selected={i === selectedIndex}
-                  key={r.url}
-                  onClick={() => navigate(r.url)}
-                  onMouseEnter={() => setSelectedIndex(i)}
+                  aria-selected={resultIndex === selectedIndex}
+                  key={result.url}
+                  onClick={() => navigate(result.url)}
+                  onMouseEnter={() => setSelectedIndex(resultIndex)}
                   role="option"
                   style={{
                     padding: '0.625rem 1rem',
                     cursor: 'pointer',
-                    background: i === selectedIndex ? 'var(--bg-muted)' : 'transparent',
+                    background: resultIndex === selectedIndex ? 'var(--bg-muted)' : 'transparent',
                     borderBottom: '1px solid var(--border)',
                   }}
                 >
-                  <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{r.title}</div>
+                  <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{result.title}</div>
                   <div
                     // Pagefind excerpts contain sanitized HTML with <mark>.
                     // Fallback excerpts are plain text (no HTML in our
                     // descriptions). Both render safely via innerHTML.
-                    dangerouslySetInnerHTML={{ __html: r.excerpt }}
+                    dangerouslySetInnerHTML={{ __html: result.excerpt }}
                     style={{
                       fontSize: '0.8125rem',
                       color: 'var(--fg-muted)',

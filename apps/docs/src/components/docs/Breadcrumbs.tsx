@@ -15,19 +15,19 @@ export function Breadcrumbs({ crumbs }: { crumbs: DocsBreadcrumb[] }) {
         marginBottom: '1.5rem',
       }}
     >
-      {crumbs.map((c, i) => (
-        <span key={`${i}-${c.label}`}>
-          {i > 0 && (
+      {crumbs.map((crumb, index) => (
+        <span key={`${index}-${crumb.label}`}>
+          {index > 0 && (
             <span aria-hidden style={{ margin: '0 0.5rem', opacity: 0.5 }}>
               /
             </span>
           )}
-          {c.url !== null && c.url !== '' ? (
-            <Link href={c.url} style={{ color: 'var(--fg-muted)' }}>
-              {c.label}
+          {crumb.url !== null && crumb.url !== '' ? (
+            <Link href={crumb.url} style={{ color: 'var(--fg-muted)' }}>
+              {crumb.label}
             </Link>
           ) : (
-            <span>{c.label}</span>
+            <span>{crumb.label}</span>
           )}
         </span>
       ))}

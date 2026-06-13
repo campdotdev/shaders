@@ -51,10 +51,10 @@ function FbmMesh({
     const animatedUv = uv()
       .mul(scaleUniform)
       .add(vec2(time.mul(timeSpeedUniform), time.mul(timeSpeedUniform)));
-    const t = fbm(animatedUv, { octaves, lacunarity, gain });
-    const tNorm = t.add(1).mul(0.5);
+    const fbmValue = fbm(animatedUv, { octaves, lacunarity, gain });
+    const fbmNormalized = fbmValue.add(1).mul(0.5);
 
-    return addPlaneMesh(ctx, colorRamp(tNorm, STOPS));
+    return addPlaneMesh(ctx, colorRamp(fbmNormalized, STOPS));
   }, [ctx, octaves, lacunarity, gain, scaleUniform, timeSpeedUniform]);
 
   return null;

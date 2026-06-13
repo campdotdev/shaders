@@ -48,33 +48,33 @@ const INITIAL: Params = {
   b3: palette.magenta.base,
 };
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
+const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const fmtPalette = (p: Params, k: 'a' | 'b') =>
-  `['${p[`${k}0`]}', '${p[`${k}1`]}', '${p[`${k}2`]}', '${p[`${k}3`]}']`;
+const fmtPalette = (params: Params, paletteKey: 'a' | 'b') =>
+  `['${params[`${paletteKey}0`]}', '${params[`${paletteKey}1`]}', '${params[`${paletteKey}2`]}', '${params[`${paletteKey}3`]}']`;
 
-const fmtJsx = (p: Params) =>
+const fmtJsx = (params: Params) =>
   `<ShaderScene>
   <MeshGradient
-    speed={${fmtNum(p.speed)}}
-    frequency={${fmtNum(p.frequency)}}
-    amplitude={${fmtNum(p.amplitude)}}
-    cycleSpeed={${fmtNum(p.cycleSpeed)}}
-    cycleEase={${fmtNum(p.cycleEase)}}
-    paletteA={${fmtPalette(p, 'a')}}
-    paletteB={${fmtPalette(p, 'b')}}
+    speed={${fmtNum(params.speed)}}
+    frequency={${fmtNum(params.frequency)}}
+    amplitude={${fmtNum(params.amplitude)}}
+    cycleSpeed={${fmtNum(params.cycleSpeed)}}
+    cycleEase={${fmtNum(params.cycleEase)}}
+    paletteA={${fmtPalette(params, 'a')}}
+    paletteB={${fmtPalette(params, 'b')}}
   />
 </ShaderScene>`;
 
-const fmtParams = (p: Params) =>
+const fmtParams = (params: Params) =>
   `{
-  speed: ${fmtNum(p.speed)},
-  frequency: ${fmtNum(p.frequency)},
-  amplitude: ${fmtNum(p.amplitude)},
-  cycleSpeed: ${fmtNum(p.cycleSpeed)},
-  cycleEase: ${fmtNum(p.cycleEase)},
-  paletteA: ${fmtPalette(p, 'a')},
-  paletteB: ${fmtPalette(p, 'b')},
+  speed: ${fmtNum(params.speed)},
+  frequency: ${fmtNum(params.frequency)},
+  amplitude: ${fmtNum(params.amplitude)},
+  cycleSpeed: ${fmtNum(params.cycleSpeed)},
+  cycleEase: ${fmtNum(params.cycleEase)},
+  paletteA: ${fmtPalette(params, 'a')},
+  paletteB: ${fmtPalette(params, 'b')},
 }`;
 
 export default function MeshGradientPage() {

@@ -23,18 +23,18 @@ export function RecipeScene({ slug, variant }: RecipeSceneProps) {
 }
 
 function RecipeMesh({ slug, variant }: { slug: string; variant: string }) {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
   const cursor = useCursor();
 
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), []);
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec]);
 
   useEffect(() => {
-    return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y));
+    return cursor.on('change', ([cursorX, cursorY]) => cursorVec.set(cursorX, 1 - cursorY));
   }, [cursor, cursorVec]);
 
   useEffect(() => {
-    if (!ctx) return;
+    if (!shaderContext) return;
     const key = `${slug}.${variant}`;
     const build = RECIPE_BUILDS[key];
 
@@ -42,8 +42,8 @@ function RecipeMesh({ slug, variant }: { slug: string; variant: string }) {
 
     const colorNode = build({ cursorUniform });
 
-    return addPlaneMesh(ctx, colorNode);
-  }, [ctx, slug, variant, cursorUniform]);
+    return addPlaneMesh(shaderContext, colorNode);
+  }, [shaderContext, slug, variant, cursorUniform]);
 
   return null;
 }

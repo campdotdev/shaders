@@ -46,39 +46,39 @@ const INITIAL: Params = {
   color4: palette.teal.base,
 };
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
+const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const fmtColors = (p: Params) => {
-  const all = [p.color0, p.color1, p.color2, p.color3, p.color4];
+const fmtColors = (params: Params) => {
+  const colorList = [params.color0, params.color1, params.color2, params.color3, params.color4];
 
-  return all
-    .slice(0, p.colorCount)
-    .map((c) => `'${c}'`)
+  return colorList
+    .slice(0, params.colorCount)
+    .map((colorHex) => `'${colorHex}'`)
     .join(', ');
 };
 
-const fmtJsx = (p: Params) =>
+const fmtJsx = (params: Params) =>
   `<ShaderScene>
   <SimplexNoise
-    colors={[${fmtColors(p)}]}
-    scale={${fmtNum(p.scale)}}
-    speed={${fmtNum(p.speed)}}
-    focus={${fmtNum(p.focus)}}
-    bias={${fmtNum(p.bias)}}
-    softness={${fmtNum(p.softness)}}
-    variant={${p.variant}}
+    colors={[${fmtColors(params)}]}
+    scale={${fmtNum(params.scale)}}
+    speed={${fmtNum(params.speed)}}
+    focus={${fmtNum(params.focus)}}
+    bias={${fmtNum(params.bias)}}
+    softness={${fmtNum(params.softness)}}
+    variant={${params.variant}}
   />
 </ShaderScene>`;
 
-const fmtParams = (p: Params) =>
+const fmtParams = (params: Params) =>
   `{
-  colors: [${fmtColors(p)}],
-  scale: ${fmtNum(p.scale)},
-  speed: ${fmtNum(p.speed)},
-  focus: ${fmtNum(p.focus)},
-  bias: ${fmtNum(p.bias)},
-  softness: ${fmtNum(p.softness)},
-  variant: ${p.variant},
+  colors: [${fmtColors(params)}],
+  scale: ${fmtNum(params.scale)},
+  speed: ${fmtNum(params.speed)},
+  focus: ${fmtNum(params.focus)},
+  bias: ${fmtNum(params.bias)},
+  softness: ${fmtNum(params.softness)},
+  variant: ${params.variant},
 }`;
 
 export default function SimplexNoisePage() {

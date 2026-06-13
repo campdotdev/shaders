@@ -46,30 +46,30 @@ const INITIAL: Params = {
   ],
 };
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
+const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const fmtColors = (stops: Stop[]) => stops.map((s) => `'${s.color}'`).join(', ');
+const fmtColors = (stops: Stop[]) => stops.map((stop) => `'${stop.color}'`).join(', ');
 
-const fmtStops = (stops: Stop[]) => stops.map((s) => fmtNum(s.position)).join(', ');
+const fmtStops = (stops: Stop[]) => stops.map((stop) => fmtNum(stop.position)).join(', ');
 
-const fmtJsx = (p: Params) =>
+const fmtJsx = (params: Params) =>
   `<ShaderScene>
   <LinearGradient
-    colors={[${fmtColors(p.stops)}]}
-    stops={[${fmtStops(p.stops)}]}
-    angle={${fmtNum(p.angle)}}
-    speed={${fmtNum(p.speed)}}
-    focalPoint={[${fmtNum(p.focalX)}, ${fmtNum(p.focalY)}]}
+    colors={[${fmtColors(params.stops)}]}
+    stops={[${fmtStops(params.stops)}]}
+    angle={${fmtNum(params.angle)}}
+    speed={${fmtNum(params.speed)}}
+    focalPoint={[${fmtNum(params.focalX)}, ${fmtNum(params.focalY)}]}
   />
 </ShaderScene>`;
 
-const fmtParams = (p: Params) =>
+const fmtParams = (params: Params) =>
   `{
-  colors: [${fmtColors(p.stops)}],
-  stops: [${fmtStops(p.stops)}],
-  angle: ${fmtNum(p.angle)},
-  speed: ${fmtNum(p.speed)},
-  focalPoint: [${fmtNum(p.focalX)}, ${fmtNum(p.focalY)}],
+  colors: [${fmtColors(params.stops)}],
+  stops: [${fmtStops(params.stops)}],
+  angle: ${fmtNum(params.angle)},
+  speed: ${fmtNum(params.speed)},
+  focalPoint: [${fmtNum(params.focalX)}, ${fmtNum(params.focalY)}],
 }`;
 
 export default function LinearGradientPage() {
@@ -113,26 +113,26 @@ export default function LinearGradientPage() {
     const rebuildStops = () => {
       for (const child of [...stopsFolder.children]) child.dispose();
 
-      local.stops.forEach((stop, i) => {
-        const row = stopsFolder.addFolder({ title: `Stop ${i}`, expanded: true });
+      local.stops.forEach((stop, stopIndex) => {
+        const row = stopsFolder.addFolder({ title: `Stop ${stopIndex}`, expanded: true });
 
         row.addBinding(stop, 'color', { label: 'color' });
         row.addBinding(stop, 'position', { label: 'position', min: 0, max: 1, step: 0.01 });
 
-        const removeBtn = row.addButton({ title: 'Remove stop' });
+        const removeButton = row.addButton({ title: 'Remove stop' });
 
-        if (local.stops.length <= MIN_STOPS) removeBtn.disabled = true;
-        removeBtn.on('click', () => {
-          local.stops.splice(i, 1);
+        if (local.stops.length <= MIN_STOPS) removeButton.disabled = true;
+        removeButton.on('click', () => {
+          local.stops.splice(stopIndex, 1);
           rebuildStops();
           sync();
         });
       });
 
-      const addBtn = stopsFolder.addButton({ title: '+ Add stop' });
+      const addButton = stopsFolder.addButton({ title: '+ Add stop' });
 
-      if (local.stops.length >= MAX_STOPS) addBtn.disabled = true;
-      addBtn.on('click', () => {
+      if (local.stops.length >= MAX_STOPS) addButton.disabled = true;
+      addButton.on('click', () => {
         const last = local.stops[local.stops.length - 1];
         // New stop slots in halfway between the current last position and 1.0.
         // Color duplicates the last stop's color so the new stop is visible
@@ -155,8 +155,8 @@ export default function LinearGradientPage() {
     };
   }, []);
 
-  const colors = params.stops.map((s) => s.color);
-  const stops = params.stops.map((s) => s.position);
+  const colors = params.stops.map((stop) => stop.color);
+  const stops = params.stops.map((stop) => stop.position);
   // angle and speed are live uniforms now — only color count / hex values /
   // stop positions still require a material rebuild because they're baked
   // into the TSL graph as JS literals (vec3 colors, position scalars).

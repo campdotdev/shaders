@@ -13,7 +13,7 @@ import type { Node } from 'three/webgpu';
  * is disposed at unmount.
  */
 export function addPlaneMesh(
-  ctx: ShaderContextValue,
+  shaderContext: ShaderContextValue,
   colorNode: ShaderNodeObject<Node>,
 ): () => void {
   const material = new MeshBasicNodeMaterial();
@@ -22,10 +22,10 @@ export function addPlaneMesh(
 
   const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
-  ctx.scene.add(mesh);
+  shaderContext.scene.add(mesh);
 
   return () => {
-    ctx.scene.remove(mesh);
+    shaderContext.scene.remove(mesh);
     try {
       material.dispose();
     } catch {

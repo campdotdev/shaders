@@ -50,16 +50,16 @@ interface PrimitiveSceneProps {
 }
 
 export function buildPrimitiveParams(slug: string, raw: PropsState): PrimitiveParams {
-  const num = (k: string): number => {
-    const v = raw[k];
+  const num = (key: string): number => {
+    const paramValue = raw[key];
 
-    if (typeof v !== 'number') {
+    if (typeof paramValue !== 'number') {
       throw new Error(
-        `primitive '${slug}': missing or non-number param '${k}' (got ${typeof v}). Check @/data/primitives.ts.`,
+        `primitive '${slug}': missing or non-number param '${key}' (got ${typeof paramValue}). Check @/data/primitives.ts.`,
       );
     }
 
-    return v;
+    return paramValue;
   };
 
   switch (slug) {
@@ -103,7 +103,7 @@ const buildStructuralKey = (primitive: PrimitiveParams): string =>
 
 // === Primitive demo builders ===
 
-function buildColorRamp(p: ParamsFor<'color-ramp'>): ShaderNodeObject<Node> {
+function buildColorRamp(params: ParamsFor<'color-ramp'>): ShaderNodeObject<Node> {
   const stops: ColorRampStop[] = [
     { color: vec3(1, 0.4, 0.4), position: 0 },
     { color: vec3(0.4, 1, 0.4), position: 0.5 },
@@ -111,7 +111,7 @@ function buildColorRamp(p: ParamsFor<'color-ramp'>): ShaderNodeObject<Node> {
   ];
 
   const baseColor = colorRamp(uv().x, stops);
-  const distFromMarker = uv().x.sub(p.position).abs();
+  const distFromMarker = uv().x.sub(params.position).abs();
   const marker = smoothstep(0.01, 0, distFromMarker);
 
   const lit = mix(baseColor, vec3(1, 1, 1), marker.mul(0.6));
@@ -119,97 +119,97 @@ function buildColorRamp(p: ParamsFor<'color-ramp'>): ShaderNodeObject<Node> {
   return vec4(lit, 1);
 }
 
-function buildNoise(p: ParamsFor<'noise'>): ShaderNodeObject<Node> {
-  const t = time.mul(p.speed);
-  const pNode = uv().mul(p.scale).add(vec2(t, t));
-  const n = noise(pNode);
+function buildNoise(params: ParamsFor<'noise'>): ShaderNodeObject<Node> {
+  const scaledTime = time.mul(params.speed);
+  const samplePosition = uv().mul(params.scale).add(vec2(scaledTime, scaledTime));
+  const noiseValue = noise(samplePosition);
   // noise returns ~[-1, 1]; map to [0, 1] grayscale.
-  const g = n.mul(0.5).add(0.5).clamp(0, 1);
+  const grayscale = noiseValue.mul(0.5).add(0.5).clamp(0, 1);
 
-  return vec4(g, g, g, 1);
+  return vec4(grayscale, grayscale, grayscale, 1);
 }
 
-function buildFbm(p: ParamsFor<'fbm'>): ShaderNodeObject<Node> {
-  const t = time.mul(p.speed);
-  const pNode = uv().mul(p.scale).add(vec2(t, t));
-  const f = fbm(pNode, {
-    octaves: p.octaves,
-    lacunarity: p.lacunarity,
-    gain: p.gain,
+function buildFbm(params: ParamsFor<'fbm'>): ShaderNodeObject<Node> {
+  const scaledTime = time.mul(params.speed);
+  const samplePosition = uv().mul(params.scale).add(vec2(scaledTime, scaledTime));
+  const fbmValue = fbm(samplePosition, {
+    octaves: params.octaves,
+    lacunarity: params.lacunarity,
+    gain: params.gain,
   });
-  const g = f.mul(0.5).add(0.5).clamp(0, 1);
+  const grayscale = fbmValue.mul(0.5).add(0.5).clamp(0, 1);
 
-  return vec4(g, g, g, 1);
+  return vec4(grayscale, grayscale, grayscale, 1);
 }
 
-function buildVoronoi(p: ParamsFor<'voronoi'>): ShaderNodeObject<Node> {
-  const t = time.mul(p.speed);
-  const pNode = uv().mul(p.scale).add(vec2(t, t));
-  const v = voronoi(pNode);
+function buildVoronoi(params: ParamsFor<'voronoi'>): ShaderNodeObject<Node> {
+  const scaledTime = time.mul(params.speed);
+  const samplePosition = uv().mul(params.scale).add(vec2(scaledTime, scaledTime));
+  const voronoiValue = voronoi(samplePosition);
   // voronoi (mx_worley_noise_float) is roughly [0, 1]; clamp to be safe.
-  const g = v.clamp(0, 1);
+  const grayscale = voronoiValue.clamp(0, 1);
 
-  return vec4(g, g, g, 1);
+  return vec4(grayscale, grayscale, grayscale, 1);
 }
 
-function buildQuantize(p: ParamsFor<'quantize'>): ShaderNodeObject<Node> {
-  const bins = Math.max(2, Math.round(p.bins));
-  const q = quantize(uv().x, bins);
+function buildQuantize(params: ParamsFor<'quantize'>): ShaderNodeObject<Node> {
+  const bins = Math.max(2, Math.round(params.bins));
+  const quantizedValue = quantize(uv().x, bins);
   const stops: ColorRampStop[] = [
     { color: vec3(0.15, 0.2, 0.4), position: 0 },
     { color: vec3(0.6, 0.4, 0.9), position: 0.5 },
     { color: vec3(1, 0.7, 0.4), position: 1 },
   ];
-  const c = colorRamp(q, stops);
+  const rampColor = colorRamp(quantizedValue, stops);
 
-  return vec4(c, 1);
+  return vec4(rampColor, 1);
 }
 
-function buildSdfCircle(p: ParamsFor<'sdf-circle'>): ShaderNodeObject<Node> {
-  const pNode = uv().sub(vec2(p.cx, p.cy));
-  const sdf = sdfCircle(pNode, p.radius);
-  const aa = 0.005;
-  const mask = smoothstep(aa, -aa, sdf);
-  const c = mix(vec3(0.05, 0.05, 0.1), vec3(1, 1, 1), mask);
+function buildSdfCircle(params: ParamsFor<'sdf-circle'>): ShaderNodeObject<Node> {
+  const samplePosition = uv().sub(vec2(params.cx, params.cy));
+  const sdf = sdfCircle(samplePosition, params.radius);
+  const antialiasWidth = 0.005;
+  const mask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
+  const mixedColor = mix(vec3(0.05, 0.05, 0.1), vec3(1, 1, 1), mask);
 
-  return vec4(c, 1);
+  return vec4(mixedColor, 1);
 }
 
-function buildDisplace(p: ParamsFor<'displace'>): ShaderNodeObject<Node> {
-  const t = time.mul(0.2);
-  const dUv = displace(uv(), vec2(p.x, p.y));
-  const samplePoint = dUv.mul(4).add(vec2(t, t));
-  const n = noise(samplePoint);
-  const g = n.mul(0.5).add(0.5).clamp(0, 1);
+function buildDisplace(params: ParamsFor<'displace'>): ShaderNodeObject<Node> {
+  const scaledTime = time.mul(0.2);
+  const displacedUv = displace(uv(), vec2(params.x, params.y));
+  const samplePoint = displacedUv.mul(4).add(vec2(scaledTime, scaledTime));
+  const noiseValue = noise(samplePoint);
+  const grayscale = noiseValue.mul(0.5).add(0.5).clamp(0, 1);
 
-  return vec4(g, g, g, 1);
+  return vec4(grayscale, grayscale, grayscale, 1);
 }
 
 function buildCursorRipple(
-  p: ParamsFor<'cursor-ripple'>,
+  params: ParamsFor<'cursor-ripple'>,
   staticCursor: Parameters<typeof cursorRipple>[1],
 ): ShaderNodeObject<Node> {
-  const reach = 1 / p.falloff;
-  const frequency = p.falloff * 8;
+  const reach = 1 / params.falloff;
+  const frequency = params.falloff * 8;
   const ripple = cursorRipple(uv(), staticCursor, {
-    amplitude: p.amplitude,
+    amplitude: params.amplitude,
     frequency,
     reach,
-    speed: p.speed * 6,
+    speed: params.speed * 6,
   });
-  const g = ripple
-    .div(p.amplitude * 2 + 0.0001)
+  const grayscale = ripple
+    .div(params.amplitude * 2 + 0.0001)
     .add(0.5)
     .clamp(0, 1);
 
-  return vec4(g, g, g, 1);
+  return vec4(grayscale, grayscale, grayscale, 1);
 }
 
 function buildTime(): ShaderNodeObject<Node> {
   // No controls. sin(time * 2) → [-1, 1] → grayscale pulse.
-  const v = sin(time.mul(2)).mul(0.5).add(0.5);
+  const pulse = sin(time.mul(2)).mul(0.5).add(0.5);
 
-  return vec4(v, v, v, 1);
+  return vec4(pulse, pulse, pulse, 1);
 }
 
 export function PrimitiveScene({ primitive }: PrimitiveSceneProps) {
@@ -223,13 +223,13 @@ export function PrimitiveScene({ primitive }: PrimitiveSceneProps) {
 }
 
 function PrimitiveMesh({ primitive }: PrimitiveSceneProps) {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
 
   const staticCursorVec = useMemo(() => new Vector2(0.5, 0.5), []);
   const staticCursor = useMemo(() => uniform(staticCursorVec), [staticCursorVec]);
 
   useEffect(() => {
-    if (!ctx) return;
+    if (!shaderContext) return;
 
     let colorNode: ShaderNodeObject<Node>;
 
@@ -268,8 +268,8 @@ function PrimitiveMesh({ primitive }: PrimitiveSceneProps) {
       }
     }
 
-    return addPlaneMesh(ctx, colorNode);
-  }, [ctx, primitive, staticCursor]);
+    return addPlaneMesh(shaderContext, colorNode);
+  }, [shaderContext, primitive, staticCursor]);
 
   return null;
 }

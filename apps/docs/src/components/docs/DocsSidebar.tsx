@@ -59,9 +59,9 @@ function NavGroupBlock({
         {group.label}
       </div>
       <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {group.items.map((item, i) =>
+        {group.items.map((item, itemIndex) =>
           'items' in item ? (
-            <li key={`g-${i}`} style={{ marginTop: '0.5rem' }}>
+            <li key={`g-${itemIndex}`} style={{ marginTop: '0.5rem' }}>
               <NavGroupBlock depth={depth + 1} group={item} pathname={pathname} />
             </li>
           ) : (

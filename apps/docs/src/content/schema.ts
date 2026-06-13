@@ -17,10 +17,10 @@ const rawFrontmatterSchema = z.object({
 
 function formatZodError(error: z.ZodError): string {
   return error.issues
-    .map((i) => {
-      const path = i.path.join('.');
+    .map((issue) => {
+      const path = issue.path.join('.');
 
-      return `  - ${path === '' ? '<root>' : path}: ${i.message}`;
+      return `  - ${path === '' ? '<root>' : path}: ${issue.message}`;
     })
     .join('\n');
 }
@@ -31,17 +31,17 @@ export function parseFrontmatter(data: unknown, sourcePath: string): DocsFrontma
   if (!result.success) {
     throw new Error(`Invalid frontmatter in ${sourcePath}:\n${formatZodError(result.error)}`);
   }
-  const v = result.data;
+  const frontmatterData = result.data;
 
   return {
-    title: v.title,
-    description: v.description,
-    section: v.section,
-    order: v.order,
-    navTitle: v.navTitle ?? v.title,
-    hidden: v.hidden ?? false,
-    status: v.status ?? 'ready',
-    tags: v.tags ?? [],
+    title: frontmatterData.title,
+    description: frontmatterData.description,
+    section: frontmatterData.section,
+    order: frontmatterData.order,
+    navTitle: frontmatterData.navTitle ?? frontmatterData.title,
+    hidden: frontmatterData.hidden ?? false,
+    status: frontmatterData.status ?? 'ready',
+    tags: frontmatterData.tags ?? [],
   };
 }
 

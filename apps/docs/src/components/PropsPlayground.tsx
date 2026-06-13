@@ -102,13 +102,13 @@ function toLiveEntry(entry: PropSchemaEntry, value: PropValue | undefined): Live
 }
 
 export function initialStateFromSchema(schema: PropSchema): PropsState {
-  const out: PropsState = {};
+  const initialState: PropsState = {};
 
   for (const entry of schema) {
-    out[entry.name] = entry.type === 'colors' ? [...entry.default] : entry.default;
+    initialState[entry.name] = entry.type === 'colors' ? [...entry.default] : entry.default;
   }
 
-  return out;
+  return initialState;
 }
 
 interface PropsPlaygroundProps {
@@ -133,7 +133,7 @@ export function PropsPlayground({ schema, onChange, className, style }: PropsPla
     <form
       aria-label="Live property controls"
       className={className}
-      onSubmit={(e) => e.preventDefault()}
+      onSubmit={(event) => event.preventDefault()}
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -168,7 +168,7 @@ function PropRow({
         <Field id={id} label={label}>
           <input
             id={id}
-            onChange={(e) => onChange(live.entry.name, e.target.value)}
+            onChange={(event) => onChange(live.entry.name, event.target.value)}
             style={{
               width: 40,
               height: 28,
@@ -194,7 +194,7 @@ function PropRow({
             id={id}
             max={live.entry.max}
             min={live.entry.min}
-            onChange={(e) => onChange(live.entry.name, e.target.value)}
+            onChange={(event) => onChange(live.entry.name, event.target.value)}
             step={step}
             style={{ flex: 1 }}
             type="range"
@@ -220,7 +220,7 @@ function PropRow({
           <input
             checked={live.value}
             id={id}
-            onChange={(e) => onChange(live.entry.name, e.target.checked)}
+            onChange={(event) => onChange(live.entry.name, event.target.checked)}
             type="checkbox"
           />
         </Field>
@@ -231,7 +231,7 @@ function PropRow({
         <Field id={id} label={label}>
           <select
             id={id}
-            onChange={(e) => onChange(live.entry.name, e.target.value)}
+            onChange={(event) => onChange(live.entry.name, event.target.value)}
             style={{
               flex: 1,
               padding: '0.25rem 0.5rem',
@@ -242,9 +242,9 @@ function PropRow({
             }}
             value={live.value}
           >
-            {live.entry.options.map((opt) => (
-              <option key={opt} value={opt}>
-                {opt}
+            {live.entry.options.map((option) => (
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </select>
@@ -255,14 +255,14 @@ function PropRow({
       return (
         <Field id={id} label={label}>
           <div style={{ display: 'flex', gap: 4, flexWrap: 'wrap' }}>
-            {live.value.map((c, i) => (
+            {live.value.map((colorValue, colorIndex) => (
               <input
-                aria-label={`${label} ${i + 1}`}
-                key={i}
-                onChange={(e) => {
+                aria-label={`${label} ${colorIndex + 1}`}
+                key={colorIndex}
+                onChange={(event) => {
                   const next = [...live.value];
 
-                  next[i] = e.target.value;
+                  next[colorIndex] = event.target.value;
                   onChange(live.entry.name, next);
                 }}
                 style={{
@@ -273,7 +273,7 @@ function PropRow({
                   background: 'transparent',
                 }}
                 type="color"
-                value={c}
+                value={colorValue}
               />
             ))}
           </div>

@@ -129,8 +129,8 @@ function ScaleRow({
         ) : null}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 4 }}>
-        {hexes.map((color, i) => {
-          const stepNum = i + 1;
+        {hexes.map((color, stepIndex) => {
+          const stepNum = stepIndex + 1;
           const ringed = brandStep === stepNum;
 
           return (
@@ -277,8 +277,8 @@ export function PaletteView() {
   const subFg = bg === 'dark' ? gray[7] : gray[6];
   const border = bg === 'dark' ? gray[2] : gray[10];
 
-  const auroraOld = AURORA.map((a) => a.oldHex);
-  const auroraNew = AURORA.map((a) => a.newColor);
+  const auroraOld = AURORA.map((auroraEntry) => auroraEntry.oldHex);
+  const auroraNew = AURORA.map((auroraEntry) => auroraEntry.newColor);
 
   // Brand lime mid step (index 9 of the 12-step brand scale = #A3C100)
   const brandLimeMid = limeScaleOklch[9];
@@ -361,8 +361,8 @@ export function PaletteView() {
           title="Accent palette — 12 hues × light / base / dark"
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 28 }}>
-            {ACCENTS.map((a) => (
-              <AccentTriad accent={a} bg={bg} key={a.name} />
+            {ACCENTS.map((accent) => (
+              <AccentTriad accent={accent} bg={bg} key={accent.name} />
             ))}
           </div>
         </Section>
@@ -374,10 +374,23 @@ export function PaletteView() {
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-              {AURORA.map((a) => (
-                <div key={a.name} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                  <ColorBlock bg={bg} color={a.oldHex} label={`${a.name} (old)`} sub={a.oldHex} />
-                  <ColorBlock bg={bg} color={a.newColor} label="new defaults" sub={a.newRef} />
+              {AURORA.map((auroraEntry) => (
+                <div
+                  key={auroraEntry.name}
+                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+                >
+                  <ColorBlock
+                    bg={bg}
+                    color={auroraEntry.oldHex}
+                    label={`${auroraEntry.name} (old)`}
+                    sub={auroraEntry.oldHex}
+                  />
+                  <ColorBlock
+                    bg={bg}
+                    color={auroraEntry.newColor}
+                    label="new defaults"
+                    sub={auroraEntry.newRef}
+                  />
                 </div>
               ))}
             </div>
@@ -461,7 +474,7 @@ export function PaletteView() {
               >
                 {[
                   { name: 'lime', color: brandLimeMid },
-                  ...ACCENTS.map((a) => ({ name: a.name, color: a.oklch.base })),
+                  ...ACCENTS.map((accent) => ({ name: accent.name, color: accent.oklch.base })),
                 ].map(({ name: chipName, color }) => (
                   <div
                     key={chipName}
