@@ -15,6 +15,9 @@ import type { TSLNode } from '../color-ramp/color-ramp.js';
  * @param p — Vec2 TSL node (typically a UV-space offset from the center).
  * @param radius — JS-side scalar OR a scalar TSL node.
  */
-export function sdfCircle(p: TSLNode, radius: TSLNode | number): ShaderNodeObject<Node> {
+export function signedDistanceFieldCircle(
+  p: TSLNode,
+  radius: TSLNode | number,
+): ShaderNodeObject<Node> {
   return length(p).sub(radius);
 }

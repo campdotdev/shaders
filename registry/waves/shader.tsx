@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { time } from '@lovo/matter';
+import { elapsedTime } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
 import { cos, type ShaderNodeObject, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
@@ -93,7 +93,7 @@ export function WavesShader(props: WavesShaderProps) {
 
       const [redChannel, greenChannel, blueChannel] = parseHex(layer.color ?? DEFAULT_LAYER_COLOR);
 
-      const layerTime = time.mul(speedValue);
+      const layerTime = elapsedTime.mul(speedValue);
       const waveInput = samplePosition.x.mul(freqValue).add(offset);
       const baseWave = wobble(waveInput.add(layerTime));
       const motionWave = cos(waveInput.mul(1.7).sub(layerTime.mul(0.55)))

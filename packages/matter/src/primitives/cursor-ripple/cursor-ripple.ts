@@ -3,7 +3,7 @@ import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
-import { time } from '../time/time.js';
+import { elapsedTime } from '../time/time.js';
 
 export interface CursorRippleOptions {
   /** Decay radius (UV space). Beyond this, the ripple is ~0. Default: 0.4. */
@@ -49,7 +49,7 @@ export function cursorRipple(
   // `time` is the engine-gated TSL node (from primitives/time/time.ts);
   // chains rooted in `time` automatically respect `prefers-reduced-motion` and
   // the runtime override set via `setReducedMotionPolicy`.
-  const wave = sin(d.mul(frequency).sub(time.mul(speed)));
+  const wave = sin(d.mul(frequency).sub(elapsedTime.mul(speed)));
   const decay = smoothstep(reach, 0, d);
 
   return wave.mul(amplitude).mul(decay);

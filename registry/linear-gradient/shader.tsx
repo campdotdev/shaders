@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorRampStop, time } from '@lovo/matter';
+import { colorRamp, type ColorRampStop, elapsedTime } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -110,9 +110,10 @@ export function LinearGradientShader({
     // animation on the GPU: when speedUniform ≤ 0 the mix picks gradientCoord
     // exactly (no S-curve distortion); above ~0.01 it fades into the cosine
     // animation. No JS-side branch, no material rebuild on speed changes.
-    const cosineAnimated = sub(1, cos(gradientCoord.add(time.mul(speedUniform)).mul(Math.PI))).mul(
-      0.5,
-    );
+    const cosineAnimated = sub(
+      1,
+      cos(gradientCoord.add(elapsedTime.mul(speedUniform)).mul(Math.PI)),
+    ).mul(0.5);
     const animatedGradientCoord = mix(
       gradientCoord,
       cosineAnimated,

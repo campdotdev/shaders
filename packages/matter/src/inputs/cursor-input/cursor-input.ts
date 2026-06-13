@@ -1,4 +1,4 @@
-export type Vec2 = readonly [number, number];
+export type Vector2 = readonly [number, number];
 
 export interface CursorInputOptions {
   /**
@@ -11,7 +11,7 @@ export interface CursorInputOptions {
    */
   smoothing?: number;
   /** Starting position. Default: [0.5, 0.5] (center). */
-  initial?: Vec2;
+  initial?: Vector2;
   /** Listen on this target. Default: window. */
   target?: EventTarget;
   /**
@@ -30,7 +30,7 @@ export interface CursorInputOptions {
   };
 }
 
-type ChangeListener = (value: Vec2) => void;
+type ChangeListener = (value: Vector2) => void;
 
 /**
  * Smoothed pointer tracker emitting a normalized (0..1) Vec2 position.
@@ -91,7 +91,7 @@ export class CursorInput {
   }
 
   /** Current smoothed position. Implements AnimatableSignal protocol. */
-  get(): Vec2 {
+  get(): Vector2 {
     return this.value;
   }
 
@@ -118,7 +118,7 @@ export class CursorInput {
     if (moved || this.targetDirty) {
       this.value = [next0, next1];
       this.targetDirty = false;
-      const snapshot: Vec2 = [next0, next1];
+      const snapshot: Vector2 = [next0, next1];
 
       for (const listener of this.listeners) listener(snapshot);
     }

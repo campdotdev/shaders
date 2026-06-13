@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import { colorRamp, type ColorRampStop, fbm, time } from '@lovo/matter';
+import { colorRamp, type ColorRampStop, elapsedTime, fractionalBrownianMotion } from '@lovo/matter';
 import { ShaderScene, useShaderContext } from '@lovo/matter-react';
 import { uniform, uv, vec2, vec3 } from 'three/tsl';
 import { Pane } from 'tweakpane';
@@ -50,8 +50,8 @@ function FbmMesh({
 
     const animatedUv = uv()
       .mul(scaleUniform)
-      .add(vec2(time.mul(timeSpeedUniform), time.mul(timeSpeedUniform)));
-    const fbmValue = fbm(animatedUv, { octaves, lacunarity, gain });
+      .add(vec2(elapsedTime.mul(timeSpeedUniform), elapsedTime.mul(timeSpeedUniform)));
+    const fbmValue = fractionalBrownianMotion(animatedUv, { octaves, lacunarity, gain });
     const fbmNormalized = fbmValue.add(1).mul(0.5);
 
     return addPlaneMesh(ctx, colorRamp(fbmNormalized, STOPS));

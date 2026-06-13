@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorRampStop, noise, quantize, time } from '@lovo/matter';
+import { colorRamp, type ColorRampStop, elapsedTime, quantize, simplexNoise } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
 import { clamp, mix, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
@@ -53,8 +53,8 @@ export function SimplexNoiseShader({
       if (!shaderContext) return;
 
       const sampleXY = uv().mul(scaleUniform).add(variantUniform);
-      const samplePoint = vec3(sampleXY, time.mul(speedUniform));
-      const rawNoise = noise(samplePoint);
+      const samplePoint = vec3(sampleXY, elapsedTime.mul(speedUniform));
+      const rawNoise = simplexNoise(samplePoint);
       const normalized = rawNoise.add(1).mul(0.5);
 
       // Bias: shift the noise scalar earlier (<0.5) or later (>0.5) into the

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { noise, time } from '@lovo/matter';
+import { elapsedTime, simplexNoise } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -200,7 +200,7 @@ export function AuroraShader(props: AuroraShaderProps) {
 
       if (layerUniform === undefined || variation === undefined) continue;
 
-      const scaledTime = time.mul(speedUniform).mul(layerUniform.speed);
+      const scaledTime = elapsedTime.mul(speedUniform).mul(layerUniform.speed);
 
       const driftPosition = vec2(
         scaledUv.x.add(scaledTime.mul(driftXUniform)),
@@ -212,7 +212,7 @@ export function AuroraShader(props: AuroraShaderProps) {
         layerUniform.color.y.add(variation + 1),
       );
 
-      const warpOffset = noise(
+      const warpOffset = simplexNoise(
         vec2(
           warpSeed.x.add(driftPosition.x).add(scaledTime),
           warpSeed.y.add(driftPosition.y).add(scaledTime),
@@ -222,7 +222,7 @@ export function AuroraShader(props: AuroraShaderProps) {
         .add(0.5)
         .mul(turbulenceUniform);
 
-      const noiseValue = noise(
+      const noiseValue = simplexNoise(
         vec2(driftPosition.x.add(warpOffset), driftPosition.y.add(warpOffset)),
       )
         .mul(0.5)

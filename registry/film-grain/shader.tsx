@@ -1,6 +1,6 @@
 'use client';
 
-import { filmGrain, time } from '@lovo/matter';
+import { elapsedTime, filmGrain } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -27,7 +27,7 @@ export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps
 
   useOverlayPass(
     (input) => {
-      const grainTime = floor(time.mul(speedUniform).mul(60));
+      const grainTime = floor(elapsedTime.mul(speedUniform).mul(60));
       const grain = filmGrain(intensityUniform, grainTime);
 
       if (mode === 'additive') {

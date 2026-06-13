@@ -15,18 +15,18 @@ npm install @lovo/matter three
 
 ## What's inside
 
-- **TSL primitives**: `fbm`, `voronoi`, `colorRamp`, `quantize`, and a handful of others — composable shader fragments for procedural visuals.
+- **TSL primitives**: `fractionalBrownianMotion`, `voronoi`, `colorRamp`, `quantize`, and a handful of others — composable shader fragments for procedural visuals.
 - **Renderer**: thin wrapper around `WebGPURenderer` that handles canvas resize, DPR, and `setClearColor`.
 - **Scheduler**: visibility/intersection-aware render loop that pauses when the canvas is off-screen or the tab is hidden.
 
 ## Minimal usage
 
 ```typescript
-import { fbm, colorRamp } from '@lovo/matter'
+import { fractionalBrownianMotion, colorRamp } from '@lovo/matter'
 import { uv, vec3, time } from 'three/tsl'
 
 // Inside your TSL fragment graph:
-const noise = fbm(uv().mul(4).add(time.mul(0.1)))
+const noise = fractionalBrownianMotion(uv().mul(4).add(time.mul(0.1)))
 const color = colorRamp(noise, [
   { stop: 0.0, color: vec3(0.05, 0.05, 0.1) },
   { stop: 1.0, color: vec3(0.3, 0.5, 0.95) },

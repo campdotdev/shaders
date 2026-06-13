@@ -1,4 +1,11 @@
-import { colorRamp, type ColorRampStop, fbm, quantize, time, voronoi } from '@lovo/matter';
+import {
+  colorRamp,
+  type ColorRampStop,
+  elapsedTime,
+  fractionalBrownianMotion,
+  quantize,
+  voronoi,
+} from '@lovo/matter';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
 import { length, max, sin, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
 import type { ShaderNodeObject } from 'three/tsl';
@@ -24,19 +31,19 @@ function stripeOutput(phase: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 
 /** Shared FBM base for plasma variants: time-driven uv drift → normalized 0..1. */
 function plasmaBase(): ShaderNodeObject<Node> {
-  const scrolledTime = time.mul(0.3);
+  const scrolledTime = elapsedTime.mul(0.3);
   const samplePosition = (uv() as ShaderNodeObject<Node>)
     .mul(2)
     .add(vec2(scrolledTime, scrolledTime)) as ShaderNodeObject<Node>;
 
-  return fbm(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1);
+  return fractionalBrownianMotion(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1);
 }
 
 export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
   // ─── animated-stripes ─────────────────────────────────────────────────
 
   'animated-stripes.canonical': () => {
-    const scrolledTime = time.mul(2);
+    const scrolledTime = elapsedTime.mul(2);
     const phase = (uv() as ShaderNodeObject<Node>).x
       .mul(20)
       .add(scrolledTime) as ShaderNodeObject<Node>;
@@ -45,7 +52,7 @@ export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
   },
 
   'animated-stripes.diagonal': () => {
-    const scrolledTime = time.mul(2);
+    const scrolledTime = elapsedTime.mul(2);
     const yPhase = (uv() as ShaderNodeObject<Node>).y.mul(8) as ShaderNodeObject<Node>;
     const phase = (uv() as ShaderNodeObject<Node>).x
       .mul(20)
@@ -56,7 +63,7 @@ export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
   },
 
   'animated-stripes.pulse': () => {
-    const pulseTime = sin(time).mul(2) as ShaderNodeObject<Node>;
+    const pulseTime = sin(elapsedTime).mul(2) as ShaderNodeObject<Node>;
     const phase = (uv() as ShaderNodeObject<Node>).x
       .mul(8)
       .add(pulseTime) as ShaderNodeObject<Node>;
