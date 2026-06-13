@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 
-export function useStaticHint(hint: boolean): void {
+export function useStaticSceneHint(hint: boolean): void {
   const shaderContext = useShaderContext();
 
   useEffect(() => {

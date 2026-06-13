@@ -5,14 +5,14 @@ import type { Camera, Scene } from 'three';
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
-export type OverlayTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
+export type PostProcessTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
 export interface ShaderContextValue {
   renderer: GpuRenderer;
   scene: Scene;
   camera: Camera;
   scheduler: FrameScheduler;
-  registerOverlay: (transform: OverlayTransform) => () => void;
+  registerOverlay: (transform: PostProcessTransform) => () => void;
 }
 
 export const ShaderContext = createContext<ShaderContextValue | null>(null);

@@ -94,13 +94,13 @@ Renders fallback content when WebGPU is unavailable or initialization fails. Wra
 
 See [SSR and fallbacks](/react/guides/ssr-and-fallbacks) for the full pattern.
 
-## `useStaticHint`
+## `useStaticSceneHint`
 
 Marks the scene as static — renders once on mount, then only on prop / signal changes. Use for decorative shaders without time-based animation.
 
 ```tsx
 function Hero() {
-  useStaticHint(true)
+  useStaticSceneHint(true)
   return <LinearGradient />
 }
 ```

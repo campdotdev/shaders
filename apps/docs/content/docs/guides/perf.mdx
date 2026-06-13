@@ -47,17 +47,17 @@ import { setReducedMotionPolicy } from '@lovo/matter'
 setReducedMotionPolicy('slow')
 ```
 
-This is global to the page and runs once at module init. The hook `useStaticHint` from `@lovo/matter-react` can read the current scale per-render if you need to swap visuals based on it.
+This is global to the page and runs once at module init. The hook `useStaticSceneHint` from `@lovo/matter-react` can read the current scale per-render if you need to swap visuals based on it.
 
 ## Static / render-on-demand
 
 For decorative shaders that don't actually need to animate every frame, you can hint to Matter that the scene is "static" — it renders once on mount, then only on prop / signal changes.
 
 ```tsx
-import { ShaderScene, useStaticHint } from '@lovo/matter-react'
+import { ShaderScene, useStaticSceneHint } from '@lovo/matter-react'
 
 function Hero() {
-  useStaticHint(true)
+  useStaticSceneHint(true)
   return (
     <ShaderScene>
       <LinearGradient />

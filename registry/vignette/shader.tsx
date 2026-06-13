@@ -5,7 +5,7 @@ import { useEffect, useMemo } from 'react';
 import {
   type AnimatableProp,
   useAnimatableUniform,
-  useOverlayPass,
+  usePostProcessPass,
   useResize,
 } from '@lovo/matter-react';
 import { length, smoothstep, mix as tslMix, uniform, uv, vec2, vec4 } from 'three/tsl';
@@ -79,7 +79,7 @@ export function VignetteShader({
     });
   }, [resize, aspectNode]);
 
-  useOverlayPass(
+  usePostProcessPass(
     (input) => {
       const aspect = aspectNode;
       const centered = uv().sub(centerUniform);

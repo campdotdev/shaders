@@ -8,7 +8,7 @@ import {
   useAnimatableUniform,
   useCursor,
   useShaderContext,
-  useStaticHint,
+  useStaticSceneHint,
 } from '@lovo/matter-react';
 import { cos, mix, smoothstep, sub, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
@@ -44,7 +44,7 @@ export function LinearGradientShader({
 
   const isStatic = typeof speed === 'number' && speed === 0;
 
-  useStaticHint(isStatic);
+  useStaticSceneHint(isStatic);
 
   const colorsKey = colors.join('|');
   const stopsKey = stops?.join('|') ?? '';

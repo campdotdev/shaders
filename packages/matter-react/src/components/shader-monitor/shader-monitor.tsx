@@ -4,9 +4,9 @@ import { type CSSProperties, useContext, useEffect, useRef, useState } from 'rea
 
 import { ShaderContext } from '../../context/shader-context.js';
 
-export type MonitorAnchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+export type ShaderMonitorAnchor = 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
-const anchorStyle: Record<MonitorAnchor, CSSProperties> = {
+const anchorStyle: Record<ShaderMonitorAnchor, CSSProperties> = {
   'top-left': { top: 8, left: 8 },
   'top-right': { top: 8, right: 8 },
   'bottom-left': { bottom: 8, left: 8 },
@@ -27,7 +27,7 @@ const baseStyle: CSSProperties = {
 };
 
 export interface ShaderMonitorProps {
-  anchor?: MonitorAnchor;
+  anchor?: ShaderMonitorAnchor;
 }
 
 export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {

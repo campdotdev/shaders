@@ -9,7 +9,7 @@ export type { CursorSignal } from './use-cursor/use-cursor.js';
 
 export { useShaderContext } from './use-shader-context/use-shader-context.js';
 
-export { useOverlayPass } from './use-overlay-pass/use-overlay-pass.js';
+export { usePostProcessPass } from './use-overlay-pass/use-overlay-pass.js';
 
 export { useResize } from './use-resize/use-resize.js';
 export type { ResizeSignal, ResizeValue } from './use-resize/use-resize.js';
@@ -19,4 +19,4 @@ export type { ScrollSignal, ScrollValue } from './use-scroll/use-scroll.js';
 
 export { useShaderMaterial } from './use-shader-material/use-shader-material.js';
 
-export { useStaticHint } from './use-static-hint/use-static-hint.js';
+export { useStaticSceneHint } from './use-static-hint/use-static-hint.js';
