@@ -25,31 +25,31 @@ export function createIntersectionWatcher(canvas: HTMLCanvasElement): Intersecti
     };
   }
 
-  const subs = new Set<(v: boolean) => void>();
+  const subscriptions = new Set<(inView: boolean) => void>();
   let inView = true;
-  const obs = new IntersectionObserver(
+  const observer = new IntersectionObserver(
     (entries) => {
-      const next = entries.some((e) => e.isIntersecting);
+      const next = entries.some((entry) => entry.isIntersecting);
 
       if (next === inView) return;
       inView = next;
-      for (const cb of subs) cb(inView);
+      for (const listener of subscriptions) listener(inView);
     },
     { threshold: 0 },
   );
 
-  obs.observe(canvas);
+  observer.observe(canvas);
 
   return {
     isInView: () => inView,
-    subscribe(cb) {
-      subs.add(cb);
+    subscribe(listener) {
+      subscriptions.add(listener);
 
-      return () => subs.delete(cb);
+      return () => subscriptions.delete(listener);
     },
     dispose() {
-      obs.disconnect();
-      subs.clear();
+      observer.disconnect();
+      subscriptions.clear();
     },
   };
 }

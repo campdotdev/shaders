@@ -19,15 +19,15 @@ describe('intersection watcher', () => {
         callback: IntersectionObserverCallback;
         observed: Element[] = [];
         disconnect = vi.fn();
-        constructor(cb: IntersectionObserverCallback) {
-          this.callback = cb;
+        constructor(callback: IntersectionObserverCallback) {
+          this.callback = callback;
           observers.push(this);
         }
         observe(el: Element) {
           this.observed.push(el);
         }
         unobserve(el: Element) {
-          this.observed = this.observed.filter((e) => e !== el);
+          this.observed = this.observed.filter((observedElement) => observedElement !== el);
         }
       },
     );
@@ -39,64 +39,64 @@ describe('intersection watcher', () => {
 
   it('reports the canvas as in-view by default until the first callback', () => {
     const canvas = document.createElement('canvas');
-    const w = createIntersectionWatcher(canvas);
+    const watcher = createIntersectionWatcher(canvas);
 
-    expect(w.isInView()).toBe(true);
-    w.dispose();
+    expect(watcher.isInView()).toBe(true);
+    watcher.dispose();
   });
 
   it('updates when the observer reports intersection', () => {
     const canvas = document.createElement('canvas');
-    const w = createIntersectionWatcher(canvas);
-    const cb = vi.fn();
+    const watcher = createIntersectionWatcher(canvas);
+    const listener = vi.fn();
 
-    w.subscribe(cb);
-    const obs = observers[0]!;
+    watcher.subscribe(listener);
+    const observer = observers[0]!;
 
-    obs.callback(
+    observer.callback(
       [{ isIntersecting: false } as IntersectionObserverEntry],
-      obs as unknown as IntersectionObserver,
+      observer as unknown as IntersectionObserver,
     );
-    expect(w.isInView()).toBe(false);
-    expect(cb).toHaveBeenLastCalledWith(false);
-    obs.callback(
+    expect(watcher.isInView()).toBe(false);
+    expect(listener).toHaveBeenLastCalledWith(false);
+    observer.callback(
       [{ isIntersecting: true } as IntersectionObserverEntry],
-      obs as unknown as IntersectionObserver,
+      observer as unknown as IntersectionObserver,
     );
-    expect(w.isInView()).toBe(true);
-    expect(cb).toHaveBeenLastCalledWith(true);
-    w.dispose();
+    expect(watcher.isInView()).toBe(true);
+    expect(listener).toHaveBeenLastCalledWith(true);
+    watcher.dispose();
   });
 
   it('disconnects on dispose', () => {
     const canvas = document.createElement('canvas');
-    const w = createIntersectionWatcher(canvas);
-    const obs = observers[0]!;
+    const watcher = createIntersectionWatcher(canvas);
+    const observer = observers[0]!;
 
-    w.dispose();
-    expect(obs.disconnect).toHaveBeenCalledTimes(1);
+    watcher.dispose();
+    expect(observer.disconnect).toHaveBeenCalledTimes(1);
   });
 
   it('survives a strict-mode create-dispose-recreate cycle', () => {
     const canvas = document.createElement('canvas');
-    const w1 = createIntersectionWatcher(canvas);
-    const cb = vi.fn();
+    const firstWatcher = createIntersectionWatcher(canvas);
+    const listener = vi.fn();
 
-    w1.subscribe(cb);
-    w1.dispose();
+    firstWatcher.subscribe(listener);
+    firstWatcher.dispose();
 
-    const w2 = createIntersectionWatcher(canvas);
+    const secondWatcher = createIntersectionWatcher(canvas);
 
-    w2.subscribe(cb);
-    // After w1 disposal, only w2's observer should fire its callback
-    const obs = observers[1]!; // w2's observer (observers[0] was w1's)
+    secondWatcher.subscribe(listener);
+    // After firstWatcher disposal, only secondWatcher's observer should fire its callback
+    const observer = observers[1]!; // secondWatcher's observer (observers[0] was firstWatcher's)
 
-    obs.callback(
+    observer.callback(
       [{ isIntersecting: false } as IntersectionObserverEntry],
-      obs as unknown as IntersectionObserver,
+      observer as unknown as IntersectionObserver,
     );
-    expect(cb).toHaveBeenCalledTimes(1);
-    w2.dispose();
+    expect(listener).toHaveBeenCalledTimes(1);
+    secondWatcher.dispose();
   });
 });
 
@@ -110,13 +110,13 @@ describe('intersection watcher — SSR fallback', () => {
 
   it('returns a no-op watcher when IntersectionObserver is undefined', () => {
     const canvas = document.createElement('canvas');
-    const w = createIntersectionWatcher(canvas);
+    const watcher = createIntersectionWatcher(canvas);
 
-    expect(w.isInView()).toBe(true);
-    const unsub = w.subscribe(() => {});
+    expect(watcher.isInView()).toBe(true);
+    const unsub = watcher.subscribe(() => {});
 
     unsub();
-    w.dispose();
+    watcher.dispose();
     // No throw — that's the contract.
   });
 });

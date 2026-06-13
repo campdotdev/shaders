@@ -13,14 +13,14 @@ describe('visibility watcher', () => {
       configurable: true,
       get: () => visibilityState,
     });
-    vi.spyOn(document, 'addEventListener').mockImplementation((type, cb) => {
-      if (type === 'visibilitychange') listeners.push(cb as () => void);
+    vi.spyOn(document, 'addEventListener').mockImplementation((type, listener) => {
+      if (type === 'visibilitychange') listeners.push(listener as () => void);
     });
-    vi.spyOn(document, 'removeEventListener').mockImplementation((type, cb) => {
+    vi.spyOn(document, 'removeEventListener').mockImplementation((type, listener) => {
       if (type === 'visibilitychange') {
-        const i = listeners.indexOf(cb as () => void);
+        const listenerIndex = listeners.indexOf(listener as () => void);
 
-        if (i >= 0) listeners.splice(i, 1);
+        if (listenerIndex >= 0) listeners.splice(listenerIndex, 1);
       }
     });
   });
@@ -30,51 +30,51 @@ describe('visibility watcher', () => {
   });
 
   it('reports visible by default', () => {
-    const w = createVisibilityWatcher();
+    const watcher = createVisibilityWatcher();
 
-    expect(w.isVisible()).toBe(true);
-    w.dispose();
+    expect(watcher.isVisible()).toBe(true);
+    watcher.dispose();
   });
 
   it('emits change when visibility flips to hidden and back', () => {
-    const w = createVisibilityWatcher();
-    const cb = vi.fn();
+    const watcher = createVisibilityWatcher();
+    const listener = vi.fn();
 
-    w.subscribe(cb);
+    watcher.subscribe(listener);
     visibilityState = 'hidden';
-    listeners.forEach((l) => l());
-    expect(cb).toHaveBeenLastCalledWith(false);
+    listeners.forEach((documentListener) => documentListener());
+    expect(listener).toHaveBeenLastCalledWith(false);
     visibilityState = 'visible';
-    listeners.forEach((l) => l());
-    expect(cb).toHaveBeenLastCalledWith(true);
-    w.dispose();
+    listeners.forEach((documentListener) => documentListener());
+    expect(listener).toHaveBeenLastCalledWith(true);
+    watcher.dispose();
   });
 
   it('removes the document listener on dispose', () => {
-    const w = createVisibilityWatcher();
+    const watcher = createVisibilityWatcher();
 
     expect(listeners.length).toBe(1);
-    w.dispose();
+    watcher.dispose();
     expect(listeners.length).toBe(0);
   });
 
   it('survives a strict-mode create-dispose-recreate cycle', () => {
-    const w1 = createVisibilityWatcher();
-    const cb = vi.fn();
+    const firstWatcher = createVisibilityWatcher();
+    const listener = vi.fn();
 
-    w1.subscribe(cb);
-    w1.dispose();
+    firstWatcher.subscribe(listener);
+    firstWatcher.dispose();
     expect(listeners.length).toBe(0);
 
-    const w2 = createVisibilityWatcher();
+    const secondWatcher = createVisibilityWatcher();
 
-    w2.subscribe(cb);
+    secondWatcher.subscribe(listener);
     expect(listeners.length).toBe(1);
-    // After w1 disposal, only w2's callback should fire
+    // After firstWatcher disposal, only secondWatcher's callback should fire
     visibilityState = 'hidden';
-    listeners.forEach((l) => l());
-    expect(cb).toHaveBeenCalledTimes(1);
-    w2.dispose();
+    listeners.forEach((documentListener) => documentListener());
+    expect(listener).toHaveBeenCalledTimes(1);
+    secondWatcher.dispose();
   });
 });
 

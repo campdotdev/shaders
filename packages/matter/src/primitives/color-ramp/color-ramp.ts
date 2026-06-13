@@ -46,16 +46,16 @@ export function colorRamp(t: TSLNode, stops: ColorRampStop[]): ShaderNodeObject<
   let result = mix(first.color, first.color, 0);
 
   for (let i = 1; i < stops.length; i += 1) {
-    const prev = stops[i - 1];
+    const previousStop = stops[i - 1];
     const next = stops[i];
 
-    if (prev === undefined || next === undefined) continue;
-    const span = next.position - prev.position;
+    if (previousStop === undefined || next === undefined) continue;
+    const positionSpan = next.position - previousStop.position;
 
-    if (span <= 0) continue;
+    if (positionSpan <= 0) continue;
     // Localize t into the [prev..next] range. `t` is TSLNode (the union),
     // so we use functional-form ops to avoid needing a chain-method receiver.
-    const localT = clamp(div(sub(t, prev.position), span), 0, 1);
+    const localT = clamp(div(sub(t, previousStop.position), positionSpan), 0, 1);
 
     result = mix(result, next.color, localT);
   }

@@ -25,25 +25,25 @@ export function createVisibilityWatcher(): VisibilityWatcher {
     };
   }
 
-  const subs = new Set<(v: boolean) => void>();
+  const subscriptions = new Set<(visible: boolean) => void>();
   const onChange = () => {
-    const v = document.visibilityState === 'visible';
+    const isVisible = document.visibilityState === 'visible';
 
-    for (const cb of subs) cb(v);
+    for (const listener of subscriptions) listener(isVisible);
   };
 
   document.addEventListener('visibilitychange', onChange);
 
   return {
     isVisible: () => document.visibilityState === 'visible',
-    subscribe(cb) {
-      subs.add(cb);
+    subscribe(listener) {
+      subscriptions.add(listener);
 
-      return () => subs.delete(cb);
+      return () => subscriptions.delete(listener);
     },
     dispose() {
       document.removeEventListener('visibilitychange', onChange);
-      subs.clear();
+      subscriptions.clear();
     },
   };
 }

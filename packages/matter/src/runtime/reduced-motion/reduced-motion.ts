@@ -45,7 +45,7 @@ const state: PolicyState = {
 export function setReducedMotionPolicy(policy: ReducedMotionPolicy): void {
   if (state.policy === policy) return;
   state.policy = policy;
-  for (const w of state.watchers) w.recompute();
+  for (const watcher of state.watchers) watcher.recompute();
 }
 
 export function getReducedMotionPolicy(): ReducedMotionPolicy {
@@ -80,10 +80,10 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
   if (typeof matchMedia !== 'function') {
     return {
       scale: () => computeScale(false),
-      subscribe: (cb) => {
+      subscribe: (listener) => {
         // No-op: SSR watchers are not in state.watchers and will never
         // receive policy-change notifications.
-        void cb;
+        void listener;
 
         return () => {
           // SSR no-op unsubscribe
@@ -96,39 +96,39 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
     };
   }
 
-  const mql = matchMedia('(prefers-reduced-motion: reduce)');
-  const subs = new Set<(s: number) => void>();
-  let last = computeScale(mql.matches);
+  const mediaQueryList = matchMedia('(prefers-reduced-motion: reduce)');
+  const subscriptions = new Set<(scale: number) => void>();
+  let lastComputedScale = computeScale(mediaQueryList.matches);
 
   const onChange = () => {
-    const next = computeScale(mql.matches);
+    const next = computeScale(mediaQueryList.matches);
 
-    if (next !== last) {
-      last = next;
-      for (const cb of subs) cb(next);
+    if (next !== lastComputedScale) {
+      lastComputedScale = next;
+      for (const listener of subscriptions) listener(next);
     }
   };
 
-  mql.addEventListener('change', onChange);
+  mediaQueryList.addEventListener('change', onChange);
 
   const watcher: InternalWatcher = {
-    scale: () => last,
-    subscribe(cb) {
-      subs.add(cb);
+    scale: () => lastComputedScale,
+    subscribe(listener) {
+      subscriptions.add(listener);
 
-      return () => subs.delete(cb);
+      return () => subscriptions.delete(listener);
     },
     recompute() {
-      const next = computeScale(mql.matches);
+      const next = computeScale(mediaQueryList.matches);
 
-      if (next !== last) {
-        last = next;
-        for (const cb of subs) cb(next);
+      if (next !== lastComputedScale) {
+        lastComputedScale = next;
+        for (const listener of subscriptions) listener(next);
       }
     },
     dispose() {
-      mql.removeEventListener('change', onChange);
-      subs.clear();
+      mediaQueryList.removeEventListener('change', onChange);
+      subscriptions.clear();
       state.watchers.delete(watcher);
     },
   };

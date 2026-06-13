@@ -5,20 +5,20 @@ import { fbm } from './fbm.js';
 
 describe('fbm', () => {
   it('returns a TSL node with default options', () => {
-    const n = fbm(uv());
+    const fbmValue = fbm(uv());
 
-    expect(n).toBeDefined();
+    expect(fbmValue).toBeDefined();
   });
 
   it('returns a TSL node when octaves=1', () => {
-    const n = fbm(uv(), { octaves: 1 });
+    const fbmValue = fbm(uv(), { octaves: 1 });
 
-    expect(n).toBeDefined();
+    expect(fbmValue).toBeDefined();
   });
 
   it('respects custom lacunarity and gain', () => {
-    const n = fbm(uv(), { octaves: 6, lacunarity: 2.5, gain: 0.4 });
+    const fbmValue = fbm(uv(), { octaves: 6, lacunarity: 2.5, gain: 0.4 });
 
-    expect(n).toBeDefined();
+    expect(fbmValue).toBeDefined();
   });
 });

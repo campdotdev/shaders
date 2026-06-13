@@ -60,11 +60,14 @@ export async function createRenderer(
   three.setClearColor(resolvedClearColor, clearAlpha);
 
   const resize = () => {
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
+    const canvasWidth = canvas.clientWidth;
+    const canvasHeight = canvas.clientHeight;
 
-    if (canvas.width !== w * three.getPixelRatio() || canvas.height !== h * three.getPixelRatio()) {
-      three.setSize(w, h, false);
+    if (
+      canvas.width !== canvasWidth * three.getPixelRatio() ||
+      canvas.height !== canvasHeight * three.getPixelRatio()
+    ) {
+      three.setSize(canvasWidth, canvasHeight, false);
     }
   };
 
