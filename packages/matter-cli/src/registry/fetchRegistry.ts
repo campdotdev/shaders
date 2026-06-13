@@ -26,9 +26,9 @@ export async function fetchRegistry(baseUrl: string): Promise<Registry> {
 
   try {
     parsed = JSON.parse(json);
-  } catch (err) {
+  } catch (caughtError) {
     throw new Error(
-      `Registry at ${url} is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+      `Registry at ${url} is not valid JSON: ${caughtError instanceof Error ? caughtError.message : String(caughtError)}`,
     );
   }
   if (!looksLikeRegistry(parsed)) {
@@ -38,9 +38,9 @@ export async function fetchRegistry(baseUrl: string): Promise<Registry> {
   return parsed;
 }
 
-function looksLikeRegistry(x: unknown): x is Registry {
-  if (typeof x !== 'object' || x === null || !('components' in x)) return false;
-  const components = x.components;
+function looksLikeRegistry(value: unknown): value is Registry {
+  if (typeof value !== 'object' || value === null || !('components' in value)) return false;
+  const components = value.components;
 
   return typeof components === 'object' && components !== null && !Array.isArray(components);
 }

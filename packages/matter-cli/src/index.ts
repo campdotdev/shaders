@@ -2,8 +2,8 @@ import { Command } from 'commander';
 
 declare const __VERSION__: string;
 
-function fail(err: unknown): never {
-  const message = err instanceof Error ? err.message : String(err);
+function fail(caughtError: unknown): never {
+  const message = caughtError instanceof Error ? caughtError.message : String(caughtError);
 
   process.stderr.write(`error: ${message}\n`);
   process.exit(1);
@@ -25,8 +25,8 @@ program
       const { runInit } = await import('./commands/init.js');
 
       await runInit(opts);
-    } catch (err) {
-      fail(err);
+    } catch (caughtError) {
+      fail(caughtError);
     }
   });
 
@@ -40,8 +40,8 @@ program
       const { runList } = await import('./commands/list.js');
 
       await runList({ ...opts, cliVersion: __VERSION__ });
-    } catch (err) {
-      fail(err);
+    } catch (caughtError) {
+      fail(caughtError);
     }
   });
 
@@ -58,8 +58,8 @@ program
         const { runAdd } = await import('./commands/add.js');
 
         await runAdd(components, { ...opts, cliVersion: __VERSION__ });
-      } catch (err) {
-        fail(err);
+      } catch (caughtError) {
+        fail(caughtError);
       }
     },
   );
@@ -77,8 +77,8 @@ program
         const { runUpdate } = await import('./commands/update.js');
 
         await runUpdate(components, { ...opts, cliVersion: __VERSION__ });
-      } catch (err) {
-        fail(err);
+      } catch (caughtError) {
+        fail(caughtError);
       }
     },
   );
@@ -118,8 +118,8 @@ program
           width: Number.parseInt(opts.width, 10),
           height: Number.parseInt(opts.height, 10),
         });
-      } catch (err) {
-        fail(err);
+      } catch (caughtError) {
+        fail(caughtError);
       }
     },
   );

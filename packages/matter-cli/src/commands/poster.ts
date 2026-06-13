@@ -27,13 +27,14 @@ export interface PosterIO {
 const READY_TIMEOUT_MS = 10_000;
 const DEFAULT_JPEG_QUALITY = 80;
 
-function normalizeType(t: string | undefined): PosterFormat {
-  const v = t?.toLowerCase();
+function normalizeType(rawType: string | undefined): PosterFormat {
+  const normalizedType = rawType?.toLowerCase();
 
-  if (v === undefined || v === 'jpg' || v === 'jpeg') return 'jpeg';
-  if (v === 'png') return 'png';
+  if (normalizedType === undefined || normalizedType === 'jpg' || normalizedType === 'jpeg')
+    return 'jpeg';
+  if (normalizedType === 'png') return 'png';
 
-  throw new Error(`--type must be 'png' or 'jpg' (got ${String(t)})`);
+  throw new Error(`--type must be 'png' or 'jpg' (got ${String(rawType)})`);
 }
 
 function extensionFor(format: PosterFormat): string {
@@ -129,18 +130,19 @@ export async function runPoster(
   }
 }
 
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
+function formatBytes(byteCount: number): string {
+  if (byteCount < 1024) return `${byteCount} B`;
+  if (byteCount < 1024 * 1024) return `${(byteCount / 1024).toFixed(1)} KB`;
 
-  return `${(n / 1024 / 1024).toFixed(2)} MB`;
+  return `${(byteCount / 1024 / 1024).toFixed(2)} MB`;
 }
 
 function posterPublicSrc(outPath: string): string {
   // Best-effort hint: if the path goes through `/public/`, suggest the served form.
-  const idx = outPath.replace(/\\/g, '/').indexOf('/public/');
+  const publicSegmentIndex = outPath.replace(/\\/g, '/').indexOf('/public/');
 
-  if (idx >= 0) return outPath.replace(/\\/g, '/').slice(idx + '/public'.length);
+  if (publicSegmentIndex >= 0)
+    return outPath.replace(/\\/g, '/').slice(publicSegmentIndex + '/public'.length);
 
   return outPath;
 }

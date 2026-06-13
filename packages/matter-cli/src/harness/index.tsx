@@ -8,8 +8,8 @@ import { installFrameReadyWatcher } from './frameReady.js';
 declare const __MATTER_USER_MODULE_PATH: string;
 declare const __MATTER_EXPORT_NAME: string;
 
-function isRecord(v: unknown): v is Record<string, unknown> {
-  return typeof v === 'object' && v !== null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 // Dynamic import returns `any`; assign to `unknown` first via explicit typing.
