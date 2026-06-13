@@ -44,47 +44,47 @@ const DEFAULTS = {
 };
 
 const hexToVec3 = (hex: string): readonly [number, number, number] => {
-  const clean = hex.replace('#', '');
-  const r = parseInt(clean.slice(0, 2), 16) / 255;
-  const g = parseInt(clean.slice(2, 4), 16) / 255;
-  const b = parseInt(clean.slice(4, 6), 16) / 255;
+  const cleanedHex = hex.replace('#', '');
+  const redChannel = parseInt(cleanedHex.slice(0, 2), 16) / 255;
+  const greenChannel = parseInt(cleanedHex.slice(2, 4), 16) / 255;
+  const blueChannel = parseInt(cleanedHex.slice(4, 6), 16) / 255;
 
-  return [r, g, b];
+  return [redChannel, greenChannel, blueChannel];
 };
 
 function buildDotFieldMaterial(
-  spacingU: ShaderNodeObject<Node>,
-  dotSizeU: ShaderNodeObject<Node>,
-  reachU: ShaderNodeObject<Node>,
-  strengthU: ShaderNodeObject<Node>,
-  cursorU: ShaderNodeObject<Node>,
-  resU: ShaderNodeObject<Node>,
+  spacingUniform: ShaderNodeObject<Node>,
+  dotSizeUniform: ShaderNodeObject<Node>,
+  reachUniform: ShaderNodeObject<Node>,
+  strengthUniform: ShaderNodeObject<Node>,
+  cursorUniform: ShaderNodeObject<Node>,
+  resUniform: ShaderNodeObject<Node>,
   color: readonly [number, number, number],
 ): MeshBasicNodeMaterial {
-  const [cr, cg, cb] = color;
+  const [redChannel, greenChannel, blueChannel] = color;
 
-  const pxUv = uv().mul(resU).div(spacingU);
+  const pxUv = uv().mul(resUniform).div(spacingUniform);
   const cellLocal = mod(pxUv, 1).sub(vec2(0.5, 0.5));
 
   const cellIndex = pxUv.sub(mod(pxUv, 1));
-  const cellCenterUv = cellIndex.add(vec2(0.5, 0.5)).mul(spacingU).div(resU);
+  const cellCenterUv = cellIndex.add(vec2(0.5, 0.5)).mul(spacingUniform).div(resUniform);
 
-  const cellToCursorPx = cellCenterUv.sub(cursorU).mul(-1).mul(resU);
+  const cellToCursorPx = cellCenterUv.sub(cursorUniform).mul(-1).mul(resUniform);
   const distToCursorPx = length(cellToCursorPx);
-  const influence = smoothstep(reachU, 0, distToCursorPx);
+  const influence = smoothstep(reachUniform, 0, distToCursorPx);
 
   // +0.001 avoids div-by-zero when cursor is exactly over a cell center
   const dirToCursor = cellToCursorPx.div(distToCursorPx.add(0.001));
-  const offset = dirToCursor.mul(influence).mul(strengthU).mul(0.4);
+  const offset = dirToCursor.mul(influence).mul(strengthUniform).mul(0.4);
   const displacedLocal = displace(cellLocal, offset.mul(-1));
 
   const zeroScalar = vec2(0).x;
-  const radius = zeroScalar.add(dotSizeU).div(zeroScalar.add(spacingU).mul(2));
+  const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
   const sdf = sdfCircle(displacedLocal, radius);
 
-  const aa = 0.01;
-  const dotMask = smoothstep(aa, -aa, sdf);
-  const dotColor = mix(vec3(0, 0, 0), vec3(cr, cg, cb), dotMask);
+  const antialiasWidth = 0.01;
+  const dotMask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
+  const dotColor = mix(vec3(0, 0, 0), vec3(redChannel, greenChannel, blueChannel), dotMask);
 
   const material = new MeshBasicNodeMaterial();
 
@@ -94,7 +94,7 @@ function buildDotFieldMaterial(
 }
 
 export function DotField(props: DotFieldProps) {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
   const cursorFromInputs = props.inputs?.cursor;
   const cursorAuto = useCursor();
   const cursor = cursorFromInputs ?? ((props.interactive ?? true) ? cursorAuto : null);
@@ -111,7 +111,8 @@ export function DotField(props: DotFieldProps) {
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec]);
 
   useEffect(() => {
-    if (cursor) return cursor.on('change', ([x, y]) => cursorVec.set(x, 1 - y));
+    if (cursor)
+      return cursor.on('change', ([cursorX, cursorY]) => cursorVec.set(cursorX, 1 - cursorY));
     cursorVec.set(0.5, 0.5);
 
     return undefined;
@@ -121,15 +122,17 @@ export function DotField(props: DotFieldProps) {
   const resUniform = useMemo(() => uniform(resVec), [resVec]);
 
   useEffect(() => {
-    const [w, h] = resize.get();
+    const [canvasWidth, canvasHeight] = resize.get();
 
-    if (w > 0 && h > 0) resVec.set(w, h);
+    if (canvasWidth > 0 && canvasHeight > 0) resVec.set(canvasWidth, canvasHeight);
 
-    return resize.on('change', ([w2, h2]) => resVec.set(w2, h2));
+    return resize.on('change', ([updatedWidth, updatedHeight]) =>
+      resVec.set(updatedWidth, updatedHeight),
+    );
   }, [resize, resVec]);
 
   useEffect(() => {
-    if (!ctx) return;
+    if (!shaderContext) return;
 
     const material = buildDotFieldMaterial(
       spacingUniform,
@@ -144,10 +147,10 @@ export function DotField(props: DotFieldProps) {
     );
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
-    ctx.scene.add(mesh);
+    shaderContext.scene.add(mesh);
 
     return () => {
-      ctx.scene.remove(mesh);
+      shaderContext.scene.remove(mesh);
       try {
         material.dispose();
       } catch {
@@ -160,7 +163,7 @@ export function DotField(props: DotFieldProps) {
       }
     };
   }, [
-    ctx,
+    shaderContext,
     color,
     spacingUniform,
     dotSizeUniform,
