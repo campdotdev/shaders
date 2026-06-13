@@ -4,25 +4,25 @@ import { cleanup, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  type OverlayTransform,
+  type PostProcessTransform,
   ShaderContext,
   type ShaderContextValue,
 } from '../../context/shader-context.js';
-import { useOverlayPass } from './use-overlay-pass.js';
+import { usePostProcessPass } from './use-overlay-pass.js';
 
 function makeCtx(): {
   ctx: ShaderContextValue;
-  registered: OverlayTransform[];
+  registered: PostProcessTransform[];
   cleanups: number;
 } {
-  const registered: OverlayTransform[] = [];
+  const registered: PostProcessTransform[] = [];
   let cleanups = 0;
   const ctx = {
     renderer: {} as ShaderContextValue['renderer'],
     scene: {} as ShaderContextValue['scene'],
     camera: {} as ShaderContextValue['camera'],
     scheduler: {} as ShaderContextValue['scheduler'],
-    registerOverlay: (transform: OverlayTransform) => {
+    registerOverlay: (transform: PostProcessTransform) => {
       registered.push(transform);
 
       return () => {
@@ -38,14 +38,14 @@ function Wrapper({ ctx, children }: { ctx: ShaderContextValue | null; children: 
   return <ShaderContext.Provider value={ctx}>{children}</ShaderContext.Provider>;
 }
 
-const identityTransform: OverlayTransform = (input) => input;
+const identityTransform: PostProcessTransform = (input) => input;
 
-describe('useOverlayPass', () => {
+describe('usePostProcessPass', () => {
   it('registers the transform on mount', () => {
     const { ctx, registered } = makeCtx();
 
     function Probe() {
-      useOverlayPass(identityTransform, []);
+      usePostProcessPass(identityTransform, []);
 
       return null;
     }
@@ -70,7 +70,7 @@ describe('useOverlayPass', () => {
     } as unknown as ShaderContextValue;
 
     function Probe() {
-      useOverlayPass(identityTransform, []);
+      usePostProcessPass(identityTransform, []);
 
       return null;
     }
@@ -89,7 +89,7 @@ describe('useOverlayPass', () => {
     const { ctx, registered } = makeCtx();
 
     function Probe({ mode }: { mode: 'a' | 'b' }) {
-      useOverlayPass(identityTransform, [mode]);
+      usePostProcessPass(identityTransform, [mode]);
 
       return null;
     }
@@ -112,7 +112,7 @@ describe('useOverlayPass', () => {
 
   it('is a no-op when called outside a ShaderScene provider', () => {
     function Probe() {
-      useOverlayPass(identityTransform, []);
+      usePostProcessPass(identityTransform, []);
 
       return null;
     }

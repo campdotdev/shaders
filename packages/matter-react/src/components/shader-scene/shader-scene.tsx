@@ -15,7 +15,7 @@ import { PostProcessing } from 'three/webgpu';
 import type { Node } from 'three/webgpu';
 
 import {
-  type OverlayTransform,
+  type PostProcessTransform,
   ShaderContext,
   type ShaderContextValue,
 } from '../../context/shader-context.js';
@@ -66,7 +66,7 @@ export function ShaderScene(props: ShaderSceneProps) {
         const postProcessing = new PostProcessing(renderer.three);
         const scheduler = new FrameScheduler();
 
-        const overlays = new Map<symbol, OverlayTransform>();
+        const overlays = new Map<symbol, PostProcessTransform>();
 
         const basePass = pass(scene, camera);
 
@@ -83,7 +83,7 @@ export function ShaderScene(props: ShaderSceneProps) {
 
         rebuildOutputNode(); // initial: just basePass, no overlays
 
-        const registerOverlay = (transform: OverlayTransform): (() => void) => {
+        const registerOverlay = (transform: PostProcessTransform): (() => void) => {
           const key = Symbol('overlay');
 
           overlays.set(key, transform);

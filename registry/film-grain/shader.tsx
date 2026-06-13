@@ -4,8 +4,8 @@ import { elapsedTime, filmGrain } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
-  useOverlayPass,
-  useStaticHint,
+  usePostProcessPass,
+  useStaticSceneHint,
 } from '@lovo/matter-react';
 import { floor, vec4 } from 'three/tsl';
 
@@ -23,9 +23,9 @@ export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps
 
   const isStatic = typeof speed === 'number' && speed === 0;
 
-  useStaticHint(isStatic);
+  useStaticSceneHint(isStatic);
 
-  useOverlayPass(
+  usePostProcessPass(
     (input) => {
       const grainTime = floor(elapsedTime.mul(speedUniform).mul(60));
       const grain = filmGrain(intensityUniform, grainTime);

@@ -5,7 +5,7 @@ import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { ShaderContext } from '../../context/shader-context.js';
-import { useStaticHint } from './use-static-hint.js';
+import { useStaticSceneHint } from './use-static-hint.js';
 
 const makeWrapper = (scheduler: FrameScheduler) => {
   function Wrapper({ children }: { children: ReactNode }) {
@@ -25,7 +25,7 @@ const makeWrapper = (scheduler: FrameScheduler) => {
   return Wrapper;
 };
 
-describe('useStaticHint', () => {
+describe('useStaticSceneHint', () => {
   beforeEach(() => {
     vi.stubGlobal('requestAnimationFrame', () => 0);
     vi.stubGlobal('cancelAnimationFrame', () => {});
@@ -38,7 +38,7 @@ describe('useStaticHint', () => {
     const scheduler = new FrameScheduler();
     const setIdle = vi.spyOn(scheduler, 'setIdle');
 
-    renderHook(() => useStaticHint(true), { wrapper: makeWrapper(scheduler) });
+    renderHook(() => useStaticSceneHint(true), { wrapper: makeWrapper(scheduler) });
     expect(setIdle).toHaveBeenLastCalledWith(true);
   });
 
@@ -46,13 +46,13 @@ describe('useStaticHint', () => {
     const scheduler = new FrameScheduler();
     const setIdle = vi.spyOn(scheduler, 'setIdle');
 
-    renderHook(() => useStaticHint(false), { wrapper: makeWrapper(scheduler) });
+    renderHook(() => useStaticSceneHint(false), { wrapper: makeWrapper(scheduler) });
     expect(setIdle).toHaveBeenLastCalledWith(false);
   });
 
   it('reverts to non-idle on unmount', () => {
     const scheduler = new FrameScheduler();
-    const { unmount } = renderHook(() => useStaticHint(true), {
+    const { unmount } = renderHook(() => useStaticSceneHint(true), {
       wrapper: makeWrapper(scheduler),
     });
 
@@ -65,7 +65,7 @@ describe('useStaticHint', () => {
     // Sanity: the hook does not spuriously call requestRender on every render.
     const scheduler = new FrameScheduler();
     const requestRender = vi.spyOn(scheduler, 'requestRender');
-    const { rerender } = renderHook(({ hint }) => useStaticHint(hint), {
+    const { rerender } = renderHook(({ hint }) => useStaticSceneHint(hint), {
       wrapper: makeWrapper(scheduler),
       initialProps: { hint: true },
     });
