@@ -30,81 +30,81 @@ export function SimplexNoiseShader({
   stops,
   variant,
 }: SimplexNoiseShaderProps) {
-  const ctx = useShaderContext();
-  const scaleU = useAnimatableUniform<number>(scale);
-  const speedU = useAnimatableUniform<number>(speed);
-  const focusU = useAnimatableUniform<number>(focus);
-  const biasU = useAnimatableUniform<number>(bias);
-  const softnessU = useAnimatableUniform<number>(softness);
+  const shaderContext = useShaderContext();
+  const scaleUniform = useAnimatableUniform<number>(scale);
+  const speedUniform = useAnimatableUniform<number>(speed);
+  const focusUniform = useAnimatableUniform<number>(focus);
+  const biasUniform = useAnimatableUniform<number>(bias);
+  const softnessUniform = useAnimatableUniform<number>(softness);
 
   const colorsKey = colors.join('|');
   const stopsKey = stops?.join('|') ?? '';
 
   const variantVec = useMemo(() => new Vector2(0, 0), []);
-  const variantU = useMemo(() => uniform(variantVec), [variantVec]);
+  const variantUniform = useMemo(() => uniform(variantVec), [variantVec]);
 
   useEffect(() => {
     variantVec.set(variant * 12.9898, variant * 78.233);
-    ctx?.scheduler.requestRender();
-  }, [ctx, variantVec, variant]);
+    shaderContext?.scheduler.requestRender();
+  }, [shaderContext, variantVec, variant]);
 
   useEffect(
     () => {
-      if (!ctx) return;
+      if (!shaderContext) return;
 
-      const sampleXY = uv().mul(scaleU).add(variantU);
-      const samplePoint = vec3(sampleXY, time.mul(speedU));
-      const raw = noise(samplePoint);
-      const normalized = raw.add(1).mul(0.5);
+      const sampleXY = uv().mul(scaleUniform).add(variantUniform);
+      const samplePoint = vec3(sampleXY, time.mul(speedUniform));
+      const rawNoise = noise(samplePoint);
+      const normalized = rawNoise.add(1).mul(0.5);
 
       // Bias: shift the noise scalar earlier (<0.5) or later (>0.5) into the
       // color ramp. 0.5 is identity. In 2-color mode this reads as dark/light;
       // in multi-color mode it leans toward the first or last colors in the array.
-      const biasShift = biasU.sub(0.5).mul(2);
+      const biasShift = biasUniform.sub(0.5).mul(2);
       const biased = clamp(normalized.add(biasShift), 0, 1);
 
       // Focus: linear scale around 0.5. 1 is identity, >1 pushes values toward
       // the ramp extremes (first/last colors), <1 pulls them toward the middle.
-      const t = clamp(biased.sub(0.5).mul(focusU).add(0.5), 0, 1);
+      const focusedValue = clamp(biased.sub(0.5).mul(focusUniform).add(0.5), 0, 1);
 
       // Softness: blend between quantized contour bands (0) and smooth ramp (1).
       const stepCount = Math.max(colors.length, 1);
-      const quantized = quantize(t, stepCount);
-      const tBanded = mix(quantized, t, softnessU);
+      const quantized = quantize(focusedValue, stepCount);
+      const bandedValue = mix(quantized, focusedValue, softnessUniform);
 
       // Build the colorRamp stops from colors[] + optional stops[] (auto-even otherwise).
-      const evenAt = (i: number) => i / Math.max(colors.length - 1, 1);
-      const rampStops: ColorRampStop[] = colors.map((hex, i) => {
-        const [r, g, b] = parseHex(hex);
-        const userPos = stops?.[i];
+      const evenAt = (colorIndex: number) => colorIndex / Math.max(colors.length - 1, 1);
+      const rampStops: ColorRampStop[] = colors.map((hex, colorIndex) => {
+        const [redChannel, greenChannel, blueChannel] = parseHex(hex);
+        const userPos = stops?.[colorIndex];
         const position =
-          typeof userPos === 'number' ? Math.min(Math.max(userPos, 0), 1) : evenAt(i);
+          typeof userPos === 'number' ? Math.min(Math.max(userPos, 0), 1) : evenAt(colorIndex);
 
         return {
-          color: vec3(r, g, b),
+          color: vec3(redChannel, greenChannel, blueChannel),
           position,
         };
       });
 
       const material = new MeshBasicNodeMaterial();
 
-      material.colorNode = colorRamp(tBanded, rampStops);
+      material.colorNode = colorRamp(bandedValue, rampStops);
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
-      ctx.scene.add(mesh);
+      shaderContext.scene.add(mesh);
 
       return () => {
-        ctx.scene.remove(mesh);
+        shaderContext.scene.remove(mesh);
         try {
           material.dispose();
-        } catch (err) {
-          console.debug('[SimplexNoise] material.dispose ignored:', err);
+        } catch (caughtError) {
+          console.debug('[SimplexNoise] material.dispose ignored:', caughtError);
         }
         try {
           mesh.geometry.dispose();
-        } catch (err) {
-          console.debug('[SimplexNoise] geometry.dispose ignored:', err);
+        } catch (caughtError) {
+          console.debug('[SimplexNoise] geometry.dispose ignored:', caughtError);
         }
       };
     },
@@ -112,7 +112,17 @@ export function SimplexNoiseShader({
     // the arrays themselves are intentionally omitted to avoid rebuilds on
     // identity-only changes. Animatable uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [ctx, scaleU, speedU, focusU, biasU, softnessU, variantU, colorsKey, stopsKey],
+    [
+      shaderContext,
+      scaleUniform,
+      speedUniform,
+      focusUniform,
+      biasUniform,
+      softnessUniform,
+      variantUniform,
+      colorsKey,
+      stopsKey,
+    ],
   );
 
   return null;
