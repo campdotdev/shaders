@@ -24,8 +24,11 @@ export interface LinearGradientShaderProps {
   interactive: boolean;
 }
 
-const isPoint = (v: unknown): v is readonly [number, number] =>
-  Array.isArray(v) && v.length === 2 && typeof v[0] === 'number' && typeof v[1] === 'number';
+const isPoint = (value: unknown): value is readonly [number, number] =>
+  Array.isArray(value) &&
+  value.length === 2 &&
+  typeof value[0] === 'number' &&
+  typeof value[1] === 'number';
 
 export function LinearGradientShader({
   colors,
@@ -35,7 +38,7 @@ export function LinearGradientShader({
   speed,
   interactive,
 }: LinearGradientShaderProps) {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
   const cursorAuto = useCursor();
   const cursor = interactive ? cursorAuto : null;
 
@@ -56,17 +59,17 @@ export function LinearGradientShader({
 
   useEffect(() => {
     const angleValue = typeof angle === 'number' ? angle : 0;
-    const rad = angleValue * (Math.PI / 180);
+    const angleRadians = angleValue * (Math.PI / 180);
 
-    dirVec.set(Math.cos(rad), Math.sin(rad));
-    ctx?.scheduler.requestRender();
-  }, [ctx, dirVec, angle]);
+    dirVec.set(Math.cos(angleRadians), Math.sin(angleRadians));
+    shaderContext?.scheduler.requestRender();
+  }, [shaderContext, dirVec, angle]);
 
   useEffect(() => {
     if (cursor) {
-      return cursor.on('change', ([x, y]) => {
-        cursorVec.set(x, 1 - y);
-        ctx?.scheduler.requestRender();
+      return cursor.on('change', ([cursorX, cursorY]) => {
+        cursorVec.set(cursorX, 1 - cursorY);
+        shaderContext?.scheduler.requestRender();
       });
     }
 
@@ -75,67 +78,74 @@ export function LinearGradientShader({
     } else {
       cursorVec.set(0.5, 0.5);
     }
-    ctx?.scheduler.requestRender();
+    shaderContext?.scheduler.requestRender();
 
     return undefined;
-  }, [ctx, cursor, cursorVec, focalPoint]);
+  }, [shaderContext, cursor, cursorVec, focalPoint]);
 
   useEffect(() => {
-    if (!ctx) return;
+    if (!shaderContext) return;
 
-    const evenAt = (i: number) => i / Math.max(colors.length - 1, 1);
+    const evenAt = (colorIndex: number) => colorIndex / Math.max(colors.length - 1, 1);
 
-    const rampStops: ColorRampStop[] = colors.map((hex, i) => {
-      const [r, g, b] = parseHex(hex);
-      const userPos = stops?.[i];
-      const position = typeof userPos === 'number' ? Math.min(Math.max(userPos, 0), 1) : evenAt(i);
+    const rampStops: ColorRampStop[] = colors.map((hex, colorIndex) => {
+      const [redChannel, greenChannel, blueChannel] = parseHex(hex);
+      const userPos = stops?.[colorIndex];
+      const position =
+        typeof userPos === 'number' ? Math.min(Math.max(userPos, 0), 1) : evenAt(colorIndex);
 
       return {
-        color: vec3(r, g, b),
+        color: vec3(redChannel, greenChannel, blueChannel),
         position,
       };
     });
 
-    const tNode = uv().sub(cursorUniform).dot(dirNode).add(0.5);
+    const gradientCoord = uv().sub(cursorUniform).dot(dirNode).add(0.5);
 
     // Cosine-smoothed ping-pong: (1 - cos(π·x)) / 2 has period 2, peaks at x=1
     // and troughs at x=0/2 — same rhythm as a triangle wave but C∞ smooth so
     // the apex doesn't show as a visible band.
     //
-    // The mix(static, animated, smoothstep(0, 0.01, speedU)) gates the
-    // animation on the GPU: when speedU ≤ 0 the mix picks tNode exactly (no
-    // S-curve distortion); above ~0.01 it fades into the cosine animation.
-    // No JS-side branch, no material rebuild on speed changes.
-    const cosineAnimated = sub(1, cos(tNode.add(time.mul(speedUniform)).mul(Math.PI))).mul(0.5);
-    const tAnimated = mix(tNode, cosineAnimated, smoothstep(0, 0.01, speedUniform));
+    // The mix(static, animated, smoothstep(0, 0.01, speedUniform)) gates the
+    // animation on the GPU: when speedUniform ≤ 0 the mix picks gradientCoord
+    // exactly (no S-curve distortion); above ~0.01 it fades into the cosine
+    // animation. No JS-side branch, no material rebuild on speed changes.
+    const cosineAnimated = sub(1, cos(gradientCoord.add(time.mul(speedUniform)).mul(Math.PI))).mul(
+      0.5,
+    );
+    const animatedGradientCoord = mix(
+      gradientCoord,
+      cosineAnimated,
+      smoothstep(0, 0.01, speedUniform),
+    );
 
     const material = new MeshBasicNodeMaterial();
 
-    material.colorNode = colorRamp(tAnimated, rampStops);
+    material.colorNode = colorRamp(animatedGradientCoord, rampStops);
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
-    ctx.scene.add(mesh);
+    shaderContext.scene.add(mesh);
 
     return () => {
-      ctx.scene.remove(mesh);
+      shaderContext.scene.remove(mesh);
 
       try {
         material.dispose();
-      } catch (err) {
-        console.debug('[LinearGradient] material.dispose ignored:', err);
+      } catch (caughtError) {
+        console.debug('[LinearGradient] material.dispose ignored:', caughtError);
       }
       try {
         mesh.geometry.dispose();
-      } catch (err) {
-        console.debug('[LinearGradient] geometry.dispose ignored:', err);
+      } catch (caughtError) {
+        console.debug('[LinearGradient] geometry.dispose ignored:', caughtError);
       }
     };
     // colorsKey and stopsKey are stable string proxies for the prop arrays;
     // the arrays themselves are intentionally omitted to avoid rebuilds on
     // identity-only changes. Animatable uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx, colorsKey, stopsKey, cursor, speedUniform, cursorUniform, dirNode]);
+  }, [shaderContext, colorsKey, stopsKey, cursor, speedUniform, cursorUniform, dirNode]);
 
   return null;
 }
