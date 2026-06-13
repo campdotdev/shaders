@@ -26,11 +26,11 @@ Writes `matter.config.json` to your project root with sensible defaults:
   "componentsDir": "src/components/matter",
   "registryUrl": "https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry",
   "aliases": { "@/": "src/" },
-  "tsx": true
+  "useTypeScript": true
 }
 ```
 
-The `${ref}` placeholder is auto-substituted with the CLI's published version tag (e.g., `v0.1.0`), so you get a stable snapshot. Override with `--ref <tag|branch|sha>` if you want to track `main` or a specific commit.
+The `${ref}` placeholder is auto-substituted with the CLI's published version tag (e.g., `v0.1.0`), so you get a stable snapshot. Override with `--reference <tag|branch|sha>` if you want to track `main` or a specific commit.
 
 ### List available components
 
@@ -63,25 +63,25 @@ npx matter-cli update --force
 Render a Matter component tree to an image for use as a `<ShaderScene fallback>` — eliminates the visible blank canvas during WebGPU initialization.
 
 ```bash
-npx matter-cli poster --from <file> --out <path> [options]
+npx matter-cli poster --source <file> --output <path> [options]
 ```
 
 | Flag               | Default    | Description                                                                                          |
 | ------------------ | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `--from <file>`    | (required) | Path to a `.tsx`/`.ts` file whose chosen export renders the full tree (must include `<ShaderScene>`) |
-| `--out <path>`     | (required) | Where to write the image. Extension optional — `--type` decides. Parent directories auto-created.    |
-| `--type <format>`  | `jpg`      | Output format: `png` or `jpg`. Default is `jpg` — best size/quality for most shaders.                |
-| `--quality <n>`    | `80`       | JPEG quality 1–100. Ignored for PNG.                                                                 |
-| `--export <name>`  | `default`  | Named export to render.                                                                              |
-| `--time <seconds>` | `0`        | Wait this long after the first non-blank frame before snapshotting.                                  |
-| `--width <px>`     | `1280`     | Render width.                                                                                        |
-| `--height <px>`    | `720`      | Render height.                                                                                       |
+| `--source <file>`           | (required) | Path to a `.tsx`/`.ts` file whose chosen export renders the full tree (must include `<ShaderScene>`) |
+| `--output <path>`           | (required) | Where to write the image. Extension optional — `--format` decides. Parent directories auto-created.    |
+| `--format <format>`         | `jpg`      | Output format: `png` or `jpg`. Default is `jpg` — best size/quality for most shaders.                |
+| `--quality <n>`             | `80`       | JPEG quality 1–100. Ignored for PNG.                                                                 |
+| `--export-name <name>`      | `default`  | Named export to render.                                                                              |
+| `--capture-delay <seconds>` | `0`        | Wait this long after the first non-blank frame before snapshotting.                                  |
+| `--width <px>`              | `1280`     | Render width.                                                                                        |
+| `--height <px>`             | `720`      | Render height.                                                                                       |
 
 #### Which format should I pick?
 
 The default (JPEG q80) handles most shaders well. PNG wins on shaders with large flat-color regions where its lossless palette compression beats JPEG's DCT. As a rule of thumb:
 
-| Use PNG (`--type png`) for…       | Use the default JPEG for…                  |
+| Use PNG (`--format png`) for…     | Use the default JPEG for…                  |
 | --------------------------------- | ------------------------------------------ |
 | `LinearGradient` with hard stops  | `Aurora` and similar gradient-heavy scenes |
 | `SimplexNoise` with contour bands | `MeshGradient` (smooth color flow)         |

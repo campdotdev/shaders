@@ -34,12 +34,12 @@ program
   .command('list')
   .description('show available components in the registry')
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
-  .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
-  .action(async (opts: { registry?: string; ref?: string }) => {
+  .option('--reference <ref>', 'tag, branch, or commit (defaults to the CLI version)')
+  .action(async (opts: { registry?: string; reference?: string }) => {
     try {
       const { runList } = await import('./commands/list.js');
 
-      await runList({ ...opts, cliVersion: __VERSION__ });
+      await runList({ registry: opts.registry, ref: opts.reference, cliVersion: __VERSION__ });
     } catch (caughtError) {
       fail(caughtError);
     }
@@ -50,14 +50,22 @@ program
   .description('copy one or more components from the registry into componentsDir')
   .argument('<components...>', 'component slugs (e.g. "linear-gradient")')
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
-  .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
+  .option('--reference <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .option('--force', 'overwrite existing files in componentsDir')
   .action(
-    async (components: string[], opts: { registry?: string; ref?: string; force?: boolean }) => {
+    async (
+      components: string[],
+      opts: { registry?: string; reference?: string; force?: boolean },
+    ) => {
       try {
         const { runAdd } = await import('./commands/add.js');
 
-        await runAdd(components, { ...opts, cliVersion: __VERSION__ });
+        await runAdd(components, {
+          registry: opts.registry,
+          ref: opts.reference,
+          force: opts.force,
+          cliVersion: __VERSION__,
+        });
       } catch (caughtError) {
         fail(caughtError);
       }
@@ -69,14 +77,22 @@ program
   .description('re-fetch a previously-added component (or all, if no name given)')
   .argument('[components...]', 'component slugs; omit to update every component in componentsDir')
   .option('--registry <url>', 'override the registryUrl from matter.config.json')
-  .option('--ref <ref>', 'tag, branch, or commit (defaults to the CLI version)')
+  .option('--reference <ref>', 'tag, branch, or commit (defaults to the CLI version)')
   .option('--force', 'overwrite files even if they have local edits')
   .action(
-    async (components: string[], opts: { registry?: string; ref?: string; force?: boolean }) => {
+    async (
+      components: string[],
+      opts: { registry?: string; reference?: string; force?: boolean },
+    ) => {
       try {
         const { runUpdate } = await import('./commands/update.js');
 
-        await runUpdate(components, { ...opts, cliVersion: __VERSION__ });
+        await runUpdate(components, {
+          registry: opts.registry,
+          ref: opts.reference,
+          force: opts.force,
+          cliVersion: __VERSION__,
+        });
       } catch (caughtError) {
         fail(caughtError);
       }
@@ -86,22 +102,22 @@ program
 program
   .command('poster')
   .description('render a Matter component tree to a static image for use as <ShaderScene fallback>')
-  .requiredOption('--from <file>', 'path to a .tsx/.ts file exporting the component to render')
-  .requiredOption('--out <path>', 'where to write the image (extension optional; --type wins)')
-  .option('--type <format>', 'output format: png or jpg', 'jpg')
+  .requiredOption('--source <file>', 'path to a .tsx/.ts file exporting the component to render')
+  .requiredOption('--output <path>', 'where to write the image (extension optional; --format wins)')
+  .option('--format <format>', 'output format: png or jpg', 'jpg')
   .option('--quality <n>', 'JPEG quality 1–100 (default 80, ignored for PNG)')
-  .option('--export <name>', 'named export to render', 'default')
-  .option('--time <seconds>', 'wait this long after first non-blank frame', '0')
+  .option('--export-name <name>', 'named export to render', 'default')
+  .option('--capture-delay <seconds>', 'wait this long after first non-blank frame', '0')
   .option('--width <px>', 'render width', '1280')
   .option('--height <px>', 'render height', '720')
   .action(
     async (opts: {
-      from: string;
-      out: string;
-      type: string;
+      source: string;
+      output: string;
+      format: string;
       quality?: string;
-      export: string;
-      time: string;
+      exportName: string;
+      captureDelay: string;
       width: string;
       height: string;
     }) => {
@@ -109,12 +125,12 @@ program
         const { runPoster } = await import('./commands/poster.js');
 
         await runPoster({
-          from: opts.from,
-          out: opts.out,
-          type: opts.type,
+          from: opts.source,
+          out: opts.output,
+          type: opts.format,
           quality: opts.quality === undefined ? undefined : Number.parseInt(opts.quality, 10),
-          exportName: opts.export,
-          timeSeconds: Number.parseFloat(opts.time),
+          exportName: opts.exportName,
+          timeSeconds: Number.parseFloat(opts.captureDelay),
           width: Number.parseInt(opts.width, 10),
           height: Number.parseInt(opts.height, 10),
         });
