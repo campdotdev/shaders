@@ -28,16 +28,16 @@ export function VignetteShader({
   radius,
   color,
 }: VignetteShaderProps) {
-  const intensityU = useAnimatableUniform(intensity);
-  const softnessU = useAnimatableUniform(softness);
-  const radiusU = useAnimatableUniform(radius);
+  const intensityUniform = useAnimatableUniform(intensity);
+  const softnessUniform = useAnimatableUniform(softness);
+  const radiusUniform = useAnimatableUniform(radius);
 
   const centerVec = useMemo(
     () => new Vector2(center[0], center[1]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
-  const centerU = useMemo(() => uniform(centerVec), [centerVec]);
+  const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
 
   useEffect(() => {
     centerVec.set(center[0], center[1]);
@@ -45,50 +45,54 @@ export function VignetteShader({
 
   const colorVec = useMemo(
     () => {
-      const [r, g, b] = parseHex(color);
+      const [redChannel, greenChannel, blueChannel] = parseHex(color);
 
-      return new Vector3(r, g, b);
+      return new Vector3(redChannel, greenChannel, blueChannel);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 
-  const colorU = useMemo(() => uniform(colorVec), [colorVec]);
+  const colorUniform = useMemo(() => uniform(colorVec), [colorVec]);
 
   useEffect(() => {
-    const [r, g, b] = parseHex(color);
+    const [redChannel, greenChannel, blueChannel] = parseHex(color);
 
-    colorVec.set(r, g, b);
+    colorVec.set(redChannel, greenChannel, blueChannel);
   }, [color, colorVec]);
 
   const resize = useResize();
-  const [iw, ih] = resize.get();
-  const aspectNode = useMemo(() => uniform(ih > 0 ? iw / ih : 16 / 9), []); // eslint-disable-line react-hooks/exhaustive-deps
+  const [initialWidth, initialHeight] = resize.get();
+  const aspectNode = useMemo(
+    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
 
   useEffect(() => {
-    const [w, h] = resize.get();
+    const [canvasWidth, canvasHeight] = resize.get();
 
-    if (w > 0 && h > 0) aspectNode.value = w / h;
+    if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
 
-    return resize.on('change', ([w2, h2]) => {
-      if (w2 > 0 && h2 > 0) aspectNode.value = w2 / h2;
+    return resize.on('change', ([updatedWidth, updatedHeight]) => {
+      if (updatedWidth > 0 && updatedHeight > 0) aspectNode.value = updatedWidth / updatedHeight;
     });
   }, [resize, aspectNode]);
 
   useOverlayPass(
     (input) => {
       const aspect = aspectNode;
-      const centered = uv().sub(centerU);
+      const centered = uv().sub(centerUniform);
       const corrected = vec2(centered.x.mul(aspect), centered.y);
-      const dist = length(corrected);
+      const distance = length(corrected);
 
-      const inner = radiusU.mul(softnessU.oneMinus());
-      const mask = smoothstep(inner, radiusU, dist);
-      const factor = mask.mul(intensityU);
+      const innerRadius = radiusUniform.mul(softnessUniform.oneMinus());
+      const mask = smoothstep(innerRadius, radiusUniform, distance);
+      const factor = mask.mul(intensityUniform);
 
-      return tslMix(input, vec4(colorU, 1), factor);
+      return tslMix(input, vec4(colorUniform, 1), factor);
     },
-    [intensityU, softnessU, radiusU, centerU, colorU, aspectNode],
+    [intensityUniform, softnessUniform, radiusUniform, centerUniform, colorUniform, aspectNode],
   );
 
   return null;
