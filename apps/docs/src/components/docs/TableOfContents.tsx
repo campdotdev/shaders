@@ -29,23 +29,23 @@ export function TableOfContents({ headings }: { headings: DocsHeading[] }) {
         On this page
       </div>
       <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-        {headings.map((h) => (
+        {headings.map((heading) => (
           <li
-            key={h.id}
+            key={heading.id}
             style={{
-              paddingLeft: h.depth === 3 ? '0.75rem' : 0,
+              paddingLeft: heading.depth === 3 ? '0.75rem' : 0,
               lineHeight: 1.5,
               marginBottom: '0.25rem',
             }}
           >
             <a
-              href={`#${h.id}`}
+              href={`#${heading.id}`}
               style={{
                 color: 'var(--fg-muted)',
                 textDecoration: 'none',
               }}
             >
-              {h.text}
+              {heading.text}
             </a>
           </li>
         ))}

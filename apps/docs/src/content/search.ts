@@ -12,32 +12,32 @@ export const getDocsSearchDocuments = cache(async (): Promise<DocsSearchDocument
   ]);
 
   const mdxDocs: DocsSearchDocument[] = pages
-    .filter((p) => !p.frontmatter.hidden && p.frontmatter.status !== 'draft')
-    .map((p) => ({
-      url: p.url,
-      title: p.frontmatter.title,
-      description: p.frontmatter.description,
-      section: p.frontmatter.section,
-      headings: p.headings.map((h) => h.text),
-      tags: p.frontmatter.tags,
+    .filter((page) => !page.frontmatter.hidden && page.frontmatter.status !== 'draft')
+    .map((page) => ({
+      url: page.url,
+      title: page.frontmatter.title,
+      description: page.frontmatter.description,
+      section: page.frontmatter.section,
+      headings: page.headings.map((heading) => heading.text),
+      tags: page.frontmatter.tags,
     }));
 
   const catalogDocs: DocsSearchDocument[] = [
-    ...components.map((c) => ({
-      url: c.url,
-      title: c.label,
-      description: c.description,
+    ...components.map((component) => ({
+      url: component.url,
+      title: component.label,
+      description: component.description,
       section: 'components',
       headings: [],
-      tags: c.tags,
+      tags: component.tags,
     })),
-    ...primitives.map((p) => ({
-      url: p.url,
-      title: p.label,
-      description: p.description,
+    ...primitives.map((primitive) => ({
+      url: primitive.url,
+      title: primitive.label,
+      description: primitive.description,
       section: 'primitives',
       headings: [],
-      tags: p.tags,
+      tags: primitive.tags,
     })),
   ];
 

@@ -12,8 +12,8 @@ const QUERY_FLAG = 'visualTest';
 const REDUCED_MOTION_FLAG = 'reducedMotion';
 const VALID_POLICIES: ReducedMotionPolicy[] = ['auto', 'off', 'slow', 'paused'];
 
-const isReducedMotionPolicy = (p: string): p is ReducedMotionPolicy =>
-  (VALID_POLICIES as readonly string[]).includes(p);
+const isReducedMotionPolicy = (policyName: string): policyName is ReducedMotionPolicy =>
+  (VALID_POLICIES as readonly string[]).includes(policyName);
 
 declare global {
   interface Window {

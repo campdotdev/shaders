@@ -5,27 +5,27 @@ export function addCopyButtons(
   getCopyJsx: () => string,
   getCopyParams: () => string,
 ): void {
-  const flashCopied = (btn: { title: string }, original: string) => {
-    btn.title = 'Copied!';
+  const flashCopied = (button: { title: string }, original: string) => {
+    button.title = 'Copied!';
     pane.refresh();
     setTimeout(() => {
-      btn.title = original;
+      button.title = original;
       pane.refresh();
     }, 1200);
   };
 
-  const jsxBtn = pane.addButton({ title: 'Copy JSX' });
+  const jsxButton = pane.addButton({ title: 'Copy JSX' });
 
-  jsxBtn.on('click', () => {
-    void navigator.clipboard.writeText(getCopyJsx()).then(() => flashCopied(jsxBtn, 'Copy JSX'));
+  jsxButton.on('click', () => {
+    void navigator.clipboard.writeText(getCopyJsx()).then(() => flashCopied(jsxButton, 'Copy JSX'));
   });
 
-  const paramsBtn = pane.addButton({ title: 'Copy params' });
+  const paramsButton = pane.addButton({ title: 'Copy params' });
 
-  paramsBtn.on('click', () => {
+  paramsButton.on('click', () => {
     void navigator.clipboard
       .writeText(getCopyParams())
-      .then(() => flashCopied(paramsBtn, 'Copy params'));
+      .then(() => flashCopied(paramsButton, 'Copy params'));
   });
 
   pane.addBlade({ view: 'separator' });

@@ -23,13 +23,13 @@ const PrimitiveScene = dynamic(() => import('./PrimitiveScene').then((m) => m.Pr
 });
 
 const buildSchema = (controls: readonly PrimitiveControl[]): PropSchema =>
-  controls.map((c) => ({
-    name: c.name,
+  controls.map((control) => ({
+    name: control.name,
     type: 'number' as const,
-    default: c.default,
-    min: c.min,
-    max: c.max,
-    step: c.step,
+    default: control.default,
+    min: control.min,
+    max: control.max,
+    step: control.step,
   }));
 
 export function PrimitiveDemo({ slug, controls }: PrimitiveDemoProps) {

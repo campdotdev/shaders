@@ -17,13 +17,13 @@ export default function Home() {
       <p style={{ opacity: 0.75 }}>Status: pre-release, M3 complete — six v1 components live.</p>
       <h2 style={{ marginTop: '2rem' }}>Components</h2>
       <ul style={{ paddingLeft: '1.25rem', lineHeight: 1.8 }}>
-        {COMPONENTS.map((c) => (
-          <li key={c.slug}>
+        {COMPONENTS.map((component) => (
+          <li key={component.slug}>
             <Link
-              href={`/components/${c.slug}`}
+              href={`/components/${component.slug}`}
               style={{ color: '#88aaff', textDecoration: 'none' }}
             >
-              {c.label}
+              {component.label}
             </Link>
           </li>
         ))}

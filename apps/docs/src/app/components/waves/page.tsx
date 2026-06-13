@@ -92,38 +92,38 @@ const INITIAL: Params = {
   ],
 };
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
+const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const fmtLayer = (l: Layer) =>
-  `{ color: '${l.color}', amplitude: ${fmtNum(l.amplitude)}, frequency: ${fmtNum(l.frequency)}, speed: ${fmtNum(l.speed)}, glow: ${fmtNum(l.glow)}, thickness: ${fmtNum(l.thickness)}, offset: ${fmtNum(l.offset)}, motion: ${fmtNum(l.motion)} }`;
+const fmtLayer = (layer: Layer) =>
+  `{ color: '${layer.color}', amplitude: ${fmtNum(layer.amplitude)}, frequency: ${fmtNum(layer.frequency)}, speed: ${fmtNum(layer.speed)}, glow: ${fmtNum(layer.glow)}, thickness: ${fmtNum(layer.thickness)}, offset: ${fmtNum(layer.offset)}, motion: ${fmtNum(layer.motion)} }`;
 
 const fmtLayers = (layers: Layer[]) => layers.map(fmtLayer).join(',\n    ');
 
-const fmtJsx = (p: Params) =>
+const fmtJsx = (params: Params) =>
   `<ShaderScene>
   <Waves
-    amplitude={${fmtNum(p.amplitude)}}
-    frequency={${fmtNum(p.frequency)}}
-    speed={${fmtNum(p.speed)}}
-    glow={${fmtNum(p.glow)}}
-    thickness={${fmtNum(p.thickness)}}
-    baseline={${fmtNum(p.baseline)}}
+    amplitude={${fmtNum(params.amplitude)}}
+    frequency={${fmtNum(params.frequency)}}
+    speed={${fmtNum(params.speed)}}
+    glow={${fmtNum(params.glow)}}
+    thickness={${fmtNum(params.thickness)}}
+    baseline={${fmtNum(params.baseline)}}
     layers={[
-    ${fmtLayers(p.layers)}
+    ${fmtLayers(params.layers)}
     ]}
   />
 </ShaderScene>`;
 
-const fmtParams = (p: Params) =>
+const fmtParams = (params: Params) =>
   `{
-  amplitude: ${fmtNum(p.amplitude)},
-  frequency: ${fmtNum(p.frequency)},
-  speed: ${fmtNum(p.speed)},
-  glow: ${fmtNum(p.glow)},
-  thickness: ${fmtNum(p.thickness)},
-  baseline: ${fmtNum(p.baseline)},
+  amplitude: ${fmtNum(params.amplitude)},
+  frequency: ${fmtNum(params.frequency)},
+  speed: ${fmtNum(params.speed)},
+  glow: ${fmtNum(params.glow)},
+  thickness: ${fmtNum(params.thickness)},
+  baseline: ${fmtNum(params.baseline)},
   layers: [
-    ${fmtLayers(p.layers)}
+    ${fmtLayers(params.layers)}
   ],
 }`;
 
@@ -168,8 +168,11 @@ export default function WavesPage() {
     const rebuildLayers = () => {
       for (const child of [...layersFolder.children]) child.dispose();
 
-      local.layers.forEach((layer, i) => {
-        const row = layersFolder.addFolder({ title: `Layer ${i}`, expanded: i === 0 });
+      local.layers.forEach((layer, layerIndex) => {
+        const row = layersFolder.addFolder({
+          title: `Layer ${layerIndex}`,
+          expanded: layerIndex === 0,
+        });
 
         row.addBinding(layer, 'color');
         row.addBinding(layer, 'amplitude', { min: 0, max: 0.3, step: 0.005 });
@@ -180,20 +183,20 @@ export default function WavesPage() {
         row.addBinding(layer, 'offset', { min: 0, max: 6.28, step: 0.01 });
         row.addBinding(layer, 'motion', { min: 0, max: 1, step: 0.01 });
 
-        const removeBtn = row.addButton({ title: 'Remove layer' });
+        const removeButton = row.addButton({ title: 'Remove layer' });
 
-        if (local.layers.length <= MIN_LAYERS) removeBtn.disabled = true;
-        removeBtn.on('click', () => {
-          local.layers.splice(i, 1);
+        if (local.layers.length <= MIN_LAYERS) removeButton.disabled = true;
+        removeButton.on('click', () => {
+          local.layers.splice(layerIndex, 1);
           rebuildLayers();
           sync();
         });
       });
 
-      const addBtn = layersFolder.addButton({ title: '+ Add layer' });
+      const addButton = layersFolder.addButton({ title: '+ Add layer' });
 
-      if (local.layers.length >= MAX_LAYERS) addBtn.disabled = true;
-      addBtn.on('click', () => {
+      if (local.layers.length >= MAX_LAYERS) addButton.disabled = true;
+      addButton.on('click', () => {
         const last = local.layers[local.layers.length - 1];
         const next: Layer = {
           color: last?.color ?? palette.red.light,
@@ -223,15 +226,15 @@ export default function WavesPage() {
 
   // Convert page-state Layer (concrete numbers) to WaveLayer for the component.
   // Same shape; the shader treats concrete values as overrides (literal bake).
-  const layers: WaveLayer[] = params.layers.map((l) => ({
-    color: l.color,
-    amplitude: l.amplitude,
-    frequency: l.frequency,
-    speed: l.speed,
-    glow: l.glow,
-    thickness: l.thickness,
-    offset: l.offset,
-    motion: l.motion,
+  const layers: WaveLayer[] = params.layers.map((layer) => ({
+    color: layer.color,
+    amplitude: layer.amplitude,
+    frequency: layer.frequency,
+    speed: layer.speed,
+    glow: layer.glow,
+    thickness: layer.thickness,
+    offset: layer.offset,
+    motion: layer.motion,
   }));
 
   return (

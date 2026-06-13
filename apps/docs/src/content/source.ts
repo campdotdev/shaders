@@ -41,9 +41,10 @@ export const getMdxDocsPages = cache(async (): Promise<DocsPage[]> => {
 
   try {
     files = await walkMdx(CONTENT_ROOT);
-  } catch (err) {
-    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return [];
-    throw err;
+  } catch (caughtError) {
+    if (caughtError instanceof Error && 'code' in caughtError && caughtError.code === 'ENOENT')
+      return [];
+    throw caughtError;
   }
 
   const pages: DocsPage[] = [];
@@ -66,12 +67,12 @@ export const getMdxDocsPages = cache(async (): Promise<DocsPage[]> => {
   }
 
   pages.sort((a, b) => {
-    const s = a.frontmatter.section.localeCompare(b.frontmatter.section);
+    const sectionComparison = a.frontmatter.section.localeCompare(b.frontmatter.section);
 
-    if (s !== 0) return s;
-    const o = a.frontmatter.order - b.frontmatter.order;
+    if (sectionComparison !== 0) return sectionComparison;
+    const orderDifference = a.frontmatter.order - b.frontmatter.order;
 
-    if (o !== 0) return o;
+    if (orderDifference !== 0) return orderDifference;
 
     return a.frontmatter.title.localeCompare(b.frontmatter.title);
   });
@@ -83,11 +84,11 @@ export const getDocsPage = cache(async (slugs: string[]): Promise<DocsPage | nul
   const pages = await getMdxDocsPages();
   const target = '/' + slugs.join('/');
 
-  return pages.find((p) => p.url === target) ?? null;
+  return pages.find((page) => page.url === target) ?? null;
 });
 
 export const getDocsStaticParams = cache(async () => {
   const pages = await getMdxDocsPages();
 
-  return pages.filter((p) => !p.frontmatter.hidden).map((p) => ({ slug: p.slugs }));
+  return pages.filter((page) => !page.frontmatter.hidden).map((page) => ({ slug: page.slugs }));
 });
