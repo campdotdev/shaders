@@ -39,7 +39,7 @@ const defaultStyle: CSSProperties = {
 export function ShaderScene(props: ShaderSceneProps) {
   const { children, fallback, className, style, maxDPR } = props;
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [ctx, setCtx] = useState<ShaderContextValue | null>(null);
+  const [shaderContext, setShaderContext] = useState<ShaderContextValue | null>(null);
   const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
@@ -72,11 +72,11 @@ export function ShaderScene(props: ShaderSceneProps) {
 
         const rebuildOutputNode = () => {
           // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-          const seed = basePass as unknown as ShaderNodeObject<Node>;
+          const basePassNode = basePass as unknown as ShaderNodeObject<Node>;
 
           postProcessing.outputNode = Array.from(overlays.values()).reduce(
-            (node, transform) => transform(node),
-            seed,
+            (currentPipeline, transform) => transform(currentPipeline),
+            basePassNode,
           );
           postProcessing.needsUpdate = true;
         };
@@ -127,13 +127,14 @@ export function ShaderScene(props: ShaderSceneProps) {
           renderer.dispose();
         };
 
-        setCtx({ renderer, scene, camera, scheduler, registerOverlay });
-      } catch (err) {
+        setShaderContext({ renderer, scene, camera, scheduler, registerOverlay });
+      } catch (caughtError) {
         if (cancelled) return;
-        const e = err instanceof Error ? err : new Error(String(err));
+        const normalizedError =
+          caughtError instanceof Error ? caughtError : new Error(String(caughtError));
 
-        console.error('[ShaderScene] renderer init failed:', e);
-        setError(e);
+        console.error('[ShaderScene] renderer init failed:', normalizedError);
+        setError(normalizedError);
       }
     };
 
@@ -143,7 +144,7 @@ export function ShaderScene(props: ShaderSceneProps) {
       cancelled = true;
       cleanup?.();
       cleanup = null;
-      setCtx(null);
+      setShaderContext(null);
     };
   }, [maxDPR]);
 
@@ -171,8 +172,8 @@ export function ShaderScene(props: ShaderSceneProps) {
         {error.message}
       </div>
     );
-  } else if (ctx) {
-    content = <ShaderContext.Provider value={ctx}>{children}</ShaderContext.Provider>;
+  } else if (shaderContext) {
+    content = <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>;
   } else {
     content = fallback ?? null;
   }

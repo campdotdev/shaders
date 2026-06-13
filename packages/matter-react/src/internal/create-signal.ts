@@ -1,7 +1,7 @@
 'use client';
 
 export function createSignal<T>(getValue: () => T): {
-  signal: { get(): T; on(event: string, cb: (v: T) => void): () => void };
+  signal: { get(): T; on(event: string, listener: (v: T) => void): () => void };
   listeners: Set<(v: T) => void>;
 } {
   const listeners = new Set<(v: T) => void>();
@@ -10,11 +10,11 @@ export function createSignal<T>(getValue: () => T): {
     listeners,
     signal: {
       get: getValue,
-      on: (_event, cb) => {
-        listeners.add(cb);
+      on: (_event, listener) => {
+        listeners.add(listener);
 
         return () => {
-          listeners.delete(cb);
+          listeners.delete(listener);
         };
       },
     },

@@ -31,35 +31,35 @@ export interface ShaderMonitorProps {
 }
 
 export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
-  const ctx = useContext(ShaderContext);
+  const shaderContext = useContext(ShaderContext);
   const [stats, setStats] = useState({ fps: 0, ticks: 0, frames: 0 });
   const ticksRef = useRef(0);
   const fpsAccumRef = useRef({ frames: 0, lastSampleAt: 0, fps: 0 });
 
   useEffect(() => {
-    if (!ctx) return;
-    const client = (tick: { now: number }) => {
+    if (!shaderContext) return;
+    const schedulerTickHandler = (tick: { now: number }) => {
       ticksRef.current += 1;
-      const acc = fpsAccumRef.current;
+      const fpsAccumulator = fpsAccumRef.current;
 
-      acc.frames += 1;
-      if (acc.lastSampleAt === 0) acc.lastSampleAt = tick.now;
-      const dt = tick.now - acc.lastSampleAt;
+      fpsAccumulator.frames += 1;
+      if (fpsAccumulator.lastSampleAt === 0) fpsAccumulator.lastSampleAt = tick.now;
+      const deltaTimeSinceLastSample = tick.now - fpsAccumulator.lastSampleAt;
 
-      if (dt >= 500) {
-        acc.fps = Math.round((acc.frames * 1000) / dt);
-        acc.frames = 0;
-        acc.lastSampleAt = tick.now;
+      if (deltaTimeSinceLastSample >= 500) {
+        fpsAccumulator.fps = Math.round((fpsAccumulator.frames * 1000) / deltaTimeSinceLastSample);
+        fpsAccumulator.frames = 0;
+        fpsAccumulator.lastSampleAt = tick.now;
       }
-      setStats({ fps: acc.fps, ticks: ticksRef.current, frames: acc.frames });
+      setStats({ fps: fpsAccumulator.fps, ticks: ticksRef.current, frames: fpsAccumulator.frames });
     };
 
-    ctx.scheduler.add(client);
+    shaderContext.scheduler.add(schedulerTickHandler);
 
-    return () => ctx.scheduler.remove(client);
-  }, [ctx]);
+    return () => shaderContext.scheduler.remove(schedulerTickHandler);
+  }, [shaderContext]);
 
-  if (!ctx) {
+  if (!shaderContext) {
     return (
       <div data-testid="matter-monitor" style={{ ...baseStyle, ...anchorStyle[anchor] }}>
         no scene

@@ -17,47 +17,47 @@ const STUB_SIGNAL: CursorSignal = {
 };
 
 export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
   const [input, setInput] = useState<CursorInput | null>(null);
 
   useEffect(() => {
-    const canvas = ctx?.renderer.three.domElement;
+    const canvas = shaderContext?.renderer.three.domElement;
     const elementOpt = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined);
-    const fresh = new CursorInput({ ...opts, element: elementOpt });
+    const newCursorInput = new CursorInput({ ...opts, element: elementOpt });
 
-    setInput(fresh);
+    setInput(newCursorInput);
 
     let detach: (() => void) | null = null;
 
-    if (ctx?.scheduler) {
-      const client = ({ delta }: { delta: number }) => fresh.tick(delta);
+    if (shaderContext?.scheduler) {
+      const schedulerTickHandler = ({ delta }: { delta: number }) => newCursorInput.tick(delta);
 
-      ctx.scheduler.add(client);
-      detach = () => ctx.scheduler.remove(client);
+      shaderContext.scheduler.add(schedulerTickHandler);
+      detach = () => shaderContext.scheduler.remove(schedulerTickHandler);
     } else {
-      let raf: number | null = null;
+      let animationFrameId: number | null = null;
       let lastNow = performance.now();
       const loop = (now: number) => {
         const delta = (now - lastNow) / 1000;
 
         lastNow = now;
-        fresh.tick(delta);
-        raf = requestAnimationFrame(loop);
+        newCursorInput.tick(delta);
+        animationFrameId = requestAnimationFrame(loop);
       };
 
-      raf = requestAnimationFrame(loop);
+      animationFrameId = requestAnimationFrame(loop);
       detach = () => {
-        if (raf !== null) cancelAnimationFrame(raf);
+        if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);
       };
     }
 
     return () => {
       detach();
-      fresh.dispose();
+      newCursorInput.dispose();
       setInput(null);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [ctx]);
+  }, [shaderContext]);
 
   return input ?? STUB_SIGNAL;
 }
