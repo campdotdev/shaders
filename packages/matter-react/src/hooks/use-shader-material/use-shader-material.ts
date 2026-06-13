@@ -10,11 +10,11 @@ export type ColorTSL = Node | ShaderNodeObject<Node>;
 
 export function useShaderMaterial(build: () => ColorTSL): MeshBasicNodeMaterial {
   const material = useMemo(() => {
-    const m = new MeshBasicNodeMaterial();
+    const nodeMaterial = new MeshBasicNodeMaterial();
 
-    m.colorNode = build();
+    nodeMaterial.colorNode = build();
 
-    return m;
+    return nodeMaterial;
   }, [build]);
 
   useEffect(() => {

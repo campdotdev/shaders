@@ -5,21 +5,21 @@ import { type AnimatableSignal, useAnimatableUniform } from './use-animatable-un
 
 const makeSignal = <T,>(initial: T) => {
   let value = initial;
-  const subs = new Set<(v: T) => void>();
-  const sig: AnimatableSignal<T> = {
+  const subscribers = new Set<(v: T) => void>();
+  const signal: AnimatableSignal<T> = {
     get: () => value,
-    on: (_event, cb) => {
-      subs.add(cb);
+    on: (_event, listener) => {
+      subscribers.add(listener);
 
-      return () => subs.delete(cb);
+      return () => subscribers.delete(listener);
     },
   };
   const set = (next: T) => {
     value = next;
-    for (const cb of subs) cb(next);
+    for (const listener of subscribers) listener(next);
   };
 
-  return { signal: sig, set };
+  return { signal, set };
 };
 
 describe('useAnimatableUniform', () => {

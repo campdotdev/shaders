@@ -5,11 +5,11 @@ import { useEffect } from 'react';
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 
 export function useStaticHint(hint: boolean): void {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
 
   useEffect(() => {
-    if (!ctx) return;
+    if (!shaderContext) return;
 
-    return ctx.scheduler.setIdle(hint);
-  }, [ctx, hint]);
+    return shaderContext.scheduler.setIdle(hint);
+  }, [shaderContext, hint]);
 }

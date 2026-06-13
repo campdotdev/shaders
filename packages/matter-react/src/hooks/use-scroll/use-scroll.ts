@@ -23,18 +23,18 @@ export function useScroll(): ScrollSignal {
     if (typeof window === 'undefined') return undefined;
 
     const compute = (): ScrollValue => {
-      const y = window.scrollY;
+      const scrollYPosition = window.scrollY;
 
       const max = Math.max(document.documentElement.scrollHeight - window.innerHeight, 1);
-      const progress = Math.max(0, Math.min(1, y / max));
+      const progress = Math.max(0, Math.min(1, scrollYPosition / max));
 
-      return [y, progress];
+      return [scrollYPosition, progress];
     };
 
     let value: ScrollValue = compute();
-    const { signal: fresh, listeners } = createSignal<ScrollValue>(() => value);
+    const { signal: newSignal, listeners } = createSignal<ScrollValue>(() => value);
 
-    setSignal(fresh);
+    setSignal(newSignal);
 
     let rafPending = false;
     const onScroll = () => {
@@ -46,7 +46,7 @@ export function useScroll(): ScrollSignal {
 
         if (next[0] === value[0] && next[1] === value[1]) return;
         value = next;
-        for (const cb of listeners) cb(next);
+        for (const listener of listeners) listener(next);
       });
     };
 

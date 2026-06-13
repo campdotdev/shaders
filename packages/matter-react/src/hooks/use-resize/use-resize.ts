@@ -18,13 +18,13 @@ const STUB_SIGNAL: ResizeSignal = {
 };
 
 export function useResize(): ResizeSignal {
-  const ctx = useShaderContext();
+  const shaderContext = useShaderContext();
   const [signal, setSignal] = useState<ResizeSignal | null>(null);
 
   useEffect(() => {
-    if (!ctx) return undefined;
+    if (!shaderContext) return undefined;
 
-    const canvas = ctx.renderer.three.domElement;
+    const canvas = shaderContext.renderer.three.domElement;
 
     if (!(canvas instanceof HTMLCanvasElement)) return undefined;
 
@@ -33,9 +33,9 @@ export function useResize(): ResizeSignal {
       canvas.clientHeight,
       typeof window !== 'undefined' ? window.devicePixelRatio : 1,
     ];
-    const { signal: fresh, listeners } = createSignal<ResizeValue>(() => value);
+    const { signal: newSignal, listeners } = createSignal<ResizeValue>(() => value);
 
-    setSignal(fresh);
+    setSignal(newSignal);
 
     const emit = () => {
       const next: ResizeValue = [
@@ -46,41 +46,43 @@ export function useResize(): ResizeSignal {
 
       if (next[0] === value[0] && next[1] === value[1] && next[2] === value[2]) return;
       value = next;
-      for (const cb of listeners) cb(next);
+      for (const listener of listeners) listener(next);
     };
 
     const observer = new ResizeObserver(emit);
 
     observer.observe(canvas);
 
-    let mql: MediaQueryList | null = null;
-    let mqlHandler: (() => void) | null = null;
+    let mediaQueryList: MediaQueryList | null = null;
+    let mediaQueryListener: (() => void) | null = null;
     const setupDprWatch = () => {
       if (typeof window === 'undefined') return;
       const dpr = window.devicePixelRatio;
-      const next = window.matchMedia(`(resolution: ${dpr}dppx)`);
-      const handler = () => {
+      const nextMediaQueryList = window.matchMedia(`(resolution: ${dpr}dppx)`);
+      const nextMediaQueryListener = () => {
         emit();
-        if (mql && mqlHandler) mql.removeEventListener('change', mqlHandler);
+        if (mediaQueryList && mediaQueryListener)
+          mediaQueryList.removeEventListener('change', mediaQueryListener);
         setupDprWatch();
       };
 
-      next.addEventListener('change', handler);
-      mql = next;
-      mqlHandler = handler;
+      nextMediaQueryList.addEventListener('change', nextMediaQueryListener);
+      mediaQueryList = nextMediaQueryList;
+      mediaQueryListener = nextMediaQueryListener;
     };
 
     setupDprWatch();
 
     return () => {
       observer.disconnect();
-      if (mql && mqlHandler) mql.removeEventListener('change', mqlHandler);
-      mql = null;
-      mqlHandler = null;
+      if (mediaQueryList && mediaQueryListener)
+        mediaQueryList.removeEventListener('change', mediaQueryListener);
+      mediaQueryList = null;
+      mediaQueryListener = null;
       listeners.clear();
       setSignal(null);
     };
-  }, [ctx]);
+  }, [shaderContext]);
 
   return signal ?? STUB_SIGNAL;
 }
