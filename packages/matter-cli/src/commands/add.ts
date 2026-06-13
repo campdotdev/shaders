@@ -32,16 +32,16 @@ export async function runAdd(
     throw new Error('add: at least one component name is required');
   }
 
-  const cfg = await readMatterConfig(io.cwd);
+  const matterConfig = await readMatterConfig(io.cwd);
   const ref = resolveRef(opts.ref, opts.cliVersion);
-  const registryUrl = resolveRegistryUrl(cfg, { registry: opts.registry, ref });
+  const registryUrl = resolveRegistryUrl(matterConfig, { registry: opts.registry, ref });
   const registry = await fetchRegistry(registryUrl);
 
   const resolved = components.map((slug) => resolveComponent(slug, registry, registryUrl));
 
   if (opts.force !== true) {
-    for (const r of resolved) {
-      const targetPath = join(io.cwd, cfg.componentsDir, r.entry.file);
+    for (const resolvedComponent of resolved) {
+      const targetPath = join(io.cwd, matterConfig.componentsDir, resolvedComponent.entry.file);
 
       if (await fileExists(targetPath)) {
         throw new Error(`${targetPath} already exists. Pass --force to overwrite.`);
@@ -50,23 +50,23 @@ export async function runAdd(
   }
 
   const fetched = await Promise.all(
-    resolved.map(async (r) => {
-      const source = await fetchComponentSource(registryUrl, r.entry.file);
+    resolved.map(async (resolvedComponent) => {
+      const source = await fetchComponentSource(registryUrl, resolvedComponent.entry.file);
 
-      return { ...r, source };
+      return { ...resolvedComponent, source };
     }),
   );
 
   const allDeps = new Set<string>();
 
-  for (const f of fetched) {
-    const targetPath = join(io.cwd, cfg.componentsDir, f.entry.file);
-    const rewritten = rewriteImports(f.source, cfg.aliases);
+  for (const fetchedComponent of fetched) {
+    const targetPath = join(io.cwd, matterConfig.componentsDir, fetchedComponent.entry.file);
+    const rewritten = rewriteImports(fetchedComponent.source, matterConfig.aliases);
 
     await mkdir(dirname(targetPath), { recursive: true });
     await writeFile(targetPath, rewritten, 'utf-8');
     io.log(`Wrote ${targetPath}`);
-    for (const dep of f.entry.dependencies) allDeps.add(dep);
+    for (const dep of fetchedComponent.entry.dependencies) allDeps.add(dep);
   }
 
   const sortedDeps = [...allDeps].sort();
@@ -93,13 +93,14 @@ function resolveComponent(
   return { slug, entry };
 }
 
-async function fileExists(p: string): Promise<boolean> {
+async function fileExists(filePath: string): Promise<boolean> {
   try {
-    await access(p);
+    await access(filePath);
 
     return true;
-  } catch (err) {
-    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return false;
-    throw err;
+  } catch (caughtError) {
+    if (caughtError instanceof Error && 'code' in caughtError && caughtError.code === 'ENOENT')
+      return false;
+    throw caughtError;
   }
 }

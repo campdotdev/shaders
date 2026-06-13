@@ -4,28 +4,30 @@ import { fileURLToPath } from 'node:url';
 async function readFileUrl(filePath: string): Promise<string> {
   try {
     return await readFile(filePath, 'utf-8');
-  } catch (err) {
-    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+  } catch (caughtError) {
+    if (caughtError instanceof Error && 'code' in caughtError && caughtError.code === 'ENOENT') {
       throw new Error(`File not found: ${filePath}`);
     }
-    throw err;
+    throw caughtError;
   }
 }
 
 async function readHttpUrl(url: string): Promise<string> {
-  let res: Response;
+  let response: Response;
 
   try {
-    res = await fetch(url);
-  } catch (err) {
-    throw new Error(`Failed to fetch ${url}: ${err instanceof Error ? err.message : String(err)}`);
+    response = await fetch(url);
+  } catch (caughtError) {
+    throw new Error(
+      `Failed to fetch ${url}: ${caughtError instanceof Error ? caughtError.message : String(caughtError)}`,
+    );
   }
 
-  if (!res.ok) {
-    throw new Error(`Failed to fetch ${url}: ${res.status} ${res.statusText}`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status} ${response.statusText}`);
   }
 
-  return res.text();
+  return response.text();
 }
 
 export async function readUrl(url: string): Promise<string> {

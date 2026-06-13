@@ -39,21 +39,21 @@ export async function readMatterConfig(projectRoot: string): Promise<MatterConfi
 
   try {
     raw = await readFile(path, 'utf-8');
-  } catch (err) {
-    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') {
+  } catch (caughtError) {
+    if (caughtError instanceof Error && 'code' in caughtError && caughtError.code === 'ENOENT') {
       throw new Error(
         `matter.config.json not found in ${projectRoot}. Run \`matter-cli init\` first.`,
       );
     }
-    throw err;
+    throw caughtError;
   }
   let parsed: unknown;
 
   try {
     parsed = JSON.parse(raw);
-  } catch (err) {
+  } catch (caughtError) {
     throw new Error(
-      `${path} is not valid JSON: ${err instanceof Error ? err.message : String(err)}`,
+      `${path} is not valid JSON: ${caughtError instanceof Error ? caughtError.message : String(caughtError)}`,
     );
   }
 
@@ -61,17 +61,20 @@ export async function readMatterConfig(projectRoot: string): Promise<MatterConfi
 }
 
 export function resolveRegistryUrl(
-  cfg: MatterConfig,
+  matterConfig: MatterConfig,
   opts: { registry?: string; ref: string },
 ): string {
-  const baseUrl = opts.registry ?? cfg.registryUrl;
+  const baseUrl = opts.registry ?? matterConfig.registryUrl;
 
   return baseUrl.replace('${ref}', opts.ref);
 }
 
-export async function writeMatterConfig(projectRoot: string, cfg: MatterConfig): Promise<void> {
+export async function writeMatterConfig(
+  projectRoot: string,
+  matterConfig: MatterConfig,
+): Promise<void> {
   const path = configPath(projectRoot);
-  const json = `${JSON.stringify(cfg, null, 2)}\n`;
+  const json = `${JSON.stringify(matterConfig, null, 2)}\n`;
 
   await writeFile(path, json, 'utf-8');
 }

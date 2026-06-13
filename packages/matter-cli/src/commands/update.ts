@@ -24,11 +24,11 @@ export async function runUpdate(
   opts: UpdateOptions,
   io: UpdateIO = { cwd: process.cwd(), log: console.log },
 ): Promise<void> {
-  const cfg = await readMatterConfig(io.cwd);
+  const matterConfig = await readMatterConfig(io.cwd);
   const ref = resolveRef(opts.ref, opts.cliVersion);
-  const registryUrl = resolveRegistryUrl(cfg, { registry: opts.registry, ref });
+  const registryUrl = resolveRegistryUrl(matterConfig, { registry: opts.registry, ref });
 
-  const componentsDir = join(io.cwd, cfg.componentsDir);
+  const componentsDir = join(io.cwd, matterConfig.componentsDir);
   const localEntries = await safeReaddir(componentsDir);
   // Recognize both layouts: top-level `<slug>.tsx` AND subdir `<slug>/<slug>.tsx`
   // (the latter is how multi-file components like aurora and linear-gradient live).
@@ -86,9 +86,10 @@ export async function runUpdate(
 async function safeReaddir(path: string): Promise<Dirent[]> {
   try {
     return await readdir(path, { withFileTypes: true });
-  } catch (err) {
-    if (err instanceof Error && 'code' in err && err.code === 'ENOENT') return [];
-    throw err;
+  } catch (caughtError) {
+    if (caughtError instanceof Error && 'code' in caughtError && caughtError.code === 'ENOENT')
+      return [];
+    throw caughtError;
   }
 }
 

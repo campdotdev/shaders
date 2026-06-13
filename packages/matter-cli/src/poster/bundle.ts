@@ -36,13 +36,13 @@ async function locateHarnessDir(): Promise<string> {
 
     for (;;) {
       try {
-        const pkgRaw = await readFile(join(dir, 'package.json'), 'utf-8');
-        const parsed: unknown = JSON.parse(pkgRaw);
-        const pkg = (typeof parsed === 'object' && parsed !== null ? parsed : {}) as {
+        const packageJsonRaw = await readFile(join(dir, 'package.json'), 'utf-8');
+        const parsed: unknown = JSON.parse(packageJsonRaw);
+        const packageJson = (typeof parsed === 'object' && parsed !== null ? parsed : {}) as {
           name?: string;
         };
 
-        if (pkg.name === '@lovo/matter-cli') {
+        if (packageJson.name === '@lovo/matter-cli') {
           for (const candidate of ['dist/harness', 'src/harness']) {
             const harnessPath = join(dir, candidate);
 
@@ -58,10 +58,13 @@ async function locateHarnessDir(): Promise<string> {
             `Found @lovo/matter-cli at ${dir} but neither dist/harness nor src/harness contains index.html`,
           );
         }
-      } catch (err) {
+      } catch (caughtError) {
         // Re-throw if we found the package but harness is missing
-        if (err instanceof Error && err.message.startsWith('Found @lovo/matter-cli')) {
-          throw err;
+        if (
+          caughtError instanceof Error &&
+          caughtError.message.startsWith('Found @lovo/matter-cli')
+        ) {
+          throw caughtError;
         }
         // Otherwise, package.json missing or wrong name; walk up
       }
@@ -101,10 +104,12 @@ export async function bundlePoster(opts: BundlePosterOpts): Promise<BundlePoster
     logLevel: 'silent',
   });
 
-  const out = result.outputFiles.find((f) => f.path.endsWith('index.js')) ?? result.outputFiles[0];
+  const indexOutput =
+    result.outputFiles.find((outputFile) => outputFile.path.endsWith('index.js')) ??
+    result.outputFiles[0];
 
-  if (!out) throw new Error('bundlePoster: esbuild produced no output');
+  if (!indexOutput) throw new Error('bundlePoster: esbuild produced no output');
   const html = await readFile(join(harnessDir, 'index.html'), 'utf-8');
 
-  return { js: out.text, html };
+  return { js: indexOutput.text, html };
 }

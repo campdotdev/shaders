@@ -1,7 +1,7 @@
 import type { MatterConfig } from './matterConfig.js';
 
-function isRecord(x: unknown): x is Record<string, unknown> {
-  return typeof x === 'object' && x !== null;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
 }
 
 export function validateMatterConfig(parsed: unknown, path: string): MatterConfig {
@@ -24,11 +24,11 @@ export function validateMatterConfig(parsed: unknown, path: string): MatterConfi
   }
   const aliases: Record<string, string> = {};
 
-  for (const [k, v] of Object.entries(obj.aliases)) {
-    if (typeof v !== 'string') {
-      throw new Error(`${path}: aliases.${k} must be a string`);
+  for (const [aliasKey, aliasValue] of Object.entries(obj.aliases)) {
+    if (typeof aliasValue !== 'string') {
+      throw new Error(`${path}: aliases.${aliasKey} must be a string`);
     }
-    aliases[k] = v;
+    aliases[aliasKey] = aliasValue;
   }
 
   return {

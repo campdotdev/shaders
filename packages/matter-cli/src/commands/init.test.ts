@@ -19,11 +19,11 @@ describe('runInit', () => {
   it('writes matter.config.json with defaults', async () => {
     await runInit({}, { cwd: dir, log: vi.fn() });
     const raw = await readFile(join(dir, 'matter.config.json'), 'utf-8');
-    const cfg = JSON.parse(raw);
+    const matterConfig = JSON.parse(raw);
 
-    expect(cfg.componentsDir).toBe('src/components/matter');
-    expect(cfg.registryUrl).toContain('lovo-hq/matter');
-    expect(cfg.tsx).toBe(true);
+    expect(matterConfig.componentsDir).toBe('src/components/matter');
+    expect(matterConfig.registryUrl).toContain('lovo-hq/matter');
+    expect(matterConfig.tsx).toBe(true);
   });
 
   it('refuses to overwrite an existing config without --force', async () => {
@@ -35,9 +35,9 @@ describe('runInit', () => {
     await writeFile(join(dir, 'matter.config.json'), '{}', 'utf-8');
     await runInit({ force: true }, { cwd: dir, log: vi.fn() });
     const raw = await readFile(join(dir, 'matter.config.json'), 'utf-8');
-    const cfg = JSON.parse(raw);
+    const matterConfig = JSON.parse(raw);
 
-    expect(cfg.componentsDir).toBe('src/components/matter');
+    expect(matterConfig.componentsDir).toBe('src/components/matter');
   });
 
   it('logs a confirmation message after writing', async () => {

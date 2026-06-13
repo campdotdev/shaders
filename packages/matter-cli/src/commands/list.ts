@@ -22,9 +22,9 @@ export async function runList(
   if (opts.registry !== undefined && opts.registry !== '') {
     baseUrl = opts.registry;
   } else if (await configExists(io.cwd)) {
-    const cfg = await readMatterConfig(io.cwd);
+    const matterConfig = await readMatterConfig(io.cwd);
 
-    baseUrl = cfg.registryUrl;
+    baseUrl = matterConfig.registryUrl;
   } else {
     baseUrl = DEFAULT_MATTER_CONFIG.registryUrl;
   }

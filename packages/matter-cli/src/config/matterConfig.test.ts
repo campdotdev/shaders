@@ -44,15 +44,15 @@ describe('matterConfig', () => {
   });
 
   it('reads back what it wrote', async () => {
-    const cfg: MatterConfig = {
+    const matterConfig: MatterConfig = {
       ...DEFAULT_MATTER_CONFIG,
       componentsDir: 'app/matter',
     };
 
-    await writeMatterConfig(dir, cfg);
+    await writeMatterConfig(dir, matterConfig);
     const read = await readMatterConfig(dir);
 
-    expect(read).toEqual(cfg);
+    expect(read).toEqual(matterConfig);
   });
 
   it('throws a clear error when matter.config.json is missing', async () => {

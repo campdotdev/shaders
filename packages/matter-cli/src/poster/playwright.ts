@@ -49,34 +49,36 @@ function getDefaultExport(value: unknown): unknown {
 }
 
 export async function resolvePlaywright(projectRoot: string): Promise<typeof Playwright> {
-  const pwDir = await findPlaywrightDir(projectRoot);
+  const playwrightDir = await findPlaywrightDir(projectRoot);
 
-  if (pwDir === null) {
+  if (playwrightDir === null) {
     throw new Error(
       `Install playwright to use this command: pnpm add -D playwright && pnpm exec playwright install chromium`,
     );
   }
   // Prefer ESM entry; fall back to CJS with .default unwrap.
-  for (const entry of ['index.mjs', 'index.js']) {
-    const filePath = join(pwDir, entry);
+  for (const entryFilename of ['index.mjs', 'index.js']) {
+    const filePath = join(playwrightDir, entryFilename);
 
     try {
       await access(filePath);
 
-      const rawMod: unknown = await import(pathToFileURL(filePath).href);
-      const ns = isPlaywrightNamespace(rawMod) ? rawMod : getDefaultExport(rawMod);
+      const rawModule: unknown = await import(pathToFileURL(filePath).href);
+      const playwrightNamespace = isPlaywrightNamespace(rawModule)
+        ? rawModule
+        : getDefaultExport(rawModule);
 
-      if (!isPlaywrightNamespace(ns)) {
+      if (!isPlaywrightNamespace(playwrightNamespace)) {
         throw new Error(`Resolved ${filePath} but it does not expose chromium.launch`);
       }
 
-      return ns;
-    } catch (err) {
-      if (entry === 'index.js') throw err;
+      return playwrightNamespace;
+    } catch (caughtError) {
+      if (entryFilename === 'index.js') throw caughtError;
       // else: try the next entry
     }
   }
-  throw new Error(`Unable to import playwright from ${pwDir}`);
+  throw new Error(`Unable to import playwright from ${playwrightDir}`);
 }
 
 export interface ScreenshotOpts {
@@ -92,18 +94,18 @@ export interface ScreenshotOpts {
 }
 
 export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes: number }> {
-  const pw = await resolvePlaywright(opts.projectRoot);
-  const browser = await pw.chromium.launch({ headless: true });
+  const playwright = await resolvePlaywright(opts.projectRoot);
+  const browser = await playwright.chromium.launch({ headless: true });
 
   try {
-    const ctx = await browser.newContext({
+    const browserContext = await browser.newContext({
       viewport: { width: opts.width, height: opts.height },
       deviceScaleFactor: 1,
     });
-    const page = await ctx.newPage();
+    const page = await browserContext.newPage();
     const consoleErrors: string[] = [];
 
-    page.on('pageerror', (e) => consoleErrors.push(`pageerror: ${e.message}`));
+    page.on('pageerror', (pageError) => consoleErrors.push(`pageerror: ${pageError.message}`));
     page.on('console', (msg) => {
       if (msg.type() === 'error') consoleErrors.push(`console: ${msg.text()}`);
     });
@@ -128,14 +130,14 @@ export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes
       await page.waitForTimeout(opts.timeSeconds * 1000);
     }
     const canvas = page.locator('canvas').first();
-    const buf =
+    const imageBuffer =
       opts.format === 'jpeg'
         ? await canvas.screenshot({ type: 'jpeg', quality: opts.quality })
         : await canvas.screenshot({ type: 'png' });
 
-    await writeFile(opts.outPath, buf);
+    await writeFile(opts.outPath, imageBuffer);
 
-    return { bytes: buf.length };
+    return { bytes: imageBuffer.length };
   } finally {
     await browser.close();
   }

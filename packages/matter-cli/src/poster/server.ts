@@ -20,48 +20,48 @@ export async function createPosterServer(opts: {
   bundle: PosterBundle;
   config: PosterRenderConfig;
 }): Promise<PosterServer> {
-  const server: Server = createServer((req, res) => {
-    const url = req.url ?? '/';
+  const server: Server = createServer((request, response) => {
+    const url = request.url ?? '/';
 
     if (url === '/' || url === '/index.html') {
-      res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
-      res.end(opts.bundle.html);
+      response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+      response.end(opts.bundle.html);
 
       return;
     }
     if (url === '/harness.js') {
-      res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
-      res.end(opts.bundle.js);
+      response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' });
+      response.end(opts.bundle.js);
 
       return;
     }
     if (url === '/config.json') {
-      res.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
-      res.end(JSON.stringify(opts.config));
+      response.writeHead(200, { 'content-type': 'application/json; charset=utf-8' });
+      response.end(JSON.stringify(opts.config));
 
       return;
     }
-    res.writeHead(404, { 'content-type': 'text/plain' });
-    res.end('not found');
+    response.writeHead(404, { 'content-type': 'text/plain' });
+    response.end('not found');
   });
 
   await new Promise<void>((resolve) => {
     server.listen(0, '127.0.0.1', resolve);
   });
 
-  const addrRaw = server.address();
+  const rawAddress = server.address();
 
-  if (addrRaw === null || typeof addrRaw === 'string') {
+  if (rawAddress === null || typeof rawAddress === 'string') {
     throw new Error('matter poster: expected server to bind a TCP address');
   }
-  const addr: AddressInfo = addrRaw;
-  const url = `http://127.0.0.1:${addr.port}`;
+  const address: AddressInfo = rawAddress;
+  const url = `http://127.0.0.1:${address.port}`;
 
   return {
     url,
     close: () =>
       new Promise<void>((resolve, reject) => {
-        server.close((err) => (err ? reject(err) : resolve()));
+        server.close((closeError) => (closeError ? reject(closeError) : resolve()));
       }),
   };
 }
