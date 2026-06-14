@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
-import type { FilmGrainMode } from '@matter/registry/film-grain';
+import type { FilmGrainBlend } from '@matter/registry/film-grain';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
@@ -20,7 +20,7 @@ const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) =
 export default function OverlayTestPage() {
   const [intensity, setIntensity] = useState(0.3);
   const [speed, setSpeed] = useState(1);
-  const [mode, setMode] = useState<FilmGrainMode>('additive');
+  const [grainBlend, setGrainBlend] = useState<FilmGrainBlend>('additive');
 
   return (
     <div
@@ -69,14 +69,16 @@ export default function OverlayTestPage() {
             value={speed}
           />
         </label>
-        <button onClick={() => setMode((m) => (m === 'additive' ? 'subtractive' : 'additive'))}>
-          Mode: {mode}
+        <button
+          onClick={() => setGrainBlend((m) => (m === 'additive' ? 'subtractive' : 'additive'))}
+        >
+          Mode: {grainBlend}
         </button>
       </div>
       <div style={{ position: 'relative', width: '100%', height: '400px' }}>
         <ShaderScene>
           <MeshGradient />
-          <FilmGrain intensity={intensity} mode={mode} speed={speed} />
+          <FilmGrain intensity={intensity} grainBlend={grainBlend} speed={speed} />
         </ShaderScene>
       </div>
     </div>

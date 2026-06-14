@@ -6,7 +6,7 @@ export default function FilmGrainPoster() {
   return (
     <ShaderScene>
       <LinearGradient />
-      <FilmGrain intensity={0.45} mode="additive" speed={1} />
+      <FilmGrain intensity={0.45} grainBlend="additive" speed={1} />
     </ShaderScene>
   );
 }

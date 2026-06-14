@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
-import type { FilmGrainMode } from '@matter/registry/film-grain';
+import type { FilmGrainBlend } from '@matter/registry/film-grain';
 
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
@@ -23,13 +23,13 @@ const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) =
 interface FilmGrainParams {
   intensity: number;
   speed: number;
-  mode: FilmGrainMode;
+  grainBlend: FilmGrainBlend;
 }
 
 const INITIAL: FilmGrainParams = {
   intensity: 0.45,
   speed: 1,
-  mode: 'additive',
+  grainBlend: 'additive',
 };
 
 const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
@@ -40,7 +40,7 @@ const fmtJsx = (p: FilmGrainParams) =>
   <FilmGrain
     intensity={${fmtNum(p.intensity)}}
     speed={${fmtNum(p.speed)}}
-    mode="${p.mode}"
+    grainBlend="${p.grainBlend}"
   />
 </ShaderScene>`;
 
@@ -48,7 +48,7 @@ const fmtParams = (p: FilmGrainParams) =>
   `{
   intensity: ${fmtNum(p.intensity)},
   speed: ${fmtNum(p.speed)},
-  mode: '${p.mode}',
+  grainBlend: '${p.grainBlend}',
 }`;
 
 export default function FilmGrainPage() {
@@ -70,7 +70,7 @@ export default function FilmGrainPage() {
 
       pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
-      pane.addBinding(local, 'mode', {
+      pane.addBinding(local, 'grainBlend', {
         options: { Additive: 'additive', Subtractive: 'subtractive' },
       });
 
@@ -91,7 +91,11 @@ export default function FilmGrainPage() {
         />
         <ShaderScene>
           <LinearGradient />
-          <FilmGrain intensity={params.intensity} mode={params.mode} speed={params.speed} />
+          <FilmGrain
+            intensity={params.intensity}
+            grainBlend={params.grainBlend}
+            speed={params.speed}
+          />
           <VisualTestPause />
         </ShaderScene>
         <div
@@ -140,7 +144,7 @@ export default function FilmGrainPage() {
         >
           {`<ShaderScene>
   <LinearGradient />
-  <FilmGrain intensity={0.45} speed={1} mode="additive" />
+  <FilmGrain intensity={0.45} speed={1} grainBlend="additive" />
 </ShaderScene>`}
         </pre>
       </section>

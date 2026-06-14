@@ -6,7 +6,7 @@ export default function GradientPlusGrain() {
   return (
     <ShaderScene>
       <LinearGradient colors={['#1a0b2e', '#3a1e6e']} stops={[0, 1]} />
-      <FilmGrain intensity={0.3} mode="additive" />
+      <FilmGrain intensity={0.3} grainBlend="additive" />
     </ShaderScene>
   )
 }
