@@ -22,10 +22,10 @@ export interface AuroraProps {
 }
 
 export const DEFAULT_LAYERS: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer] = [
-  { hex: '#0ae24b', speed: 0.07, intensity: 0.6, variation: 0 }, // palette.green.base
-  { hex: '#1837e6', speed: 0.1, intensity: 0.2, variation: 5 }, // palette.blue.base
-  { hex: '#661acc', speed: 0.15, intensity: 0.3, variation: 11 }, // palette.violet.base
-  { hex: '#cc1a99', speed: 0.07, intensity: 0.2, variation: 17 }, // palette.magenta.base
+  { color: '#0ae24b', speed: 0.07, intensity: 0.6, seed: 0 }, // palette.green.base
+  { color: '#1837e6', speed: 0.1, intensity: 0.2, seed: 5 }, // palette.blue.base
+  { color: '#661acc', speed: 0.15, intensity: 0.3, seed: 11 }, // palette.violet.base
+  { color: '#cc1a99', speed: 0.07, intensity: 0.2, seed: 17 }, // palette.magenta.base
 ];
 
 export function Aurora({

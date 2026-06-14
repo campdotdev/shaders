@@ -12,10 +12,10 @@ import { addCopyButtons } from '@/lib/paneUtils';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 interface PlainAuroraLayer {
-  hex: string;
+  color: string;
   speed: number;
   intensity: number;
-  variation: number;
+  seed: number;
   falloff: number;
 }
 
@@ -55,31 +55,31 @@ const INITIAL: AuroraParams = {
   skyColor: '#146389',
   layers: [
     {
-      hex: palette.green.base,
+      color: palette.green.base,
       speed: 0.07,
       intensity: 0.6,
-      variation: 0,
+      seed: 0,
       falloff: 1,
     },
     {
-      hex: palette.blue.base,
+      color: palette.blue.base,
       speed: 0.1,
       intensity: 0.2,
-      variation: 5,
+      seed: 5,
       falloff: 1,
     },
     {
-      hex: palette.violet.base,
+      color: palette.violet.base,
       speed: 0.15,
       intensity: 0.3,
-      variation: 11,
+      seed: 11,
       falloff: 1,
     },
     {
-      hex: palette.magenta.base,
+      color: palette.magenta.base,
       speed: 0.07,
       intensity: 0.2,
-      variation: 17,
+      seed: 17,
       falloff: 1,
     },
   ],
@@ -94,9 +94,9 @@ const fmtNum = (numericValue: number) => {
 };
 
 const fmtLayer = (layer: PlainAuroraLayer) =>
-  `{ hex: '${layer.hex}', speed: ${fmtNum(layer.speed)}, intensity: ${fmtNum(
+  `{ color: '${layer.color}', speed: ${fmtNum(layer.speed)}, intensity: ${fmtNum(
     layer.intensity,
-  )}, variation: ${fmtNum(layer.variation)}, falloff: ${fmtNum(layer.falloff)} }`;
+  )}, seed: ${fmtNum(layer.seed)}, falloff: ${fmtNum(layer.falloff)} }`;
 
 const fmtJsx = (params: AuroraParams) =>
   `<ShaderScene>
@@ -267,7 +267,7 @@ export default function AuroraPage() {
         syncToReact();
       });
 
-      folder.addBinding(layer, 'hex', { label: 'color' });
+      folder.addBinding(layer, 'color', { label: 'color' });
       folder.addBinding(layer, 'speed', { min: 0, max: 0.5, step: 0.005 });
       folder.addBinding(layer, 'intensity', { min: 0, max: 1, step: 0.01 });
       folder.addBinding(layer, 'falloff', {
