@@ -15,10 +15,10 @@ import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry, Vector3 } from '
 import { parseHex } from '../utils/color';
 
 export interface AuroraLayer {
-  hex: string;
+  color: string;
   speed: AnimatableProp<number>;
   intensity: AnimatableProp<number>;
-  variation: number;
+  seed: number;
   falloff?: AnimatableProp<number>;
 }
 
@@ -60,7 +60,7 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
 
   const colorVec = useMemo(
     () => {
-      const [redChannel, greenChannel, blueChannel] = parseHex(layer.hex);
+      const [redChannel, greenChannel, blueChannel] = parseHex(layer.color);
 
       return new Vector3(redChannel, greenChannel, blueChannel);
     },
@@ -71,10 +71,10 @@ function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
   const colorNode = useMemo(() => uniform(colorVec), [colorVec]);
 
   useEffect(() => {
-    const [redChannel, greenChannel, blueChannel] = parseHex(layer.hex);
+    const [redChannel, greenChannel, blueChannel] = parseHex(layer.color);
 
     colorVec.set(redChannel, greenChannel, blueChannel);
-  }, [layer.hex, colorVec]);
+  }, [layer.color, colorVec]);
 
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
   const widenedColor = colorNode as unknown as ShaderNodeObject<Node>;
@@ -173,13 +173,13 @@ export function AuroraShader(props: AuroraShaderProps) {
     [layer0, layer1, layer2, layer3],
   );
 
-  const variations = useMemo(
+  const seeds = useMemo(
     () =>
       [
-        props.layers[0].variation,
-        props.layers[1].variation,
-        props.layers[2].variation,
-        props.layers[3].variation,
+        props.layers[0].seed,
+        props.layers[1].seed,
+        props.layers[2].seed,
+        props.layers[3].seed,
       ] as const,
     [props.layers],
   );
@@ -196,9 +196,9 @@ export function AuroraShader(props: AuroraShaderProps) {
 
     for (let layerIndex = 0; layerIndex < 4; layerIndex += 1) {
       const layerUniform = layerUniforms[layerIndex];
-      const variation = variations[layerIndex];
+      const seed = seeds[layerIndex];
 
-      if (layerUniform === undefined || variation === undefined) continue;
+      if (layerUniform === undefined || seed === undefined) continue;
 
       const scaledTime = elapsedTime.mul(speedUniform).mul(layerUniform.speed);
 
@@ -207,10 +207,7 @@ export function AuroraShader(props: AuroraShaderProps) {
         scaledUv.y.add(scaledTime.mul(driftYUniform)),
       );
 
-      const warpSeed = vec2(
-        layerUniform.color.x.add(variation),
-        layerUniform.color.y.add(variation + 1),
-      );
+      const warpSeed = vec2(layerUniform.color.x.add(seed), layerUniform.color.y.add(seed + 1));
 
       const warpOffset = simplexNoise(
         vec2(
@@ -256,7 +253,7 @@ export function AuroraShader(props: AuroraShaderProps) {
   }, [
     shaderContext,
     layerUniforms,
-    variations,
+    seeds,
     intensityUniform,
     speedUniform,
     densityXUniform,
