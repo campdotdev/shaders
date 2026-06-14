@@ -2,16 +2,20 @@
 
 import type { AnimatableProp } from '@lovo/matter-react';
 
-import { type FilmGrainMode, FilmGrainShader } from './shader';
+import { type FilmGrainBlend, FilmGrainShader } from './shader';
 
-export type { FilmGrainMode } from './shader';
+export type { FilmGrainBlend } from './shader';
 
 export interface FilmGrainProps {
   intensity?: AnimatableProp<number>;
   speed?: AnimatableProp<number>;
-  mode?: FilmGrainMode;
+  grainBlend?: FilmGrainBlend;
 }
 
-export function FilmGrain({ intensity = 0.45, speed = 1, mode = 'additive' }: FilmGrainProps) {
-  return <FilmGrainShader intensity={intensity} mode={mode} speed={speed} />;
+export function FilmGrain({
+  intensity = 0.45,
+  speed = 1,
+  grainBlend = 'additive',
+}: FilmGrainProps) {
+  return <FilmGrainShader intensity={intensity} grainBlend={grainBlend} speed={speed} />;
 }

@@ -9,15 +9,15 @@ import {
 } from '@lovo/matter-react';
 import { floor, vec4 } from 'three/tsl';
 
-export type FilmGrainMode = 'additive' | 'subtractive';
+export type FilmGrainBlend = 'additive' | 'subtractive';
 
 export interface FilmGrainShaderProps {
   intensity: AnimatableProp<number>;
   speed: AnimatableProp<number>;
-  mode: FilmGrainMode;
+  grainBlend: FilmGrainBlend;
 }
 
-export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps) {
+export function FilmGrainShader({ intensity, speed, grainBlend }: FilmGrainShaderProps) {
   const intensityUniform = useAnimatableUniform<number>(intensity);
   const speedUniform = useAnimatableUniform<number>(speed);
 
@@ -30,7 +30,7 @@ export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps
       const grainTime = floor(elapsedTime.mul(speedUniform).mul(60));
       const grain = filmGrain(intensityUniform, grainTime);
 
-      if (mode === 'additive') {
+      if (grainBlend === 'additive') {
         return input.add(vec4(grain, grain, grain, 0));
       }
 
@@ -38,7 +38,7 @@ export function FilmGrainShader({ intensity, speed, mode }: FilmGrainShaderProps
 
       return input.sub(vec4(positive, positive, positive, 0));
     },
-    [intensityUniform, speedUniform, mode],
+    [intensityUniform, speedUniform, grainBlend],
   );
 
   return null;

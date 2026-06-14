@@ -242,25 +242,25 @@ to a *presumed* behavior — a confidently-wrong name is worse than a terse-but-
 | SimplexNoise | `focus` | → **`contrast`** | scales the noise around 0.5 — `>1` pushes values to the ramp extremes, `<1` toward the middle (that's contrast) |
 | SimplexNoise | `variant` | → **`seed`** | becomes an XY offset added to the noise sample coords — it reseeds the pattern |
 | Aurora | `variation` (`AuroraLayer`) | → **`seed`** | fed into the per-layer noise `warpSeed` to differentiate each layer's pattern — **not** a color knob (earlier `colorVariation` guess was wrong) |
-| FilmGrain | `mode` | → **`blendMode`** | enum is `additive`\|`subtractive` — it's literally how the grain blends with the input |
-| Waves | `motion` (`WaveLayer`) | → **`chop`** (alt: `turbulence`) | scales a secondary high-frequency wobble mixed into the wave — adds agitation, **not** drift; `drift`/`sway` would be wrong |
+| FilmGrain | `mode` | → **`grainBlend`** | enum is `additive`\|`subtractive` — it's how the grain blends with the input. **Not** `blendMode`: those values aren't standard blend-mode keywords (`screen`/`multiply`/…) and `subtractive` is a grain-specific darken-only pass, not the textbook Subtract blend. Reserve `blendMode` for a future general blend-mode API. |
+| Waves | `motion` (`WaveLayer`) | → **`turbulence`** | scales a secondary high-frequency, counter-traveling ripple mixed into the base wave — adds agitation/complexity, **not** drift. `chop`/`choppiness` is the accurate water-shader term but is jargon for a web-dev audience; `turbulence` reads plainly. `motion` was actively misleading (collides with `speed`, the real temporal control). |
 | DotField | `strength` | → **`displacementStrength`** *(low priority)* | scales how far dots displace from the cursor; accurate, but `strength` reads fine next to `reach` — optional |
 
 > The shader read caught **two wrong guesses**: Aurora `variation` is a noise *seed*
-> (not `colorVariation`), and Waves `motion` is wave *chop* (not `drift`). Bonus:
-> `variant` and `variation` both resolving to `seed` gives cross-component consistency.
-> Net result — the only props that change are the **one consistency fix (D2)** plus
-> these **five verified D3 renames** (DotField `strength` optional); everything in D1
-> keeps its original, already-clear name.
+> (not `colorVariation`), and Waves `motion` is wave *turbulence* (a secondary ripple,
+> not `drift`). Bonus: `variant` and `variation` both resolving to `seed` gives
+> cross-component consistency. Net result — the only props that change are the **one
+> consistency fix (D2)** plus these **five verified D3 renames** (DotField `strength`
+> optional); everything in D1 keeps its original, already-clear name.
 
 ### E. Cross-surface consistency fixes
 
 - **Single-color prop:** standardize on `color`. Only `AuroraLayer.hex` breaks the
   pattern → rename to `color` (Vignette, Waves, DotField already use `color`).
 - **Motion vs speed:** `WaveLayer.motion` is the only per-layer "motion" term while
-  every component uses `speed` for animation rate. Resolve in the shader (D3): rename
-  to a distinct term like `drift` if it's a separate axis of motion, or fold into
-  `speed` if it's the same concept.
+  every component uses `speed` for animation rate. Resolved in the shader (D3): it
+  scales a secondary ripple (agitation), distinct from `speed` — renamed to
+  **`turbulence`**.
 - **`…U` uniform suffix** also appears on the *internal* shader-prop interfaces
   (`speedU`, `dot-field.tsx` `spacingU`/`cursorU`/`resU`) — covered by Phase 4a.
 
@@ -382,7 +382,7 @@ no-ops at runtime (identical pixels).
 
 - Small, resolved scope: **D1 untouched**; **D2** = `AuroraLayer.hex` → `color`;
   **D3** = `focus`→`contrast`, SimplexNoise `variant`→`seed`, Aurora `variation`→`seed`,
-  FilmGrain `mode`→`blendMode`, Waves `motion`→`chop` (DotField `strength`→
+  FilmGrain `mode`→`grainBlend`, Waves `motion`→`turbulence` (DotField `strength`→
   `displacementStrength` optional). Names are already verified against each shader.
 - One component per commit. Update: the component `.tsx` + `shader.tsx`, default-props
   objects, the docs page + demo, the `PropsPlayground` schema, poster examples, and the
