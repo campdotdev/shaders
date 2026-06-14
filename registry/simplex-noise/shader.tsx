@@ -12,47 +12,47 @@ import { parseHex } from '../utils/color';
 export interface SimplexNoiseShaderProps {
   scale: AnimatableProp<number>;
   speed: AnimatableProp<number>;
-  focus: AnimatableProp<number>;
+  contrast: AnimatableProp<number>;
   bias: AnimatableProp<number>;
   softness: AnimatableProp<number>;
   colors: string[];
   stops: number[] | undefined;
-  variant: number;
+  seed: number;
 }
 
 export function SimplexNoiseShader({
   scale,
   speed,
-  focus,
+  contrast,
   bias,
   softness,
   colors,
   stops,
-  variant,
+  seed,
 }: SimplexNoiseShaderProps) {
   const shaderContext = useShaderContext();
   const scaleUniform = useAnimatableUniform<number>(scale);
   const speedUniform = useAnimatableUniform<number>(speed);
-  const focusUniform = useAnimatableUniform<number>(focus);
+  const contrastUniform = useAnimatableUniform<number>(contrast);
   const biasUniform = useAnimatableUniform<number>(bias);
   const softnessUniform = useAnimatableUniform<number>(softness);
 
   const colorsKey = colors.join('|');
   const stopsKey = stops?.join('|') ?? '';
 
-  const variantVec = useMemo(() => new Vector2(0, 0), []);
-  const variantUniform = useMemo(() => uniform(variantVec), [variantVec]);
+  const seedVec = useMemo(() => new Vector2(0, 0), []);
+  const seedUniform = useMemo(() => uniform(seedVec), [seedVec]);
 
   useEffect(() => {
-    variantVec.set(variant * 12.9898, variant * 78.233);
+    seedVec.set(seed * 12.9898, seed * 78.233);
     shaderContext?.scheduler.requestRender();
-  }, [shaderContext, variantVec, variant]);
+  }, [shaderContext, seedVec, seed]);
 
   useEffect(
     () => {
       if (!shaderContext) return;
 
-      const sampleXY = uv().mul(scaleUniform).add(variantUniform);
+      const sampleXY = uv().mul(scaleUniform).add(seedUniform);
       const samplePoint = vec3(sampleXY, elapsedTime.mul(speedUniform));
       const rawNoise = simplexNoise(samplePoint);
       const normalized = rawNoise.add(1).mul(0.5);
@@ -63,14 +63,14 @@ export function SimplexNoiseShader({
       const biasShift = biasUniform.sub(0.5).mul(2);
       const biased = clamp(normalized.add(biasShift), 0, 1);
 
-      // Focus: linear scale around 0.5. 1 is identity, >1 pushes values toward
+      // Contrast: linear scale around 0.5. 1 is identity, >1 pushes values toward
       // the ramp extremes (first/last colors), <1 pulls them toward the middle.
-      const focusedValue = clamp(biased.sub(0.5).mul(focusUniform).add(0.5), 0, 1);
+      const contrastedValue = clamp(biased.sub(0.5).mul(contrastUniform).add(0.5), 0, 1);
 
       // Softness: blend between quantized contour bands (0) and smooth ramp (1).
       const stepCount = Math.max(colors.length, 1);
-      const quantized = quantize(focusedValue, stepCount);
-      const bandedValue = mix(quantized, focusedValue, softnessUniform);
+      const quantized = quantize(contrastedValue, stepCount);
+      const bandedValue = mix(quantized, contrastedValue, softnessUniform);
 
       // Build the colorRamp stops from colors[] + optional stops[] (auto-even otherwise).
       const evenAt = (colorIndex: number) => colorIndex / Math.max(colors.length - 1, 1);
@@ -116,10 +116,10 @@ export function SimplexNoiseShader({
       shaderContext,
       scaleUniform,
       speedUniform,
-      focusUniform,
+      contrastUniform,
       biasUniform,
       softnessUniform,
-      variantUniform,
+      seedUniform,
       colorsKey,
       stopsKey,
     ],

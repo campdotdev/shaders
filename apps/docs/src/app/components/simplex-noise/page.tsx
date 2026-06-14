@@ -19,10 +19,10 @@ const SimplexNoise = dynamic(
 interface Params {
   scale: number;
   speed: number;
-  focus: number;
+  contrast: number;
   bias: number;
   softness: number;
-  variant: number;
+  seed: number;
   colorCount: number;
   color0: string;
   color1: string;
@@ -34,10 +34,10 @@ interface Params {
 const INITIAL: Params = {
   scale: 10,
   speed: 0.2,
-  focus: 2.5,
+  contrast: 2.5,
   bias: 0.5,
   softness: 0,
-  variant: 0,
+  seed: 0,
   colorCount: 5,
   color0: palette.blue.base,
   color1: palette.violet.base,
@@ -63,10 +63,10 @@ const fmtJsx = (params: Params) =>
     colors={[${fmtColors(params)}]}
     scale={${fmtNum(params.scale)}}
     speed={${fmtNum(params.speed)}}
-    focus={${fmtNum(params.focus)}}
+    contrast={${fmtNum(params.contrast)}}
     bias={${fmtNum(params.bias)}}
     softness={${fmtNum(params.softness)}}
-    variant={${params.variant}}
+    seed={${params.seed}}
   />
 </ShaderScene>`;
 
@@ -75,10 +75,10 @@ const fmtParams = (params: Params) =>
   colors: [${fmtColors(params)}],
   scale: ${fmtNum(params.scale)},
   speed: ${fmtNum(params.speed)},
-  focus: ${fmtNum(params.focus)},
+  contrast: ${fmtNum(params.contrast)},
   bias: ${fmtNum(params.bias)},
   softness: ${fmtNum(params.softness)},
-  variant: ${params.variant},
+  seed: ${params.seed},
 }`;
 
 export default function SimplexNoisePage() {
@@ -100,10 +100,10 @@ export default function SimplexNoisePage() {
 
       pane.addBinding(local, 'scale', { min: 0.5, max: 30, step: 0.1 });
       pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
-      pane.addBinding(local, 'focus', { min: 0, max: 4, step: 0.01 });
+      pane.addBinding(local, 'contrast', { min: 0, max: 4, step: 0.01 });
       pane.addBinding(local, 'bias', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 });
-      pane.addBinding(local, 'variant', { min: 0, max: 100, step: 1 });
+      pane.addBinding(local, 'seed', { min: 0, max: 100, step: 1 });
       pane.addBlade({ view: 'separator' });
 
       const colorsFolder = pane.addFolder({ title: 'Colors' });
@@ -142,11 +142,11 @@ export default function SimplexNoisePage() {
           <SimplexNoise
             bias={params.bias}
             colors={colors}
-            focus={params.focus}
+            contrast={params.contrast}
             scale={params.scale}
             softness={params.softness}
             speed={params.speed}
-            variant={params.variant}
+            seed={params.seed}
           />
           <VisualTestPause />
         </ShaderScene>
