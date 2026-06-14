@@ -9,10 +9,10 @@ export interface SimplexNoiseProps {
   stops?: number[];
   scale?: AnimatableProp<number>;
   speed?: AnimatableProp<number>;
-  focus?: AnimatableProp<number>;
+  contrast?: AnimatableProp<number>;
   bias?: AnimatableProp<number>;
   softness?: AnimatableProp<number>;
-  variant?: number;
+  seed?: number;
 }
 
 const DEFAULT_COLORS = [
@@ -28,21 +28,21 @@ export function SimplexNoise({
   stops,
   scale = 10,
   speed = 0.2,
-  focus = 2.5,
+  contrast = 2.5,
   bias = 0.5,
   softness = 0,
-  variant = 0,
+  seed = 0,
 }: SimplexNoiseProps) {
   return (
     <SimplexNoiseShader
       bias={bias}
       colors={colors}
-      focus={focus}
+      contrast={contrast}
       scale={scale}
       softness={softness}
       speed={speed}
       stops={stops}
-      variant={variant}
+      seed={seed}
     />
   );
 }
