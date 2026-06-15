@@ -7,14 +7,12 @@ export interface MatterConfig {
   componentsDir: string;
   registryUrl: string;
   aliases: Record<string, string>;
-  useTypeScript: boolean;
 }
 
 export const DEFAULT_MATTER_CONFIG: MatterConfig = {
   componentsDir: 'src/components/matter',
   registryUrl: 'https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry',
   aliases: { '@/': 'src/' },
-  useTypeScript: true,
 };
 
 const CONFIG_FILENAME = 'matter.config.json';
