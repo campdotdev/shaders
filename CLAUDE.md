@@ -137,6 +137,7 @@ pnpm smoke
 - **Branch**: `main` only for now. PR branches when GitHub remote is configured.
 - **TDD where applicable**: For Tier 2 primitives and CLI logic, write tests first (Vitest). For Tier 1 components and shader visuals, "tests" are docs-page demos (with Tweakpane controls) + Playwright visual regression in M5 — there is no meaningful unit test for "does this gradient look right." Don't try to mock the GPU.
 - **TypeScript**: strict mode, `verbatimModuleSyntax`, `noUncheckedIndexedAccess`. Use `import type` for type-only imports (the lint rule enforces this).
+- **Clear names over abbreviations.** Prefer long, descriptive identifiers over terse or ambiguous ones (`u`, `iw`, `cfg`, `ctx`, `cb`). The codebase was audited for this in MAT-34; keep it that way. There's no ESLint rule enforcing it (deliberately — the user reviews names by eye), so the burden is on judgment: if a name wouldn't be self-explanatory to a reader who didn't write it, expand it. Reasonable exceptions: conventional loop counters, math/shader locals where the single letter mirrors the math (`x`/`y` coords), and destructured GPU channel tuples.
 - **No emojis in code or commit messages** unless the user explicitly requests them.
 - **Don't add features beyond what the current task or plan specifies.** YAGNI hard. If you find yourself thinking "while I'm here, I'll also add…", stop.
 
