@@ -22,8 +22,8 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
 
   useEffect(() => {
     const canvas = shaderContext?.renderer.three.domElement;
-    const elementOpt = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined);
-    const newCursorInput = new CursorInput({ ...opts, element: elementOpt });
+    const resolvedElement = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined);
+    const newCursorInput = new CursorInput({ ...opts, element: resolvedElement });
 
     setInput(newCursorInput);
 
