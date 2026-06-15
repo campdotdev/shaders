@@ -42,11 +42,11 @@ The lower-level hook for users who already own a `<Canvas>` from `@react-three/f
 ```tsx
 import { useShaderMaterial } from '@lovo/matter-react'
 import { uv } from 'three/tsl'
-import { fractionalBrownianMotion } from '@lovo/matter'
+import { fractalNoise } from '@lovo/matter'
 
 function Plane() {
   const material = useShaderMaterial({
-    color: fractionalBrownianMotion(uv()),
+    color: fractalNoise(uv()),
   })
   return <mesh material={material}><planeGeometry /></mesh>
 }

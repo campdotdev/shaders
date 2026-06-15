@@ -5,7 +5,7 @@ import type { Node } from 'three/webgpu';
 import type { TSLNode } from '../color-ramp/color-ramp.js';
 import { simplexNoise } from '../noise/noise.js';
 
-export interface FractionalBrownianMotionOptions {
+export interface FractalNoiseOptions {
   /** Number of octaves to sum. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */
   octaves?: number;
   /** Per-octave frequency multiplier. JS-side number. Default: 2. */
@@ -37,10 +37,7 @@ export interface FractionalBrownianMotionOptions {
  * @returns scalar TSL node, normalized to roughly [-1..1] regardless of
  *          octave count thanks to the amplitude-sum division at the end.
  */
-export function fractionalBrownianMotion(
-  p: TSLNode,
-  opts: FractionalBrownianMotionOptions = {},
-): ShaderNodeObject<Node> {
+export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): ShaderNodeObject<Node> {
   const octaves = opts.octaves ?? 4;
   const lacunarity = opts.lacunarity ?? 2;
   const gain = opts.gain ?? 0.5;

@@ -16,7 +16,7 @@ changes to the public API are acceptable** and explicitly in scope.
 | Trailing `U` = "uniform" (`speedU`, `driftXU`) | **Expand** to `...Uniform` (`speedUniform`, `driftXUniform`). |
 | Display-string recipe snippets (`recipes.ts`, `_builds.ts`) | **Rename** for consistency — users see clear names. |
 | Test files (`*.test.ts(x)`) | **Include** in the rename pass. |
-| Public API (exports, hooks, props, CLI flags, config keys) | **In scope.** Spell out shader-domain jargon (`fbm` → `fractionalBrownianMotion`). For props, apply a **"longer only if clearer" test** — rename a prop only when the new name adds real meaning (resolves "X of what?") or fixes a cross-component inconsistency; keep names that already convey intent. |
+| Public API (exports, hooks, props, CLI flags, config keys) | **In scope.** Spell out shader-domain jargon (`fbm` → `fractalNoise`). For props, apply a **"longer only if clearer" test** — rename a prop only when the new name adds real meaning (resolves "X of what?") or fixes a cross-component inconsistency; keep names that already convey intent. |
 
 ## Canonical naming conventions
 
@@ -180,7 +180,7 @@ confirmed by reading the shader's use of that prop during execution** — don't 
 
 | Line | Current | Rename to | Notes |
 | --- | --- | --- | --- |
-| 17–18 | `fbm`, `FBMOptions` | `fractionalBrownianMotion`, `FractionalBrownianMotionOptions` | spell out acronym |
+| 17–18 | `fbm`, `FBMOptions` | `fractalNoise`, `FractalNoiseOptions` | spell out acronym |
 | 16 | `noise` | `simplexNoise` | it *is* simplex noise; matches the `SimplexNoise` component |
 | 24 | `sdfCircle` | `signedDistanceFieldCircle` | spell out `sdf` |
 | 30 | `time` | `elapsedTime` | clarify which "time" |
