@@ -92,8 +92,8 @@ export default function FilmGrainPage() {
         <ShaderScene>
           <LinearGradient />
           <FilmGrain
-            intensity={params.intensity}
             grainBlend={params.grainBlend}
+            intensity={params.intensity}
             speed={params.speed}
           />
           <VisualTestPause />
