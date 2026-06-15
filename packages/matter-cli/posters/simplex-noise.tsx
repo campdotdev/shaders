@@ -9,9 +9,9 @@ export default function SimplexNoisePoster() {
         colors={['#1837e6', '#661acc', '#9e00ba', '#cc1a99', '#00cda6']}
         contrast={2.5}
         scale={10}
+        seed={0}
         softness={0}
         speed={0.2}
-        seed={0}
       />
     </ShaderScene>
   );

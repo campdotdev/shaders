@@ -17,5 +17,5 @@ export function FilmGrain({
   speed = 1,
   grainBlend = 'additive',
 }: FilmGrainProps) {
-  return <FilmGrainShader intensity={intensity} grainBlend={grainBlend} speed={speed} />;
+  return <FilmGrainShader grainBlend={grainBlend} intensity={intensity} speed={speed} />;
 }

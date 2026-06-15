@@ -78,7 +78,7 @@ export default function OverlayTestPage() {
       <div style={{ position: 'relative', width: '100%', height: '400px' }}>
         <ShaderScene>
           <MeshGradient />
-          <FilmGrain intensity={intensity} grainBlend={grainBlend} speed={speed} />
+          <FilmGrain grainBlend={grainBlend} intensity={intensity} speed={speed} />
         </ShaderScene>
       </div>
     </div>

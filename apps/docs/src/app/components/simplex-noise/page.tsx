@@ -144,9 +144,9 @@ export default function SimplexNoisePage() {
             colors={colors}
             contrast={params.contrast}
             scale={params.scale}
+            seed={params.seed}
             softness={params.softness}
             speed={params.speed}
-            seed={params.seed}
           />
           <VisualTestPause />
         </ShaderScene>
