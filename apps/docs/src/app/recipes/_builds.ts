@@ -105,24 +105,24 @@ export const RECIPE_BUILDS: Record<string, RecipeBuild> = {
   // ─── plasma ───────────────────────────────────────────────────────────
 
   'plasma.canonical': () => {
-    const fbmValue = plasmaBase();
+    const noiseValue = plasmaBase();
     const stops: ColorRampStop[] = [
       { color: vec3(0.4, 0, 0.8), position: 0 },
       { color: vec3(1, 0.4, 0.6), position: 0.5 },
       { color: vec3(0.4, 0.9, 1), position: 1 },
     ];
-    const rampColor = colorRamp(fbmValue, stops);
+    const rampColor = colorRamp(noiseValue, stops);
 
     return vec4(rampColor, 1);
   },
 
   'plasma.monochrome-marble': () => {
-    const fbmValue = plasmaBase();
+    const noiseValue = plasmaBase();
     const stops: ColorRampStop[] = [
       { color: vec3(0.05, 0.05, 0.1), position: 0 },
       { color: vec3(0.85, 0.85, 0.9), position: 1 },
     ];
-    const rampColor = colorRamp(fbmValue, stops);
+    const rampColor = colorRamp(noiseValue, stops);
 
     return vec4(rampColor, 1);
   },
