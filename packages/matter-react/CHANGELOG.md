@@ -1,5 +1,17 @@
 # @lovo/matter-react
 
+## 0.5.0
+
+### Minor Changes
+
+- 35274c3: Rename ambiguous `@lovo/matter-react` public exports to clearer names (BREAKING, pre-1.0):
+
+  - `useOverlayPass` → `usePostProcessPass` (and the paired type `OverlayTransform` → `PostProcessTransform`)
+  - `useStaticHint` → `useStaticSceneHint`
+  - `MonitorAnchor` (type) → `ShaderMonitorAnchor`
+
+  Migration: update imports and call sites to the new names. Behavior is unchanged.
+
 ## 0.4.1
 
 ## 0.4.0
@@ -23,13 +35,13 @@
   **New: `useOverlayPass(transform, deps)` hook**
 
   ```ts
-  import { useOverlayPass, useAnimatableUniform } from "@lovo/matter-react";
+  import { useAnimatableUniform, useOverlayPass } from '@lovo/matter-react';
 
   export function MyOverlay({ intensity }) {
     const intensityU = useAnimatableUniform(intensity);
     useOverlayPass(
       (input) => input.mul(intensityU), // takes upstream pixel, returns modified pixel
-      [intensityU]
+      [intensityU],
     );
     return null;
   }

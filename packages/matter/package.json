@@ -1,6 +1,6 @@
 {
   "name": "@lovo/matter",
-  "version": "0.4.1",
+  "version": "0.5.0",
   "description": "Engine for Matter — TSL primitives, renderer, scheduler. Framework-agnostic.",
   "keywords": [
     "background",
