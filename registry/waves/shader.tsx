@@ -17,7 +17,7 @@ interface WavesShaderLayer {
   glow?: number;
   thickness?: number;
   offset?: number;
-  motion?: number;
+  turbulence?: number;
 }
 
 export interface WavesShaderProps {
@@ -35,7 +35,7 @@ const DEFAULT_FREQUENCY = 1;
 const DEFAULT_SPEED = 1;
 const DEFAULT_GLOW = 0.72;
 const DEFAULT_THICKNESS = 0.65;
-const DEFAULT_MOTION = 0.35;
+const DEFAULT_TURBULENCE = 0.35;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
 const wobble = (phase: ShaderNodeObject<Node>) =>
@@ -57,7 +57,7 @@ export function WavesShader(props: WavesShaderProps) {
   const layersKey = props.layers
     .map(
       (layer) =>
-        `${layer.color ?? ''}|${layer.amplitude ?? ''}|${layer.frequency ?? ''}|${layer.speed ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}|${layer.offset ?? ''}|${layer.motion ?? ''}`,
+        `${layer.color ?? ''}|${layer.amplitude ?? ''}|${layer.frequency ?? ''}|${layer.speed ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}|${layer.offset ?? ''}|${layer.turbulence ?? ''}`,
     )
     .join('||');
 
@@ -89,17 +89,17 @@ export function WavesShader(props: WavesShaderProps) {
           ? thicknessUniform
           : thicknessUniform.mul(layer.thickness / DEFAULT_THICKNESS);
       const offset = layer.offset ?? 0;
-      const motionValue = layer.motion ?? DEFAULT_MOTION;
+      const turbulenceValue = layer.turbulence ?? DEFAULT_TURBULENCE;
 
       const [redChannel, greenChannel, blueChannel] = parseHex(layer.color ?? DEFAULT_LAYER_COLOR);
 
       const layerTime = elapsedTime.mul(speedValue);
       const waveInput = samplePosition.x.mul(freqValue).add(offset);
       const baseWave = wobble(waveInput.add(layerTime));
-      const motionWave = cos(waveInput.mul(1.7).sub(layerTime.mul(0.55)))
+      const turbulenceWave = cos(waveInput.mul(1.7).sub(layerTime.mul(0.55)))
         .add(cos(waveInput.mul(0.43).add(layerTime.mul(1.35))))
         .mul(0.25);
-      const wave = baseWave.add(motionWave.mul(motionValue));
+      const wave = baseWave.add(turbulenceWave.mul(turbulenceValue));
 
       const layerY = yBase.add(wave.mul(ampValue));
 

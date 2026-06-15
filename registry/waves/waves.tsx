@@ -12,7 +12,7 @@ export interface WaveLayer {
   glow?: number;
   thickness?: number;
   offset?: number;
-  motion?: number;
+  turbulence?: number;
 }
 
 export interface WavesProps {
@@ -36,7 +36,7 @@ export const DEFAULT_LAYERS: WaveLayer[] = [
     glow: 0.55,
     thickness: 0.45,
     offset: 0,
-    motion: 0.12,
+    turbulence: 0.12,
   }, // palette.red.light
   {
     color: '#ecb100',
@@ -46,7 +46,7 @@ export const DEFAULT_LAYERS: WaveLayer[] = [
     glow: 0.62,
     thickness: 0.55,
     offset: 1.57,
-    motion: 0.32,
+    turbulence: 0.32,
   }, // palette.amber.base
   {
     color: '#0ae24b',
@@ -56,7 +56,7 @@ export const DEFAULT_LAYERS: WaveLayer[] = [
     glow: 0.7,
     thickness: 0.65,
     offset: 3.14,
-    motion: 0.52,
+    turbulence: 0.52,
   }, // palette.green.base
   {
     color: '#4370f0',
@@ -66,7 +66,7 @@ export const DEFAULT_LAYERS: WaveLayer[] = [
     glow: 0.78,
     thickness: 0.75,
     offset: 4.71,
-    motion: 0.72,
+    turbulence: 0.72,
   }, // palette.blue.light
 ];
 

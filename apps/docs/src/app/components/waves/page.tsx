@@ -23,7 +23,7 @@ interface Layer {
   glow: number;
   thickness: number;
   offset: number;
-  motion: number;
+  turbulence: number;
 }
 
 interface Params {
@@ -57,7 +57,7 @@ const INITIAL: Params = {
       glow: 0.55,
       thickness: 0.45,
       offset: 0,
-      motion: 0.12,
+      turbulence: 0.12,
     },
     {
       color: palette.amber.base,
@@ -67,7 +67,7 @@ const INITIAL: Params = {
       glow: 0.62,
       thickness: 0.55,
       offset: 1.57,
-      motion: 0.32,
+      turbulence: 0.32,
     },
     {
       color: palette.green.base,
@@ -77,7 +77,7 @@ const INITIAL: Params = {
       glow: 0.7,
       thickness: 0.65,
       offset: 3.14,
-      motion: 0.52,
+      turbulence: 0.52,
     },
     {
       color: palette.blue.light,
@@ -87,7 +87,7 @@ const INITIAL: Params = {
       glow: 0.78,
       thickness: 0.75,
       offset: 4.71,
-      motion: 0.72,
+      turbulence: 0.72,
     },
   ],
 };
@@ -95,7 +95,7 @@ const INITIAL: Params = {
 const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
 const fmtLayer = (layer: Layer) =>
-  `{ color: '${layer.color}', amplitude: ${fmtNum(layer.amplitude)}, frequency: ${fmtNum(layer.frequency)}, speed: ${fmtNum(layer.speed)}, glow: ${fmtNum(layer.glow)}, thickness: ${fmtNum(layer.thickness)}, offset: ${fmtNum(layer.offset)}, motion: ${fmtNum(layer.motion)} }`;
+  `{ color: '${layer.color}', amplitude: ${fmtNum(layer.amplitude)}, frequency: ${fmtNum(layer.frequency)}, speed: ${fmtNum(layer.speed)}, glow: ${fmtNum(layer.glow)}, thickness: ${fmtNum(layer.thickness)}, offset: ${fmtNum(layer.offset)}, turbulence: ${fmtNum(layer.turbulence)} }`;
 
 const fmtLayers = (layers: Layer[]) => layers.map(fmtLayer).join(',\n    ');
 
@@ -181,7 +181,7 @@ export default function WavesPage() {
         row.addBinding(layer, 'glow', { min: 0, max: 3, step: 0.01 });
         row.addBinding(layer, 'thickness', { min: 0.1, max: 4, step: 0.01 });
         row.addBinding(layer, 'offset', { min: 0, max: 6.28, step: 0.01 });
-        row.addBinding(layer, 'motion', { min: 0, max: 1, step: 0.01 });
+        row.addBinding(layer, 'turbulence', { min: 0, max: 1, step: 0.01 });
 
         const removeButton = row.addButton({ title: 'Remove layer' });
 
@@ -206,7 +206,7 @@ export default function WavesPage() {
           glow: last?.glow ?? 1,
           thickness: last?.thickness ?? 1,
           offset: ((last?.offset ?? 0) + 1.57) % 6.28,
-          motion: last?.motion ?? 0.35,
+          turbulence: last?.turbulence ?? 0.35,
         };
 
         local.layers.push(next);
@@ -234,7 +234,7 @@ export default function WavesPage() {
     glow: layer.glow,
     thickness: layer.thickness,
     offset: layer.offset,
-    motion: layer.motion,
+    turbulence: layer.turbulence,
   }));
 
   return (
