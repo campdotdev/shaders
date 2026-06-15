@@ -15,8 +15,8 @@ export type { ColorRampStop, TSLNode } from './primitives/color-ramp/color-ramp.
 
 export { simplexNoise } from './primitives/noise/noise.js';
 
-export { fractionalBrownianMotion } from './primitives/fbm/fbm.js';
-export type { FractionalBrownianMotionOptions } from './primitives/fbm/fbm.js';
+export { fractalNoise } from './primitives/fbm/fbm.js';
+export type { FractalNoiseOptions } from './primitives/fbm/fbm.js';
 
 export { voronoi } from './primitives/voronoi/voronoi.js';
 

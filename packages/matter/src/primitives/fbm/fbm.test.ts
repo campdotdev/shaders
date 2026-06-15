@@ -1,24 +1,24 @@
 import { uv } from 'three/tsl';
 import { describe, expect, it } from 'vitest';
 
-import { fractionalBrownianMotion } from './fbm.js';
+import { fractalNoise } from './fbm.js';
 
 describe('fbm', () => {
   it('returns a TSL node with default options', () => {
-    const fbmValue = fractionalBrownianMotion(uv());
+    const noiseValue = fractalNoise(uv());
 
-    expect(fbmValue).toBeDefined();
+    expect(noiseValue).toBeDefined();
   });
 
   it('returns a TSL node when octaves=1', () => {
-    const fbmValue = fractionalBrownianMotion(uv(), { octaves: 1 });
+    const noiseValue = fractalNoise(uv(), { octaves: 1 });
 
-    expect(fbmValue).toBeDefined();
+    expect(noiseValue).toBeDefined();
   });
 
   it('respects custom lacunarity and gain', () => {
-    const fbmValue = fractionalBrownianMotion(uv(), { octaves: 6, lacunarity: 2.5, gain: 0.4 });
+    const noiseValue = fractalNoise(uv(), { octaves: 6, lacunarity: 2.5, gain: 0.4 });
 
-    expect(fbmValue).toBeDefined();
+    expect(noiseValue).toBeDefined();
   });
 });

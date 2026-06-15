@@ -46,14 +46,14 @@ interface ColorRampStop {
   },
   {
     slug: 'fbm',
-    name: 'fractionalBrownianMotion',
+    name: 'fractalNoise',
     description: 'Fractal Brownian Motion — sums of noise at multiple scales.',
-    signature: `function fractionalBrownianMotion(
+    signature: `function fractalNoise(
   p: TSLNode,
-  opts?: FractionalBrownianMotionOptions,
+  opts?: FractalNoiseOptions,
 ): TSLNode
 
-interface FractionalBrownianMotionOptions {
+interface FractalNoiseOptions {
   octaves?: number     // default 4
   lacunarity?: number  // default 2
   gain?: number        // default 0.5

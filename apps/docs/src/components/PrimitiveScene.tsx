@@ -8,7 +8,7 @@ import {
   cursorRipple,
   displace,
   elapsedTime,
-  fractionalBrownianMotion,
+  fractalNoise,
   quantize,
   signedDistanceFieldCircle,
   simplexNoise,
@@ -132,12 +132,12 @@ function buildNoise(params: ParamsFor<'noise'>): ShaderNodeObject<Node> {
 function buildFbm(params: ParamsFor<'fbm'>): ShaderNodeObject<Node> {
   const scaledTime = elapsedTime.mul(params.speed);
   const samplePosition = uv().mul(params.scale).add(vec2(scaledTime, scaledTime));
-  const fbmValue = fractionalBrownianMotion(samplePosition, {
+  const noiseValue = fractalNoise(samplePosition, {
     octaves: params.octaves,
     lacunarity: params.lacunarity,
     gain: params.gain,
   });
-  const grayscale = fbmValue.mul(0.5).add(0.5).clamp(0, 1);
+  const grayscale = noiseValue.mul(0.5).add(0.5).clamp(0, 1);
 
   return vec4(grayscale, grayscale, grayscale, 1);
 }

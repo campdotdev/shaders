@@ -2,7 +2,7 @@ import {
   colorRamp,
   type ColorRampStop,
   elapsedTime,
-  fractionalBrownianMotion,
+  fractalNoise,
   quantize,
   voronoi,
 } from '@lovo/matter';
@@ -36,7 +36,7 @@ function plasmaBase(): ShaderNodeObject<Node> {
     .mul(2)
     .add(vec2(scrolledTime, scrolledTime)) as ShaderNodeObject<Node>;
 
-  return fractionalBrownianMotion(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1);
+  return fractalNoise(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1);
 }
 
 export const RECIPE_BUILDS: Record<string, RecipeBuild> = {

@@ -15,7 +15,7 @@ TSL building blocks for writing shader expressions. Each primitive is documented
 
 - `colorRamp(stops, t)` — multi-stop color gradient sampled at `t` ∈ [0, 1].
 - `simplexNoise(uv, opts?)` — single-octave 2D value noise.
-- `fractionalBrownianMotion(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `scale`, `octaves`, `lacunarity`, `gain`, `speed`.
+- `fractalNoise(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `scale`, `octaves`, `lacunarity`, `gain`, `speed`.
 - `voronoi(uv, opts?)` — distance-to-nearest-feature noise.
 - `quantize(value, bins)` — posterize a float to discrete steps.
 - `signedDistanceFieldCircle(uv, radius, center)` — signed-distance field for a circle. Negative inside, positive outside.
@@ -61,7 +61,7 @@ import { time as rawTime } from 'three/tsl'
 
 ## Type exports
 
-The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vector2`, `ColorRampStop`, `TSLNode`, `FractionalBrownianMotionOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`.
+The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vector2`, `ColorRampStop`, `TSLNode`, `FractalNoiseOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`.
 
 <Callout>
   For React-specific exports (`<ShaderScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@lovo/matter`.

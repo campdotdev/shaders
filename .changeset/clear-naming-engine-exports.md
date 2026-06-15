@@ -4,7 +4,7 @@
 
 Rename engine exports to spelled-out, domain-accurate names (breaking).
 
-- `fbm` → `fractionalBrownianMotion` (and `FBMOptions` → `FractionalBrownianMotionOptions`)
+- `fbm` → `fractalNoise` (and `FBMOptions` → `FractalNoiseOptions`)
 - `noise` → `simplexNoise`
 - `sdfCircle` → `signedDistanceFieldCircle`
 - `time` → `elapsedTime`

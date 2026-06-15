@@ -87,22 +87,22 @@ material.colorNode = vec4(glow, glow.mul(0.7), glow.mul(1.5), 1)`,
     description: 'FBM-driven color swirl. The canonical "shader-y" look from one primitive.',
     primitivesUsed: ['fbm', 'time', 'color-ramp'],
     source: `import { uv, vec2, vec3, vec4 } from 'three/tsl'
-import { elapsedTime, fractionalBrownianMotion, colorRamp } from '@lovo/matter'
+import { elapsedTime, fractalNoise, colorRamp } from '@lovo/matter'
 
 const scrolledTime = elapsedTime.mul(0.3)
 const samplePosition = uv().mul(2).add(vec2(scrolledTime, scrolledTime))
-const fbmValue = fractionalBrownianMotion(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1)
+const noiseValue = fractalNoise(samplePosition, { octaves: 4 }).mul(0.5).add(0.5).clamp(0, 1)
 const stops = [
   { color: vec3(0.4, 0.0, 0.8), position: 0 },
   { color: vec3(1, 0.4, 0.6), position: 0.5 },
   { color: vec3(0.4, 0.9, 1), position: 1 },
 ]
-material.colorNode = vec4(colorRamp(fbmValue, stops), 1)`,
+material.colorNode = vec4(colorRamp(noiseValue, stops), 1)`,
     variants: [
       {
         key: 'canonical',
         label: 'Canonical',
-        note: 'The base — 3-stop purple/pink/cyan ramp over fbm with octaves: 4.',
+        note: 'The base — 3-stop purple/pink/cyan ramp over fractal noise with octaves: 4.',
       },
       {
         key: 'monochrome-marble',
