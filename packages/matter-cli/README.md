@@ -25,8 +25,7 @@ Writes `matter.config.json` to your project root with sensible defaults:
 {
   "componentsDir": "src/components/matter",
   "registryUrl": "https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry",
-  "aliases": { "@/": "src/" },
-  "useTypeScript": true
+  "aliases": { "@/": "src/" }
 }
 ```
 
