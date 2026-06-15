@@ -34,7 +34,7 @@ describe('useStaticSceneHint', () => {
     vi.unstubAllGlobals();
   });
 
-  it('marks the scheduler idle when hint=true', () => {
+  it('marks the scheduler idle when isStatic=true', () => {
     const scheduler = new FrameScheduler();
     const setIdle = vi.spyOn(scheduler, 'setIdle');
 
@@ -42,7 +42,7 @@ describe('useStaticSceneHint', () => {
     expect(setIdle).toHaveBeenLastCalledWith(true);
   });
 
-  it('marks the scheduler not idle when hint=false', () => {
+  it('marks the scheduler not idle when isStatic=false', () => {
     const scheduler = new FrameScheduler();
     const setIdle = vi.spyOn(scheduler, 'setIdle');
 
@@ -61,17 +61,17 @@ describe('useStaticSceneHint', () => {
     expect(scheduler.idle).toBe(false);
   });
 
-  it('does not call requestRender on render when hint is unchanged', () => {
+  it('does not call requestRender on render when isStatic is unchanged', () => {
     // Sanity: the hook does not spuriously call requestRender on every render.
     const scheduler = new FrameScheduler();
     const requestRender = vi.spyOn(scheduler, 'requestRender');
-    const { rerender } = renderHook(({ hint }) => useStaticSceneHint(hint), {
+    const { rerender } = renderHook(({ isStatic }) => useStaticSceneHint(isStatic), {
       wrapper: makeWrapper(scheduler),
-      initialProps: { hint: true },
+      initialProps: { isStatic: true },
     });
 
-    rerender({ hint: true });
-    rerender({ hint: true });
+    rerender({ isStatic: true });
+    rerender({ isStatic: true });
     expect(requestRender).not.toHaveBeenCalled();
   });
 });
