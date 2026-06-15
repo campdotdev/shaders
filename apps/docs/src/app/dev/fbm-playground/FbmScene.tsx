@@ -52,9 +52,9 @@ function FbmMesh({
       .mul(scaleUniform)
       .add(vec2(elapsedTime.mul(timeSpeedUniform), elapsedTime.mul(timeSpeedUniform)));
     const noiseValue = fractalNoise(animatedUv, { octaves, lacunarity, gain });
-    const fbmNormalized = noiseValue.add(1).mul(0.5);
+    const normalizedNoise = noiseValue.add(1).mul(0.5);
 
-    return addPlaneMesh(ctx, colorRamp(fbmNormalized, STOPS));
+    return addPlaneMesh(ctx, colorRamp(normalizedNoise, STOPS));
   }, [ctx, octaves, lacunarity, gain, scaleUniform, timeSpeedUniform]);
 
   return null;
