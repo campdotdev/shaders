@@ -46,9 +46,9 @@ const INITIAL: Params = {
   color4: palette.teal.base,
 };
 
-const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
+const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const fmtColors = (params: Params) => {
+const formatColors = (params: Params) => {
   const colorList = [params.color0, params.color1, params.color2, params.color3, params.color4];
 
   return colorList
@@ -57,27 +57,27 @@ const fmtColors = (params: Params) => {
     .join(', ');
 };
 
-const fmtJsx = (params: Params) =>
+const formatJsx = (params: Params) =>
   `<ShaderScene>
   <SimplexNoise
-    colors={[${fmtColors(params)}]}
-    scale={${fmtNum(params.scale)}}
-    speed={${fmtNum(params.speed)}}
-    contrast={${fmtNum(params.contrast)}}
-    bias={${fmtNum(params.bias)}}
-    softness={${fmtNum(params.softness)}}
+    colors={[${formatColors(params)}]}
+    scale={${formatNumber(params.scale)}}
+    speed={${formatNumber(params.speed)}}
+    contrast={${formatNumber(params.contrast)}}
+    bias={${formatNumber(params.bias)}}
+    softness={${formatNumber(params.softness)}}
     seed={${params.seed}}
   />
 </ShaderScene>`;
 
-const fmtParams = (params: Params) =>
+const formatParams = (params: Params) =>
   `{
-  colors: [${fmtColors(params)}],
-  scale: ${fmtNum(params.scale)},
-  speed: ${fmtNum(params.speed)},
-  contrast: ${fmtNum(params.contrast)},
-  bias: ${fmtNum(params.bias)},
-  softness: ${fmtNum(params.softness)},
+  colors: [${formatColors(params)}],
+  scale: ${formatNumber(params.scale)},
+  speed: ${formatNumber(params.speed)},
+  contrast: ${formatNumber(params.contrast)},
+  bias: ${formatNumber(params.bias)},
+  softness: ${formatNumber(params.softness)},
   seed: ${params.seed},
 }`;
 
@@ -94,8 +94,8 @@ export default function SimplexNoisePage() {
 
       addCopyButtons(
         pane,
-        () => fmtJsx(local),
-        () => fmtParams(local),
+        () => formatJsx(local),
+        () => formatParams(local),
       );
 
       pane.addBinding(local, 'scale', { min: 0.5, max: 30, step: 0.1 });

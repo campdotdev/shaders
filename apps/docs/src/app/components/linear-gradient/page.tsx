@@ -46,30 +46,30 @@ const INITIAL: Params = {
   ],
 };
 
-const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
+const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const fmtColors = (stops: Stop[]) => stops.map((stop) => `'${stop.color}'`).join(', ');
+const formatColors = (stops: Stop[]) => stops.map((stop) => `'${stop.color}'`).join(', ');
 
-const fmtStops = (stops: Stop[]) => stops.map((stop) => fmtNum(stop.position)).join(', ');
+const formatStops = (stops: Stop[]) => stops.map((stop) => formatNumber(stop.position)).join(', ');
 
-const fmtJsx = (params: Params) =>
+const formatJsx = (params: Params) =>
   `<ShaderScene>
   <LinearGradient
-    colors={[${fmtColors(params.stops)}]}
-    stops={[${fmtStops(params.stops)}]}
-    angle={${fmtNum(params.angle)}}
-    speed={${fmtNum(params.speed)}}
-    focalPoint={[${fmtNum(params.focalX)}, ${fmtNum(params.focalY)}]}
+    colors={[${formatColors(params.stops)}]}
+    stops={[${formatStops(params.stops)}]}
+    angle={${formatNumber(params.angle)}}
+    speed={${formatNumber(params.speed)}}
+    focalPoint={[${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}]}
   />
 </ShaderScene>`;
 
-const fmtParams = (params: Params) =>
+const formatParams = (params: Params) =>
   `{
-  colors: [${fmtColors(params.stops)}],
-  stops: [${fmtStops(params.stops)}],
-  angle: ${fmtNum(params.angle)},
-  speed: ${fmtNum(params.speed)},
-  focalPoint: [${fmtNum(params.focalX)}, ${fmtNum(params.focalY)}],
+  colors: [${formatColors(params.stops)}],
+  stops: [${formatStops(params.stops)}],
+  angle: ${formatNumber(params.angle)},
+  speed: ${formatNumber(params.speed)},
+  focalPoint: [${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}],
 }`;
 
 export default function LinearGradientPage() {
@@ -96,8 +96,8 @@ export default function LinearGradientPage() {
 
     addCopyButtons(
       pane,
-      () => fmtJsx(local),
-      () => fmtParams(local),
+      () => formatJsx(local),
+      () => formatParams(local),
     );
 
     pane.addBinding(local, 'angle', { min: 0, max: 360, step: 1 });

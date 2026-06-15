@@ -42,15 +42,15 @@ const INITIAL: VignetteParams = {
   grainIntensity: 0.3,
 };
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
+const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
-const fmtJsx = (p: VignetteParams) => {
-  const grain = `<FilmGrain intensity={${fmtNum(p.grainIntensity)}} />`;
+const formatJsx = (p: VignetteParams) => {
+  const grain = `<FilmGrain intensity={${formatNumber(p.grainIntensity)}} />`;
   const vignette = `<Vignette
-    intensity={${fmtNum(p.intensity)}}
-    softness={${fmtNum(p.softness)}}
-    center={[${fmtNum(p.centerX)}, ${fmtNum(p.centerY)}]}
-    radius={${fmtNum(p.radius)}}
+    intensity={${formatNumber(p.intensity)}}
+    softness={${formatNumber(p.softness)}}
+    center={[${formatNumber(p.centerX)}, ${formatNumber(p.centerY)}]}
+    radius={${formatNumber(p.radius)}}
     color="${p.color}"
   />`;
 
@@ -67,12 +67,12 @@ const fmtJsx = (p: VignetteParams) => {
 </ShaderScene>`;
 };
 
-const fmtParams = (p: VignetteParams) =>
+const formatParams = (p: VignetteParams) =>
   `{
-  intensity: ${fmtNum(p.intensity)},
-  softness: ${fmtNum(p.softness)},
-  center: [${fmtNum(p.centerX)}, ${fmtNum(p.centerY)}],
-  radius: ${fmtNum(p.radius)},
+  intensity: ${formatNumber(p.intensity)},
+  softness: ${formatNumber(p.softness)},
+  center: [${formatNumber(p.centerX)}, ${formatNumber(p.centerY)}],
+  radius: ${formatNumber(p.radius)},
   color: '${p.color}',
 }`;
 
@@ -89,8 +89,8 @@ export default function VignettePage() {
 
       addCopyButtons(
         pane,
-        () => fmtJsx(local),
-        () => fmtParams(local),
+        () => formatJsx(local),
+        () => formatParams(local),
       );
 
       pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 });
