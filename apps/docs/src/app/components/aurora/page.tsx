@@ -87,58 +87,58 @@ const INITIAL: AuroraParams = {
 
 const LAYER_TITLES = ['Layer 0', 'Layer 1', 'Layer 2', 'Layer 3'];
 
-const fmtNum = (numericValue: number) => {
+const formatNumber = (numericValue: number) => {
   const roundedValue = Math.round(numericValue * 10000) / 10000;
 
   return String(roundedValue);
 };
 
-const fmtLayer = (layer: PlainAuroraLayer) =>
-  `{ color: '${layer.color}', speed: ${fmtNum(layer.speed)}, intensity: ${fmtNum(
+const formatLayer = (layer: PlainAuroraLayer) =>
+  `{ color: '${layer.color}', speed: ${formatNumber(layer.speed)}, intensity: ${formatNumber(
     layer.intensity,
-  )}, seed: ${fmtNum(layer.seed)}, falloff: ${fmtNum(layer.falloff)} }`;
+  )}, seed: ${formatNumber(layer.seed)}, falloff: ${formatNumber(layer.falloff)} }`;
 
-const fmtJsx = (params: AuroraParams) =>
+const formatJsx = (params: AuroraParams) =>
   `<ShaderScene>
   <Aurora
-    intensity={${fmtNum(params.intensity)}}
-    speed={${fmtNum(params.speed)}}
-    densityX={${fmtNum(params.densityX)}}
-    densityY={${fmtNum(params.densityY)}}
-    falloff={${fmtNum(params.falloff)}}
-    driftX={${fmtNum(params.driftX)}}
-    driftY={${fmtNum(params.driftY)}}
-    turbulence={${fmtNum(params.turbulence)}}
+    intensity={${formatNumber(params.intensity)}}
+    speed={${formatNumber(params.speed)}}
+    densityX={${formatNumber(params.densityX)}}
+    densityY={${formatNumber(params.densityY)}}
+    falloff={${formatNumber(params.falloff)}}
+    driftX={${formatNumber(params.driftX)}}
+    driftY={${formatNumber(params.driftY)}}
+    turbulence={${formatNumber(params.turbulence)}}
     direction="${params.direction}"
     horizonColor="${params.horizonColor}"
     skyColor="${params.skyColor}"
     layers={[
-      ${fmtLayer(params.layers[0])},
-      ${fmtLayer(params.layers[1])},
-      ${fmtLayer(params.layers[2])},
-      ${fmtLayer(params.layers[3])},
+      ${formatLayer(params.layers[0])},
+      ${formatLayer(params.layers[1])},
+      ${formatLayer(params.layers[2])},
+      ${formatLayer(params.layers[3])},
     ]}
   />
 </ShaderScene>`;
 
-const fmtParams = (params: AuroraParams) =>
+const formatParams = (params: AuroraParams) =>
   `{
-  intensity: ${fmtNum(params.intensity)},
-  speed: ${fmtNum(params.speed)},
-  densityX: ${fmtNum(params.densityX)},
-  densityY: ${fmtNum(params.densityY)},
-  falloff: ${fmtNum(params.falloff)},
-  driftX: ${fmtNum(params.driftX)},
-  driftY: ${fmtNum(params.driftY)},
-  turbulence: ${fmtNum(params.turbulence)},
+  intensity: ${formatNumber(params.intensity)},
+  speed: ${formatNumber(params.speed)},
+  densityX: ${formatNumber(params.densityX)},
+  densityY: ${formatNumber(params.densityY)},
+  falloff: ${formatNumber(params.falloff)},
+  driftX: ${formatNumber(params.driftX)},
+  driftY: ${formatNumber(params.driftY)},
+  turbulence: ${formatNumber(params.turbulence)},
   direction: '${params.direction}',
   horizonColor: '${params.horizonColor}',
   skyColor: '${params.skyColor}',
   layers: [
-    ${fmtLayer(params.layers[0])},
-    ${fmtLayer(params.layers[1])},
-    ${fmtLayer(params.layers[2])},
-    ${fmtLayer(params.layers[3])},
+    ${formatLayer(params.layers[0])},
+    ${formatLayer(params.layers[1])},
+    ${formatLayer(params.layers[2])},
+    ${formatLayer(params.layers[3])},
   ],
 }`;
 
@@ -195,8 +195,8 @@ export default function AuroraPage() {
 
     addCopyButtons(
       pane,
-      () => fmtJsx(local),
-      () => fmtParams(local),
+      () => formatJsx(local),
+      () => formatParams(local),
     );
 
     const globals = pane.addFolder({ title: 'Global' });

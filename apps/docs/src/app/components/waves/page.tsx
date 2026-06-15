@@ -92,38 +92,38 @@ const INITIAL: Params = {
   ],
 };
 
-const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
+const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const fmtLayer = (layer: Layer) =>
-  `{ color: '${layer.color}', amplitude: ${fmtNum(layer.amplitude)}, frequency: ${fmtNum(layer.frequency)}, speed: ${fmtNum(layer.speed)}, glow: ${fmtNum(layer.glow)}, thickness: ${fmtNum(layer.thickness)}, offset: ${fmtNum(layer.offset)}, turbulence: ${fmtNum(layer.turbulence)} }`;
+const formatLayer = (layer: Layer) =>
+  `{ color: '${layer.color}', amplitude: ${formatNumber(layer.amplitude)}, frequency: ${formatNumber(layer.frequency)}, speed: ${formatNumber(layer.speed)}, glow: ${formatNumber(layer.glow)}, thickness: ${formatNumber(layer.thickness)}, offset: ${formatNumber(layer.offset)}, turbulence: ${formatNumber(layer.turbulence)} }`;
 
-const fmtLayers = (layers: Layer[]) => layers.map(fmtLayer).join(',\n    ');
+const formatLayers = (layers: Layer[]) => layers.map(formatLayer).join(',\n    ');
 
-const fmtJsx = (params: Params) =>
+const formatJsx = (params: Params) =>
   `<ShaderScene>
   <Waves
-    amplitude={${fmtNum(params.amplitude)}}
-    frequency={${fmtNum(params.frequency)}}
-    speed={${fmtNum(params.speed)}}
-    glow={${fmtNum(params.glow)}}
-    thickness={${fmtNum(params.thickness)}}
-    baseline={${fmtNum(params.baseline)}}
+    amplitude={${formatNumber(params.amplitude)}}
+    frequency={${formatNumber(params.frequency)}}
+    speed={${formatNumber(params.speed)}}
+    glow={${formatNumber(params.glow)}}
+    thickness={${formatNumber(params.thickness)}}
+    baseline={${formatNumber(params.baseline)}}
     layers={[
-    ${fmtLayers(params.layers)}
+    ${formatLayers(params.layers)}
     ]}
   />
 </ShaderScene>`;
 
-const fmtParams = (params: Params) =>
+const formatParams = (params: Params) =>
   `{
-  amplitude: ${fmtNum(params.amplitude)},
-  frequency: ${fmtNum(params.frequency)},
-  speed: ${fmtNum(params.speed)},
-  glow: ${fmtNum(params.glow)},
-  thickness: ${fmtNum(params.thickness)},
-  baseline: ${fmtNum(params.baseline)},
+  amplitude: ${formatNumber(params.amplitude)},
+  frequency: ${formatNumber(params.frequency)},
+  speed: ${formatNumber(params.speed)},
+  glow: ${formatNumber(params.glow)},
+  thickness: ${formatNumber(params.thickness)},
+  baseline: ${formatNumber(params.baseline)},
   layers: [
-    ${fmtLayers(params.layers)}
+    ${formatLayers(params.layers)}
   ],
 }`;
 
@@ -149,8 +149,8 @@ export default function WavesPage() {
 
     addCopyButtons(
       pane,
-      () => fmtJsx(local),
-      () => fmtParams(local),
+      () => formatJsx(local),
+      () => formatParams(local),
     );
 
     pane.addBinding(local, 'amplitude', { min: 0, max: 0.3, step: 0.005 });
@@ -278,7 +278,7 @@ export default function WavesPage() {
             whiteSpace: 'pre-wrap',
           }}
         >
-          {fmtJsx(params)}
+          {formatJsx(params)}
         </pre>
       </section>
     </main>

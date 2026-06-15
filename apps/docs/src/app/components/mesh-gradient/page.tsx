@@ -48,33 +48,33 @@ const INITIAL: Params = {
   b3: palette.magenta.base,
 };
 
-const fmtNum = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
+const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const fmtPalette = (params: Params, paletteKey: 'a' | 'b') =>
+const formatPalette = (params: Params, paletteKey: 'a' | 'b') =>
   `['${params[`${paletteKey}0`]}', '${params[`${paletteKey}1`]}', '${params[`${paletteKey}2`]}', '${params[`${paletteKey}3`]}']`;
 
-const fmtJsx = (params: Params) =>
+const formatJsx = (params: Params) =>
   `<ShaderScene>
   <MeshGradient
-    speed={${fmtNum(params.speed)}}
-    frequency={${fmtNum(params.frequency)}}
-    amplitude={${fmtNum(params.amplitude)}}
-    cycleSpeed={${fmtNum(params.cycleSpeed)}}
-    cycleEase={${fmtNum(params.cycleEase)}}
-    paletteA={${fmtPalette(params, 'a')}}
-    paletteB={${fmtPalette(params, 'b')}}
+    speed={${formatNumber(params.speed)}}
+    frequency={${formatNumber(params.frequency)}}
+    amplitude={${formatNumber(params.amplitude)}}
+    cycleSpeed={${formatNumber(params.cycleSpeed)}}
+    cycleEase={${formatNumber(params.cycleEase)}}
+    paletteA={${formatPalette(params, 'a')}}
+    paletteB={${formatPalette(params, 'b')}}
   />
 </ShaderScene>`;
 
-const fmtParams = (params: Params) =>
+const formatParams = (params: Params) =>
   `{
-  speed: ${fmtNum(params.speed)},
-  frequency: ${fmtNum(params.frequency)},
-  amplitude: ${fmtNum(params.amplitude)},
-  cycleSpeed: ${fmtNum(params.cycleSpeed)},
-  cycleEase: ${fmtNum(params.cycleEase)},
-  paletteA: ${fmtPalette(params, 'a')},
-  paletteB: ${fmtPalette(params, 'b')},
+  speed: ${formatNumber(params.speed)},
+  frequency: ${formatNumber(params.frequency)},
+  amplitude: ${formatNumber(params.amplitude)},
+  cycleSpeed: ${formatNumber(params.cycleSpeed)},
+  cycleEase: ${formatNumber(params.cycleEase)},
+  paletteA: ${formatPalette(params, 'a')},
+  paletteB: ${formatPalette(params, 'b')},
 }`;
 
 export default function MeshGradientPage() {
@@ -90,8 +90,8 @@ export default function MeshGradientPage() {
 
       addCopyButtons(
         pane,
-        () => fmtJsx(local),
-        () => fmtParams(local),
+        () => formatJsx(local),
+        () => formatParams(local),
       );
 
       pane.addBinding(local, 'speed', { min: 0, max: 5, step: 0.01 });

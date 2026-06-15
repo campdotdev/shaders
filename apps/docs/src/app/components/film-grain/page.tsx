@@ -32,22 +32,22 @@ const INITIAL: FilmGrainParams = {
   grainBlend: 'additive',
 };
 
-const fmtNum = (n: number) => String(Math.round(n * 10000) / 10000);
+const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
-const fmtJsx = (p: FilmGrainParams) =>
+const formatJsx = (p: FilmGrainParams) =>
   `<ShaderScene>
   <LinearGradient />
   <FilmGrain
-    intensity={${fmtNum(p.intensity)}}
-    speed={${fmtNum(p.speed)}}
+    intensity={${formatNumber(p.intensity)}}
+    speed={${formatNumber(p.speed)}}
     grainBlend="${p.grainBlend}"
   />
 </ShaderScene>`;
 
-const fmtParams = (p: FilmGrainParams) =>
+const formatParams = (p: FilmGrainParams) =>
   `{
-  intensity: ${fmtNum(p.intensity)},
-  speed: ${fmtNum(p.speed)},
+  intensity: ${formatNumber(p.intensity)},
+  speed: ${formatNumber(p.speed)},
   grainBlend: '${p.grainBlend}',
 }`;
 
@@ -64,8 +64,8 @@ export default function FilmGrainPage() {
 
       addCopyButtons(
         pane,
-        () => fmtJsx(local),
-        () => fmtParams(local),
+        () => formatJsx(local),
+        () => formatParams(local),
       );
 
       pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 });
