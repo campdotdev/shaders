@@ -9,17 +9,22 @@ import {
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { type ShaderNodeObject, smoothstep, sub, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry, Vector3 } from 'three/webgpu';
+import { smoothstep, sub, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 
 import { parseHex } from '../utils/color';
 
 export interface AuroraLayer {
   color: string;
-  speed: AnimatableProp<number>;
-  intensity: AnimatableProp<number>;
-  seed: number;
-  falloff?: AnimatableProp<number>;
+  speed?: number;
+  intensity?: number;
+  seed?: number;
+  falloff?: number;
+}
+
+export interface AuroraBackground {
+  horizon: string;
+  sky: string;
 }
 
 export type AuroraDirection = 'bottom' | 'top' | 'left' | 'right';
@@ -31,6 +36,10 @@ const DIRECTION_VECTORS: Record<AuroraDirection, [number, number, number]> = {
   right: [-1, 0, 1],
 };
 
+const DEFAULT_LAYER_SPEED = 0.1;
+const DEFAULT_LAYER_INTENSITY = 0.3;
+const DEFAULT_LAYER_FALLOFF = 1;
+
 export interface AuroraShaderProps {
   intensity: AnimatableProp<number>;
   speed: AnimatableProp<number>;
@@ -41,53 +50,8 @@ export interface AuroraShaderProps {
   driftY: AnimatableProp<number>;
   turbulence: AnimatableProp<number>;
   direction: AuroraDirection;
-  horizonColor: string;
-  skyColor: string;
-  layers: [AuroraLayer, AuroraLayer, AuroraLayer, AuroraLayer];
-}
-
-interface LayerUniforms {
-  color: ShaderNodeObject<Node>;
-  speed: ShaderNodeObject<Node>;
-  intensity: ShaderNodeObject<Node>;
-  falloff: ShaderNodeObject<Node>;
-}
-
-function useLayerUniforms(layer: AuroraLayer): LayerUniforms {
-  const speedUniform = useAnimatableUniform<number>(layer.speed);
-  const intensityUniform = useAnimatableUniform<number>(layer.intensity);
-  const falloffUniform = useAnimatableUniform<number>(layer.falloff ?? 1);
-
-  const colorVec = useMemo(
-    () => {
-      const [redChannel, greenChannel, blueChannel] = parseHex(layer.color);
-
-      return new Vector3(redChannel, greenChannel, blueChannel);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  const colorNode = useMemo(() => uniform(colorVec), [colorVec]);
-
-  useEffect(() => {
-    const [redChannel, greenChannel, blueChannel] = parseHex(layer.color);
-
-    colorVec.set(redChannel, greenChannel, blueChannel);
-  }, [layer.color, colorVec]);
-
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  const widenedColor = colorNode as unknown as ShaderNodeObject<Node>;
-
-  return useMemo(
-    () => ({
-      color: widenedColor,
-      speed: speedUniform,
-      intensity: intensityUniform,
-      falloff: falloffUniform,
-    }),
-    [widenedColor, speedUniform, intensityUniform, falloffUniform],
-  );
+  background: AuroraBackground;
+  layers: AuroraLayer[];
 }
 
 function useColorUniform(hex: string) {
@@ -160,29 +124,15 @@ export function AuroraShader(props: AuroraShaderProps) {
     dirVec.set(directionX, directionY, directionBias);
   }, [props.direction, dirVec]);
 
-  const horizonNode = useColorUniform(props.horizonColor);
-  const skyNode = useColorUniform(props.skyColor);
+  const horizonNode = useColorUniform(props.background.horizon);
+  const skyNode = useColorUniform(props.background.sky);
 
-  const layer0 = useLayerUniforms(props.layers[0]);
-  const layer1 = useLayerUniforms(props.layers[1]);
-  const layer2 = useLayerUniforms(props.layers[2]);
-  const layer3 = useLayerUniforms(props.layers[3]);
-
-  const layerUniforms = useMemo(
-    () => [layer0, layer1, layer2, layer3] as const,
-    [layer0, layer1, layer2, layer3],
-  );
-
-  const seeds = useMemo(
-    () =>
-      [
-        props.layers[0].seed,
-        props.layers[1].seed,
-        props.layers[2].seed,
-        props.layers[3].seed,
-      ] as const,
-    [props.layers],
-  );
+  const layersKey = props.layers
+    .map(
+      (layer) =>
+        `${layer.color}|${layer.speed ?? ''}|${layer.intensity ?? ''}|${layer.seed ?? ''}|${layer.falloff ?? ''}`,
+    )
+    .join('||');
 
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
@@ -194,20 +144,22 @@ export function AuroraShader(props: AuroraShaderProps) {
 
     let aurora = vec3(0, 0, 0);
 
-    for (let layerIndex = 0; layerIndex < 4; layerIndex += 1) {
-      const layerUniform = layerUniforms[layerIndex];
-      const seed = seeds[layerIndex];
+    for (const layer of props.layers) {
+      const [redChannel, greenChannel, blueChannel] = parseHex(layer.color);
+      const layerColor = vec3(redChannel, greenChannel, blueChannel);
+      const layerSpeed = layer.speed ?? DEFAULT_LAYER_SPEED;
+      const layerIntensity = layer.intensity ?? DEFAULT_LAYER_INTENSITY;
+      const layerFalloff = layer.falloff ?? DEFAULT_LAYER_FALLOFF;
+      const seed = layer.seed ?? 0;
 
-      if (layerUniform === undefined || seed === undefined) continue;
-
-      const scaledTime = elapsedTime.mul(speedUniform).mul(layerUniform.speed);
+      const scaledTime = elapsedTime.mul(speedUniform).mul(layerSpeed);
 
       const driftPosition = vec2(
         scaledUv.x.add(scaledTime.mul(driftXUniform)),
         scaledUv.y.add(scaledTime.mul(driftYUniform)),
       );
 
-      const warpSeed = vec2(layerUniform.color.x.add(seed), layerUniform.color.y.add(seed + 1));
+      const warpSeed = vec2(layerColor.x.add(seed), layerColor.y.add(seed + 1));
 
       const warpOffset = simplexNoise(
         vec2(
@@ -225,9 +177,9 @@ export function AuroraShader(props: AuroraShaderProps) {
         .mul(0.5)
         .add(0.5);
 
-      const auroraField = noiseValue.sub(fallOff.mul(falloffUniform).mul(layerUniform.falloff));
+      const auroraField = noiseValue.sub(fallOff.mul(falloffUniform).mul(layerFalloff));
 
-      aurora = aurora.add(layerUniform.color.mul(auroraField).mul(layerUniform.intensity).mul(2));
+      aurora = aurora.add(layerColor.mul(auroraField).mul(layerIntensity).mul(2));
     }
 
     const sky = horizonNode
@@ -250,10 +202,13 @@ export function AuroraShader(props: AuroraShaderProps) {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
     };
+    // layersKey is a stable string proxy for props.layers — listing the array
+    // itself would rebuild on identity-only changes. Per-layer values are baked
+    // as literals, so a content change must trigger a rebuild.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     shaderContext,
-    layerUniforms,
-    seeds,
+    layersKey,
     intensityUniform,
     speedUniform,
     densityXUniform,

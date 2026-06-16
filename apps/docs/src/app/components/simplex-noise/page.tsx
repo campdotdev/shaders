@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+import type { ColorStop } from '@matter/registry/simplex-noise';
+
 import { palette } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
@@ -48,19 +50,19 @@ const INITIAL: Params = {
 
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const formatColors = (params: Params) => {
+const formatStops = (params: Params) => {
   const colorList = [params.color0, params.color1, params.color2, params.color3, params.color4];
 
   return colorList
     .slice(0, params.colorCount)
-    .map((colorHex) => `'${colorHex}'`)
+    .map((colorHex) => `{ color: '${colorHex}' }`)
     .join(', ');
 };
 
 const formatJsx = (params: Params) =>
   `<ShaderScene>
   <SimplexNoise
-    colors={[${formatColors(params)}]}
+    stops={[${formatStops(params)}]}
     scale={${formatNumber(params.scale)}}
     speed={${formatNumber(params.speed)}}
     contrast={${formatNumber(params.contrast)}}
@@ -72,7 +74,7 @@ const formatJsx = (params: Params) =>
 
 const formatParams = (params: Params) =>
   `{
-  colors: [${formatColors(params)}],
+  stops: [${formatStops(params)}],
   scale: ${formatNumber(params.scale)},
   speed: ${formatNumber(params.speed)},
   contrast: ${formatNumber(params.contrast)},
@@ -125,7 +127,9 @@ export default function SimplexNoisePage() {
   );
 
   const allColors = [params.color0, params.color1, params.color2, params.color3, params.color4];
-  const colors = allColors.slice(0, params.colorCount);
+  const stops: ColorStop[] = allColors
+    .slice(0, params.colorCount)
+    .map((color) => ({ color }));
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -141,12 +145,12 @@ export default function SimplexNoisePage() {
         <ShaderScene>
           <SimplexNoise
             bias={params.bias}
-            colors={colors}
             contrast={params.contrast}
             scale={params.scale}
             seed={params.seed}
             softness={params.softness}
             speed={params.speed}
+            stops={stops}
           />
           <VisualTestPause />
         </ShaderScene>

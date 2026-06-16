@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
-import type { AuroraDirection } from '@matter/registry/aurora';
+import type { AuroraDirection, AuroraLayer } from '@matter/registry/aurora';
 import { Pane } from 'tweakpane';
 
 import { palette } from '@/lib/palette';
@@ -36,10 +36,13 @@ interface AuroraParams {
   driftY: number;
   turbulence: number;
   direction: AuroraDirection;
-  horizonColor: string;
-  skyColor: string;
-  layers: [PlainAuroraLayer, PlainAuroraLayer, PlainAuroraLayer, PlainAuroraLayer];
+  horizon: string;
+  sky: string;
+  layers: PlainAuroraLayer[];
 }
+
+const MIN_LAYERS = 1;
+const MAX_LAYERS = 8;
 
 const INITIAL: AuroraParams = {
   intensity: 1,
@@ -51,52 +54,22 @@ const INITIAL: AuroraParams = {
   driftY: -3.15,
   turbulence: 1.3,
   direction: 'top',
-  horizonColor: '#040009',
-  skyColor: '#146389',
+  horizon: '#040009',
+  sky: '#146389',
   layers: [
-    {
-      color: palette.green.base,
-      speed: 0.07,
-      intensity: 0.6,
-      seed: 0,
-      falloff: 1,
-    },
-    {
-      color: palette.blue.base,
-      speed: 0.1,
-      intensity: 0.2,
-      seed: 5,
-      falloff: 1,
-    },
-    {
-      color: palette.violet.base,
-      speed: 0.15,
-      intensity: 0.3,
-      seed: 11,
-      falloff: 1,
-    },
-    {
-      color: palette.magenta.base,
-      speed: 0.07,
-      intensity: 0.2,
-      seed: 17,
-      falloff: 1,
-    },
+    { color: palette.green.base, speed: 0.07, intensity: 0.6, seed: 0, falloff: 1 },
+    { color: palette.blue.base, speed: 0.1, intensity: 0.2, seed: 5, falloff: 1 },
+    { color: palette.violet.base, speed: 0.15, intensity: 0.3, seed: 11, falloff: 1 },
+    { color: palette.magenta.base, speed: 0.07, intensity: 0.2, seed: 17, falloff: 1 },
   ],
 };
 
-const LAYER_TITLES = ['Layer 0', 'Layer 1', 'Layer 2', 'Layer 3'];
-
-const formatNumber = (numericValue: number) => {
-  const roundedValue = Math.round(numericValue * 10000) / 10000;
-
-  return String(roundedValue);
-};
+const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
 const formatLayer = (layer: PlainAuroraLayer) =>
-  `{ color: '${layer.color}', speed: ${formatNumber(layer.speed)}, intensity: ${formatNumber(
-    layer.intensity,
-  )}, seed: ${formatNumber(layer.seed)}, falloff: ${formatNumber(layer.falloff)} }`;
+  `{ color: '${layer.color}', speed: ${formatNumber(layer.speed)}, intensity: ${formatNumber(layer.intensity)}, seed: ${formatNumber(layer.seed)}, falloff: ${formatNumber(layer.falloff)} }`;
+
+const formatLayers = (layers: PlainAuroraLayer[]) => layers.map(formatLayer).join(',\n      ');
 
 const formatJsx = (params: AuroraParams) =>
   `<ShaderScene>
@@ -110,13 +83,9 @@ const formatJsx = (params: AuroraParams) =>
     driftY={${formatNumber(params.driftY)}}
     turbulence={${formatNumber(params.turbulence)}}
     direction="${params.direction}"
-    horizonColor="${params.horizonColor}"
-    skyColor="${params.skyColor}"
+    background={{ horizon: '${params.horizon}', sky: '${params.sky}' }}
     layers={[
-      ${formatLayer(params.layers[0])},
-      ${formatLayer(params.layers[1])},
-      ${formatLayer(params.layers[2])},
-      ${formatLayer(params.layers[3])},
+      ${formatLayers(params.layers)},
     ]}
   />
 </ShaderScene>`;
@@ -132,65 +101,30 @@ const formatParams = (params: AuroraParams) =>
   driftY: ${formatNumber(params.driftY)},
   turbulence: ${formatNumber(params.turbulence)},
   direction: '${params.direction}',
-  horizonColor: '${params.horizonColor}',
-  skyColor: '${params.skyColor}',
+  background: { horizon: '${params.horizon}', sky: '${params.sky}' },
   layers: [
-    ${formatLayer(params.layers[0])},
-    ${formatLayer(params.layers[1])},
-    ${formatLayer(params.layers[2])},
-    ${formatLayer(params.layers[3])},
+    ${formatLayers(params.layers)},
   ],
 }`;
 
 export default function AuroraPage() {
   const paneContainerRef = useRef<HTMLDivElement>(null);
-  const [params, setParams] = useState<AuroraParams>(INITIAL);
+  const [params, setParams] = useState<AuroraParams>(() => structuredClone(INITIAL));
 
   useEffect(() => {
     const container = paneContainerRef.current;
 
     if (!container) return;
-    // Tweakpane mutates `local` in place; we sync to React state on `change`.
+
     const local: AuroraParams = structuredClone(INITIAL);
-
     const pane = new Pane({ container, title: '<Aurora>' });
-    const syncToReact = () => setParams(structuredClone(local));
-
-    // Remembered pre-mute intensity per layer, so Unmute can restore.
-    const savedIntensities: number[] = INITIAL.layers.map((layer) => layer.intensity);
-    const muteBtns: Array<{ title: string } | null> = [null, null, null, null];
-
-    const resetGlobals = () => {
-      local.intensity = INITIAL.intensity;
-      local.speed = INITIAL.speed;
-      local.densityX = INITIAL.densityX;
-      local.densityY = INITIAL.densityY;
-      local.falloff = INITIAL.falloff;
-      local.driftX = INITIAL.driftX;
-      local.driftY = INITIAL.driftY;
-      local.turbulence = INITIAL.turbulence;
-      local.direction = INITIAL.direction;
-      local.horizonColor = INITIAL.horizonColor;
-      local.skyColor = INITIAL.skyColor;
-    };
-
-    const resetLayer = (layerIndex: number) => {
-      const layer = local.layers[layerIndex];
-      const initial = INITIAL.layers[layerIndex];
-
-      if (layer === undefined || initial === undefined) return;
-      Object.assign(layer, initial);
-      savedIntensities[layerIndex] = initial.intensity;
-      const button = muteBtns[layerIndex];
-
-      if (button) button.title = 'Mute layer';
-    };
+    const sync = () => setParams(structuredClone(local));
 
     pane.addButton({ title: 'Reset all' }).on('click', () => {
-      resetGlobals();
-      for (let layerIndex = 0; layerIndex < 4; layerIndex += 1) resetLayer(layerIndex);
+      Object.assign(local, structuredClone(INITIAL));
+      rebuildLayers();
       pane.refresh();
-      syncToReact();
+      sync();
     });
 
     addCopyButtons(
@@ -203,95 +137,88 @@ export default function AuroraPage() {
 
     globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
     globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 });
-    globals.addBinding(local, 'densityX', {
-      label: 'density X',
-      min: 0.5,
-      max: 10,
-      step: 0.05,
-    });
-    globals.addBinding(local, 'densityY', {
-      label: 'density Y',
-      min: 0.5,
-      max: 10,
-      step: 0.05,
-    });
+    globals.addBinding(local, 'densityX', { label: 'density X', min: 0.5, max: 10, step: 0.05 });
+    globals.addBinding(local, 'densityY', { label: 'density Y', min: 0.5, max: 10, step: 0.05 });
     globals.addBinding(local, 'falloff', { min: 0, max: 2, step: 0.01 });
-    globals.addBinding(local, 'driftX', {
-      label: 'drift X',
-      min: -5,
-      max: 5,
-      step: 0.05,
-    });
-    globals.addBinding(local, 'driftY', {
-      label: 'drift Y',
-      min: -5,
-      max: 5,
-      step: 0.05,
-    });
+    globals.addBinding(local, 'driftX', { label: 'drift X', min: -5, max: 5, step: 0.05 });
+    globals.addBinding(local, 'driftY', { label: 'drift Y', min: -5, max: 5, step: 0.05 });
     globals.addBinding(local, 'turbulence', { min: 0, max: 3, step: 0.01 });
     globals.addBinding(local, 'direction', {
       label: 'from',
       options: { Bottom: 'bottom', Top: 'top', Left: 'left', Right: 'right' },
     });
-    globals.addBinding(local, 'horizonColor', { label: 'horizon' });
-    globals.addBinding(local, 'skyColor', { label: 'sky' });
 
-    for (let layerIndex = 0; layerIndex < 4; layerIndex += 1) {
-      const title = LAYER_TITLES[layerIndex];
-      const layer = local.layers[layerIndex];
-      const initial = INITIAL.layers[layerIndex];
+    const backgroundFolder = pane.addFolder({ title: 'Background' });
 
-      if (title === undefined || layer === undefined || initial === undefined) continue;
-      const folder = pane.addFolder({
-        title,
-        expanded: layerIndex === 0,
+    backgroundFolder.addBinding(local, 'horizon');
+    backgroundFolder.addBinding(local, 'sky');
+
+    pane.addBlade({ view: 'separator' });
+
+    const layersFolder = pane.addFolder({ title: 'Layers' });
+
+    // Tweakpane folders are static; to render variable-length lists we dispose
+    // every child of the layers folder and rebuild on each mutation.
+    const rebuildLayers = () => {
+      for (const child of [...layersFolder.children]) child.dispose();
+
+      local.layers.forEach((layer, layerIndex) => {
+        const row = layersFolder.addFolder({
+          title: `Layer ${layerIndex}`,
+          expanded: layerIndex === 0,
+        });
+
+        row.addBinding(layer, 'color');
+        row.addBinding(layer, 'speed', { min: 0, max: 0.5, step: 0.005 });
+        row.addBinding(layer, 'intensity', { min: 0, max: 1, step: 0.01 });
+        row.addBinding(layer, 'falloff', { label: 'falloff ×', min: 0.1, max: 3, step: 0.01 });
+        row.addBinding(layer, 'seed', { min: 0, max: 100, step: 1 });
+
+        const removeButton = row.addButton({ title: 'Remove layer' });
+
+        if (local.layers.length <= MIN_LAYERS) removeButton.disabled = true;
+        removeButton.on('click', () => {
+          local.layers.splice(layerIndex, 1);
+          rebuildLayers();
+          sync();
+        });
       });
 
-      const muteBtn = folder.addButton({
-        title: layer.intensity > 0 ? 'Mute layer' : 'Unmute layer',
+      const addButton = layersFolder.addButton({ title: '+ Add layer' });
+
+      if (local.layers.length >= MAX_LAYERS) addButton.disabled = true;
+      addButton.on('click', () => {
+        const last = local.layers[local.layers.length - 1];
+        const next: PlainAuroraLayer = {
+          color: last?.color ?? palette.green.base,
+          speed: last?.speed ?? 0.1,
+          intensity: last?.intensity ?? 0.3,
+          seed: ((last?.seed ?? 0) + 6) % 101,
+          falloff: last?.falloff ?? 1,
+        };
+
+        local.layers.push(next);
+        rebuildLayers();
+        sync();
       });
+    };
 
-      muteBtns[layerIndex] = muteBtn;
-      muteBtn.on('click', () => {
-        if (layer.intensity > 0) {
-          savedIntensities[layerIndex] = layer.intensity;
-          layer.intensity = 0;
-          muteBtn.title = 'Unmute layer';
-        } else {
-          const restore = savedIntensities[layerIndex] ?? initial.intensity;
+    rebuildLayers();
 
-          layer.intensity = restore > 0 ? restore : initial.intensity;
-          muteBtn.title = 'Mute layer';
-        }
-        pane.refresh();
-        syncToReact();
-      });
-
-      folder.addBinding(layer, 'color', { label: 'color' });
-      folder.addBinding(layer, 'speed', { min: 0, max: 0.5, step: 0.005 });
-      folder.addBinding(layer, 'intensity', { min: 0, max: 1, step: 0.01 });
-      folder.addBinding(layer, 'falloff', {
-        label: 'falloff ×',
-        min: 0.1,
-        max: 3,
-        step: 0.01,
-      });
-
-      folder.addButton({ title: 'Reset layer' }).on('click', () => {
-        resetLayer(layerIndex);
-        pane.refresh();
-        syncToReact();
-      });
-    }
-
-    pane.on('change', () => {
-      syncToReact();
-    });
+    pane.on('change', sync);
 
     return () => {
       pane.dispose();
     };
   }, []);
+
+  const layers: AuroraLayer[] = params.layers.map((layer) => ({
+    color: layer.color,
+    speed: layer.speed,
+    intensity: layer.intensity,
+    seed: layer.seed,
+    falloff: layer.falloff,
+  }));
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -306,16 +233,15 @@ export default function AuroraPage() {
         />
         <ShaderScene>
           <Aurora
+            background={{ horizon: params.horizon, sky: params.sky }}
             densityX={params.densityX}
             densityY={params.densityY}
             direction={params.direction}
             driftX={params.driftX}
             driftY={params.driftY}
             falloff={params.falloff}
-            horizonColor={params.horizonColor}
             intensity={params.intensity}
-            layers={params.layers}
-            skyColor={params.skyColor}
+            layers={layers}
             speed={params.speed}
             turbulence={params.turbulence}
           />
@@ -349,7 +275,7 @@ export default function AuroraPage() {
           }}
         >
           {`<ShaderScene>
-  <Aurora intensity={1} falloff={0.6} layers={[...]} />
+  <Aurora intensity={1} falloff={1.1} layers={[...]} />
 </ShaderScene>`}
         </pre>
       </section>

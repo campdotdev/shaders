@@ -6,12 +6,18 @@ export default function SimplexNoisePoster() {
     <ShaderScene>
       <SimplexNoise
         bias={0.5}
-        colors={['#1837e6', '#661acc', '#9e00ba', '#cc1a99', '#00cda6']}
         contrast={2.5}
         scale={10}
         seed={0}
         softness={0}
         speed={0.2}
+        stops={[
+          { color: '#1837e6' },
+          { color: '#661acc' },
+          { color: '#9e00ba' },
+          { color: '#cc1a99' },
+          { color: '#00cda6' },
+        ]}
       />
     </ShaderScene>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorRampStop, elapsedTime } from '@lovo/matter';
+import { colorRamp, elapsedTime } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -10,14 +10,13 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { cos, mix, smoothstep, sub, uniform, uv, vec3 } from 'three/tsl';
+import { cos, mix, smoothstep, sub, uniform, uv } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
-import { parseHex } from '../utils/color';
+import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
 export interface LinearGradientShaderProps {
-  colors: string[];
-  stops: number[] | undefined;
+  stops: ColorStop[];
   angle: AnimatableProp<number>;
   focalPoint: AnimatableProp<readonly [number, number]>;
   speed: AnimatableProp<number>;
@@ -31,7 +30,6 @@ const isPoint = (value: unknown): value is readonly [number, number] =>
   typeof value[1] === 'number';
 
 export function LinearGradientShader({
-  colors,
   stops,
   angle,
   focalPoint,
@@ -46,8 +44,7 @@ export function LinearGradientShader({
 
   useStaticSceneHint(isStatic);
 
-  const colorsKey = colors.join('|');
-  const stopsKey = stops?.join('|') ?? '';
+  const stopsKey = colorStopsKey(stops);
 
   const speedUniform = useAnimatableUniform<number>(speed);
 
@@ -86,19 +83,7 @@ export function LinearGradientShader({
   useEffect(() => {
     if (!shaderContext) return;
 
-    const evenAt = (colorIndex: number) => colorIndex / Math.max(colors.length - 1, 1);
-
-    const rampStops: ColorRampStop[] = colors.map((hex, colorIndex) => {
-      const [redChannel, greenChannel, blueChannel] = parseHex(hex);
-      const userPos = stops?.[colorIndex];
-      const position =
-        typeof userPos === 'number' ? Math.min(Math.max(userPos, 0), 1) : evenAt(colorIndex);
-
-      return {
-        color: vec3(redChannel, greenChannel, blueChannel),
-        position,
-      };
-    });
+    const rampStops = toColorRampStops(stops);
 
     const gradientCoord = uv().sub(cursorUniform).dot(dirNode).add(0.5);
 
@@ -142,11 +127,11 @@ export function LinearGradientShader({
         console.debug('[LinearGradient] geometry.dispose ignored:', caughtError);
       }
     };
-    // colorsKey and stopsKey are stable string proxies for the prop arrays;
-    // the arrays themselves are intentionally omitted to avoid rebuilds on
-    // identity-only changes. Animatable uniforms are mutated in place.
+    // stopsKey is a stable string proxy for the stops array; the array itself
+    // is intentionally omitted to avoid rebuilds on identity-only changes.
+    // Animatable uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shaderContext, colorsKey, stopsKey, cursor, speedUniform, cursorUniform, dirNode]);
+  }, [shaderContext, stopsKey, cursor, speedUniform, cursorUniform, dirNode]);
 
   return null;
 }

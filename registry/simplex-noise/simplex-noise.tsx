@@ -2,11 +2,13 @@
 
 import type { AnimatableProp } from '@lovo/matter-react';
 
+import type { ColorStop } from '../utils/color';
 import { SimplexNoiseShader } from './shader';
 
+export type { ColorStop } from '../utils/color';
+
 export interface SimplexNoiseProps {
-  colors?: string[];
-  stops?: number[];
+  stops?: ColorStop[];
   scale?: AnimatableProp<number>;
   speed?: AnimatableProp<number>;
   contrast?: AnimatableProp<number>;
@@ -15,17 +17,16 @@ export interface SimplexNoiseProps {
   seed?: number;
 }
 
-const DEFAULT_COLORS = [
-  '#1837e6', // palette.blue.base
-  '#661acc', // palette.violet.base
-  '#9e00ba', // palette.purple.base
-  '#cc1a99', // palette.magenta.base
-  '#00cda6', // palette.teal.base
+const DEFAULT_STOPS: ColorStop[] = [
+  { color: '#1837e6' }, // palette.blue.base
+  { color: '#661acc' }, // palette.violet.base
+  { color: '#9e00ba' }, // palette.purple.base
+  { color: '#cc1a99' }, // palette.magenta.base
+  { color: '#00cda6' }, // palette.teal.base
 ];
 
 export function SimplexNoise({
-  colors = DEFAULT_COLORS,
-  stops,
+  stops = DEFAULT_STOPS,
   scale = 10,
   speed = 0.2,
   contrast = 2.5,
@@ -36,13 +37,12 @@ export function SimplexNoise({
   return (
     <SimplexNoiseShader
       bias={bias}
-      colors={colors}
       contrast={contrast}
       scale={scale}
+      seed={seed}
       softness={softness}
       speed={speed}
       stops={stops}
-      seed={seed}
     />
   );
 }

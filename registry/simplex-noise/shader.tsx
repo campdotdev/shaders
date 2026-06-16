@@ -2,12 +2,12 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorRampStop, elapsedTime, quantize, simplexNoise } from '@lovo/matter';
+import { colorRamp, elapsedTime, quantize, simplexNoise } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
 import { clamp, mix, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
-import { parseHex } from '../utils/color';
+import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
 export interface SimplexNoiseShaderProps {
   scale: AnimatableProp<number>;
@@ -15,8 +15,7 @@ export interface SimplexNoiseShaderProps {
   contrast: AnimatableProp<number>;
   bias: AnimatableProp<number>;
   softness: AnimatableProp<number>;
-  colors: string[];
-  stops: number[] | undefined;
+  stops: ColorStop[];
   seed: number;
 }
 
@@ -26,7 +25,6 @@ export function SimplexNoiseShader({
   contrast,
   bias,
   softness,
-  colors,
   stops,
   seed,
 }: SimplexNoiseShaderProps) {
@@ -37,8 +35,7 @@ export function SimplexNoiseShader({
   const biasUniform = useAnimatableUniform<number>(bias);
   const softnessUniform = useAnimatableUniform<number>(softness);
 
-  const colorsKey = colors.join('|');
-  const stopsKey = stops?.join('|') ?? '';
+  const stopsKey = colorStopsKey(stops);
 
   const seedVec = useMemo(() => new Vector2(0, 0), []);
   const seedUniform = useMemo(() => uniform(seedVec), [seedVec]);
@@ -68,23 +65,12 @@ export function SimplexNoiseShader({
       const contrastedValue = clamp(biased.sub(0.5).mul(contrastUniform).add(0.5), 0, 1);
 
       // Softness: blend between quantized contour bands (0) and smooth ramp (1).
-      const stepCount = Math.max(colors.length, 1);
+      const stepCount = Math.max(stops.length, 1);
       const quantized = quantize(contrastedValue, stepCount);
       const bandedValue = mix(quantized, contrastedValue, softnessUniform);
 
-      // Build the colorRamp stops from colors[] + optional stops[] (auto-even otherwise).
-      const evenAt = (colorIndex: number) => colorIndex / Math.max(colors.length - 1, 1);
-      const rampStops: ColorRampStop[] = colors.map((hex, colorIndex) => {
-        const [redChannel, greenChannel, blueChannel] = parseHex(hex);
-        const userPos = stops?.[colorIndex];
-        const position =
-          typeof userPos === 'number' ? Math.min(Math.max(userPos, 0), 1) : evenAt(colorIndex);
-
-        return {
-          color: vec3(redChannel, greenChannel, blueChannel),
-          position,
-        };
-      });
+      // Build the colorRamp stops from the ColorStop[] (auto-even positions when omitted).
+      const rampStops = toColorRampStops(stops);
 
       const material = new MeshBasicNodeMaterial();
 
@@ -108,9 +94,9 @@ export function SimplexNoiseShader({
         }
       };
     },
-    // colorsKey and stopsKey are stable string proxies for the prop arrays;
-    // the arrays themselves are intentionally omitted to avoid rebuilds on
-    // identity-only changes. Animatable uniforms are mutated in place.
+    // stopsKey is a stable string proxy for the stops array; the array itself
+    // is intentionally omitted to avoid rebuilds on identity-only changes.
+    // Animatable uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
       shaderContext,
@@ -120,7 +106,6 @@ export function SimplexNoiseShader({
       biasUniform,
       softnessUniform,
       seedUniform,
-      colorsKey,
       stopsKey,
     ],
   );

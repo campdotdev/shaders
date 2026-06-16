@@ -24,7 +24,11 @@ export function PerfMonitorDemo() {
       </label>
       <div style={{ position: 'relative', width: 600, height: 400 }}>
         <ShaderScene>
-          <LinearGradient angle={45} colors={['#ff7b72', '#7b9cff']} speed={speed} />
+          <LinearGradient
+            angle={45}
+            speed={speed}
+            stops={[{ color: '#ff7b72' }, { color: '#7b9cff' }]}
+          />
           <ShaderMonitor anchor="top-right" />
         </ShaderScene>
       </div>
