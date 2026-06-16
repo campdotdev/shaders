@@ -127,9 +127,7 @@ export default function SimplexNoisePage() {
   );
 
   const allColors = [params.color0, params.color1, params.color2, params.color3, params.color4];
-  const stops: ColorStop[] = allColors
-    .slice(0, params.colorCount)
-    .map((color) => ({ color }));
+  const stops: ColorStop[] = allColors.slice(0, params.colorCount).map((color) => ({ color }));
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
