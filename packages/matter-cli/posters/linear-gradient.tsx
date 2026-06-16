@@ -6,10 +6,13 @@ export default function LinearGradientPoster() {
     <ShaderScene>
       <LinearGradient
         angle={90}
-        colors={['#661acc', '#9e00ba', '#8c0067']}
         focalPoint={[0.5, 0.5]}
         speed={0}
-        stops={[0, 0.5, 1]}
+        stops={[
+          { color: '#661acc', position: 0 },
+          { color: '#9e00ba', position: 0.5 },
+          { color: '#8c0067', position: 1 },
+        ]}
       />
     </ShaderScene>
   );

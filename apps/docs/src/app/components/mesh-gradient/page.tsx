@@ -61,8 +61,10 @@ const formatJsx = (params: Params) =>
     amplitude={${formatNumber(params.amplitude)}}
     cycleSpeed={${formatNumber(params.cycleSpeed)}}
     cycleEase={${formatNumber(params.cycleEase)}}
-    paletteA={${formatPalette(params, 'a')}}
-    paletteB={${formatPalette(params, 'b')}}
+    palettes={[
+      ${formatPalette(params, 'a')},
+      ${formatPalette(params, 'b')},
+    ]}
   />
 </ShaderScene>`;
 
@@ -73,8 +75,10 @@ const formatParams = (params: Params) =>
   amplitude: ${formatNumber(params.amplitude)},
   cycleSpeed: ${formatNumber(params.cycleSpeed)},
   cycleEase: ${formatNumber(params.cycleEase)},
-  paletteA: ${formatPalette(params, 'a')},
-  paletteB: ${formatPalette(params, 'b')},
+  palettes: [
+    ${formatPalette(params, 'a')},
+    ${formatPalette(params, 'b')},
+  ],
 }`;
 
 export default function MeshGradientPage() {
@@ -146,8 +150,10 @@ export default function MeshGradientPage() {
             cycleEase={params.cycleEase}
             cycleSpeed={params.cycleSpeed}
             frequency={params.frequency}
-            paletteA={[params.a0, params.a1, params.a2, params.a3]}
-            paletteB={[params.b0, params.b1, params.b2, params.b3]}
+            palettes={[
+              [params.a0, params.a1, params.a2, params.a3],
+              [params.b0, params.b1, params.b2, params.b3],
+            ]}
             speed={params.speed}
           />
           <VisualTestPause />

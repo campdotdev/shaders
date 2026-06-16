@@ -52,7 +52,11 @@ export function ReducedMotionDemo() {
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
             <ShaderScene style={{ borderRadius: 8 }}>
-              <LinearGradient angle={45} colors={['#ff7b72', '#7b9cff', '#7bff9c']} speed={1} />
+              <LinearGradient
+                angle={45}
+                speed={1}
+                stops={[{ color: '#ff7b72' }, { color: '#7b9cff' }, { color: '#7bff9c' }]}
+              />
             </ShaderScene>
           </div>
         </div>

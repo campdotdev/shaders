@@ -48,15 +48,17 @@ const INITIAL: Params = {
 
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const formatColors = (stops: Stop[]) => stops.map((stop) => `'${stop.color}'`).join(', ');
-
-const formatStops = (stops: Stop[]) => stops.map((stop) => formatNumber(stop.position)).join(', ');
+const formatStops = (stops: Stop[]) =>
+  stops
+    .map((stop) => `{ color: '${stop.color}', position: ${formatNumber(stop.position)} }`)
+    .join(',\n      ');
 
 const formatJsx = (params: Params) =>
   `<ShaderScene>
   <LinearGradient
-    colors={[${formatColors(params.stops)}]}
-    stops={[${formatStops(params.stops)}]}
+    stops={[
+      ${formatStops(params.stops)},
+    ]}
     angle={${formatNumber(params.angle)}}
     speed={${formatNumber(params.speed)}}
     focalPoint={[${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}]}
@@ -65,8 +67,11 @@ const formatJsx = (params: Params) =>
 
 const formatParams = (params: Params) =>
   `{
-  colors: [${formatColors(params.stops)}],
-  stops: [${formatStops(params.stops)}],
+  stops: [
+    ${params.stops
+      .map((stop) => `{ color: '${stop.color}', position: ${formatNumber(stop.position)} }`)
+      .join(',\n    ')},
+  ],
   angle: ${formatNumber(params.angle)},
   speed: ${formatNumber(params.speed)},
   focalPoint: [${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}],
@@ -155,12 +160,7 @@ export default function LinearGradientPage() {
     };
   }, []);
 
-  const colors = params.stops.map((stop) => stop.color);
-  const stops = params.stops.map((stop) => stop.position);
-  // angle and speed are live uniforms now — only color count / hex values /
-  // stop positions still require a material rebuild because they're baked
-  // into the TSL graph as JS literals (vec3 colors, position scalars).
-  const remountKey = `${colors.join('|')}|${stops.join('|')}`;
+  const remountKey = params.stops.map((stop) => `${stop.color}@${stop.position}`).join('|');
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -176,11 +176,10 @@ export default function LinearGradientPage() {
         <ShaderScene>
           <LinearGradient
             angle={params.angle}
-            colors={colors}
             focalPoint={[params.focalX, params.focalY]}
             key={remountKey}
             speed={params.speed}
-            stops={stops}
+            stops={params.stops}
           />
           <VisualTestPause />
         </ShaderScene>

@@ -12,7 +12,7 @@ import {
 import { abs, cos, mix, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 
-import { parseHex } from '../utils/color';
+import { type Palette, parseHex } from '../utils/color';
 
 export interface MeshGradientShaderProps {
   speed: AnimatableProp<number>;
@@ -20,8 +20,7 @@ export interface MeshGradientShaderProps {
   amplitude: AnimatableProp<number>;
   cycleSpeed: AnimatableProp<number>;
   cycleEase: AnimatableProp<number>;
-  paletteA: [string, string, string, string];
-  paletteB: [string, string, string, string];
+  palettes: [Palette, Palette];
 }
 
 const LAYER_ROT_RAD = (-5 * Math.PI) / 180;
@@ -54,11 +53,12 @@ export function MeshGradientShader({
   amplitude,
   cycleSpeed,
   cycleEase,
-  paletteA,
-  paletteB,
+  palettes,
 }: MeshGradientShaderProps) {
   const shaderContext = useShaderContext();
   const resize = useResize();
+
+  const [paletteA, paletteB] = palettes;
 
   const cycleSpeedUniform = useAnimatableUniform<number>(cycleSpeed);
   const cycleEaseUniform = useAnimatableUniform<number>(cycleEase);

@@ -2,7 +2,10 @@
 
 import type { AnimatableProp } from '@lovo/matter-react';
 
+import type { Palette } from '../utils/color';
 import { MeshGradientShader } from './shader';
+
+export type { Palette } from '../utils/color';
 
 export interface MeshGradientProps {
   speed?: AnimatableProp<number>;
@@ -10,22 +13,23 @@ export interface MeshGradientProps {
   amplitude?: AnimatableProp<number>;
   cycleSpeed?: AnimatableProp<number>;
   cycleEase?: AnimatableProp<number>;
-  paletteA?: [string, string, string, string];
-  paletteB?: [string, string, string, string];
+  /** Two palettes to cross-fade between as the gradient cycles. */
+  palettes?: [Palette, Palette];
 }
 
-const DEFAULT_PALETTE_A: [string, string, string, string] = [
-  '#bcdc33', // palette.lime.base
-  '#0ae24b', // palette.green.base
-  '#00cda6', // palette.teal.base
-  '#007bc6', // palette.sky.base
-];
-
-const DEFAULT_PALETTE_B: [string, string, string, string] = [
-  '#ecb100', // palette.amber.base
-  '#ee6600', // palette.orange.base
-  '#ff0029', // palette.red.base
-  '#cc1a99', // palette.magenta.base
+const DEFAULT_PALETTES: [Palette, Palette] = [
+  [
+    '#bcdc33', // palette.lime.base
+    '#0ae24b', // palette.green.base
+    '#00cda6', // palette.teal.base
+    '#007bc6', // palette.sky.base
+  ],
+  [
+    '#ecb100', // palette.amber.base
+    '#ee6600', // palette.orange.base
+    '#ff0029', // palette.red.base
+    '#cc1a99', // palette.magenta.base
+  ],
 ];
 
 export function MeshGradient({
@@ -34,8 +38,7 @@ export function MeshGradient({
   amplitude = 30,
   cycleSpeed = 0.5,
   cycleEase = 0.6,
-  paletteA = DEFAULT_PALETTE_A,
-  paletteB = DEFAULT_PALETTE_B,
+  palettes = DEFAULT_PALETTES,
 }: MeshGradientProps) {
   return (
     <MeshGradientShader
@@ -43,8 +46,7 @@ export function MeshGradient({
       cycleEase={cycleEase}
       cycleSpeed={cycleSpeed}
       frequency={frequency}
-      paletteA={paletteA}
-      paletteB={paletteB}
+      palettes={palettes}
       speed={speed}
     />
   );
