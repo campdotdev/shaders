@@ -901,6 +901,22 @@ git commit -m "feat(matter): add colorSpace parameter to colorRamp (default line
 
 ---
 
+> **IMPLEMENTATION NOTES (as shipped — Tasks 10–11 deviated from the draft below):**
+> - The probe renders **six red→blue gradient rows** (one per space) via the public
+>   `mixColor` only — no deep registry import. Gradient endpoints double as the
+>   round-trip check (`mixColor(red, blue, 0)` == `toLinear(fromLinear(red))`), so one
+>   design serves both the visual gate and the automated test.
+> - **Use `screenUV`, not `uv()`** for the gradient/row coordinates. The scene camera
+>   aspect-compresses `uv().x` (it only spans ~0..0.23 horizontally on a wide canvas);
+>   `screenUV` is true 0..1 viewport space. `screenUV.y` is **top-down** (row 0 at top).
+> - The `ShaderScene` container needs `position: relative` (+ explicit height), or the
+>   absolutely-positioned canvas escapes to fill the viewport behind the docs chrome.
+> - Single canvas / single `ShaderScene` (one WebGPU context) — avoids the context
+>   limit that many small canvases would hit.
+> - Tests assert: each row's left≈red and right≈blue (round-trip at endpoints), and the
+>   OKLab midpoint stays saturated (green below both red and blue). Verified midpoints:
+>   linear (188,0,188), OKLab (140,83,162), HSV (254,0,255).
+
 ## Task 10: Color-space probe page
 
 **Files:**
