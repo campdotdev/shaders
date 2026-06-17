@@ -1,6 +1,6 @@
 'use client';
 
-import type { ColorSpace } from '@lovo/matter';
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
@@ -15,6 +15,7 @@ export interface LinearGradientProps {
   speed?: AnimatableProp<number>;
   interactive?: boolean;
   colorSpace?: ColorSpace;
+  hueInterpolation?: HueInterpolation;
 }
 
 const DEFAULT_STOPS: ColorStop[] = [
@@ -30,12 +31,14 @@ export function LinearGradient({
   speed = 0,
   interactive = false,
   colorSpace = 'oklab',
+  hueInterpolation = 'shorter',
 }: LinearGradientProps) {
   return (
     <LinearGradientShader
       angle={angle}
       colorSpace={colorSpace}
       focalPoint={focalPoint}
+      hueInterpolation={hueInterpolation}
       interactive={interactive}
       speed={speed}
       stops={stops}

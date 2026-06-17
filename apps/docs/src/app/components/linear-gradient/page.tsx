@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
-import type { ColorSpace } from '@lovo/matter';
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import { Pane } from 'tweakpane';
 
 import { palette } from '@/lib/palette';
@@ -30,6 +30,7 @@ interface Params {
   focalX: number;
   focalY: number;
   colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
   stops: Stop[];
 }
 
@@ -42,6 +43,7 @@ const INITIAL: Params = {
   focalX: 0.5,
   focalY: 0.5,
   colorSpace: 'oklab',
+  hueInterpolation: 'shorter',
   stops: [
     { color: palette.violet.base, position: 0 },
     { color: palette.purple.base, position: 0.5 },
@@ -66,6 +68,7 @@ const formatJsx = (params: Params) =>
     speed={${formatNumber(params.speed)}}
     focalPoint={[${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}]}
     colorSpace="${params.colorSpace}"
+    hueInterpolation="${params.hueInterpolation}"
   />
 </ShaderScene>`;
 
@@ -80,6 +83,7 @@ const formatParams = (params: Params) =>
   speed: ${formatNumber(params.speed)},
   focalPoint: [${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}],
   colorSpace: '${params.colorSpace}',
+  hueInterpolation: '${params.hueInterpolation}',
 }`;
 
 export default function LinearGradientPage() {
@@ -122,6 +126,15 @@ export default function LinearGradientPage() {
         LCH: 'lch',
         HSL: 'hsl',
         HSV: 'hsv',
+      },
+    });
+    pane.addBinding(local, 'hueInterpolation', {
+      label: 'hue arc',
+      options: {
+        shorter: 'shorter',
+        longer: 'longer',
+        increasing: 'increasing',
+        decreasing: 'decreasing',
       },
     });
     pane.addBlade({ view: 'separator' });
@@ -178,6 +191,8 @@ export default function LinearGradientPage() {
   const remountKey =
     params.colorSpace +
     '|' +
+    params.hueInterpolation +
+    '|' +
     params.stops.map((stop) => `${stop.color}@${stop.position}`).join('|');
 
   return (
@@ -196,6 +211,7 @@ export default function LinearGradientPage() {
             angle={params.angle}
             colorSpace={params.colorSpace}
             focalPoint={[params.focalX, params.focalY]}
+            hueInterpolation={params.hueInterpolation}
             key={remountKey}
             speed={params.speed}
             stops={params.stops}
