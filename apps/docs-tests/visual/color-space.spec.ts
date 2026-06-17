@@ -46,7 +46,7 @@ async function openProbe(page: Page): Promise<void> {
   await page.waitForTimeout(2000);
 }
 
-test('endpoints round-trip: each space row is red on the left, blue on the right', async ({
+test('endpoints round-trip: each space row is yellow on the left, blue on the right', async ({
   page,
 }) => {
   await openProbe(page);
@@ -57,9 +57,10 @@ test('endpoints round-trip: each space row is red on the left, blue on the right
     const [rightR, rightG, rightB] = await samplePixel(page, 0.99, y);
     const space = SPACES[rowIndex];
 
-    // Left edge == round-trip(red) ~ red.
+    // Left edge == round-trip(yellow) ~ yellow. The green channel here is what
+    // guards conversion bugs that crush a single channel (e.g. the LCH matrix).
     expect(leftR, `${space} left (${leftR},${leftG},${leftB})`).toBeGreaterThan(210);
-    expect(leftG, `${space} left (${leftR},${leftG},${leftB})`).toBeLessThan(60);
+    expect(leftG, `${space} left (${leftR},${leftG},${leftB})`).toBeGreaterThan(210);
     expect(leftB, `${space} left (${leftR},${leftG},${leftB})`).toBeLessThan(85);
 
     // Right edge == round-trip(blue) ~ blue.
@@ -69,13 +70,16 @@ test('endpoints round-trip: each space row is red on the left, blue on the right
   }
 });
 
-test('oklab red->blue midpoint stays saturated (green below both red and blue)', async ({
+test('oklab yellow->blue midpoint stays chromatic (not the gray of a naive average)', async ({
   page,
 }) => {
   await openProbe(page);
 
   const y = rowYFraction(SPACES.indexOf('oklab'));
   const [red, green, blue] = await samplePixel(page, 0.5, y);
+  const spread = Math.max(red, green, blue) - Math.min(red, green, blue);
 
-  expect(green, `oklab midpoint (${red}, ${green}, ${blue})`).toBeLessThan(Math.min(red, blue));
+  // A naive linear average of yellow and blue is mid-gray (spread ~0); the
+  // perceptual oklab path stays a saturated teal (spread ~90).
+  expect(spread, `oklab midpoint (${red}, ${green}, ${blue})`).toBeGreaterThan(40);
 });
