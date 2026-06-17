@@ -2,7 +2,6 @@ import type { ShaderNodeObject } from 'three/tsl';
 import { atan2, cos, length, mix, sin, vec2, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
-import { shortestArcHue } from './hue.js';
 import { linearToOklab, oklabToLinear } from './oklab.js';
 import type { ColorSpaceImpl } from './types.js';
 
@@ -36,6 +35,6 @@ function oklchToLinear(lch: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 export const oklchSpace: ColorSpaceImpl = {
   fromLinear: linearToOklch,
   toLinear: oklchToLinear,
-  lerp: (a, b, t) =>
-    vec3(mix(a.x, b.x, t), mix(a.y, b.y, t), shortestArcHue(a.z, b.z, t, TWO_PI)),
+  lerp: (a, b, t, hue) =>
+    vec3(mix(a.x, b.x, t), mix(a.y, b.y, t), hue(a.z, b.z, t, TWO_PI)),
 };
