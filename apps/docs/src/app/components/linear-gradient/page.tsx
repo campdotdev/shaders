@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
+import type { ColorSpace } from '@lovo/matter';
 import { Pane } from 'tweakpane';
 
 import { palette } from '@/lib/palette';
@@ -28,6 +29,7 @@ interface Params {
   speed: number;
   focalX: number;
   focalY: number;
+  colorSpace: ColorSpace;
   stops: Stop[];
 }
 
@@ -39,6 +41,7 @@ const INITIAL: Params = {
   speed: 0,
   focalX: 0.5,
   focalY: 0.5,
+  colorSpace: 'oklab',
   stops: [
     { color: palette.violet.base, position: 0 },
     { color: palette.purple.base, position: 0.5 },
@@ -62,6 +65,7 @@ const formatJsx = (params: Params) =>
     angle={${formatNumber(params.angle)}}
     speed={${formatNumber(params.speed)}}
     focalPoint={[${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}]}
+    colorSpace="${params.colorSpace}"
   />
 </ShaderScene>`;
 
@@ -75,6 +79,7 @@ const formatParams = (params: Params) =>
   angle: ${formatNumber(params.angle)},
   speed: ${formatNumber(params.speed)},
   focalPoint: [${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}],
+  colorSpace: '${params.colorSpace}',
 }`;
 
 export default function LinearGradientPage() {
@@ -109,6 +114,16 @@ export default function LinearGradientPage() {
     pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
     pane.addBinding(local, 'focalX', { label: 'focal x', min: 0, max: 1, step: 0.01 });
     pane.addBinding(local, 'focalY', { label: 'focal y', min: 0, max: 1, step: 0.01 });
+    pane.addBinding(local, 'colorSpace', {
+      options: {
+        OKLab: 'oklab',
+        OKLch: 'oklch',
+        Linear: 'linear',
+        LCH: 'lch',
+        HSL: 'hsl',
+        HSV: 'hsv',
+      },
+    });
     pane.addBlade({ view: 'separator' });
 
     const stopsFolder = pane.addFolder({ title: 'Color stops' });
@@ -160,7 +175,10 @@ export default function LinearGradientPage() {
     };
   }, []);
 
-  const remountKey = params.stops.map((stop) => `${stop.color}@${stop.position}`).join('|');
+  const remountKey =
+    params.colorSpace +
+    '|' +
+    params.stops.map((stop) => `${stop.color}@${stop.position}`).join('|');
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -176,6 +194,7 @@ export default function LinearGradientPage() {
         <ShaderScene>
           <LinearGradient
             angle={params.angle}
+            colorSpace={params.colorSpace}
             focalPoint={[params.focalX, params.focalY]}
             key={remountKey}
             speed={params.speed}
