@@ -1,7 +1,9 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { mix, vec3 } from 'three/tsl';
-import { clamp, div, sub } from 'three/tsl';
+import { clamp, div, sub, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
+
+import { colorSpaces } from '../color-space/registry.js';
+import type { ColorSpace } from '../color-space/types.js';
 
 /**
  * Canonical TSL-node *input* shape used throughout `@lovo/matter`.
@@ -17,7 +19,7 @@ import type { Node } from 'three/webgpu';
 export type TSLNode = Node | ShaderNodeObject<Node>;
 
 export interface ColorRampStop {
-  /** Color expressed as a TSL node (typically `vec3(r,g,b)`). */
+  /** Color expressed as a TSL node (typically `vec3(r,g,b)`), in linear-sRGB. */
   color: TSLNode;
   /** Position 0..1 along the ramp. */
   position: number;
@@ -27,23 +29,32 @@ export interface ColorRampStop {
  * Multi-stop color interpolation. Given a t in [0..1] and N color stops at
  * fixed positions, returns the smoothly-interpolated color.
  *
+ * `colorSpace` controls the interpolation space (default `'linear'` — a plain
+ * per-channel mix that preserves the input values). Stops are converted into
+ * the space up front, the nested-mix chain runs IN that space, and the result
+ * is converted back to linear-sRGB once at the end.
+ *
  * Falls back to the first/last stop's color outside the bracketing positions.
  */
-export function colorRamp(t: TSLNode, stops: ColorRampStop[]): ShaderNodeObject<Node> {
-  // TSLNode is wider than ShaderNodeObject<Node> in TSL's published types
-  // (see CLAUDE.md gotcha #5). Wrapping with mix(node, node, 0) yields a
-  // chainable ShaderNodeObject<Node> without a cast — the GPU shader compiler
-  // folds the no-op interpolation away.
+export function colorRamp(
+  t: TSLNode,
+  stops: ColorRampStop[],
+  colorSpace: ColorSpace = 'linear',
+): ShaderNodeObject<Node> {
+  const space = colorSpaces[colorSpace];
   const first = stops[0];
 
   if (first === undefined) return vec3(0, 0, 0);
-  if (stops.length === 1) return mix(first.color, first.color, 0);
 
-  // Build a chain of nested mixes, one per adjacent pair of stops.
-  // For three stops at positions 0, 0.5, 1:
-  //   inner = mix(stop0, stop1, smoothstep(0, 0.5, t))
-  //   outer = mix(inner, stop2, smoothstep(0.5, 1, t))
-  let result = mix(first.color, first.color, 0);
+  const firstCoords = space.fromLinear(vec3(first.color));
+
+  if (stops.length === 1) return space.toLinear(firstCoords);
+
+  // Build a chain of nested mixes, one per adjacent pair of stops, working in
+  // the interpolation space. The running result collapses to the previous stop
+  // exactly at each segment boundary, so this stays clean pairwise interpolation
+  // (and per-segment shortest-arc hue stays correct for cylindrical spaces).
+  let resultCoords = firstCoords;
 
   for (let i = 1; i < stops.length; i += 1) {
     const previousStop = stops[i - 1];
@@ -57,8 +68,10 @@ export function colorRamp(t: TSLNode, stops: ColorRampStop[]): ShaderNodeObject<
     // so we use functional-form ops to avoid needing a chain-method receiver.
     const localT = clamp(div(sub(t, previousStop.position), positionSpan), 0, 1);
 
-    result = mix(result, next.color, localT);
+    const nextCoords = space.fromLinear(vec3(next.color));
+
+    resultCoords = space.lerp(resultCoords, nextCoords, localT);
   }
 
-  return result;
+  return space.toLinear(resultCoords);
 }
