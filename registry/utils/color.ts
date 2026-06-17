@@ -1,13 +1,22 @@
-import type { ColorRampStop } from '@lovo/matter';
+import { type ColorRampStop, srgbChannelToLinear } from '@lovo/matter';
 import { vec3 } from 'three/tsl';
 
+/**
+ * Parse a `#rrggbb` hex string into **linear-sRGB** channels in [0, 1].
+ *
+ * Hex is gamma-encoded sRGB; we decode it to linear here so the value handed to
+ * `material.colorNode` is genuine linear-sRGB. The renderer then re-encodes
+ * linear->sRGB on output, so solid colors render at their true hex appearance.
+ * (Before this decode, gamma digits were fed as if linear and re-encoded — the
+ * double-encode that lightened every color.)
+ */
 export const parseHex = (hex: string): [number, number, number] => {
   const cleanedHex = hex.replace('#', '');
 
   return [
-    parseInt(cleanedHex.slice(0, 2), 16) / 255,
-    parseInt(cleanedHex.slice(2, 4), 16) / 255,
-    parseInt(cleanedHex.slice(4, 6), 16) / 255,
+    srgbChannelToLinear(parseInt(cleanedHex.slice(0, 2), 16) / 255),
+    srgbChannelToLinear(parseInt(cleanedHex.slice(2, 4), 16) / 255),
+    srgbChannelToLinear(parseInt(cleanedHex.slice(4, 6), 16) / 255),
   ];
 };
 
