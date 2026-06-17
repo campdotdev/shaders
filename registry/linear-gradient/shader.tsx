@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, elapsedTime } from '@lovo/matter';
+import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -22,6 +22,7 @@ export interface LinearGradientShaderProps {
   speed: AnimatableProp<number>;
   interactive: boolean;
   colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
 }
 
 const isPoint = (value: unknown): value is readonly [number, number] =>
@@ -37,6 +38,7 @@ export function LinearGradientShader({
   speed,
   interactive,
   colorSpace,
+  hueInterpolation,
 }: LinearGradientShaderProps) {
   const shaderContext = useShaderContext();
   const cursorAuto = useCursor();
@@ -109,7 +111,7 @@ export function LinearGradientShader({
 
     const material = new MeshBasicNodeMaterial();
 
-    material.colorNode = colorRamp(animatedGradientCoord, rampStops, colorSpace);
+    material.colorNode = colorRamp(animatedGradientCoord, rampStops, colorSpace, hueInterpolation);
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -133,7 +135,16 @@ export function LinearGradientShader({
     // is intentionally omitted to avoid rebuilds on identity-only changes.
     // Animatable uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shaderContext, stopsKey, cursor, speedUniform, cursorUniform, dirNode, colorSpace]);
+  }, [
+    shaderContext,
+    stopsKey,
+    cursor,
+    speedUniform,
+    cursorUniform,
+    dirNode,
+    colorSpace,
+    hueInterpolation,
+  ]);
 
   return null;
 }
