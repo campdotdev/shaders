@@ -1,4 +1,4 @@
-import { Color } from 'three';
+import { Color, Vector2 } from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 
 export type GpuBackend = 'webgpu' | 'webgl2';
@@ -59,14 +59,23 @@ export async function createRenderer(
 
   three.setClearColor(resolvedClearColor, clearAlpha);
 
+  const rendererSize = new Vector2();
   const resize = () => {
     const canvasWidth = canvas.clientWidth;
     const canvasHeight = canvas.clientHeight;
 
-    if (
-      canvas.width !== canvasWidth * three.getPixelRatio() ||
-      canvas.height !== canvasHeight * three.getPixelRatio()
-    ) {
+    // Ignore zero-size (canvas not yet laid out); a ResizeObserver will call
+    // back once it has real dimensions.
+    if (canvasWidth === 0 || canvasHeight === 0) return;
+
+    // Compare against the renderer's *logical* size (getSize), NOT canvas.width.
+    // The backend can set the canvas drawing buffer during init while the
+    // renderer's logical size stays at the 300x150 default — comparing
+    // canvas.width would then skip setSize and leave the render target
+    // (and every shader's output) compressed.
+    three.getSize(rendererSize);
+
+    if (rendererSize.width !== canvasWidth || rendererSize.height !== canvasHeight) {
       three.setSize(canvasWidth, canvasHeight, false);
     }
   };
