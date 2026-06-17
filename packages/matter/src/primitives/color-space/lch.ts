@@ -75,7 +75,7 @@ function lchToLinear(lch: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 
   // CIE XYZ (D65) -> linear-sRGB.
   const r = x.mul(3.2409699419).sub(y.mul(1.5373831776)).sub(z.mul(0.4986107603));
-  const g = x.mul(-0.9692436363).add(y.mul(0.8759675015)).add(z.mul(0.0415550574));
+  const g = x.mul(-0.9692436363).add(y.mul(1.8759675015)).add(z.mul(0.0415550574));
   const b = x.mul(0.0556300797).sub(y.mul(0.2039769589)).add(z.mul(1.0569715142));
 
   return vec3(r, g, b);
