@@ -113,16 +113,22 @@ export function ShaderScene(props: ShaderSceneProps) {
         const unsubVisibility = visibility.subscribe(updatePauseState);
         const unsubIntersection = intersection.subscribe(updatePauseState);
 
-        const onResize = () => renderer.resize();
+        // Track the canvas's actual box size, not just window 'resize'. The
+        // canvas commonly gets its real size from layout AFTER renderer init
+        // (with no window resize firing), which would otherwise leave the
+        // renderer stuck at the default 300x150 and render the scene into an
+        // undersized target — compressing every shader's output. ResizeObserver
+        // fires once on observe() and on every subsequent box change.
+        const resizeObserver = new ResizeObserver(() => renderer.resize());
 
-        window.addEventListener('resize', onResize);
+        resizeObserver.observe(canvas);
 
         cleanup = () => {
           unsubVisibility();
           unsubIntersection();
           visibility.dispose();
           intersection.dispose();
-          window.removeEventListener('resize', onResize);
+          resizeObserver.disconnect();
           scheduler.dispose();
           renderer.dispose();
         };
