@@ -2,7 +2,6 @@ import type { ShaderNodeObject } from 'three/tsl';
 import { abs, clamp, fract, max, min, mix, step, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
-import { shortestArcHue } from './hue.js';
 import { linearToSrgb, srgbToLinear } from './transfer.js';
 import type { ColorSpaceImpl } from './types.js';
 
@@ -46,6 +45,6 @@ function hslToGammaRgb(hsl: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 export const hslSpace: ColorSpaceImpl = {
   fromLinear: (rgb) => gammaRgbToHsl(linearToSrgb(rgb)),
   toLinear: (hsl) => srgbToLinear(hslToGammaRgb(hsl)),
-  lerp: (a, b, t) =>
-    vec3(shortestArcHue(a.x, b.x, t, 1), mix(a.y, b.y, t), mix(a.z, b.z, t)),
+  lerp: (a, b, t, hue) =>
+    vec3(hue(a.x, b.x, t, 1), mix(a.y, b.y, t), mix(a.z, b.z, t)),
 };

@@ -2,8 +2,9 @@ import type { ShaderNodeObject } from 'three/tsl';
 import { clamp, div, sub, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
+import { hueArcInterpolators } from '../color-space/hue.js';
 import { colorSpaces } from '../color-space/registry.js';
-import type { ColorSpace } from '../color-space/types.js';
+import type { ColorSpace, HueInterpolation } from '../color-space/types.js';
 
 /**
  * Canonical TSL-node *input* shape used throughout `@lovo/matter`.
@@ -34,14 +35,19 @@ export interface ColorRampStop {
  * the space up front, the nested-mix chain runs IN that space, and the result
  * is converted back to linear-sRGB once at the end.
  *
+ * `hueInterpolation` chooses which way around the wheel cylindrical spaces
+ * travel (default `'shorter'`); it's inert for rectangular spaces (linear/oklab).
+ *
  * Falls back to the first/last stop's color outside the bracketing positions.
  */
 export function colorRamp(
   t: TSLNode,
   stops: ColorRampStop[],
   colorSpace: ColorSpace = 'linear',
+  hueInterpolation: HueInterpolation = 'shorter',
 ): ShaderNodeObject<Node> {
   const space = colorSpaces[colorSpace];
+  const hue = hueArcInterpolators[hueInterpolation];
   const first = stops[0];
 
   if (first === undefined) return vec3(0, 0, 0);
@@ -70,7 +76,7 @@ export function colorRamp(
 
     const nextCoords = space.fromLinear(vec3(next.color));
 
-    resultCoords = space.lerp(resultCoords, nextCoords, localT);
+    resultCoords = space.lerp(resultCoords, nextCoords, localT, hue);
   }
 
   return space.toLinear(resultCoords);

@@ -14,7 +14,7 @@ export { colorRamp } from './primitives/color-ramp/color-ramp.js';
 export type { ColorRampStop, TSLNode } from './primitives/color-ramp/color-ramp.js';
 
 export { mixColor, srgbChannelToLinear } from './primitives/color-space/index.js';
-export type { ColorSpace } from './primitives/color-space/index.js';
+export type { ColorSpace, HueInterpolation } from './primitives/color-space/index.js';
 
 export { simplexNoise } from './primitives/noise/noise.js';
 
