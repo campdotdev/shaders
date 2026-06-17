@@ -4,9 +4,9 @@ import { expect, test } from '@playwright/test';
 const SPACES = ['linear', 'oklab', 'oklch', 'lch', 'hsl', 'hsv'] as const;
 const ROWS = SPACES.length;
 
-/** Top-down y fraction of the vertical center of row `index` (screenUV.y is top-down, so row 0 is at the top). */
+/** Top-down y fraction of the vertical center of row `index` (uv().y is bottom-up, so row 0 is at the bottom). */
 function rowYFraction(index: number): number {
-  return (index + 0.5) / ROWS;
+  return 1 - (index + 0.5) / ROWS;
 }
 
 /** Sample one pixel of the probe canvas at fractional (x, y) coordinates (0..1, top-down). */
