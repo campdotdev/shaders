@@ -50,7 +50,7 @@ correct. It is orthogonal to the planned `gamut` feature (output color gamut on
 type ColorSpace = 'linear' | 'oklab' | 'oklch' | 'lch' | 'hsl' | 'hsv';
 ```
 
-- New optional prop on each of the five components: `colorSpace?: ColorSpace`,
+- New optional prop on each of the three components: `colorSpace?: ColorSpace`,
   **default `'oklab'`**. Example: `<LinearGradient colorSpace="oklab" />`.
 - `colorSpace` is a **structural / rebuild prop**, not a uniform. Changing it rebuilds
   the material (it swaps which conversion math is in the TSL graph). This is acceptable
@@ -196,7 +196,7 @@ colors), palette tuning is genuinely a one-time concern in phase 2.
 
 ## Migration / versioning
 
-- Breaking color change (appearance shifts on all five components). Pre-1.0, so a
+- Breaking color change (appearance shifts on the three scoped components). Pre-1.0, so a
   **minor** version bump via changeset.
 - Registry components are copy-paste delivered, so existing user copies are unaffected
   until re-copied.
