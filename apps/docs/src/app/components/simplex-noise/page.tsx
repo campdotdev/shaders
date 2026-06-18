@@ -3,6 +3,7 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { ColorStop } from '@matter/registry/simplex-noise';
 
 import { palette } from '@/lib/palette';
@@ -25,6 +26,8 @@ interface Params {
   bias: number;
   softness: number;
   seed: number;
+  colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
   colorCount: number;
   color0: string;
   color1: string;
@@ -40,6 +43,8 @@ const INITIAL: Params = {
   bias: 0.5,
   softness: 0,
   seed: 0,
+  colorSpace: 'oklab',
+  hueInterpolation: 'shorter',
   colorCount: 5,
   color0: palette.blue.base,
   color1: palette.violet.base,
@@ -69,6 +74,8 @@ const formatJsx = (params: Params) =>
     bias={${formatNumber(params.bias)}}
     softness={${formatNumber(params.softness)}}
     seed={${params.seed}}
+    colorSpace="${params.colorSpace}"
+    hueInterpolation="${params.hueInterpolation}"
   />
 </ShaderScene>`;
 
@@ -81,6 +88,8 @@ const formatParams = (params: Params) =>
   bias: ${formatNumber(params.bias)},
   softness: ${formatNumber(params.softness)},
   seed: ${params.seed},
+  colorSpace: '${params.colorSpace}',
+  hueInterpolation: '${params.hueInterpolation}',
 }`;
 
 export default function SimplexNoisePage() {
@@ -106,6 +115,25 @@ export default function SimplexNoisePage() {
       pane.addBinding(local, 'bias', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'seed', { min: 0, max: 100, step: 1 });
+      pane.addBinding(local, 'colorSpace', {
+        options: {
+          OKLab: 'oklab',
+          OKLch: 'oklch',
+          Linear: 'linear',
+          LCH: 'lch',
+          HSL: 'hsl',
+          HSV: 'hsv',
+        },
+      });
+      pane.addBinding(local, 'hueInterpolation', {
+        label: 'hue arc',
+        options: {
+          shorter: 'shorter',
+          longer: 'longer',
+          increasing: 'increasing',
+          decreasing: 'decreasing',
+        },
+      });
       pane.addBlade({ view: 'separator' });
 
       const colorsFolder = pane.addFolder({ title: 'Colors' });
@@ -143,7 +171,9 @@ export default function SimplexNoisePage() {
         <ShaderScene>
           <SimplexNoise
             bias={params.bias}
+            colorSpace={params.colorSpace}
             contrast={params.contrast}
+            hueInterpolation={params.hueInterpolation}
             scale={params.scale}
             seed={params.seed}
             softness={params.softness}
