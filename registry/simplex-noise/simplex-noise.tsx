@@ -1,5 +1,6 @@
 'use client';
 
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
@@ -15,6 +16,8 @@ export interface SimplexNoiseProps {
   bias?: AnimatableProp<number>;
   softness?: AnimatableProp<number>;
   seed?: number;
+  colorSpace?: ColorSpace;
+  hueInterpolation?: HueInterpolation;
 }
 
 const DEFAULT_STOPS: ColorStop[] = [
@@ -33,11 +36,15 @@ export function SimplexNoise({
   bias = 0.5,
   softness = 0,
   seed = 0,
+  colorSpace = 'oklab',
+  hueInterpolation = 'shorter',
 }: SimplexNoiseProps) {
   return (
     <SimplexNoiseShader
       bias={bias}
+      colorSpace={colorSpace}
       contrast={contrast}
+      hueInterpolation={hueInterpolation}
       scale={scale}
       seed={seed}
       softness={softness}

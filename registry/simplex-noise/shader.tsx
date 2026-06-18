@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, elapsedTime, quantize, simplexNoise } from '@lovo/matter';
+import {
+  colorRamp,
+  type ColorSpace,
+  elapsedTime,
+  type HueInterpolation,
+  quantize,
+  simplexNoise,
+} from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
 import { clamp, mix, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
@@ -17,6 +24,8 @@ export interface SimplexNoiseShaderProps {
   softness: AnimatableProp<number>;
   stops: ColorStop[];
   seed: number;
+  colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
 }
 
 export function SimplexNoiseShader({
@@ -27,6 +36,8 @@ export function SimplexNoiseShader({
   softness,
   stops,
   seed,
+  colorSpace,
+  hueInterpolation,
 }: SimplexNoiseShaderProps) {
   const shaderContext = useShaderContext();
   const scaleUniform = useAnimatableUniform<number>(scale);
@@ -74,7 +85,7 @@ export function SimplexNoiseShader({
 
       const material = new MeshBasicNodeMaterial();
 
-      material.colorNode = colorRamp(bandedValue, rampStops);
+      material.colorNode = colorRamp(bandedValue, rampStops, colorSpace, hueInterpolation);
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -107,6 +118,8 @@ export function SimplexNoiseShader({
       softnessUniform,
       seedUniform,
       stopsKey,
+      colorSpace,
+      hueInterpolation,
     ],
   );
 
