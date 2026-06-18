@@ -38,8 +38,9 @@ correct. It is orthogonal to the planned `gamut` feature (output color gamut on
    correct. This is a deliberate, baseline-breaking pre-1.0 migration.
 2. **Default space: `oklab`.** Perceptually uniform; no muddy gray midpoints, no
    over-bright linear-light midpoints. Matches CSS Color 4's gradient default.
-3. **Scope: all multi-color components** — LinearGradient, SimplexNoise, MeshGradient,
-   Aurora, Waves. Single-color overlays (Vignette, FilmGrain, DotField) are excluded.
+3. **Scope: LinearGradient, SimplexNoise, MeshGradient.** Aurora and Waves are
+   excluded because they composite color additively (no pairwise blend for the prop to
+   govern). Single-color overlays (Vignette, FilmGrain, DotField) are excluded.
 4. **Architecture: a single `mixColor` primitive** with per-space conversions as
    composable internals (chosen over exposing raw conversion pairs everywhere).
 
@@ -62,6 +63,12 @@ type ColorSpace = 'linear' | 'oklab' | 'oklch' | 'lch' | 'hsl' | 'hsv';
   conversion functions. They are structured as clean standalone modules so promoting
   them to public later (if a recipe needs in-space manipulation) is a zero-cost minor
   release.
+
+**Post-spec additions during rollout:** A `hueInterpolation` prop (CSS Color 4
+keywords: `'shorter'` | `'longer'` | `'increasing'` | `'decreasing'`, default
+`'shorter'`) was added alongside `colorSpace` to govern hue path in cylindrical
+spaces. The LCH conversion's XYZ→sRGB green coefficient was corrected during
+implementation.
 
 ## Engine primitives (`@lovo/matter`)
 
@@ -159,8 +166,8 @@ per-component color parsing in Aurora and Waves.
 4. **SimplexNoise** — add `colorSpace` prop (via `colorRamp`). Regenerate baseline.
 5. **MeshGradient** — swap `mix()` calls for `mixColor`; add `colorSpace` prop.
    Regenerate baseline.
-6. **Aurora** — same. Regenerate baseline.
-7. **Waves** — same. Regenerate baseline.
+6. **Aurora** — *descoped.* Composite color additively (no pairwise blend).
+7. **Waves** — *descoped.* Composite color additively (no pairwise blend).
 8. **Docs + version** — `colorSpace` control in each Tweakpane panel, primitive docs for
    `mixColor`, changeset (breaking color change → minor bump pre-1.0).
 
