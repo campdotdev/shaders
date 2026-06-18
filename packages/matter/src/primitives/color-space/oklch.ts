@@ -35,6 +35,5 @@ function oklchToLinear(lch: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 export const oklchSpace: ColorSpaceImpl = {
   fromLinear: linearToOklch,
   toLinear: oklchToLinear,
-  lerp: (a, b, t, hue) =>
-    vec3(mix(a.x, b.x, t), mix(a.y, b.y, t), hue(a.z, b.z, t, TWO_PI)),
+  lerp: (a, b, t, hue) => vec3(mix(a.x, b.x, t), mix(a.y, b.y, t), hue(a.z, b.z, t, TWO_PI)),
 };

@@ -1,7 +1,7 @@
 'use client';
 
-import type { AnimatableProp } from '@lovo/matter-react';
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
+import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { Palette } from '../utils/color';
 import { MeshGradientShader } from './shader';

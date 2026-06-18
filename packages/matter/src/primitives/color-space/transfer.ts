@@ -27,7 +27,9 @@ export function srgbToLinear(srgb: TSLNode): ShaderNodeObject<Node> {
 export function linearToSrgb(linear: TSLNode): ShaderNodeObject<Node> {
   const value = pow(linear, 1);
   const lowSegment = value.mul(12.92);
-  const highSegment = pow(value, 1 / 2.4).mul(1.055).sub(0.055);
+  const highSegment = pow(value, 1 / 2.4)
+    .mul(1.055)
+    .sub(0.055);
 
   return mix(lowSegment, highSegment, step(0.0031308, value));
 }

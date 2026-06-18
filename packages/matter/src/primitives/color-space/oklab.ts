@@ -21,9 +21,18 @@ export function linearToOklab(rgb: ShaderNodeObject<Node>): ShaderNodeObject<Nod
   const shortRoot = cbrt(shortCone);
 
   // Step 3: LMS' -> OKLab via matrix M2.
-  const lightness = longRoot.mul(0.2104542553).add(mediumRoot.mul(0.793617785)).sub(shortRoot.mul(0.0040720468));
-  const greenRed = longRoot.mul(1.9779984951).sub(mediumRoot.mul(2.428592205)).add(shortRoot.mul(0.4505937099));
-  const blueYellow = longRoot.mul(0.0259040371).add(mediumRoot.mul(0.7827717662)).sub(shortRoot.mul(0.808675766));
+  const lightness = longRoot
+    .mul(0.2104542553)
+    .add(mediumRoot.mul(0.793617785))
+    .sub(shortRoot.mul(0.0040720468));
+  const greenRed = longRoot
+    .mul(1.9779984951)
+    .sub(mediumRoot.mul(2.428592205))
+    .add(shortRoot.mul(0.4505937099));
+  const blueYellow = longRoot
+    .mul(0.0259040371)
+    .add(mediumRoot.mul(0.7827717662))
+    .sub(shortRoot.mul(0.808675766));
 
   return vec3(lightness, greenRed, blueYellow);
 }
@@ -45,9 +54,18 @@ export function oklabToLinear(lab: ShaderNodeObject<Node>): ShaderNodeObject<Nod
   const shortCone = shortRoot.mul(shortRoot).mul(shortRoot);
 
   // Inverse of step 1: LMS -> linear RGB.
-  const r = longCone.mul(4.0767416621).sub(mediumCone.mul(3.3077115913)).add(shortCone.mul(0.2309699292));
-  const g = longCone.mul(-1.2684380046).add(mediumCone.mul(2.6097574011)).sub(shortCone.mul(0.3413193965));
-  const b = longCone.mul(-0.0041960863).sub(mediumCone.mul(0.7034186147)).add(shortCone.mul(1.707614701));
+  const r = longCone
+    .mul(4.0767416621)
+    .sub(mediumCone.mul(3.3077115913))
+    .add(shortCone.mul(0.2309699292));
+  const g = longCone
+    .mul(-1.2684380046)
+    .add(mediumCone.mul(2.6097574011))
+    .sub(shortCone.mul(0.3413193965));
+  const b = longCone
+    .mul(-0.0041960863)
+    .sub(mediumCone.mul(0.7034186147))
+    .add(shortCone.mul(1.707614701));
 
   return vec3(r, g, b);
 }

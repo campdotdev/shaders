@@ -36,7 +36,11 @@ function hslToGammaRgb(hsl: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 
   const chroma = abs(lightness.mul(2).sub(1)).oneMinus().mul(saturation);
   // Per-channel triangle-wave hue ramp, same basis as Hocevar's hsv2rgb.
-  const ramp = abs(fract(vec3(hue).add(vec3(1, 2 / 3, 1 / 3))).mul(6).sub(vec3(3)));
+  const ramp = abs(
+    fract(vec3(hue).add(vec3(1, 2 / 3, 1 / 3)))
+      .mul(6)
+      .sub(vec3(3)),
+  );
   const hueRgb = clamp(ramp.sub(vec3(1)), 0, 1); // pure-hue color at full chroma
 
   return hueRgb.sub(0.5).mul(chroma).add(lightness);
@@ -45,6 +49,5 @@ function hslToGammaRgb(hsl: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 export const hslSpace: ColorSpaceImpl = {
   fromLinear: (rgb) => gammaRgbToHsl(linearToSrgb(rgb)),
   toLinear: (hsl) => srgbToLinear(hslToGammaRgb(hsl)),
-  lerp: (a, b, t, hue) =>
-    vec3(hue(a.x, b.x, t, 1), mix(a.y, b.y, t), mix(a.z, b.z, t)),
+  lerp: (a, b, t, hue) => vec3(hue(a.x, b.x, t, 1), mix(a.y, b.y, t), mix(a.z, b.z, t)),
 };
