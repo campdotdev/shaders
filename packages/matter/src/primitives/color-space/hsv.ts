@@ -31,7 +31,11 @@ function hsvToGammaRgb(hsv: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
   const hue = hsv.x;
   const saturation = hsv.y;
   const value = hsv.z;
-  const ramp = abs(fract(vec3(hue).add(vec3(1, 2 / 3, 1 / 3))).mul(6).sub(vec3(3)));
+  const ramp = abs(
+    fract(vec3(hue).add(vec3(1, 2 / 3, 1 / 3)))
+      .mul(6)
+      .sub(vec3(3)),
+  );
 
   return mix(vec3(1), clamp(ramp.sub(vec3(1)), 0, 1), saturation).mul(value);
 }
@@ -39,6 +43,5 @@ function hsvToGammaRgb(hsv: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 export const hsvSpace: ColorSpaceImpl = {
   fromLinear: (rgb) => gammaRgbToHsv(linearToSrgb(rgb)),
   toLinear: (hsv) => srgbToLinear(hsvToGammaRgb(hsv)),
-  lerp: (a, b, t, hue) =>
-    vec3(hue(a.x, b.x, t, 1), mix(a.y, b.y, t), mix(a.z, b.z, t)),
+  lerp: (a, b, t, hue) => vec3(hue(a.x, b.x, t, 1), mix(a.y, b.y, t), mix(a.z, b.z, t)),
 };
