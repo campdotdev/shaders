@@ -90,9 +90,10 @@ What each part does:
 - `pnpm install --frozen-lockfile` — cold install inside the container.
   ~2–3 min the first time per fresh container.
 - `playwright test --update-snapshots --grep "<name>"` — runs only the
-  matching specs. Playwright's `webServer` block auto-builds and starts
-  the Next.js docs site inside the container (see
-  [`playwright.config.ts:37-42`](../../apps/docs-tests/playwright.config.ts#L37-L42)).
+  matching specs. Playwright's `webServer` block uses Turbo to build the
+  static docs output, then starts the Next.js docs site inside the
+  container (see
+  [`playwright.config.ts:17-23`](../../apps/docs-tests/playwright.config.ts#L17-L23)).
 
 Total wall time on a cold run: ~5 min, mostly the Next.js production
 build. Subsequent runs reuse the pulled image and the `.next` cache if
@@ -119,8 +120,8 @@ pnpm --filter @matter/docs-tests exec playwright test \
   --update-snapshots --grep "Aurora"
 ```
 
-Same `webServer` boots the local Next.js build. Faster than the Docker
-path because there's no container start cost.
+Same `webServer` boots the local static docs build through Turbo. Faster
+than the Docker path because there's no container start cost.
 
 ## Committing
 
