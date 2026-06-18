@@ -10,6 +10,7 @@ import { mix, step, uv, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import { addPlaneMesh } from '@/lib/meshUtils';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 // Near-antipodal hue pair (blue ~264deg, yellow ~92deg in OKLCH): the shorter
 // arc runs through cyan/green, the longer arc through magenta/orange, so each
@@ -67,6 +68,7 @@ export default function ProbeGrid() {
     <div style={{ position: 'relative', width: '100%', height: 600 }}>
       <ShaderScene>
         <ProbeMesh />
+        <VisualTestPause />
       </ShaderScene>
     </div>
   );

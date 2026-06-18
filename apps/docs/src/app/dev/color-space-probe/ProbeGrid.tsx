@@ -8,6 +8,7 @@ import { ShaderScene, useShaderContext } from '@lovo/matter-react';
 import { mix, step, uv, vec3, vec4 } from 'three/tsl';
 
 import { addPlaneMesh } from '@/lib/meshUtils';
+import { VisualTestPause } from '@/lib/visualTestHooks';
 
 const SPACES: ColorSpace[] = ['linear', 'oklab', 'oklch', 'lch', 'hsl', 'hsv'];
 const ROWS = SPACES.length;
@@ -57,6 +58,7 @@ export default function ProbeGrid() {
     <div style={{ position: 'relative', width: '100%', height: 600 }}>
       <ShaderScene>
         <ProbeMesh />
+        <VisualTestPause />
       </ShaderScene>
     </div>
   );
