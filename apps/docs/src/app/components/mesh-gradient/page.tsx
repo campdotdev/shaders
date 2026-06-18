@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
+
 import { palette } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
@@ -22,6 +24,8 @@ interface Params {
   amplitude: number;
   cycleSpeed: number;
   cycleEase: number;
+  colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
   a0: string;
   a1: string;
   a2: string;
@@ -38,6 +42,8 @@ const INITIAL: Params = {
   amplitude: 30,
   cycleSpeed: 0.5,
   cycleEase: 0.6,
+  colorSpace: 'oklab',
+  hueInterpolation: 'shorter',
   a0: palette.lime.base,
   a1: palette.green.base,
   a2: palette.teal.base,
@@ -61,6 +67,8 @@ const formatJsx = (params: Params) =>
     amplitude={${formatNumber(params.amplitude)}}
     cycleSpeed={${formatNumber(params.cycleSpeed)}}
     cycleEase={${formatNumber(params.cycleEase)}}
+    colorSpace="${params.colorSpace}"
+    hueInterpolation="${params.hueInterpolation}"
     palettes={[
       ${formatPalette(params, 'a')},
       ${formatPalette(params, 'b')},
@@ -75,6 +83,8 @@ const formatParams = (params: Params) =>
   amplitude: ${formatNumber(params.amplitude)},
   cycleSpeed: ${formatNumber(params.cycleSpeed)},
   cycleEase: ${formatNumber(params.cycleEase)},
+  colorSpace: '${params.colorSpace}',
+  hueInterpolation: '${params.hueInterpolation}',
   palettes: [
     ${formatPalette(params, 'a')},
     ${formatPalette(params, 'b')},
@@ -113,6 +123,25 @@ export default function MeshGradientPage() {
         max: 3,
         step: 0.01,
       });
+      pane.addBinding(local, 'colorSpace', {
+        options: {
+          OKLab: 'oklab',
+          OKLch: 'oklch',
+          Linear: 'linear',
+          LCH: 'lch',
+          HSL: 'hsl',
+          HSV: 'hsv',
+        },
+      });
+      pane.addBinding(local, 'hueInterpolation', {
+        label: 'hue arc',
+        options: {
+          shorter: 'shorter',
+          longer: 'longer',
+          increasing: 'increasing',
+          decreasing: 'decreasing',
+        },
+      });
       pane.addBlade({ view: 'separator' });
 
       const aFolder = pane.addFolder({ title: 'Palette A', expanded: false });
@@ -147,9 +176,11 @@ export default function MeshGradientPage() {
         <ShaderScene>
           <MeshGradient
             amplitude={params.amplitude}
+            colorSpace={params.colorSpace}
             cycleEase={params.cycleEase}
             cycleSpeed={params.cycleSpeed}
             frequency={params.frequency}
+            hueInterpolation={params.hueInterpolation}
             palettes={[
               [params.a0, params.a1, params.a2, params.a3],
               [params.b0, params.b1, params.b2, params.b3],
