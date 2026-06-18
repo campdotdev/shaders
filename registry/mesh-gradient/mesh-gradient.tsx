@@ -1,6 +1,7 @@
 'use client';
 
 import type { AnimatableProp } from '@lovo/matter-react';
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 
 import type { Palette } from '../utils/color';
 import { MeshGradientShader } from './shader';
@@ -15,6 +16,8 @@ export interface MeshGradientProps {
   cycleEase?: AnimatableProp<number>;
   /** Two palettes to cross-fade between as the gradient cycles. */
   palettes?: [Palette, Palette];
+  colorSpace?: ColorSpace;
+  hueInterpolation?: HueInterpolation;
 }
 
 const DEFAULT_PALETTES: [Palette, Palette] = [
@@ -39,13 +42,17 @@ export function MeshGradient({
   cycleSpeed = 0.5,
   cycleEase = 0.6,
   palettes = DEFAULT_PALETTES,
+  colorSpace = 'oklab',
+  hueInterpolation = 'shorter',
 }: MeshGradientProps) {
   return (
     <MeshGradientShader
       amplitude={amplitude}
+      colorSpace={colorSpace}
       cycleEase={cycleEase}
       cycleSpeed={cycleSpeed}
       frequency={frequency}
+      hueInterpolation={hueInterpolation}
       palettes={palettes}
       speed={speed}
     />

@@ -2,14 +2,20 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { elapsedTime, simplexNoise } from '@lovo/matter';
+import {
+  type ColorSpace,
+  elapsedTime,
+  type HueInterpolation,
+  mixColor,
+  simplexNoise,
+} from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { abs, cos, mix, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
+import { abs, cos, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 
 import { type Palette, parseHex } from '../utils/color';
@@ -21,6 +27,8 @@ export interface MeshGradientShaderProps {
   cycleSpeed: AnimatableProp<number>;
   cycleEase: AnimatableProp<number>;
   palettes: [Palette, Palette];
+  colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
 }
 
 const LAYER_ROT_RAD = (-5 * Math.PI) / 180;
@@ -54,6 +62,8 @@ export function MeshGradientShader({
   cycleSpeed,
   cycleEase,
   palettes,
+  colorSpace,
+  hueInterpolation,
 }: MeshGradientShaderProps) {
   const shaderContext = useShaderContext();
   const resize = useResize();
@@ -138,10 +148,10 @@ export function MeshGradientShader({
       .add(1)
       .mul(0.5);
 
-    const color0 = mix(paletteAColor0, paletteBColor0, eased);
-    const color1 = mix(paletteAColor1, paletteBColor1, eased);
-    const color2 = mix(paletteAColor2, paletteBColor2, eased);
-    const color3 = mix(paletteAColor3, paletteBColor3, eased);
+    const color0 = mixColor(paletteAColor0, paletteBColor0, eased, colorSpace, hueInterpolation);
+    const color1 = mixColor(paletteAColor1, paletteBColor1, eased, colorSpace, hueInterpolation);
+    const color2 = mixColor(paletteAColor2, paletteBColor2, eased, colorSpace, hueInterpolation);
+    const color3 = mixColor(paletteAColor3, paletteBColor3, eased, colorSpace, hueInterpolation);
 
     // ---- Two-layer smoothstep blend ---------------------------------
     const layerCosine = Math.cos(LAYER_ROT_RAD);
@@ -192,6 +202,8 @@ export function MeshGradientShader({
     paletteBColor1,
     paletteBColor2,
     paletteBColor3,
+    colorSpace,
+    hueInterpolation,
   ]);
 
   return null;
