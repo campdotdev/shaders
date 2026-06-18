@@ -19,10 +19,13 @@ export const PRIMITIVES: readonly PrimitiveEntry[] = [
   {
     slug: 'color-ramp',
     name: 'colorRamp',
-    description: 'Sample a color from a list of color stops at a position.',
+    description:
+      'Sample a color from a list of color stops at a position. Blends in a chosen color space (perceptual oklab by default), with a selectable hue-arc direction for the cylindrical spaces.',
     signature: `function colorRamp(
   t: TSLNode,
   stops: ColorRampStop[],
+  colorSpace?: ColorSpace,
+  hueInterpolation?: HueInterpolation,
 ): TSLNode
 
 interface ColorRampStop {
@@ -31,6 +34,21 @@ interface ColorRampStop {
 }`,
     usedBy: ['linear-gradient', 'simplex-noise', 'aurora'],
     controls: [{ name: 'position', min: 0, max: 1, step: 0.01, default: 0.5 }],
+  },
+  {
+    slug: 'mix-color',
+    name: 'mixColor',
+    description:
+      'Blend two linear-sRGB colors in a chosen color space (perceptual oklab by default), with a selectable hue-arc direction for the cylindrical spaces. The pairwise sibling of colorRamp; used by MeshGradient.',
+    signature: `function mixColor(
+  colorA: TSLNode,
+  colorB: TSLNode,
+  t: TSLNode,
+  colorSpace?: ColorSpace,
+  hueInterpolation?: HueInterpolation,
+): TSLNode`,
+    usedBy: ['mesh-gradient'],
+    controls: [{ name: 't', min: 0, max: 1, step: 0.01, default: 0.5 }],
   },
   {
     slug: 'noise',
