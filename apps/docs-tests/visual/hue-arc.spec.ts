@@ -1,6 +1,8 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
+import { waitForShader } from './helpers';
+
 // Row order MUST match the probe's MODES array (row 0 = bottom, uv().y bottom-up).
 const MODES = ['shorter', 'longer', 'increasing', 'decreasing'] as const;
 const ROWS = MODES.length;
@@ -52,10 +54,9 @@ async function samplePixel(
 }
 
 async function openProbe(page: Page): Promise<void> {
-  await page.goto('/dev/hue-arc-probe');
+  await page.goto('/dev/hue-arc-probe?visualTest=1');
   await page.locator('canvas').first().waitFor();
-  // Static render (no animation); a short settle is enough.
-  await page.waitForTimeout(2000);
+  await waitForShader(page);
 }
 
 test('blue->yellow OKLch midpoint lands on the arc each hueInterpolation mode selects', async ({

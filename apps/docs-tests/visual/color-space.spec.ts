@@ -1,6 +1,8 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
+import { waitForShader } from './helpers';
+
 const SPACES = ['linear', 'oklab', 'oklch', 'lch', 'hsl', 'hsv'] as const;
 const ROWS = SPACES.length;
 
@@ -40,10 +42,9 @@ async function samplePixel(
 }
 
 async function openProbe(page: Page): Promise<void> {
-  await page.goto('/dev/color-space-probe');
+  await page.goto('/dev/color-space-probe?visualTest=1');
   await page.locator('canvas').first().waitFor();
-  // Static render (no animation); a short settle is enough.
-  await page.waitForTimeout(2000);
+  await waitForShader(page);
 }
 
 test('endpoints round-trip: each space row is yellow on the left, blue on the right', async ({
