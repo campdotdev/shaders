@@ -9,6 +9,7 @@ import {
   displace,
   elapsedTime,
   fractalNoise,
+  mixColor,
   quantize,
   signedDistanceFieldCircle,
   simplexNoise,
@@ -26,6 +27,7 @@ import type { PropsState } from './PropsPlayground';
 
 export type PrimitiveParams =
   | { slug: 'color-ramp'; position: number }
+  | { slug: 'mix-color'; t: number }
   | { slug: 'noise'; scale: number; speed: number }
   | {
       slug: 'fbm';
@@ -65,6 +67,8 @@ export function buildPrimitiveParams(slug: string, raw: PropsState): PrimitivePa
   switch (slug) {
     case 'color-ramp':
       return { slug, position: num('position') };
+    case 'mix-color':
+      return { slug, t: num('t') };
     case 'noise':
       return { slug, scale: num('scale'), speed: num('speed') };
     case 'fbm':
@@ -115,6 +119,15 @@ function buildColorRamp(params: ParamsFor<'color-ramp'>): ShaderNodeObject<Node>
   const marker = smoothstep(0.01, 0, distFromMarker);
 
   const lit = mix(baseColor, vec3(1, 1, 1), marker.mul(0.6));
+
+  return vec4(lit, 1);
+}
+
+function buildMixColor(params: ParamsFor<'mix-color'>): ShaderNodeObject<Node> {
+  const mixed = mixColor(vec3(1, 0.2, 0.1), vec3(0.15, 0.35, 1), uv().x);
+  const distFromMarker = uv().x.sub(params.t).abs();
+  const marker = smoothstep(0.01, 0, distFromMarker);
+  const lit = mix(mixed, vec3(1, 1, 1), marker.mul(0.6));
 
   return vec4(lit, 1);
 }
@@ -236,6 +249,9 @@ function PrimitiveMesh({ primitive }: PrimitiveSceneProps) {
     switch (primitive.slug) {
       case 'color-ramp':
         colorNode = buildColorRamp(primitive);
+        break;
+      case 'mix-color':
+        colorNode = buildMixColor(primitive);
         break;
       case 'noise':
         colorNode = buildNoise(primitive);
