@@ -5,6 +5,7 @@ export type {
   GpuRenderer,
   GpuBackend,
   CreateRendererOptions,
+  OutputGamut,
 } from './runtime/create-renderer/create-renderer.js';
 
 export { CursorInput } from './inputs/cursor-input/cursor-input.js';

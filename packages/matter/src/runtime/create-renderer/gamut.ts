@@ -1,7 +1,25 @@
-import { DisplayP3ColorSpace, SRGBColorSpace } from 'three';
+import {
+  DisplayP3ColorSpace,
+  DisplayP3ColorSpaceImpl,
+  LinearDisplayP3ColorSpace,
+  LinearDisplayP3ColorSpaceImpl,
+} from 'three/examples/jsm/math/ColorSpaces.js';
+import { ColorManagement, SRGBColorSpace } from 'three';
+import type { WebGPURenderer } from 'three/webgpu';
+
+import type { GpuBackend } from './create-renderer.js';
 
 /** The output color gamut the renderer encodes its framebuffer for. */
 export type OutputGamut = 'srgb' | 'p3';
+
+// three 0.170 core registers only sRGB and linear-sRGB in ColorManagement. The
+// Display P3 spaces ship as an addon that does NOT self-register, so we define
+// them once here (idempotent) before any P3 output. This makes the renderer's
+// linear-sRGB working space convert correctly into P3 on output.
+ColorManagement.define({
+  [DisplayP3ColorSpace]: DisplayP3ColorSpaceImpl,
+  [LinearDisplayP3ColorSpace]: LinearDisplayP3ColorSpaceImpl,
+});
 
 /**
  * Map a resolved output gamut to the three color-space constant for
@@ -9,4 +27,54 @@ export type OutputGamut = 'srgb' | 'p3';
  */
 export function gamutToColorSpace(gamut: OutputGamut): string {
   return gamut === 'p3' ? DisplayP3ColorSpace : SRGBColorSpace;
+}
+
+/**
+ * Minimal structural view of the WebGPU backend internals we must reach into.
+ * three's public `Backend` type surfaces neither `device` nor `context`, but the
+ * WebGPU backend sets both at init (`this.device`, `this.context`).
+ */
+interface WebGpuBackendInternals {
+  device?: GPUDevice;
+  context?: GPUCanvasContext;
+}
+
+/**
+ * Re-configure the WebGPU canvas context for the output gamut.
+ *
+ * Necessary because three 0.170's WebGPU backend configures the `GPUCanvasContext`
+ * only at init, with no `colorSpace` field — so it defaults to sRGB and a P3
+ * `outputColorSpace` would write P3-encoded pixels into an sRGB surface. We re-run
+ * `configure()` once with `colorSpace: 'display-p3'`, mirroring three's other
+ * config values (the renderer is built without `alpha`, so `alphaMode` is
+ * `'opaque'`; usage matches the backend's `RENDER_ATTACHMENT | COPY_SRC`). Resize
+ * never re-configures the context, so this sticks for the renderer's lifetime.
+ *
+ * No-op for sRGB output, for the WebGL2 fallback (which stays sRGB in v1), and
+ * where WebGPU is unavailable.
+ */
+export function applyCanvasGamut(
+  renderer: WebGPURenderer,
+  backend: GpuBackend,
+  gamut: OutputGamut,
+): void {
+  if (gamut !== 'p3' || backend !== 'webgpu') return;
+  // `navigator.gpu` is typed as always-present but is genuinely absent on hosts
+  // without WebGPU, so probe with `in` (a `=== undefined` check reads as dead).
+  if (typeof navigator === 'undefined' || !('gpu' in navigator)) return;
+
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
+  const internals = renderer.backend as unknown as WebGpuBackendInternals;
+  const device = internals.device;
+  const context = internals.context;
+
+  if (device === undefined || context === undefined) return;
+
+  context.configure({
+    device,
+    format: navigator.gpu.getPreferredCanvasFormat(),
+    usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
+    alphaMode: 'opaque',
+    colorSpace: 'display-p3',
+  });
 }

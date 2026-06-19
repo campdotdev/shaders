@@ -116,15 +116,19 @@ git commit -m "feat(matter): add gamutToColorSpace output-gamut mapping"
 
 ### Task 2: Wire `gamut` into `createRenderer`
 
+> **Plan revision (2026-06-18, during execution):** Verified against three 0.170 source that `outputColorSpace` alone does NOT produce P3 on either backend. Findings: (a) three 0.170 core registers only sRGB/linear-sRGB in `ColorManagement` — Display P3 ships in the addon `three/examples/jsm/math/ColorSpaces.js` and does NOT self-register, so we must call `ColorManagement.define(...)`; (b) the WebGPU backend's `context.configure({...})` has no `colorSpace` field (defaults sRGB) and the WebGL-fallback backend has no `drawingBufferColorSpace` handling, so P3-encoded pixels would land in an sRGB surface; (c) the context is configured once at init (resize does not re-configure), so a manual `context.configure({ ..., colorSpace: 'display-p3' })` after init persists. Decision (user-approved): hand-roll on 0.170 — register P3, set `outputColorSpace`, and manually re-configure the WebGPU canvas context. WebGL-fallback machines stay sRGB in v1 (graceful, documented). `gamut.ts` (Task 1) absorbs the registration + a `applyCanvasGamut` helper; Task 1's test is corrected to import `DisplayP3ColorSpace` from the addon.
+
 **Files:**
+- Modify: `packages/matter/src/runtime/create-renderer/gamut.ts` (add P3 registration + `applyCanvasGamut`)
+- Modify: `packages/matter/src/runtime/create-renderer/gamut.test.ts` (import `DisplayP3ColorSpace` from the addon, not `three`)
 - Modify: `packages/matter/src/runtime/create-renderer/create-renderer.ts`
 - Modify: `packages/matter/src/index.ts`
 
 **Interfaces:**
-- Consumes: `OutputGamut`, `gamutToColorSpace` from Task 1.
-- Produces: `CreateRendererOptions.gamut?: OutputGamut` (default `'srgb'`); `createRenderer` sets `three.outputColorSpace` before first render.
+- Consumes: `OutputGamut`, `gamutToColorSpace`, `applyCanvasGamut` from `gamut.ts`.
+- Produces: `CreateRendererOptions.gamut?: OutputGamut` (default `'srgb'`); `createRenderer` sets `three.outputColorSpace` after init and calls `applyCanvasGamut(three, backend, gamut)` after backend detection.
 
-No unit test (requires a real GPU/canvas — per project convention we don't mock the GPU). Validated by the Phase 1 gate.
+No GPU unit test (we don't mock the GPU). The pure `gamutToColorSpace` mapping IS unit-tested (Task 1). The context reconfigure is validated by the Phase 1 gate on a P3 display.
 
 - [ ] **Step 1: Add the import and option**
 

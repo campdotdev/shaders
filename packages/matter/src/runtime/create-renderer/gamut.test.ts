@@ -1,4 +1,5 @@
-import { DisplayP3ColorSpace, SRGBColorSpace } from 'three';
+import { DisplayP3ColorSpace } from 'three/examples/jsm/math/ColorSpaces.js';
+import { SRGBColorSpace } from 'three';
 import { describe, expect, it } from 'vitest';
 
 import { gamutToColorSpace } from './gamut.js';
