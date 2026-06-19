@@ -1,24 +1,19 @@
-import { type ColorRampStop, srgbChannelToLinear } from '@lovo/matter';
+import { type ColorRampStop, parseColorString } from '@lovo/matter';
 import { vec3 } from 'three/tsl';
 
 /**
- * Parse a `#rrggbb` hex string into **linear-sRGB** channels in [0, 1].
+ * Parse a color string into **extended** linear-sRGB channels. Accepts `#rrggbb`,
+ * `oklch(...)`, and `oklab(...)`.
  *
- * Hex is gamma-encoded sRGB; we decode it to linear here so the value handed to
- * `material.colorNode` is genuine linear-sRGB. The renderer then re-encodes
- * linear->sRGB on output, so solid colors render at their true hex appearance.
- * (Before this decode, gamma digits were fed as if linear and re-encoded — the
- * double-encode that lightened every color.)
+ * Hex is gamma-encoded sRGB and decodes into [0, 1]; oklch/oklab may land outside
+ * sRGB (channels below 0 or above 1) for wide-gamut (P3) colors. Those extended
+ * values survive to a P3 output and clamp per-channel on an sRGB output. The
+ * renderer re-encodes linear->output on output, so solid colors render true.
  */
-export const parseHex = (hex: string): [number, number, number] => {
-  const cleanedHex = hex.replace('#', '');
+export const parseColor = (color: string): [number, number, number] => parseColorString(color);
 
-  return [
-    srgbChannelToLinear(parseInt(cleanedHex.slice(0, 2), 16) / 255),
-    srgbChannelToLinear(parseInt(cleanedHex.slice(2, 4), 16) / 255),
-    srgbChannelToLinear(parseInt(cleanedHex.slice(4, 6), 16) / 255),
-  ];
-};
+/** @deprecated Use {@link parseColor}; retained so existing call sites keep working. */
+export const parseHex = parseColor;
 
 /**
  * A single color stop in a gradient ramp. `position` is optional; when omitted,
@@ -48,7 +43,7 @@ export const toColorRampStops = (stops: ColorStop[]): ColorRampStop[] => {
   const lastIndex = Math.max(stops.length - 1, 1);
 
   return stops.map((stop, index) => {
-    const [redChannel, greenChannel, blueChannel] = parseHex(stop.color);
+    const [redChannel, greenChannel, blueChannel] = parseColor(stop.color);
     const position =
       typeof stop.position === 'number'
         ? Math.min(Math.max(stop.position, 0), 1)
