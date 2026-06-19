@@ -127,6 +127,7 @@ From `docs/superpowers/ideas-backlog.md` — not commitments, just orientation:
 ## Code style preferences
 
 - **No comments or JSDoc unless asked.** The user adds comments and documentation themselves. Do not add JSDoc (`/** */`), inline explanatory comments, or `// ...` notes when writing or editing code. Only add a comment if the user explicitly requests it or the specific line contains non-obvious behaviour that would otherwise be invisible (e.g. a required workaround for a named gotcha in CLAUDE.md).
+- **Avoid ESLint suppression comments.** Fix lint errors with clearer types, runtime guards, narrower scopes, or small refactors. Use `eslint-disable` comments only when the rule is genuinely wrong or the workaround would make the code less clear, and keep the comment as narrow as possible.
 - **No double-underscore test helper names.** Prefer clear names like `resetReducedMotionForTests`; the `ForTests` suffix is enough signal. Do not add `__fooForTests`-style exports.
 
 ---
