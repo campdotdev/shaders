@@ -24,7 +24,7 @@ export default function ProbeGrid() {
           style={{ position: 'relative', width: '100%', height: 200 }}
         >
           <ShaderScene gamut="p3">
-            <LinearGradient stops={OKLCH_STOPS} colorSpace={space} speed={0} />
+            <LinearGradient colorSpace={space} speed={0} stops={OKLCH_STOPS} />
             <VisualTestPause />
           </ShaderScene>
         </div>
