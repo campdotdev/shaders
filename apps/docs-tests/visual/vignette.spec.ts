@@ -1,5 +1,4 @@
 import { expect, test } from './fixtures';
-
 import { waitForShader } from './helpers';
 
 test('Vignette — default story', async ({ page }) => {

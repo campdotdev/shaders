@@ -1,5 +1,4 @@
 import { expect, test } from './fixtures';
-
 import { waitForShader } from './helpers';
 
 test('LinearGradient — default story', async ({ page }) => {

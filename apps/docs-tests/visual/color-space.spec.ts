@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from './fixtures';
 
+import { expect, test } from './fixtures';
 import { waitForShader } from './helpers';
 
 const SPACES = ['linear', 'oklab', 'oklch', 'lch', 'hsl', 'hsv'] as const;

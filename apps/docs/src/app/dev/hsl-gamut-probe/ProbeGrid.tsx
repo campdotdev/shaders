@@ -1,7 +1,7 @@
 'use client';
 
-import { LinearGradient } from '@matter/registry/linear-gradient';
 import { ShaderScene } from '@lovo/matter-react';
+import { LinearGradient } from '@matter/registry/linear-gradient';
 
 import { VisualTestPause } from '@/lib/visualTestHooks';
 

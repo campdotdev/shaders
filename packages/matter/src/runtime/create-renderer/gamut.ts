@@ -1,10 +1,10 @@
+import { ColorManagement, SRGBColorSpace } from 'three';
 import {
   DisplayP3ColorSpace,
   DisplayP3ColorSpaceImpl,
   LinearDisplayP3ColorSpace,
   LinearDisplayP3ColorSpaceImpl,
 } from 'three/examples/jsm/math/ColorSpaces.js';
-import { ColorManagement, SRGBColorSpace } from 'three';
 import type { WebGPURenderer } from 'three/webgpu';
 
 import type { GpuBackend } from './create-renderer.js';

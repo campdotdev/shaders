@@ -19,7 +19,10 @@ import {
   ShaderContext,
   type ShaderContextValue,
 } from '../../context/shader-context.js';
-import { type GamutPreference, useDisplayGamut } from '../../hooks/use-display-gamut/use-display-gamut.js';
+import {
+  type GamutPreference,
+  useDisplayGamut,
+} from '../../hooks/use-display-gamut/use-display-gamut.js';
 
 export interface ShaderSceneProps {
   children?: ReactNode;
