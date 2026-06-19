@@ -43,6 +43,8 @@ export { elapsedTime } from './primitives/time/time.js';
 
 export { filmGrain } from './primitives/film-grain/film-grain.js';
 
+export { dither } from './primitives/dither/dither.js';
+
 export {
   setReducedMotionPolicy,
   getReducedMotionPolicy,
