@@ -22,9 +22,7 @@ const isSignal = <T>(value: AnimatableProp<T>): value is AnimatableSignal<T> => 
   );
 };
 
-export function useAnimatableUniform<T>(
-  value: AnimatableProp<T>,
-): ReturnType<typeof uniform<T>> {
+export function useAnimatableUniform<T>(value: AnimatableProp<T>): ReturnType<typeof uniform<T>> {
   const uniformNode = useMemo(() => {
     const initial = isSignal(value) ? value.get() : value;
 

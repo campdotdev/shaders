@@ -11,17 +11,7 @@ import {
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import {
-  length,
-  mix,
-  mod,
-  smoothstep,
-  uniform,
-  uv,
-  vec2,
-  vec3,
-  vec4,
-} from 'three/tsl';
+import { length, mix, mod, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 export interface DotFieldProps {
