@@ -19,6 +19,7 @@ import {
   ShaderContext,
   type ShaderContextValue,
 } from '../../context/shader-context.js';
+import { type GamutPreference, useDisplayGamut } from '../../hooks/use-display-gamut/use-display-gamut.js';
 
 export interface ShaderSceneProps {
   children?: ReactNode;
@@ -26,6 +27,8 @@ export interface ShaderSceneProps {
   className?: string;
   style?: CSSProperties;
   maxDPR?: number;
+  /** Output color gamut. 'auto' (default) uses the widest the display supports. */
+  gamut?: GamutPreference;
 }
 
 const defaultStyle: CSSProperties = {
@@ -37,7 +40,8 @@ const defaultStyle: CSSProperties = {
 };
 
 export function ShaderScene(props: ShaderSceneProps) {
-  const { children, fallback, className, style, maxDPR } = props;
+  const { children, fallback, className, style, maxDPR, gamut = 'auto' } = props;
+  const resolvedGamut = useDisplayGamut(gamut);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shaderContext, setShaderContext] = useState<ShaderContextValue | null>(null);
   const [error, setError] = useState<Error | null>(null);
@@ -52,7 +56,7 @@ export function ShaderScene(props: ShaderSceneProps) {
 
     const setup = async () => {
       try {
-        const renderer = await createRenderer(canvas, { maxDPR });
+        const renderer = await createRenderer(canvas, { maxDPR, gamut: resolvedGamut });
 
         if (cancelled) {
           renderer.dispose();
@@ -152,7 +156,7 @@ export function ShaderScene(props: ShaderSceneProps) {
       cleanup = null;
       setShaderContext(null);
     };
-  }, [maxDPR]);
+  }, [maxDPR, resolvedGamut]);
 
   let content: ReactNode;
 
