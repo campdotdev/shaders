@@ -864,9 +864,16 @@ End state: visual baselines stay deterministic regardless of the dev machine's d
 
 ### Task 8: Pin visual-regression scenes to sRGB
 
+> **Plan revisions (during execution):**
+> - **Pulled forward before the Phase 2 gate.** On a P3 dev machine the gate's "baselines unchanged" check is meaningless until scenes are pinned to sRGB (default `auto` → P3 otherwise), so this ran before Task 5's gate verification.
+> - **Shared fixture instead of a per-spec `pinSrgbGamut(page)` helper.** Added `apps/docs-tests/visual/fixtures.ts` exporting an extended `test` whose `context` fixture installs the init script once; all 10 screenshot/pixel specs swap `import { expect, test } from '@playwright/test'` → `from './fixtures'`. DRYer and covers the probe specs too. The only manual-`browser.newContext()` test (linear-gradient reduced-motion) needs no pin — it compares two shots for equality, no baseline.
+> - **Bug fix vs the plan's draft helper:** spreading a `MediaQueryList` (`{...mql, matches:false}`) drops its methods, so `addEventListener` would be `undefined` and `useDisplayGamut` would throw. The fixture wraps it in a `Proxy` instead.
+> - **Correct test command is `pnpm --filter @matter/docs-tests test:visual`** (there is no `test` script). All gate/verification commands below that say `... test` should read `... test:visual`.
+> - **Pre-existing flakiness found (NOT caused by this feature):** the full suite shows a rotating 1/20 failure between `film-grain` and `vignette` (both animated grain overlays capturing at a slightly different animation phase under single-worker load). Verified by running the full suite on the pre-feature engine, where it also fails 1/20 (film-grain that run). All non-grain tests — including every mixColor/colorRamp-driven gradient — pass deterministically, which is the real proof the clamp removal (Task 5) is sRGB-neutral. The grain-test flake is out of scope for this feature; flagged to the user.
+
 **Files:**
-- Modify: `apps/docs-tests/visual/helpers.ts`
-- Modify: each existing `apps/docs-tests/visual/*.spec.ts` that calls `page.goto` for a component story (add the pin before navigation).
+- Create: `apps/docs-tests/visual/fixtures.ts`
+- Modify: the 10 screenshot/pixel specs (swap the `@playwright/test` import for `./fixtures`)
 
 **Interfaces:**
 - Produces: `pinSrgbGamut(page: Page): Promise<void>` — installs an init script forcing `matchMedia('(color-gamut: p3)')` to report `matches: false`, so `ShaderScene`'s default `'auto'` resolves to `'srgb'` on any machine.
