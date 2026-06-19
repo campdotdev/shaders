@@ -121,12 +121,7 @@ export function LinearGradientShader({
     // banding, most visible on P3. uv() gives a per-pixel coordinate for the
     // hash. Always-on here for evaluation; productization (toggle + final
     // output-pass placement) is a follow-up.
-    const gradientColor = colorRamp(
-      animatedGradientCoord,
-      rampStops,
-      colorSpace,
-      hueInterpolation,
-    );
+    const gradientColor = colorRamp(animatedGradientCoord, rampStops, colorSpace, hueInterpolation);
 
     material.colorNode = dither(gradientColor, uv());
 

@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
-import { expect, test } from './fixtures';
 
+import { expect, test } from './fixtures';
 import { waitForShader } from './helpers';
 
 // Row order MUST match the probe's MODES array (row 0 = bottom, uv().y bottom-up).

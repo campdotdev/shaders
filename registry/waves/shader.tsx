@@ -91,7 +91,9 @@ export function WavesShader(props: WavesShaderProps) {
       const offset = layer.offset ?? 0;
       const turbulenceValue = layer.turbulence ?? DEFAULT_TURBULENCE;
 
-      const [redChannel, greenChannel, blueChannel] = parseColor(layer.color ?? DEFAULT_LAYER_COLOR);
+      const [redChannel, greenChannel, blueChannel] = parseColor(
+        layer.color ?? DEFAULT_LAYER_COLOR,
+      );
 
       const layerTime = elapsedTime.mul(speedValue);
       const waveInput = samplePosition.x.mul(freqValue).add(offset);
