@@ -11,7 +11,7 @@ import {
 import { length, smoothstep, mix as tslMix, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Vector2, Vector3 } from 'three/webgpu';
 
-import { parseHex } from '../utils/color';
+import { parseColor } from '../utils/color';
 
 export interface VignetteShaderProps {
   intensity: AnimatableProp<number>;
@@ -45,7 +45,7 @@ export function VignetteShader({
 
   const colorVec = useMemo(
     () => {
-      const [redChannel, greenChannel, blueChannel] = parseHex(color);
+      const [redChannel, greenChannel, blueChannel] = parseColor(color);
 
       return new Vector3(redChannel, greenChannel, blueChannel);
     },
@@ -56,7 +56,7 @@ export function VignetteShader({
   const colorUniform = useMemo(() => uniform(colorVec), [colorVec]);
 
   useEffect(() => {
-    const [redChannel, greenChannel, blueChannel] = parseHex(color);
+    const [redChannel, greenChannel, blueChannel] = parseColor(color);
 
     colorVec.set(redChannel, greenChannel, blueChannel);
   }, [color, colorVec]);

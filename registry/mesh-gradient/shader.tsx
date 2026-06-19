@@ -18,7 +18,7 @@ import {
 import { abs, cos, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 
-import { type Palette, parseHex } from '../utils/color';
+import { type Palette, parseColor } from '../utils/color';
 
 export interface MeshGradientShaderProps {
   speed: AnimatableProp<number>;
@@ -36,7 +36,7 @@ const LAYER_ROT_RAD = (-5 * Math.PI) / 180;
 function useColorUniform(hex: string) {
   const vec = useMemo(
     () => {
-      const [redChannel, greenChannel, blueChannel] = parseHex(hex);
+      const [redChannel, greenChannel, blueChannel] = parseColor(hex);
 
       return new Vector3(redChannel, greenChannel, blueChannel);
     },
@@ -47,7 +47,7 @@ function useColorUniform(hex: string) {
   const node = useMemo(() => uniform(vec), [vec]);
 
   useEffect(() => {
-    const [redChannel, greenChannel, blueChannel] = parseHex(hex);
+    const [redChannel, greenChannel, blueChannel] = parseColor(hex);
 
     vec.set(redChannel, greenChannel, blueChannel);
   }, [hex, vec]);

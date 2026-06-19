@@ -7,7 +7,7 @@ import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lo
 import { cos, type ShaderNodeObject, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
-import { parseHex } from '../utils/color';
+import { parseColor } from '../utils/color';
 
 interface WavesShaderLayer {
   color?: string;
@@ -91,7 +91,7 @@ export function WavesShader(props: WavesShaderProps) {
       const offset = layer.offset ?? 0;
       const turbulenceValue = layer.turbulence ?? DEFAULT_TURBULENCE;
 
-      const [redChannel, greenChannel, blueChannel] = parseHex(layer.color ?? DEFAULT_LAYER_COLOR);
+      const [redChannel, greenChannel, blueChannel] = parseColor(layer.color ?? DEFAULT_LAYER_COLOR);
 
       const layerTime = elapsedTime.mul(speedValue);
       const waveInput = samplePosition.x.mul(freqValue).add(offset);

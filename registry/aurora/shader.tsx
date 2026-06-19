@@ -12,7 +12,7 @@ import {
 import { smoothstep, sub, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 
-import { parseHex } from '../utils/color';
+import { parseColor } from '../utils/color';
 
 export interface AuroraLayer {
   color: string;
@@ -57,7 +57,7 @@ export interface AuroraShaderProps {
 function useColorUniform(hex: string) {
   const vec = useMemo(
     () => {
-      const [redChannel, greenChannel, blueChannel] = parseHex(hex);
+      const [redChannel, greenChannel, blueChannel] = parseColor(hex);
 
       return new Vector3(redChannel, greenChannel, blueChannel);
     },
@@ -68,7 +68,7 @@ function useColorUniform(hex: string) {
   const node = useMemo(() => uniform(vec), [vec]);
 
   useEffect(() => {
-    const [redChannel, greenChannel, blueChannel] = parseHex(hex);
+    const [redChannel, greenChannel, blueChannel] = parseColor(hex);
 
     vec.set(redChannel, greenChannel, blueChannel);
   }, [hex, vec]);
@@ -145,7 +145,7 @@ export function AuroraShader(props: AuroraShaderProps) {
     let aurora = vec3(0, 0, 0);
 
     for (const layer of props.layers) {
-      const [redChannel, greenChannel, blueChannel] = parseHex(layer.color);
+      const [redChannel, greenChannel, blueChannel] = parseColor(layer.color);
       const layerColor = vec3(redChannel, greenChannel, blueChannel);
       const layerSpeed = layer.speed ?? DEFAULT_LAYER_SPEED;
       const layerIntensity = layer.intensity ?? DEFAULT_LAYER_INTENSITY;
