@@ -7,6 +7,9 @@ export type {
 export { useCursor } from './use-cursor/use-cursor.js';
 export type { CursorSignal } from './use-cursor/use-cursor.js';
 
+export { useDisplayGamut } from './use-display-gamut/use-display-gamut.js';
+export type { GamutPreference } from './use-display-gamut/use-display-gamut.js';
+
 export { useShaderContext } from './use-shader-context/use-shader-context.js';
 
 export { usePostProcessPass } from './use-overlay-pass/use-overlay-pass.js';
