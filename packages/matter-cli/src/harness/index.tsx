@@ -12,22 +12,23 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null;
 }
 
-// Dynamic import returns `any`; assign to `unknown` first via explicit typing.
+function isReactComponent(value: unknown): value is React.ComponentType<unknown> {
+  return typeof value === 'function';
+}
+
 const rawModule: unknown = await import(/* @vite-ignore */ __MATTER_USER_MODULE_PATH);
 const userModule: Record<string, unknown> = isRecord(rawModule) ? rawModule : {};
 
 const rawExport: unknown = userModule[__MATTER_EXPORT_NAME];
 
-if (typeof rawExport !== 'function') {
+if (!isReactComponent(rawExport)) {
   document.body.innerHTML = `<pre style="color:#fff;padding:1rem">matter poster: export "${__MATTER_EXPORT_NAME}" is not a React component (got ${typeof rawExport}). Available exports: ${Object.keys(
     userModule,
   ).join(', ')}</pre>`;
   throw new Error(`export "${__MATTER_EXPORT_NAME}" is not a component`);
 }
 
-// After the typeof guard above, rawExport is a function — safe to use as a React component.
-// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-const Component = rawExport as React.ComponentType<unknown>;
+const Component = rawExport;
 
 const rootEl = document.getElementById('root');
 

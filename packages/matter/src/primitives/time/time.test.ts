@@ -1,14 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
-  __resetReducedMotionForTests,
+  resetReducedMotionForTests,
   setReducedMotionPolicy,
 } from '../../runtime/reduced-motion/reduced-motion.js';
 import { elapsedTime } from './time.js';
 
 describe('gated time', () => {
   beforeEach(() => {
-    __resetReducedMotionForTests();
+    resetReducedMotionForTests();
     setReducedMotionPolicy('auto');
   });
 

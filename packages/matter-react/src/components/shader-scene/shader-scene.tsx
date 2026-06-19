@@ -9,10 +9,8 @@ import {
   FrameScheduler,
 } from '@lovo/matter';
 import { OrthographicCamera, Scene } from 'three';
-import { pass } from 'three/tsl';
-import type { ShaderNodeObject } from 'three/tsl';
+import { pass, vec4 } from 'three/tsl';
 import { PostProcessing } from 'three/webgpu';
-import type { Node } from 'three/webgpu';
 
 import {
   type PostProcessTransform,
@@ -75,12 +73,9 @@ export function ShaderScene(props: ShaderSceneProps) {
 
         const overlays = new Map<symbol, PostProcessTransform>();
 
-        const basePass = pass(scene, camera);
+        const basePassNode = vec4(pass(scene, camera));
 
         const rebuildOutputNode = () => {
-          // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-          const basePassNode = basePass as unknown as ShaderNodeObject<Node>;
-
           postProcessing.outputNode = Array.from(overlays.values()).reduce(
             (currentPipeline, transform) => transform(currentPipeline),
             basePassNode,

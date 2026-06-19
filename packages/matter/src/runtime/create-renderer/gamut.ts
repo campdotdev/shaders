@@ -35,8 +35,24 @@ export function gamutToColorSpace(gamut: OutputGamut): string {
  * WebGPU backend sets both at init (`this.device`, `this.context`).
  */
 interface WebGpuBackendInternals {
-  device?: GPUDevice;
-  context?: GPUCanvasContext;
+  device: GPUDevice;
+  context: GPUCanvasContext;
+}
+
+function hasWebGpuBackendInternals(backend: unknown): backend is WebGpuBackendInternals {
+  if (typeof backend !== 'object' || backend === null) return false;
+  if (!('device' in backend) || !('context' in backend)) return false;
+
+  const { device, context } = backend;
+
+  return (
+    typeof device === 'object' &&
+    device !== null &&
+    typeof context === 'object' &&
+    context !== null &&
+    'configure' in context &&
+    typeof context.configure === 'function'
+  );
 }
 
 /**
@@ -59,19 +75,17 @@ export function applyCanvasGamut(
   gamut: OutputGamut,
 ): void {
   if (gamut !== 'p3' || backend !== 'webgpu') return;
+
   // `navigator.gpu` is typed as always-present but is genuinely absent on hosts
   // without WebGPU, so probe with `in` (a `=== undefined` check reads as dead).
   if (typeof navigator === 'undefined' || !('gpu' in navigator)) return;
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  const internals = renderer.backend as unknown as WebGpuBackendInternals;
-  const device = internals.device;
-  const context = internals.context;
+  const webGpuBackend = renderer.backend;
 
-  if (device === undefined || context === undefined) return;
+  if (!hasWebGpuBackendInternals(webGpuBackend)) return;
 
-  context.configure({
-    device,
+  webGpuBackend.context.configure({
+    device: webGpuBackend.device,
     format: navigator.gpu.getPreferredCanvasFormat(),
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
     alphaMode: 'opaque',

@@ -3,8 +3,6 @@
 import { useEffect, useMemo } from 'react';
 
 import { uniform } from 'three/tsl';
-import type { ShaderNodeObject } from 'three/tsl';
-import type { Node } from 'three/webgpu';
 
 export interface AnimatableSignal<T> {
   get(): T;
@@ -26,7 +24,7 @@ const isSignal = <T>(value: AnimatableProp<T>): value is AnimatableSignal<T> => 
 
 export function useAnimatableUniform<T>(
   value: AnimatableProp<T>,
-): ShaderNodeObject<Node> & { value: T } {
+): ReturnType<typeof uniform<T>> {
   const uniformNode = useMemo(() => {
     const initial = isSignal(value) ? value.get() : value;
 
@@ -47,6 +45,5 @@ export function useAnimatableUniform<T>(
     return undefined;
   }, [value, uniformNode]);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  return uniformNode as unknown as ShaderNodeObject<Node> & { value: T };
+  return uniformNode;
 }
