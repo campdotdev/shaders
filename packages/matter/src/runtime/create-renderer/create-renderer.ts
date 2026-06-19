@@ -1,6 +1,10 @@
 import { Color, Vector2 } from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 
+import { applyCanvasGamut, gamutToColorSpace, type OutputGamut } from './gamut.js';
+
+export type { OutputGamut } from './gamut.js';
+
 export type GpuBackend = 'webgpu' | 'webgl2';
 
 export interface CreateRendererOptions {
@@ -14,6 +18,8 @@ export interface CreateRendererOptions {
   clearAlpha?: number;
   /** Cap on devicePixelRatio. Default: 2. Pass Infinity to disable. */
   maxDPR?: number;
+  /** Output color gamut the framebuffer is encoded for. Default: 'srgb'. */
+  gamut?: OutputGamut;
 }
 
 export interface GpuRenderer {
@@ -44,6 +50,7 @@ export async function createRenderer(
     clearColor = 0x000000,
     clearAlpha = 0,
     maxDPR = 2,
+    gamut = 'srgb',
   } = opts;
 
   const three = new WebGPURenderer({
@@ -53,6 +60,8 @@ export async function createRenderer(
   });
 
   await three.init();
+
+  three.outputColorSpace = gamutToColorSpace(gamut);
 
   three.setPixelRatio(Math.min(window.devicePixelRatio, maxDPR));
   const resolvedClearColor = clearColor instanceof Color ? clearColor : new Color(clearColor);
@@ -87,6 +96,10 @@ export async function createRenderer(
   // a property access that would trip strict typing.
   const isWebGL = 'isWebGLBackend' in three.backend && three.backend.isWebGLBackend === true;
   const backend: GpuBackend = forceWebGL || isWebGL ? 'webgl2' : 'webgpu';
+
+  // three's WebGPU backend doesn't configure the canvas context for P3, so do it
+  // ourselves now that the backend is known. No-op for sRGB / WebGL fallback.
+  applyCanvasGamut(three, backend, gamut);
 
   return {
     three,
