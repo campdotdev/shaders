@@ -33,11 +33,36 @@ interface PagefindModule {
   }>;
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null;
+}
+
+function isPagefindModule(value: unknown): value is PagefindModule {
+  return isRecord(value) && typeof value.search === 'function';
+}
+
+function isStringArray(value: unknown): value is string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === 'string');
+}
+
+function isSearchDoc(value: unknown): value is SearchDoc {
+  return (
+    isRecord(value) &&
+    typeof value.url === 'string' &&
+    typeof value.title === 'string' &&
+    typeof value.description === 'string' &&
+    typeof value.section === 'string' &&
+    isStringArray(value.headings) &&
+    isStringArray(value.tags)
+  );
+}
+
 async function createPagefindBackend(): Promise<SearchBackend | null> {
   try {
     const path = '/pagefind/pagefind.js';
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const pagefindModule = (await import(/* webpackIgnore: true */ path)) as PagefindModule;
+    const pagefindModule: unknown = await import(/* webpackIgnore: true */ path);
+
+    if (!isPagefindModule(pagefindModule)) return null;
 
     return async (query) => {
       if (query.trim() === '') return [];
@@ -70,19 +95,22 @@ async function createFallbackBackend(): Promise<SearchBackend | null> {
     const response = await fetch('/api/search');
 
     if (!response.ok) return null;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-    const docs = (await response.json()) as SearchDoc[];
+    const docsJson: unknown = await response.json();
 
-    // eslint-disable-next-line @typescript-eslint/require-await -- conforms to SearchBackend interface (pagefind backend is genuinely async)
-    return async (query) => {
+    if (!Array.isArray(docsJson) || !docsJson.every(isSearchDoc)) return null;
+    const docs = docsJson;
+
+    return (query) => {
       const normalizedQuery = query.toLowerCase().trim();
 
-      if (normalizedQuery === '') return [];
+      if (normalizedQuery === '') return Promise.resolve([]);
 
-      return docs
-        .filter((doc) => matches(doc, normalizedQuery))
-        .slice(0, 20)
-        .map((doc) => ({ url: doc.url, title: doc.title, excerpt: doc.description }));
+      return Promise.resolve(
+        docs
+          .filter((doc) => matches(doc, normalizedQuery))
+          .slice(0, 20)
+          .map((doc) => ({ url: doc.url, title: doc.title, excerpt: doc.description })),
+      );
     };
   } catch {
     return null;

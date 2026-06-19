@@ -1,6 +1,4 @@
 import { uniform } from 'three/tsl';
-import type { ShaderNodeObject } from 'three/tsl';
-import type { Node } from 'three/webgpu';
 
 export type ReducedMotionPolicy = 'auto' | 'off' | 'slow' | 'paused';
 
@@ -147,7 +145,7 @@ let globalWatcher: ReducedMotionWatcher | null = null;
  * imperatively when policy changes is safe — TSL re-reads the uniform every
  * frame.
  */
-export function getReducedMotionTimeScale(): ShaderNodeObject<Node> {
+export function getReducedMotionTimeScale(): ReturnType<typeof uniform<number>> {
   if (globalScaleUniform === null) {
     globalWatcher = createReducedMotionWatcher();
     globalScaleUniform = uniform(globalWatcher.scale());
@@ -157,15 +155,11 @@ export function getReducedMotionTimeScale(): ShaderNodeObject<Node> {
     });
   }
 
-  // ShaderNodeObject<UniformNode<number>> isn't structurally assignable to
-  // ShaderNodeObject<Node> (invariant generic methods); chains work the same
-  // at runtime, so widen at the return boundary.
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  return globalScaleUniform as unknown as ShaderNodeObject<Node>;
+  return globalScaleUniform;
 }
 
 // Keep a typed reference for tests that may want to re-init between tests.
-export const __resetReducedMotionForTests = () => {
+export const resetReducedMotionForTests = () => {
   globalWatcher?.dispose();
   globalWatcher = null;
   globalScaleUniform = null;

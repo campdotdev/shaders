@@ -911,7 +911,7 @@ function parseHex(hex: string): readonly [number, number, number] {
   ];
 }
 
-function useColorUniform(hex: string): ShaderNodeObject<Node> {
+function useColorUniform(hex: string): ReturnType<typeof uniform<Vector3>> {
   const vec = useMemo(
     () => {
       const [r, g, b] = parseHex(hex);
@@ -930,8 +930,7 @@ function useColorUniform(hex: string): ShaderNodeObject<Node> {
     vec.set(r, g, b);
   }, [hex, vec]);
 
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-  return node as unknown as ShaderNodeObject<Node>;
+  return node;
 }
 ```
 
@@ -940,7 +939,7 @@ In `WavesShader`, replace the old `color = useMemo(() => hexToVec3(...), …)` w
 const colorUniform = useColorUniform(props.color);
 ```
 
-Update `buildWavesMaterial`'s signature: drop the `color: readonly [...]` parameter, add `colorU: ShaderNodeObject<Node>`. Drop the `void color` and the `vec3(cr, cg, cb)` reference. Replace the channel-weighted accumulator line with:
+Update `buildWavesMaterial`'s signature: drop the `color: readonly [...]` parameter, add `colorU: ReturnType<typeof uniform<Vector3>>`. Drop the `void color` and the `vec3(cr, cg, cb)` reference. Replace the channel-weighted accumulator line with:
 
 ```ts
 waveColor = waveColor.add(colorU.mul(width));

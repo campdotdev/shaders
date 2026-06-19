@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { displace, signedDistanceFieldCircle } from '@lovo/matter';
+import { displace, signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
 import {
   type AnimatableProp,
   type CursorSignal,
@@ -15,7 +15,6 @@ import {
   length,
   mix,
   mod,
-  type ShaderNodeObject,
   smoothstep,
   uniform,
   uv,
@@ -23,7 +22,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry, Vector2 } from 'three/webgpu';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 export interface DotFieldProps {
   spacing?: AnimatableProp<number>;
@@ -53,12 +52,12 @@ const hexToVec3 = (hex: string): readonly [number, number, number] => {
 };
 
 function buildDotFieldMaterial(
-  spacingUniform: ShaderNodeObject<Node>,
-  dotSizeUniform: ShaderNodeObject<Node>,
-  reachUniform: ShaderNodeObject<Node>,
-  strengthUniform: ShaderNodeObject<Node>,
-  cursorUniform: ShaderNodeObject<Node>,
-  resUniform: ShaderNodeObject<Node>,
+  spacingUniform: TSLNode,
+  dotSizeUniform: TSLNode,
+  reachUniform: TSLNode,
+  strengthUniform: TSLNode,
+  cursorUniform: TSLNode,
+  resUniform: TSLNode,
   color: readonly [number, number, number],
 ): MeshBasicNodeMaterial {
   const [redChannel, greenChannel, blueChannel] = color;
@@ -139,10 +138,8 @@ export function DotField(props: DotFieldProps) {
       dotSizeUniform,
       reachUniform,
       strengthUniform,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      cursorUniform as unknown as ShaderNodeObject<Node>,
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion
-      resUniform as unknown as ShaderNodeObject<Node>,
+      cursorUniform,
+      resUniform,
       color,
     );
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);

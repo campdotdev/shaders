@@ -1,9 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
-  __resetReducedMotionForTests,
   createReducedMotionWatcher,
   getReducedMotionTimeScale,
+  resetReducedMotionForTests,
   setReducedMotionPolicy,
 } from './reduced-motion.js';
 
@@ -181,7 +181,7 @@ describe('reducedMotion watcher — SSR fallback', () => {
 
 describe('reducedMotion uniform', () => {
   beforeEach(() => {
-    __resetReducedMotionForTests();
+    resetReducedMotionForTests();
     vi.stubGlobal('matchMedia', () => ({
       matches: false,
       addEventListener: () => {},
@@ -191,7 +191,7 @@ describe('reducedMotion uniform', () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
-    __resetReducedMotionForTests();
+    resetReducedMotionForTests();
     setReducedMotionPolicy('auto');
   });
 
