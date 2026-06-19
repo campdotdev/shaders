@@ -6,10 +6,7 @@ import type { TSLNode } from '../color-ramp/color-ramp.js';
 
 type TSLScalar = TSLNode | number;
 
-export function filmGrain(
-  intensity: TSLScalar,
-  timeOffset: TSLScalar = 0,
-): ShaderNodeObject<Node> {
+export function filmGrain(intensity: TSLScalar, timeOffset: TSLScalar = 0): ShaderNodeObject<Node> {
   const pixel = screenCoordinate.xy.floor();
   // Convert to uint before multiplying so the seed arithmetic stays in exact
   // integer space. Float32 loses integer precision above 2^24 (~16.7M), and
