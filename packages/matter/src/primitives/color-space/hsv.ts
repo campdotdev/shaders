@@ -41,7 +41,10 @@ function hsvToGammaRgb(hsv: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 }
 
 export const hsvSpace: ColorSpaceImpl = {
-  fromLinear: (rgb) => gammaRgbToHsv(linearToSrgb(rgb)),
+  // Clamp into sRGB before the gamma transfer: HSV is an sRGB-gamut concept, and
+  // the sRGB OETF's pow() can't be WGSL const-evaluated on the negative channels
+  // of an out-of-sRGB (wide-gamut) stop color — that crashed the shader compile.
+  fromLinear: (rgb) => gammaRgbToHsv(linearToSrgb(clamp(rgb, 0, 1))),
   toLinear: (hsv) => srgbToLinear(hsvToGammaRgb(hsv)),
   lerp: (a, b, t, hue) => vec3(hue(a.x, b.x, t, 1), mix(a.y, b.y, t), mix(a.z, b.z, t)),
 };

@@ -47,7 +47,10 @@ function hslToGammaRgb(hsl: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 }
 
 export const hslSpace: ColorSpaceImpl = {
-  fromLinear: (rgb) => gammaRgbToHsl(linearToSrgb(rgb)),
+  // Clamp into sRGB before the gamma transfer: HSL is an sRGB-gamut concept, and
+  // the sRGB OETF's pow() can't be WGSL const-evaluated on the negative channels
+  // of an out-of-sRGB (wide-gamut) stop color — that crashed the shader compile.
+  fromLinear: (rgb) => gammaRgbToHsl(linearToSrgb(clamp(rgb, 0, 1))),
   toLinear: (hsl) => srgbToLinear(hslToGammaRgb(hsl)),
   lerp: (a, b, t, hue) => vec3(hue(a.x, b.x, t, 1), mix(a.y, b.y, t), mix(a.z, b.z, t)),
 };
