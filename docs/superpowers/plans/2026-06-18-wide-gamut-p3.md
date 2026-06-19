@@ -854,7 +854,11 @@ git commit -m "feat(registry): accept oklch/oklab color inputs via parseColor"
 ### PHASE 3 GATE (stop and feel it)
 
 1. **Automated:** Task 6 unit tests prove a high-chroma `oklch(...)` decodes to extended linear-sRGB (channels outside `[0,1]`). This is the deterministic proof that wide-gamut input flows.
-2. **Feel it:** on the LinearGradient demo (run `pnpm --filter @matter/docs dev`), set a stop to a vivid `oklch(0.86 0.28 142)` and toggle `gamut` (use the control added in Task 10, or temporarily hardcode). Under `p3` on a P3 display it should look vividly green and beyond what the same hex could show; under `srgb` it clamps gracefully to the sRGB edge. Confirm hex stops are visually unchanged.
+2. **Feel it:** on the LinearGradient demo (run `pnpm --filter @matter/docs dev`), set a stop to a vivid `oklch(0.87 0.34 142)` and toggle `gamut`. Under `p3` on a P3 display it looks vividly green, beyond what the same hex could show; under `srgb` it clamps gracefully to the sRGB edge.
+
+> **Gate result (during execution): PASSED with a follow-up.** The wide-gamut color rendered and P3 output is active. The corrected test color is `oklch(0.87 0.34 142)` (the planned `0.86 0.28 142` is actually *inside* sRGB — sRGB green's max chroma at that hue is ~0.295). The stop-color Tweakpane widget had to switch from the color-picker to a text input (`view: 'text'`) because the picker silently rejects `oklch()`/`oklab()` strings.
+>
+> **Banding observed (expected, filed):** smooth gradients show visible 8-bit quantization banding on P3 output (the same 256 levels stretched across a wider gamut). Investigated float/HDR mitigation: three 0.170 has no supported float-canvas path and full HDR is out of scope. Dithering is the cheap standard fix — filed as **GitHub #46** and scheduled as **Phase 5 (spike)** below. Not a blocker for P3 support.
 
 ---
 
@@ -1114,9 +1118,15 @@ git commit -m "docs: expose gamut control on the LinearGradient playground"
 
 ### PHASE 4 GATE (stop and feel it)
 
-1. Full visual suite green: `pnpm --filter @matter/docs-tests test`.
+1. Full visual suite green: `pnpm --filter @matter/docs-tests test:visual` (note: the script is `test:visual`, not `test`; expect the pre-existing grain-overlay flake from #45 — re-run or accept 19/20).
 2. The gamut-probe spec passes (or the readback fallback is in place with a recorded note).
 3. On the LinearGradient page, the `gamut` dropdown is present and switches live; with an `oklch(...)` stop the P3 setting reads more vivid on a P3 display and falls back cleanly on sRGB.
+
+---
+
+## Phase 5 — Output dithering spike (added during execution)
+
+> Tracked as **GitHub #46**. Goal: reduce the 8-bit-P3 gradient banding observed at the Phase 3 gate with a small sub-LSB output dither. This is a **spike** — explore a cheap technique on `LinearGradient`, confirm it visibly removes the banding under P3, then decide whether to productize (reusable primitive vs global overlay pass) in a follow-up. Detailed plan TBD after the spike; design questions (hash vs ordered vs blue-noise; placement; magnitude; always-on vs gated) are captured in #46.
 
 ---
 
