@@ -1,5 +1,5 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { clamp, vec3 } from 'three/tsl';
+import { vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
@@ -11,7 +11,9 @@ import type { ColorSpace, HueInterpolation } from './types.js';
  * Blend two linear-sRGB colors in `colorSpace`: convert both endpoints into the
  * space, interpolate, convert back to linear-sRGB. `hueInterpolation` chooses
  * the hue-wheel direction for cylindrical spaces (default `'shorter'`; inert for
- * rectangular spaces). Result is clamped to [0,1] (out-of-gamut colors clipped).
+ * rectangular spaces). The result is NOT clamped — extended (out-of-sRGB) values
+ * are preserved so a wide-gamut (P3) output can display them; an sRGB output
+ * clamps per-channel at the framebuffer, identical to the prior behavior.
  */
 export function mixColor(
   colorA: TSLNode,
@@ -25,5 +27,5 @@ export function mixColor(
   const a = space.fromLinear(vec3(colorA));
   const b = space.fromLinear(vec3(colorB));
 
-  return clamp(space.toLinear(space.lerp(a, b, t, hue)), 0, 1);
+  return space.toLinear(space.lerp(a, b, t, hue));
 }
