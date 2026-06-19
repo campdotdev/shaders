@@ -7,8 +7,9 @@ import { useEffect, useRef, useState } from 'react';
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { GamutPreference } from '@lovo/matter-react';
 import { Pane } from 'tweakpane';
+import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
 
-import { palette } from '@/lib/palette';
+import { paletteOklch } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
@@ -48,9 +49,9 @@ const INITIAL: Params = {
   hueInterpolation: 'shorter',
   gamut: 'auto',
   stops: [
-    { color: palette.violet.base, position: 0 },
-    { color: palette.purple.base, position: 0.5 },
-    { color: palette.magenta.dark, position: 1 },
+    { color: paletteOklch.violet.base, position: 0 },
+    { color: paletteOklch.purple.base, position: 0.5 },
+    { color: paletteOklch.magenta.dark, position: 1 },
   ],
 };
 
@@ -100,6 +101,11 @@ export default function LinearGradientPage() {
 
     const local: Params = structuredClone(INITIAL);
     const pane = new Pane({ container, title: '<LinearGradient>' });
+
+    // Pre-release wide-gamut color picker (docs-only). The built-in Tweakpane
+    // picker is sRGB and rejects oklch()/oklab() strings; color-plus adapts its
+    // UI to the bound color's gamut.
+    pane.registerPlugin(TweakpanePluginColorPlus);
     const sync = () => setParams(structuredClone(local));
 
     pane.addButton({ title: 'Reset all' }).on('click', () => {
@@ -155,10 +161,15 @@ export default function LinearGradientPage() {
       local.stops.forEach((stop, stopIndex) => {
         const row = stopsFolder.addFolder({ title: `Stop ${stopIndex}`, expanded: true });
 
-        // Plain text input (not Tweakpane's color picker) so wide-gamut color
-        // strings — `oklch(...)` / `oklab(...)`, which the picker rejects — can be
-        // typed alongside hex. parseColor handles all three formats.
-        row.addBinding(stop, 'color', { label: 'color', view: 'text' });
+        // Wide-gamut picker (color-plus). `formatLocked` keeps the written-back
+        // value in the bound color's format (oklch here) no matter how the picker
+        // is manipulated, so every stop stays in a format parseColor supports
+        // (hex / oklch / oklab) rather than emitting rgb()/hsl()/display-p3().
+        row.addBinding(stop, 'color', {
+          label: 'color',
+          view: 'color-plus',
+          color: { formatLocked: true },
+        });
         row.addBinding(stop, 'position', { label: 'position', min: 0, max: 1, step: 0.01 });
 
         const removeButton = row.addButton({ title: 'Remove stop' });
@@ -179,7 +190,7 @@ export default function LinearGradientPage() {
         // New stop slots in halfway between the current last position and 1.0.
         // Color duplicates the last stop's color so the new stop is visible
         // and immediately editable rather than appearing as a random hex.
-        const nextColor = last?.color ?? '#888888';
+        const nextColor = last?.color ?? 'oklch(0.6 0 0)';
         const nextPosition = last !== undefined ? (last.position + 1) / 2 : 1;
 
         local.stops.push({ color: nextColor, position: nextPosition });
