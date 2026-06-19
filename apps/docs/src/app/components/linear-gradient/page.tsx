@@ -155,7 +155,10 @@ export default function LinearGradientPage() {
       local.stops.forEach((stop, stopIndex) => {
         const row = stopsFolder.addFolder({ title: `Stop ${stopIndex}`, expanded: true });
 
-        row.addBinding(stop, 'color', { label: 'color' });
+        // Plain text input (not Tweakpane's color picker) so wide-gamut color
+        // strings — `oklch(...)` / `oklab(...)`, which the picker rejects — can be
+        // typed alongside hex. parseColor handles all three formats.
+        row.addBinding(stop, 'color', { label: 'color', view: 'text' });
         row.addBinding(stop, 'position', { label: 'position', min: 0, max: 1, step: 0.01 });
 
         const removeButton = row.addButton({ title: 'Remove stop' });
