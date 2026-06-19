@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
+import type { GamutPreference } from '@lovo/matter-react';
 import { Pane } from 'tweakpane';
 
 import { palette } from '@/lib/palette';
@@ -31,6 +32,7 @@ interface Params {
   focalY: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
+  gamut: GamutPreference;
   stops: Stop[];
 }
 
@@ -44,6 +46,7 @@ const INITIAL: Params = {
   focalY: 0.5,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
+  gamut: 'auto',
   stops: [
     { color: palette.violet.base, position: 0 },
     { color: palette.purple.base, position: 0.5 },
@@ -59,7 +62,7 @@ const formatStops = (stops: Stop[]) =>
     .join(',\n      ');
 
 const formatJsx = (params: Params) =>
-  `<ShaderScene>
+  `<ShaderScene gamut="${params.gamut}">
   <LinearGradient
     stops={[
       ${formatStops(params.stops)},
@@ -137,6 +140,9 @@ export default function LinearGradientPage() {
         decreasing: 'decreasing',
       },
     });
+    pane.addBinding(local, 'gamut', {
+      options: { Auto: 'auto', sRGB: 'srgb', 'Display P3': 'p3' },
+    });
     pane.addBlade({ view: 'separator' });
 
     const stopsFolder = pane.addFolder({ title: 'Color stops' });
@@ -188,12 +194,9 @@ export default function LinearGradientPage() {
     };
   }, []);
 
-  const remountKey =
-    params.colorSpace +
-    '|' +
-    params.hueInterpolation +
-    '|' +
-    params.stops.map((stop) => `${stop.color}@${stop.position}`).join('|');
+  const remountKey = `${params.gamut}|${params.colorSpace}|${params.hueInterpolation}|${params.stops
+    .map((stop) => `${stop.color}@${stop.position}`)
+    .join('|')}`;
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -206,7 +209,7 @@ export default function LinearGradientPage() {
           src="/posters/linear-gradient.png"
           style={{ objectFit: 'cover' }}
         />
-        <ShaderScene>
+        <ShaderScene gamut={params.gamut}>
           <LinearGradient
             angle={params.angle}
             colorSpace={params.colorSpace}
