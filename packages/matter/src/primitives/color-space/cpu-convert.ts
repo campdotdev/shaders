@@ -1,0 +1,112 @@
+import { srgbChannelToLinear } from './transfer.js';
+
+/**
+ * OKLab (L, a, b) -> extended linear-sRGB. CPU mirror of the TSL `oklabToLinear`
+ * in `oklab.ts` (same M2^-1 / cube / M1^-1 matrices). The result is NOT clamped:
+ * colors outside sRGB return channels below 0 or above 1, which a wide-gamut
+ * output can render and an sRGB output clamps at the framebuffer.
+ */
+export function oklabToLinearSrgb(
+  lightness: number,
+  greenRed: number,
+  blueYellow: number,
+): [number, number, number] {
+  const longRoot = lightness + 0.3963377774 * greenRed + 0.2158037573 * blueYellow;
+  const mediumRoot = lightness - 0.1055613458 * greenRed - 0.0638541728 * blueYellow;
+  const shortRoot = lightness - 0.0894841775 * greenRed - 1.291485548 * blueYellow;
+
+  const longCone = longRoot * longRoot * longRoot;
+  const mediumCone = mediumRoot * mediumRoot * mediumRoot;
+  const shortCone = shortRoot * shortRoot * shortRoot;
+
+  const red = 4.0767416621 * longCone - 3.3077115913 * mediumCone + 0.2309699292 * shortCone;
+  const green = -1.2684380046 * longCone + 2.6097574011 * mediumCone - 0.3413193965 * shortCone;
+  const blue = -0.0041960863 * longCone - 0.7034186147 * mediumCone + 1.707614701 * shortCone;
+
+  return [red, green, blue];
+}
+
+/** OKLch (L, C, h-in-degrees) -> extended linear-sRGB. */
+export function oklchToLinearSrgb(
+  lightness: number,
+  chroma: number,
+  hueDegrees: number,
+): [number, number, number] {
+  const hueRadians = (hueDegrees * Math.PI) / 180;
+  const greenRed = chroma * Math.cos(hueRadians);
+  const blueYellow = chroma * Math.sin(hueRadians);
+
+  return oklabToLinearSrgb(lightness, greenRed, blueYellow);
+}
+
+/** Parse `50%` -> 0.5 or a bare number. `scale` is the value of 100% (default 1). */
+function parseComponent(token: string, scale: number): number {
+  const trimmed = token.trim();
+
+  if (trimmed.endsWith('%')) {
+    return (parseFloat(trimmed.slice(0, -1)) / 100) * scale;
+  }
+
+  return parseFloat(trimmed);
+}
+
+/** Split `oklch(...)`/`oklab(...)` inner text into component tokens, dropping `/ alpha`. */
+function functionArgs(input: string, prefix: string): string[] {
+  const inner = input.slice(prefix.length, input.lastIndexOf(')'));
+  const beforeAlpha = inner.split('/')[0] ?? '';
+
+  return beforeAlpha
+    .trim()
+    .split(/[\s,]+/)
+    .filter((token) => token.length > 0);
+}
+
+/**
+ * Parse a color string to **extended** linear-sRGB. Accepts `#rrggbb`,
+ * `oklab(L a b)`, and `oklch(L C H)` (CSS Color 4 syntax: L/C may be percentages,
+ * H may carry a `deg` suffix, an optional `/ alpha` is parsed and dropped).
+ * Throws on any other syntax.
+ */
+export function parseColorString(input: string): [number, number, number] {
+  const value = input.trim();
+
+  if (value.startsWith('#')) {
+    const hex = value.slice(1);
+
+    return [
+      srgbChannelToLinear(parseInt(hex.slice(0, 2), 16) / 255),
+      srgbChannelToLinear(parseInt(hex.slice(2, 4), 16) / 255),
+      srgbChannelToLinear(parseInt(hex.slice(4, 6), 16) / 255),
+    ];
+  }
+
+  if (value.startsWith('oklch(')) {
+    const [lightnessToken, chromaToken, hueToken] = functionArgs(value, 'oklch(');
+
+    if (lightnessToken === undefined || chromaToken === undefined || hueToken === undefined) {
+      throw new Error(`Invalid oklch() color: "${input}"`);
+    }
+
+    const lightness = parseComponent(lightnessToken, 1);
+    const chroma = parseComponent(chromaToken, 0.4);
+    const hueDegrees = parseFloat(hueToken.replace(/deg$/, ''));
+
+    return oklchToLinearSrgb(lightness, chroma, hueDegrees);
+  }
+
+  if (value.startsWith('oklab(')) {
+    const [lightnessToken, aToken, bToken] = functionArgs(value, 'oklab(');
+
+    if (lightnessToken === undefined || aToken === undefined || bToken === undefined) {
+      throw new Error(`Invalid oklab() color: "${input}"`);
+    }
+
+    return oklabToLinearSrgb(
+      parseComponent(lightnessToken, 1),
+      parseComponent(aToken, 0.4),
+      parseComponent(bToken, 0.4),
+    );
+  }
+
+  throw new Error(`Unsupported color syntax: "${input}". Use #rrggbb, oklch(...), or oklab(...).`);
+}

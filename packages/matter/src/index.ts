@@ -14,7 +14,13 @@ export type { CursorInputOptions, Vector2 } from './inputs/cursor-input/cursor-i
 export { colorRamp } from './primitives/color-ramp/color-ramp.js';
 export type { ColorRampStop, TSLNode } from './primitives/color-ramp/color-ramp.js';
 
-export { mixColor, srgbChannelToLinear } from './primitives/color-space/index.js';
+export {
+  mixColor,
+  srgbChannelToLinear,
+  oklabToLinearSrgb,
+  oklchToLinearSrgb,
+  parseColorString,
+} from './primitives/color-space/index.js';
 export type { ColorSpace, HueInterpolation } from './primitives/color-space/index.js';
 
 export { simplexNoise } from './primitives/noise/noise.js';
