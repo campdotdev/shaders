@@ -62,9 +62,13 @@ function hasWebGpuBackendInternals(backend: unknown): backend is WebGpuBackendIn
  * only at init, with no `colorSpace` field — so it defaults to sRGB and a P3
  * `outputColorSpace` would write P3-encoded pixels into an sRGB surface. We re-run
  * `configure()` once with `colorSpace: 'display-p3'`, mirroring three's other
- * config values (the renderer is built without `alpha`, so `alphaMode` is
- * `'opaque'`; usage matches the backend's `RENDER_ATTACHMENT | COPY_SRC`). Resize
- * never re-configures the context, so this sticks for the renderer's lifetime.
+ * config values. Critically, `alphaMode` must mirror three's choice: the WebGPU
+ * backend defaults `alpha` to `true` and therefore configures the context as
+ * `'premultiplied'` (transparent). Passing `'opaque'` here would override that and
+ * paint the canvas opaque black until the first shader frame, producing a black
+ * flash over whatever sits behind a transparent canvas. Usage matches the
+ * backend's `RENDER_ATTACHMENT | COPY_SRC`. Resize never re-configures the
+ * context, so this sticks for the renderer's lifetime.
  *
  * No-op for sRGB output, for the WebGL2 fallback (which stays sRGB in v1), and
  * where WebGPU is unavailable.
@@ -88,7 +92,7 @@ export function applyCanvasGamut(
     device: webGpuBackend.device,
     format: navigator.gpu.getPreferredCanvasFormat(),
     usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC,
-    alphaMode: 'opaque',
+    alphaMode: 'premultiplied',
     colorSpace: 'display-p3',
   });
 }

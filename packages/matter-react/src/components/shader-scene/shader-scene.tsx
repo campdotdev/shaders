@@ -46,6 +46,11 @@ export function ShaderScene(props: ShaderSceneProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shaderContext, setShaderContext] = useState<ShaderContextValue | null>(null);
   const [error, setError] = useState<Error | null>(null);
+  // Stays false until the renderer has actually painted a frame containing the
+  // shader. The fallback is held until then so there's no gap between dropping
+  // the fallback and the first shader frame (which would otherwise flash the
+  // canvas's clear state).
+  const [firstFramePainted, setFirstFramePainted] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -54,6 +59,7 @@ export function ShaderScene(props: ShaderSceneProps) {
 
     let cancelled = false;
     let cleanup: (() => void) | null = null;
+    let firstPaintRaf: number | null = null;
 
     const setup = async () => {
       try {
@@ -97,7 +103,26 @@ export function ShaderScene(props: ShaderSceneProps) {
           };
         };
 
-        scheduler.add(() => postProcessing.render());
+        // Signal "first paint" only once the scene actually has something to
+        // draw (a base shader mesh, or at least an overlay pass) — the scheduler
+        // renders empty frames before the child shader mounts its mesh, and we
+        // don't want to drop the fallback over an empty canvas. Defer the state
+        // flip by one rAF so the just-submitted frame composites before the
+        // fallback is removed.
+        let firstPaintSignaled = false;
+        const renderFrame = () => {
+          postProcessing.render();
+
+          if (!firstPaintSignaled && (scene.children.length > 0 || overlays.size > 0)) {
+            firstPaintSignaled = true;
+            firstPaintRaf = requestAnimationFrame(() => {
+              firstPaintRaf = null;
+              if (!cancelled) setFirstFramePainted(true);
+            });
+          }
+        };
+
+        scheduler.add(renderFrame);
         scheduler.start();
 
         const visibility = createVisibilityWatcher();
@@ -150,9 +175,16 @@ export function ShaderScene(props: ShaderSceneProps) {
 
     return () => {
       cancelled = true;
+      if (firstPaintRaf !== null) {
+        cancelAnimationFrame(firstPaintRaf);
+        firstPaintRaf = null;
+      }
       cleanup?.();
       cleanup = null;
       setShaderContext(null);
+      // A fresh renderer (e.g. on gamut change) must re-prove its first paint,
+      // so show the fallback again until it does.
+      setFirstFramePainted(false);
     };
   }, [maxDPR, resolvedGamut]);
 
@@ -180,10 +212,20 @@ export function ShaderScene(props: ShaderSceneProps) {
         {error.message}
       </div>
     );
-  } else if (shaderContext) {
-    content = <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>;
   } else {
-    content = fallback ?? null;
+    // Mount the children as soon as the context exists so the shader can build
+    // and paint, but keep the fallback overlaid on top until that first frame
+    // lands. The children render no visible DOM of their own (they drive the
+    // canvas), so the fallback sits above the canvas and is removed only once
+    // the shader is actually on screen.
+    content = (
+      <>
+        {shaderContext && (
+          <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>
+        )}
+        {!firstFramePainted && (fallback ?? null)}
+      </>
+    );
   }
 
   return (
