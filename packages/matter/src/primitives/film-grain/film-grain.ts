@@ -2,9 +2,13 @@ import { hash, mul, screenCoordinate } from 'three/tsl';
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
+import type { TSLNode } from '../color-ramp/color-ramp.js';
+
+type TSLScalar = TSLNode | number;
+
 export function filmGrain(
-  intensity: ShaderNodeObject<Node> | number,
-  timeOffset: ShaderNodeObject<Node> | number = 0,
+  intensity: TSLScalar,
+  timeOffset: TSLScalar = 0,
 ): ShaderNodeObject<Node> {
   const pixel = screenCoordinate.xy.floor();
   // Convert to uint before multiplying so the seed arithmetic stays in exact
