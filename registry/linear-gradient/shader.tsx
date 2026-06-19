@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
+import {
+  colorRamp,
+  type ColorSpace,
+  dither,
+  elapsedTime,
+  type HueInterpolation,
+} from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -111,7 +117,18 @@ export function LinearGradientShader({
 
     const material = new MeshBasicNodeMaterial();
 
-    material.colorNode = colorRamp(animatedGradientCoord, rampStops, colorSpace, hueInterpolation);
+    // SPIKE (#46): dither the gradient output to break up 8-bit quantization
+    // banding, most visible on P3. uv() gives a per-pixel coordinate for the
+    // hash. Always-on here for evaluation; productization (toggle + final
+    // output-pass placement) is a follow-up.
+    const gradientColor = colorRamp(
+      animatedGradientCoord,
+      rampStops,
+      colorSpace,
+      hueInterpolation,
+    );
+
+    material.colorNode = dither(gradientColor, uv());
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
