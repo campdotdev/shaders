@@ -943,6 +943,8 @@ git commit -m "test(docs-tests): pin visual scenes to sRGB for deterministic bas
 
 ### Task 9: P3 probe dev route + spec
 
+> **Plan revision (during execution): the automated pixel-diff probe isn't achievable; the spec is a render smoke test instead.** Confirmed empirically: a WebGPU canvas can't be read back via `drawImage`/`getImageData` (returns zeros after present), and a Playwright screenshot is color-managed to sRGB, collapsing the P3-vs-sRGB difference. So `gamut.spec.ts` asserts both forced-gamut ShaderScenes render without error (canvases sized, no page errors) — guarding that the manual Display-P3 `context.configure` doesn't throw/blank. The deterministic automated proof of wide-gamut **decode** is the `parseColorString` unit test (Task 6); output-**widening** is validated by eye on a P3 display (Phase 3 gate). The probe route stays useful for manual inspection.
+
 **Files:**
 - Create: `apps/docs/src/app/dev/gamut-probe/page.tsx`
 - Create: `apps/docs/src/app/dev/gamut-probe/ProbeGrid.tsx`
