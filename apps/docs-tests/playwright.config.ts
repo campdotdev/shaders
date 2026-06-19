@@ -15,7 +15,8 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
-    command: 'pnpm turbo run build --filter=@matter/docs && pnpm --filter @matter/docs preview',
+    command:
+      'pnpm turbo run build --filter=@matter/docs --force && pnpm --filter @matter/docs preview',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
