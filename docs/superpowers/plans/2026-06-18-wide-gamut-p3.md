@@ -1128,7 +1128,17 @@ git commit -m "docs: expose gamut control on the LinearGradient playground"
 
 ## Phase 5 — Output dithering spike (added during execution)
 
-> Tracked as **GitHub #46**. Goal: reduce the 8-bit-P3 gradient banding observed at the Phase 3 gate with a small sub-LSB output dither. This is a **spike** — explore a cheap technique on `LinearGradient`, confirm it visibly removes the banding under P3, then decide whether to productize (reusable primitive vs global overlay pass) in a follow-up. Detailed plan TBD after the spike; design questions (hash vs ordered vs blue-noise; placement; magnitude; always-on vs gated) are captured in #46.
+> Tracked as **GitHub #46**. Goal: reduce the 8-bit-P3 gradient banding observed at the Phase 3 gate with a small sub-LSB output dither.
+>
+> **Outcome (kept as spike, user-approved):** added a `dither` TSL primitive (`packages/matter/src/primitives/dither/`) — hash-based triangular-PDF noise (~1 LSB), exported from `@lovo/matter` — and applied it always-on to `LinearGradient`'s output. Confirmed visually it breaks up the P3 banding. Caveats it ships with (full productization deferred to #46): applied in **linear-sRGB working space** (correct home is a final output pass after color conversion), **always-on** (no toggle), and **LinearGradient-only** (other components still band). The 1-LSB noise stays within the visual-regression screenshot tolerance, so no baselines changed.
+
+## Phase 6 — Wide-gamut color picker + HSL/HSV crash fix (added during execution)
+
+> Surfaced while validating Phase 5.
+>
+> **Color picker:** the built-in Tweakpane picker is sRGB and rejects `oklch()`/`oklab()`. Added `tweakpane-plugin-color-plus` (pre-release, **docs-only devDependency**) to the LinearGradient playground; seeded the demo's default stops in oklch and set `color: { formatLocked: true }` so `stop.color` always stays oklch — a format `parseColor` supports — regardless of picker manipulation (no `rgb()`/`hsl()`/`display-p3()` leak).
+>
+> **Bug fix (`fix(matter)`):** an out-of-sRGB stop (negative/&gt;1 linear channels — now reachable via oklch inputs + unclamped mixing) sent through `hsl`/`hsv` `fromLinear` produced `pow(negativeConstant, …)`, which WGSL const-evaluation rejects → fragment shader failed to compile → black canvas. Root-caused via the quoted WGSL error (the strict const-eval doesn't reproduce in headless Chromium's WebGPU toolchain). Fix: clamp into `[0,1]` before the sRGB transfer in `hsl`/`hsv` `fromLinear` — HSL/HSV are sRGB-gamut concepts, so gamut-clamping before conversion is the correct behavior. Guarded by a new `dev/hsl-gamut-probe` route + `hsl-gamut.spec.ts` (guards rendering; can't reproduce the exact compile error headless).
 
 ---
 
