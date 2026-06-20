@@ -6,10 +6,11 @@ import {
   createIntersectionWatcher,
   createRenderer,
   createVisibilityWatcher,
+  dither,
   FrameScheduler,
 } from '@lovo/matter';
 import { OrthographicCamera, Scene } from 'three';
-import { pass, vec4 } from 'three/tsl';
+import { pass, renderOutput, vec4 } from 'three/tsl';
 import { PostProcessing } from 'three/webgpu';
 
 import {
@@ -75,6 +76,10 @@ export function ShaderScene(props: ShaderSceneProps) {
 
         camera.position.z = 1;
         const postProcessing = new PostProcessing(renderer.three);
+
+        // Take ownership of the output color transform so we can dither in
+        // display-encoded space (see rebuildOutputNode below).
+        postProcessing.outputColorTransform = false;
         const scheduler = new FrameScheduler();
 
         const overlays = new Map<symbol, PostProcessTransform>();
@@ -82,10 +87,18 @@ export function ShaderScene(props: ShaderSceneProps) {
         const basePassNode = vec4(pass(scene, camera));
 
         const rebuildOutputNode = () => {
-          postProcessing.outputNode = Array.from(overlays.values()).reduce(
+          // Overlays (FilmGrain, Vignette, ...) compose in linear working space.
+          const composed = Array.from(overlays.values()).reduce(
             (currentPipeline, transform) => transform(currentPipeline),
             basePassNode,
           );
+
+          // renderOutput applies tone mapping + the working->output color-space
+          // transfer (it reads both from the context three sets because
+          // outputColorTransform is false), so dither runs last, in
+          // display-encoded space, right before 8-bit quantization. This breaks
+          // up gradient banding uniformly across every component in the scene.
+          postProcessing.outputNode = dither(renderOutput(composed));
           postProcessing.needsUpdate = true;
         };
 
