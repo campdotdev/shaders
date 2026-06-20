@@ -98,6 +98,7 @@ Plans written before M8 may still reference `vp run …` — translate those men
 | MAT-16 | FilmGrain + Vignette overlay pipeline; `useOverlayPass`; PostProcessing in MatterScene | — |
 | MAT-13 | Brand-aligned OKLCH palette; `/palette` ref page; all component defaults pivoted | `v0.3.0` |
 | M8 | Vite+ removal; Oxlint → ESLint 9; ESLint backlog cleared | — |
+| MAT-37 | Output dithering productized (#46): Bayer 8×8, scene-wide display-space output pass; dropped per-component `dither()` + scene-level gamut control from LinearGradient panel | — |
 
 M7.1, M7.2 (tsdown, `vp run`) were cancelled when M8 reverted the Vite+ adoption.
 

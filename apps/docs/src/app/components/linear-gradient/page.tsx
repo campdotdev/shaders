@@ -5,7 +5,6 @@ import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-import type { GamutPreference } from '@lovo/matter-react';
 import { Pane } from 'tweakpane';
 import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
 
@@ -33,7 +32,6 @@ interface Params {
   focalY: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
-  gamut: GamutPreference;
   stops: Stop[];
 }
 
@@ -47,7 +45,6 @@ const INITIAL: Params = {
   focalY: 0.5,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
-  gamut: 'auto',
   stops: [
     { color: paletteOklch.violet.base, position: 0 },
     { color: paletteOklch.purple.base, position: 0.5 },
@@ -63,7 +60,7 @@ const formatStops = (stops: Stop[]) =>
     .join(',\n      ');
 
 const formatJsx = (params: Params) =>
-  `<ShaderScene gamut="${params.gamut}">
+  `<ShaderScene>
   <LinearGradient
     stops={[
       ${formatStops(params.stops)},
@@ -146,9 +143,6 @@ export default function LinearGradientPage() {
         decreasing: 'decreasing',
       },
     });
-    pane.addBinding(local, 'gamut', {
-      options: { Auto: 'auto', sRGB: 'srgb', 'Display P3': 'p3' },
-    });
     pane.addBlade({ view: 'separator' });
 
     const stopsFolder = pane.addFolder({ title: 'Color stops' });
@@ -208,7 +202,7 @@ export default function LinearGradientPage() {
     };
   }, []);
 
-  const remountKey = `${params.gamut}|${params.colorSpace}|${params.hueInterpolation}|${params.stops
+  const remountKey = `${params.colorSpace}|${params.hueInterpolation}|${params.stops
     .map((stop) => `${stop.color}@${stop.position}`)
     .join('|')}`;
 
@@ -223,7 +217,7 @@ export default function LinearGradientPage() {
           src="/posters/linear-gradient.png"
           style={{ objectFit: 'cover' }}
         />
-        <ShaderScene gamut={params.gamut}>
+        <ShaderScene>
           <LinearGradient
             angle={params.angle}
             colorSpace={params.colorSpace}
