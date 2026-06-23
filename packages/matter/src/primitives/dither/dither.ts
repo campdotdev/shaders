@@ -1,5 +1,5 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { floor, fract, screenCoordinate, vec2, vec3 } from 'three/tsl';
+import { floor, fract, screenCoordinate, vec2, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
@@ -47,5 +47,12 @@ export function dither(color: TSLNode, amount = 1 / 255): ShaderNodeObject<Node>
   // Bayer cell in [0, 1); center to [-0.5, 0.5) so the dither is unbiased.
   const threshold = bayer8(vec2(screenCoordinate.xy)).sub(0.5);
 
-  return vec3(color).add(threshold.mul(amount));
+  // Dither only the color channels and pass the source alpha through unchanged.
+  // Collapsing to a vec3 here would let the consuming material default alpha to
+  // 1, turning an otherwise-transparent output (e.g. ShaderScene's empty frames
+  // before the shader mesh mounts) into opaque black — a flash over whatever
+  // sits behind the canvas. `vec4(color).a` reads the original alpha for a vec4
+  // input and defaults to 1 for a vec3 (three pads the missing component with
+  // 1.0), so both arities are preserved correctly.
+  return vec4(vec3(color).add(threshold.mul(amount)), vec4(color).a);
 }
