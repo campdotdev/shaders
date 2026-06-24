@@ -17,7 +17,6 @@ export interface PosterOptions {
   height: number;
   type?: string;
   quality?: number;
-  /** Capture DPR (default 2, matching the live renderer's maxDPR clamp). */
   deviceScaleFactor?: number;
 }
 
@@ -30,8 +29,6 @@ const READY_TIMEOUT_MS = 10_000;
 const DEFAULT_JPEG_QUALITY = 80;
 const DEFAULT_DEVICE_SCALE_FACTOR = 2;
 
-// `!(value > 0)` (rather than `value <= 0`) deliberately rejects NaN too, which
-// is what Number.parseFloat('garbage') yields from the CLI flag.
 export function validateDeviceScaleFactor(value: number): number {
   if (!(value > 0)) {
     throw new Error(`--device-scale-factor must be greater than 0, received: ${value}`);
