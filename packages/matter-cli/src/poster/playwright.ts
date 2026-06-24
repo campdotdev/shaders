@@ -91,6 +91,8 @@ export interface ScreenshotOpts {
   projectRoot: string;
   format: 'jpeg' | 'png';
   quality: number | undefined;
+  /** Capture DPR; matches the live renderer's maxDPR clamp (default 2). */
+  deviceScaleFactor: number;
 }
 
 export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes: number }> {
@@ -100,7 +102,7 @@ export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes
   try {
     const browserContext = await browser.newContext({
       viewport: { width: opts.width, height: opts.height },
-      deviceScaleFactor: 1,
+      deviceScaleFactor: opts.deviceScaleFactor,
     });
     const page = await browserContext.newPage();
     const consoleErrors: string[] = [];
@@ -130,6 +132,7 @@ export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes
       await page.waitForTimeout(opts.timeSeconds * 1000);
     }
     const canvas = page.locator('canvas').first();
+
     const imageBuffer =
       opts.format === 'jpeg'
         ? await canvas.screenshot({ type: 'jpeg', quality: opts.quality })

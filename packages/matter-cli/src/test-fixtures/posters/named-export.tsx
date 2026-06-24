@@ -4,7 +4,7 @@ import { LinearGradient } from '@matter/registry/linear-gradient'
 export function NamedExport() {
   return (
     <ShaderScene>
-      <LinearGradient colors={['#102', '#204']} />
+      <LinearGradient stops={[{ color: '#110022' }, { color: '#220044' }]} />
     </ShaderScene>
   )
 }

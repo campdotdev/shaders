@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import { resolveOutPath, runPoster } from './poster.js';
+import { resolveOutPath, runPoster, validateDeviceScaleFactor } from './poster.js';
 
 const base = {
   from: '/tmp/nope.tsx',
@@ -139,5 +139,18 @@ describe('resolveOutPath', () => {
 
   it('appends the format extension to non-image extensions', () => {
     expect(resolveOutPath('/tmp/hero.bak', 'jpeg')).toBe('/tmp/hero.bak.jpg');
+  });
+});
+
+describe('validateDeviceScaleFactor', () => {
+  it('returns the value for any positive number, including fractional', () => {
+    expect(validateDeviceScaleFactor(2)).toBe(2);
+    expect(validateDeviceScaleFactor(1.5)).toBe(1.5);
+  });
+
+  it('throws on zero, negatives, and NaN', () => {
+    expect(() => validateDeviceScaleFactor(0)).toThrow(/device-scale-factor/);
+    expect(() => validateDeviceScaleFactor(-1)).toThrow(/device-scale-factor/);
+    expect(() => validateDeviceScaleFactor(Number.NaN)).toThrow(/device-scale-factor/);
   });
 });

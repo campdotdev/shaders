@@ -5,7 +5,7 @@ import { LinearGradient } from '@matter/registry/linear-gradient'
 export default function GradientPlusGrain() {
   return (
     <ShaderScene>
-      <LinearGradient colors={['#1a0b2e', '#3a1e6e']} stops={[0, 1]} />
+      <LinearGradient stops={[{ color: '#1a0b2e' }, { color: '#3a1e6e' }]} />
       <FilmGrain intensity={0.3} grainBlend="additive" />
     </ShaderScene>
   )

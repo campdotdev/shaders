@@ -67,6 +67,9 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
           timeSeconds: 0,
           width: 800,
           height: 600,
+          // Pin DPR 1 so these size sanity-caps stay calibrated; the poster
+          // default is now 2, which would otherwise quadruple pixel counts.
+          deviceScaleFactor: 1,
           ...c.extra,
         },
         { cwd: process.cwd(), log: vi.fn() },
