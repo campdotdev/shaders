@@ -17,6 +17,8 @@ export interface PosterOptions {
   height: number;
   type?: string;
   quality?: number;
+  /** Capture DPR (default 2, matching the live renderer's maxDPR clamp). */
+  deviceScaleFactor?: number;
 }
 
 export interface PosterIO {
@@ -26,6 +28,17 @@ export interface PosterIO {
 
 const READY_TIMEOUT_MS = 10_000;
 const DEFAULT_JPEG_QUALITY = 80;
+const DEFAULT_DEVICE_SCALE_FACTOR = 2;
+
+// `!(value > 0)` (rather than `value <= 0`) deliberately rejects NaN too, which
+// is what Number.parseFloat('garbage') yields from the CLI flag.
+export function validateDeviceScaleFactor(value: number): number {
+  if (!(value > 0)) {
+    throw new Error(`--device-scale-factor must be greater than 0, received: ${value}`);
+  }
+
+  return value;
+}
 
 function normalizeType(rawType: string | undefined): PosterFormat {
   const normalizedType = rawType?.toLowerCase();
@@ -100,6 +113,10 @@ export async function runPoster(
     projectRoot,
   });
 
+  const deviceScaleFactor = validateDeviceScaleFactor(
+    opts.deviceScaleFactor ?? DEFAULT_DEVICE_SCALE_FACTOR,
+  );
+
   const server = await createPosterServer({
     bundle,
     config: { width: opts.width, height: opts.height },
@@ -117,6 +134,7 @@ export async function runPoster(
       projectRoot,
       format,
       quality,
+      deviceScaleFactor,
     });
 
     io.log(`Wrote poster: ${resolvedOut} (${opts.width}×${opts.height}, ${formatBytes(bytes)})`);

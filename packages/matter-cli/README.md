@@ -75,6 +75,7 @@ npx matter-cli poster --source <file> --output <path> [options]
 | `--capture-delay <seconds>` | `0`        | Wait this long after the first non-blank frame before snapshotting.                                  |
 | `--width <px>`              | `1280`     | Render width.                                                                                        |
 | `--height <px>`             | `720`      | Render height.                                                                                       |
+| `--device-scale-factor <n>` | `2`        | Capture device pixel ratio. Default matches the live renderer's DPR cap for crisp posters on retina. |
 
 #### Which format should I pick?
 
