@@ -91,7 +91,6 @@ export interface ScreenshotOpts {
   projectRoot: string;
   format: 'jpeg' | 'png';
   quality: number | undefined;
-  /** Capture DPR; matches the live renderer's maxDPR clamp (default 2). */
   deviceScaleFactor: number;
 }
 
