@@ -53,9 +53,9 @@
 
   **Registry-side ships (delivered via `@lovo/matter-cli` copy-paste):**
 
-  - `<FilmGrain>` — additive or subtractive grain overlay.
+  - `<Grain>` — additive or subtractive grain overlay.
   - `<Vignette>` — radial edge darkening, aspect-corrected so the mask is a circle on widescreen.
-  - **Breaking:** `<MeshGradient>` no longer accepts `grain` / `grainSpeed` props. Stack `<FilmGrain />` as a sibling inside `<MatterScene>` instead. Existing copies pulled before this release keep working; new pulls / CLI refreshes pick up the new shape. The MeshGradient docs page has the new pattern.
+  - **Breaking:** `<MeshGradient>` no longer accepts `grain` / `grainSpeed` props. Stack `<Grain />` as a sibling inside `<MatterScene>` instead. Existing copies pulled before this release keep working; new pulls / CLI refreshes pick up the new shape. The MeshGradient docs page has the new pattern.
 
 ### Patch Changes
 

@@ -1477,7 +1477,7 @@ git add packages/matter-cli/src/test-fixtures/posters/named-export.tsx
 git commit -m "test(matter-cli): named-export poster fixture"
 ```
 
-### Task 6.3: Composition fixture (gradient + film-grain)
+### Task 6.3: Composition fixture (gradient + grain)
 
 **Files:**
 - Create: `packages/matter-cli/src/test-fixtures/posters/gradient-plus-grain.tsx`
@@ -1485,13 +1485,13 @@ git commit -m "test(matter-cli): named-export poster fixture"
 - [ ] **Step 1: Create the fixture**
 
 ```tsx
-import { FilmGrain, LinearGradient, ShaderScene } from '@lovo/matter-react'
+import { Grain, LinearGradient, ShaderScene } from '@lovo/matter-react'
 
 export default function GradientPlusGrain() {
   return (
     <ShaderScene>
       <LinearGradient colors={['#1a0b2e', '#3a1e6e']} stops={[0, 1]} />
-      <FilmGrain intensity={0.3} mode="additive" />
+      <Grain intensity={0.3} mode="additive" />
     </ShaderScene>
   )
 }
@@ -1504,7 +1504,7 @@ node packages/matter-cli/dist/index.js poster \
   --from packages/matter-cli/src/test-fixtures/posters/gradient-plus-grain.tsx \
   --out /tmp/grain.png
 ```
-Expected: a dark purple gradient with visible film-grain.
+Expected: a dark purple gradient with visible grain.
 
 - [ ] **Step 3: Commit**
 
@@ -1780,7 +1780,7 @@ node packages/matter-cli/dist/index.js poster \
   --width 1920 --height 1080
 open /tmp/final-smoke.png   # or xdg-open on Linux
 ```
-Expected: dark purple gradient with film-grain at 1920×1080.
+Expected: dark purple gradient with grain at 1920×1080.
 
 ### GATE 7 — Done
 

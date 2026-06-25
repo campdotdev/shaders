@@ -21,7 +21,7 @@ Adding per-component `colorSpace` interpolation (`linear` / `oklab` / `oklch` / 
 
 - **Fix the foundation** (decode hex→linear) — done.
 - **Default interpolation space: `oklab`** (component-prop default). `colorRamp`'s own param defaults to `'linear'` (behavior-preserving).
-- **Scope:** LinearGradient, SimplexNoise, MeshGradient, Aurora, Waves (the multi-color components). Overlays (Vignette/FilmGrain/DotField) excluded from the prop.
+- **Scope:** LinearGradient, SimplexNoise, MeshGradient, Aurora, Waves (the multi-color components). Overlays (Vignette/Grain/DotField) excluded from the prop.
 - **Architecture:** one `mixColor(a, b, t, space)` primitive + per-space conversions (internal); `colorRamp` interpolates in-space and converts back once.
 - **Public API:** `mixColor`, `ColorSpace`, `srgbChannelToLinear`. Individual conversions stay internal.
 - **Cylindrical spaces** (oklch/lch/hsl/hsv) use shortest-arc hue; HSL/HSV operate on gamma sRGB; OKLch/LCH clip out-of-gamut to [0,1].
@@ -33,7 +33,7 @@ Adding per-component `colorSpace` interpolation (`linear` / `oklab` / `oklch` / 
 3. **Renderer resize fix** (was the real cause of the apparent "uv compression" — NOT a color bug): `create-renderer.ts` resize guard now compares the renderer's logical `getSize()` (not `canvas.width`); `shader-scene.tsx` uses a `ResizeObserver` (not just window resize). The renderer had been stuck at the 300×150 default.
 4. **Probe uses `uv()`** (not `screenUV` — `screenUV` reliably breaks the docs static-export build; `uv()` is correct once the renderer is sized right).
 5. **turbo.json:** `build` outputs now include `.next/**` and `out/**` (were missing → cached docs builds restored an incomplete tree with no `out/` → "silent" build failures).
-6. **Darwin visual baselines regenerated** for true-color (LinearGradient/SimplexNoise/Aurora/FilmGrain shifted past threshold; others stayed within tolerance).
+6. **Darwin visual baselines regenerated** for true-color (LinearGradient/SimplexNoise/Aurora/Grain shifted past threshold; others stayed within tolerance).
 
 ## NEXT: Plan 2 Phase B (LinearGradient colorSpace)
 

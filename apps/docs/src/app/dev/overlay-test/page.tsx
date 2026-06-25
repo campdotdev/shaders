@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
-import type { FilmGrainBlend } from '@matter/registry/film-grain';
+import type { GrainBlend } from '@matter/registry/grain';
 
 const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
   ssr: false,
@@ -13,14 +13,14 @@ const MeshGradient = dynamic(
   { ssr: false },
 );
 
-const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
+const Grain = dynamic(() => import('@matter/registry/grain').then((m) => m.Grain), {
   ssr: false,
 });
 
 export default function OverlayTestPage() {
   const [intensity, setIntensity] = useState(0.3);
   const [speed, setSpeed] = useState(1);
-  const [grainBlend, setGrainBlend] = useState<FilmGrainBlend>('additive');
+  const [grainBlend, setGrainBlend] = useState<GrainBlend>('additive');
 
   return (
     <div
@@ -33,7 +33,7 @@ export default function OverlayTestPage() {
     >
       <h1>Overlay test (dev only)</h1>
       <p style={{ color: 'var(--fg-muted)' }}>
-        Validation page for the overlay registration pipeline. FilmGrain should appear as a layer of
+        Validation page for the overlay registration pipeline. Grain should appear as a layer of
         noise on top of MeshGradient. Drag intensity to confirm the uniform reads through; drag
         speed to feel the shutter-rate quantization (low speed = chunky 24Hz cadence). Toggle mode
         to compare additive (brightness-preserving, half pixels brighten) vs. subtractive
@@ -78,7 +78,7 @@ export default function OverlayTestPage() {
       <div style={{ position: 'relative', width: '100%', height: '400px' }}>
         <ShaderScene>
           <MeshGradient />
-          <FilmGrain grainBlend={grainBlend} intensity={intensity} speed={speed} />
+          <Grain grainBlend={grainBlend} intensity={intensity} speed={speed} />
         </ShaderScene>
       </div>
     </div>

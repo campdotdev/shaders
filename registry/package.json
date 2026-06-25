@@ -8,7 +8,7 @@
     "./linear-gradient": "./linear-gradient/linear-gradient.tsx",
     "./simplex-noise": "./simplex-noise/simplex-noise.tsx",
     "./dot-field": "./dot-field.tsx",
-    "./film-grain": "./film-grain/film-grain.tsx",
+    "./grain": "./grain/grain.tsx",
     "./waves": "./waves/waves.tsx",
     "./mesh-gradient": "./mesh-gradient/mesh-gradient.tsx",
     "./aurora": "./aurora/aurora.tsx",

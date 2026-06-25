@@ -87,7 +87,7 @@ export function ShaderScene(props: ShaderSceneProps) {
         const basePassNode = vec4(pass(scene, camera));
 
         const rebuildOutputNode = () => {
-          // Overlays (FilmGrain, Vignette, ...) compose in linear working space.
+          // Overlays (Grain, Vignette, ...) compose in linear working space.
           const composed = Array.from(overlays.values()).reduce(
             (currentPipeline, transform) => transform(currentPipeline),
             basePassNode,

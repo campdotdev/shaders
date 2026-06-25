@@ -1,5 +1,5 @@
 import { ShaderScene } from '@lovo/matter-react';
-import { FilmGrain } from '@matter/registry/film-grain';
+import { Grain } from '@matter/registry/grain';
 import { MeshGradient } from '@matter/registry/mesh-gradient';
 
 export default function MeshGradientPoster() {
@@ -16,7 +16,7 @@ export default function MeshGradientPoster() {
         ]}
         speed={2}
       />
-      <FilmGrain intensity={0.08} speed={1} />
+      <Grain intensity={0.08} speed={1} />
     </ShaderScene>
   );
 }

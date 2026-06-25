@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
-import type { FilmGrainBlend } from '@matter/registry/film-grain';
+import type { GrainBlend } from '@matter/registry/grain';
 
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
@@ -16,44 +16,44 @@ const LinearGradient = dynamic(
   () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
   { ssr: false },
 );
-const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
+const Grain = dynamic(() => import('@matter/registry/grain').then((m) => m.Grain), {
   ssr: false,
 });
 
-interface FilmGrainParams {
+interface GrainParams {
   intensity: number;
   speed: number;
-  grainBlend: FilmGrainBlend;
+  grainBlend: GrainBlend;
 }
 
-const INITIAL: FilmGrainParams = {
-  intensity: 0.45,
-  speed: 1,
+const INITIAL: GrainParams = {
+  intensity: 0.15,
+  speed: 0.3,
   grainBlend: 'additive',
 };
 
 const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
-const formatJsx = (p: FilmGrainParams) =>
+const formatJsx = (p: GrainParams) =>
   `<ShaderScene>
   <LinearGradient />
-  <FilmGrain
+  <Grain
     intensity={${formatNumber(p.intensity)}}
     speed={${formatNumber(p.speed)}}
     grainBlend="${p.grainBlend}"
   />
 </ShaderScene>`;
 
-const formatParams = (p: FilmGrainParams) =>
+const formatParams = (p: GrainParams) =>
   `{
   intensity: ${formatNumber(p.intensity)},
   speed: ${formatNumber(p.speed)},
   grainBlend: '${p.grainBlend}',
 }`;
 
-export default function FilmGrainPage() {
-  const [params, paneContainerRef] = useTweakpane<FilmGrainParams>(
-    '<FilmGrain>',
+export default function GrainPage() {
+  const [params, paneContainerRef] = useTweakpane<GrainParams>(
+    '<Grain>',
     INITIAL,
     (pane, local, sync) => {
       pane.addButton({ title: 'Reset all' }).on('click', () => {
@@ -86,16 +86,12 @@ export default function FilmGrainPage() {
           fill
           priority
           sizes="100vw"
-          src="/posters/film-grain.jpg"
+          src="/posters/grain.jpg"
           style={{ objectFit: 'cover' }}
         />
         <ShaderScene>
           <LinearGradient />
-          <FilmGrain
-            grainBlend={params.grainBlend}
-            intensity={params.intensity}
-            speed={params.speed}
-          />
+          <Grain grainBlend={params.grainBlend} intensity={params.intensity} speed={params.speed} />
           <VisualTestPause />
         </ShaderScene>
         <div
@@ -114,7 +110,7 @@ export default function FilmGrainPage() {
         />
       </div>
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-        <h1 style={{ marginTop: 0 }}>&lt;FilmGrain /&gt;</h1>
+        <h1 style={{ marginTop: 0 }}>&lt;Grain /&gt;</h1>
         <p>
           Standalone film grain overlay. Stacks inside any <code>&lt;ShaderScene&gt;</code> on top
           of whatever base component you want — gradients, noise fields, mesh gradients — and
@@ -144,7 +140,7 @@ export default function FilmGrainPage() {
         >
           {`<ShaderScene>
   <LinearGradient />
-  <FilmGrain intensity={0.45} speed={1} grainBlend="additive" />
+  <Grain intensity={0.45} speed={1} grainBlend="additive" />
 </ShaderScene>`}
         </pre>
       </section>

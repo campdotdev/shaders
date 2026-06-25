@@ -1,12 +1,12 @@
 import { ShaderScene } from '@lovo/matter-react';
-import { FilmGrain } from '@matter/registry/film-grain';
+import { Grain } from '@matter/registry/grain';
 import { LinearGradient } from '@matter/registry/linear-gradient';
 
-export default function FilmGrainPoster() {
+export default function GrainPoster() {
   return (
     <ShaderScene>
       <LinearGradient />
-      <FilmGrain grainBlend="additive" intensity={0.45} speed={1} />
+      <Grain grainBlend="additive" intensity={0.45} speed={1} />
     </ShaderScene>
   );
 }
