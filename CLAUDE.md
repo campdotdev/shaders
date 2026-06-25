@@ -51,7 +51,7 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 | 8   | Vite+ removal — `vp implode`, back to plain pnpm/vite/vitest; Oxlint → ESLint 9   | ✅ Complete | —             |
 | 9   | Drop pure TSL re-exports from `@lovo/matter`                                       | ✅ Complete | `m9-complete` / `v0.2.0` |
 | MAT-8  | MeshGradient full rebuild (noise rotation, domain warp, palette cycling, film grain primitive) | ✅ Complete | —             |
-| MAT-16 | FilmGrain + Vignette overlay pipeline; `useOverlayPass`; PostProcessing in MatterScene | ✅ Complete | —             |
+| MAT-16 | Grain + Vignette overlay pipeline; `useOverlayPass`; PostProcessing in MatterScene | ✅ Complete | —             |
 | MAT-13 | Brand-aligned OKLCH palette; `/palette` ref page; all component defaults pivoted | ✅ Complete | `v0.3.0`      |
 | —   | Per-layer `<Waves>` API (`layers: WaveLayer[]` + per-layer Tweakpane UI)           | ✅ Complete | `v0.4.1`      |
 | MAT-37 | Output dithering productized (#46): Bayer 8×8, scene-wide display-space output pass | ✅ Complete | —             |

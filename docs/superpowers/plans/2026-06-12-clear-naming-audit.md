@@ -187,7 +187,7 @@ confirmed by reading the shader's use of that prop during execution** — don't 
 | 10 | `Vec2` (type) | `Vector2` | match three.js convention |
 | 13 | `TSLNode` (type) | `ShaderNode` | `TSL` is opaque; `ShaderNode` reads plainly (decide: keep `TSLNode`?) |
 | 20 | `voronoi` | *keep* | already a full proper name, not an abbreviation |
-| — | `colorRamp`, `quantize`, `displace`, `cursorRipple`, `filmGrain` | *keep* | already clear |
+| — | `colorRamp`, `quantize`, `displace`, `cursorRipple`, `grain` | *keep* | already clear |
 
 ### B. `@lovo/matter-react` exports — `hooks/index.ts`, `components/index.ts`
 
@@ -242,7 +242,7 @@ to a *presumed* behavior — a confidently-wrong name is worse than a terse-but-
 | SimplexNoise | `focus` | → **`contrast`** | scales the noise around 0.5 — `>1` pushes values to the ramp extremes, `<1` toward the middle (that's contrast) |
 | SimplexNoise | `variant` | → **`seed`** | becomes an XY offset added to the noise sample coords — it reseeds the pattern |
 | Aurora | `variation` (`AuroraLayer`) | → **`seed`** | fed into the per-layer noise `warpSeed` to differentiate each layer's pattern — **not** a color knob (earlier `colorVariation` guess was wrong) |
-| FilmGrain | `mode` | → **`grainBlend`** | enum is `additive`\|`subtractive` — it's how the grain blends with the input. **Not** `blendMode`: those values aren't standard blend-mode keywords (`screen`/`multiply`/…) and `subtractive` is a grain-specific darken-only pass, not the textbook Subtract blend. Reserve `blendMode` for a future general blend-mode API. |
+| Grain | `mode` | → **`grainBlend`** | enum is `additive`\|`subtractive` — it's how the grain blends with the input. **Not** `blendMode`: those values aren't standard blend-mode keywords (`screen`/`multiply`/…) and `subtractive` is a grain-specific darken-only pass, not the textbook Subtract blend. Reserve `blendMode` for a future general blend-mode API. |
 | Waves | `motion` (`WaveLayer`) | → **`turbulence`** | scales a secondary high-frequency, counter-traveling ripple mixed into the base wave — adds agitation/complexity, **not** drift. `chop`/`choppiness` is the accurate water-shader term but is jargon for a web-dev audience; `turbulence` reads plainly. `motion` was actively misleading (collides with `speed`, the real temporal control). |
 | DotField | `strength` | → **`displacementStrength`** *(low priority)* | scales how far dots displace from the cursor; accurate, but `strength` reads fine next to `reach` — optional |
 
@@ -326,7 +326,7 @@ no-ops at runtime (identical pixels).
 
 - Files: `utils/color.ts`, `dot-field.tsx`, and every `shader.tsx`/component wrapper
   (`linear-gradient`, `mesh-gradient`, `simplex-noise`, `vignette`, `waves`, `aurora`,
-  `film-grain`).
+  `grain`).
 - Two sub-passes for safety:
   - **4a — uniform suffix:** `…U` → `…Uniform` across all shaders.
   - **4b — math & color locals:** RGB channels, canvas dims, `p`/`t`/`n` →
@@ -382,7 +382,7 @@ no-ops at runtime (identical pixels).
 
 - Small, resolved scope: **D1 untouched**; **D2** = `AuroraLayer.hex` → `color`;
   **D3** = `focus`→`contrast`, SimplexNoise `variant`→`seed`, Aurora `variation`→`seed`,
-  FilmGrain `mode`→`grainBlend`, Waves `motion`→`turbulence` (DotField `strength`→
+  Grain `mode`→`grainBlend`, Waves `motion`→`turbulence` (DotField `strength`→
   `displacementStrength` optional). Names are already verified against each shader.
 - One component per commit. Update: the component `.tsx` + `shader.tsx`, default-props
   objects, the docs page + demo, the `PropsPlayground` schema, poster examples, and the

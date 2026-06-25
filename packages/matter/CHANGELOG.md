@@ -24,7 +24,7 @@
   - `time` → `elapsedTime`
   - `Vec2` → `Vector2`
 
-  `TSLNode`, `voronoi`, `colorRamp`, `quantize`, `displace`, `cursorRipple`, and `filmGrain` are unchanged.
+  `TSLNode`, `voronoi`, `colorRamp`, `quantize`, `displace`, `cursorRipple`, and `grain` are unchanged.
 
   **Migration:** one-pass find-and-replace in your imports and call sites. No behavioral changes.
 
@@ -50,21 +50,21 @@
 
 ### Minor Changes
 
-- 3856367: Add `filmGrain` primitive — hash-based, centered film grain for shader compositions.
+- 3856367: Add `grain` primitive — hash-based, centered film grain for shader compositions.
 
   ```ts
-  import { filmGrain, time } from "@lovo/matter";
+  import { grain, time } from "@lovo/matter";
   import { uv } from "three/tsl";
 
   // Static grain:
-  const grain = filmGrain(uv(), 0.08);
+  const grainValue = grain(uv(), 0.08);
 
   // Twinkling grain — caller controls the shutter rate. floor() quantizes
   // time to a discrete cadence; the hash is so sensitive that a continuous
   // time input gives no perceptible speed control.
-  const grain = filmGrain(uv(), 0.08, time.mul(speed).mul(60).floor());
+  const grainValue = grain(uv(), 0.08, time.mul(speed).mul(60).floor());
 
-  material.colorNode = vec4(color.add(grain), 1);
+  material.colorNode = vec4(color.add(grainValue), 1);
   ```
 
   Output is centered around zero (mean of `length(vec2(u, v))` for uniform

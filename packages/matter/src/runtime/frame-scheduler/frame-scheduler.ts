@@ -18,7 +18,7 @@ export class FrameScheduler {
   // Reference-counted idle voting. The scheduler is idle only when at least
   // one component has voted idle AND no component has voted animated. This
   // prevents a static component (e.g. LinearGradient speed=0) from halting
-  // the loop while an animated overlay (e.g. FilmGrain) is still running.
+  // the loop while an animated overlay (e.g. Grain) is still running.
   private idleVotes = 0;
   private animatedVotes = 0;
 

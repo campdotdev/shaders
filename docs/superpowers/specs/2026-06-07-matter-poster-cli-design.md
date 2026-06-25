@@ -7,7 +7,7 @@ Status: Approved (pending implementation plan)
 
 Add a `matter poster` command to `@lovo/matter-cli` that produces a static PNG of a Matter component tree (with the user's actual props and composition) so it can be used as `<ShaderScene fallback={...}>`. The PNG fills the first-paint window between mount and WebGPU-renderer-ready, eliminating the visible blank canvas while the GPU pipeline initializes.
 
-The source of truth is the user's own `.tsx` file. Pointing at the file means props, composition (stacked overlays like `<FilmGrain>` on top of `<LinearGradient>`), and any local shader edits are all reflected automatically.
+The source of truth is the user's own `.tsx` file. Pointing at the file means props, composition (stacked overlays like `<Grain>` on top of `<LinearGradient>`), and any local shader edits are all reflected automatically.
 
 ## 2. Non-goals (v1)
 
@@ -149,7 +149,7 @@ The harness signals readiness via `window.__matterReady`. Algorithm:
 
 ### Edge cases
 
-- **Subtractive overlays alone** (e.g., film-grain with no base in subtractive mode) will render full black indefinitely. The 10-second `waitForFunction` timeout catches this and exits 1 with a hint: `"no canvas content detected within 10s; does your component render a ShaderScene with a visible base layer?"`
+- **Subtractive overlays alone** (e.g., grain with no base in subtractive mode) will render full black indefinitely. The 10-second `waitForFunction` timeout catches this and exits 1 with a hint: `"no canvas content detected within 10s; does your component render a ShaderScene with a visible base layer?"`
 - **Components that render briefly visible then re-blank** (transitions, async asset loads): out of scope. We snapshot the first non-blank frame regardless.
 - **WebGPU vs WebGL2 backend selection**: TSL auto-falls-back. The frame-ready helper detects which context the canvas has and reads pixels accordingly.
 

@@ -1235,6 +1235,6 @@ Expected: functions above threshold drops significantly (registry component func
 
 These were observed during planning but are separate from complexity reduction:
 
-1. **Multi-file CLI distribution bug:** `registry/aurora/aurora.tsx` imports from `./shader` but `registry.json` only lists `aurora/aurora.tsx` as the CLI-distributed file. A user running `matter-cli add aurora` would receive a broken component. Same for `film-grain`, `mesh-gradient`, `vignette`. Fix requires adding a `files: string[]` field to `RegistryEntry` and updating the `add` command to fetch all listed files. Track separately.
+1. **Multi-file CLI distribution bug:** `registry/aurora/aurora.tsx` imports from `./shader` but `registry.json` only lists `aurora/aurora.tsx` as the CLI-distributed file. A user running `matter-cli add aurora` would receive a broken component. Same for `grain`, `mesh-gradient`, `vignette`. Fix requires adding a `files: string[]` field to `RegistryEntry` and updating the `add` command to fetch all listed files. Track separately.
 
 2. **`registrySources.ts` path bug:** `apps/docs/src/lib/registrySources.ts` constructs paths as `${slug}.tsx` for all slugs including `mesh-gradient` and `aurora`, which would resolve to non-existent flat files. These docs pages must be reading their source differently. Investigate separately if the docs source viewer is broken for multi-file components.

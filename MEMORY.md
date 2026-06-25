@@ -95,7 +95,7 @@ Plans written before M8 may still reference `vp run …` — translate those men
 | M7 | Vite+ adoption (later reverted) | `m7-complete` |
 | M9 | Drop pure TSL re-exports from `@lovo/matter` | `m9-complete` / `v0.2.0` |
 | MAT-8 | MeshGradient full rebuild (noise rotation, domain warp, palette cycling, film grain primitive) | — |
-| MAT-16 | FilmGrain + Vignette overlay pipeline; `useOverlayPass`; PostProcessing in MatterScene | — |
+| MAT-16 | Grain + Vignette overlay pipeline; `useOverlayPass`; PostProcessing in MatterScene | — |
 | MAT-13 | Brand-aligned OKLCH palette; `/palette` ref page; all component defaults pivoted | `v0.3.0` |
 | M8 | Vite+ removal; Oxlint → ESLint 9; ESLint backlog cleared | — |
 | MAT-37 | Output dithering productized (#46): Bayer 8×8, scene-wide display-space output pass; dropped per-component `dither()` + scene-level gamut control from LinearGradient panel | — |
@@ -109,7 +109,7 @@ M7.1, M7.2 (tsdown, `vp run`) were cancelled when M8 reverted the Vite+ adoption
 From `docs/superpowers/ideas-backlog.md` — not commitments, just orientation:
 
 **Infrastructure (smaller, no new components):**
-- Atomic overlay reorder — eliminate the 1-frame flash when toggling `<FilmGrain>`/`<Vignette>` order (microtask-batch `rebuildOutputNode`). Size S–M.
+- Atomic overlay reorder — eliminate the 1-frame flash when toggling `<Grain>`/`<Vignette>` order (microtask-batch `rebuildOutputNode`). Size S–M.
 - Blend mode prop on overlay components (`'multiply' | 'screen' | 'overlay'` etc.)
 - Promote `useColorUniform` to `@lovo/matter-react` (wait until `colorSpace` infra is designed)
 - `colorSpace` prop across all Tier 1 components (OKLab/OKLCH GPU blending)

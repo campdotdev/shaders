@@ -10,7 +10,7 @@
   registry copy-paste story clean and is deterministic/shimmer-free, which suits
   the static-scene render path). Blue-noise rejected for the texture-packaging
   tax; white-noise hash rejected as clumpy.
-- **Coords:** per-pixel via `screenCoordinate` (like `filmGrain`), not `uv()`.
+- **Coords:** per-pixel via `screenCoordinate` (like `grain`), not `uv()`.
 - **Placement:** the canonical application is a **final output stage in
   `ShaderScene`**, applied in **display-encoded space** (after the renderer's
   output transfer) so 1 LSB of noise maps to ~1 display step uniformly. The
@@ -45,7 +45,7 @@
   built from `screenCoordinate.xy` (recursive `bayer2/4/8` helpers, values in
   `[0,1)`, centered to `[-0.5, 0.5)` and scaled by `amount`).
 - New signature: `dither(color, amount = 1/255)` — drop the `coord` param
-  (screen coords are read internally, matching `filmGrain`).
+  (screen coords are read internally, matching `grain`).
 - Update docstring: remove the "linear-sRGB working space" caveat; note this is
   the per-shader/Mode-2 entry point and that the scene applies it in display
   space.
@@ -69,7 +69,7 @@ green.
 
 **Gate (stop & play):** run the docs site; on `LinearGradient`, `Aurora`,
 `MeshGradient`, `SimplexNoise` the banding is broken up uniformly (not just
-LinearGradient). FilmGrain/Vignette overlays still look correct (their linear
+LinearGradient). Grain/Vignette overlays still look correct (their linear
 pre-transform behavior is unchanged).
 
 ## Phase 3 — Visual-regression baselines

@@ -40,7 +40,7 @@ correct. It is orthogonal to the planned `gamut` feature (output color gamut on
    over-bright linear-light midpoints. Matches CSS Color 4's gradient default.
 3. **Scope: LinearGradient, SimplexNoise, MeshGradient.** Aurora and Waves are
    excluded because they composite color additively (no pairwise blend for the prop to
-   govern). Single-color overlays (Vignette, FilmGrain, DotField) are excluded.
+   govern). Single-color overlays (Vignette, Grain, DotField) are excluded.
 4. **Architecture: a single `mixColor` primitive** with per-space conversions as
    composable internals (chosen over exposing raw conversion pairs everywhere).
 
@@ -191,7 +191,7 @@ colors), palette tuning is genuinely a one-time concern in phase 2.
 - The `gamut` / Display-P3 output feature (separate, on `MatterScene`; orthogonal).
 - A gamma-sRGB interpolation mode (not among the six requested spaces; add later only if
   CSS-parity is wanted).
-- Single-color overlays: Vignette, FilmGrain, DotField.
+- Single-color overlays: Vignette, Grain, DotField.
 - Proper out-of-gamut mapping (we clip).
 
 ## Migration / versioning

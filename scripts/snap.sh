@@ -36,7 +36,7 @@ IMAGE="mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy"
 # Force amd64 so locally-generated "linux" baselines match CI (ubuntu-latest =
 # amd64). Without this, Docker on Apple Silicon transparently pulls the arm64
 # variant of the multi-arch image, and the resulting Chromium/SwiftShader pixels
-# drift from CI just enough to push noise-heavy shaders (film-grain) past the
+# drift from CI just enough to push noise-heavy shaders (grain) past the
 # 0.02 maxDiffPixelRatio threshold.
 PLATFORM_FLAG=(--platform linux/amd64)
 docker pull "${PLATFORM_FLAG[@]}" "$IMAGE"

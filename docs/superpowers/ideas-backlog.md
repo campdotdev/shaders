@@ -161,7 +161,7 @@ Aurora, DotField, LinearGradient, MeshGradient, NoiseField, Waves.
 
 ### ~~Film grain~~ — shipped 2026-05-29 (MAT-16)
 
-Standalone `<FilmGrain>` overlay shipped in the same milestone that
+Standalone `<Grain>` overlay shipped in the same milestone that
 introduced the overlay-component category architecture (PostProcessing
 pipeline + `useOverlayPass`). `<Vignette>` shipped alongside as the
 first read-upstream-pixels overlay. MeshGradient's bundled grain was
@@ -173,7 +173,7 @@ Original entry retained below for posterity.
 
 ### Film grain
 
-- **What:** standalone `<FilmGrain>` overlay component that can be stacked
+- **What:** standalone `<Grain>` overlay component that can be stacked
   in a `<MatterScene>` to apply grain to any underlying effect. Intensity,
   shutter rate, scale, color tint, blend mode controls.
 - **Source:** Photoshop, Apple keynote treatments,
@@ -182,13 +182,13 @@ Original entry retained below for posterity.
 - **Tier:** 1 (Surfaces category — first member of the overlay category).
 - **Size:** M (component is small; the *architecture* it forces is the work).
 - **Notes:**
-  - **Primitive already shipped.** `filmGrain(uvNode, intensity, timeOffset?)`
-    landed in `@lovo/matter` in MAT-8 phase 6b. The `<FilmGrain>` component
+  - **Primitive already shipped.** `grain(uvNode, intensity, timeOffset?)`
+    landed in `@lovo/matter` in MAT-8 phase 6b. The `<Grain>` component
     becomes a thin wrapper around the primitive plus the overlay/blend
     plumbing — no hash math to redesign.
   - **Architecture decision required before building.** Two paths, both
     real product work:
-    1. *Transparent overlay mesh.* `<FilmGrain>` creates its own
+    1. *Transparent overlay mesh.* `<Grain>` creates its own
        full-screen plane with `material.transparent = true` and an additive
        blend equation so centered grain (mean = 0) adds zero net brightness
        to the destination. Lighter; fits the current `MatterScene` (single
@@ -205,10 +205,10 @@ Original entry retained below for posterity.
     process passes in JSX-declaration order.
   - **Subtractive variant.** MAT-8 shipped centered grain as the default
     because subtractive crushes blacks and surprises users. Expose a
-    `mode: 'centered' | 'subtractive'` prop on `<FilmGrain>` for users
+    `mode: 'centered' | 'subtractive'` prop on `<Grain>` for users
     who specifically want the film-stock darkening look.
   - **Twinkle rate.** The primitive deliberately doesn't bake in a shutter
-    rate — caller passes a time node. `<FilmGrain>` should expose a
+    rate — caller passes a time node. `<Grain>` should expose a
     `speed` prop (0 = static, 1 = ~60Hz default matching MAT-8, lower for
     film-cadence ~24Hz) and quantize internally via `floor(time*speed*60)`.
   - **Trigger to start work:** beginning v2 overlay-component planning
@@ -291,7 +291,7 @@ Original entry retained below for posterity.
 Standalone `<Vignette>` overlay. Aspect-corrected radial mask via
 `useOverlayPass`, with `intensity`/`softness`/`center`/`radius`/`color`
 props. Plays in the {`"read-upstream"`} half of the post-processing
-pipeline; stacks with `<FilmGrain>` (and any future overlays) inside a
+pipeline; stacks with `<Grain>` (and any future overlays) inside a
 shared `<MatterScene>`.
 
 ### Lens flare
@@ -453,11 +453,11 @@ or direction drags.
 
 ### Blend mode prop on overlay components
 
-- **What:** A `blend` prop on `<Vignette>` and `<FilmGrain>` (and any
+- **What:** A `blend` prop on `<Vignette>` and `<Grain>` (and any
   future overlays) accepting `'normal' | 'multiply' | 'screen' | 'overlay'
   | 'soft-light' | 'hard-light' | 'add' | 'subtract'`. Today each overlay
   hardcodes its blend math: Vignette uses `mix(input, edgeColor, factor)`
-  (a normal blend); FilmGrain uses `input.add(...)` (additive) or
+  (a normal blend); Grain uses `input.add(...)` (additive) or
   `input.sub(...)` (subtractive). Exposing blend mode lets users compose
   the same overlay differently — e.g., a Vignette in `'multiply'` mode
   darkens via channel-wise multiplication for a richer film look, while
@@ -472,7 +472,7 @@ or direction drags.
   transform becomes `(input) => blend(input, computeLayer(...), modeUniform)`.
   The mode prop should be in the `useOverlayPass` deps array — changing it
   rebuilds the transform graph, which is correct: blend math is structural.
-  Worth doing alongside FilmGrain's existing `mode: 'additive' | 'subtractive'`
+  Worth doing alongside Grain's existing `mode: 'additive' | 'subtractive'`
   refactor — that prop becomes redundant once `blend` lands (additive = 'add',
   subtractive = 'subtract' with `.abs()` baked in or as a separate
   `clampNegative` prop). Migration path: keep `mode` as a deprecated alias
@@ -482,7 +482,7 @@ or direction drags.
 
 - **What:** Eliminate the 1-frame flash of "bare base scene" that happens
   when the user reorders overlay children inside `<MatterScene>` (e.g.,
-  swapping `<><FilmGrain/><Vignette/></>` ↔ `<><Vignette/><FilmGrain/></>`).
+  swapping `<><Grain/><Vignette/></>` ↔ `<><Vignette/><Grain/></>`).
   Today each overlay registers on mount + unregisters on cleanup; React's
   reconciler unmounts both children and remounts both, and between the
   cleanups and the new mounts the `overlays` Map is empty → pipeline is

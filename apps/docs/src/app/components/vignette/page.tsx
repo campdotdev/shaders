@@ -13,7 +13,7 @@ const LinearGradient = dynamic(
   () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
   { ssr: false },
 );
-const FilmGrain = dynamic(() => import('@matter/registry/film-grain').then((m) => m.FilmGrain), {
+const Grain = dynamic(() => import('@matter/registry/grain').then((m) => m.Grain), {
   ssr: false,
 });
 const Vignette = dynamic(() => import('@matter/registry/vignette').then((m) => m.Vignette), {
@@ -45,7 +45,7 @@ const INITIAL: VignetteParams = {
 const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
 const formatJsx = (p: VignetteParams) => {
-  const grain = `<FilmGrain intensity={${formatNumber(p.grainIntensity)}} />`;
+  const grain = `<Grain intensity={${formatNumber(p.grainIntensity)}} />`;
   const vignette = `<Vignette
     intensity={${formatNumber(p.intensity)}}
     softness={${formatNumber(p.softness)}}
@@ -110,7 +110,7 @@ export default function VignettePage() {
       pane.addBinding(local, 'radius', { min: 0, max: 1.5, step: 0.01 });
       pane.addBinding(local, 'color');
 
-      const stackFolder = pane.addFolder({ title: 'Stack with FilmGrain' });
+      const stackFolder = pane.addFolder({ title: 'Stack with Grain' });
 
       stackFolder.addBinding(local, 'grainOrderFirst', {
         label: 'grain first?',
@@ -135,7 +135,7 @@ export default function VignettePage() {
       softness={params.softness}
     />
   );
-  const grainEl = <FilmGrain intensity={params.grainIntensity} />;
+  const grainEl = <Grain intensity={params.grainIntensity} />;
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
@@ -175,8 +175,8 @@ export default function VignettePage() {
         <p>
           Radial darkening at the canvas edges. Stacks inside any <code>&lt;ShaderScene&gt;</code>{' '}
           on top of whatever base component you want and fades the upstream pixels toward an edge
-          color along a soft falloff ring. Unlike <code>&lt;FilmGrain /&gt;</code>, which generates
-          new noise from <code>uv</code>, Vignette reads the upstream pixel and mixes it toward{' '}
+          color along a soft falloff ring. Unlike <code>&lt;Grain /&gt;</code>, which generates new
+          noise from <code>uv</code>, Vignette reads the upstream pixel and mixes it toward{' '}
           <code>color</code> — the {`"read-upstream"`} half of the post-processing pipeline.
         </p>
         <p>

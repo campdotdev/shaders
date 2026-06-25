@@ -85,7 +85,7 @@ The default (JPEG q80) handles most shaders well. PNG wins on shaders with large
 | --------------------------------- | ------------------------------------------ |
 | `LinearGradient` with hard stops  | `Aurora` and similar gradient-heavy scenes |
 | `SimplexNoise` with contour bands | `MeshGradient` (smooth color flow)         |
-| Anything with < ~20 unique colors | `FilmGrain` (high-entropy noise)           |
+| Anything with < ~20 unique colors | `Grain` (high-entropy noise)           |
 
 If unsure, run both — the difference can be 3–7× either direction.
 

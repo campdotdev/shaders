@@ -1,6 +1,6 @@
 'use client';
 
-import { elapsedTime, filmGrain } from '@lovo/matter';
+import { elapsedTime, grain } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -9,15 +9,15 @@ import {
 } from '@lovo/matter-react';
 import { floor, vec4 } from 'three/tsl';
 
-export type FilmGrainBlend = 'additive' | 'subtractive';
+export type GrainBlend = 'additive' | 'subtractive';
 
-export interface FilmGrainShaderProps {
+export interface GrainShaderProps {
   intensity: AnimatableProp<number>;
   speed: AnimatableProp<number>;
-  grainBlend: FilmGrainBlend;
+  grainBlend: GrainBlend;
 }
 
-export function FilmGrainShader({ intensity, speed, grainBlend }: FilmGrainShaderProps) {
+export function GrainShader({ intensity, speed, grainBlend }: GrainShaderProps) {
   const intensityUniform = useAnimatableUniform<number>(intensity);
   const speedUniform = useAnimatableUniform<number>(speed);
 
@@ -28,13 +28,13 @@ export function FilmGrainShader({ intensity, speed, grainBlend }: FilmGrainShade
   usePostProcessPass(
     (input) => {
       const grainTime = floor(elapsedTime.mul(speedUniform).mul(60));
-      const grain = filmGrain(intensityUniform, grainTime);
+      const grainValue = grain(intensityUniform, grainTime);
 
       if (grainBlend === 'additive') {
-        return input.add(vec4(grain, grain, grain, 0));
+        return input.add(vec4(grainValue, grainValue, grainValue, 0));
       }
 
-      const positive = grain.abs();
+      const positive = grainValue.abs();
 
       return input.sub(vec4(positive, positive, positive, 0));
     },
