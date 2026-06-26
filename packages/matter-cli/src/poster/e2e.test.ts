@@ -1,4 +1,4 @@
-import { mkdtemp, rm, stat } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, stat } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -96,4 +96,28 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
       }
     }, 30_000);
   }
+
+  it('captures a deterministic t=0 frame across runs', async () => {
+    const outA = join(outDir, 'determinism-a.png');
+    const outB = join(outDir, 'determinism-b.png');
+    const base = {
+      from: join(FIXTURES, 'gradient-plus-grain.tsx'),
+      type: 'png' as const,
+      exportName: 'default',
+      timeSeconds: 0,
+      width: 320,
+      height: 240,
+      deviceScaleFactor: 1,
+    };
+
+    await runPoster({ ...base, out: outA }, { cwd: process.cwd(), log: vi.fn() });
+    await runPoster({ ...base, out: outB }, { cwd: process.cwd(), log: vi.fn() });
+
+    const [bytesA, bytesB] = await Promise.all([readFile(outA), readFile(outB)]);
+
+    // The grain overlay animates with elapsedTime, so two runs that each rode a
+    // different nondeterministic warmup would differ. Pinning the harness to a
+    // paused (t=0) clock makes both runs identical.
+    expect(Buffer.compare(bytesA, bytesB)).toBe(0);
+  }, 60_000);
 });
