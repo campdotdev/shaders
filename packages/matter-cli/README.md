@@ -100,13 +100,13 @@ pnpm exec playwright install chromium
 
 ```bash
 # Default — writes ./public/hero.jpg (JPEG q80)
-npx matter-cli poster --from ./src/components/matter/hero.tsx --out ./public/hero
+npx matter-cli poster --source ./src/components/matter/hero.tsx --output ./public/hero.jpg
 
 # Posterized shader — PNG compresses smaller
-npx matter-cli poster --from ./gradient.tsx --out ./public/gradient --type png
+npx matter-cli poster --source ./gradient.tsx --output ./public/gradient.png --format png
 
 # Higher quality JPEG
-npx matter-cli poster --from ./aurora.tsx --out ./public/aurora --quality 92
+npx matter-cli poster --source ./aurora.tsx --output ./public/aurora.jpg --quality 92
 ```
 
 Wire it up:
