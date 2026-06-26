@@ -114,7 +114,7 @@ export default function SimplexNoisePage() {
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
+      <div data-shader-demo style={{ position: 'relative' }}>
         <Image
           alt="Simplex noise shader preview: posterized organic noise pattern in blue, violet, magenta, and teal"
           fill

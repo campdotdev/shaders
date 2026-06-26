@@ -59,7 +59,7 @@ export default function GrainPage() {
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
+      <div data-shader-demo style={{ position: 'relative' }}>
         <Image
           alt="Film grain shader preview: violet to magenta gradient overlaid with grain"
           fill
