@@ -11,6 +11,8 @@ cd "$REPO_ROOT"
 CLI="node packages/matter-cli/dist/index.js poster"
 COMPONENTS_DIR="apps/docs/src/app/components"
 OUT_DIR="apps/docs/public/posters"
+WIDTH=1680
+HEIGHT=720
 
 if [ ! -f packages/matter-cli/dist/index.js ]; then
   echo "error: CLI not built. Run: pnpm --filter @lovo/matter-cli build" >&2
@@ -30,7 +32,9 @@ for pair in \
   $CLI \
     --source "${COMPONENTS_DIR}/${name}/scene.tsx" \
     --output "${OUT_DIR}/${name}.${format}" \
-    --format "${format}"
+    --format "${format}" \
+    --width "$WIDTH" \
+    --height "$HEIGHT"
 done
 
 echo "All posters regenerated."

@@ -239,7 +239,7 @@ export default function WavesPage() {
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div data-shader-demo style={{ position: 'relative', height: '70vh', background: '#0a0a14' }}>
+      <div data-shader-demo style={{ position: 'relative', background: '#0a0a14' }}>
         <ShaderScene>
           <Waves
             amplitude={params.amplitude}
