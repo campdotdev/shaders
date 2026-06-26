@@ -25,7 +25,10 @@ for pair in \
   "simplex-noise:png" \
   "aurora:jpg" \
   "grain:jpg" \
-  "mesh-gradient:jpg"; do
+  "mesh-gradient:jpg" \
+  "waves:jpg" \
+  "vignette:jpg" \
+  "dot-field:png"; do
   name="${pair%%:*}"
   format="${pair##*:}"
   echo "==> $name ($format)"
