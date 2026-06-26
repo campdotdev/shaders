@@ -1,9 +1,10 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { ShaderScene } from '@lovo/matter-react';
 import { SimplexNoise } from '@matter/registry/simplex-noise';
 import type { ColorStop } from '@matter/registry/simplex-noise';
-import type { ReactNode } from 'react';
 
 import { INITIAL, type Params } from './params';
 
