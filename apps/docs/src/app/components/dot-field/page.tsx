@@ -1,35 +1,14 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 
-import { palette } from '@/lib/palette';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
-  ssr: false,
-});
-const DotField = dynamic(() => import('@matter/registry/dot-field').then((m) => m.DotField), {
-  ssr: false,
-});
+import { INITIAL, type Params } from './params';
 
-interface Params {
-  color: string;
-  spacing: number;
-  dotSize: number;
-  reach: number;
-  strength: number;
-  interactive: boolean;
-}
-
-const INITIAL: Params = {
-  color: palette.gray[8],
-  spacing: 30,
-  dotSize: 2,
-  reach: 100,
-  strength: 1,
-  interactive: true,
-};
+const DotFieldScene = dynamic(() => import('./scene'), { ssr: false });
 
 export default function DotFieldPage() {
   const [params, paneContainerRef] = useTweakpane<Params>(
@@ -57,17 +36,17 @@ export default function DotFieldPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', background: '#0a0a14' }}>
-        <ShaderScene>
-          <DotField
-            color={params.color}
-            dotSize={params.dotSize}
-            interactive={params.interactive}
-            reach={params.reach}
-            spacing={params.spacing}
-            strength={params.strength}
-          />
+        <Image
+          alt="Dot field shader preview: a sparse grid of small gray dots on a dark background"
+          fill
+          priority
+          sizes="100vw"
+          src="/posters/dot-field.png"
+          style={{ objectFit: 'cover' }}
+        />
+        <DotFieldScene params={params}>
           <VisualTestPause />
-        </ShaderScene>
+        </DotFieldScene>
         <div
           aria-hidden="true"
           data-tweakpane-host

@@ -1,46 +1,15 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import Image from 'next/image';
 
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
-  ssr: false,
-});
-const LinearGradient = dynamic(
-  () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
-  { ssr: false },
-);
-const Grain = dynamic(() => import('@matter/registry/grain').then((m) => m.Grain), {
-  ssr: false,
-});
-const Vignette = dynamic(() => import('@matter/registry/vignette').then((m) => m.Vignette), {
-  ssr: false,
-});
+import { INITIAL, type VignetteParams } from './params';
 
-interface VignetteParams {
-  intensity: number;
-  softness: number;
-  centerX: number;
-  centerY: number;
-  radius: number;
-  color: string;
-  grainOrderFirst: boolean;
-  grainIntensity: number;
-}
-
-const INITIAL: VignetteParams = {
-  intensity: 0.7,
-  softness: 0.5,
-  centerX: 0.5,
-  centerY: 0.5,
-  radius: 0.6,
-  color: '#000000',
-  grainOrderFirst: true,
-  grainIntensity: 0.3,
-};
+const VignetteScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
@@ -126,35 +95,20 @@ export default function VignettePage() {
     },
   );
 
-  const vignetteEl = (
-    <Vignette
-      center={[params.centerX, params.centerY]}
-      color={params.color}
-      intensity={params.intensity}
-      radius={params.radius}
-      softness={params.softness}
-    />
-  );
-  const grainEl = <Grain intensity={params.grainIntensity} />;
-
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative' }}>
-        <ShaderScene>
-          <LinearGradient />
-          {params.grainOrderFirst ? (
-            <>
-              {grainEl}
-              {vignetteEl}
-            </>
-          ) : (
-            <>
-              {vignetteEl}
-              {grainEl}
-            </>
-          )}
+        <Image
+          alt="Vignette shader preview: a violet-to-magenta gradient with grain, darkened toward the edges"
+          fill
+          priority
+          sizes="100vw"
+          src="/posters/vignette.jpg"
+          style={{ objectFit: 'cover' }}
+        />
+        <VignetteScene params={params}>
           <VisualTestPause />
-        </ShaderScene>
+        </VignetteScene>
         <div
           aria-hidden="true"
           data-tweakpane-host
