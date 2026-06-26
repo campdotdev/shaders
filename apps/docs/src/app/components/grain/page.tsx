@@ -3,34 +3,13 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
-import type { GrainBlend } from '@matter/registry/grain';
-
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
-  ssr: false,
-});
-const LinearGradient = dynamic(
-  () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
-  { ssr: false },
-);
-const Grain = dynamic(() => import('@matter/registry/grain').then((m) => m.Grain), {
-  ssr: false,
-});
+import { type GrainParams, INITIAL } from './params';
 
-interface GrainParams {
-  intensity: number;
-  speed: number;
-  grainBlend: GrainBlend;
-}
-
-const INITIAL: GrainParams = {
-  intensity: 0.15,
-  speed: 0.3,
-  grainBlend: 'additive',
-};
+const GrainScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
@@ -89,11 +68,9 @@ export default function GrainPage() {
           src="/posters/grain.jpg"
           style={{ objectFit: 'cover' }}
         />
-        <ShaderScene>
-          <LinearGradient />
-          <Grain grainBlend={params.grainBlend} intensity={params.intensity} speed={params.speed} />
+        <GrainScene params={params}>
           <VisualTestPause />
-        </ShaderScene>
+        </GrainScene>
         <div
           aria-hidden="true"
           data-tweakpane-host
