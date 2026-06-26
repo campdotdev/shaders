@@ -1,9 +1,10 @@
 'use client';
 
+import type { ReactNode } from 'react';
+
 import { ShaderScene } from '@lovo/matter-react';
 import { Grain } from '@matter/registry/grain';
 import { LinearGradient } from '@matter/registry/linear-gradient';
-import type { ReactNode } from 'react';
 
 import { type GrainParams, INITIAL } from './params';
 
