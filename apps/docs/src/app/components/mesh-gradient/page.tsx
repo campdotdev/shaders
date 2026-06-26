@@ -3,56 +3,13 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-
-import { palette } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
-  ssr: false,
-});
-const MeshGradient = dynamic(
-  () => import('@matter/registry/mesh-gradient').then((m) => m.MeshGradient),
-  { ssr: false },
-);
+import { INITIAL, type Params } from './params';
 
-interface Params {
-  speed: number;
-  frequency: number;
-  amplitude: number;
-  cycleSpeed: number;
-  cycleEase: number;
-  colorSpace: ColorSpace;
-  hueInterpolation: HueInterpolation;
-  a0: string;
-  a1: string;
-  a2: string;
-  a3: string;
-  b0: string;
-  b1: string;
-  b2: string;
-  b3: string;
-}
-
-const INITIAL: Params = {
-  speed: 2,
-  frequency: 5,
-  amplitude: 30,
-  cycleSpeed: 0.5,
-  cycleEase: 0.6,
-  colorSpace: 'oklab',
-  hueInterpolation: 'shorter',
-  a0: palette.lime.base,
-  a1: palette.green.base,
-  a2: palette.teal.base,
-  a3: palette.sky.base,
-  b0: palette.amber.base,
-  b1: palette.orange.base,
-  b2: palette.red.base,
-  b3: palette.magenta.base,
-};
+const MeshGradientScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
@@ -173,22 +130,9 @@ export default function MeshGradientPage() {
           src="/posters/mesh-gradient.jpg"
           style={{ objectFit: 'cover' }}
         />
-        <ShaderScene>
-          <MeshGradient
-            amplitude={params.amplitude}
-            colorSpace={params.colorSpace}
-            cycleEase={params.cycleEase}
-            cycleSpeed={params.cycleSpeed}
-            frequency={params.frequency}
-            hueInterpolation={params.hueInterpolation}
-            palettes={[
-              [params.a0, params.a1, params.a2, params.a3],
-              [params.b0, params.b1, params.b2, params.b3],
-            ]}
-            speed={params.speed}
-          />
+        <MeshGradientScene params={params}>
           <VisualTestPause />
-        </ShaderScene>
+        </MeshGradientScene>
         <div
           aria-hidden="true"
           data-tweakpane-host
