@@ -3,55 +3,13 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-import type { ColorStop } from '@matter/registry/simplex-noise';
-
-import { palette } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
-  ssr: false,
-});
-const SimplexNoise = dynamic(
-  () => import('@matter/registry/simplex-noise').then((m) => m.SimplexNoise),
-  { ssr: false },
-);
+import { INITIAL, type Params } from './params';
 
-interface Params {
-  scale: number;
-  speed: number;
-  contrast: number;
-  bias: number;
-  softness: number;
-  seed: number;
-  colorSpace: ColorSpace;
-  hueInterpolation: HueInterpolation;
-  colorCount: number;
-  color0: string;
-  color1: string;
-  color2: string;
-  color3: string;
-  color4: string;
-}
-
-const INITIAL: Params = {
-  scale: 10,
-  speed: 0.2,
-  contrast: 2.5,
-  bias: 0.5,
-  softness: 0,
-  seed: 0,
-  colorSpace: 'oklab',
-  hueInterpolation: 'shorter',
-  colorCount: 5,
-  color0: palette.blue.base,
-  color1: palette.violet.base,
-  color2: palette.purple.base,
-  color3: palette.magenta.base,
-  color4: palette.teal.base,
-};
+const SimplexNoiseScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
@@ -154,9 +112,6 @@ export default function SimplexNoisePage() {
     },
   );
 
-  const allColors = [params.color0, params.color1, params.color2, params.color3, params.color4];
-  const stops: ColorStop[] = allColors.slice(0, params.colorCount).map((color) => ({ color }));
-
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
@@ -168,20 +123,9 @@ export default function SimplexNoisePage() {
           src="/posters/simplex-noise.png"
           style={{ objectFit: 'cover' }}
         />
-        <ShaderScene>
-          <SimplexNoise
-            bias={params.bias}
-            colorSpace={params.colorSpace}
-            contrast={params.contrast}
-            hueInterpolation={params.hueInterpolation}
-            scale={params.scale}
-            seed={params.seed}
-            softness={params.softness}
-            speed={params.speed}
-            stops={stops}
-          />
+        <SimplexNoiseScene params={params}>
           <VisualTestPause />
-        </ShaderScene>
+        </SimplexNoiseScene>
         <div
           aria-hidden="true"
           data-tweakpane-host
