@@ -1,8 +1,7 @@
 import type React from 'react';
 
-import { createRoot } from 'react-dom/client';
-
 import { setReducedMotionPolicy } from '@lovo/matter';
+import { createRoot } from 'react-dom/client';
 
 import { installFrameReadyWatcher } from './frameReady.js';
 
