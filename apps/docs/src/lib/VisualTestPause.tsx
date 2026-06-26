@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { setReducedMotionPolicy } from '@lovo/matter';
+import { resetRendererClock, setReducedMotionPolicy } from '@lovo/matter';
 import type { ReducedMotionPolicy, SchedulerTick } from '@lovo/matter';
 import { useShaderContext } from '@lovo/matter-react';
 
@@ -39,37 +39,12 @@ function useVisualTestPause(): void {
 
     const releaseAnimated = ctx.scheduler.setIdle(false);
 
-    interface NodeFrameInternal {
-      time?: number;
-      deltaTime?: number;
-      lastTime?: number;
-    }
-    const getNodeFrame = (): NodeFrameInternal | undefined => {
-      const three: unknown = ctx.renderer.three;
-
-      if (!(typeof three === 'object' && three !== null && '_nodes' in three)) return undefined;
-      const nodes = three._nodes;
-
-      if (!(typeof nodes === 'object' && nodes !== null && 'nodeFrame' in nodes)) return undefined;
-      const frame = nodes.nodeFrame;
-
-      if (typeof frame !== 'object' || frame === null) return undefined;
-
-      return frame;
-    };
-
     let frame = 0;
     const client = (_tick: SchedulerTick) => {
       frame += 1;
 
       if (frame === 1) {
-        const nodeFrame = getNodeFrame();
-
-        if (nodeFrame) {
-          nodeFrame.time = 0;
-          nodeFrame.deltaTime = 0;
-          nodeFrame.lastTime = undefined;
-        }
+        resetRendererClock(ctx.renderer.three);
 
         return;
       }
