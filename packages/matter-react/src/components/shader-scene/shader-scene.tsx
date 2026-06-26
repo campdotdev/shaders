@@ -8,6 +8,7 @@ import {
   createVisibilityWatcher,
   dither,
   FrameScheduler,
+  resetRendererClock,
 } from '@lovo/matter';
 import { OrthographicCamera, Scene } from 'three';
 import { pass, renderOutput, vec4 } from 'three/tsl';
@@ -124,9 +125,19 @@ export function ShaderScene(props: ShaderSceneProps) {
         // fallback is removed.
         let firstPaintSignaled = false;
         const renderFrame = () => {
+          const hasContent = scene.children.length > 0 || overlays.size > 0;
+
+          // On the frame that first has something to draw, zero the clock BEFORE
+          // rendering so the frame the user first sees (once the fallback drops)
+          // is t=0 — matching the deterministic poster. Resetting after the
+          // fallback is already gone would pop the animation backwards from
+          // warmup-time to 0, a new visible glitch.
+          if (!firstPaintSignaled && hasContent) {
+            resetRendererClock(renderer.three);
+          }
           postProcessing.render();
 
-          if (!firstPaintSignaled && (scene.children.length > 0 || overlays.size > 0)) {
+          if (!firstPaintSignaled && hasContent) {
             firstPaintSignaled = true;
             firstPaintRaf = requestAnimationFrame(() => {
               firstPaintRaf = null;
