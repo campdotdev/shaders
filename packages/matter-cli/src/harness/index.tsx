@@ -2,6 +2,8 @@ import type React from 'react';
 
 import { createRoot } from 'react-dom/client';
 
+import { setReducedMotionPolicy } from '@lovo/matter';
+
 import { installFrameReadyWatcher } from './frameReady.js';
 
 // Replaced at build time by esbuild's `define`:
@@ -35,6 +37,12 @@ const rootEl = document.getElementById('root');
 if (!rootEl) throw new Error('matter poster: #root missing from harness HTML');
 
 const root = createRoot(rootEl);
+
+// Pin the animation clock so the poster captures a deterministic t=0 frame,
+// matching what users see at mount (ShaderScene also resets to t=0 at first
+// paint). 'paused' sets the reduced-motion time scale to 0, so elapsedTime
+// stays 0 regardless of how many settle frames elapse before the screenshot.
+setReducedMotionPolicy('paused');
 
 root.render(<Component />);
 
