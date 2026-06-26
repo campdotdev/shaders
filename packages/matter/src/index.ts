@@ -41,6 +41,8 @@ export type { CursorRippleOptions } from './primitives/cursor-ripple/cursor-ripp
 
 export { elapsedTime } from './primitives/time/time.js';
 
+export { resetRendererClock } from './runtime/clock/reset-clock.js';
+
 export { grain } from './primitives/grain/grain.js';
 
 export { dither } from './primitives/dither/dither.js';
