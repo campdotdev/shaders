@@ -115,9 +115,12 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
 
     const [bytesA, bytesB] = await Promise.all([readFile(outA), readFile(outB)]);
 
-    // The grain overlay animates with elapsedTime, so two runs that each rode a
-    // different nondeterministic warmup would differ. Pinning the harness to a
-    // paused (t=0) clock makes both runs identical.
+    // Determinism regression guard: the grain overlay animates with elapsedTime,
+    // so if the harness ever stopped pinning the clock (paused -> scale 0), a run
+    // that rode a different warmup time could shift the grain and diverge. This
+    // asserts two runs stay byte-identical; it does not by itself prove the
+    // paused clock is load-bearing (warmup may coincide), only that determinism
+    // holds.
     expect(Buffer.compare(bytesA, bytesB)).toBe(0);
   }, 60_000);
 });
