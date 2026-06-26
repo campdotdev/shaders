@@ -4,53 +4,16 @@ import dynamic from 'next/dynamic';
 import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import { Pane } from 'tweakpane';
 import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
 
-import { paletteOklch } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-const ShaderScene = dynamic(() => import('@lovo/matter-react').then((m) => m.ShaderScene), {
-  ssr: false,
-});
-const LinearGradient = dynamic(
-  () => import('@matter/registry/linear-gradient').then((m) => m.LinearGradient),
-  { ssr: false },
-);
+import { INITIAL, MAX_STOPS, MIN_STOPS } from './params';
+import type { Params, Stop } from './params';
 
-interface Stop {
-  color: string;
-  position: number;
-}
-
-interface Params {
-  angle: number;
-  speed: number;
-  focalX: number;
-  focalY: number;
-  colorSpace: ColorSpace;
-  hueInterpolation: HueInterpolation;
-  stops: Stop[];
-}
-
-const MIN_STOPS = 1;
-const MAX_STOPS = 6;
-
-const INITIAL: Params = {
-  angle: 90,
-  speed: 0,
-  focalX: 0.5,
-  focalY: 0.5,
-  colorSpace: 'oklab',
-  hueInterpolation: 'shorter',
-  stops: [
-    { color: paletteOklch.violet.base, position: 0 },
-    { color: paletteOklch.purple.base, position: 0.5 },
-    { color: paletteOklch.magenta.dark, position: 1 },
-  ],
-};
+const LinearGradientScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
@@ -202,10 +165,6 @@ export default function LinearGradientPage() {
     };
   }, []);
 
-  const remountKey = `${params.colorSpace}|${params.hueInterpolation}|${params.stops
-    .map((stop) => `${stop.color}@${stop.position}`)
-    .join('|')}`;
-
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', height: '70vh' }}>
@@ -217,18 +176,9 @@ export default function LinearGradientPage() {
           src="/posters/linear-gradient.png"
           style={{ objectFit: 'cover' }}
         />
-        <ShaderScene>
-          <LinearGradient
-            angle={params.angle}
-            colorSpace={params.colorSpace}
-            focalPoint={[params.focalX, params.focalY]}
-            hueInterpolation={params.hueInterpolation}
-            key={remountKey}
-            speed={params.speed}
-            stops={params.stops}
-          />
+        <LinearGradientScene params={params}>
           <VisualTestPause />
-        </ShaderScene>
+        </LinearGradientScene>
         <div
           aria-hidden="true"
           data-tweakpane-host
