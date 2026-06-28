@@ -21,9 +21,9 @@ export default function VignetteScene({
       <Vignette
         center={[params.centerX, params.centerY]}
         color={params.color}
+        extent={params.extent}
+        feather={params.feather}
         intensity={params.intensity}
-        radius={params.radius}
-        softness={params.softness}
       />
       {children}
     </ShaderScene>

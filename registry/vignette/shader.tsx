@@ -15,22 +15,16 @@ import { parseColor } from '../utils/color';
 
 export interface VignetteShaderProps {
   intensity: AnimatableProp<number>;
-  softness: AnimatableProp<number>;
+  feather: AnimatableProp<number>;
   center: [number, number];
-  radius: AnimatableProp<number>;
+  extent: AnimatableProp<number>;
   color: string;
 }
 
-export function VignetteShader({
-  intensity,
-  softness,
-  center,
-  radius,
-  color,
-}: VignetteShaderProps) {
+export function VignetteShader({ intensity, feather, center, extent, color }: VignetteShaderProps) {
   const intensityUniform = useAnimatableUniform(intensity);
-  const softnessUniform = useAnimatableUniform(softness);
-  const radiusUniform = useAnimatableUniform(radius);
+  const featherUniform = useAnimatableUniform(feather);
+  const extentUniform = useAnimatableUniform(extent);
 
   const centerVec = useMemo(
     () => new Vector2(center[0], center[1]),
@@ -86,13 +80,13 @@ export function VignetteShader({
       const corrected = vec2(centered.x.mul(aspect), centered.y);
       const distance = length(corrected);
 
-      const innerRadius = radiusUniform.mul(softnessUniform.oneMinus());
-      const mask = smoothstep(innerRadius, radiusUniform, distance);
+      const featherStart = extentUniform.mul(featherUniform.oneMinus());
+      const mask = smoothstep(featherStart, extentUniform, distance);
       const factor = mask.mul(intensityUniform);
 
       return tslMix(input, vec4(colorUniform, 1), factor);
     },
-    [intensityUniform, softnessUniform, radiusUniform, centerUniform, colorUniform, aspectNode],
+    [intensityUniform, featherUniform, extentUniform, centerUniform, colorUniform, aspectNode],
   );
 
   return null;
