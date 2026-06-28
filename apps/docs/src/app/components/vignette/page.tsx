@@ -14,7 +14,6 @@ const VignetteScene = dynamic(() => import('./scene'), { ssr: false });
 const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
 const formatJsx = (p: VignetteParams) => {
-  const grain = `<Grain intensity={${formatNumber(p.grainIntensity)}} />`;
   const vignette = `<Vignette
     intensity={${formatNumber(p.intensity)}}
     softness={${formatNumber(p.softness)}}
@@ -23,16 +22,9 @@ const formatJsx = (p: VignetteParams) => {
     color="${p.color}"
   />`;
 
-  return p.grainOrderFirst
-    ? `<ShaderScene>
-  <LinearGradient />
-  ${grain}
-  ${vignette}
-</ShaderScene>`
-    : `<ShaderScene>
+  return `<ShaderScene>
   <LinearGradient />
   ${vignette}
-  ${grain}
 </ShaderScene>`;
 };
 
@@ -79,18 +71,6 @@ export default function VignettePage() {
       pane.addBinding(local, 'radius', { min: 0, max: 1.5, step: 0.01 });
       pane.addBinding(local, 'color');
 
-      const stackFolder = pane.addFolder({ title: 'Stack with Grain' });
-
-      stackFolder.addBinding(local, 'grainOrderFirst', {
-        label: 'grain first?',
-      });
-      stackFolder.addBinding(local, 'grainIntensity', {
-        label: 'grain intensity',
-        min: 0,
-        max: 0.5,
-        step: 0.005,
-      });
-
       pane.on('change', sync);
     },
   );
@@ -99,7 +79,7 @@ export default function VignettePage() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative' }}>
         <Image
-          alt="Vignette shader preview: a violet-to-magenta gradient with grain, darkened toward the edges"
+          alt="Vignette shader preview: a violet-to-magenta gradient darkened toward the edges"
           fill
           priority
           sizes="100vw"
@@ -132,13 +112,6 @@ export default function VignettePage() {
           color along a soft falloff ring. Unlike <code>&lt;Grain /&gt;</code>, which generates new
           noise from <code>uv</code>, Vignette reads the upstream pixel and mixes it toward{' '}
           <code>color</code> — the {`"read-upstream"`} half of the post-processing pipeline.
-        </p>
-        <p>
-          <strong>Stacking order matters.</strong> The {`"grain first?"`} toggle in the panel swaps
-          which overlay runs first. With grain first, the vignette darkens the already-grainy output
-          — grain dims in the corners along with everything else. With vignette first, the grain is
-          added on top of the already-darkened corners, so grain stays bright even where the image
-          is dark. Both are useful looks; the choice is a stylistic call.
         </p>
         <p>
           <code>softness</code> controls how gradual the falloff is. At <code>0</code> the ring is a
