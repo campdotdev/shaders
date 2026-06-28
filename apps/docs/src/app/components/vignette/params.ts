@@ -5,8 +5,6 @@ export interface VignetteParams {
   centerY: number;
   radius: number;
   color: string;
-  grainOrderFirst: boolean;
-  grainIntensity: number;
 }
 
 export const INITIAL: VignetteParams = {
@@ -16,6 +14,4 @@ export const INITIAL: VignetteParams = {
   centerY: 0.5,
   radius: 0.6,
   color: '#000000',
-  grainOrderFirst: true,
-  grainIntensity: 0.3,
 };
