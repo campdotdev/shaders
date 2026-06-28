@@ -16,9 +16,9 @@ const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 const formatJsx = (p: VignetteParams) => {
   const vignette = `<Vignette
     intensity={${formatNumber(p.intensity)}}
-    softness={${formatNumber(p.softness)}}
+    feather={${formatNumber(p.feather)}}
     center={[${formatNumber(p.centerX)}, ${formatNumber(p.centerY)}]}
-    radius={${formatNumber(p.radius)}}
+    extent={${formatNumber(p.extent)}}
     color="${p.color}"
   />`;
 
@@ -31,9 +31,9 @@ const formatJsx = (p: VignetteParams) => {
 const formatParams = (p: VignetteParams) =>
   `{
   intensity: ${formatNumber(p.intensity)},
-  softness: ${formatNumber(p.softness)},
+  feather: ${formatNumber(p.feather)},
   center: [${formatNumber(p.centerX)}, ${formatNumber(p.centerY)}],
-  radius: ${formatNumber(p.radius)},
+  extent: ${formatNumber(p.extent)},
   color: '${p.color}',
 }`;
 
@@ -55,7 +55,7 @@ export default function VignettePage() {
       );
 
       pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 });
-      pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'feather', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'centerX', {
         min: 0,
         max: 1,
@@ -68,7 +68,7 @@ export default function VignettePage() {
         step: 0.01,
         label: 'center.y',
       });
-      pane.addBinding(local, 'radius', { min: 0, max: 1.5, step: 0.01 });
+      pane.addBinding(local, 'extent', { min: 0, max: 1.5, step: 0.01 });
       pane.addBinding(local, 'color');
 
       pane.on('change', sync);
@@ -114,9 +114,9 @@ export default function VignettePage() {
           <code>color</code> — the {`"read-upstream"`} half of the post-processing pipeline.
         </p>
         <p>
-          <code>softness</code> controls how gradual the falloff is. At <code>0</code> the ring is a
+          <code>feather</code> controls how gradual the falloff is. At <code>0</code> the ring is a
           hard cutoff; at <code>1</code> the entire canvas is in the falloff (a smooth radial
-          gradient from center to edge). <code>radius</code> is the outer edge of the ring;{' '}
+          gradient from center to edge). <code>extent</code> is the outer edge of the ring;{' '}
           <code>center</code> is the bright spot in normalized UV space.
         </p>
         <pre
@@ -131,7 +131,7 @@ export default function VignettePage() {
         >
           {`<ShaderScene>
   <LinearGradient />
-  <Vignette intensity={0.5} radius={0.6} softness={0.5} />
+  <Vignette intensity={0.5} extent={0.6} feather={0.5} />
 </ShaderScene>`}
         </pre>
       </section>
