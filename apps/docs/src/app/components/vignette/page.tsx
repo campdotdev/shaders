@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
+
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
@@ -13,13 +15,15 @@ const VignetteScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
-const formatJsx = (p: VignetteParams) => {
+const formatJsx = (params: VignetteParams) => {
   const vignette = `<Vignette
-    intensity={${formatNumber(p.intensity)}}
-    feather={${formatNumber(p.feather)}}
-    center={[${formatNumber(p.centerX)}, ${formatNumber(p.centerY)}]}
-    extent={${formatNumber(p.extent)}}
-    color="${p.color}"
+    intensity={${formatNumber(params.intensity)}}
+    feather={${formatNumber(params.feather)}}
+    center={[${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}]}
+    falloff={${formatNumber(params.falloff)}}
+    color="${params.color}"
+    colorSpace="${params.colorSpace}"
+    hueInterpolation="${params.hueInterpolation}"
   />`;
 
   return `<ShaderScene>
@@ -28,13 +32,15 @@ const formatJsx = (p: VignetteParams) => {
 </ShaderScene>`;
 };
 
-const formatParams = (p: VignetteParams) =>
+const formatParams = (params: VignetteParams) =>
   `{
-  intensity: ${formatNumber(p.intensity)},
-  feather: ${formatNumber(p.feather)},
-  center: [${formatNumber(p.centerX)}, ${formatNumber(p.centerY)}],
-  extent: ${formatNumber(p.extent)},
-  color: '${p.color}',
+  intensity: ${formatNumber(params.intensity)},
+  feather: ${formatNumber(params.feather)},
+  center: [${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}],
+  falloff: ${formatNumber(params.falloff)},
+  color: '${params.color}',
+  colorSpace: '${params.colorSpace}',
+  hueInterpolation: '${params.hueInterpolation}',
 }`;
 
 export default function VignettePage() {
@@ -42,6 +48,10 @@ export default function VignettePage() {
     '<Vignette>',
     INITIAL,
     (pane, local, sync) => {
+      // Wide-gamut color picker: the built-in picker is sRGB and rejects
+      // oklch()/oklab() strings, so register color-plus for P3-capable input.
+      pane.registerPlugin(TweakpanePluginColorPlus);
+
       pane.addButton({ title: 'Reset all' }).on('click', () => {
         Object.assign(local, INITIAL);
         pane.refresh();
@@ -68,8 +78,31 @@ export default function VignettePage() {
         step: 0.01,
         label: 'center.y',
       });
-      pane.addBinding(local, 'extent', { min: 0, max: 1.5, step: 0.01 });
-      pane.addBinding(local, 'color');
+      pane.addBinding(local, 'falloff', { min: 0, max: 1.5, step: 0.01 });
+      pane.addBinding(local, 'color', {
+        label: 'color',
+        view: 'color-plus',
+        color: { formatLocked: true },
+      });
+      pane.addBinding(local, 'colorSpace', {
+        options: {
+          OKLab: 'oklab',
+          OKLch: 'oklch',
+          Linear: 'linear',
+          LCH: 'lch',
+          HSL: 'hsl',
+          HSV: 'hsv',
+        },
+      });
+      pane.addBinding(local, 'hueInterpolation', {
+        label: 'hue arc',
+        options: {
+          shorter: 'shorter',
+          longer: 'longer',
+          increasing: 'increasing',
+          decreasing: 'decreasing',
+        },
+      });
 
       pane.on('change', sync);
     },
@@ -116,7 +149,7 @@ export default function VignettePage() {
         <p>
           <code>feather</code> controls how gradual the falloff is. At <code>0</code> the ring is a
           hard cutoff; at <code>1</code> the entire canvas is in the falloff (a smooth radial
-          gradient from center to edge). <code>extent</code> is the outer edge of the ring;{' '}
+          gradient from center to edge). <code>falloff</code> is the outer edge of the ring;{' '}
           <code>center</code> is the bright spot in normalized UV space.
         </p>
         <pre
@@ -131,7 +164,7 @@ export default function VignettePage() {
         >
           {`<ShaderScene>
   <LinearGradient />
-  <Vignette intensity={0.5} extent={0.6} feather={0.5} />
+  <Vignette intensity={0.5} falloff={0.6} feather={0.5} />
 </ShaderScene>`}
         </pre>
       </section>

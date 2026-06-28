@@ -21,8 +21,10 @@ export default function VignetteScene({
       <Vignette
         center={[params.centerX, params.centerY]}
         color={params.color}
-        extent={params.extent}
+        colorSpace={params.colorSpace}
+        falloff={params.falloff}
         feather={params.feather}
+        hueInterpolation={params.hueInterpolation}
         intensity={params.intensity}
       />
       {children}
