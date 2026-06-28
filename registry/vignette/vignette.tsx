@@ -26,7 +26,7 @@ export interface VignetteProps {
 }
 
 export function Vignette({
-  intensity = 0.2,
+  intensity = 0.3,
   feather = 0.6,
   center = [0.5, 0.5],
   falloff = 0.7,

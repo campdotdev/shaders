@@ -12,7 +12,7 @@ export interface VignetteParams {
 }
 
 export const INITIAL: VignetteParams = {
-  intensity: 0.2,
+  intensity: 0.3,
   feather: 0.6,
   centerX: 0.5,
   centerY: 0.5,
