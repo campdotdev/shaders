@@ -13,21 +13,21 @@ const GrainScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
 
-const formatJsx = (p: GrainParams) =>
+const formatJsx = (params: GrainParams) =>
   `<ShaderScene>
   <LinearGradient />
   <Grain
-    intensity={${formatNumber(p.intensity)}}
-    speed={${formatNumber(p.speed)}}
-    grainBlend="${p.grainBlend}"
+    intensity={${formatNumber(params.intensity)}}
+    speed={${formatNumber(params.speed)}}
+    grainBlend="${params.grainBlend}"
   />
 </ShaderScene>`;
 
-const formatParams = (p: GrainParams) =>
+const formatParams = (params: GrainParams) =>
   `{
-  intensity: ${formatNumber(p.intensity)},
-  speed: ${formatNumber(p.speed)},
-  grainBlend: '${p.grainBlend}',
+  intensity: ${formatNumber(params.intensity)},
+  speed: ${formatNumber(params.speed)},
+  grainBlend: '${params.grainBlend}',
 }`;
 
 export default function GrainPage() {
