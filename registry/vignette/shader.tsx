@@ -2,13 +2,15 @@
 
 import { useEffect, useMemo } from 'react';
 
+import { mixColor } from '@lovo/matter';
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
   usePostProcessPass,
   useResize,
 } from '@lovo/matter-react';
-import { length, smoothstep, mix as tslMix, uniform, uv, vec2, vec4 } from 'three/tsl';
+import { length, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Vector2, Vector3 } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
@@ -17,14 +19,24 @@ export interface VignetteShaderProps {
   intensity: AnimatableProp<number>;
   feather: AnimatableProp<number>;
   center: [number, number];
-  extent: AnimatableProp<number>;
+  falloff: AnimatableProp<number>;
   color: string;
+  colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
 }
 
-export function VignetteShader({ intensity, feather, center, extent, color }: VignetteShaderProps) {
+export function VignetteShader({
+  intensity,
+  feather,
+  center,
+  falloff,
+  color,
+  colorSpace,
+  hueInterpolation,
+}: VignetteShaderProps) {
   const intensityUniform = useAnimatableUniform(intensity);
   const featherUniform = useAnimatableUniform(feather);
-  const extentUniform = useAnimatableUniform(extent);
+  const falloffUniform = useAnimatableUniform(falloff);
 
   const centerVec = useMemo(
     () => new Vector2(center[0], center[1]),
@@ -80,13 +92,27 @@ export function VignetteShader({ intensity, feather, center, extent, color }: Vi
       const corrected = vec2(centered.x.mul(aspect), centered.y);
       const distance = length(corrected);
 
-      const featherStart = extentUniform.mul(featherUniform.oneMinus());
-      const mask = smoothstep(featherStart, extentUniform, distance);
+      const featherStart = falloffUniform.mul(featherUniform.oneMinus());
+      const mask = smoothstep(featherStart, falloffUniform, distance);
       const factor = mask.mul(intensityUniform);
 
-      return tslMix(input, vec4(colorUniform, 1), factor);
+      // Blend the upstream pixel toward `color` inside the chosen color space,
+      // following `hueInterpolation`'s arc for cylindrical spaces. mixColor works
+      // on linear vec3, so blend rgb and carry the original alpha through.
+      const blended = mixColor(input.rgb, colorUniform, factor, colorSpace, hueInterpolation);
+
+      return vec4(blended, input.a);
     },
-    [intensityUniform, featherUniform, extentUniform, centerUniform, colorUniform, aspectNode],
+    [
+      intensityUniform,
+      featherUniform,
+      falloffUniform,
+      centerUniform,
+      colorUniform,
+      aspectNode,
+      colorSpace,
+      hueInterpolation,
+    ],
   );
 
   return null;
