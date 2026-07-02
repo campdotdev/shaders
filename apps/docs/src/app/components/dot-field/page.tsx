@@ -3,6 +3,8 @@
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
 
+import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
+
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
@@ -15,7 +17,14 @@ export default function DotFieldPage() {
     '<DotField>',
     INITIAL,
     (pane, local, sync) => {
-      pane.addBinding(local, 'color');
+      // Wide-gamut color picker: the built-in picker is sRGB and rejects
+      // oklch()/oklab() strings, so register color-plus for P3-capable input.
+      pane.registerPlugin(TweakpanePluginColorPlus);
+      pane.addBinding(local, 'color', {
+        label: 'color',
+        view: 'color-plus',
+        color: { formatLocked: true },
+      });
       pane.addBlade({ view: 'separator' });
       pane.addBinding(local, 'spacing', { min: 8, max: 80, step: 1 });
       pane.addBinding(local, 'dotSize', {
