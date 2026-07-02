@@ -5,12 +5,44 @@ import Image from 'next/image';
 
 import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
 
+import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { INITIAL, type Params } from './params';
 
 const DotFieldScene = dynamic(() => import('./scene'), { ssr: false });
+
+const formatNumber = (n: number) => String(Math.round(n * 10000) / 10000);
+
+const formatJsx = (params: Params) => {
+  const dotField = `<DotField
+    spacing={${formatNumber(params.spacing)}}
+    dotSize={${formatNumber(params.dotSize)}}
+    color="${params.color}"
+    speed={${formatNumber(params.speed)}}
+    amplitude={${formatNumber(params.amplitude)}}
+    wavelength={${formatNumber(params.wavelength)}}
+    decay={${formatNumber(params.decay)}}
+    center={[${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}]}
+  />`;
+
+  return `<ShaderScene>
+  ${dotField}
+</ShaderScene>`;
+};
+
+const formatParams = (params: Params) =>
+  `{
+  spacing: ${formatNumber(params.spacing)},
+  dotSize: ${formatNumber(params.dotSize)},
+  color: '${params.color}',
+  speed: ${formatNumber(params.speed)},
+  amplitude: ${formatNumber(params.amplitude)},
+  wavelength: ${formatNumber(params.wavelength)},
+  decay: ${formatNumber(params.decay)},
+  center: [${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}],
+}`;
 
 export default function DotFieldPage() {
   const [params, paneContainerRef] = useTweakpane<Params>(
@@ -20,6 +52,18 @@ export default function DotFieldPage() {
       // Wide-gamut color picker: the built-in picker is sRGB and rejects
       // oklch()/oklab() strings, so register color-plus for P3-capable input.
       pane.registerPlugin(TweakpanePluginColorPlus);
+
+      pane.addButton({ title: 'Reset all' }).on('click', () => {
+        Object.assign(local, INITIAL);
+        pane.refresh();
+        sync();
+      });
+
+      addCopyButtons(
+        pane,
+        () => formatJsx(local),
+        () => formatParams(local),
+      );
       pane.addBinding(local, 'color', {
         label: 'color',
         view: 'color-plus',
@@ -39,8 +83,8 @@ export default function DotFieldPage() {
       pane.addBinding(local, 'wavelength', { min: 20, max: 400, step: 5 });
       pane.addBinding(local, 'decay', { min: 0, max: 5, step: 0.05 });
       pane.addBlade({ view: 'separator' });
-      pane.addBinding(local, 'centerX', { label: 'center x', min: 0, max: 1, step: 0.01 });
-      pane.addBinding(local, 'centerY', { label: 'center y', min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'centerX', { label: 'center.x', min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'centerY', { label: 'center.y', min: 0, max: 1, step: 0.01 });
       pane.on('change', sync);
     },
   );
