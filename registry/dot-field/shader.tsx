@@ -66,7 +66,7 @@ function buildDotFieldMaterial(
 
   // Push each dot radially by the (faded) wave, in cell-local units.
   const offset = dirFromCenter.mul(wave).mul(amplitudeUniform).mul(falloff);
-  const displacedLocal = displace(cellLocal, offset);
+  const displacedLocal = displace(cellLocal, offset.mul(-1));
 
   const zeroScalar = vec2(0).x;
   const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
