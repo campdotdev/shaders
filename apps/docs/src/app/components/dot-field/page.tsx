@@ -33,6 +33,14 @@ export default function DotFieldPage() {
         max: 8,
         step: 0.5,
       });
+      pane.addBlade({ view: 'separator' });
+      pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
+      pane.addBinding(local, 'amplitude', { min: 0, max: 0.9, step: 0.01 });
+      pane.addBinding(local, 'wavelength', { min: 20, max: 400, step: 5 });
+      pane.addBinding(local, 'decay', { min: 0, max: 5, step: 0.05 });
+      pane.addBlade({ view: 'separator' });
+      pane.addBinding(local, 'centerX', { label: 'center x', min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'centerY', { label: 'center y', min: 0, max: 1, step: 0.01 });
       pane.on('change', sync);
     },
   );
@@ -76,7 +84,7 @@ export default function DotFieldPage() {
           }}
         >
           {`<ShaderScene>
-  <DotField spacing={30} dotSize={2} color="oklch(0.65 0.01 150)" />
+  <DotField spacing={30} dotSize={3} color="oklch(0.65 0.01 150)" speed={0.45} amplitude={0.15} />
 </ShaderScene>`}
         </pre>
       </section>
