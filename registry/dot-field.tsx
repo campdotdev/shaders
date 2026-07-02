@@ -14,6 +14,8 @@ import {
 import { length, mix, mod, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
+import { parseColor } from './utils/color';
+
 export interface DotFieldProps {
   spacing?: AnimatableProp<number>;
   dotSize?: AnimatableProp<number>;
@@ -30,15 +32,6 @@ const DEFAULTS = {
   color: '#8B918C',
   reach: 100,
   strength: 1,
-};
-
-const hexToVec3 = (hex: string): readonly [number, number, number] => {
-  const cleanedHex = hex.replace('#', '');
-  const redChannel = parseInt(cleanedHex.slice(0, 2), 16) / 255;
-  const greenChannel = parseInt(cleanedHex.slice(2, 4), 16) / 255;
-  const blueChannel = parseInt(cleanedHex.slice(4, 6), 16) / 255;
-
-  return [redChannel, greenChannel, blueChannel];
 };
 
 function buildDotFieldMaterial(
@@ -94,7 +87,7 @@ export function DotField(props: DotFieldProps) {
   const reachUniform = useAnimatableUniform<number>(props.reach ?? DEFAULTS.reach);
   const strengthUniform = useAnimatableUniform<number>(props.strength ?? DEFAULTS.strength);
 
-  const color = useMemo(() => hexToVec3(props.color ?? DEFAULTS.color), [props.color]);
+  const color = useMemo(() => parseColor(props.color ?? DEFAULTS.color), [props.color]);
 
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), []);
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec]);
