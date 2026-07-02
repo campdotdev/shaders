@@ -33,11 +33,6 @@ export default function DotFieldPage() {
         max: 8,
         step: 0.5,
       });
-      pane.addBlade({ view: 'separator' });
-      pane.addBinding(local, 'reach', { min: 10, max: 400, step: 5 });
-      pane.addBinding(local, 'strength', { min: 0, max: 3, step: 0.05 });
-      pane.addBlade({ view: 'separator' });
-      pane.addBinding(local, 'interactive', { label: 'interactive (cursor)' });
       pane.on('change', sync);
     },
   );
@@ -81,7 +76,7 @@ export default function DotFieldPage() {
           }}
         >
           {`<ShaderScene>
-  <DotField spacing={30} dotSize={2} color="#888" reach={100} strength={1} />
+  <DotField spacing={30} dotSize={2} color="oklch(0.65 0.01 150)" />
 </ShaderScene>`}
         </pre>
       </section>

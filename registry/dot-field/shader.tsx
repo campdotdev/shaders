@@ -2,16 +2,14 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { displace, signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
+import { signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
 import {
   type AnimatableProp,
-  type CursorSignal,
   useAnimatableUniform,
-  useCursor,
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { length, mix, mod, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { mix, round, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
@@ -20,41 +18,26 @@ export interface DotFieldShaderProps {
   spacing: AnimatableProp<number>;
   dotSize: AnimatableProp<number>;
   color: string;
-  reach: AnimatableProp<number>;
-  strength: AnimatableProp<number>;
-  interactive: boolean;
-  inputs?: { cursor?: CursorSignal };
 }
 
 function buildDotFieldMaterial(
   spacingUniform: TSLNode,
   dotSizeUniform: TSLNode,
-  reachUniform: TSLNode,
-  strengthUniform: TSLNode,
-  cursorUniform: TSLNode,
   resUniform: TSLNode,
   color: readonly [number, number, number],
 ): MeshBasicNodeMaterial {
   const [redChannel, greenChannel, blueChannel] = color;
 
-  const pxUv = uv().mul(resUniform).div(spacingUniform);
-  const cellLocal = mod(pxUv, 1).sub(vec2(0.5, 0.5));
-
-  const cellIndex = pxUv.sub(mod(pxUv, 1));
-  const cellCenterUv = cellIndex.add(vec2(0.5, 0.5)).mul(spacingUniform).div(resUniform);
-
-  const cellToCursorPx = cellCenterUv.sub(cursorUniform).mul(-1).mul(resUniform);
-  const distToCursorPx = length(cellToCursorPx);
-  const influence = smoothstep(reachUniform, 0, distToCursorPx);
-
-  // +0.001 avoids div-by-zero when cursor is exactly over a cell center
-  const dirToCursor = cellToCursorPx.div(distToCursorPx.add(0.001));
-  const offset = dirToCursor.mul(influence).mul(strengthUniform).mul(0.4);
-  const displacedLocal = displace(cellLocal, offset.mul(-1));
+  // Cell-space coordinate measured outward from the canvas center (0 at center).
+  const cellCoord = uv().sub(0.5).mul(resUniform).div(spacingUniform);
+  // Signed offset to the nearest dot center: 0 at a dot, ±0.5 at a cell edge.
+  // Anchoring at center makes opposite-edge margins symmetric and puts a dot
+  // exactly at the middle (where the Phase 3 ripple will emanate from).
+  const cellLocal = cellCoord.sub(round(cellCoord));
 
   const zeroScalar = vec2(0).x;
   const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
-  const sdf = signedDistanceFieldCircle(displacedLocal, radius);
+  const sdf = signedDistanceFieldCircle(cellLocal, radius);
 
   const antialiasWidth = 0.01;
   const dotMask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
@@ -67,38 +50,14 @@ function buildDotFieldMaterial(
   return material;
 }
 
-export function DotFieldShader({
-  spacing,
-  dotSize,
-  color,
-  reach,
-  strength,
-  interactive,
-  inputs,
-}: DotFieldShaderProps) {
+export function DotFieldShader({ spacing, dotSize, color }: DotFieldShaderProps) {
   const shaderContext = useShaderContext();
-  const cursorFromInputs = inputs?.cursor;
-  const cursorAuto = useCursor();
-  const cursor = cursorFromInputs ?? (interactive ? cursorAuto : null);
   const resize = useResize();
 
   const spacingUniform = useAnimatableUniform<number>(spacing);
   const dotSizeUniform = useAnimatableUniform<number>(dotSize);
-  const reachUniform = useAnimatableUniform<number>(reach);
-  const strengthUniform = useAnimatableUniform<number>(strength);
 
   const parsedColor = useMemo(() => parseColor(color), [color]);
-
-  const cursorVec = useMemo(() => new Vector2(0.5, 0.5), []);
-  const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec]);
-
-  useEffect(() => {
-    if (cursor)
-      return cursor.on('change', ([cursorX, cursorY]) => cursorVec.set(cursorX, 1 - cursorY));
-    cursorVec.set(0.5, 0.5);
-
-    return undefined;
-  }, [cursor, cursorVec]);
 
   const resVec = useMemo(() => new Vector2(1920, 1080), []);
   const resUniform = useMemo(() => uniform(resVec), [resVec]);
@@ -116,15 +75,7 @@ export function DotFieldShader({
   useEffect(() => {
     if (!shaderContext) return;
 
-    const material = buildDotFieldMaterial(
-      spacingUniform,
-      dotSizeUniform,
-      reachUniform,
-      strengthUniform,
-      cursorUniform,
-      resUniform,
-      parsedColor,
-    );
+    const material = buildDotFieldMaterial(spacingUniform, dotSizeUniform, resUniform, parsedColor);
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
     shaderContext.scene.add(mesh);
@@ -142,16 +93,7 @@ export function DotFieldShader({
         /* same */
       }
     };
-  }, [
-    shaderContext,
-    parsedColor,
-    spacingUniform,
-    dotSizeUniform,
-    reachUniform,
-    strengthUniform,
-    cursorUniform,
-    resUniform,
-  ]);
+  }, [shaderContext, parsedColor, spacingUniform, dotSizeUniform, resUniform]);
 
   return null;
 }
