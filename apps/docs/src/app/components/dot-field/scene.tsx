@@ -16,7 +16,16 @@ export default function DotFieldScene({
 } = {}) {
   return (
     <ShaderScene>
-      <DotField color={params.color} dotSize={params.dotSize} spacing={params.spacing} />
+      <DotField
+        amplitude={params.amplitude}
+        center={[params.centerX, params.centerY]}
+        color={params.color}
+        decay={params.decay}
+        dotSize={params.dotSize}
+        spacing={params.spacing}
+        speed={params.speed}
+        wavelength={params.wavelength}
+      />
       {children}
     </ShaderScene>
   );

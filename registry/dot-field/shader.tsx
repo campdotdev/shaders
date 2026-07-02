@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
+import { displace, elapsedTime, signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { mix, round, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { exp, length, mix, round, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
@@ -18,26 +18,59 @@ export interface DotFieldShaderProps {
   spacing: AnimatableProp<number>;
   dotSize: AnimatableProp<number>;
   color: string;
+  speed: AnimatableProp<number>;
+  amplitude: AnimatableProp<number>;
+  wavelength: AnimatableProp<number>;
+  decay: AnimatableProp<number>;
+  center: [number, number];
 }
 
 function buildDotFieldMaterial(
   spacingUniform: TSLNode,
   dotSizeUniform: TSLNode,
+  speedUniform: TSLNode,
+  amplitudeUniform: TSLNode,
+  wavelengthUniform: TSLNode,
+  decayUniform: TSLNode,
+  centerUniform: TSLNode,
   resUniform: TSLNode,
   color: readonly [number, number, number],
 ): MeshBasicNodeMaterial {
   const [redChannel, greenChannel, blueChannel] = color;
 
-  // Cell-space coordinate measured outward from the canvas center (0 at center).
   const cellCoord = uv().sub(0.5).mul(resUniform).div(spacingUniform);
-  // Signed offset to the nearest dot center: 0 at a dot, ±0.5 at a cell edge.
-  // Anchoring at center makes opposite-edge margins symmetric and puts a dot
-  // exactly at the middle (where the Phase 3 ripple will emanate from).
-  const cellLocal = cellCoord.sub(round(cellCoord));
+  const cellIndex = round(cellCoord);
+  const cellLocal = cellCoord.sub(cellIndex);
+
+  // Ripple origin snapped to the nearest dot, in the same integer lattice space
+  // as the cells. vec2(0).add(centerUniform) lifts the bare uniform into a node
+  // receiver so the chain stays Gotcha #12-safe (uniforms only ever arguments).
+  const originIndex = round(
+    vec2(0, 0).add(centerUniform).sub(0.5).mul(resUniform).div(spacingUniform),
+  );
+
+  // Vector from the origin dot to this dot, in cell units (isotropic, square cells).
+  const toCell = cellIndex.sub(originIndex);
+  const distCells = length(toCell);
+  // +0.001 avoids div-by-zero for the dot sitting exactly on the ripple origin
+  const dirFromCenter = toCell.div(distCells.add(0.001));
+  const distToCenterPx = distCells.mul(spacingUniform);
+
+  // Traveling wave: crests move outward as elapsedTime grows.
+  const phase = distToCenterPx.div(wavelengthUniform).sub(elapsedTime.mul(speedUniform));
+  const wave = sin(phase.mul(Math.PI * 2));
+
+  // Fade the wave with distance so the ripple settles toward the edges.
+  const distNorm = distToCenterPx.div(length(resUniform).mul(0.5));
+  const falloff = exp(distNorm.mul(decayUniform).mul(-1));
+
+  // Push each dot radially by the (faded) wave, in cell-local units.
+  const offset = dirFromCenter.mul(wave).mul(amplitudeUniform).mul(falloff);
+  const displacedLocal = displace(cellLocal, offset);
 
   const zeroScalar = vec2(0).x;
   const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
-  const sdf = signedDistanceFieldCircle(cellLocal, radius);
+  const sdf = signedDistanceFieldCircle(displacedLocal, radius);
 
   const antialiasWidth = 0.01;
   const dotMask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
@@ -50,14 +83,34 @@ function buildDotFieldMaterial(
   return material;
 }
 
-export function DotFieldShader({ spacing, dotSize, color }: DotFieldShaderProps) {
+export function DotFieldShader({
+  spacing,
+  dotSize,
+  color,
+  speed,
+  amplitude,
+  wavelength,
+  decay,
+  center,
+}: DotFieldShaderProps) {
   const shaderContext = useShaderContext();
   const resize = useResize();
 
   const spacingUniform = useAnimatableUniform<number>(spacing);
   const dotSizeUniform = useAnimatableUniform<number>(dotSize);
+  const speedUniform = useAnimatableUniform<number>(speed);
+  const amplitudeUniform = useAnimatableUniform<number>(amplitude);
+  const wavelengthUniform = useAnimatableUniform<number>(wavelength);
+  const decayUniform = useAnimatableUniform<number>(decay);
 
   const parsedColor = useMemo(() => parseColor(color), [color]);
+
+  const centerVec = useMemo(() => new Vector2(0.5, 0.5), []);
+  const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
+
+  useEffect(() => {
+    centerVec.set(center[0], center[1]);
+  }, [centerVec, center]);
 
   const resVec = useMemo(() => new Vector2(1920, 1080), []);
   const resUniform = useMemo(() => uniform(resVec), [resVec]);
@@ -75,7 +128,17 @@ export function DotFieldShader({ spacing, dotSize, color }: DotFieldShaderProps)
   useEffect(() => {
     if (!shaderContext) return;
 
-    const material = buildDotFieldMaterial(spacingUniform, dotSizeUniform, resUniform, parsedColor);
+    const material = buildDotFieldMaterial(
+      spacingUniform,
+      dotSizeUniform,
+      speedUniform,
+      amplitudeUniform,
+      wavelengthUniform,
+      decayUniform,
+      centerUniform,
+      resUniform,
+      parsedColor,
+    );
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
     shaderContext.scene.add(mesh);
@@ -93,7 +156,18 @@ export function DotFieldShader({ spacing, dotSize, color }: DotFieldShaderProps)
         /* same */
       }
     };
-  }, [shaderContext, parsedColor, spacingUniform, dotSizeUniform, resUniform]);
+  }, [
+    shaderContext,
+    parsedColor,
+    spacingUniform,
+    dotSizeUniform,
+    speedUniform,
+    amplitudeUniform,
+    wavelengthUniform,
+    decayUniform,
+    centerUniform,
+    resUniform,
+  ]);
 
   return null;
 }
