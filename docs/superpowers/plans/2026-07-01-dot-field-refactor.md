@@ -630,7 +630,7 @@ import {
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { exp, length, mix, mod, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { exp, length, mix, round, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 ```
 Props interface after this step:
@@ -672,13 +672,14 @@ function buildDotFieldMaterial(
 ): MeshBasicNodeMaterial {
   const [redChannel, greenChannel, blueChannel] = color;
 
-  const pxUv = uv().mul(resUniform).div(spacingUniform);
-  const cellLocal = mod(pxUv, 1).sub(vec2(0.5, 0.5));
+  // Center-anchored cell coordinate (0 at canvas center), carried over from Phase 2.
+  const cellCoord = uv().sub(0.5).mul(resUniform).div(spacingUniform);
+  const cellLocal = cellCoord.sub(round(cellCoord));
 
-  const cellIndex = pxUv.sub(mod(pxUv, 1));
-  const cellCenterUv = cellIndex.add(vec2(0.5, 0.5)).mul(spacingUniform).div(resUniform);
-
-  // Radial ripple: phase grows with distance from center and recedes over time.
+  // Radial ripple: phase grows with distance from the ripple center and recedes over time.
+  // Each cell's center back in normalized UV, then the vector to the ripple origin.
+  // (Uniforms are only ever arguments here — never bare-uniform receivers — per Gotcha #12.)
+  const cellCenterUv = round(cellCoord).mul(spacingUniform).div(resUniform).add(0.5);
   const cellToCenterPx = cellCenterUv.sub(centerUniform).mul(resUniform);
   const distToCenterPx = length(cellToCenterPx);
   // +0.001 avoids div-by-zero for the cell exactly at center
