@@ -14,25 +14,17 @@ import {
 import { length, mix, mod, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
-import { parseColor } from './utils/color';
+import { parseColor } from '../utils/color';
 
-export interface DotFieldProps {
-  spacing?: AnimatableProp<number>;
-  dotSize?: AnimatableProp<number>;
-  color?: string;
-  reach?: AnimatableProp<number>;
-  strength?: AnimatableProp<number>;
-  interactive?: boolean;
+export interface DotFieldShaderProps {
+  spacing: AnimatableProp<number>;
+  dotSize: AnimatableProp<number>;
+  color: string;
+  reach: AnimatableProp<number>;
+  strength: AnimatableProp<number>;
+  interactive: boolean;
   inputs?: { cursor?: CursorSignal };
 }
-
-const DEFAULTS = {
-  spacing: 30,
-  dotSize: 2,
-  color: '#8B918C',
-  reach: 100,
-  strength: 1,
-};
 
 function buildDotFieldMaterial(
   spacingUniform: TSLNode,
@@ -75,19 +67,27 @@ function buildDotFieldMaterial(
   return material;
 }
 
-export function DotField(props: DotFieldProps) {
+export function DotFieldShader({
+  spacing,
+  dotSize,
+  color,
+  reach,
+  strength,
+  interactive,
+  inputs,
+}: DotFieldShaderProps) {
   const shaderContext = useShaderContext();
-  const cursorFromInputs = props.inputs?.cursor;
+  const cursorFromInputs = inputs?.cursor;
   const cursorAuto = useCursor();
-  const cursor = cursorFromInputs ?? ((props.interactive ?? true) ? cursorAuto : null);
+  const cursor = cursorFromInputs ?? (interactive ? cursorAuto : null);
   const resize = useResize();
 
-  const spacingUniform = useAnimatableUniform<number>(props.spacing ?? DEFAULTS.spacing);
-  const dotSizeUniform = useAnimatableUniform<number>(props.dotSize ?? DEFAULTS.dotSize);
-  const reachUniform = useAnimatableUniform<number>(props.reach ?? DEFAULTS.reach);
-  const strengthUniform = useAnimatableUniform<number>(props.strength ?? DEFAULTS.strength);
+  const spacingUniform = useAnimatableUniform<number>(spacing);
+  const dotSizeUniform = useAnimatableUniform<number>(dotSize);
+  const reachUniform = useAnimatableUniform<number>(reach);
+  const strengthUniform = useAnimatableUniform<number>(strength);
 
-  const color = useMemo(() => parseColor(props.color ?? DEFAULTS.color), [props.color]);
+  const parsedColor = useMemo(() => parseColor(color), [color]);
 
   const cursorVec = useMemo(() => new Vector2(0.5, 0.5), []);
   const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec]);
@@ -123,7 +123,7 @@ export function DotField(props: DotFieldProps) {
       strengthUniform,
       cursorUniform,
       resUniform,
-      color,
+      parsedColor,
     );
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -144,7 +144,7 @@ export function DotField(props: DotFieldProps) {
     };
   }, [
     shaderContext,
-    color,
+    parsedColor,
     spacingUniform,
     dotSizeUniform,
     reachUniform,
