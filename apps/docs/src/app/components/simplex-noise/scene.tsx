@@ -10,16 +10,18 @@ import { INITIAL, type Params } from './params';
 
 export default function SimplexNoiseScene({
   params = INITIAL,
+  onFirstPaint,
   children,
 }: {
   params?: Params;
+  onFirstPaint?: () => void;
   children?: ReactNode;
 } = {}) {
   const allColors = [params.color0, params.color1, params.color2, params.color3, params.color4];
   const stops: ColorStop[] = allColors.slice(0, params.colorCount).map((color) => ({ color }));
 
   return (
-    <ShaderScene>
+    <ShaderScene onFirstPaint={onFirstPaint}>
       <SimplexNoise
         bias={params.bias}
         colorSpace={params.colorSpace}

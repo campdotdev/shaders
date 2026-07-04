@@ -52,6 +52,7 @@ const formatParams = (params: Params) =>
 export default function WavesPage() {
   const paneContainerRef = useRef<HTMLDivElement>(null);
   const [params, setParams] = useState<Params>(() => structuredClone(INITIAL));
+  const [painted, setPainted] = useState(false);
 
   useEffect(() => {
     const container = paneContainerRef.current;
@@ -149,15 +150,17 @@ export default function WavesPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', background: '#0a0a14' }}>
-        <Image
-          alt="Waves shader preview: layered luminous wave bands in red, amber, green, and blue over a dark field"
-          fill
-          priority
-          sizes="100vw"
-          src="/posters/waves.jpg"
-          style={{ objectFit: 'cover' }}
-        />
-        <WavesScene params={params}>
+        {!painted && (
+          <Image
+            alt="Waves shader preview: layered luminous wave bands in red, amber, green, and blue over a dark field"
+            fill
+            priority
+            sizes="100vw"
+            src="/posters/waves.jpg"
+            style={{ objectFit: 'cover' }}
+          />
+        )}
+        <WavesScene onFirstPaint={() => setPainted(true)} params={params}>
           <VisualTestPause />
         </WavesScene>
         <div

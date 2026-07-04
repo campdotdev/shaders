@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import { useState } from 'react';
 
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
@@ -51,6 +52,7 @@ const formatParams = (params: Params) =>
 }`;
 
 export default function SimplexNoisePage() {
+  const [painted, setPainted] = useState(false);
   const [params, paneContainerRef] = useTweakpane<Params>(
     '<SimplexNoise>',
     INITIAL,
@@ -115,15 +117,17 @@ export default function SimplexNoisePage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative' }}>
-        <Image
-          alt="Simplex noise shader preview: posterized organic noise pattern in blue, violet, magenta, and teal"
-          fill
-          priority
-          sizes="100vw"
-          src="/posters/simplex-noise.png"
-          style={{ objectFit: 'cover' }}
-        />
-        <SimplexNoiseScene params={params}>
+        {!painted && (
+          <Image
+            alt="Simplex noise shader preview: posterized organic noise pattern in blue, violet, magenta, and teal"
+            fill
+            priority
+            sizes="100vw"
+            src="/posters/simplex-noise.png"
+            style={{ objectFit: 'cover' }}
+          />
+        )}
+        <SimplexNoiseScene onFirstPaint={() => setPainted(true)} params={params}>
           <VisualTestPause />
         </SimplexNoiseScene>
         <div

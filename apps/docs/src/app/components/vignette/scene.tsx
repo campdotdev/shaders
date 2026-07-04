@@ -10,13 +10,15 @@ import { INITIAL, type VignetteParams } from './params';
 
 export default function VignetteScene({
   params = INITIAL,
+  onFirstPaint,
   children,
 }: {
   params?: VignetteParams;
+  onFirstPaint?: () => void;
   children?: ReactNode;
 } = {}) {
   return (
-    <ShaderScene>
+    <ShaderScene onFirstPaint={onFirstPaint}>
       <LinearGradient />
       <Vignette
         center={[params.centerX, params.centerY]}

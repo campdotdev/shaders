@@ -9,13 +9,15 @@ import { INITIAL, type Params } from './params';
 
 export default function DotFieldScene({
   params = INITIAL,
+  onFirstPaint,
   children,
 }: {
   params?: Params;
+  onFirstPaint?: () => void;
   children?: ReactNode;
 } = {}) {
   return (
-    <ShaderScene>
+    <ShaderScene onFirstPaint={onFirstPaint}>
       <DotField
         amplitude={params.amplitude}
         center={[params.centerX, params.centerY]}
