@@ -9,7 +9,7 @@ import {
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { smoothstep, sub, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
@@ -20,11 +20,6 @@ export interface AuroraLayer {
   intensity?: number;
   seed?: number;
   falloff?: number;
-}
-
-export interface AuroraBackground {
-  horizon: string;
-  sky: string;
 }
 
 export type AuroraDirection = 'bottom' | 'top' | 'left' | 'right';
@@ -50,30 +45,7 @@ export interface AuroraShaderProps {
   driftY: AnimatableProp<number>;
   turbulence: AnimatableProp<number>;
   direction: AuroraDirection;
-  background: AuroraBackground;
   layers: AuroraLayer[];
-}
-
-function useColorUniform(hex: string) {
-  const vec = useMemo(
-    () => {
-      const [redChannel, greenChannel, blueChannel] = parseColor(hex);
-
-      return new Vector3(redChannel, greenChannel, blueChannel);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  const node = useMemo(() => uniform(vec), [vec]);
-
-  useEffect(() => {
-    const [redChannel, greenChannel, blueChannel] = parseColor(hex);
-
-    vec.set(redChannel, greenChannel, blueChannel);
-  }, [hex, vec]);
-
-  return node;
 }
 
 export function AuroraShader(props: AuroraShaderProps) {
@@ -124,9 +96,6 @@ export function AuroraShader(props: AuroraShaderProps) {
     dirVec.set(directionX, directionY, directionBias);
   }, [props.direction, dirVec]);
 
-  const horizonNode = useColorUniform(props.background.horizon);
-  const skyNode = useColorUniform(props.background.sky);
-
   const layersKey = props.layers
     .map(
       (layer) =>
@@ -136,6 +105,8 @@ export function AuroraShader(props: AuroraShaderProps) {
 
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
+
+    material.transparent = true;
 
     const aspect = aspectNode;
     const scaledUv = vec2(uv().x.mul(aspect).mul(densityXUniform), uv().y.mul(densityYUniform));
@@ -182,13 +153,11 @@ export function AuroraShader(props: AuroraShaderProps) {
       aurora = aurora.add(layerColor.mul(auroraField).mul(layerIntensity).mul(2));
     }
 
-    const sky = horizonNode
-      .mul(sub(1, smoothstep(0, 0.5, fallOff)))
-      .add(skyNode.mul(sub(1, smoothstep(0.4, 1, fallOff))));
+    const curtains = aurora.mul(intensityUniform); // vec3 light contribution
+    const rgb = curtains.max(0); // clamp away the now-unmasked negative auroraField
+    const alpha = rgb.x.max(rgb.y).max(rgb.z).clamp(0, 1); // max-channel coverage
 
-    const finalColor = sky.add(aurora.mul(intensityUniform));
-
-    material.colorNode = vec4(finalColor, 1);
+    material.colorNode = vec4(rgb, alpha);
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -217,8 +186,6 @@ export function AuroraShader(props: AuroraShaderProps) {
     driftXUniform,
     driftYUniform,
     turbulenceUniform,
-    horizonNode,
-    skyNode,
     aspectNode,
     dirNode,
   ]);

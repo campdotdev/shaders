@@ -26,7 +26,6 @@ export default function AuroraScene({
   return (
     <ShaderScene>
       <Aurora
-        background={{ horizon: params.horizon, sky: params.sky }}
         densityX={params.densityX}
         densityY={params.densityY}
         direction={params.direction}
