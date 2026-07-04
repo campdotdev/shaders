@@ -10,13 +10,15 @@ import { type GrainParams, INITIAL } from './params';
 
 export default function GrainScene({
   params = INITIAL,
+  onFirstPaint,
   children,
 }: {
   params?: GrainParams;
+  onFirstPaint?: () => void;
   children?: ReactNode;
 } = {}) {
   return (
-    <ShaderScene>
+    <ShaderScene onFirstPaint={onFirstPaint}>
       <LinearGradient />
       <Grain grainBlend={params.grainBlend} intensity={params.intensity} speed={params.speed} />
       {children}

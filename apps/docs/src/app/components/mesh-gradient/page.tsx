@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import { useState } from 'react';
 
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
@@ -49,6 +50,7 @@ const formatParams = (params: Params) =>
 }`;
 
 export default function MeshGradientPage() {
+  const [painted, setPainted] = useState(false);
   const [params, paneContainerRef] = useTweakpane<Params>(
     '<MeshGradient>',
     INITIAL,
@@ -122,15 +124,17 @@ export default function MeshGradientPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative' }}>
-        <Image
-          alt="Mesh gradient shader preview: warped four-color gradient blending pink, magenta, yellow, and orange"
-          fill
-          priority
-          sizes="100vw"
-          src="/posters/mesh-gradient.jpg"
-          style={{ objectFit: 'cover' }}
-        />
-        <MeshGradientScene params={params}>
+        {!painted && (
+          <Image
+            alt="Mesh gradient shader preview: warped four-color gradient blending pink, magenta, yellow, and orange"
+            fill
+            priority
+            sizes="100vw"
+            src="/posters/mesh-gradient.jpg"
+            style={{ objectFit: 'cover' }}
+          />
+        )}
+        <MeshGradientScene onFirstPaint={() => setPainted(true)} params={params}>
           <VisualTestPause />
         </MeshGradientScene>
         <div

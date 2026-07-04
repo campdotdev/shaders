@@ -53,6 +53,7 @@ const formatParams = (params: Params) =>
 export default function LinearGradientPage() {
   const paneContainerRef = useRef<HTMLDivElement>(null);
   const [params, setParams] = useState<Params>(() => structuredClone(INITIAL));
+  const [painted, setPainted] = useState(false);
 
   useEffect(() => {
     const container = paneContainerRef.current;
@@ -168,15 +169,17 @@ export default function LinearGradientPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative' }}>
-        <Image
-          alt="Linear gradient shader preview: vertical gradient from violet to purple to magenta"
-          fill
-          priority
-          sizes="100vw"
-          src="/posters/linear-gradient.png"
-          style={{ objectFit: 'cover' }}
-        />
-        <LinearGradientScene params={params}>
+        {!painted && (
+          <Image
+            alt="Linear gradient shader preview: vertical gradient from violet to purple to magenta"
+            fill
+            priority
+            sizes="100vw"
+            src="/posters/linear-gradient.png"
+            style={{ objectFit: 'cover' }}
+          />
+        )}
+        <LinearGradientScene onFirstPaint={() => setPainted(true)} params={params}>
           <VisualTestPause />
         </LinearGradientScene>
         <div

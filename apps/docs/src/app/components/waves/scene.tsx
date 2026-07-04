@@ -10,9 +10,11 @@ import { INITIAL, type Params } from './params';
 
 export default function WavesScene({
   params = INITIAL,
+  onFirstPaint,
   children,
 }: {
   params?: Params;
+  onFirstPaint?: () => void;
   children?: ReactNode;
 } = {}) {
   const layers: WaveLayer[] = params.layers.map((layer) => ({
@@ -27,7 +29,7 @@ export default function WavesScene({
   }));
 
   return (
-    <ShaderScene>
+    <ShaderScene onFirstPaint={onFirstPaint}>
       <Waves
         amplitude={params.amplitude}
         baseline={params.baseline}
