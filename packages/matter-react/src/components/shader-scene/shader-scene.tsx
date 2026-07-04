@@ -56,6 +56,7 @@ export function ShaderScene(props: ShaderSceneProps) {
   // canvas's clear state).
   const [firstFramePainted, setFirstFramePainted] = useState(false);
   const onFirstPaintRef = useRef(onFirstPaint);
+
   useEffect(() => {
     onFirstPaintRef.current = onFirstPaint;
   }, [onFirstPaint]);
