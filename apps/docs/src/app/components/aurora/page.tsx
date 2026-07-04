@@ -39,7 +39,6 @@ const formatJsx = (params: AuroraParams) =>
     driftY={${formatNumber(params.driftY)}}
     turbulence={${formatNumber(params.turbulence)}}
     direction="${params.direction}"
-    background={{ horizon: '${params.horizon}', sky: '${params.sky}' }}
     layers={[
       ${formatLayers(params.layers)},
     ]}
@@ -57,7 +56,6 @@ const formatParams = (params: AuroraParams) =>
   driftY: ${formatNumber(params.driftY)},
   turbulence: ${formatNumber(params.turbulence)},
   direction: '${params.direction}',
-  background: { horizon: '${params.horizon}', sky: '${params.sky}' },
   layers: [
     ${formatLayers(params.layers)},
   ],
@@ -66,6 +64,7 @@ const formatParams = (params: AuroraParams) =>
 export default function AuroraPage() {
   const paneContainerRef = useRef<HTMLDivElement>(null);
   const [params, setParams] = useState<AuroraParams>(() => structuredClone(INITIAL));
+  const [painted, setPainted] = useState(false);
 
   useEffect(() => {
     const container = paneContainerRef.current;
@@ -103,11 +102,6 @@ export default function AuroraPage() {
       label: 'from',
       options: { Bottom: 'bottom', Top: 'top', Left: 'left', Right: 'right' },
     });
-
-    const backgroundFolder = pane.addFolder({ title: 'Background' });
-
-    backgroundFolder.addBinding(local, 'horizon');
-    backgroundFolder.addBinding(local, 'sky');
 
     pane.addBlade({ view: 'separator' });
 
@@ -170,16 +164,18 @@ export default function AuroraPage() {
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div data-shader-demo style={{ position: 'relative', background: '#0a0a14' }}>
-        <Image
-          alt="Aurora shader preview: cyan sky over green and blue curtain bands with a dark horizon"
-          fill
-          priority
-          sizes="100vw"
-          src="/posters/aurora.jpg"
-          style={{ objectFit: 'cover' }}
-        />
-        <AuroraScene params={params}>
+      <div data-shader-demo style={{ position: 'relative', background: '#0b0f1a' }}>
+        {!painted && (
+          <Image
+            alt="Aurora shader preview: cyan sky over green and blue curtain bands with a dark horizon"
+            fill
+            priority
+            sizes="100vw"
+            src="/posters/aurora.jpg"
+            style={{ objectFit: 'cover' }}
+          />
+        )}
+        <AuroraScene onFirstPaint={() => setPainted(true)} params={params}>
           <VisualTestPause />
         </AuroraScene>
         <div
