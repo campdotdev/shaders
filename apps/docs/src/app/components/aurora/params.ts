@@ -20,8 +20,6 @@ export interface AuroraParams {
   driftY: number;
   turbulence: number;
   direction: AuroraDirection;
-  horizon: string;
-  sky: string;
   layers: PlainAuroraLayer[];
 }
 
@@ -38,8 +36,6 @@ export const INITIAL: AuroraParams = {
   driftY: -3.15,
   turbulence: 1.3,
   direction: 'top',
-  horizon: '#040009',
-  sky: '#146389',
   layers: [
     { color: palette.green.base, speed: 0.07, intensity: 0.6, seed: 0, falloff: 1 },
     { color: palette.blue.base, speed: 0.1, intensity: 0.2, seed: 5, falloff: 1 },
