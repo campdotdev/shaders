@@ -32,6 +32,8 @@ export interface ShaderSceneProps {
   maxDPR?: number;
   /** Output color gamut. 'auto' (default) uses the widest the display supports. */
   gamut?: GamutPreference;
+  /** Fires once, on the frame after the shader's first content frame is on screen. */
+  onFirstPaint?: () => void;
 }
 
 const defaultStyle: CSSProperties = {
@@ -43,7 +45,7 @@ const defaultStyle: CSSProperties = {
 };
 
 export function ShaderScene(props: ShaderSceneProps) {
-  const { children, fallback, className, style, maxDPR, gamut = 'auto' } = props;
+  const { children, fallback, className, style, maxDPR, gamut = 'auto', onFirstPaint } = props;
   const resolvedGamut = useDisplayGamut(gamut);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shaderContext, setShaderContext] = useState<ShaderContextValue | null>(null);
@@ -53,6 +55,10 @@ export function ShaderScene(props: ShaderSceneProps) {
   // the fallback and the first shader frame (which would otherwise flash the
   // canvas's clear state).
   const [firstFramePainted, setFirstFramePainted] = useState(false);
+  const onFirstPaintRef = useRef(onFirstPaint);
+  useEffect(() => {
+    onFirstPaintRef.current = onFirstPaint;
+  }, [onFirstPaint]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -141,7 +147,10 @@ export function ShaderScene(props: ShaderSceneProps) {
             firstPaintSignaled = true;
             firstPaintRaf = requestAnimationFrame(() => {
               firstPaintRaf = null;
-              if (!cancelled) setFirstFramePainted(true);
+              if (!cancelled) {
+                setFirstFramePainted(true);
+                onFirstPaintRef.current?.();
+              }
             });
           }
         };

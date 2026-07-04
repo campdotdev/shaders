@@ -2,6 +2,8 @@
 
 ## 2.0.0
 
+- `ShaderScene` gains an `onFirstPaint?: () => void` prop, fired once when the shader's first frame is on screen. Lets consumers dismiss a server-rendered poster without relying on the shader being opaque.
+
 ## 1.0.0
 
 ## 0.6.0
