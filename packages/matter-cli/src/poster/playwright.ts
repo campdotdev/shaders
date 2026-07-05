@@ -92,6 +92,7 @@ export interface ScreenshotOpts {
   format: 'jpeg' | 'png';
   quality: number | undefined;
   deviceScaleFactor: number;
+  background?: string;
 }
 
 export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes: number }> {
@@ -129,6 +130,34 @@ export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes
     }
     if (opts.timeSeconds > 0) {
       await page.waitForTimeout(opts.timeSeconds * 1000);
+    }
+    if (opts.background !== undefined) {
+      // This callback is serialized and run in the browser page, which has no
+      // DOM lib types in this Node-only package's tsconfig — go through
+      // `globalThis` (as in the __matterReady check above) instead of
+      // referencing `document` directly, and set the style property via
+      // `Reflect.set` to avoid asserting a DOM element shape.
+      await page.evaluate((bg: string) => {
+        function applyBackground(element: unknown): void {
+          if (typeof element !== 'object' || element === null) return;
+          const style: unknown = Reflect.get(element, 'style');
+
+          if (typeof style !== 'object' || style === null) return;
+          Reflect.set(style, 'background', bg);
+        }
+
+        const browserDocument: unknown = Reflect.get(globalThis, 'document');
+
+        if (typeof browserDocument !== 'object' || browserDocument === null) return;
+        const querySelector: unknown = Reflect.get(browserDocument, 'querySelector');
+
+        if (typeof querySelector !== 'function') return;
+        // Set the background on the canvas element itself. A canvas element
+        // screenshot composites the transparent WebGPU content over the
+        // element's OWN CSS background, not the page body's, so targeting
+        // body/documentElement has no effect on the captured pixels.
+        applyBackground(Reflect.apply(querySelector, browserDocument, ['canvas']));
+      }, opts.background);
     }
     const canvas = page.locator('canvas').first();
 

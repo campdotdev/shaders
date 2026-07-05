@@ -1,6 +1,26 @@
-import { describe, expect, it, vi } from 'vitest';
+import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { resolveOutPath, runPoster, validateDeviceScaleFactor } from './poster.js';
+
+const { launchAndScreenshotMock } = vi.hoisted(() => ({
+  launchAndScreenshotMock: vi.fn(async () => ({ bytes: 123 })),
+}));
+
+vi.mock('../poster/bundle.js', () => ({
+  bundlePoster: vi.fn(async () => ({ html: '<html></html>', js: '' })),
+}));
+vi.mock('../poster/server.js', () => ({
+  createPosterServer: vi.fn(async () => ({
+    url: 'http://127.0.0.1:0/',
+    close: vi.fn(async () => undefined),
+  })),
+}));
+vi.mock('../poster/playwright.js', () => ({
+  launchAndScreenshot: launchAndScreenshotMock,
+}));
 
 const base = {
   from: '/tmp/nope.tsx',
@@ -139,6 +159,45 @@ describe('resolveOutPath', () => {
 
   it('appends the format extension to non-image extensions', () => {
     expect(resolveOutPath('/tmp/hero.bak', 'jpeg')).toBe('/tmp/hero.bak.jpg');
+  });
+});
+
+describe('runPoster — --background threading', () => {
+  let sourceDir: string;
+  let sourceFile: string;
+
+  beforeEach(async () => {
+    launchAndScreenshotMock.mockClear();
+    sourceDir = await mkdtemp(join(tmpdir(), 'matter-poster-test-'));
+    sourceFile = join(sourceDir, 'scene.tsx');
+    await writeFile(join(sourceDir, 'package.json'), '{"name":"matter-poster-test-fixture"}');
+    await writeFile(sourceFile, 'export default function Scene() { return null; }');
+  });
+
+  afterEach(async () => {
+    await rm(sourceDir, { recursive: true, force: true });
+  });
+
+  it('passes --background through to launchAndScreenshot', async () => {
+    await runPoster(
+      { ...base, from: sourceFile, out: join(sourceDir, 'poster.jpg'), background: '#0b0f1a' },
+      { cwd: sourceDir, log: vi.fn() },
+    );
+
+    expect(launchAndScreenshotMock).toHaveBeenCalledWith(
+      expect.objectContaining({ background: '#0b0f1a' }),
+    );
+  });
+
+  it('leaves background undefined when --background is omitted', async () => {
+    await runPoster(
+      { ...base, from: sourceFile, out: join(sourceDir, 'poster.jpg') },
+      { cwd: sourceDir, log: vi.fn() },
+    );
+
+    expect(launchAndScreenshotMock).toHaveBeenCalledWith(
+      expect.objectContaining({ background: undefined }),
+    );
   });
 });
 

@@ -19,25 +19,38 @@ if [ ! -f packages/matter-cli/dist/index.js ]; then
   exit 1
 fi
 
-# name:format pairs (png for the flat shaders, jpg for the busy ones)
+# name:format[:background] pairs (png for the flat shaders, jpg for the busy
+# ones; background is optional and only needed for shaders with a transparent
+# base layer, e.g. aurora, so they flatten onto a sensible color)
 for pair in \
   "linear-gradient:png" \
   "simplex-noise:png" \
-  "aurora:jpg" \
+  "aurora:jpg:#0b0f1a" \
   "grain:jpg" \
   "mesh-gradient:jpg" \
   "waves:jpg" \
   "vignette:jpg" \
   "dot-field:png"; do
   name="${pair%%:*}"
-  format="${pair##*:}"
+  rest="${pair#*:}"
+  format="${rest%%:*}"
+  if [ "$rest" != "$format" ]; then
+    background="${rest#*:}"
+  else
+    background=""
+  fi
   echo "==> $name ($format)"
-  $CLI \
-    --source "${COMPONENTS_DIR}/${name}/scene.tsx" \
-    --output "${OUT_DIR}/${name}.${format}" \
-    --format "${format}" \
-    --width "$WIDTH" \
+  args=(
+    --source "${COMPONENTS_DIR}/${name}/scene.tsx"
+    --output "${OUT_DIR}/${name}.${format}"
+    --format "${format}"
+    --width "$WIDTH"
     --height "$HEIGHT"
+  )
+  if [ -n "$background" ]; then
+    args+=(--background "$background")
+  fi
+  $CLI "${args[@]}"
 done
 
 echo "All posters regenerated."

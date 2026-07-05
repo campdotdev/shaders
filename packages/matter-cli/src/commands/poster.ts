@@ -18,6 +18,7 @@ export interface PosterOptions {
   type?: string;
   quality?: number;
   deviceScaleFactor?: number;
+  background?: string;
 }
 
 export interface PosterIO {
@@ -132,6 +133,7 @@ export async function runPoster(
       format,
       quality,
       deviceScaleFactor,
+      background: opts.background,
     });
 
     io.log(`Wrote poster: ${resolvedOut} (${opts.width}×${opts.height}, ${formatBytes(bytes)})`);
