@@ -167,7 +167,7 @@ export default function AuroraPage() {
       <div data-shader-demo style={{ position: 'relative', background: '#0b0f1a' }}>
         {!painted && (
           <Image
-            alt="Aurora shader preview: cyan sky over green and blue curtain bands with a dark horizon"
+            alt="Aurora shader preview: green, blue, and violet light curtains over a dark backdrop"
             fill
             priority
             sizes="100vw"
