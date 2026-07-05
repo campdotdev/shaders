@@ -2,6 +2,10 @@
 
 ## 2.0.0
 
+### Patch Changes
+
+- `poster` gains a `--background <color>` option to composite the shader onto a given CSS color before capture (used for transparent shaders like Aurora). Defaults to the harness background when omitted.
+
 ## 1.0.0
 
 ## 0.6.0

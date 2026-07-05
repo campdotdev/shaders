@@ -111,6 +111,10 @@ program
   .option('--width <px>', 'render width', '1280')
   .option('--height <px>', 'render height', '720')
   .option('--device-scale-factor <n>', 'capture DPR; defaults to 2 to match the live renderer', '2')
+  .option(
+    '--background <color>',
+    'CSS color to composite behind the shader before capture (default: harness background)',
+  )
   .action(
     async (opts: {
       source: string;
@@ -122,6 +126,7 @@ program
       width: string;
       height: string;
       deviceScaleFactor: string;
+      background?: string;
     }) => {
       try {
         const { runPoster } = await import('./commands/poster.js');
@@ -136,6 +141,7 @@ program
           width: Number.parseInt(opts.width, 10),
           height: Number.parseInt(opts.height, 10),
           deviceScaleFactor: Number.parseFloat(opts.deviceScaleFactor),
+          background: opts.background,
         });
       } catch (caughtError) {
         fail(caughtError);
