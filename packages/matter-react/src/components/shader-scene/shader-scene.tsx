@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, type ReactNode, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 
 import {
   createIntersectionWatcher,
@@ -23,10 +23,10 @@ import {
   type GamutPreference,
   useDisplayGamut,
 } from '../../hooks/use-display-gamut/use-display-gamut.js';
+import { PosterContext } from '../shader-poster/poster-context.js';
 
 export interface ShaderSceneProps {
   children?: ReactNode;
-  fallback?: ReactNode;
   className?: string;
   style?: CSSProperties;
   maxDPR?: number;
@@ -46,7 +46,6 @@ const defaultStyle: CSSProperties = {
 
 export function ShaderScene({
   children,
-  fallback,
   className,
   style,
   maxDPR,
@@ -57,12 +56,12 @@ export function ShaderScene({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shaderContext, setShaderContext] = useState<ShaderContextValue | null>(null);
   const [error, setError] = useState<Error | null>(null);
-  // Stays false until the renderer has actually painted a frame containing the
-  // shader. The fallback is held until then so there's no gap between dropping
-  // the fallback and the first shader frame (which would otherwise flash the
-  // canvas's clear state).
-  const [firstFramePainted, setFirstFramePainted] = useState(false);
   const onFirstPaintRef = useRef(onFirstPaint);
+  // Poster boundary controls, when a ShaderPoster wraps this scene. The value
+  // is memoized stable by ShaderPoster, so listing it in the setup effect's
+  // deps does not cause renderer rebuilds. Null (a no-op below) when the
+  // scene is used without a poster.
+  const posterControls = useContext(PosterContext);
 
   useEffect(() => {
     onFirstPaintRef.current = onFirstPaint;
@@ -156,7 +155,7 @@ export function ShaderScene({
             firstPaintRaf = requestAnimationFrame(() => {
               firstPaintRaf = null;
               if (!cancelled) {
-                setFirstFramePainted(true);
+                posterControls?.setShaderPainted(true);
                 onFirstPaintRef.current?.();
               }
             });
@@ -224,10 +223,10 @@ export function ShaderScene({
       cleanup = null;
       setShaderContext(null);
       // A fresh renderer (e.g. on gamut change) must re-prove its first paint,
-      // so show the fallback again until it does.
-      setFirstFramePainted(false);
+      // so re-arm the enclosing poster until it does.
+      posterControls?.setShaderPainted(false);
     };
-  }, [maxDPR, resolvedGamut]);
+  }, [maxDPR, resolvedGamut, posterControls]);
 
   let content: ReactNode;
 
@@ -255,18 +254,12 @@ export function ShaderScene({
     );
   } else {
     // Mount the children as soon as the context exists so the shader can build
-    // and paint, but keep the fallback overlaid on top until that first frame
-    // lands. The children render no visible DOM of their own (they drive the
-    // canvas), so the fallback sits above the canvas and is removed only once
-    // the shader is actually on screen.
-    content = (
-      <>
-        {shaderContext && (
-          <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>
-        )}
-        {!firstFramePainted && (fallback ?? null)}
-      </>
-    );
+    // and paint. The children render no visible DOM of their own (they drive
+    // the canvas); an enclosing ShaderPoster keeps its poster overlaid until
+    // this scene signals its first painted content frame.
+    content = shaderContext ? (
+      <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>
+    ) : null;
   }
 
   return (
