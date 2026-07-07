@@ -1,12 +1,12 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import { Pane } from 'tweakpane';
 import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
 
+import { DemoPoster } from '@/components/DemoPoster';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
@@ -53,7 +53,6 @@ const formatParams = (params: Params) =>
 export default function LinearGradientPage() {
   const paneContainerRef = useRef<HTMLDivElement>(null);
   const [params, setParams] = useState<Params>(() => structuredClone(INITIAL));
-  const [painted, setPainted] = useState(false);
 
   useEffect(() => {
     const container = paneContainerRef.current;
@@ -169,19 +168,14 @@ export default function LinearGradientPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative' }}>
-        {!painted && (
-          <Image
-            alt="Linear gradient shader preview: vertical gradient from violet to purple to magenta"
-            fill
-            priority
-            sizes="100vw"
-            src="/posters/linear-gradient.png"
-            style={{ objectFit: 'cover' }}
-          />
-        )}
-        <LinearGradientScene onFirstPaint={() => setPainted(true)} params={params}>
-          <VisualTestPause />
-        </LinearGradientScene>
+        <DemoPoster
+          alt="Linear gradient shader preview: vertical gradient from violet to purple to magenta"
+          src="/posters/linear-gradient.png"
+        >
+          <LinearGradientScene params={params}>
+            <VisualTestPause />
+          </LinearGradientScene>
+        </DemoPoster>
         <div
           aria-hidden="true"
           data-tweakpane-host

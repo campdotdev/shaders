@@ -1,11 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { useState } from 'react';
 
 import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
 
+import { DemoPoster } from '@/components/DemoPoster';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
@@ -46,7 +45,6 @@ const formatParams = (params: Params) =>
 }`;
 
 export default function DotFieldPage() {
-  const [painted, setPainted] = useState(false);
   const [params, paneContainerRef] = useTweakpane<Params>(
     '<DotField>',
     INITIAL,
@@ -94,19 +92,14 @@ export default function DotFieldPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', background: '#0a0a14' }}>
-        {!painted && (
-          <Image
-            alt="Dot field shader preview: a sparse grid of small gray dots on a dark background"
-            fill
-            priority
-            sizes="100vw"
-            src="/posters/dot-field.png"
-            style={{ objectFit: 'cover' }}
-          />
-        )}
-        <DotFieldScene onFirstPaint={() => setPainted(true)} params={params}>
-          <VisualTestPause />
-        </DotFieldScene>
+        <DemoPoster
+          alt="Dot field shader preview: a sparse grid of small gray dots on a dark background"
+          src="/posters/dot-field.png"
+        >
+          <DotFieldScene params={params}>
+            <VisualTestPause />
+          </DotFieldScene>
+        </DemoPoster>
         <div
           aria-hidden="true"
           data-tweakpane-host

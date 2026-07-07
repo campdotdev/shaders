@@ -9,15 +9,13 @@ import { INITIAL, type Params } from './params';
 
 export default function MeshGradientScene({
   params = INITIAL,
-  onFirstPaint,
   children,
 }: {
   params?: Params;
-  onFirstPaint?: () => void;
   children?: ReactNode;
 } = {}) {
   return (
-    <ShaderScene onFirstPaint={onFirstPaint}>
+    <ShaderScene>
       <MeshGradient
         amplitude={params.amplitude}
         colorSpace={params.colorSpace}
