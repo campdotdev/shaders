@@ -1,9 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { useState } from 'react';
 
+import { DemoPoster } from '@/components/DemoPoster';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
@@ -32,7 +31,6 @@ const formatParams = (params: GrainParams) =>
 }`;
 
 export default function GrainPage() {
-  const [painted, setPainted] = useState(false);
   const [params, paneContainerRef] = useTweakpane<GrainParams>(
     '<Grain>',
     INITIAL,
@@ -62,19 +60,14 @@ export default function GrainPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative' }}>
-        {!painted && (
-          <Image
-            alt="Film grain shader preview: violet to magenta gradient overlaid with grain"
-            fill
-            priority
-            sizes="100vw"
-            src="/posters/grain.jpg"
-            style={{ objectFit: 'cover' }}
-          />
-        )}
-        <GrainScene onFirstPaint={() => setPainted(true)} params={params}>
-          <VisualTestPause />
-        </GrainScene>
+        <DemoPoster
+          alt="Film grain shader preview: violet to magenta gradient overlaid with grain"
+          src="/posters/grain.jpg"
+        >
+          <GrainScene params={params}>
+            <VisualTestPause />
+          </GrainScene>
+        </DemoPoster>
         <div
           aria-hidden="true"
           data-tweakpane-host

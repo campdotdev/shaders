@@ -1,11 +1,10 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
-import { useState } from 'react';
 
 import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
 
+import { DemoPoster } from '@/components/DemoPoster';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { useTweakpane } from '@/lib/useTweakpane';
 import { VisualTestPause } from '@/lib/visualTestHooks';
@@ -45,7 +44,6 @@ const formatParams = (params: VignetteParams) =>
 }`;
 
 export default function VignettePage() {
-  const [painted, setPainted] = useState(false);
   const [params, paneContainerRef] = useTweakpane<VignetteParams>(
     '<Vignette>',
     INITIAL,
@@ -113,19 +111,14 @@ export default function VignettePage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative' }}>
-        {!painted && (
-          <Image
-            alt="Vignette shader preview: a violet-to-magenta gradient darkened toward the edges"
-            fill
-            priority
-            sizes="100vw"
-            src="/posters/vignette.jpg"
-            style={{ objectFit: 'cover' }}
-          />
-        )}
-        <VignetteScene onFirstPaint={() => setPainted(true)} params={params}>
-          <VisualTestPause />
-        </VignetteScene>
+        <DemoPoster
+          alt="Vignette shader preview: a violet-to-magenta gradient darkened toward the edges"
+          src="/posters/vignette.jpg"
+        >
+          <VignetteScene params={params}>
+            <VisualTestPause />
+          </VignetteScene>
+        </DemoPoster>
         <div
           aria-hidden="true"
           data-tweakpane-host

@@ -9,11 +9,9 @@ import { INITIAL, type Params } from './params';
 
 export default function LinearGradientScene({
   params = INITIAL,
-  onFirstPaint,
   children,
 }: {
   params?: Params;
-  onFirstPaint?: () => void;
   children?: ReactNode;
 } = {}) {
   const remountKey = `${params.colorSpace}-${params.hueInterpolation}-${params.stops
@@ -21,7 +19,7 @@ export default function LinearGradientScene({
     .join(',')}`;
 
   return (
-    <ShaderScene onFirstPaint={onFirstPaint}>
+    <ShaderScene>
       <LinearGradient
         angle={params.angle}
         colorSpace={params.colorSpace}
