@@ -44,8 +44,15 @@ const defaultStyle: CSSProperties = {
   height: '100%',
 };
 
-export function ShaderScene(props: ShaderSceneProps) {
-  const { children, fallback, className, style, maxDPR, gamut = 'auto', onFirstPaint } = props;
+export function ShaderScene({
+  children,
+  fallback,
+  className,
+  style,
+  maxDPR,
+  gamut = 'auto',
+  onFirstPaint,
+}: ShaderSceneProps) {
   const resolvedGamut = useDisplayGamut(gamut);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shaderContext, setShaderContext] = useState<ShaderContextValue | null>(null);
