@@ -10,11 +10,9 @@ import { type AuroraParams, INITIAL } from './params';
 
 export default function AuroraScene({
   params = INITIAL,
-  onFirstPaint,
   children,
 }: {
   params?: AuroraParams;
-  onFirstPaint?: () => void;
   children?: ReactNode;
 } = {}) {
   const layers: AuroraLayer[] = params.layers.map((layer) => ({
@@ -26,7 +24,7 @@ export default function AuroraScene({
   }));
 
   return (
-    <ShaderScene onFirstPaint={onFirstPaint}>
+    <ShaderScene>
       <Aurora
         densityX={params.densityX}
         densityY={params.densityY}

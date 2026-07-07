@@ -1,11 +1,11 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import Image from 'next/image';
 import { useEffect, useRef, useState } from 'react';
 
 import { Pane } from 'tweakpane';
 
+import { DemoPoster } from '@/components/DemoPoster';
 import { palette } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { VisualTestPause } from '@/lib/visualTestHooks';
@@ -64,7 +64,6 @@ const formatParams = (params: AuroraParams) =>
 export default function AuroraPage() {
   const paneContainerRef = useRef<HTMLDivElement>(null);
   const [params, setParams] = useState<AuroraParams>(() => structuredClone(INITIAL));
-  const [painted, setPainted] = useState(false);
 
   useEffect(() => {
     const container = paneContainerRef.current;
@@ -165,19 +164,14 @@ export default function AuroraPage() {
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', background: '#0b0f1a' }}>
-        {!painted && (
-          <Image
-            alt="Aurora shader preview: green, blue, and violet light curtains over a dark backdrop"
-            fill
-            priority
-            sizes="100vw"
-            src="/posters/aurora.jpg"
-            style={{ objectFit: 'cover' }}
-          />
-        )}
-        <AuroraScene onFirstPaint={() => setPainted(true)} params={params}>
-          <VisualTestPause />
-        </AuroraScene>
+        <DemoPoster
+          alt="Aurora shader preview: green, blue, and violet light curtains over a dark backdrop"
+          src="/posters/aurora.jpg"
+        >
+          <AuroraScene params={params}>
+            <VisualTestPause />
+          </AuroraScene>
+        </DemoPoster>
         <div
           aria-hidden="true"
           data-tweakpane-host
