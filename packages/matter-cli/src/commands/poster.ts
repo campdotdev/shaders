@@ -139,9 +139,9 @@ export async function runPoster(
     io.log(`Wrote poster: ${resolvedOut} (${opts.width}×${opts.height}, ${formatBytes(bytes)})`);
     io.log('');
     io.log(`Wire it up inside ${opts.from}:`);
-    io.log('  <ShaderScene fallback={<img src="' + posterPublicSrc(resolvedOut) + '" alt="" />}>');
-    io.log('    ...');
-    io.log('  </ShaderScene>');
+    io.log('  <ShaderPoster poster={<img src="' + posterPublicSrc(resolvedOut) + '" alt="" />}>');
+    io.log('    <ShaderScene>...</ShaderScene>');
+    io.log('  </ShaderPoster>');
   } finally {
     await server.close();
   }
