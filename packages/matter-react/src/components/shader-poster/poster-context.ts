@@ -27,12 +27,16 @@ const POSTER_CONTEXT_KEY = Symbol.for('@lovo/matter-react:poster-context');
 
 const globalRegistry = globalThis as Record<symbol, unknown>;
 
-// eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- globalThis registry values are untyped by nature; this narrows the one key this module owns.
-const existingContext = globalRegistry[POSTER_CONTEXT_KEY] as
-  | Context<PosterContextValue | null>
-  | undefined;
+// Only this module ever writes POSTER_CONTEXT_KEY, so checking for React's
+// context shape is enough to trust the slot without a type assertion.
+function isPosterContext(value: unknown): value is Context<PosterContextValue | null> {
+  return typeof value === 'object' && value !== null && 'Provider' in value;
+}
 
-export const PosterContext: Context<PosterContextValue | null> =
-  existingContext ?? createContext<PosterContextValue | null>(null);
+const registeredContext = globalRegistry[POSTER_CONTEXT_KEY];
+
+export const PosterContext: Context<PosterContextValue | null> = isPosterContext(registeredContext)
+  ? registeredContext
+  : createContext<PosterContextValue | null>(null);
 
 globalRegistry[POSTER_CONTEXT_KEY] = PosterContext;
