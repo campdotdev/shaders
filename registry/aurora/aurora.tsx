@@ -19,11 +19,15 @@ export interface AuroraProps {
   layers?: AuroraLayer[];
 }
 
+// Modeled on a real display: dominant oxygen-green body, teal shimmer, a
+// high-altitude blue veil (high falloff hugs the curtain origin), and a faint
+// pink fringe reaching below the tips (low falloff). Keeping the accent
+// intensities low avoids additive gray-out where curtains overlap.
 export const DEFAULT_LAYERS: AuroraLayer[] = [
-  { color: '#0ae24b', speed: 0.07, intensity: 0.6, seed: 0 }, // palette.green.base
-  { color: '#1837e6', speed: 0.1, intensity: 0.2, seed: 5 }, // palette.blue.base
-  { color: '#661acc', speed: 0.15, intensity: 0.3, seed: 11 }, // palette.violet.base
-  { color: '#cc1a99', speed: 0.07, intensity: 0.2, seed: 17 }, // palette.magenta.base
+  { color: '#0ae24b', speed: 0.07, intensity: 0.6, seed: 0, falloff: 1 }, // palette.green.base
+  { color: '#00cda6', speed: 0.1, intensity: 0.3, seed: 5, falloff: 0.95 }, // palette.teal.base
+  { color: '#1b9fda', speed: 0.15, intensity: 0.15, seed: 11, falloff: 1.2 }, // palette.sky.light
+  { color: '#e765b8', speed: 0.07, intensity: 0.12, seed: 17, falloff: 0.8 }, // palette.magenta.light
 ];
 
 export function Aurora({

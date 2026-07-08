@@ -165,7 +165,7 @@ export default function AuroraPage() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', background: '#0b0f1a' }}>
         <DemoPoster
-          alt="Aurora shader preview: green, blue, and violet light curtains over a dark backdrop"
+          alt="Aurora shader preview: green and teal light curtains with a blue veil and pink fringe over a dark backdrop"
           src="/posters/aurora.jpg"
         >
           <AuroraScene params={params}>

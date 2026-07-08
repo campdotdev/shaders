@@ -38,8 +38,8 @@ export const INITIAL: AuroraParams = {
   direction: 'top',
   layers: [
     { color: palette.green.base, speed: 0.07, intensity: 0.6, seed: 0, falloff: 1 },
-    { color: palette.blue.base, speed: 0.1, intensity: 0.2, seed: 5, falloff: 1 },
-    { color: palette.violet.base, speed: 0.15, intensity: 0.3, seed: 11, falloff: 1 },
-    { color: palette.magenta.base, speed: 0.07, intensity: 0.2, seed: 17, falloff: 1 },
+    { color: palette.teal.base, speed: 0.1, intensity: 0.3, seed: 5, falloff: 0.95 },
+    { color: palette.sky.light, speed: 0.15, intensity: 0.15, seed: 11, falloff: 1.2 },
+    { color: palette.magenta.light, speed: 0.07, intensity: 0.12, seed: 17, falloff: 0.8 },
   ],
 };
