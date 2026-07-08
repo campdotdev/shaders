@@ -114,7 +114,7 @@ Wire it up:
 ```tsx
 import { ShaderPoster } from '@lovo/matter-react/poster';
 
-<ShaderPoster poster={<img src="/hero.jpg" alt="" />}>
+<ShaderPoster poster={<img src="/hero.jpg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}>
   <ShaderScene>
     <LinearGradient ... />
   </ShaderScene>

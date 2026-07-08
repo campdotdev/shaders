@@ -139,7 +139,11 @@ export async function runPoster(
     io.log(`Wrote poster: ${resolvedOut} (${opts.width}×${opts.height}, ${formatBytes(bytes)})`);
     io.log('');
     io.log(`Wire it up inside ${opts.from}:`);
-    io.log('  <ShaderPoster poster={<img src="' + posterPublicSrc(resolvedOut) + '" alt="" />}>');
+    io.log(
+      '  <ShaderPoster poster={<img src="' +
+        posterPublicSrc(resolvedOut) +
+        "\" alt=\"\" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}>",
+    );
     io.log('    <ShaderScene>...</ShaderScene>');
     io.log('  </ShaderPoster>');
   } finally {
