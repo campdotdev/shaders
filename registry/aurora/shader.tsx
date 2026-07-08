@@ -107,6 +107,10 @@ export function AuroraShader(props: AuroraShaderProps) {
     const material = new MeshBasicNodeMaterial();
 
     material.transparent = true;
+    // The colorNode below emits premultiplied output: rgb is the curtain light
+    // itself, alpha is coverage. Without this flag, NormalBlending scales rgb
+    // by alpha a second time and the curtains dim quadratically.
+    material.premultipliedAlpha = true;
 
     const aspect = aspectNode;
     const scaledUv = vec2(uv().x.mul(aspect).mul(densityXUniform), uv().y.mul(densityYUniform));
