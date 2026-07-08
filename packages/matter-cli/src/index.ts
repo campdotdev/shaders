@@ -101,7 +101,9 @@ program
 
 program
   .command('poster')
-  .description('render a Matter component tree to a static image for use as <ShaderScene fallback>')
+  .description(
+    'render a Matter component tree to a static image for use as a <ShaderPoster> poster',
+  )
   .requiredOption('--source <file>', 'path to a .tsx/.ts file exporting the component to render')
   .requiredOption('--output <path>', 'where to write the image (extension optional; --format wins)')
   .option('--format <format>', 'output format: png or jpg', 'jpg')

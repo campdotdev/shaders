@@ -59,7 +59,7 @@ npx matter-cli update --force
 
 ### Render a static fallback image
 
-Render a Matter component tree to an image for use as a `<ShaderScene fallback>` — eliminates the visible blank canvas during WebGPU initialization.
+Render a Matter component tree to an image for use as the `poster` in `<ShaderPoster>` — eliminates the visible blank canvas during WebGPU initialization.
 
 ```bash
 npx matter-cli poster --source <file> --output <path> [options]
@@ -112,9 +112,13 @@ npx matter-cli poster --source ./aurora.tsx --output ./public/aurora.jpg --quali
 Wire it up:
 
 ```tsx
-<ShaderScene fallback={<img src="/hero.jpg" alt="" />}>
-  <LinearGradient ... />
-</ShaderScene>
+import { ShaderPoster } from '@lovo/matter-react/poster';
+
+<ShaderPoster poster={<img src="/hero.jpg" alt="" />}>
+  <ShaderScene>
+    <LinearGradient ... />
+  </ShaderScene>
+</ShaderPoster>
 ```
 
 **Limitations:**
