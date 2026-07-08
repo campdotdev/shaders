@@ -16,6 +16,13 @@ export interface PosterContextValue {
 // so every copy resolves to the single context created first — otherwise the
 // ShaderPoster provider and the ShaderScene consumer would hold different
 // context objects and the poster would never dismiss.
+//
+// Because this key is shared across independently-versioned copies of the
+// package, `PosterContextValue`'s shape is a forever-contract for the
+// lifetime of this key: any future change to it must stay backward-compatible
+// with older copies reading/writing the same global slot, or the key itself
+// must be bumped (e.g. to `@lovo/matter-react:poster-context/v2`) so
+// incompatible shapes don't collide.
 const POSTER_CONTEXT_KEY = Symbol.for('@lovo/matter-react:poster-context');
 
 const globalRegistry = globalThis as Record<symbol, unknown>;

@@ -7,4 +7,5 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   external: ['react', 'three', '@lovo/matter'],
+  banner: { js: "'use client';" },
 });
