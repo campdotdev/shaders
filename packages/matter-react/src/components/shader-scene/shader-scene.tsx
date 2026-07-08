@@ -133,17 +133,17 @@ export function ShaderScene({
         // Signal "first paint" only once the scene actually has something to
         // draw (a base shader mesh, or at least an overlay pass) — the scheduler
         // renders empty frames before the child shader mounts its mesh, and we
-        // don't want to drop the fallback over an empty canvas. Defer the state
-        // flip by one rAF so the just-submitted frame composites before the
-        // fallback is removed.
+        // don't want to drop the enclosing poster over an empty canvas. Defer the
+        // state flip by one rAF so the just-submitted frame composites before the
+        // poster is removed.
         let firstPaintSignaled = false;
         const renderFrame = () => {
           const hasContent = scene.children.length > 0 || overlays.size > 0;
 
           // On the frame that first has something to draw, zero the clock BEFORE
-          // rendering so the frame the user first sees (once the fallback drops)
+          // rendering so the frame the user first sees (once the poster drops)
           // is t=0 — matching the deterministic poster. Resetting after the
-          // fallback is already gone would pop the animation backwards from
+          // poster is already gone would pop the animation backwards from
           // warmup-time to 0, a new visible glitch.
           if (!firstPaintSignaled && hasContent) {
             resetRendererClock(renderer.three);
