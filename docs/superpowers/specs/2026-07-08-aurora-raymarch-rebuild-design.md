@@ -51,8 +51,7 @@ is written.
 
 ```ts
 interface AuroraProps {
-  colors?: string[];    // altitude ramp, low → high
-  stops?: number[];     // optional ramp positions, LinearGradient convention
+  stops?: ColorStop[];  // altitude ramp, low → high; { color: string; position?: number }
   intensity?: AnimatableProp<number>;
   speed?: AnimatableProp<number>;
   drift?: AnimatableProp<number>;      // horizontal ribbon drift
@@ -60,6 +59,8 @@ interface AuroraProps {
   density?: AnimatableProp<number>;    // ribbon frequency
   falloff?: AnimatableProp<number>;    // vertical extent/fade of the band
   direction?: 'bottom' | 'top' | 'left' | 'right'; // edge the horizon sits on
+  colorSpace?: ColorSpace;             // default 'oklab'
+  hueInterpolation?: HueInterpolation; // default 'shorter'
 }
 ```
 
@@ -67,10 +68,14 @@ Changes from the current API:
 
 - `layers: AuroraLayer[]` is **removed**. Ribbon multiplicity comes from the
   march; color variety comes from the altitude ramp.
-- `colors`/`stops` follow the LinearGradient convention and accept wide-gamut
-  input via `parseColor`. Default ramp: `palette.green.base` →
-  `palette.teal.base` → `palette.sky.light` → `palette.magenta.light` — the
-  physical emission order (oxygen green low, ionized blue high, pink fringe).
+- `stops` follows the LinearGradient convention exactly (`ColorStop[]` from
+  `registry/utils/color`, converted via `toColorRampStops`, wide-gamut input
+  via `parseColor`). Default ramp: `palette.green.base` → `palette.teal.base`
+  → `palette.sky.light` → `palette.magenta.light` — the physical emission
+  order (oxygen green low, ionized blue high, pink fringe).
+- `colorSpace`/`hueInterpolation` are added, matching the MAT-43 rule that
+  interpolating components carry them — the altitude ramp makes Aurora an
+  interpolating component. Both pass straight through to `colorRamp`.
 - `driftX`/`driftY` collapse to `drift` and `densityX`/`densityY` to
   `density`. In a horizon composition only motion along the band and ribbon
   frequency are meaningful.
