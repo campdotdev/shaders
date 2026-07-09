@@ -190,10 +190,6 @@ export function AuroraShader({
       // speed stays a relative dial around 1.
       const shimmerPhase = elapsedTime.mul(speedUniform).mul(0.15);
 
-      // Fixed-altitude tint (the ramp's curtain-base green) until Task 5
-      // drives the ramp per-slice.
-      const sliceColor = colorRamp(float(0.15), rampStops, colorSpace, hueInterpolation);
-
       // Screen-space hash: decorrelates the slice offsets pixel-to-pixel so
       // the march's discrete slices dissolve into grain instead of banding.
       const screenHash = fract(
@@ -231,6 +227,14 @@ export function AuroraShader({
 
         const fieldValue = triangleField(groundCoords, shimmerPhase, turbulenceUniform);
 
+        // Altitude in [0, 1] drives the user's color ramp — the physical
+        // green-low → pink-high stratification. The 0.6 exponent counteracts
+        // the extinction weighting: most accumulated light comes from early
+        // (low) slices, so a linear ramp reads almost entirely as the first
+        // stop. Sub-linear altitude pulls the upper stops down into the
+        // bright, heavily-weighted part of the curtain.
+        const altitude = stepIndex.div(stepCount).pow(0.6);
+        const sliceColor = colorRamp(altitude, rampStops, colorSpace, hueInterpolation);
         const slice = vec4(sliceColor.mul(fieldValue), fieldValue);
 
         // Average-then-accumulate: blending each slice into a running average
@@ -238,9 +242,10 @@ export function AuroraShader({
         runningAverage.assign(mix(runningAverage, slice, 0.5));
 
         // Atmospheric extinction: each successive slice contributes
-        // exponentially less. smoothstep suppresses the first few slices,
-        // which otherwise read as a hard floor.
-        const extinction = exp2(stepIndex.mul(-0.065).sub(2.5));
+        // exponentially less. falloff scales the decay — the band's vertical
+        // extent. smoothstep suppresses the first few slices, which otherwise
+        // read as a hard floor.
+        const extinction = exp2(stepIndex.mul(-0.065).mul(falloffUniform).sub(2.5));
 
         accumulated.addAssign(runningAverage.mul(extinction).mul(smoothstep(0, 5, stepIndex)));
       });
@@ -248,7 +253,7 @@ export function AuroraShader({
       // Rays pointing below the horizon never hit the sky — fade them out fast.
       const horizonMask = clamp(rayDirection.y.mul(15).add(0.4), 0, 1);
 
-      const emission = accumulated.rgb.mul(horizonMask).mul(1.8);
+      const emission = accumulated.rgb.mul(horizonMask).mul(1.8).mul(intensityUniform);
       const coverage = accumulated.a.mul(horizonMask).mul(1.5).clamp(0, 1);
 
       return vec4(emission.max(0), coverage);
