@@ -4,43 +4,37 @@ import dynamic from 'next/dynamic';
 import { useEffect, useRef, useState } from 'react';
 
 import { Pane } from 'tweakpane';
+import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
 
 import { DemoPoster } from '@/components/DemoPoster';
-import { palette } from '@/lib/palette';
 import { addCopyButtons } from '@/lib/paneUtils';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-import {
-  type AuroraParams,
-  INITIAL,
-  MAX_LAYERS,
-  MIN_LAYERS,
-  type PlainAuroraLayer,
-} from './params';
+import { type AuroraParams, INITIAL, MAX_STOPS, MIN_STOPS, type PlainColorStop } from './params';
 
 const AuroraScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
-const formatLayer = (layer: PlainAuroraLayer) =>
-  `{ color: '${layer.color}', speed: ${formatNumber(layer.speed)}, intensity: ${formatNumber(layer.intensity)}, seed: ${formatNumber(layer.seed)}, falloff: ${formatNumber(layer.falloff)} }`;
-
-const formatLayers = (layers: PlainAuroraLayer[]) => layers.map(formatLayer).join(',\n      ');
+const formatStops = (stops: PlainColorStop[]) =>
+  stops
+    .map((stop) => `{ color: '${stop.color}', position: ${formatNumber(stop.position)} }`)
+    .join(',\n      ');
 
 const formatJsx = (params: AuroraParams) =>
   `<ShaderScene>
   <Aurora
     intensity={${formatNumber(params.intensity)}}
     speed={${formatNumber(params.speed)}}
-    densityX={${formatNumber(params.densityX)}}
-    densityY={${formatNumber(params.densityY)}}
-    falloff={${formatNumber(params.falloff)}}
-    driftX={${formatNumber(params.driftX)}}
-    driftY={${formatNumber(params.driftY)}}
+    drift={${formatNumber(params.drift)}}
     turbulence={${formatNumber(params.turbulence)}}
+    density={${formatNumber(params.density)}}
+    falloff={${formatNumber(params.falloff)}}
     direction="${params.direction}"
-    layers={[
-      ${formatLayers(params.layers)},
+    colorSpace="${params.colorSpace}"
+    hueInterpolation="${params.hueInterpolation}"
+    stops={[
+      ${formatStops(params.stops)},
     ]}
   />
 </ShaderScene>`;
@@ -49,15 +43,15 @@ const formatParams = (params: AuroraParams) =>
   `{
   intensity: ${formatNumber(params.intensity)},
   speed: ${formatNumber(params.speed)},
-  densityX: ${formatNumber(params.densityX)},
-  densityY: ${formatNumber(params.densityY)},
-  falloff: ${formatNumber(params.falloff)},
-  driftX: ${formatNumber(params.driftX)},
-  driftY: ${formatNumber(params.driftY)},
+  drift: ${formatNumber(params.drift)},
   turbulence: ${formatNumber(params.turbulence)},
+  density: ${formatNumber(params.density)},
+  falloff: ${formatNumber(params.falloff)},
   direction: '${params.direction}',
-  layers: [
-    ${formatLayers(params.layers)},
+  colorSpace: '${params.colorSpace}',
+  hueInterpolation: '${params.hueInterpolation}',
+  stops: [
+    ${formatStops(params.stops)},
   ],
 }`;
 
@@ -72,11 +66,17 @@ export default function AuroraPage() {
 
     const local: AuroraParams = structuredClone(INITIAL);
     const pane = new Pane({ container, title: '<Aurora>' });
+
+    // Pre-release wide-gamut color picker (docs-only). The built-in Tweakpane
+    // picker is sRGB and rejects oklch()/oklab() strings; color-plus adapts its
+    // UI to the bound color's gamut.
+    pane.registerPlugin(TweakpanePluginColorPlus);
+
     const sync = () => setParams(structuredClone(local));
 
     pane.addButton({ title: 'Reset all' }).on('click', () => {
       Object.assign(local, structuredClone(INITIAL));
-      rebuildLayers();
+      rebuildStops();
       pane.refresh();
       sync();
     });
@@ -91,68 +91,86 @@ export default function AuroraPage() {
 
     globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
     globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 });
-    globals.addBinding(local, 'densityX', { label: 'density X', min: 0.5, max: 10, step: 0.05 });
-    globals.addBinding(local, 'densityY', { label: 'density Y', min: 0.5, max: 10, step: 0.05 });
-    globals.addBinding(local, 'falloff', { min: 0, max: 2, step: 0.01 });
-    globals.addBinding(local, 'driftX', { label: 'drift X', min: -5, max: 5, step: 0.05 });
-    globals.addBinding(local, 'driftY', { label: 'drift Y', min: -5, max: 5, step: 0.05 });
+    globals.addBinding(local, 'drift', { min: -3, max: 3, step: 0.01 });
     globals.addBinding(local, 'turbulence', { min: 0, max: 3, step: 0.01 });
+    globals.addBinding(local, 'density', { min: 0.25, max: 4, step: 0.01 });
+    globals.addBinding(local, 'falloff', { min: 0, max: 2, step: 0.01 });
     globals.addBinding(local, 'direction', {
-      label: 'from',
+      label: 'horizon',
       options: { Bottom: 'bottom', Top: 'top', Left: 'left', Right: 'right' },
     });
+    globals.addBinding(local, 'colorSpace', {
+      options: {
+        OKLab: 'oklab',
+        OKLch: 'oklch',
+        Linear: 'linear',
+        LCH: 'lch',
+        HSL: 'hsl',
+        HSV: 'hsv',
+      },
+    });
+    globals.addBinding(local, 'hueInterpolation', {
+      label: 'hue arc',
+      options: {
+        shorter: 'shorter',
+        longer: 'longer',
+        increasing: 'increasing',
+        decreasing: 'decreasing',
+      },
+    });
+    // Provisional while tuning (MAT-46 Task 7 decides whether steps ships).
+    globals.addBinding(local, 'steps', { min: 10, max: 80, step: 5 });
 
     pane.addBlade({ view: 'separator' });
 
-    const layersFolder = pane.addFolder({ title: 'Layers' });
+    const stopsFolder = pane.addFolder({ title: 'Stops (low → high altitude)' });
 
     // Tweakpane folders are static; to render variable-length lists we dispose
-    // every child of the layers folder and rebuild on each mutation.
-    const rebuildLayers = () => {
-      for (const child of [...layersFolder.children]) child.dispose();
+    // every child of the stops folder and rebuild on each mutation.
+    const rebuildStops = () => {
+      for (const child of [...stopsFolder.children]) child.dispose();
 
-      local.layers.forEach((layer, layerIndex) => {
-        const row = layersFolder.addFolder({
-          title: `Layer ${layerIndex}`,
-          expanded: layerIndex === 0,
+      local.stops.forEach((stop, stopIndex) => {
+        const row = stopsFolder.addFolder({
+          title: `Stop ${stopIndex}`,
+          expanded: stopIndex === 0,
         });
 
-        row.addBinding(layer, 'color');
-        row.addBinding(layer, 'speed', { min: 0, max: 0.5, step: 0.005 });
-        row.addBinding(layer, 'intensity', { min: 0, max: 1, step: 0.01 });
-        row.addBinding(layer, 'falloff', { label: 'falloff ×', min: 0.1, max: 3, step: 0.01 });
-        row.addBinding(layer, 'seed', { min: 0, max: 100, step: 1 });
+        // Wide-gamut picker (color-plus). `formatLocked` keeps the written-back
+        // value in the bound color's format (oklch here) no matter how the
+        // picker is used.
+        row.addBinding(stop, 'color', {
+          label: 'color',
+          view: 'color-plus',
+          color: { formatLocked: true },
+        });
+        row.addBinding(stop, 'position', { min: 0, max: 1, step: 0.01 });
 
-        const removeButton = row.addButton({ title: 'Remove layer' });
+        const removeButton = row.addButton({ title: 'Remove stop' });
 
-        if (local.layers.length <= MIN_LAYERS) removeButton.disabled = true;
+        if (local.stops.length <= MIN_STOPS) removeButton.disabled = true;
         removeButton.on('click', () => {
-          local.layers.splice(layerIndex, 1);
-          rebuildLayers();
+          local.stops.splice(stopIndex, 1);
+          rebuildStops();
           sync();
         });
       });
 
-      const addButton = layersFolder.addButton({ title: '+ Add layer' });
+      const addButton = stopsFolder.addButton({ title: '+ Add stop' });
 
-      if (local.layers.length >= MAX_LAYERS) addButton.disabled = true;
+      if (local.stops.length >= MAX_STOPS) addButton.disabled = true;
       addButton.on('click', () => {
-        const last = local.layers[local.layers.length - 1];
-        const next: PlainAuroraLayer = {
-          color: last?.color ?? palette.green.base,
-          speed: last?.speed ?? 0.1,
-          intensity: last?.intensity ?? 0.3,
-          seed: ((last?.seed ?? 0) + 6) % 101,
-          falloff: last?.falloff ?? 1,
-        };
+        const last = local.stops[local.stops.length - 1];
+        // Duplicate the last stop's color so the new stop is visible.
+        const nextColor = last?.color ?? 'oklch(0.6 0 0)';
 
-        local.layers.push(next);
-        rebuildLayers();
+        local.stops.push({ color: nextColor, position: 1 });
+        rebuildStops();
         sync();
       });
     };
 
-    rebuildLayers();
+    rebuildStops();
 
     pane.on('change', sync);
 
@@ -200,7 +218,7 @@ export default function AuroraPage() {
           }}
         >
           {`<ShaderScene>
-  <Aurora intensity={1} falloff={1.1} layers={[...]} />
+  <Aurora intensity={1} stops={[...]} />
 </ShaderScene>`}
         </pre>
       </section>

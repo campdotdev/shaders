@@ -3,8 +3,7 @@
 import type { ReactNode } from 'react';
 
 import { ShaderScene } from '@lovo/matter-react';
-import type { AuroraLayer } from '@matter/registry/aurora';
-import { Aurora } from '@matter/registry/aurora';
+import { Aurora, type ColorStop } from '@matter/registry/aurora';
 
 import { type AuroraParams, INITIAL } from './params';
 
@@ -15,26 +14,24 @@ export default function AuroraScene({
   params?: AuroraParams;
   children?: ReactNode;
 } = {}) {
-  const layers: AuroraLayer[] = params.layers.map((layer) => ({
-    color: layer.color,
-    speed: layer.speed,
-    intensity: layer.intensity,
-    seed: layer.seed,
-    falloff: layer.falloff,
+  const stops: ColorStop[] = params.stops.map((stop) => ({
+    color: stop.color,
+    position: stop.position,
   }));
 
   return (
     <ShaderScene>
       <Aurora
-        densityX={params.densityX}
-        densityY={params.densityY}
+        colorSpace={params.colorSpace}
+        density={params.density}
         direction={params.direction}
-        driftX={params.driftX}
-        driftY={params.driftY}
+        drift={params.drift}
         falloff={params.falloff}
+        hueInterpolation={params.hueInterpolation}
         intensity={params.intensity}
-        layers={layers}
         speed={params.speed}
+        steps={params.steps}
+        stops={stops}
         turbulence={params.turbulence}
       />
       {children}
