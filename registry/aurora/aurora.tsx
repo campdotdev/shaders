@@ -4,7 +4,7 @@ import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
-import { type AuroraDirection, AuroraShader, DEFAULT_STEPS } from './shader';
+import { type AuroraDirection, AuroraShader } from './shader';
 
 export type { AuroraDirection } from './shader';
 export type { ColorStop } from '../utils/color';
@@ -29,22 +29,20 @@ export interface AuroraProps {
   direction?: AuroraDirection;
   colorSpace?: ColorSpace;
   hueInterpolation?: HueInterpolation;
-  /** Provisional while tuning (MAT-46): raymarch slice count. */
-  steps?: number;
 }
 
+// Defaults are the values tuned by eye at the MAT-46 gates, not round numbers.
 export function Aurora({
   stops = DEFAULT_STOPS,
-  intensity = 1,
+  intensity = 1.7,
   speed = 1,
-  drift = 1,
-  turbulence = 1.25,
-  density = 1,
-  falloff = 1,
+  drift = 0.13,
+  turbulence = 1.3,
+  density = 0.7,
+  falloff = 1.35,
   direction = 'bottom',
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
-  steps = DEFAULT_STEPS,
 }: AuroraProps) {
   return (
     <AuroraShader
@@ -56,7 +54,6 @@ export function Aurora({
       hueInterpolation={hueInterpolation}
       intensity={intensity}
       speed={speed}
-      steps={steps}
       stops={stops}
       turbulence={turbulence}
     />

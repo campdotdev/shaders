@@ -30,7 +30,6 @@ export default function AuroraScene({
         hueInterpolation={params.hueInterpolation}
         intensity={params.intensity}
         speed={params.speed}
-        steps={params.steps}
         stops={stops}
         turbulence={params.turbulence}
       />

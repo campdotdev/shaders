@@ -118,9 +118,6 @@ export default function AuroraPage() {
         decreasing: 'decreasing',
       },
     });
-    // Provisional while tuning (MAT-46 Task 7 decides whether steps ships).
-    globals.addBinding(local, 'steps', { min: 10, max: 80, step: 5 });
-
     pane.addBlade({ view: 'separator' });
 
     const stopsFolder = pane.addFolder({ title: 'Stops (low → high altitude)' });
