@@ -2,14 +2,14 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, type HueInterpolation } from '@lovo/matter';
+import { colorRamp, type ColorSpace, type HueInterpolation, simplexNoise } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { smoothstep, uniform, uv, vec4 } from 'three/tsl';
+import { clamp, float, normalize, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
@@ -86,18 +86,44 @@ export function AuroraShader({
 
     const rampStops = toColorRampStops(stops);
 
-    // ── Placeholder graph (replaced by the raymarch in Tasks 2–6) ──────────
-    // A soft band: rises quickly above the "horizon" (y ≈ 0.25) and fades out
-    // toward the top. Altitude for the ramp is just screen height for now.
-    const altitude = uv().y;
-    const band = smoothstep(0.22, 0.34, altitude).mul(smoothstep(0.4, 0.85, altitude).oneMinus());
+    // ── Aurora graph ────────────────────────────────────────────────────────
+    // Screen position → normalized device coords: center-origin, x scaled by
+    // aspect so ribbons don't stretch on wide canvases.
+    const ndcX = uv().x.sub(0.5).mul(2).mul(aspectNode);
+    const ndcY = uv().y.sub(0.5).mul(2);
 
-    const rampColor = colorRamp(altitude, rampStops, colorSpace, hueInterpolation);
-    const emission = rampColor.mul(band).mul(intensityUniform);
-    const coverage = band.mul(0.8);
+    // Virtual camera: sits below the aurora looking toward the horizon (+z),
+    // biased slightly upward so the band occupies the upper frame.
+    const rayOrigin = vec3(0, 0, -6.7);
+    const rayDirection = normalize(vec3(ndcX, ndcY.mul(0.8).add(0.25), 1.4));
 
-    material.colorNode = vec4(emission, coverage);
-    // ── End placeholder graph ───────────────────────────────────────────────
+    // One horizontal slice at the curtain-base altitude. The bent divisor
+    // (rd.y·2 + 0.4 instead of plain rd.y) fakes atmospheric curvature: rays
+    // that graze the horizon hit at a finite distance instead of infinity, so
+    // the sheet bends down toward the horizon line.
+    const sliceAltitude = float(0.9);
+    const marchDistance = sliceAltitude.sub(rayOrigin.y).div(rayDirection.y.mul(2).add(0.4));
+    const samplePoint = rayOrigin.add(rayDirection.mul(marchDistance));
+
+    // Sample the field on the ground plane: z runs toward the horizon,
+    // x runs across the screen.
+    // ×2 base frequency so density = 1 shows readable structure out of the
+    // box; density stays a relative dial around it. Re-tune at the Task 3/4
+    // gates — the triangle noise and march sample the field differently.
+    const groundCoords = vec2(samplePoint.z, samplePoint.x).mul(densityUniform).mul(2);
+    const fieldValue = simplexNoise(groundCoords).mul(0.5).add(0.5);
+
+    // Rays pointing below the horizon never hit the sky — fade them out fast.
+    const horizonMask = clamp(rayDirection.y.mul(15).add(0.4), 0, 1);
+
+    const brightness = fieldValue.mul(horizonMask);
+
+    // Fixed-altitude tint (the ramp's curtain-base green) until Task 5 drives
+    // the ramp per-slice. Keeps the ramp plumbing live through Tasks 2–4.
+    const sliceColor = colorRamp(float(0.15), rampStops, colorSpace, hueInterpolation);
+
+    material.colorNode = vec4(sliceColor.mul(brightness), brightness);
+    // ── End aurora graph ────────────────────────────────────────────────────
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
