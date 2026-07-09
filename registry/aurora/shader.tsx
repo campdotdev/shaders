@@ -2,64 +2,59 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { elapsedTime, simplexNoise } from '@lovo/matter';
+import { colorRamp, type ColorSpace, type HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
+import { smoothstep, uniform, uv, vec4 } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
-import { parseColor } from '../utils/color';
-
-export interface AuroraLayer {
-  color: string;
-  speed?: number;
-  intensity?: number;
-  seed?: number;
-  falloff?: number;
-}
+import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
 export type AuroraDirection = 'bottom' | 'top' | 'left' | 'right';
 
-const DIRECTION_VECTORS: Record<AuroraDirection, [number, number, number]> = {
-  bottom: [0, 1, 0],
-  top: [0, -1, 1],
-  left: [1, 0, 0],
-  right: [-1, 0, 1],
-};
-
-const DEFAULT_LAYER_SPEED = 0.1;
-const DEFAULT_LAYER_INTENSITY = 0.3;
-const DEFAULT_LAYER_FALLOFF = 1;
+/** Raymarch slice count. Provisional `steps` prop while tuning (MAT-46 Task 7 decides its fate). */
+export const DEFAULT_STEPS = 40;
 
 export interface AuroraShaderProps {
+  stops: ColorStop[];
   intensity: AnimatableProp<number>;
   speed: AnimatableProp<number>;
-  densityX: AnimatableProp<number>;
-  densityY: AnimatableProp<number>;
-  falloff: AnimatableProp<number>;
-  driftX: AnimatableProp<number>;
-  driftY: AnimatableProp<number>;
+  drift: AnimatableProp<number>;
   turbulence: AnimatableProp<number>;
+  density: AnimatableProp<number>;
+  falloff: AnimatableProp<number>;
   direction: AuroraDirection;
-  layers: AuroraLayer[];
+  colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
+  steps: number;
 }
 
-export function AuroraShader(props: AuroraShaderProps) {
+export function AuroraShader({
+  stops,
+  intensity,
+  speed,
+  drift,
+  turbulence,
+  density,
+  falloff,
+  direction,
+  colorSpace,
+  hueInterpolation,
+  steps,
+}: AuroraShaderProps) {
   const shaderContext = useShaderContext();
   const resize = useResize();
 
-  const intensityUniform = useAnimatableUniform<number>(props.intensity);
-  const speedUniform = useAnimatableUniform<number>(props.speed);
-  const densityXUniform = useAnimatableUniform<number>(props.densityX);
-  const densityYUniform = useAnimatableUniform<number>(props.densityY);
-  const falloffUniform = useAnimatableUniform<number>(props.falloff);
-  const driftXUniform = useAnimatableUniform<number>(props.driftX);
-  const driftYUniform = useAnimatableUniform<number>(props.driftY);
-  const turbulenceUniform = useAnimatableUniform<number>(props.turbulence);
+  const intensityUniform = useAnimatableUniform<number>(intensity);
+  const speedUniform = useAnimatableUniform<number>(speed);
+  const driftUniform = useAnimatableUniform<number>(drift);
+  const turbulenceUniform = useAnimatableUniform<number>(turbulence);
+  const densityUniform = useAnimatableUniform<number>(density);
+  const falloffUniform = useAnimatableUniform<number>(falloff);
 
   const [initialWidth, initialHeight] = resize.get();
   const aspectNode = useMemo(
@@ -78,90 +73,31 @@ export function AuroraShader(props: AuroraShaderProps) {
     });
   }, [resize, aspectNode]);
 
-  const dirVec = useMemo(
-    () => {
-      const [directionX, directionY, directionBias] = DIRECTION_VECTORS[props.direction];
-
-      return new Vector3(directionX, directionY, directionBias);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  const dirNode = useMemo(() => uniform(dirVec), [dirVec]);
-
-  useEffect(() => {
-    const [directionX, directionY, directionBias] = DIRECTION_VECTORS[props.direction];
-
-    dirVec.set(directionX, directionY, directionBias);
-  }, [props.direction, dirVec]);
-
-  const layersKey = props.layers
-    .map(
-      (layer) =>
-        `${layer.color}|${layer.speed ?? ''}|${layer.intensity ?? ''}|${layer.seed ?? ''}|${layer.falloff ?? ''}`,
-    )
-    .join('||');
+  const stopsKey = colorStopsKey(stops);
 
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
 
     material.transparent = true;
-    // The colorNode below emits premultiplied output: rgb is the curtain light
-    // itself, alpha is coverage. Without this flag, NormalBlending scales rgb
-    // by alpha a second time and the curtains dim quadratically.
+    // rgb below is the accumulated curtain light itself (premultiplied), alpha
+    // is coverage. Without this flag NormalBlending scales rgb by alpha a
+    // second time and everything dims quadratically (MAT-45).
     material.premultipliedAlpha = true;
 
-    const aspect = aspectNode;
-    const scaledUv = vec2(uv().x.mul(aspect).mul(densityXUniform), uv().y.mul(densityYUniform));
+    const rampStops = toColorRampStops(stops);
 
-    const fallOff = uv().x.mul(dirNode.x).add(uv().y.mul(dirNode.y)).add(dirNode.z);
+    // ── Placeholder graph (replaced by the raymarch in Tasks 2–6) ──────────
+    // A soft band: rises quickly above the "horizon" (y ≈ 0.25) and fades out
+    // toward the top. Altitude for the ramp is just screen height for now.
+    const altitude = uv().y;
+    const band = smoothstep(0.22, 0.34, altitude).mul(smoothstep(0.4, 0.85, altitude).oneMinus());
 
-    let aurora = vec3(0, 0, 0);
+    const rampColor = colorRamp(altitude, rampStops, colorSpace, hueInterpolation);
+    const emission = rampColor.mul(band).mul(intensityUniform);
+    const coverage = band.mul(0.8);
 
-    for (const layer of props.layers) {
-      const [redChannel, greenChannel, blueChannel] = parseColor(layer.color);
-      const layerColor = vec3(redChannel, greenChannel, blueChannel);
-      const layerSpeed = layer.speed ?? DEFAULT_LAYER_SPEED;
-      const layerIntensity = layer.intensity ?? DEFAULT_LAYER_INTENSITY;
-      const layerFalloff = layer.falloff ?? DEFAULT_LAYER_FALLOFF;
-      const seed = layer.seed ?? 0;
-
-      const scaledTime = elapsedTime.mul(speedUniform).mul(layerSpeed);
-
-      const driftPosition = vec2(
-        scaledUv.x.add(scaledTime.mul(driftXUniform)),
-        scaledUv.y.add(scaledTime.mul(driftYUniform)),
-      );
-
-      const warpSeed = vec2(layerColor.x.add(seed), layerColor.y.add(seed + 1));
-
-      const warpOffset = simplexNoise(
-        vec2(
-          warpSeed.x.add(driftPosition.x).add(scaledTime),
-          warpSeed.y.add(driftPosition.y).add(scaledTime),
-        ),
-      )
-        .mul(0.5)
-        .add(0.5)
-        .mul(turbulenceUniform);
-
-      const noiseValue = simplexNoise(
-        vec2(driftPosition.x.add(warpOffset), driftPosition.y.add(warpOffset)),
-      )
-        .mul(0.5)
-        .add(0.5);
-
-      const auroraField = noiseValue.sub(fallOff.mul(falloffUniform).mul(layerFalloff));
-
-      aurora = aurora.add(layerColor.mul(auroraField).mul(layerIntensity).mul(2));
-    }
-
-    const curtains = aurora.mul(intensityUniform); // vec3 light contribution
-    const rgb = curtains.max(0); // clamp away the now-unmasked negative auroraField
-    const alpha = rgb.x.max(rgb.y).max(rgb.z).clamp(0, 1); // max-channel coverage
-
-    material.colorNode = vec4(rgb, alpha);
+    material.colorNode = vec4(emission, coverage);
+    // ── End placeholder graph ───────────────────────────────────────────────
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -175,23 +111,24 @@ export function AuroraShader(props: AuroraShaderProps) {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
     };
-    // layersKey is a stable string proxy for props.layers — listing the array
-    // itself would rebuild on identity-only changes. Per-layer values are baked
-    // as literals, so a content change must trigger a rebuild.
+    // stopsKey is a stable string proxy for `stops` — listing the array itself
+    // would rebuild on identity-only changes. Stop colors/positions, direction,
+    // and steps are baked as literals, so content changes must rebuild.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     shaderContext,
-    layersKey,
+    stopsKey,
+    colorSpace,
+    hueInterpolation,
+    direction,
+    steps,
     intensityUniform,
     speedUniform,
-    densityXUniform,
-    densityYUniform,
-    falloffUniform,
-    driftXUniform,
-    driftYUniform,
+    driftUniform,
     turbulenceUniform,
+    densityUniform,
+    falloffUniform,
     aspectNode,
-    dirNode,
   ]);
 
   return null;

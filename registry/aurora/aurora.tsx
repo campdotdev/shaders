@@ -1,58 +1,63 @@
 'use client';
 
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
-import { type AuroraDirection, type AuroraLayer, AuroraShader } from './shader';
+import type { ColorStop } from '../utils/color';
+import { type AuroraDirection, AuroraShader, DEFAULT_STEPS } from './shader';
 
-export type { AuroraDirection, AuroraLayer } from './shader';
+export type { AuroraDirection } from './shader';
+export type { ColorStop } from '../utils/color';
 
-export interface AuroraProps {
-  intensity?: AnimatableProp<number>;
-  speed?: AnimatableProp<number>;
-  densityX?: AnimatableProp<number>;
-  densityY?: AnimatableProp<number>;
-  falloff?: AnimatableProp<number>;
-  driftX?: AnimatableProp<number>;
-  driftY?: AnimatableProp<number>;
-  turbulence?: AnimatableProp<number>;
-  direction?: AuroraDirection;
-  layers?: AuroraLayer[];
-}
-
-// Modeled on a real display: dominant oxygen-green body, teal shimmer, a
-// high-altitude blue veil (high falloff hugs the curtain origin), and a faint
-// pink fringe reaching below the tips (low falloff). Keeping the accent
-// intensities low avoids additive gray-out where curtains overlap.
-export const DEFAULT_LAYERS: AuroraLayer[] = [
-  { color: '#0ae24b', speed: 0.07, intensity: 0.6, seed: 0, falloff: 1 }, // palette.green.base
-  { color: '#00cda6', speed: 0.1, intensity: 0.3, seed: 5, falloff: 0.95 }, // palette.teal.base
-  { color: '#1b9fda', speed: 0.15, intensity: 0.15, seed: 11, falloff: 1.2 }, // palette.sky.light
-  { color: '#e765b8', speed: 0.07, intensity: 0.12, seed: 17, falloff: 0.8 }, // palette.magenta.light
+// Altitude ramp, low → high, in physical emission order: oxygen green at the
+// curtain base, teal mid, ionized blue high, pink fringe at the top.
+export const DEFAULT_STOPS: ColorStop[] = [
+  { color: '#0ae24b', position: 0 }, // palette.green.base
+  { color: '#00cda6', position: 0.35 }, // palette.teal.base
+  { color: '#1b9fda', position: 0.7 }, // palette.sky.light
+  { color: '#e765b8', position: 1 }, // palette.magenta.light
 ];
 
+export interface AuroraProps {
+  stops?: ColorStop[];
+  intensity?: AnimatableProp<number>;
+  speed?: AnimatableProp<number>;
+  drift?: AnimatableProp<number>;
+  turbulence?: AnimatableProp<number>;
+  density?: AnimatableProp<number>;
+  falloff?: AnimatableProp<number>;
+  direction?: AuroraDirection;
+  colorSpace?: ColorSpace;
+  hueInterpolation?: HueInterpolation;
+  /** Provisional while tuning (MAT-46): raymarch slice count. */
+  steps?: number;
+}
+
 export function Aurora({
+  stops = DEFAULT_STOPS,
   intensity = 1,
-  speed = 0.6,
-  densityX = 1.35,
-  densityY = 5.35,
-  falloff = 1.1,
-  driftX = 0.2,
-  driftY = -3.15,
-  turbulence = 1.3,
-  direction = 'top',
-  layers = DEFAULT_LAYERS,
+  speed = 1,
+  drift = 0.5,
+  turbulence = 1,
+  density = 1,
+  falloff = 1,
+  direction = 'bottom',
+  colorSpace = 'oklab',
+  hueInterpolation = 'shorter',
+  steps = DEFAULT_STEPS,
 }: AuroraProps) {
   return (
     <AuroraShader
-      densityX={densityX}
-      densityY={densityY}
+      colorSpace={colorSpace}
+      density={density}
       direction={direction}
-      driftX={driftX}
-      driftY={driftY}
+      drift={drift}
       falloff={falloff}
+      hueInterpolation={hueInterpolation}
       intensity={intensity}
-      layers={layers}
       speed={speed}
+      steps={steps}
+      stops={stops}
       turbulence={turbulence}
     />
   );

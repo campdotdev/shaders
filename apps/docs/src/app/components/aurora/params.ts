@@ -1,45 +1,45 @@
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AuroraDirection } from '@matter/registry/aurora';
 
-import { palette } from '../../../lib/palette';
+import { paletteOklch } from '../../../lib/palette';
 
-export interface PlainAuroraLayer {
+export interface PlainColorStop {
   color: string;
-  speed: number;
-  intensity: number;
-  seed: number;
-  falloff: number;
+  position: number;
 }
 
 export interface AuroraParams {
   intensity: number;
   speed: number;
-  densityX: number;
-  densityY: number;
-  falloff: number;
-  driftX: number;
-  driftY: number;
+  drift: number;
   turbulence: number;
+  density: number;
+  falloff: number;
   direction: AuroraDirection;
-  layers: PlainAuroraLayer[];
+  colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
+  steps: number;
+  stops: PlainColorStop[];
 }
 
-export const MIN_LAYERS = 1;
-export const MAX_LAYERS = 8;
+export const MIN_STOPS = 2;
+export const MAX_STOPS = 6;
 
 export const INITIAL: AuroraParams = {
   intensity: 1,
-  speed: 0.6,
-  densityX: 1.35,
-  densityY: 5.35,
-  falloff: 1.1,
-  driftX: 0.2,
-  driftY: -3.15,
-  turbulence: 1.3,
-  direction: 'top',
-  layers: [
-    { color: palette.green.base, speed: 0.07, intensity: 0.6, seed: 0, falloff: 1 },
-    { color: palette.teal.base, speed: 0.1, intensity: 0.3, seed: 5, falloff: 0.95 },
-    { color: palette.sky.light, speed: 0.15, intensity: 0.15, seed: 11, falloff: 1.2 },
-    { color: palette.magenta.light, speed: 0.07, intensity: 0.12, seed: 17, falloff: 0.8 },
+  speed: 1,
+  drift: 0.5,
+  turbulence: 1,
+  density: 1,
+  falloff: 1,
+  direction: 'bottom',
+  colorSpace: 'oklab',
+  hueInterpolation: 'shorter',
+  steps: 40,
+  stops: [
+    { color: paletteOklch.green.base, position: 0 },
+    { color: paletteOklch.teal.base, position: 0.35 },
+    { color: paletteOklch.sky.light, position: 0.7 },
+    { color: paletteOklch.magenta.light, position: 1 },
   ],
 };
