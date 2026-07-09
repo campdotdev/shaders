@@ -1,7 +1,7 @@
 # Aurora raymarched rebuild — design
 
 **Issue:** MAT-46 · **Branch:** `hunter/mat-46-make-the-aurora-more-realistic`
-**Status:** Approved design, pending implementation plan.
+**Status:** Implemented 2026-07-09 on the branch above (plan: `docs/superpowers/plans/2026-07-08-aurora-raymarch-rebuild.md`).
 
 ## Problem
 
