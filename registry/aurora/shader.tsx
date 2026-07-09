@@ -42,8 +42,8 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color'
 
 export type AuroraDirection = 'bottom' | 'top' | 'left' | 'right';
 
-/** Raymarch slice count. Provisional `steps` prop while tuning (MAT-46 Task 7 decides its fate). */
-export const DEFAULT_STEPS = 40;
+/** Raymarch slice count — slice banding dissolves by ~40 (judged at the Task 4 gate). */
+const STEP_COUNT = 40;
 
 type TSLValue = ShaderNodeObject<Node>;
 
@@ -130,7 +130,6 @@ export interface AuroraShaderProps {
   direction: AuroraDirection;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
-  steps: number;
 }
 
 export function AuroraShader({
@@ -144,7 +143,6 @@ export function AuroraShader({
   direction,
   colorSpace,
   hueInterpolation,
-  steps,
 }: AuroraShaderProps) {
   const shaderContext = useShaderContext();
   const resize = useResize();
@@ -187,7 +185,7 @@ export function AuroraShader({
     const rampStops = toColorRampStops(stops);
 
     // ── Aurora graph ────────────────────────────────────────────────────────
-    const stepCount = steps;
+    const stepCount = STEP_COUNT;
 
     const auroraNode = Fn(() => {
       // Screen position → normalized device coords: center-origin, the
@@ -311,8 +309,8 @@ export function AuroraShader({
       }
     };
     // stopsKey is a stable string proxy for `stops` — listing the array itself
-    // would rebuild on identity-only changes. Stop colors/positions, direction,
-    // and steps are baked as literals, so content changes must rebuild.
+    // would rebuild on identity-only changes. Stop colors/positions and
+    // direction are baked as literals, so content changes must rebuild.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     shaderContext,
@@ -320,7 +318,6 @@ export function AuroraShader({
     colorSpace,
     hueInterpolation,
     direction,
-    steps,
     intensityUniform,
     speedUniform,
     driftUniform,

@@ -18,24 +18,23 @@ export interface AuroraParams {
   direction: AuroraDirection;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
-  steps: number;
   stops: PlainColorStop[];
 }
 
 export const MIN_STOPS = 2;
 export const MAX_STOPS = 6;
 
+// Tuned by eye at the MAT-46 gates; keep in sync with the Aurora defaults.
 export const INITIAL: AuroraParams = {
-  intensity: 1,
+  intensity: 1.7,
   speed: 1,
-  drift: 1,
-  turbulence: 1.25,
-  density: 1,
-  falloff: 1,
+  drift: 0.13,
+  turbulence: 1.3,
+  density: 0.7,
+  falloff: 1.35,
   direction: 'bottom',
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
-  steps: 40,
   stops: [
     { color: paletteOklch.green.base, position: 0 },
     { color: paletteOklch.teal.base, position: 0.35 },
