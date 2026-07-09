@@ -29,7 +29,7 @@ export const INITIAL: AuroraParams = {
   intensity: 1,
   speed: 1,
   drift: 0.5,
-  turbulence: 1,
+  turbulence: 1.25,
   density: 1,
   falloff: 1,
   direction: 'bottom',
