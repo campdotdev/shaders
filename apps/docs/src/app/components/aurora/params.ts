@@ -28,7 +28,7 @@ export const MAX_STOPS = 6;
 export const INITIAL: AuroraParams = {
   intensity: 1,
   speed: 1,
-  drift: 0.5,
+  drift: 1,
   turbulence: 1.25,
   density: 1,
   falloff: 1,

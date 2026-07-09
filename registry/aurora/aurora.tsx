@@ -37,7 +37,7 @@ export function Aurora({
   stops = DEFAULT_STOPS,
   intensity = 1,
   speed = 1,
-  drift = 0.5,
+  drift = 1,
   turbulence = 1.25,
   density = 1,
   falloff = 1,

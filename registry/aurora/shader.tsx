@@ -62,6 +62,21 @@ const rotate2d = (point: TSLValue, angle: TSLNode): TSLValue =>
   );
 
 /**
+ * Remap screen uv so the shader's internal "horizon at the bottom, altitude
+ * increasing up" frame lands on the requested edge. Left/right also swap
+ * which axis carries the aspect correction.
+ */
+const DIRECTION_REMAPS: Record<
+  AuroraDirection,
+  (screenUv: TSLValue) => { across: TSLValue; up: TSLValue; swapAspect: boolean }
+> = {
+  bottom: (screenUv) => ({ across: screenUv.x, up: screenUv.y, swapAspect: false }),
+  top: (screenUv) => ({ across: screenUv.x, up: screenUv.y.oneMinus(), swapAspect: false }),
+  left: (screenUv) => ({ across: screenUv.y, up: screenUv.x, swapAspect: true }),
+  right: (screenUv) => ({ across: screenUv.y, up: screenUv.x.oneMinus(), swapAspect: true }),
+};
+
+/**
  * Streaky FBM built from triangle waves: five octaves, each rotated and
  * domain-warped by the previous. `shimmerPhase` rotates the warp over time
  * (the aurora shimmer); `warpStrength` scales the warp (turbulence).
@@ -175,10 +190,13 @@ export function AuroraShader({
     const stepCount = steps;
 
     const auroraNode = Fn(() => {
-      // Screen position → normalized device coords: center-origin, x scaled by
-      // aspect so ribbons don't stretch on wide canvases.
-      const ndcX = uv().x.sub(0.5).mul(2).mul(aspectNode);
-      const ndcY = uv().y.sub(0.5).mul(2);
+      // Screen position → normalized device coords: center-origin, the
+      // across-band axis scaled by aspect so ribbons don't stretch on wide
+      // canvases. The direction remap decides which screen edge is "down".
+      const { across, up, swapAspect } = DIRECTION_REMAPS[direction](uv());
+      const aspectAcross = swapAspect ? aspectNode.reciprocal() : aspectNode;
+      const ndcX = across.sub(0.5).mul(2).mul(aspectAcross);
+      const ndcY = up.sub(0.5).mul(2);
 
       // Virtual camera: sits below the aurora looking toward the horizon (+z),
       // biased slightly upward so the band occupies the upper frame.
@@ -220,10 +238,28 @@ export function AuroraShader({
           .sub(jitter);
         const samplePoint = rayOrigin.add(rayDirection.mul(marchDistance));
 
+        const altitudeFraction = stepIndex.div(stepCount);
+
+        // Drift: travel along the band, sheared by altitude so curtain tops
+        // lead their bases (wind shear) instead of the texture sliding as one
+        // rigid sheet. Base rate re-tuned at the Task 6 gate after shear+sway
+        // landed — with those adding apparent motion, far less raw drift reads
+        // right. drift stays a relative dial around 1.
+        const driftOffset = elapsedTime.mul(driftUniform).mul(0.008).mul(altitudeFraction.add(1));
+
+        // Undulation: a slow wave traveling through depth sways each ribbon
+        // side-to-side, stronger with altitude, so the curtains ripple even
+        // at drift 0. Rides the speed dial with the shimmer.
+        const sway = sin(samplePoint.z.mul(0.6).add(elapsedTime.mul(speedUniform).mul(0.3)))
+          .mul(0.12)
+          .mul(altitudeFraction.add(0.25));
+
         // Sample the field on the ground plane: z runs toward the horizon,
         // x runs across the screen. Base pattern frequency tuned by eye at
         // the Task 3 gate; density stays a relative dial around 1.
-        const groundCoords = vec2(samplePoint.z, samplePoint.x).mul(densityUniform).mul(1.5);
+        const groundCoords = vec2(samplePoint.z, samplePoint.x.add(driftOffset).add(sway))
+          .mul(densityUniform)
+          .mul(1.5);
 
         const fieldValue = triangleField(groundCoords, shimmerPhase, turbulenceUniform);
 
@@ -233,7 +269,7 @@ export function AuroraShader({
         // (low) slices, so a linear ramp reads almost entirely as the first
         // stop. Sub-linear altitude pulls the upper stops down into the
         // bright, heavily-weighted part of the curtain.
-        const altitude = stepIndex.div(stepCount).pow(0.6);
+        const altitude = altitudeFraction.pow(0.6);
         const sliceColor = colorRamp(altitude, rampStops, colorSpace, hueInterpolation);
         const slice = vec4(sliceColor.mul(fieldValue), fieldValue);
 
