@@ -18,11 +18,18 @@ import {
 import {
   clamp,
   cos,
+  dot,
+  exp2,
   float,
+  Fn,
   fract,
+  Loop,
+  mix,
   normalize,
+  screenCoordinate,
   type ShaderNodeObject,
   sin,
+  smoothstep,
   uniform,
   uv,
   vec2,
@@ -165,45 +172,89 @@ export function AuroraShader({
     const rampStops = toColorRampStops(stops);
 
     // ── Aurora graph ────────────────────────────────────────────────────────
-    // Screen position → normalized device coords: center-origin, x scaled by
-    // aspect so ribbons don't stretch on wide canvases.
-    const ndcX = uv().x.sub(0.5).mul(2).mul(aspectNode);
-    const ndcY = uv().y.sub(0.5).mul(2);
+    const stepCount = steps;
 
-    // Virtual camera: sits below the aurora looking toward the horizon (+z),
-    // biased slightly upward so the band occupies the upper frame.
-    const rayOrigin = vec3(0, 0, -6.7);
-    const rayDirection = normalize(vec3(ndcX, ndcY.mul(0.8).add(0.25), 1.4));
+    const auroraNode = Fn(() => {
+      // Screen position → normalized device coords: center-origin, x scaled by
+      // aspect so ribbons don't stretch on wide canvases.
+      const ndcX = uv().x.sub(0.5).mul(2).mul(aspectNode);
+      const ndcY = uv().y.sub(0.5).mul(2);
 
-    // One horizontal slice at the curtain-base altitude. The bent divisor
-    // (rd.y·2 + 0.4 instead of plain rd.y) fakes atmospheric curvature: rays
-    // that graze the horizon hit at a finite distance instead of infinity, so
-    // the sheet bends down toward the horizon line.
-    const sliceAltitude = float(0.9);
-    const marchDistance = sliceAltitude.sub(rayOrigin.y).div(rayDirection.y.mul(2).add(0.4));
-    const samplePoint = rayOrigin.add(rayDirection.mul(marchDistance));
+      // Virtual camera: sits below the aurora looking toward the horizon (+z),
+      // biased slightly upward so the band occupies the upper frame.
+      const rayOrigin = vec3(0, 0, -6.7);
+      const rayDirection = normalize(vec3(ndcX, ndcY.mul(0.8).add(0.25), 1.4));
 
-    // Sample the field on the ground plane: z runs toward the horizon,
-    // x runs across the screen.
-    // Base pattern frequency, tuned by eye at the Task 3 gate (user preferred
-    // old density 0.75 × the 2.0 base). density stays a relative dial around 1.
-    const groundCoords = vec2(samplePoint.z, samplePoint.x).mul(densityUniform).mul(1.5);
-    // Base shimmer rate, tuned by eye at the Task 3 gate (the reference's 0.06
-    // read as static; the user's preferred feel was ~2.4× faster). speed stays
-    // a relative dial around 1.
-    const shimmerPhase = elapsedTime.mul(speedUniform).mul(0.15);
-    const fieldValue = triangleField(groundCoords, shimmerPhase, turbulenceUniform);
+      // Base shimmer rate, tuned by eye at the Task 3 gate (the reference's
+      // 0.06 read as static; the user's preferred feel was ~2.4× faster).
+      // speed stays a relative dial around 1.
+      const shimmerPhase = elapsedTime.mul(speedUniform).mul(0.15);
 
-    // Rays pointing below the horizon never hit the sky — fade them out fast.
-    const horizonMask = clamp(rayDirection.y.mul(15).add(0.4), 0, 1);
+      // Fixed-altitude tint (the ramp's curtain-base green) until Task 5
+      // drives the ramp per-slice.
+      const sliceColor = colorRamp(float(0.15), rampStops, colorSpace, hueInterpolation);
 
-    const brightness = fieldValue.mul(horizonMask);
+      // Screen-space hash: decorrelates the slice offsets pixel-to-pixel so
+      // the march's discrete slices dissolve into grain instead of banding.
+      const screenHash = fract(
+        sin(dot(screenCoordinate.xy, vec2(12.9898, 4.1414))).mul(43758.5453),
+      );
 
-    // Fixed-altitude tint (the ramp's curtain-base green) until Task 5 drives
-    // the ramp per-slice. Keeps the ramp plumbing live through Tasks 2–4.
-    const sliceColor = colorRamp(float(0.15), rampStops, colorSpace, hueInterpolation);
+      // Accumulators must be GPU-side variables (`toVar`) because the loop
+      // below runs on the GPU — a JS variable can't change per iteration there.
+      const accumulated = vec4(0).toVar();
+      const runningAverage = vec4(0).toVar();
 
-    material.colorNode = vec4(sliceColor.mul(brightness), brightness);
+      Loop(stepCount, ({ i }: { i: TSLValue }) => {
+        const stepIndex = float(i);
+
+        // Ramp the jitter in over the first steps — the lowest slices form
+        // the curtain's sharp bottom edge and shouldn't be blurred.
+        const jitter = screenHash.mul(0.006).mul(smoothstep(0, 15, stepIndex));
+
+        // Slice altitudes: pow(i, 1.4) packs slices tightly at the base
+        // (sharp bright lower border) and spreads them out with height
+        // (long soft fade upward). The bent divisor (rd.y·2 + 0.4) fakes
+        // atmospheric curvature — horizon-grazing rays hit at a finite
+        // distance, bending the sheet down toward the horizon line.
+        const sliceAltitude = stepIndex.pow(1.4).mul(0.002).add(0.8);
+        const marchDistance = sliceAltitude
+          .sub(rayOrigin.y)
+          .div(rayDirection.y.mul(2).add(0.4))
+          .sub(jitter);
+        const samplePoint = rayOrigin.add(rayDirection.mul(marchDistance));
+
+        // Sample the field on the ground plane: z runs toward the horizon,
+        // x runs across the screen. Base pattern frequency tuned by eye at
+        // the Task 3 gate; density stays a relative dial around 1.
+        const groundCoords = vec2(samplePoint.z, samplePoint.x).mul(densityUniform).mul(1.5);
+
+        const fieldValue = triangleField(groundCoords, shimmerPhase, turbulenceUniform);
+
+        const slice = vec4(sliceColor.mul(fieldValue), fieldValue);
+
+        // Average-then-accumulate: blending each slice into a running average
+        // before adding smears slice-to-slice noise into continuous wisps.
+        runningAverage.assign(mix(runningAverage, slice, 0.5));
+
+        // Atmospheric extinction: each successive slice contributes
+        // exponentially less. smoothstep suppresses the first few slices,
+        // which otherwise read as a hard floor.
+        const extinction = exp2(stepIndex.mul(-0.065).sub(2.5));
+
+        accumulated.addAssign(runningAverage.mul(extinction).mul(smoothstep(0, 5, stepIndex)));
+      });
+
+      // Rays pointing below the horizon never hit the sky — fade them out fast.
+      const horizonMask = clamp(rayDirection.y.mul(15).add(0.4), 0, 1);
+
+      const emission = accumulated.rgb.mul(horizonMask).mul(1.8);
+      const coverage = accumulated.a.mul(horizonMask).mul(1.5).clamp(0, 1);
+
+      return vec4(emission.max(0), coverage);
+    })();
+
+    material.colorNode = auroraNode;
     // ── End aurora graph ────────────────────────────────────────────────────
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
