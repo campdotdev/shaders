@@ -1,5 +1,11 @@
 # @lovo/matter-react
 
+## 3.0.0
+
+### Major Changes
+
+- 1b0bbcb: Remove `ShaderScene`'s `fallback` prop (breaking). Use the new `ShaderPoster` component from `@lovo/matter-react/poster` instead — it renders in the initial HTML (SSR-safe, no three import) and dismisses when the wrapped `ShaderScene` paints its first frame.
+
 ## 2.0.0
 
 - `ShaderScene` gains an `onFirstPaint?: () => void` prop, fired once when the shader's first frame is on screen. Lets consumers dismiss a server-rendered poster without relying on the shader being opaque.
