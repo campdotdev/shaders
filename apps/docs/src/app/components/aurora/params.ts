@@ -1,5 +1,4 @@
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-import type { AuroraDirection } from '@matter/registry/aurora';
 
 import { paletteOklch } from '../../../lib/palette';
 
@@ -11,11 +10,9 @@ export interface PlainColorStop {
 export interface AuroraParams {
   intensity: number;
   speed: number;
-  drift: number;
   turbulence: number;
   density: number;
   falloff: number;
-  direction: AuroraDirection;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   stops: PlainColorStop[];
@@ -24,15 +21,13 @@ export interface AuroraParams {
 export const MIN_STOPS = 2;
 export const MAX_STOPS = 6;
 
-// Tuned by eye at the MAT-46 gates; keep in sync with the Aurora defaults.
+// Placeholder values during the MAT-48 rebuild; retuned at the Phase 6 gate.
 export const INITIAL: AuroraParams = {
-  intensity: 1.7,
+  intensity: 1,
   speed: 1,
-  drift: 0.13,
-  turbulence: 1.3,
-  density: 0.7,
-  falloff: 1.35,
-  direction: 'bottom',
+  turbulence: 1,
+  density: 1,
+  falloff: 1,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [

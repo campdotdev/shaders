@@ -26,11 +26,9 @@ const formatJsx = (params: AuroraParams) =>
   <Aurora
     intensity={${formatNumber(params.intensity)}}
     speed={${formatNumber(params.speed)}}
-    drift={${formatNumber(params.drift)}}
     turbulence={${formatNumber(params.turbulence)}}
     density={${formatNumber(params.density)}}
     falloff={${formatNumber(params.falloff)}}
-    direction="${params.direction}"
     colorSpace="${params.colorSpace}"
     hueInterpolation="${params.hueInterpolation}"
     stops={[
@@ -43,11 +41,9 @@ const formatParams = (params: AuroraParams) =>
   `{
   intensity: ${formatNumber(params.intensity)},
   speed: ${formatNumber(params.speed)},
-  drift: ${formatNumber(params.drift)},
   turbulence: ${formatNumber(params.turbulence)},
   density: ${formatNumber(params.density)},
   falloff: ${formatNumber(params.falloff)},
-  direction: '${params.direction}',
   colorSpace: '${params.colorSpace}',
   hueInterpolation: '${params.hueInterpolation}',
   stops: [
@@ -91,14 +87,9 @@ export default function AuroraPage() {
 
     globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
     globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 });
-    globals.addBinding(local, 'drift', { min: -3, max: 3, step: 0.01 });
     globals.addBinding(local, 'turbulence', { min: 0, max: 3, step: 0.01 });
     globals.addBinding(local, 'density', { min: 0.25, max: 4, step: 0.01 });
     globals.addBinding(local, 'falloff', { min: 0, max: 2, step: 0.01 });
-    globals.addBinding(local, 'direction', {
-      label: 'horizon',
-      options: { Bottom: 'bottom', Top: 'top', Left: 'left', Right: 'right' },
-    });
     globals.addBinding(local, 'colorSpace', {
       options: {
         OKLab: 'oklab',
