@@ -11,7 +11,6 @@ export interface AuroraParams {
   intensity: number;
   speed: number;
   turbulence: number;
-  density: number;
   falloff: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
@@ -26,7 +25,6 @@ export const INITIAL: AuroraParams = {
   intensity: 1,
   speed: 1,
   turbulence: 1,
-  density: 1,
   falloff: 1,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
