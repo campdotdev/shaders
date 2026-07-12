@@ -2,7 +2,13 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { elapsedTime, type TSLNode } from '@lovo/matter';
+import {
+  colorRamp,
+  type ColorSpace,
+  elapsedTime,
+  type HueInterpolation,
+  type TSLNode,
+} from '@lovo/matter';
 import { useResize, useShaderContext } from '@lovo/matter-react';
 import {
   clamp,
@@ -26,6 +32,8 @@ import {
   vec4,
 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
+
+import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
 // Aurora technique inspired by nimitz's "Auroras" (shadertoy.com/view/XtGGRt):
 // triangle-noise fbm, depth-sliced raymarch, average-then-accumulate
@@ -97,9 +105,20 @@ const auroraField = (coords: TSLValue, warpPhase: TSLNode, domainPhase: TSLNode)
   return float(1).div(ridgeSum.mul(20).pow(1.3)).clamp(0, 1);
 };
 
-export function AuroraShader() {
+export interface AuroraShaderProps {
+  stops: ColorStop[];
+  colorSpace: ColorSpace;
+  hueInterpolation: HueInterpolation;
+}
+
+export function AuroraShader({ stops, colorSpace, hueInterpolation }: AuroraShaderProps) {
   const shaderContext = useShaderContext();
   const resize = useResize();
+
+  // Stable string proxy for the stops array — colors/positions are baked
+  // into the ramp as literals, so a content change must rebuild the
+  // material, but an identity-only change must not (gotcha #17/#19).
+  const stopsKey = colorStopsKey(stops);
 
   const [initialWidth, initialHeight] = resize.get();
   const aspectNode = useMemo(
@@ -120,6 +139,7 @@ export function AuroraShader() {
 
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
+    const rampStops = toColorRampStops(stops);
 
     material.transparent = true;
     // rgb below is the accumulated curtain light itself (premultiplied);
@@ -175,14 +195,14 @@ export function AuroraShader() {
           domainPhase,
         );
 
-        // Depth-stratified hue cycling: each slice gets its own palette
-        // phase, so near and far ribbons glow different colors. Replaced by
-        // the user color ramp in Phase 4.
-        const paletteColor = sin(vec3(-1.15, 1.5, -0.2).add(stepIndex.mul(0.043)))
-          .mul(0.5)
-          .add(0.5);
+        // Depth-stratified color: slice index drives the user ramp, so near
+        // and far ribbons glow different stops. pow keeps the upper stops
+        // visible — extinction weights early slices, so a linear index
+        // would read as stop 0 almost everywhere.
+        const sliceProgress = stepIndex.div(STEP_COUNT).pow(0.6);
+        const sliceColor = colorRamp(sliceProgress, rampStops, colorSpace, hueInterpolation);
 
-        const slice = vec4(paletteColor.mul(fieldValue), fieldValue);
+        const slice = vec4(sliceColor.mul(fieldValue), fieldValue);
 
         // Average-then-accumulate: blending each slice into a running
         // average before adding smears slice-to-slice noise into continuous
@@ -222,7 +242,9 @@ export function AuroraShader() {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
     };
-  }, [shaderContext, aspectNode]);
+    // stopsKey stands in for stops (content proxy; rampStops derives from it).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shaderContext, stopsKey, colorSpace, hueInterpolation, aspectNode]);
 
   return null;
 }
