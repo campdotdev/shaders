@@ -1,7 +1,7 @@
 # Aurora reference rebuild (MAT-48) — design
 
 **Date:** 2026-07-12
-**Status:** Approved (brainstorm session 2026-07-11/12)
+**Status:** Implemented 2026-07-12 on the branch below (plan: `docs/superpowers/plans/2026-07-12-aurora-reference-rebuild.md`).
 **Branch:** `hunter/mat-48-rework-aurora`
 
 ## Goal

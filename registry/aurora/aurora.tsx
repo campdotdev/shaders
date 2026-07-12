@@ -9,7 +9,7 @@ import { AuroraShader } from './shader';
 export type { ColorStop } from '../utils/color';
 
 // Depth ramp, near → far: oxygen green up close, teal mid, ionized blue and
-// pink fringe in the distance. Starting point; retuned at the Phase 6 gate.
+// pink fringe in the distance.
 export const DEFAULT_STOPS: ColorStop[] = [
   { color: '#0ae24b', position: 0 },
   { color: '#00cda6', position: 0.35 },
@@ -27,8 +27,7 @@ export interface AuroraProps {
   hueInterpolation?: HueInterpolation;
 }
 
-// Dial defaults are placeholders (1 = reference feel); retuned at the
-// Phase 6 gate.
+// Defaults approved by eye at the MAT-48 gates.
 export function Aurora({
   stops = DEFAULT_STOPS,
   intensity = 1,

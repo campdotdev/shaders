@@ -214,6 +214,12 @@ export default function AuroraPage() {
   <Aurora intensity={1} stops={[...]} />
 </ShaderScene>`}
         </pre>
+        <p>
+          The aurora fills its scene; compose with the container. For a curtain band hanging in a
+          wide dark sky, place a short ShaderScene near the top of a taller dark section.{' '}
+          <code>falloff</code> fades the curtain from the bottom up — 1 fills the canvas, 0 hides
+          it.
+        </p>
       </section>
     </main>
   );

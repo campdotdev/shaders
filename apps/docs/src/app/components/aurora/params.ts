@@ -20,7 +20,7 @@ export interface AuroraParams {
 export const MIN_STOPS = 2;
 export const MAX_STOPS = 6;
 
-// Placeholder values during the MAT-48 rebuild; retuned at the Phase 6 gate.
+// Approved by eye at the MAT-48 gates; keep in sync with the Aurora defaults.
 export const INITIAL: AuroraParams = {
   intensity: 1,
   speed: 1,

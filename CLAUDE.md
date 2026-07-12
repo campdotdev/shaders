@@ -57,6 +57,7 @@ For full architecture, public APIs, the v1 catalog of six components, animation/
 | MAT-37 | Output dithering productized (#46): Bayer 8×8, scene-wide display-space output pass | ✅ Complete | —             |
 | MAT-45 | Aurora vibrancy restored: premultiplied-alpha compositing fix + natural palette defaults | ✅ Complete | —             |
 | MAT-46 | Aurora raymarched rebuild: volumetric sky-band, `layers` → altitude `stops` ramp (breaking) | ✅ Complete | —             |
+| MAT-48 | Aurora reference rebuild: triangle-noise fbm + depth-indexed ramp; `drift`/`direction`/`density` removed, `falloff` → screen-space reveal (breaking) | ✅ Complete | —             |
 
 > Latest published version: **`v0.4.1`**. M7.1, M7.2 (tsdown, `vp run`) were cancelled when M8 reverted the Vite+ adoption.
 
