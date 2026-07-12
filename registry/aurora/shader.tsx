@@ -98,7 +98,10 @@ const auroraField = (
   let warpPoint = point;
 
   for (let octave = 0; octave < 5; octave += 1) {
-    const warp = rotate2d(triangleWave2(warpPoint.mul(1.85)).mul(0.75).mul(warpStrength), warpPhase);
+    const warp = rotate2d(
+      triangleWave2(warpPoint.mul(1.85)).mul(0.75).mul(warpStrength),
+      warpPhase,
+    );
 
     point = point.sub(warp.div(warpGain));
 
