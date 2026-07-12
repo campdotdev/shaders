@@ -1,16 +1,25 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 
 import { elapsedTime, type TSLNode } from '@lovo/matter';
-import { useShaderContext } from '@lovo/matter-react';
+import { useResize, useShaderContext } from '@lovo/matter-react';
 import {
+  clamp,
   cos,
+  dot,
+  exp2,
   float,
   Fn,
   fract,
+  Loop,
+  mix,
+  normalize,
+  screenCoordinate,
   type ShaderNodeObject,
   sin,
+  smoothstep,
+  uniform,
   uv,
   vec2,
   vec3,
@@ -24,6 +33,17 @@ import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/web
 // gates.
 
 type TSLValue = ShaderNodeObject<Node>;
+
+/** Raymarch slice count. Banding re-judged at the Phase 2 gate. */
+const STEP_COUNT = 60;
+
+/** Per-pixel hash (fract-dot construction) — seeds the march jitter. */
+const hashNoise = (point: TSLValue): TSLValue => {
+  const spread = fract(vec3(point.x, point.y, point.x).mul(0.1031));
+  const mixed = spread.add(dot(spread, vec3(spread.y, spread.z, spread.x).add(33.33)));
+
+  return fract(mixed.x.add(mixed.y).mul(mixed.z));
+};
 
 /**
  * Triangle wave of x in [0, 0.5]. Where simplex is billowy, the triangle wave
@@ -79,23 +99,113 @@ const auroraField = (coords: TSLValue, warpPhase: TSLNode, domainPhase: TSLNode)
 
 export function AuroraShader() {
   const shaderContext = useShaderContext();
+  const resize = useResize();
+
+  const [initialWidth, initialHeight] = resize.get();
+  const aspectNode = useMemo(
+    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  useEffect(() => {
+    const [canvasWidth, canvasHeight] = resize.get();
+
+    if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
+
+    return resize.on('change', ([updatedWidth, updatedHeight]) => {
+      if (updatedWidth > 0 && updatedHeight > 0) aspectNode.value = updatedWidth / updatedHeight;
+    });
+  }, [resize, aspectNode]);
 
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
 
-    // Phase 1 scaffolding: look straight at the field, grayscale, no march.
-    // uv is stretched to roughly the coordinate range the raymarch will
-    // sample so this gate judges the real pattern.
-    const fieldPreview = Fn(() => {
-      const coords = uv().sub(0.5).mul(vec2(10, 4));
+    const auroraNode = Fn(() => {
+      // Screen uv → centered NDC; x carries the aspect so ribbons don't
+      // stretch on wide canvases.
+      const ndcX = uv().x.sub(0.5).mul(2).mul(aspectNode);
+      const ndcY = uv().y.sub(0.5).mul(2);
+
+      // Virtual camera looking toward the horizon (+z); z sets the fov.
+      const rayDirection = normalize(vec3(ndcX, ndcY, 1.064));
+
       const warpPhase = elapsedTime.mul(0.02);
       const domainPhase = elapsedTime.mul(0.01);
-      const fieldValue = auroraField(coords, warpPhase, domainPhase);
 
-      return vec4(vec3(fieldValue), 1);
+      // Per-pixel jitter seed: decorrelates slice offsets pixel-to-pixel so
+      // the discrete march dissolves into grain instead of contour banding.
+      const jitterSeed = hashNoise(screenCoordinate.xy);
+
+      // Loop state must be GPU-side variables (toVar) — the loop runs on the
+      // GPU, so a JS binding can't change per iteration there.
+      const accumulated = vec4(0).toVar();
+      const runningAverage = vec4(0).toVar();
+
+      Loop(STEP_COUNT, ({ i }: { i: TSLValue }) => {
+        const stepIndex = float(i);
+
+        // Ramp jitter in over the first slices — the lowest slices draw the
+        // curtain's sharp bottom edge and shouldn't be blurred.
+        const jitter = jitterSeed.mul(0.006).mul(smoothstep(0, 15, stepIndex));
+
+        // pow(i, 1.4) packs slices tight at the base and spreads them with
+        // height; the bent divisor fakes atmospheric curvature so
+        // horizon-grazing rays push the sheet toward the horizon line.
+        const marchDistance = stepIndex
+          .pow(1.4)
+          .mul(0.002)
+          .add(0.8)
+          .div(rayDirection.y.mul(2).add(0.4))
+          .sub(jitter);
+
+        const samplePoint = vec3(5.5).add(rayDirection.mul(marchDistance));
+
+        // Sample the field on the horizontal plane: z runs toward the
+        // horizon, x runs across the screen.
+        const fieldValue = auroraField(
+          vec2(samplePoint.z, samplePoint.x),
+          warpPhase,
+          domainPhase,
+        );
+
+        // Depth-stratified hue cycling: each slice gets its own palette
+        // phase, so near and far ribbons glow different colors. Replaced by
+        // the user color ramp in Phase 4.
+        const paletteColor = sin(vec3(-1.15, 1.5, -0.2).add(stepIndex.mul(0.043)))
+          .mul(0.5)
+          .add(0.5);
+
+        const slice = vec4(paletteColor.mul(fieldValue), fieldValue);
+
+        // Average-then-accumulate: blending each slice into a running
+        // average before adding smears slice-to-slice noise into continuous
+        // wisps.
+        runningAverage.assign(mix(runningAverage, slice, 0.5));
+
+        // Atmospheric extinction: each successive slice contributes
+        // exponentially less; the smoothstep suppresses the first few
+        // slices, which otherwise read as a hard floor.
+        const extinction = exp2(stepIndex.mul(-0.065).sub(2.5));
+
+        accumulated.addAssign(runningAverage.mul(extinction).mul(smoothstep(0, 5, stepIndex)));
+      });
+
+      // Rays pointing below the horizon never hit sky — fade them out fast.
+      const horizonMask = clamp(rayDirection.y.mul(15).add(0.4), 0, 1);
+
+      // Soft-clip shaping: lifts the mids and rolls off the top instead of
+      // clipping hot filaments.
+      const shaped = smoothstep(0, 1.1, accumulated.mul(horizonMask).mul(1.5));
+
+      // Stage-1 scaffolding: opaque composite over a dark sky gradient so
+      // the browser can be A/B'd against ShaderToy. Deleted in Phase 3.
+      const sky = mix(vec3(0.006, 0.026, 0.095), vec3(0.007, 0.011, 0.035), uv().y);
+
+      return vec4(sky.add(shaped.rgb), 1);
     })();
 
-    material.colorNode = fieldPreview;
+    material.colorNode = auroraNode;
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -109,7 +219,7 @@ export function AuroraShader() {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
     };
-  }, [shaderContext]);
+  }, [shaderContext, aspectNode]);
 
   return null;
 }
