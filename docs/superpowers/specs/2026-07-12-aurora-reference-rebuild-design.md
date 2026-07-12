@@ -6,11 +6,12 @@
 
 ## Goal
 
-Rebuild `registry/aurora/shader.tsx` from scratch as a faithful port of the
-nimitz-style ShaderToy aurora the user supplied (see Appendix A), then
-productize it back into a Matter Tier 1 component. The MAT-46 shader is
-discarded — it shares ancestry with the same reference but diverged in the
-places that make the reference look alive.
+Rebuild `registry/aurora/shader.tsx` from scratch following the structure of
+the nimitz-style ShaderToy aurora the user supplied (a modified derivative of
+nimitz's "Auroras", ShaderToy `XtGGRt` — see License constraint and
+Appendix A), then productize it back into a Matter Tier 1 component. The
+MAT-46 shader is discarded — it shares ancestry with the same reference but
+diverged in the places that make the reference look alive.
 
 ### Why redo it
 
@@ -39,8 +40,29 @@ Diagnosed gaps in the current (MAT-46) aurora versus the reference:
 | Dropped props | `drift`, `direction` — breaking change, noted in changelog |
 | `falloff` semantics | Horizon fade steepness. High = tight fade at band bottom; 0 = no cut, aurora fills canvas. Fade must stay soft and ride the ribbon shapes — never read as a screen-space line |
 | Background | Component stays a transparent premultiplied overlay. Reference's sky gradient lives only on the demo page as a page background |
-| Build strategy | Faithful-first, two-stage: port the reference verbatim (opaque, sin palette, literal constants), A/B against ShaderToy, then productize one gate at a time |
+| Build strategy | Reference-shaped, two-stage: rebuild the reference's structure (opaque, sin palette, literal starting constants), A/B against ShaderToy expecting "close, not pixel-identical", then productize one gate at a time |
 | Execution mode | Co-write: the user types `shader.tsx` chunk-by-chunk; Claude explains and guides, and does not Edit/Write shader files |
+| License stance | Technique reference only (see License constraint below) — original TSL expression, constants as starting values re-tuned at gates, inspiration credit in the file header, no verbatim-port claim |
+
+## License constraint
+
+nimitz's "Auroras" (ShaderToy `XtGGRt`) is CC BY-NC-SA 3.0, and the
+user-supplied variant inherits that license. Matter cannot ship
+CC BY-NC-SA-derived code: the NC clause conflicts with any commercial use of
+`@lovo/matter`, and the SA clause would contaminate every consumer app the
+CLI copies the component into. The MAT-46 rebuild already established the
+stance and this rebuild keeps it:
+
+- The reference is used as a **technique reference** — the raymarch
+  structure, triangle-noise fbm idea, and average-then-accumulate trick are
+  uncopyrightable techniques.
+- All TSL is written as original expression. Constants from the reference
+  are treated as starting values and re-tuned by eye at the phase gates;
+  shipped values are ours.
+- The shader file header carries an inspiration credit naming nimitz's
+  Auroras. No verbatim-port claim is made anywhere.
+- The reference GLSL itself is not committed to the repository (Appendix A
+  is a structural description, not a transcription).
 
 ## Public API
 
@@ -66,9 +88,10 @@ literal so that the default value reproduces the reference feel.
 
 ## Shader structure
 
-### Stage 1 — faithful port (opaque)
+### Stage 1 — reference-shaped port (opaque)
 
-Five co-write blocks mirroring the reference function-for-function:
+Five co-write blocks matching the reference's structure. Numeric values named
+below are starting points, re-tuned at gates per the license stance:
 
 1. **Helpers.**
    - `hashNoise(vec2)` — the reference's fract-dot hash (replaces the old
@@ -140,7 +163,7 @@ All constants stay literal in stage 1 — no uniforms, no props.
 | # | Phase | Gate |
 | --- | --- | --- |
 | 1 | Helpers + `auroraField` visualized flat (grayscale plane) | See curtain filaments, feel warp motion; tri-noise fbm + domain warp explained |
-| 2 | Ray setup + 60-slice march + sin palette + sky (full reference output) | Browser vs ShaderToy side-by-side; banding check |
+| 2 | Ray setup + 60-slice march + sin palette + sky (full reference-shaped output) | Browser vs ShaderToy side-by-side (expect close, not pixel-identical); banding check |
 | 3 | Transparency swap | Same vibrancy over demo background; stacks over other shaders |
 | 4 | Slice-indexed color ramp | Wrap-vs-once decision; default stops picked |
 | 5 | Props → uniforms + falloff shaping | Drag every dial; falloff edge organic at extremes |
@@ -168,88 +191,32 @@ All constants stay literal in stage 1 — no uniforms, no props.
 - New engine primitives. Everything lives in `registry/aurora/`.
 - Any other component.
 
-## Appendix A — reference shader (user-supplied, ShaderToy)
+## Appendix A — reference structure (description, not a transcription)
 
-```glsl
-#define MAX_DIST 100.0
-#define PI 3.1415926535
+The user-supplied reference (kept out of the repo per the license
+constraint; it lives in the brainstorm conversation) is a modified
+derivative of nimitz's "Auroras" (`XtGGRt`). Its structure, which stage 1
+mirrors:
 
-#define u_time iTime
-#define u_resolution iResolution
-
-float random(vec2 p)
-{
-    vec3 p3  = fract(vec3(p.xyx) * .1031);
-    p3 += dot(p3, p3.yzx + 33.33);
-    return fract((p3.x + p3.y) * p3.z);
-}
-
-mat2 mm2(in float a){float c = cos(a), s = sin(a);return mat2(c,s,-s,c);}
-float tri(in float x){return abs(fract(x)-.5);}
-vec2 tri2(in vec2 p){return vec2(tri(p.x)+tri(p.y),tri(p.y+tri(p.x)));}
-
-float fbmAurora(vec2 p, float spd) {
-    float z = 1.8;
-    float z2 = 2.5;
-    float rz = 0.;
-    p *= mm2(p.x * 0.06);
-    vec2 bp = p;
-    for (float i = 0.; i < 5.; i++ ) {
-        vec2 dg = tri2(bp*1.85)*.75;
-        dg *= mm2(u_time*spd);
-        p -= dg/z2;
-
-        bp *= 1.3;
-        z2 *= .45;
-        z *= .42;
-        p *= 1.21 + (rz-1.0)*.02;
-
-        rz += tri(p.x+tri(p.y))*z;
-        p *= mm2(u_time * 0.01); // Smoother rotation
-    }
-    return clamp(1. / pow(rz * 20., 1.3), 0.,1.);
-}
-
-vec4 aurora(vec3 rd) {
-    vec4 col = vec4(0);
-    vec4 avgCol = vec4(0);
-
-    for (float i=0.; i < 60.; i++) { // Increased sample count for smoother result
-        float of = 0.006*random(gl_FragCoord.xy)*smoothstep(0.,15., i);
-        float pt = ((.8+pow(i,1.4)*.002)) / (rd.y * 2. + 0.4);
-        pt -= of;
-        vec3 bpos = 5.5 + pt * rd;
-        vec2 p = bpos.zx;
-        float rzt = fbmAurora(p, 0.02); // Reduced speed for smoother movement
-        vec4 col2 = vec4(0,0,0, rzt);
-        col2.rgb = (sin(1.-vec3(2.15,-.5, 1.2) +i * 0.043) * 0.5 + 0.5)*rzt;
-        avgCol = mix(avgCol, col2, .5);
-        col += avgCol * exp2(-i*0.065 - 2.5) * smoothstep(0., 5., i);
-    }
-    col *= (clamp(rd.y*15.+.4,0.,1.));
-
-    return smoothstep(0.,1.1,pow(col,vec4(1.))*1.5);
-}
-
-void setSkyColor(vec2 uv, out vec3 color, vec3 dir) {
-   color = mix(vec3(0.006,0.026,0.095), vec3(0.007,0.011,0.035), uv.y);
-   color += aurora(dir).rgb;
-}
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord)
-{
-  vec2 uv = fragCoord.xy / u_resolution.xy;
-  vec2 p = (-u_resolution.xy + 2.0 * gl_FragCoord.xy) / u_resolution.y;
-
-  vec3 ro = vec3(0.0, 1.2, 0.0);
-  vec3 rd = normalize(vec3(p.xy, 1.064));
-
-  vec3 color = vec3(0.0);
-  setSkyColor(uv, color, rd);
-
-  color = pow(color, vec3(1. / 2.2)); // gamma correction
-  color = smoothstep(0., 1., color);
-
-  fragColor = vec4(color, 1.0);
-}
-```
+- **Hash:** a fract-dot construction (the common "hash without sine"
+  pattern) seeded from the pixel coordinate; used only for per-pixel march
+  jitter.
+- **Triangle noise:** `tri(x) = abs(fract(x) - 0.5)` plus a vec2 composite
+  that cross-feeds the two axes.
+- **fbm:** 5 octaves. An initial rotation proportional to `p.x` bends the
+  domain; each octave computes a triangle-wave warp vector from a scaled
+  copy of the domain, rotates that warp by `time × warpSpeed`, subtracts it,
+  advances a lacunarity/gain ladder, accumulates a ridge term, and finally
+  rotates the whole domain by a small time-proportional angle (the
+  smooth-drift ingredient). Output is a clamped reciprocal power of the
+  ridge sum, concentrating brightness into filaments.
+- **March:** 60 slices. Slice distance grows super-linearly with slice
+  index and is divided by a linear function of `rd.y` (band placement /
+  fake curvature); a hash jitter ramps in over the first ~15 slices. The
+  field is sampled on the horizontal (`z, x`) plane at each slice.
+- **Color:** per-slice RGB from a sinusoidal palette phased by slice index
+  (the depth-stratified hue cycling), scaled by the field value; slices are
+  blended into a running average before accumulation under an `exp2`
+  extinction weight, with the first few slices smoothstep-suppressed.
+- **Output:** horizon clamp on `rd.y`, composite onto a dark vertical sky
+  gradient, hand gamma (1/2.2), final smoothstep shaping.
