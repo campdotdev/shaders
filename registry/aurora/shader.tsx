@@ -121,6 +121,12 @@ export function AuroraShader() {
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
 
+    material.transparent = true;
+    // rgb below is the accumulated curtain light itself (premultiplied);
+    // alpha is coverage. Without this flag NormalBlending scales rgb by
+    // alpha a second time and everything dims quadratically (MAT-45).
+    material.premultipliedAlpha = true;
+
     const auroraNode = Fn(() => {
       // Screen uv → centered NDC; x carries the aspect so ribbons don't
       // stretch on wide canvases.
@@ -195,14 +201,11 @@ export function AuroraShader() {
       const horizonMask = clamp(rayDirection.y.mul(15).add(0.4), 0, 1);
 
       // Soft-clip shaping: lifts the mids and rolls off the top instead of
-      // clipping hot filaments.
+      // clipping hot filaments. Applies to the alpha channel too — coverage
+      // rode through the same average/extinction pipeline in .a.
       const shaped = smoothstep(0, 1.1, accumulated.mul(horizonMask).mul(1.5));
 
-      // Stage-1 scaffolding: opaque composite over a dark sky gradient so
-      // the browser can be A/B'd against ShaderToy. Deleted in Phase 3.
-      const sky = mix(vec3(0.006, 0.026, 0.095), vec3(0.007, 0.011, 0.035), uv().y);
-
-      return vec4(sky.add(shaped.rgb), 1);
+      return vec4(shaped.rgb, shaped.a.clamp(0, 1));
     })();
 
     material.colorNode = auroraNode;

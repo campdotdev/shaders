@@ -169,7 +169,15 @@ export default function AuroraPage() {
 
   return (
     <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div data-shader-demo style={{ position: 'relative', background: '#0b0f1a' }}>
+      <div
+        data-shader-demo
+        style={{
+          position: 'relative',
+          // sRGB approximation of the reference sky the aurora was tuned
+          // against — the component itself is transparent.
+          background: 'linear-gradient(to top, #193157, #1b2138)',
+        }}
+      >
         <DemoPoster
           alt="Aurora shader preview: green and teal light curtains with a blue veil and pink fringe over a dark backdrop"
           src="/posters/aurora.jpg"
