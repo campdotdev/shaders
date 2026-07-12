@@ -1,36 +1,16 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
+import { elapsedTime, type TSLNode } from '@lovo/matter';
+import { useShaderContext } from '@lovo/matter-react';
 import {
-  colorRamp,
-  type ColorSpace,
-  elapsedTime,
-  type HueInterpolation,
-  type TSLNode,
-} from '@lovo/matter';
-import {
-  type AnimatableProp,
-  useAnimatableUniform,
-  useResize,
-  useShaderContext,
-} from '@lovo/matter-react';
-import {
-  clamp,
   cos,
-  dot,
-  exp2,
   float,
   Fn,
   fract,
-  Loop,
-  mix,
-  normalize,
-  screenCoordinate,
   type ShaderNodeObject,
   sin,
-  smoothstep,
-  uniform,
   uv,
   vec2,
   vec3,
@@ -38,21 +18,26 @@ import {
 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
-import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
-
-export type AuroraDirection = 'bottom' | 'top' | 'left' | 'right';
-
-/** Raymarch slice count — slice banding dissolves by ~40 (judged at the Task 4 gate). */
-const STEP_COUNT = 40;
+// Aurora technique inspired by nimitz's "Auroras" (shadertoy.com/view/XtGGRt):
+// triangle-noise fbm, depth-sliced raymarch, average-then-accumulate
+// compositing. Original TSL implementation, constants tuned at the MAT-48
+// gates.
 
 type TSLValue = ShaderNodeObject<Node>;
 
 /**
- * Triangle wave of x in [0.01, 0.49]. Where simplex is billowy, the triangle
- * wave has straight slopes and sharp creases — the creases become the curtain
+ * Triangle wave of x in [0, 0.5]. Where simplex is billowy, the triangle wave
+ * has straight slopes and sharp creases — the creases become the curtain
  * filaments.
  */
-const triangleWave = (value: TSLNode): TSLValue => fract(value).sub(0.5).abs().clamp(0.01, 0.49);
+const triangleWave = (value: TSLNode): TSLValue => fract(value).sub(0.5).abs();
+
+/** Cross-fed vec2 triangle wave; nesting x into y decorrelates the axes. */
+const triangleWave2 = (point: TSLValue): TSLValue =>
+  vec2(
+    triangleWave(point.x).add(triangleWave(point.y)),
+    triangleWave(point.y.add(triangleWave(point.x))),
+  );
 
 /** Rotate a vec2 by an angle without mat2 — keeps everything a plain chain. */
 const rotate2d = (point: TSLValue, angle: TSLNode): TSLValue =>
@@ -62,239 +47,55 @@ const rotate2d = (point: TSLValue, angle: TSLNode): TSLValue =>
   );
 
 /**
- * Remap screen uv so the shader's internal "horizon at the bottom, altitude
- * increasing up" frame lands on the requested edge. Left/right also swap
- * which axis carries the aspect correction.
+ * Five-octave triangle-noise fbm. Each octave warps the domain with a
+ * time-rotated triangle-wave offset (the shimmer), climbs a lacunarity/gain
+ * ladder, accumulates a ridge term, and rotates the whole domain a little
+ * (`domainPhase` — slow continuous evolution). Reciprocal-power shaping
+ * concentrates brightness into thin filaments.
  */
-const DIRECTION_REMAPS: Record<
-  AuroraDirection,
-  (screenUv: TSLValue) => { across: TSLValue; up: TSLValue; swapAspect: boolean }
-> = {
-  bottom: (screenUv) => ({ across: screenUv.x, up: screenUv.y, swapAspect: false }),
-  top: (screenUv) => ({ across: screenUv.x, up: screenUv.y.oneMinus(), swapAspect: false }),
-  left: (screenUv) => ({ across: screenUv.y, up: screenUv.x, swapAspect: true }),
-  right: (screenUv) => ({ across: screenUv.y, up: screenUv.x.oneMinus(), swapAspect: true }),
-};
-
-/**
- * Streaky FBM built from triangle waves: five octaves, each rotated and
- * domain-warped by the previous. `shimmerPhase` rotates the warp over time
- * (the aurora shimmer); `warpStrength` scales the warp (turbulence).
- * Returns a field value in [0, 0.55] whose reciprocal shaping concentrates
- * brightness into thin filaments.
- */
-const triangleField = (
-  coords: TSLValue,
-  shimmerPhase: TSLNode,
-  warpStrength: TSLNode,
-): TSLValue => {
-  let sampleCoords = rotate2d(coords, coords.x.mul(0.06));
-  let octaveCoords = sampleCoords;
-  let fieldSum: TSLValue = float(0);
-  let amplitude = 1.8;
-  let warpDivisor = 2.5;
+const auroraField = (coords: TSLValue, warpPhase: TSLNode, domainPhase: TSLNode): TSLValue => {
+  let ridgeGain = 1.8;
+  let warpGain = 2.5;
+  let ridgeSum: TSLValue = float(0);
+  let point = rotate2d(coords, coords.x.mul(0.06));
+  let warpPoint = point;
 
   for (let octave = 0; octave < 5; octave += 1) {
-    const ridge = rotate2d(
-      vec2(
-        triangleWave(octaveCoords.x).add(triangleWave(octaveCoords.y)),
-        triangleWave(octaveCoords.y.add(triangleWave(octaveCoords.x))),
-      ).mul(0.75),
-      shimmerPhase,
-    );
+    const warp = rotate2d(triangleWave2(warpPoint.mul(1.85)).mul(0.75), warpPhase);
 
-    sampleCoords = sampleCoords.sub(ridge.div(warpDivisor).mul(warpStrength));
-    sampleCoords = sampleCoords.mul(1.21);
-    octaveCoords = octaveCoords.mul(1.3);
-    warpDivisor *= 0.45;
-    amplitude *= 0.42;
+    point = point.sub(warp.div(warpGain));
 
-    fieldSum = fieldSum.add(
-      triangleWave(sampleCoords.x.add(triangleWave(sampleCoords.y))).mul(amplitude),
-    );
+    warpPoint = warpPoint.mul(1.3);
+    warpGain *= 0.45;
+    ridgeGain *= 0.42;
+    point = point.mul(ridgeSum.sub(1).mul(0.02).add(1.21));
 
-    sampleCoords = rotate2d(sampleCoords, float(-0.3)).negate();
+    ridgeSum = ridgeSum.add(triangleWave(point.x.add(triangleWave(point.y))).mul(ridgeGain));
+    point = rotate2d(point, domainPhase);
   }
 
-  return float(1).div(fieldSum.mul(29).pow(1.3)).clamp(0, 0.55);
+  return float(1).div(ridgeSum.mul(20).pow(1.3)).clamp(0, 1);
 };
 
-export interface AuroraShaderProps {
-  stops: ColorStop[];
-  intensity: AnimatableProp<number>;
-  speed: AnimatableProp<number>;
-  drift: AnimatableProp<number>;
-  turbulence: AnimatableProp<number>;
-  density: AnimatableProp<number>;
-  falloff: AnimatableProp<number>;
-  direction: AuroraDirection;
-  colorSpace: ColorSpace;
-  hueInterpolation: HueInterpolation;
-}
-
-export function AuroraShader({
-  stops,
-  intensity,
-  speed,
-  drift,
-  turbulence,
-  density,
-  falloff,
-  direction,
-  colorSpace,
-  hueInterpolation,
-}: AuroraShaderProps) {
+export function AuroraShader() {
   const shaderContext = useShaderContext();
-  const resize = useResize();
-
-  const intensityUniform = useAnimatableUniform<number>(intensity);
-  const speedUniform = useAnimatableUniform<number>(speed);
-  const driftUniform = useAnimatableUniform<number>(drift);
-  const turbulenceUniform = useAnimatableUniform<number>(turbulence);
-  const densityUniform = useAnimatableUniform<number>(density);
-  const falloffUniform = useAnimatableUniform<number>(falloff);
-
-  const [initialWidth, initialHeight] = resize.get();
-  const aspectNode = useMemo(
-    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
-
-    if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
-
-    return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) aspectNode.value = updatedWidth / updatedHeight;
-    });
-  }, [resize, aspectNode]);
-
-  const stopsKey = colorStopsKey(stops);
 
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
 
-    material.transparent = true;
-    // rgb below is the accumulated curtain light itself (premultiplied), alpha
-    // is coverage. Without this flag NormalBlending scales rgb by alpha a
-    // second time and everything dims quadratically (MAT-45).
-    material.premultipliedAlpha = true;
+    // Phase 1 scaffolding: look straight at the field, grayscale, no march.
+    // uv is stretched to roughly the coordinate range the raymarch will
+    // sample so this gate judges the real pattern.
+    const fieldPreview = Fn(() => {
+      const coords = uv().sub(0.5).mul(vec2(10, 4));
+      const warpPhase = elapsedTime.mul(0.02);
+      const domainPhase = elapsedTime.mul(0.01);
+      const fieldValue = auroraField(coords, warpPhase, domainPhase);
 
-    const rampStops = toColorRampStops(stops);
-
-    // ── Aurora graph ────────────────────────────────────────────────────────
-    const stepCount = STEP_COUNT;
-
-    const auroraNode = Fn(() => {
-      // Screen position → normalized device coords: center-origin, the
-      // across-band axis scaled by aspect so ribbons don't stretch on wide
-      // canvases. The direction remap decides which screen edge is "down".
-      const { across, up, swapAspect } = DIRECTION_REMAPS[direction](uv());
-      const aspectAcross = swapAspect ? aspectNode.reciprocal() : aspectNode;
-      const ndcX = across.sub(0.5).mul(2).mul(aspectAcross);
-      const ndcY = up.sub(0.5).mul(2);
-
-      // Virtual camera: sits below the aurora looking toward the horizon (+z),
-      // biased slightly upward so the band occupies the upper frame.
-      const rayOrigin = vec3(0, 0, -6.7);
-      const rayDirection = normalize(vec3(ndcX, ndcY.mul(0.8).add(0.25), 1.4));
-
-      // Base shimmer rate, tuned by eye at the Task 3 gate (the reference's
-      // 0.06 read as static; the user's preferred feel was ~2.4× faster).
-      // speed stays a relative dial around 1.
-      const shimmerPhase = elapsedTime.mul(speedUniform).mul(0.15);
-
-      // Screen-space hash: decorrelates the slice offsets pixel-to-pixel so
-      // the march's discrete slices dissolve into grain instead of banding.
-      const screenHash = fract(
-        sin(dot(screenCoordinate.xy, vec2(12.9898, 4.1414))).mul(43758.5453),
-      );
-
-      // Accumulators must be GPU-side variables (`toVar`) because the loop
-      // below runs on the GPU — a JS variable can't change per iteration there.
-      const accumulated = vec4(0).toVar();
-      const runningAverage = vec4(0).toVar();
-
-      Loop(stepCount, ({ i }: { i: TSLValue }) => {
-        const stepIndex = float(i);
-
-        // Ramp the jitter in over the first steps — the lowest slices form
-        // the curtain's sharp bottom edge and shouldn't be blurred.
-        const jitter = screenHash.mul(0.006).mul(smoothstep(0, 15, stepIndex));
-
-        // Slice altitudes: pow(i, 1.4) packs slices tightly at the base
-        // (sharp bright lower border) and spreads them out with height
-        // (long soft fade upward). The bent divisor (rd.y·2 + 0.4) fakes
-        // atmospheric curvature — horizon-grazing rays hit at a finite
-        // distance, bending the sheet down toward the horizon line.
-        const sliceAltitude = stepIndex.pow(1.4).mul(0.002).add(0.8);
-        const marchDistance = sliceAltitude
-          .sub(rayOrigin.y)
-          .div(rayDirection.y.mul(2).add(0.4))
-          .sub(jitter);
-        const samplePoint = rayOrigin.add(rayDirection.mul(marchDistance));
-
-        const altitudeFraction = stepIndex.div(stepCount);
-
-        // Drift: travel along the band, sheared by altitude so curtain tops
-        // lead their bases (wind shear) instead of the texture sliding as one
-        // rigid sheet. Base rate re-tuned at the Task 6 gate after shear+sway
-        // landed — with those adding apparent motion, far less raw drift reads
-        // right. drift stays a relative dial around 1.
-        const driftOffset = elapsedTime.mul(driftUniform).mul(0.008).mul(altitudeFraction.add(1));
-
-        // Undulation: a slow wave traveling through depth sways each ribbon
-        // side-to-side, stronger with altitude, so the curtains ripple even
-        // at drift 0. Rides the speed dial with the shimmer.
-        const sway = sin(samplePoint.z.mul(0.6).add(elapsedTime.mul(speedUniform).mul(0.3)))
-          .mul(0.12)
-          .mul(altitudeFraction.add(0.25));
-
-        // Sample the field on the ground plane: z runs toward the horizon,
-        // x runs across the screen. Base pattern frequency tuned by eye at
-        // the Task 3 gate; density stays a relative dial around 1.
-        const groundCoords = vec2(samplePoint.z, samplePoint.x.add(driftOffset).add(sway))
-          .mul(densityUniform)
-          .mul(1.5);
-
-        const fieldValue = triangleField(groundCoords, shimmerPhase, turbulenceUniform);
-
-        // Altitude in [0, 1] drives the user's color ramp — the physical
-        // green-low → pink-high stratification. The 0.6 exponent counteracts
-        // the extinction weighting: most accumulated light comes from early
-        // (low) slices, so a linear ramp reads almost entirely as the first
-        // stop. Sub-linear altitude pulls the upper stops down into the
-        // bright, heavily-weighted part of the curtain.
-        const altitude = altitudeFraction.pow(0.6);
-        const sliceColor = colorRamp(altitude, rampStops, colorSpace, hueInterpolation);
-        const slice = vec4(sliceColor.mul(fieldValue), fieldValue);
-
-        // Average-then-accumulate: blending each slice into a running average
-        // before adding smears slice-to-slice noise into continuous wisps.
-        runningAverage.assign(mix(runningAverage, slice, 0.5));
-
-        // Atmospheric extinction: each successive slice contributes
-        // exponentially less. falloff scales the decay — the band's vertical
-        // extent. smoothstep suppresses the first few slices, which otherwise
-        // read as a hard floor.
-        const extinction = exp2(stepIndex.mul(-0.065).mul(falloffUniform).sub(2.5));
-
-        accumulated.addAssign(runningAverage.mul(extinction).mul(smoothstep(0, 5, stepIndex)));
-      });
-
-      // Rays pointing below the horizon never hit the sky — fade them out fast.
-      const horizonMask = clamp(rayDirection.y.mul(15).add(0.4), 0, 1);
-
-      const emission = accumulated.rgb.mul(horizonMask).mul(1.8).mul(intensityUniform);
-      const coverage = accumulated.a.mul(horizonMask).mul(1.5).clamp(0, 1);
-
-      return vec4(emission.max(0), coverage);
+      return vec4(vec3(fieldValue), 1);
     })();
 
-    material.colorNode = auroraNode;
-    // ── End aurora graph ────────────────────────────────────────────────────
+    material.colorNode = fieldPreview;
 
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -308,24 +109,7 @@ export function AuroraShader({
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
     };
-    // stopsKey is a stable string proxy for `stops` — listing the array itself
-    // would rebuild on identity-only changes. Stop colors/positions and
-    // direction are baked as literals, so content changes must rebuild.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    shaderContext,
-    stopsKey,
-    colorSpace,
-    hueInterpolation,
-    direction,
-    intensityUniform,
-    speedUniform,
-    driftUniform,
-    turbulenceUniform,
-    densityUniform,
-    falloffUniform,
-    aspectNode,
-  ]);
+  }, [shaderContext]);
 
   return null;
 }
