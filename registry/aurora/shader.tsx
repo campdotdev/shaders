@@ -9,9 +9,13 @@ import {
   type HueInterpolation,
   type TSLNode,
 } from '@lovo/matter';
-import { useResize, useShaderContext } from '@lovo/matter-react';
 import {
-  clamp,
+  type AnimatableProp,
+  useAnimatableUniform,
+  useResize,
+  useShaderContext,
+} from '@lovo/matter-react';
+import {
   cos,
   dot,
   exp2,
@@ -81,7 +85,12 @@ const rotate2d = (point: TSLValue, angle: TSLNode): TSLValue =>
  * (`domainPhase` — slow continuous evolution). Reciprocal-power shaping
  * concentrates brightness into thin filaments.
  */
-const auroraField = (coords: TSLValue, warpPhase: TSLNode, domainPhase: TSLNode): TSLValue => {
+const auroraField = (
+  coords: TSLValue,
+  warpPhase: TSLNode,
+  domainPhase: TSLNode,
+  warpStrength: TSLNode,
+): TSLValue => {
   let ridgeGain = 1.8;
   let warpGain = 2.5;
   let ridgeSum: TSLValue = float(0);
@@ -89,7 +98,7 @@ const auroraField = (coords: TSLValue, warpPhase: TSLNode, domainPhase: TSLNode)
   let warpPoint = point;
 
   for (let octave = 0; octave < 5; octave += 1) {
-    const warp = rotate2d(triangleWave2(warpPoint.mul(1.85)).mul(0.75), warpPhase);
+    const warp = rotate2d(triangleWave2(warpPoint.mul(1.85)).mul(0.75).mul(warpStrength), warpPhase);
 
     point = point.sub(warp.div(warpGain));
 
@@ -107,13 +116,30 @@ const auroraField = (coords: TSLValue, warpPhase: TSLNode, domainPhase: TSLNode)
 
 export interface AuroraShaderProps {
   stops: ColorStop[];
+  intensity: AnimatableProp<number>;
+  speed: AnimatableProp<number>;
+  turbulence: AnimatableProp<number>;
+  falloff: AnimatableProp<number>;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
 }
 
-export function AuroraShader({ stops, colorSpace, hueInterpolation }: AuroraShaderProps) {
+export function AuroraShader({
+  stops,
+  intensity,
+  speed,
+  turbulence,
+  falloff,
+  colorSpace,
+  hueInterpolation,
+}: AuroraShaderProps) {
   const shaderContext = useShaderContext();
   const resize = useResize();
+
+  const intensityUniform = useAnimatableUniform<number>(intensity);
+  const speedUniform = useAnimatableUniform<number>(speed);
+  const turbulenceUniform = useAnimatableUniform<number>(turbulence);
+  const falloffUniform = useAnimatableUniform<number>(falloff);
 
   // Stable string proxy for the stops array — colors/positions are baked
   // into the ramp as literals, so a content change must rebuild the
@@ -148,16 +174,21 @@ export function AuroraShader({ stops, colorSpace, hueInterpolation }: AuroraShad
     material.premultipliedAlpha = true;
 
     const auroraNode = Fn(() => {
-      // Screen uv → centered NDC; x carries the aspect so ribbons don't
-      // stretch on wide canvases.
+      // Screen uv → NDC; x carries the aspect so ribbons don't stretch on
+      // wide canvases. y maps the canvas bottom to just above the
+      // geometry's horizon (march distances flip negative below
+      // rayDirection.y = -0.2 and sample behind the camera), so the whole
+      // canvas is valid sky and the curtain band spans its full height.
       const ndcX = uv().x.sub(0.5).mul(2).mul(aspectNode);
-      const ndcY = uv().y.sub(0.5).mul(2);
+      const ndcY = uv().y.mul(1.03).sub(0.03);
 
       // Virtual camera looking toward the horizon (+z); z sets the fov.
       const rayDirection = normalize(vec3(ndcX, ndcY, 1.064));
 
-      const warpPhase = elapsedTime.mul(0.02);
-      const domainPhase = elapsedTime.mul(0.01);
+      // speed scales both time phases together so shimmer and drift stay
+      // coupled.
+      const warpPhase = elapsedTime.mul(speedUniform).mul(0.02);
+      const domainPhase = elapsedTime.mul(speedUniform).mul(0.01);
 
       // Per-pixel jitter seed: decorrelates slice offsets pixel-to-pixel so
       // the discrete march dissolves into grain instead of contour banding.
@@ -193,6 +224,7 @@ export function AuroraShader({ stops, colorSpace, hueInterpolation }: AuroraShad
           vec2(samplePoint.z, samplePoint.x),
           warpPhase,
           domainPhase,
+          turbulenceUniform,
         );
 
         // Depth-stratified color: slice index drives the user ramp, so near
@@ -217,13 +249,20 @@ export function AuroraShader({ stops, colorSpace, hueInterpolation }: AuroraShad
         accumulated.addAssign(runningAverage.mul(extinction).mul(smoothstep(0, 5, stepIndex)));
       });
 
-      // Rays pointing below the horizon never hit sky — fade them out fast.
-      const horizonMask = clamp(rayDirection.y.mul(15).add(0.4), 0, 1);
+      // falloff is a screen-space reveal: 0 hides the aurora, 1 fills the
+      // canvas, in between a soft fade line sweeps up from the bottom.
+      const fadeEdge = float(1).sub(falloffUniform).mul(1.4);
+      const horizonMask = smoothstep(fadeEdge.sub(0.4), fadeEdge, uv().y);
 
       // Soft-clip shaping: lifts the mids and rolls off the top instead of
       // clipping hot filaments. Applies to the alpha channel too — coverage
-      // rode through the same average/extinction pipeline in .a.
-      const shaped = smoothstep(0, 1.1, accumulated.mul(horizonMask).mul(1.5));
+      // rode through the same average/extinction pipeline in .a. intensity
+      // feeds the soft-clip, so hot values saturate instead of clipping.
+      const shaped = smoothstep(
+        0,
+        1.1,
+        accumulated.mul(horizonMask).mul(1.5).mul(intensityUniform),
+      );
 
       return vec4(shaped.rgb, shaped.a.clamp(0, 1));
     })();
@@ -244,7 +283,17 @@ export function AuroraShader({ stops, colorSpace, hueInterpolation }: AuroraShad
     };
     // stopsKey stands in for stops (content proxy; rampStops derives from it).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shaderContext, stopsKey, colorSpace, hueInterpolation, aspectNode]);
+  }, [
+    shaderContext,
+    stopsKey,
+    colorSpace,
+    hueInterpolation,
+    intensityUniform,
+    speedUniform,
+    turbulenceUniform,
+    falloffUniform,
+    aspectNode,
+  ]);
 
   return null;
 }
