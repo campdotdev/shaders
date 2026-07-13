@@ -7,9 +7,9 @@
 ## Goal
 
 Rebuild `registry/aurora/shader.tsx` from scratch following the structure of
-the nimitz-style ShaderToy aurora the user supplied (a modified derivative of
-nimitz's "Auroras", ShaderToy `XtGGRt` — see License constraint and
-Appendix A), then productize it back into a Matter Tier 1 component. The
+the ShaderToy aurora the user supplied (see License constraint and
+Appendix A for provenance), then productize it back into a Matter Tier 1
+component. The
 MAT-46 shader is discarded — it shares ancestry with the same reference but
 diverged in the places that make the reference look alive.
 
