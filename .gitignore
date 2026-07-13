@@ -55,3 +55,7 @@ blob-report/
 
 # Local-only design docs and plans (kept off GitHub)
 docs/superpowers/
+
+# Local-only agent orientation and preferences (kept off GitHub)
+CLAUDE.md
+MEMORY.md
