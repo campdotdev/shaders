@@ -4,7 +4,7 @@
 >
 > **CO-WRITE OVERRIDE (non-negotiable):** `registry/aurora/shader.tsx` is co-written — Claude presents each code chunk with a TSL explanation and the USER types it. Neither Claude nor any subagent may call Edit/Write on `registry/aurora/shader.tsx`. All other files (wrapper, demo, docs) may be edited normally. Every task ends at a "GATE" — stop, let the user run the dev server and react, before starting the next task.
 
-**Goal:** Rebuild `<Aurora>` as a raymarched volumetric sky-band (nimitz-inspired) with an altitude color ramp replacing the per-layer API.
+**Goal:** Rebuild `<Aurora>` as a raymarched volumetric sky-band with an altitude color ramp replacing the per-layer API.
 
 **Architecture:** A fullscreen quad whose fragment shader casts a per-pixel ray from a virtual camera, marches ~40 altitude slices above a horizon, samples a triangle-wave FBM field at each slice, and accumulates emission + coverage. Output stays a premultiplied transparent layer. File split unchanged: `aurora.tsx` (wrapper) + `shader.tsx` (TSL).
 

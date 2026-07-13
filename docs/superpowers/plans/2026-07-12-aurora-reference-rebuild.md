@@ -10,7 +10,7 @@
 > server, look, feel, and react before continuing. Steps use checkbox
 > (`- [ ]`) syntax for tracking.
 
-**Goal:** Rebuild `registry/aurora` from scratch following the structure of the user-supplied nimitz-style ShaderToy aurora, then productize it: transparent overlay, depth-indexed color ramp, reduced prop set.
+**Goal:** Rebuild `registry/aurora` from scratch following the structure of the user-supplied ShaderToy aurora reference, then productize it: transparent overlay, depth-indexed color ramp, reduced prop set.
 
 **Architecture:** Two stages. Stage 1 (Phases 1–2) rebuilds the reference's structure opaque with literal starting constants and A/Bs against ShaderToy. Stage 2 (Phases 3–6) productizes one gate at a time: transparency, color ramp, uniform dials, wrapper/demo/defaults.
 
