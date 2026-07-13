@@ -8,8 +8,6 @@ React shader components powered by WebGPU and Three.js TSL.
 
 Matter is a React component library for shader-driven backgrounds and interactive surfaces. It ships polished drop-in components like `<LinearGradient>`, `<Aurora>`, and `<DotField>` for developers who don't want to write shaders, alongside a primitives library and recipe gallery for those who do.
 
-The full design is in [`docs/superpowers/specs/2026-05-02-matter-design.md`](./docs/superpowers/specs/2026-05-02-matter-design.md).
-
 ## Repository structure
 
 ```
