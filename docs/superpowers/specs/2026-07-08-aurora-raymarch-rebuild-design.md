@@ -31,22 +31,6 @@ raymarched volume, which produces all four properties inherently.
 - No per-component dither/gamut handling (scene-level concerns).
 - Registry file split stays: `aurora.tsx` wrapper + `shader.tsx` TSL graph.
 
-## Reference
-
-nimitz, "Auroras" (ShaderToy `XtGGRt`). We adapt, not transcribe:
-
-- **Triangle-wave FBM noise** for the curtain field — cheap per-step 2D noise
-  with the streaky, filamented character auroras need.
-- **Raymarch accumulation** — ~30–50 steps per pixel through a shell above the
-  horizon; each step samples the field and accumulates emission + opacity.
-  Softness and translucency emerge from accumulation instead of shaping
-  curves; parallax falls out of stepping at real depths.
-- **Altitude color ramp** — color keyed on sample height, replacing per-layer
-  colors.
-
-Phase 0 of the plan is a guided read of the reference source before any TSL
-is written.
-
 ## Public API (breaking; ships as v0.5.0)
 
 ```ts

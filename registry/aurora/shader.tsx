@@ -41,8 +41,7 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color'
 
 // Aurora technique inspired by nimitz's "Auroras" (shadertoy.com/view/XtGGRt):
 // triangle-noise fbm, depth-sliced raymarch, average-then-accumulate
-// compositing. Original TSL implementation, constants tuned at the MAT-48
-// gates.
+// compositing. Original TSL implementation
 
 type TSLValue = ShaderNodeObject<Node>;
 

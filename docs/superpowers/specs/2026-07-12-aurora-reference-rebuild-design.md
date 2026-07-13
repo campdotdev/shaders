@@ -44,26 +44,6 @@ Diagnosed gaps in the current (MAT-46) aurora versus the reference:
 | Execution mode | Co-write: the user types `shader.tsx` chunk-by-chunk; Claude explains and guides, and does not Edit/Write shader files |
 | License stance | Technique reference only (see License constraint below) — original TSL expression, constants as starting values re-tuned at gates, inspiration credit in the file header, no verbatim-port claim |
 
-## License constraint
-
-nimitz's "Auroras" (ShaderToy `XtGGRt`) is CC BY-NC-SA 3.0, and the
-user-supplied variant inherits that license. Matter cannot ship
-CC BY-NC-SA-derived code: the NC clause conflicts with any commercial use of
-`@lovo/matter`, and the SA clause would contaminate every consumer app the
-CLI copies the component into. The MAT-46 rebuild already established the
-stance and this rebuild keeps it:
-
-- The reference is used as a **technique reference** — the raymarch
-  structure, triangle-noise fbm idea, and average-then-accumulate trick are
-  uncopyrightable techniques.
-- All TSL is written as original expression. Constants from the reference
-  are treated as starting values and re-tuned by eye at the phase gates;
-  shipped values are ours.
-- The shader file header carries an inspiration credit naming nimitz's
-  Auroras. No verbatim-port claim is made anywhere.
-- The reference GLSL itself is not committed to the repository (Appendix A
-  is a structural description, not a transcription).
-
 ## Public API
 
 Files keep their current shape: `registry/aurora/aurora.tsx` (wrapper with
@@ -190,33 +170,3 @@ All constants stay literal in stage 1 — no uniforms, no props.
   port still wants it.
 - New engine primitives. Everything lives in `registry/aurora/`.
 - Any other component.
-
-## Appendix A — reference structure (description, not a transcription)
-
-The user-supplied reference (kept out of the repo per the license
-constraint; it lives in the brainstorm conversation) is a modified
-derivative of nimitz's "Auroras" (`XtGGRt`). Its structure, which stage 1
-mirrors:
-
-- **Hash:** a fract-dot construction (the common "hash without sine"
-  pattern) seeded from the pixel coordinate; used only for per-pixel march
-  jitter.
-- **Triangle noise:** `tri(x) = abs(fract(x) - 0.5)` plus a vec2 composite
-  that cross-feeds the two axes.
-- **fbm:** 5 octaves. An initial rotation proportional to `p.x` bends the
-  domain; each octave computes a triangle-wave warp vector from a scaled
-  copy of the domain, rotates that warp by `time × warpSpeed`, subtracts it,
-  advances a lacunarity/gain ladder, accumulates a ridge term, and finally
-  rotates the whole domain by a small time-proportional angle (the
-  smooth-drift ingredient). Output is a clamped reciprocal power of the
-  ridge sum, concentrating brightness into filaments.
-- **March:** 60 slices. Slice distance grows super-linearly with slice
-  index and is divided by a linear function of `rd.y` (band placement /
-  fake curvature); a hash jitter ramps in over the first ~15 slices. The
-  field is sampled on the horizontal (`z, x`) plane at each slice.
-- **Color:** per-slice RGB from a sinusoidal palette phased by slice index
-  (the depth-stratified hue cycling), scaled by the field value; slices are
-  blended into a running average before accumulation under an `exp2`
-  extinction weight, with the first few slices smoothstep-suppressed.
-- **Output:** horizon clamp on `rd.y`, composite onto a dark vertical sky
-  gradient, hand gamma (1/2.2), final smoothstep shaping.

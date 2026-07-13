@@ -24,8 +24,6 @@
 - Output contract: `material.transparent = true` AND `material.premultipliedAlpha = true`; rgb = light contribution (may exceed 1), alpha = coverage clamped [0, 1].
 - The docs site imports `registry/` raw (transpilePackages) — shader edits hot-reload; no package build needed for registry/demo work.
 - Node 22 (`fnm use 22` or equivalent) for anything that builds the docs site (`pnpm snap`).
-- License: nimitz's "Auroras" (ShaderToy `XtGGRt`, CC BY-NC-SA) is a *technique reference only*. No GLSL is transcribed into the repo; all TSL is written fresh and constants are re-derived/re-tuned at gates.
-- No GPU unit tests — validation is the demo page at every gate + Playwright visual baselines at the end.
 - Dev server for gates: `pnpm --filter @matter/docs dev`, page `http://localhost:3000/components/aurora`.
 
 ---

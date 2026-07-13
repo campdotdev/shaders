@@ -123,11 +123,6 @@ import {
 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
-// Aurora technique inspired by nimitz's "Auroras" (shadertoy.com/view/XtGGRt):
-// triangle-noise fbm, depth-sliced raymarch, average-then-accumulate
-// compositing. Original TSL implementation, constants tuned at the MAT-48
-// gates.
-
 type TSLValue = ShaderNodeObject<Node>;
 
 /**
