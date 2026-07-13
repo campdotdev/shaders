@@ -52,3 +52,6 @@ blob-report/
 **/.viteplus/
 .vp-cache/
 **/.vp-cache/
+
+# Local-only design docs and plans (kept off GitHub)
+docs/superpowers/
