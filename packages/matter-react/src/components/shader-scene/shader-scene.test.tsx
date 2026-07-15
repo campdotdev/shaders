@@ -34,6 +34,7 @@ describe('ShaderScene', () => {
   });
   afterEach(() => {
     vi.unstubAllGlobals();
+    vi.restoreAllMocks();
   });
 
   it('mounts a canvas element', () => {
@@ -68,7 +69,7 @@ describe('ShaderScene', () => {
   });
 
   it('fires onError with a renderer-init MatterError when init fails', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
     const cause = new Error('no gpu backend');
 
     vi.mocked(createRenderer).mockRejectedValueOnce(cause);
@@ -82,11 +83,10 @@ describe('ShaderScene', () => {
     expect(error).toBeInstanceOf(MatterError);
     expect(error.code).toBe('renderer-init');
     expect(error.cause).toBe(cause);
-    consoleError.mockRestore();
   });
 
   it('renders no error text and mounts no children after init failure', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     vi.mocked(createRenderer).mockRejectedValueOnce(new Error('no gpu backend'));
 
@@ -99,20 +99,27 @@ describe('ShaderScene', () => {
     await waitFor(() => expect(console.error).toHaveBeenCalled());
     expect(queryByTestId('child')).not.toBeInTheDocument();
     expect(container.textContent ?? '').not.toContain('init failed');
-    consoleError.mockRestore();
   });
 
   it('swallows a throwing onError handler', async () => {
-    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     vi.mocked(createRenderer).mockRejectedValueOnce(new Error('no gpu backend'));
     const onError = vi.fn(() => {
       throw new Error('handler boom');
     });
 
-    expect(() => render(<ShaderScene onError={onError} />)).not.toThrow();
+    let queryByTestId!: ReturnType<typeof render>['queryByTestId'];
+
+    expect(() => {
+      ({ queryByTestId } = render(
+        <ShaderScene onError={onError}>
+          <div data-testid="child" />
+        </ShaderScene>,
+      ));
+    }).not.toThrow();
     await waitFor(() => expect(onError).toHaveBeenCalled());
-    consoleError.mockRestore();
+    expect(queryByTestId('child')).not.toBeInTheDocument();
   });
 
   it('does not fire onError on successful init', async () => {
