@@ -86,6 +86,7 @@ export function ShaderScene({
     let firstPaintRaf: number | null = null;
 
     const setup = async () => {
+      setError(null);
       try {
         const renderer = await createRenderer(canvas, { maxDPR, gamut: resolvedGamut });
 
