@@ -29,10 +29,8 @@ jobs:
           cache: pnpm
           registry-url: 'https://registry.npmjs.org'
 
-      # npm >= 11.5.1 is required for OIDC trusted publishing.
-      # Node 22 ships with npm 10.x, which silently falls back to anonymous PUT (→ 404).
-      - name: Upgrade npm for OIDC trusted publishing
-        run: npm install -g npm@latest
+      # pnpm >= 10 supports npm OIDC trusted publishing natively, so no global
+      # npm upgrade is needed — pnpm publishes without delegating to npm.
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
