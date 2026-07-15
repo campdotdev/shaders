@@ -212,8 +212,7 @@ export function ShaderScene({
         setShaderContext({ renderer, scene, camera, scheduler, registerOverlay });
       } catch (caughtError) {
         if (cancelled) return;
-        const message =
-          caughtError instanceof Error ? caughtError.message : String(caughtError);
+        const message = caughtError instanceof Error ? caughtError.message : String(caughtError);
         const matterError = new MatterError('renderer-init', message, { cause: caughtError });
 
         if (process.env.NODE_ENV !== 'production') {
