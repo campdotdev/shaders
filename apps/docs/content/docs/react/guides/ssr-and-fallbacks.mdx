@@ -85,6 +85,20 @@ When `navigator.gpu` is missing or `requestAdapter()` returns `null`, the fallba
   Don't try to detect WebGPU yourself with a conditional render. Detection is async (`requestAdapter` is a Promise), and doing it client-side causes hydration mismatches. Let `<FallbackBoundary>` handle it — it renders the fallback during the same render pass and swaps in the real scene only after the device is ready.
 </Callout>
 
+## When renderer init fails
+
+`<ShaderScene>` tries WebGPU, then falls back to WebGL2 automatically. If neither is available, init fails. A bare `<ShaderScene>` then renders nothing — a transparent canvas. It never shows a raw error to users.
+
+To show something in its place, wrap it in `<ShaderPoster>`: the poster stays up because the scene never signals its first paint. To report the failure to your own telemetry, pass `onError`:
+
+```tsx
+<ShaderScene onError={(error) => reportToSentry(error)}>
+  <Aurora />
+</ShaderScene>
+```
+
+`onError` receives a `MatterError` with `code: 'renderer-init'`; the original thrown error is on `.cause`. This is separate from `<FallbackBoundary>`, which covers SSR and hydration — not renderer failure.
+
 ## What gets server-rendered
 
 If you wrap Matter in `next/dynamic` with `ssr: false`, **nothing** Matter-related ships in the server HTML. That's correct — there's nothing useful to render server-side. The fallback inside `<FallbackBoundary>` is what users see during hydration and on unsupported browsers.

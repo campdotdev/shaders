@@ -34,6 +34,7 @@ import { ShaderScene } from '@lovo/matter-react'
 | `style` | `CSSProperties` | — | Forwarded to the canvas container. |
 | `className` | `string` | — | Forwarded to the canvas container. |
 | `children` | `ReactNode` | — | One or more Matter components. |
+| `onError` | `(error: MatterError) => void` | — | Called once if renderer init fails (e.g. no GPU backend). Receives a `MatterError` with `code: 'renderer-init'` and the original error on `.cause`. |
 
 ## `useShaderMaterial`
 
