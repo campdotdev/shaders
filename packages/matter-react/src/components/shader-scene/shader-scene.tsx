@@ -19,6 +19,7 @@ import {
   ShaderContext,
   type ShaderContextValue,
 } from '../../context/shader-context.js';
+import { MatterError } from '../../errors/matter-error.js';
 import {
   type GamutPreference,
   useDisplayGamut,
@@ -34,6 +35,8 @@ export interface ShaderSceneProps {
   gamut?: GamutPreference;
   /** Fires once, on the frame after the shader's first content frame is on screen. */
   onFirstPaint?: () => void;
+  /** Fires once with a typed MatterError when renderer init fails. */
+  onError?: (error: MatterError) => void;
 }
 
 const defaultStyle: CSSProperties = {
@@ -51,12 +54,14 @@ export function ShaderScene({
   maxDPR,
   gamut = 'auto',
   onFirstPaint,
+  onError,
 }: ShaderSceneProps) {
   const resolvedGamut = useDisplayGamut(gamut);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shaderContext, setShaderContext] = useState<ShaderContextValue | null>(null);
-  const [error, setError] = useState<Error | null>(null);
+  const [error, setError] = useState<MatterError | null>(null);
   const onFirstPaintRef = useRef(onFirstPaint);
+  const onErrorRef = useRef(onError);
   // Poster boundary controls, when a ShaderPoster wraps this scene. The value
   // is memoized stable by ShaderPoster, so listing it in the setup effect's
   // deps does not cause renderer rebuilds. Null (a no-op below) when the
@@ -66,6 +71,10 @@ export function ShaderScene({
   useEffect(() => {
     onFirstPaintRef.current = onFirstPaint;
   }, [onFirstPaint]);
+
+  useEffect(() => {
+    onErrorRef.current = onError;
+  }, [onError]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -203,11 +212,21 @@ export function ShaderScene({
         setShaderContext({ renderer, scene, camera, scheduler, registerOverlay });
       } catch (caughtError) {
         if (cancelled) return;
-        const normalizedError =
-          caughtError instanceof Error ? caughtError : new Error(String(caughtError));
+        const message =
+          caughtError instanceof Error ? caughtError.message : String(caughtError);
+        const matterError = new MatterError('renderer-init', message, { cause: caughtError });
 
-        console.error('[ShaderScene] renderer init failed:', normalizedError);
-        setError(normalizedError);
+        if (process.env.NODE_ENV !== 'production') {
+          console.error('[ShaderScene] renderer init failed:', matterError);
+        }
+        try {
+          onErrorRef.current?.(matterError);
+        } catch (handlerError) {
+          if (process.env.NODE_ENV !== 'production') {
+            console.error('[ShaderScene] onError handler threw:', handlerError);
+          }
+        }
+        setError(matterError);
       }
     };
 
@@ -231,27 +250,10 @@ export function ShaderScene({
   let content: ReactNode;
 
   if (error) {
-    content = (
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '1rem',
-          color: '#fff',
-          background: 'rgba(120, 30, 30, 0.85)',
-          font: '0.85rem ui-monospace, monospace',
-          whiteSpace: 'pre-wrap',
-          textAlign: 'center',
-        }}
-      >
-        ShaderScene init failed:
-        {'\n'}
-        {error.message}
-      </div>
-    );
+    // Init failed. Render nothing — the canvas stays transparent. A wrapping
+    // ShaderPoster keeps its poster up (first paint never fired), which is the
+    // intended visible degradation. Consumers observe the failure via onError.
+    content = null;
   } else {
     // Mount the children as soon as the context exists so the shader can build
     // and paint. The children render no visible DOM of their own (they drive
