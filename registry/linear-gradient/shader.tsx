@@ -121,17 +121,8 @@ export function LinearGradientShader({
 
     return () => {
       shaderContext.scene.remove(mesh);
-
-      try {
-        material.dispose();
-      } catch (caughtError) {
-        console.debug('[LinearGradient] material.dispose ignored:', caughtError);
-      }
-      try {
-        mesh.geometry.dispose();
-      } catch (caughtError) {
-        console.debug('[LinearGradient] geometry.dispose ignored:', caughtError);
-      }
+      material.dispose();
+      mesh.geometry.dispose();
     };
     // stopsKey is a stable string proxy for the stops array; the array itself
     // is intentionally omitted to avoid rebuilds on identity-only changes.
