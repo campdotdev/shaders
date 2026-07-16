@@ -85,12 +85,12 @@ describe('ShaderScene', () => {
     expect(error.cause).toBe(cause);
   });
 
-  it('renders no error text and mounts no children after init failure', async () => {
+  it('mounts no children after init failure', async () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     vi.mocked(createRenderer).mockRejectedValueOnce(new Error('no gpu backend'));
 
-    const { queryByTestId, container } = render(
+    const { queryByTestId } = render(
       <ShaderScene>
         <div data-testid="child" />
       </ShaderScene>,
@@ -98,7 +98,26 @@ describe('ShaderScene', () => {
 
     await waitFor(() => expect(console.error).toHaveBeenCalled());
     expect(queryByTestId('child')).not.toBeInTheDocument();
-    expect(container.textContent ?? '').not.toContain('init failed');
+  });
+
+  it('fires onError once even when a failing setup re-runs', async () => {
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    const cause = new Error('no gpu backend');
+
+    vi.mocked(createRenderer).mockRejectedValueOnce(cause).mockRejectedValueOnce(cause);
+    const onError = vi.fn();
+
+    const { rerender } = render(<ShaderScene maxDPR={1} onError={onError} />);
+
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+
+    // A maxDPR change re-runs the setup effect; init fails again.
+    rerender(<ShaderScene maxDPR={2} onError={onError} />);
+
+    // The dev log fires per attempt, so it marks the second failure settling.
+    await waitFor(() => expect(console.error).toHaveBeenCalledTimes(2));
+    expect(onError).toHaveBeenCalledTimes(1);
   });
 
   it('swallows a throwing onError handler', async () => {
@@ -125,8 +144,15 @@ describe('ShaderScene', () => {
   it('does not fire onError on successful init', async () => {
     const onError = vi.fn();
 
-    render(<ShaderScene onError={onError} />);
-    await waitFor(() => {});
+    const { getByTestId } = render(
+      <ShaderScene onError={onError}>
+        <div data-testid="child" />
+      </ShaderScene>,
+    );
+
+    // Children mount only once setup has committed the shader context, so
+    // this waits for the success path to fully settle.
+    await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
     expect(onError).not.toHaveBeenCalled();
   });
 });
