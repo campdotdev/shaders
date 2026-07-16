@@ -93,8 +93,16 @@ export function SimplexNoiseShader({
 
       return () => {
         shaderContext.scene.remove(mesh);
-        material.dispose();
-        mesh.geometry.dispose();
+        try {
+          material.dispose();
+        } catch {
+          // three/webgpu can throw during dispose under Strict Mode double-invoke
+        }
+        try {
+          mesh.geometry.dispose();
+        } catch {
+          // same
+        }
       };
     },
     // stopsKey is a stable string proxy for the stops array; the array itself
