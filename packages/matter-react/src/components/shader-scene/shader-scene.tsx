@@ -59,9 +59,12 @@ export function ShaderScene({
   const resolvedGamut = useDisplayGamut(gamut);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [shaderContext, setShaderContext] = useState<ShaderContextValue | null>(null);
-  const [error, setError] = useState<MatterError | null>(null);
   const onFirstPaintRef = useRef(onFirstPaint);
   const onErrorRef = useRef(onError);
+  // onError's "fires once" contract holds per scene instance: the setup effect
+  // re-runs on dep changes (gamut, maxDPR), and a persistently failing init
+  // would otherwise re-notify on every re-run.
+  const errorFiredRef = useRef(false);
   // Poster boundary controls, when a ShaderPoster wraps this scene. The value
   // is memoized stable by ShaderPoster, so listing it in the setup effect's
   // deps does not cause renderer rebuilds. Null (a no-op below) when the
@@ -86,7 +89,6 @@ export function ShaderScene({
     let firstPaintRaf: number | null = null;
 
     const setup = async () => {
-      setError(null);
       try {
         const renderer = await createRenderer(canvas, { maxDPR, gamut: resolvedGamut });
 
@@ -219,14 +221,16 @@ export function ShaderScene({
         if (process.env.NODE_ENV !== 'production') {
           console.error('[ShaderScene] renderer init failed:', matterError);
         }
-        try {
-          onErrorRef.current?.(matterError);
-        } catch (handlerError) {
-          if (process.env.NODE_ENV !== 'production') {
-            console.error('[ShaderScene] onError handler threw:', handlerError);
+        if (!errorFiredRef.current) {
+          errorFiredRef.current = true;
+          try {
+            onErrorRef.current?.(matterError);
+          } catch (handlerError) {
+            if (process.env.NODE_ENV !== 'production') {
+              console.error('[ShaderScene] onError handler threw:', handlerError);
+            }
           }
         }
-        setError(matterError);
       }
     };
 
@@ -247,22 +251,18 @@ export function ShaderScene({
     };
   }, [maxDPR, resolvedGamut, posterControls]);
 
-  let content: ReactNode;
-
-  if (error) {
-    // Init failed. Render nothing — the canvas stays transparent. A wrapping
-    // ShaderPoster keeps its poster up (first paint never fired), which is the
-    // intended visible degradation. Consumers observe the failure via onError.
-    content = null;
-  } else {
-    // Mount the children as soon as the context exists so the shader can build
-    // and paint. The children render no visible DOM of their own (they drive
-    // the canvas); an enclosing ShaderPoster keeps its poster overlaid until
-    // this scene signals its first painted content frame.
-    content = shaderContext ? (
-      <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>
-    ) : null;
-  }
+  // Mount the children as soon as the context exists so the shader can build
+  // and paint. The children render no visible DOM of their own (they drive
+  // the canvas); an enclosing ShaderPoster keeps its poster overlaid until
+  // this scene signals its first painted content frame.
+  //
+  // On init failure the context never materializes, so this stays null and the
+  // canvas stays transparent. A wrapping ShaderPoster keeps its poster up
+  // (first paint never fired), which is the intended visible degradation.
+  // Consumers observe the failure via onError.
+  const content: ReactNode = shaderContext ? (
+    <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>
+  ) : null;
 
   return (
     <div className={className} style={{ ...defaultStyle, ...style }}>
