@@ -10,8 +10,8 @@ export interface PlainColorStop {
 export interface AuroraParams {
   intensity: number;
   speed: number;
-  turbulence: number;
-  falloff: number;
+  waviness: number;
+  fill: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   stops: PlainColorStop[];
@@ -24,8 +24,8 @@ export const MAX_STOPS = 6;
 export const INITIAL: AuroraParams = {
   intensity: 1,
   speed: 1,
-  turbulence: 1,
-  falloff: 1,
+  waviness: 1,
+  fill: 1,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [

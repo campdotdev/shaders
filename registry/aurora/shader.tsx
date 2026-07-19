@@ -117,12 +117,40 @@ const auroraField = (
 };
 
 export interface AuroraShaderProps {
+  /**
+   * Curtain colors; nearer ribbons lean on earlier stops, farther ribbons on
+   * later ones. Accepts hex, `oklch()`, or `oklab()`.
+   */
   stops: ColorStop[];
+  /**
+   * Overall brightness. Feeds a soft-clip curve, so values past 1 saturate
+   * gracefully instead of clipping. 0 hides the curtains.
+   * Accepts a static value or an animation signal.
+   */
   intensity: AnimatableProp<number>;
+  /**
+   * Animation rate of the curtain shimmer and drift. 0 freezes the motion.
+   * Accepts a static value or an animation signal.
+   */
   speed: AnimatableProp<number>;
-  turbulence: AnimatableProp<number>;
-  falloff: AnimatableProp<number>;
+  /**
+   * How much the curtain filaments bend and billow. 0 gives straight,
+   * unwarped ribbons; higher values make them wavier and more chaotic.
+   * Accepts a static value or an animation signal.
+   */
+  waviness: AnimatableProp<number>;
+  /**
+   * How much of the canvas the aurora fills, revealed from the bottom up
+   * along a soft fade line. 0 hides the aurora, 1 fills the canvas.
+   * Accepts a static value or an animation signal.
+   */
+  fill: AnimatableProp<number>;
+  /** Color space the curtain colors are interpolated in. */
   colorSpace: ColorSpace;
+  /**
+   * Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert
+   * otherwise.
+   */
   hueInterpolation: HueInterpolation;
 }
 
@@ -130,8 +158,8 @@ export function AuroraShader({
   stops,
   intensity,
   speed,
-  turbulence,
-  falloff,
+  waviness,
+  fill,
   colorSpace,
   hueInterpolation,
 }: AuroraShaderProps) {
@@ -140,8 +168,8 @@ export function AuroraShader({
 
   const intensityUniform = useAnimatableUniform<number>(intensity);
   const speedUniform = useAnimatableUniform<number>(speed);
-  const turbulenceUniform = useAnimatableUniform<number>(turbulence);
-  const falloffUniform = useAnimatableUniform<number>(falloff);
+  const wavinessUniform = useAnimatableUniform<number>(waviness);
+  const fillUniform = useAnimatableUniform<number>(fill);
 
   // Stable string proxy for the stops array — colors/positions are baked
   // into the ramp as literals, so a content change must rebuild the
@@ -226,7 +254,7 @@ export function AuroraShader({
           vec2(samplePoint.z, samplePoint.x),
           warpPhase,
           domainPhase,
-          turbulenceUniform,
+          wavinessUniform,
         );
 
         // Depth-stratified color: slice index drives the user ramp, so near
@@ -251,9 +279,8 @@ export function AuroraShader({
         accumulated.addAssign(runningAverage.mul(extinction).mul(smoothstep(0, 5, stepIndex)));
       });
 
-      // falloff is a screen-space reveal: 0 hides the aurora, 1 fills the
-      // canvas, in between a soft fade line sweeps up from the bottom.
-      const fadeEdge = float(1).sub(falloffUniform).mul(1.4);
+      // fill is a screen-space reveal: 0 hides the aurora, 1 fills the canvas, in between a soft fade line sweeps up from the bottom.
+      const fadeEdge = float(1).sub(fillUniform).mul(1.4);
       const horizonMask = smoothstep(fadeEdge.sub(0.4), fadeEdge, uv().y);
 
       // Soft-clip shaping: lifts the mids and rolls off the top instead of
@@ -292,8 +319,8 @@ export function AuroraShader({
     hueInterpolation,
     intensityUniform,
     speedUniform,
-    turbulenceUniform,
-    falloffUniform,
+    wavinessUniform,
+    fillUniform,
     aspectNode,
   ]);
 
