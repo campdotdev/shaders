@@ -21,7 +21,7 @@ export default function SimplexNoiseScene({
   return (
     <ShaderScene>
       <SimplexNoise
-        bias={params.bias}
+        balance={params.balance}
         colorSpace={params.colorSpace}
         contrast={params.contrast}
         hueInterpolation={params.hueInterpolation}
