@@ -16,11 +16,15 @@ import { Vector2, Vector3 } from 'three/webgpu';
 import { parseColor } from '../utils/color';
 
 export interface VignetteShaderProps {
-  /** Overlay strength toward the edges. 0 = no vignette, 1 = full `color` at the edge. */
+  /**
+   * Overlay strength toward the edges. 0 = no vignette, 1 = full `color` at
+   * the edge. Accepts a static value or an animation signal.
+   */
   intensity: AnimatableProp<number>;
   /**
    * How gradually the vignette ramps in, as a fraction of `radius`.
    * 0 = a hard ring at `radius`; 1 = feathers all the way from the center.
+   * Accepts a static value or an animation signal.
    */
   feather: AnimatableProp<number>;
   /** Vignette center in normalized UV; `[0.5, 0.5]` is centered. */
@@ -28,6 +32,7 @@ export interface VignetteShaderProps {
   /**
    * Normalized distance from `center` at which the vignette reaches full
    * strength. Smaller values close the vignette in sooner.
+   * Accepts a static value or an animation signal.
    */
   radius: AnimatableProp<number>;
   /** Color blended in toward the edges (hex, `oklch()`, or `oklab()`). */
