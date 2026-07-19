@@ -21,13 +21,38 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgp
 import { type Palette, parseColor } from '../utils/color';
 
 export interface MeshGradientShaderProps {
+  /**
+   * Speed of the flowing warp motion. 0 freezes the flow (palette cycling
+   * continues). Accepts a static value or an animation signal.
+   */
   speed: AnimatableProp<number>;
+  /**
+   * How many warp bends appear across the gradient. Higher values give
+   * tighter, more numerous bends. Accepts a static value or an animation
+   * signal.
+   */
   frequency: AnimatableProp<number>;
+  /**
+   * Warp subtlety — larger values give a weaker, gentler warp; smaller
+   * values distort harder. Accepts a static value or an animation signal.
+   */
   amplitude: AnimatableProp<number>;
+  /**
+   * Speed of the cross-fade between the two `palettes`. 0 freezes the
+   * cycle. Accepts a static value or an animation signal.
+   */
   cycleSpeed: AnimatableProp<number>;
+  /**
+   * Easing of the palette cycle. 1 = a smooth sinusoidal ping-pong; below 1
+   * holds each palette longer with snappier transitions; above 1 lingers in
+   * the blended middle. Accepts a static value or an animation signal.
+   */
   cycleEase: AnimatableProp<number>;
+  /** Two palettes to cross-fade between as the gradient cycles. */
   palettes: [Palette, Palette];
+  /** Color space the palettes are interpolated in. */
   colorSpace: ColorSpace;
+  /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
   hueInterpolation: HueInterpolation;
 }
 
