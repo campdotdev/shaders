@@ -29,7 +29,7 @@ const formatJsx = (params: Params) =>
     scale={${formatNumber(params.scale)}}
     speed={${formatNumber(params.speed)}}
     contrast={${formatNumber(params.contrast)}}
-    bias={${formatNumber(params.bias)}}
+    balance={${formatNumber(params.balance)}}
     softness={${formatNumber(params.softness)}}
     seed={${params.seed}}
     colorSpace="${params.colorSpace}"
@@ -43,7 +43,7 @@ const formatParams = (params: Params) =>
   scale: ${formatNumber(params.scale)},
   speed: ${formatNumber(params.speed)},
   contrast: ${formatNumber(params.contrast)},
-  bias: ${formatNumber(params.bias)},
+  balance: ${formatNumber(params.balance)},
   softness: ${formatNumber(params.softness)},
   seed: ${params.seed},
   colorSpace: '${params.colorSpace}',
@@ -70,7 +70,7 @@ export default function SimplexNoisePage() {
       pane.addBinding(local, 'scale', { min: 0.5, max: 30, step: 0.1 });
       pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
       pane.addBinding(local, 'contrast', { min: 0, max: 4, step: 0.01 });
-      pane.addBinding(local, 'bias', { min: 0, max: 1, step: 0.01 });
+      pane.addBinding(local, 'balance', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'seed', { min: 0, max: 100, step: 1 });
       pane.addBinding(local, 'colorSpace', {

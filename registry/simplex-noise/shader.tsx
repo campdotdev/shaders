@@ -17,14 +17,49 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgp
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
 export interface SimplexNoiseShaderProps {
+  /**
+   * Zoom of the noise field — roughly how many noise features span the
+   * canvas. Higher values give a finer, denser pattern.
+   * Accepts a static value or an animation signal.
+   */
   scale: AnimatableProp<number>;
+  /**
+   * How fast the pattern morphs over time. 0 freezes the pattern.
+   * Accepts a static value or an animation signal.
+   */
   speed: AnimatableProp<number>;
+  /**
+   * Pushes noise values toward the ramp extremes. 1 is neutral; above 1
+   * leans into the first and last colors, below 1 pulls everything toward
+   * the middle stops. Accepts a static value or an animation signal.
+   */
   contrast: AnimatableProp<number>;
-  bias: AnimatableProp<number>;
+  /**
+   * Shifts the whole pattern through the color ramp. 0.5 is neutral; below
+   * leans toward the first colors, above leans toward the last. In 2-color
+   * mode this reads as a dark/light balance. Accepts a static value or an
+   * animation signal.
+   */
+  balance: AnimatableProp<number>;
+  /**
+   * Blends between posterized contour bands and a smooth gradient. 0 = hard
+   * bands (one per color stop); 1 = fully smooth. Accepts a static value or
+   * an animation signal.
+   */
   softness: AnimatableProp<number>;
+  /**
+   * Colors of the ramp the noise field maps onto. Accepts hex, `oklch()`,
+   * or `oklab()`; positions auto-space when omitted.
+   */
   stops: ColorStop[];
+  /**
+   * Static offset of the noise pattern. Change it for a different layout of
+   * the same character.
+   */
   seed: number;
+  /** Color space the ramp is interpolated in. */
   colorSpace: ColorSpace;
+  /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
   hueInterpolation: HueInterpolation;
 }
 
@@ -32,7 +67,7 @@ export function SimplexNoiseShader({
   scale,
   speed,
   contrast,
-  bias,
+  balance,
   softness,
   stops,
   seed,
@@ -43,7 +78,7 @@ export function SimplexNoiseShader({
   const scaleUniform = useAnimatableUniform<number>(scale);
   const speedUniform = useAnimatableUniform<number>(speed);
   const contrastUniform = useAnimatableUniform<number>(contrast);
-  const biasUniform = useAnimatableUniform<number>(bias);
+  const balanceUniform = useAnimatableUniform<number>(balance);
   const softnessUniform = useAnimatableUniform<number>(softness);
 
   const stopsKey = colorStopsKey(stops);
@@ -65,15 +100,15 @@ export function SimplexNoiseShader({
       const rawNoise = simplexNoise(samplePoint);
       const normalized = rawNoise.add(1).mul(0.5);
 
-      // Bias: shift the noise scalar earlier (<0.5) or later (>0.5) into the
+      // Balance: shift the noise scalar earlier (<0.5) or later (>0.5) into the
       // color ramp. 0.5 is identity. In 2-color mode this reads as dark/light;
       // in multi-color mode it leans toward the first or last colors in the array.
-      const biasShift = biasUniform.sub(0.5).mul(2);
-      const biased = clamp(normalized.add(biasShift), 0, 1);
+      const balanceShift = balanceUniform.sub(0.5).mul(2);
+      const balanced = clamp(normalized.add(balanceShift), 0, 1);
 
       // Contrast: linear scale around 0.5. 1 is identity, >1 pushes values toward
       // the ramp extremes (first/last colors), <1 pulls them toward the middle.
-      const contrastedValue = clamp(biased.sub(0.5).mul(contrastUniform).add(0.5), 0, 1);
+      const contrastedValue = clamp(balanced.sub(0.5).mul(contrastUniform).add(0.5), 0, 1);
 
       // Softness: blend between quantized contour bands (0) and smooth ramp (1).
       const stepCount = Math.max(stops.length, 1);
@@ -114,7 +149,7 @@ export function SimplexNoiseShader({
       scaleUniform,
       speedUniform,
       contrastUniform,
-      biasUniform,
+      balanceUniform,
       softnessUniform,
       seedUniform,
       stopsKey,

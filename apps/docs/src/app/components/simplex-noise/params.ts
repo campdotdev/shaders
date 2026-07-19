@@ -6,7 +6,7 @@ export interface Params {
   scale: number;
   speed: number;
   contrast: number;
-  bias: number;
+  balance: number;
   softness: number;
   seed: number;
   colorSpace: ColorSpace;
@@ -23,7 +23,7 @@ export const INITIAL: Params = {
   scale: 10,
   speed: 0.2,
   contrast: 2.5,
-  bias: 0.5,
+  balance: 0.5,
   softness: 0,
   seed: 0,
   colorSpace: 'oklab',
