@@ -6,7 +6,6 @@ import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '
 import {
   type AnimatableProp,
   useAnimatableUniform,
-  useCursor,
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
@@ -16,12 +15,33 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgp
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
 export interface LinearGradientShaderProps {
+  /**
+   * Colors along the gradient. Accepts hex, `oklch()`, or `oklab()`;
+   * positions auto-space when omitted.
+   */
   stops: ColorStop[];
+  /**
+   * Gradient direction in degrees. 0 runs left to right, 90 runs bottom to
+   * top. Accepts a static value or an animation signal.
+   */
   angle: AnimatableProp<number>;
-  focalPoint: AnimatableProp<readonly [number, number]>;
+  /**
+   * Anchor point of the gradient in normalized UV; `[0.5, 0.5]` is centered.
+   * The point on screen where the first color stop sits. Accepts a static
+   * value or an animation signal.
+   */
+  center: AnimatableProp<readonly [number, number]>;
+  /**
+   * Speed of the back-and-forth color drift along the gradient. 0 gives a
+   * static gradient. Accepts a static value or an animation signal.
+   */
   speed: AnimatableProp<number>;
-  interactive: boolean;
+  /** Color space the gradient is interpolated in. */
   colorSpace: ColorSpace;
+  /**
+   * Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert
+   * otherwise.
+   */
   hueInterpolation: HueInterpolation;
 }
 
@@ -34,15 +54,12 @@ const isPoint = (value: unknown): value is readonly [number, number] =>
 export function LinearGradientShader({
   stops,
   angle,
-  focalPoint,
+  center,
   speed,
-  interactive,
   colorSpace,
   hueInterpolation,
 }: LinearGradientShaderProps) {
   const shaderContext = useShaderContext();
-  const cursorAuto = useCursor();
-  const cursor = interactive ? cursorAuto : null;
 
   const isStatic = typeof speed === 'number' && speed === 0;
 
@@ -52,8 +69,8 @@ export function LinearGradientShader({
 
   const speedUniform = useAnimatableUniform<number>(speed);
 
-  const cursorVec = useMemo(() => new Vector2(0.5, 0.5), []);
-  const cursorUniform = useMemo(() => uniform(cursorVec), [cursorVec]);
+  const centerVec = useMemo(() => new Vector2(0.5, 0.5), []);
+  const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
 
   const dirVec = useMemo(() => new Vector2(1, 0), []);
   const dirNode = useMemo(() => uniform(dirVec), [dirVec]);
@@ -67,29 +84,20 @@ export function LinearGradientShader({
   }, [shaderContext, dirVec, angle]);
 
   useEffect(() => {
-    if (cursor) {
-      return cursor.on('change', ([cursorX, cursorY]) => {
-        cursorVec.set(cursorX, 1 - cursorY);
-        shaderContext?.scheduler.requestRender();
-      });
-    }
-
-    if (isPoint(focalPoint)) {
-      cursorVec.set(focalPoint[0], 1 - focalPoint[1]);
+    if (isPoint(center)) {
+      centerVec.set(center[0], 1 - center[1]);
     } else {
-      cursorVec.set(0.5, 0.5);
+      centerVec.set(0.5, 0.5);
     }
     shaderContext?.scheduler.requestRender();
-
-    return undefined;
-  }, [shaderContext, cursor, cursorVec, focalPoint]);
+  }, [shaderContext, centerVec, center]);
 
   useEffect(() => {
     if (!shaderContext) return;
 
     const rampStops = toColorRampStops(stops);
 
-    const gradientCoord = uv().sub(cursorUniform).dot(dirNode).add(0.5);
+    const gradientCoord = uv().sub(centerUniform).dot(dirNode).add(0.5);
 
     // Cosine-smoothed ping-pong: (1 - cos(π·x)) / 2 has period 2, peaks at x=1
     // and troughs at x=0/2 — same rhythm as a triangle wave but C∞ smooth so
@@ -136,16 +144,7 @@ export function LinearGradientShader({
     // is intentionally omitted to avoid rebuilds on identity-only changes.
     // Animatable uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    shaderContext,
-    stopsKey,
-    cursor,
-    speedUniform,
-    cursorUniform,
-    dirNode,
-    colorSpace,
-    hueInterpolation,
-  ]);
+  }, [shaderContext, stopsKey, speedUniform, centerUniform, dirNode, colorSpace, hueInterpolation]);
 
   return null;
 }

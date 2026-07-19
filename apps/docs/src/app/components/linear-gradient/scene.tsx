@@ -22,8 +22,8 @@ export default function LinearGradientScene({
     <ShaderScene>
       <LinearGradient
         angle={params.angle}
+        center={[params.centerX, params.centerY]}
         colorSpace={params.colorSpace}
-        focalPoint={[params.focalX, params.focalY]}
         hueInterpolation={params.hueInterpolation}
         key={remountKey}
         speed={params.speed}
