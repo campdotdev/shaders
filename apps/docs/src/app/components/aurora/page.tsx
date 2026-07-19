@@ -26,8 +26,8 @@ const formatJsx = (params: AuroraParams) =>
   <Aurora
     intensity={${formatNumber(params.intensity)}}
     speed={${formatNumber(params.speed)}}
-    turbulence={${formatNumber(params.turbulence)}}
-    falloff={${formatNumber(params.falloff)}}
+    waviness={${formatNumber(params.waviness)}}
+    fill={${formatNumber(params.fill)}}
     colorSpace="${params.colorSpace}"
     hueInterpolation="${params.hueInterpolation}"
     stops={[
@@ -40,8 +40,8 @@ const formatParams = (params: AuroraParams) =>
   `{
   intensity: ${formatNumber(params.intensity)},
   speed: ${formatNumber(params.speed)},
-  turbulence: ${formatNumber(params.turbulence)},
-  falloff: ${formatNumber(params.falloff)},
+  waviness: ${formatNumber(params.waviness)},
+  fill: ${formatNumber(params.fill)},
   colorSpace: '${params.colorSpace}',
   hueInterpolation: '${params.hueInterpolation}',
   stops: [
@@ -85,8 +85,8 @@ export default function AuroraPage() {
 
     globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
     globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 });
-    globals.addBinding(local, 'turbulence', { min: 0, max: 3, step: 0.01 });
-    globals.addBinding(local, 'falloff', { min: 0, max: 1, step: 0.01 });
+    globals.addBinding(local, 'waviness', { min: 0, max: 3, step: 0.01 });
+    globals.addBinding(local, 'fill', { min: 0, max: 1, step: 0.01 });
     globals.addBinding(local, 'colorSpace', {
       options: {
         OKLab: 'oklab',
@@ -217,8 +217,7 @@ export default function AuroraPage() {
         <p>
           The aurora fills its scene; compose with the container. For a curtain band hanging in a
           wide dark sky, place a short ShaderScene near the top of a taller dark section.{' '}
-          <code>falloff</code> fades the curtain from the bottom up — 1 fills the canvas, 0 hides
-          it.
+          <code>fill</code> reveals the curtain from the bottom up — 1 fills the canvas, 0 hides it.
         </p>
       </section>
     </main>
