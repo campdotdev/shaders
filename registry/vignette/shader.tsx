@@ -16,12 +16,25 @@ import { Vector2, Vector3 } from 'three/webgpu';
 import { parseColor } from '../utils/color';
 
 export interface VignetteShaderProps {
+  /** Overlay strength toward the edges. 0 = no vignette, 1 = full `color` at the edge. */
   intensity: AnimatableProp<number>;
+  /**
+   * How gradually the vignette ramps in, as a fraction of `radius`.
+   * 0 = a hard ring at `radius`; 1 = feathers all the way from the center.
+   */
   feather: AnimatableProp<number>;
+  /** Vignette center in normalized UV; `[0.5, 0.5]` is centered. */
   center: [number, number];
-  falloff: AnimatableProp<number>;
+  /**
+   * Normalized distance from `center` at which the vignette reaches full
+   * strength. Smaller values close the vignette in sooner.
+   */
+  radius: AnimatableProp<number>;
+  /** Color blended in toward the edges (hex, `oklch()`, or `oklab()`). */
   color: string;
+  /** Color space the overlay blend is computed in. */
   colorSpace: ColorSpace;
+  /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
   hueInterpolation: HueInterpolation;
 }
 
@@ -29,14 +42,14 @@ export function VignetteShader({
   intensity,
   feather,
   center,
-  falloff,
+  radius,
   color,
   colorSpace,
   hueInterpolation,
 }: VignetteShaderProps) {
   const intensityUniform = useAnimatableUniform(intensity);
   const featherUniform = useAnimatableUniform(feather);
-  const falloffUniform = useAnimatableUniform(falloff);
+  const radiusUniform = useAnimatableUniform(radius);
 
   const centerVec = useMemo(
     () => new Vector2(center[0], center[1]),
@@ -92,8 +105,8 @@ export function VignetteShader({
       const corrected = vec2(centered.x.mul(aspect), centered.y);
       const distance = length(corrected);
 
-      const featherStart = falloffUniform.mul(featherUniform.oneMinus());
-      const mask = smoothstep(featherStart, falloffUniform, distance);
+      const featherStart = radiusUniform.mul(featherUniform.oneMinus());
+      const mask = smoothstep(featherStart, radiusUniform, distance);
       const factor = mask.mul(intensityUniform);
 
       // Blend the upstream pixel toward `color` inside the chosen color space,
@@ -106,7 +119,7 @@ export function VignetteShader({
     [
       intensityUniform,
       featherUniform,
-      falloffUniform,
+      radiusUniform,
       centerUniform,
       colorUniform,
       aspectNode,

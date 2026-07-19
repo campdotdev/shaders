@@ -20,7 +20,7 @@ const formatJsx = (params: VignetteParams) => {
     intensity={${formatNumber(params.intensity)}}
     feather={${formatNumber(params.feather)}}
     center={[${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}]}
-    falloff={${formatNumber(params.falloff)}}
+    radius={${formatNumber(params.radius)}}
     color="${params.color}"
     colorSpace="${params.colorSpace}"
     hueInterpolation="${params.hueInterpolation}"
@@ -37,7 +37,7 @@ const formatParams = (params: VignetteParams) =>
   intensity: ${formatNumber(params.intensity)},
   feather: ${formatNumber(params.feather)},
   center: [${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}],
-  falloff: ${formatNumber(params.falloff)},
+  radius: ${formatNumber(params.radius)},
   color: '${params.color}',
   colorSpace: '${params.colorSpace}',
   hueInterpolation: '${params.hueInterpolation}',
@@ -78,7 +78,7 @@ export default function VignettePage() {
         step: 0.01,
         label: 'center.y',
       });
-      pane.addBinding(local, 'falloff', { min: 0, max: 1.5, step: 0.01 });
+      pane.addBinding(local, 'radius', { min: 0, max: 1.5, step: 0.01 });
       pane.addBinding(local, 'color', {
         label: 'color',
         view: 'color-plus',
@@ -139,14 +139,14 @@ export default function VignettePage() {
         <p>
           Radial darkening at the canvas edges. Stacks inside any <code>&lt;ShaderScene&gt;</code>{' '}
           on top of whatever base component you want and fades the upstream pixels toward an edge
-          color along a soft falloff ring. Unlike <code>&lt;Grain /&gt;</code>, which generates new
+          color along a soft radial ring. Unlike <code>&lt;Grain /&gt;</code>, which generates new
           noise from <code>uv</code>, Vignette reads the upstream pixel and mixes it toward{' '}
           <code>color</code> — the {`"read-upstream"`} half of the post-processing pipeline.
         </p>
         <p>
-          <code>feather</code> controls how gradual the falloff is. At <code>0</code> the ring is a
-          hard cutoff; at <code>1</code> the entire canvas is in the falloff (a smooth radial
-          gradient from center to edge). <code>falloff</code> is the outer edge of the ring;{' '}
+          <code>feather</code> controls how gradual the blend is. At <code>0</code> the ring is a
+          hard cutoff; at <code>1</code> the entire canvas is in the blend (a smooth radial gradient
+          from center to edge). <code>radius</code> is the outer edge of the ring;{' '}
           <code>center</code> is the bright spot in normalized UV space.
         </p>
         <pre
@@ -161,7 +161,7 @@ export default function VignettePage() {
         >
           {`<ShaderScene>
   <LinearGradient />
-  <Vignette intensity={0.5} falloff={0.6} feather={0.5} />
+  <Vignette intensity={0.5} radius={0.6} feather={0.5} />
 </ShaderScene>`}
         </pre>
       </section>

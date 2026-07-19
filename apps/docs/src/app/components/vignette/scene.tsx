@@ -22,10 +22,10 @@ export default function VignetteScene({
         center={[params.centerX, params.centerY]}
         color={params.color}
         colorSpace={params.colorSpace}
-        falloff={params.falloff}
         feather={params.feather}
         hueInterpolation={params.hueInterpolation}
         intensity={params.intensity}
+        radius={params.radius}
       />
       {children}
     </ShaderScene>
