@@ -9,24 +9,62 @@ import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/web
 
 import { parseColor } from '../utils/color';
 
+/**
+ * A single wave line. Each numeric field scales the matching global prop
+ * for this line only; omit a field to use the global value as-is.
+ */
 interface WavesShaderLayer {
+  /** Line color — hex, `oklch()`, or `oklab()`. */
   color?: string;
+  /** This line's wave height. */
   amplitude?: number;
+  /** This line's wave count across the canvas width. */
   frequency?: number;
+  /** This line's drift rate. */
   speed?: number;
+  /** This line's brightness. */
   glow?: number;
+  /** This line's width. */
   thickness?: number;
+  /** Phase offset in radians, sliding the line's wave pattern horizontally. */
   offset?: number;
-  turbulence?: number;
+  /** Extra fine wobble on top of this line's base wave. 0 = a pure smooth wave. */
+  waviness?: number;
 }
 
 export interface WavesShaderProps {
+  /** The wave lines to draw. Lines emit light additively — overlaps brighten. */
   layers: WavesShaderLayer[];
+  /**
+   * Master wave height, as a fraction of half the canvas height. 0 = flat
+   * lines. Accepts a static value or an animation signal.
+   */
   amplitude: AnimatableProp<number>;
+  /**
+   * Master wave count across the canvas width. Accepts a static value or
+   * an animation signal.
+   */
   frequency: AnimatableProp<number>;
+  /**
+   * Master drift rate of the wave motion. 0 freezes the lines. Accepts a
+   * static value or an animation signal.
+   */
   speed: AnimatableProp<number>;
+  /**
+   * Master brightness of the lines. 0 = invisible. Accepts a static value
+   * or an animation signal.
+   */
   glow: AnimatableProp<number>;
+  /**
+   * Master line width. Larger values give broader, softer lines. Accepts a
+   * static value or an animation signal.
+   */
   thickness: AnimatableProp<number>;
+  /**
+   * Vertical shift applied to all lines, as a fraction of half the canvas
+   * height. Positive lifts, negative drops. Accepts a static value or an
+   * animation signal.
+   */
   baseline: AnimatableProp<number>;
 }
 
@@ -35,7 +73,7 @@ const DEFAULT_FREQUENCY = 1;
 const DEFAULT_SPEED = 1;
 const DEFAULT_GLOW = 0.72;
 const DEFAULT_THICKNESS = 0.65;
-const DEFAULT_TURBULENCE = 0.35;
+const DEFAULT_WAVINESS = 0.35;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
 const wobble = (phase: ShaderNodeObject<Node>) =>
@@ -57,7 +95,7 @@ export function WavesShader(props: WavesShaderProps) {
   const layersKey = props.layers
     .map(
       (layer) =>
-        `${layer.color ?? ''}|${layer.amplitude ?? ''}|${layer.frequency ?? ''}|${layer.speed ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}|${layer.offset ?? ''}|${layer.turbulence ?? ''}`,
+        `${layer.color ?? ''}|${layer.amplitude ?? ''}|${layer.frequency ?? ''}|${layer.speed ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}|${layer.offset ?? ''}|${layer.waviness ?? ''}`,
     )
     .join('||');
 
@@ -89,7 +127,7 @@ export function WavesShader(props: WavesShaderProps) {
           ? thicknessUniform
           : thicknessUniform.mul(layer.thickness / DEFAULT_THICKNESS);
       const offset = layer.offset ?? 0;
-      const turbulenceValue = layer.turbulence ?? DEFAULT_TURBULENCE;
+      const wavinessValue = layer.waviness ?? DEFAULT_WAVINESS;
 
       const [redChannel, greenChannel, blueChannel] = parseColor(
         layer.color ?? DEFAULT_LAYER_COLOR,
@@ -98,10 +136,10 @@ export function WavesShader(props: WavesShaderProps) {
       const layerTime = elapsedTime.mul(speedValue);
       const waveInput = samplePosition.x.mul(freqValue).add(offset);
       const baseWave = wobble(waveInput.add(layerTime));
-      const turbulenceWave = cos(waveInput.mul(1.7).sub(layerTime.mul(0.55)))
+      const wavinessWave = cos(waveInput.mul(1.7).sub(layerTime.mul(0.55)))
         .add(cos(waveInput.mul(0.43).add(layerTime.mul(1.35))))
         .mul(0.25);
-      const wave = baseWave.add(turbulenceWave.mul(turbulenceValue));
+      const wave = baseWave.add(wavinessWave.mul(wavinessValue));
 
       const layerY = yBase.add(wave.mul(ampValue));
 

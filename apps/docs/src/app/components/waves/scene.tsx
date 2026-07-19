@@ -23,7 +23,7 @@ export default function WavesScene({
     glow: layer.glow,
     thickness: layer.thickness,
     offset: layer.offset,
-    turbulence: layer.turbulence,
+    waviness: layer.waviness,
   }));
 
   return (

@@ -8,7 +8,7 @@ export interface Layer {
   glow: number;
   thickness: number;
   offset: number;
-  turbulence: number;
+  waviness: number;
 }
 
 export interface Params {
@@ -40,7 +40,7 @@ export const INITIAL: Params = {
       glow: 0.55,
       thickness: 0.45,
       offset: 0,
-      turbulence: 0.12,
+      waviness: 0.12,
     },
     {
       color: palette.amber.base,
@@ -50,7 +50,7 @@ export const INITIAL: Params = {
       glow: 0.62,
       thickness: 0.55,
       offset: 1.57,
-      turbulence: 0.32,
+      waviness: 0.32,
     },
     {
       color: palette.green.base,
@@ -60,7 +60,7 @@ export const INITIAL: Params = {
       glow: 0.7,
       thickness: 0.65,
       offset: 3.14,
-      turbulence: 0.52,
+      waviness: 0.52,
     },
     {
       color: palette.blue.light,
@@ -70,7 +70,7 @@ export const INITIAL: Params = {
       glow: 0.78,
       thickness: 0.75,
       offset: 4.71,
-      turbulence: 0.72,
+      waviness: 0.72,
     },
   ],
 };

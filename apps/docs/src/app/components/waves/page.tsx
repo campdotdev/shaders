@@ -17,7 +17,7 @@ const WavesScene = dynamic(() => import('./scene'), { ssr: false });
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
 const formatLayer = (layer: Layer) =>
-  `{ color: '${layer.color}', amplitude: ${formatNumber(layer.amplitude)}, frequency: ${formatNumber(layer.frequency)}, speed: ${formatNumber(layer.speed)}, glow: ${formatNumber(layer.glow)}, thickness: ${formatNumber(layer.thickness)}, offset: ${formatNumber(layer.offset)}, turbulence: ${formatNumber(layer.turbulence)} }`;
+  `{ color: '${layer.color}', amplitude: ${formatNumber(layer.amplitude)}, frequency: ${formatNumber(layer.frequency)}, speed: ${formatNumber(layer.speed)}, glow: ${formatNumber(layer.glow)}, thickness: ${formatNumber(layer.thickness)}, offset: ${formatNumber(layer.offset)}, waviness: ${formatNumber(layer.waviness)} }`;
 
 const formatLayers = (layers: Layer[]) => layers.map(formatLayer).join(',\n    ');
 
@@ -103,7 +103,7 @@ export default function WavesPage() {
         row.addBinding(layer, 'glow', { min: 0, max: 3, step: 0.01 });
         row.addBinding(layer, 'thickness', { min: 0.1, max: 4, step: 0.01 });
         row.addBinding(layer, 'offset', { min: 0, max: 6.28, step: 0.01 });
-        row.addBinding(layer, 'turbulence', { min: 0, max: 1, step: 0.01 });
+        row.addBinding(layer, 'waviness', { min: 0, max: 1, step: 0.01 });
 
         const removeButton = row.addButton({ title: 'Remove layer' });
 
@@ -128,7 +128,7 @@ export default function WavesPage() {
           glow: last?.glow ?? 1,
           thickness: last?.thickness ?? 1,
           offset: ((last?.offset ?? 0) + 1.57) % 6.28,
-          turbulence: last?.turbulence ?? 0.35,
+          waviness: last?.waviness ?? 0.35,
         };
 
         local.layers.push(next);
