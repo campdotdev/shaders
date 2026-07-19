@@ -15,13 +15,33 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgp
 import { parseColor } from '../utils/color';
 
 export interface DotFieldShaderProps {
+  /** Grid cell size in pixels. Accepts a static value or an animation signal. */
   spacing: AnimatableProp<number>;
+  /** Dot radius in pixels. Accepts a static value or an animation signal. */
   dotSize: AnimatableProp<number>;
+  /** Dot color — hex, `oklch()`, or `oklab()`. */
   color: string;
+  /**
+   * Ripple travel speed (rings expand faster as this grows). Accepts a static
+   * value or an animation signal.
+   */
   speed: AnimatableProp<number>;
+  /**
+   * Peak radial displacement, as a fraction of `spacing` (≈0–0.9). 0 = a
+   * static grid. Accepts a static value or an animation signal.
+   */
   amplitude: AnimatableProp<number>;
+  /**
+   * Distance between wave crests, in pixels. Accepts a static value or an
+   * animation signal.
+   */
   wavelength: AnimatableProp<number>;
+  /**
+   * How quickly ripples decay with distance from `center`. 0 = no decay
+   * (uniform field). Accepts a static value or an animation signal.
+   */
   decay: AnimatableProp<number>;
+  /** Ripple origin in normalized UV; `[0.5, 0.5]` is centered. */
   center: [number, number];
 }
 

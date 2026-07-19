@@ -5,21 +5,44 @@ import type { AnimatableProp } from '@lovo/matter-react';
 import { DotFieldShader } from './shader';
 
 export interface DotFieldProps {
-  /** Grid cell size in pixels. */
+  /**
+   * Grid cell size in pixels. Defaults to 30. Accepts a static value or an
+   * animation signal.
+   */
   spacing?: AnimatableProp<number>;
-  /** Dot radius in pixels. */
+  /**
+   * Dot radius in pixels. Defaults to 3. Accepts a static value or an
+   * animation signal.
+   */
   dotSize?: AnimatableProp<number>;
-  /** Dot color — hex, `oklch()`, or `oklab()`. */
+  /** Dot color — hex, `oklch()`, or `oklab()`. Defaults to `'#8B918C'`. */
   color?: string;
-  /** Ripple travel speed (rings expand faster as this grows). */
+  /**
+   * Ripple travel speed (rings expand faster as this grows). Defaults to
+   * 0.45. Accepts a static value or an animation signal.
+   */
   speed?: AnimatableProp<number>;
-  /** Peak radial displacement, as a fraction of `spacing` (≈0–0.9). */
+  /**
+   * Peak radial displacement, as a fraction of `spacing` (≈0–0.9). 0 = a
+   * static grid. Defaults to 0.15. Accepts a static value or an animation
+   * signal.
+   */
   amplitude?: AnimatableProp<number>;
-  /** Distance between wave crests, in pixels. */
+  /**
+   * Distance between wave crests, in pixels. Defaults to 150. Accepts a
+   * static value or an animation signal.
+   */
   wavelength?: AnimatableProp<number>;
-  /** How quickly ripples fade with distance from `center`. 0 = no decay (uniform field). */
+  /**
+   * How quickly ripples decay with distance from `center`. 0 = no decay
+   * (uniform field). Defaults to 0.65. Accepts a static value or an
+   * animation signal.
+   */
   decay?: AnimatableProp<number>;
-  /** Ripple origin in normalized UV; `[0.5, 0.5]` is centered. */
+  /**
+   * Ripple origin in normalized UV; `[0.5, 0.5]` is centered. Defaults to
+   * `[0.5, 0.5]`.
+   */
   center?: [number, number];
 }
 
