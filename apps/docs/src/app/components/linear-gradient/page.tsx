@@ -30,7 +30,7 @@ const formatJsx = (params: Params) =>
     ]}
     angle={${formatNumber(params.angle)}}
     speed={${formatNumber(params.speed)}}
-    focalPoint={[${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}]}
+    center={[${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}]}
     colorSpace="${params.colorSpace}"
     hueInterpolation="${params.hueInterpolation}"
   />
@@ -45,7 +45,7 @@ const formatParams = (params: Params) =>
   ],
   angle: ${formatNumber(params.angle)},
   speed: ${formatNumber(params.speed)},
-  focalPoint: [${formatNumber(params.focalX)}, ${formatNumber(params.focalY)}],
+  center: [${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}],
   colorSpace: '${params.colorSpace}',
   hueInterpolation: '${params.hueInterpolation}',
 }`;
@@ -85,8 +85,8 @@ export default function LinearGradientPage() {
 
     pane.addBinding(local, 'angle', { min: 0, max: 360, step: 1 });
     pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
-    pane.addBinding(local, 'focalX', { label: 'focal x', min: 0, max: 1, step: 0.01 });
-    pane.addBinding(local, 'focalY', { label: 'focal y', min: 0, max: 1, step: 0.01 });
+    pane.addBinding(local, 'centerX', { label: 'center x', min: 0, max: 1, step: 0.01 });
+    pane.addBinding(local, 'centerY', { label: 'center y', min: 0, max: 1, step: 0.01 });
     pane.addBinding(local, 'colorSpace', {
       options: {
         OKLab: 'oklab',
@@ -191,10 +191,7 @@ export default function LinearGradientPage() {
       </div>
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;LinearGradient /&gt;</h1>
-        <p>
-          Animated linear gradient with optional cursor parallax. The simplest, foundational Matter
-          component.
-        </p>
+        <p>Animated linear gradient. The simplest, foundational Matter component.</p>
         <pre
           style={{
             background: '#1a1a2a',
