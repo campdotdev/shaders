@@ -23,7 +23,7 @@ export default function AuroraScene({
     <ShaderScene>
       <Aurora
         colorSpace={params.colorSpace}
-        fill={params.fill}
+        coverage={params.coverage}
         hueInterpolation={params.hueInterpolation}
         intensity={params.intensity}
         speed={params.speed}

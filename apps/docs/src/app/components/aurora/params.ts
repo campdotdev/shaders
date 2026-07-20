@@ -11,7 +11,7 @@ export interface AuroraParams {
   intensity: number;
   speed: number;
   waviness: number;
-  fill: number;
+  coverage: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   stops: PlainColorStop[];
@@ -25,7 +25,7 @@ export const INITIAL: AuroraParams = {
   intensity: 1,
   speed: 1,
   waviness: 1,
-  fill: 1,
+  coverage: 1,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [

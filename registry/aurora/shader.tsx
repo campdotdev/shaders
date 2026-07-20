@@ -140,11 +140,11 @@ export interface AuroraShaderProps {
    */
   waviness: AnimatableProp<number>;
   /**
-   * How much of the canvas the aurora fills, revealed from the bottom up
-   * along a soft fade line. 0 hides the aurora, 1 fills the canvas.
+   * How much of the canvas the aurora covers, revealed from the bottom up
+   * along a soft fade line. 0 hides the aurora, 1 covers the canvas.
    * Accepts a static value or an animation signal.
    */
-  fill: AnimatableProp<number>;
+  coverage: AnimatableProp<number>;
   /** Color space the curtain colors are interpolated in. */
   colorSpace: ColorSpace;
   /**
@@ -159,7 +159,7 @@ export function AuroraShader({
   intensity,
   speed,
   waviness,
-  fill,
+  coverage,
   colorSpace,
   hueInterpolation,
 }: AuroraShaderProps) {
@@ -169,7 +169,7 @@ export function AuroraShader({
   const intensityUniform = useAnimatableUniform<number>(intensity);
   const speedUniform = useAnimatableUniform<number>(speed);
   const wavinessUniform = useAnimatableUniform<number>(waviness);
-  const fillUniform = useAnimatableUniform<number>(fill);
+  const coverageUniform = useAnimatableUniform<number>(coverage);
 
   // Stable string proxy for the stops array — colors/positions are baked
   // into the ramp as literals, so a content change must rebuild the
@@ -279,8 +279,8 @@ export function AuroraShader({
         accumulated.addAssign(runningAverage.mul(extinction).mul(smoothstep(0, 5, stepIndex)));
       });
 
-      // fill is a screen-space reveal: 0 hides the aurora, 1 fills the canvas, in between a soft fade line sweeps up from the bottom.
-      const fadeEdge = float(1).sub(fillUniform).mul(1.4);
+      // coverage is a screen-space reveal: 0 hides the aurora, 1 covers the canvas, in between a soft fade line sweeps up from the bottom.
+      const fadeEdge = float(1).sub(coverageUniform).mul(1.4);
       const horizonMask = smoothstep(fadeEdge.sub(0.4), fadeEdge, uv().y);
 
       // Soft-clip shaping: lifts the mids and rolls off the top instead of
@@ -320,7 +320,7 @@ export function AuroraShader({
     intensityUniform,
     speedUniform,
     wavinessUniform,
-    fillUniform,
+    coverageUniform,
     aspectNode,
   ]);
 

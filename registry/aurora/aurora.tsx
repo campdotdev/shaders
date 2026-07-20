@@ -41,11 +41,11 @@ export interface AuroraProps {
    */
   waviness?: AnimatableProp<number>;
   /**
-   * How much of the canvas the aurora fills, revealed from the bottom up
-   * along a soft fade line. 0 hides the aurora, 1 fills the canvas.
+   * How much of the canvas the aurora covers, revealed from the bottom up
+   * along a soft fade line. 0 hides the aurora, 1 covers the canvas.
    * Defaults to 1. Accepts a static value or an animation signal.
    */
-  fill?: AnimatableProp<number>;
+  coverage?: AnimatableProp<number>;
   /**
    * Color space the curtain colors are interpolated in. Defaults to
    * `'oklab'`.
@@ -64,14 +64,14 @@ export function Aurora({
   intensity = 1,
   speed = 1,
   waviness = 1,
-  fill = 1,
+  coverage = 1,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
 }: AuroraProps) {
   return (
     <AuroraShader
       colorSpace={colorSpace}
-      fill={fill}
+      coverage={coverage}
       hueInterpolation={hueInterpolation}
       intensity={intensity}
       speed={speed}
