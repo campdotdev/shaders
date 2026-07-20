@@ -20,7 +20,7 @@ const Grain = dynamic(() => import('@matter/registry/grain').then((m) => m.Grain
 export default function OverlayTestPage() {
   const [intensity, setIntensity] = useState(0.3);
   const [speed, setSpeed] = useState(1);
-  const [grainBlend, setGrainBlend] = useState<GrainBlend>('additive');
+  const [blend, setBlend] = useState<GrainBlend>('additive');
 
   return (
     <div
@@ -69,16 +69,14 @@ export default function OverlayTestPage() {
             value={speed}
           />
         </label>
-        <button
-          onClick={() => setGrainBlend((m) => (m === 'additive' ? 'subtractive' : 'additive'))}
-        >
-          Mode: {grainBlend}
+        <button onClick={() => setBlend((m) => (m === 'additive' ? 'subtractive' : 'additive'))}>
+          Mode: {blend}
         </button>
       </div>
       <div style={{ position: 'relative', width: '100%', height: '400px' }}>
         <ShaderScene>
           <MeshGradient />
-          <Grain grainBlend={grainBlend} intensity={intensity} speed={speed} />
+          <Grain blend={blend} intensity={intensity} speed={speed} />
         </ShaderScene>
       </div>
     </div>

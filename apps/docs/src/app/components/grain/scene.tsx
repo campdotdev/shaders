@@ -18,7 +18,7 @@ export default function GrainScene({
   return (
     <ShaderScene>
       <LinearGradient />
-      <Grain grainBlend={params.grainBlend} intensity={params.intensity} speed={params.speed} />
+      <Grain blend={params.blend} intensity={params.intensity} speed={params.speed} />
       {children}
     </ShaderScene>
   );

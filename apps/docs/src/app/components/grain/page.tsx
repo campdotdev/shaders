@@ -19,7 +19,7 @@ const formatJsx = (params: GrainParams) =>
   <Grain
     intensity={${formatNumber(params.intensity)}}
     speed={${formatNumber(params.speed)}}
-    grainBlend="${params.grainBlend}"
+    blend="${params.blend}"
   />
 </ShaderScene>`;
 
@@ -27,7 +27,7 @@ const formatParams = (params: GrainParams) =>
   `{
   intensity: ${formatNumber(params.intensity)},
   speed: ${formatNumber(params.speed)},
-  grainBlend: '${params.grainBlend}',
+  blend: '${params.blend}',
 }`;
 
 export default function GrainPage() {
@@ -49,7 +49,7 @@ export default function GrainPage() {
 
       pane.addBinding(local, 'intensity', { min: 0, max: 1, step: 0.01 });
       pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
-      pane.addBinding(local, 'grainBlend', {
+      pane.addBinding(local, 'blend', {
         options: { Additive: 'additive', Subtractive: 'subtractive' },
       });
 
@@ -114,7 +114,7 @@ export default function GrainPage() {
         >
           {`<ShaderScene>
   <LinearGradient />
-  <Grain intensity={0.45} speed={1} grainBlend="additive" />
+  <Grain intensity={0.45} speed={1} blend="additive" />
 </ShaderScene>`}
         </pre>
       </section>
