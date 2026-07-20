@@ -4,7 +4,7 @@
   "components": {
     "linear-gradient": {
       "file": "linear-gradient/linear-gradient.tsx",
-      "description": "Animated linear gradient with optional cursor parallax. The simplest, foundational Matter component.",
+      "description": "Animated linear gradient. The simplest, foundational Matter component.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "elapsedTime", "uniform"],
       "tier": 1
@@ -28,7 +28,7 @@
     },
     "dot-field": {
       "file": "dot-field/dot-field.tsx",
-      "description": "Tiled dot field with cursor displacement — the architecturally-validating Matter component.",
+      "description": "Tiled dot field with center-anchored ripple displacement — the architecturally-validating Matter component.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "signedDistanceFieldCircle",
