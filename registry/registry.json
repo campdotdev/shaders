@@ -47,7 +47,7 @@
     },
     "grain": {
       "file": "grain/grain.tsx",
-      "description": "Additive or subtractive film grain overlay. Stacks on top of any base component inside <MatterScene>.",
+      "description": "Additive or subtractive film grain overlay. Stacks on top of any base component inside <ShaderScene>.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["grain", "uv", "vec4", "uniform", "elapsedTime", "floor"],
       "tier": 1
@@ -99,7 +99,7 @@
     },
     "vignette": {
       "file": "vignette/vignette.tsx",
-      "description": "Radial darkening at the canvas edges. Stacks on top of any base component inside <MatterScene>.",
+      "description": "Radial darkening at the canvas edges. Stacks on top of any base component inside <ShaderScene>.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["uv", "vec2", "vec3", "vec4", "mix", "smoothstep", "length", "uniform"],
       "tier": 1
