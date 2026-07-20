@@ -20,7 +20,7 @@ export function Hero() {
   return (
     <ShaderScene style={{ position: 'absolute', inset: 0 }}>
       <Aurora />
-      <DotField interactive />
+      <DotField />
     </ShaderScene>
   )
 }
@@ -50,7 +50,7 @@ Children render back-to-front in JSX order. The first child is the background; l
 
 ```tsx
 <ShaderScene>
-  <DotField interactive />  {/* drawn first */}
+  <DotField />  {/* drawn first */}
   <Aurora />                {/* drawn on top */}
 </ShaderScene>
 ```

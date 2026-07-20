@@ -15,12 +15,11 @@ export const parseColor = (color: string): [number, number, number] => parseColo
 /** @deprecated Use {@link parseColor}; retained so existing call sites keep working. */
 export const parseHex = parseColor;
 
-/**
- * A single color stop in a gradient ramp. `position` is optional; when omitted,
- * stops are spaced evenly across the [0, 1] range in array order.
- */
+/** A color stop in a gradient ramp. */
 export interface ColorStop {
+  /** Stop color — hex, `oklch()`, or `oklab()`. */
   color: string;
+  /** Position along the ramp, 0–1. Positions auto-space evenly when omitted. */
   position?: number;
 }
 
