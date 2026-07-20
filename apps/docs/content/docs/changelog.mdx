@@ -9,6 +9,17 @@ order: 30
 
 Matter ships as three coordinated npm packages: `@lovo/matter` (engine), `@lovo/matter-react` (React binding), and `@lovo/matter-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo; this page summarizes the headline changes.
 
+## Unreleased
+
+**Registry components — prop renames and prop docs.** Every Tier 1 component prop now has JSDoc hover documentation, and several props were renamed to plainer vocabulary. Because components are delivered by copy-paste, your installed copies are unaffected; re-add a component via the CLI to get the new names.
+
+- `Aurora`: `turbulence` → `waviness`, `falloff` → `fill`
+- `Vignette`: `falloff` → `radius`
+- `SimplexNoise`: `bias` → `balance`
+- `LinearGradient`: `focalPoint` → `center`; `interactive` removed (cursor following was dropped from all components)
+- `Waves`: `WaveLayer.turbulence` → `waviness`
+- `Grain`: `grainBlend` → `blend`
+
 ## 0.2.0
 
 **Breaking change — `@lovo/matter` no longer re-exports pure TSL primitives.**
