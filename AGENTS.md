@@ -40,6 +40,7 @@ For architecture, public APIs, the component catalog, and the animation/signal p
 - **When finishing a branch, always push and open a PR.** Never merge locally. Don't ask which integration option to use.
 - **No AI attribution.** Do not add "Generated with Claude Code" (or equivalent) trailers or `Co-Authored-By` AI footers to commits or PR bodies.
 - **PR bodies**: concise and why-led. 1–2 sentences of motivation up top, then a short list of changes framed by why each matters. No "Test plan" section, no "Follow-ups" section, no links to internal planning artifacts (`.planning/`, `docs/superpowers/plans/`, memory files). Group by concept, not by commit. The prose should sound like a person, not generated copy.
+- **Run user-facing prose through the humanizer skill** (`~/.agents/skills/humanizer`). PR bodies, changelog entries, and release notes get a humanizer pass before opening the PR / publishing.
 - **Commit messages**: Conventional Commits (`feat(scope): …`, `fix(scope): …`, `chore: …`, `docs: …`, `ci: …`). Scope is the package name without the `@lovo/` prefix.
 
 ## Shader development process
