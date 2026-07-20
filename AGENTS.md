@@ -60,6 +60,8 @@ These rules exist because Matter doubles as a shader-learning project for its au
 - **TypeScript**: strict mode, `verbatimModuleSyntax`, `noUncheckedIndexedAccess`, `import type` for type-only imports.
 - **TDD where applicable**: tests-first for Tier 2 primitives and CLI logic. For shader visuals, the "test" is a docs demo + Playwright visual regression — don't try to unit test "does this gradient look right" or mock the GPU.
 - **No emojis** in code or commit messages.
+- **JSDoc on every user-facing prop.** All registry component props — the wrapper `*Props` and the `*ShaderProps` mirror, plus nested types like `WaveLayer`/`ColorStop` — carry JSDoc: what the prop controls, 0/1 semantics for normalized props, units, and the default in prose (wrapper only; the mirror drops "Defaults to …"). Every `AnimatableProp<T>` prop ends its comment with "Accepts a static value or an animation signal."; plain props don't.
+- **Prop names use everyday words, not GPU jargon.** Prefer `waviness` over `turbulence`, `fill`/`radius` over `falloff`, `balance` over `bias`. When two components share a concept, they share the name (e.g. `center`).
 - **YAGNI hard.** Don't add features beyond the current task. No inert props for API symmetry (e.g. `colorSpace` was deliberately NOT added to non-interpolating components like waves/grain/aurora).
 
 ## Design rules
