@@ -71,10 +71,10 @@ export interface WavesProps {
 // Interim default layer set — Task 7 replaces it with the redesigned
 // 8-line palette.
 export const DEFAULT_LAYERS: WaveLayer[] = [
-  { color: '#ff6f6a', amplitude: 0.14, glow: 0.55, thickness: 0.45 }, // palette.red.light
-  { color: '#ecb100', amplitude: 0.17, glow: 0.62, thickness: 0.55 }, // palette.amber.base
+  { color: '#ff6f6a', amplitude: 0.14, glow: 0.55, thickness: 0.65 }, // palette.red.light
+  { color: '#ecb100', amplitude: 0.17, glow: 0.62, thickness: 0.65 }, // palette.amber.base
   { color: '#0ae24b', amplitude: 0.2, glow: 0.7, thickness: 0.65 }, // palette.green.base
-  { color: '#4370f0', amplitude: 0.23, glow: 0.78, thickness: 0.75 }, // palette.blue.light
+  { color: '#4370f0', amplitude: 0.23, glow: 0.78, thickness: 0.65 }, // palette.blue.light
 ];
 
 export function Waves({
