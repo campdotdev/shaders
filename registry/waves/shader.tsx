@@ -4,8 +4,8 @@ import { useEffect } from 'react';
 
 import { elapsedTime } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
-import { cos, type ShaderNodeObject, uv, vec2, vec3, vec4 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
+import { sin, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
 
@@ -18,36 +18,28 @@ interface WavesShaderLayer {
   color?: string;
   /** This line's wave height. */
   amplitude?: number;
-  /** This line's wave count across the canvas width. */
-  frequency?: number;
-  /** This line's drift rate. */
-  speed?: number;
   /** This line's brightness. */
   glow?: number;
   /** This line's width. */
   thickness?: number;
-  /** Phase offset in radians, sliding the line's wave pattern horizontally. */
-  offset?: number;
-  /** Extra fine wobble on top of this line's base wave. 0 = a pure smooth wave. */
-  waviness?: number;
 }
 
 export interface WavesShaderProps {
   /** The wave lines to draw. Lines emit light additively — overlaps brighten. */
   layers: WavesShaderLayer[];
   /**
-   * Master wave height, as a fraction of half the canvas height. 0 = flat
-   * lines. Accepts a static value or an animation signal.
+   * Wave height of the bundle, as a fraction of half the canvas height.
+   * 0 = flat lines. Accepts a static value or an animation signal.
    */
   amplitude: AnimatableProp<number>;
   /**
-   * Master wave count across the canvas width. Accepts a static value or
-   * an animation signal.
+   * Wave count across the canvas width, shared by every line. Accepts a
+   * static value or an animation signal.
    */
   frequency: AnimatableProp<number>;
   /**
-   * Master drift rate of the wave motion. 0 freezes the lines. Accepts a
-   * static value or an animation signal.
+   * Drift rate of the wave motion, shared by every line. 0 freezes the
+   * lines. Accepts a static value or an animation signal.
    */
   speed: AnimatableProp<number>;
   /**
@@ -68,19 +60,15 @@ export interface WavesShaderProps {
   baseline: AnimatableProp<number>;
 }
 
-const DEFAULT_AMPLITUDE = 0.09;
-const DEFAULT_FREQUENCY = 1;
-const DEFAULT_SPEED = 1;
+const DEFAULT_AMPLITUDE = 0.2;
 const DEFAULT_GLOW = 0.72;
 const DEFAULT_THICKNESS = 0.65;
-const DEFAULT_WAVINESS = 0.35;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
-const wobble = (phase: ShaderNodeObject<Node>) =>
-  cos(phase)
-    .add(cos(phase.mul(1.3).add(1.3)))
-    .add(cos(phase.mul(1.4).add(1.4)))
-    .div(3);
+// Phase radians the shared wave scrolls per speed-scaled second. Gate-tunable.
+const SCROLL_RATE = 2;
+// Fixed phase gap between neighboring lines. Gate-tunable.
+const LINE_STAGGER = 0.5;
 
 export function WavesShader(props: WavesShaderProps) {
   const shaderContext = useShaderContext();
@@ -95,7 +83,7 @@ export function WavesShader(props: WavesShaderProps) {
   const layersKey = props.layers
     .map(
       (layer) =>
-        `${layer.color ?? ''}|${layer.amplitude ?? ''}|${layer.frequency ?? ''}|${layer.speed ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}|${layer.offset ?? ''}|${layer.waviness ?? ''}`,
+        `${layer.color ?? ''}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}`,
     )
     .join('||');
 
@@ -105,42 +93,35 @@ export function WavesShader(props: WavesShaderProps) {
     const samplePosition = vec2(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1));
 
     const yBase = samplePosition.y.add(baselineUniform);
+
+    // One shared clock and one shared wave phase for every line — coherence
+    // comes from the architecture, not from per-line tuning. frequency = full
+    // wave cycles across the canvas width (x spans 2, so the PI factor makes
+    // frequency 1 exactly one cycle).
+    const time = elapsedTime.mul(speedUniform);
+    const wavePhase = samplePosition.x.mul(freqUniform).mul(Math.PI).sub(time.mul(SCROLL_RATE));
+
     let waveColor = vec3(0, 0, 0);
 
-    for (const layer of props.layers) {
+    for (const [layerIndex, layer] of props.layers.entries()) {
       // Globals are master controls. Per-layer values preserve relative
       // differences by scaling those globals against the component defaults.
       const ampValue =
         layer.amplitude === undefined
           ? ampUniform
           : ampUniform.mul(layer.amplitude / DEFAULT_AMPLITUDE);
-      const freqValue =
-        layer.frequency === undefined
-          ? freqUniform
-          : freqUniform.mul(layer.frequency / DEFAULT_FREQUENCY);
-      const speedValue =
-        layer.speed === undefined ? speedUniform : speedUniform.mul(layer.speed / DEFAULT_SPEED);
       const glowValue =
         layer.glow === undefined ? glowUniform : glowUniform.mul(layer.glow / DEFAULT_GLOW);
       const thicknessValue =
         layer.thickness === undefined
           ? thicknessUniform
           : thicknessUniform.mul(layer.thickness / DEFAULT_THICKNESS);
-      const offset = layer.offset ?? 0;
-      const wavinessValue = layer.waviness ?? DEFAULT_WAVINESS;
 
       const [redChannel, greenChannel, blueChannel] = parseColor(
         layer.color ?? DEFAULT_LAYER_COLOR,
       );
 
-      const layerTime = elapsedTime.mul(speedValue);
-      const waveInput = samplePosition.x.mul(freqValue).add(offset);
-      const baseWave = wobble(waveInput.add(layerTime));
-      const wavinessWave = cos(waveInput.mul(1.7).sub(layerTime.mul(0.55)))
-        .add(cos(waveInput.mul(0.43).add(layerTime.mul(1.35))))
-        .mul(0.25);
-      const wave = baseWave.add(wavinessWave.mul(wavinessValue));
-
+      const wave = sin(wavePhase.add(LINE_STAGGER * layerIndex));
       const layerY = yBase.add(wave.mul(ampValue));
 
       const width = layerY.mul(150).abs().reciprocal().mul(thicknessValue).mul(glowValue);

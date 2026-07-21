@@ -18,12 +18,8 @@ export default function WavesScene({
   const layers: WaveLayer[] = params.layers.map((layer) => ({
     color: layer.color,
     amplitude: layer.amplitude,
-    frequency: layer.frequency,
-    speed: layer.speed,
     glow: layer.glow,
     thickness: layer.thickness,
-    offset: layer.offset,
-    waviness: layer.waviness,
   }));
 
   return (
