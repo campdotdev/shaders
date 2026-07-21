@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 import { elapsedTime } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
-import { sin, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { float, sin, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
@@ -76,6 +76,13 @@ const DEFAULT_AMPLITUDE = 0.2;
 const DEFAULT_GLOW = 0.72;
 const DEFAULT_THICKNESS = 0.65;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
+
+// Half the core band's height at thickness 1, in canvas units. Gate-tunable.
+const BAND_HALF_WIDTH = 0.02;
+// Halo brightness relative to the core. Gate-tunable.
+const HALO_WEIGHT = 0.15;
+// Keeps the 1/distance halo finite at the line center. Gate-tunable.
+const HALO_SOFTENING = 0.003;
 
 // Phase radians the shared wave scrolls per speed-scaled second. Gate-tunable.
 const SCROLL_RATE = 2;
@@ -163,10 +170,19 @@ export function WavesShader(props: WavesShaderProps) {
       const envelope = pulse.mul(breathingUniform).mul(depthWeight).add(1);
       const layerY = yBase.add(wave.mul(ampValue).mul(envelope));
 
-      const width = layerY.mul(150).abs().reciprocal().mul(thicknessValue).mul(glowValue);
+      // Hybrid profile: a crisp smoothstep core inside a finite band, plus a
+      // subdued 1/distance halo so the lines keep their luminous identity.
+      // bandT runs 1 at the line center to 0 at the band edge; s²(3−2s) is
+      // the smoothstep polynomial.
+      const distanceFromLine = layerY.abs();
+      const halfWidth = thicknessValue.mul(BAND_HALF_WIDTH);
+      const bandT = distanceFromLine.div(halfWidth).oneMinus().max(0);
+      const core = bandT.mul(bandT).mul(float(3).sub(bandT.mul(2)));
+      const halo = halfWidth.mul(HALO_WEIGHT).div(distanceFromLine.add(HALO_SOFTENING));
+      const intensity = core.add(halo).mul(glowValue);
 
       waveColor = waveColor.add(
-        vec3(width.mul(redChannel), width.mul(greenChannel), width.mul(blueChannel)),
+        vec3(intensity.mul(redChannel), intensity.mul(greenChannel), intensity.mul(blueChannel)),
       );
     }
 
