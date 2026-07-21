@@ -155,7 +155,11 @@ export function WavesShader(props: WavesShaderProps) {
       // reference. The envelope swings amplitude between (1 − breathing) and
       // (1 + breathing) times its base value.
       const depthWeight = 1 - layerIndex / props.layers.length;
-      const pulse = sin(time.add(layerIndex * PULSE_STAGGER));
+      // Sine-of-sine shaping: still swings −1..1, but the slope hits zero at
+      // the extremes, so the pulse dwells fully-swollen / fully-flattened and
+      // moves quickly through the middle.
+      const pulseBase = sin(time.add(layerIndex * PULSE_STAGGER));
+      const pulse = sin(pulseBase.mul(Math.PI / 2));
       const envelope = pulse.mul(breathingUniform).mul(depthWeight).add(1);
       const layerY = yBase.add(wave.mul(ampValue).mul(envelope));
 
