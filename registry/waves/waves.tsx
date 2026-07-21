@@ -60,6 +60,12 @@ export interface WavesProps {
    * Accepts a static value or an animation signal.
    */
   braiding?: AnimatableProp<number>;
+  /**
+   * Depth of the slow height pulse. 0 = steady heights, 1 = full swell
+   * (lines double at the peak and flatten at the trough). Defaults to 0.5.
+   * Accepts a static value or an animation signal.
+   */
+  breathing?: AnimatableProp<number>;
 }
 
 // Interim default layer set — Task 7 replaces it with the redesigned
@@ -80,12 +86,14 @@ export function Waves({
   thickness = 0.65,
   baseline = 0.08,
   braiding = 0.6,
+  breathing = 0.5,
 }: WavesProps) {
   return (
     <WavesShader
       amplitude={amplitude}
       baseline={baseline}
       braiding={braiding}
+      breathing={breathing}
       frequency={frequency}
       glow={glow}
       layers={layers}

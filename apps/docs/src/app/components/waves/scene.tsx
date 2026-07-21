@@ -28,6 +28,7 @@ export default function WavesScene({
         amplitude={params.amplitude}
         baseline={params.baseline}
         braiding={params.braiding}
+        breathing={params.breathing}
         frequency={params.frequency}
         glow={params.glow}
         layers={layers}

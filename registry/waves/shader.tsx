@@ -64,6 +64,12 @@ export interface WavesShaderProps {
    * value or an animation signal.
    */
   braiding: AnimatableProp<number>;
+  /**
+   * Depth of the slow height pulse. 0 = steady heights, 1 = full swell
+   * (lines double at the peak and flatten at the trough). Accepts a static
+   * value or an animation signal.
+   */
+  breathing: AnimatableProp<number>;
 }
 
 const DEFAULT_AMPLITUDE = 0.2;
@@ -78,6 +84,8 @@ const LINE_STAGGER = 0.35;
 // How fast the braid's phase spread grows per speed-scaled second, at
 // braiding = 1. Gate-tunable.
 const BRAID_RATE = 0.35;
+// Phase gap between neighboring lines' height pulses, radians. Gate-tunable.
+const PULSE_STAGGER = 0.35;
 
 export function WavesShader(props: WavesShaderProps) {
   const shaderContext = useShaderContext();
@@ -89,6 +97,7 @@ export function WavesShader(props: WavesShaderProps) {
   const thicknessUniform = useAnimatableUniform<number>(props.thickness);
   const baselineUniform = useAnimatableUniform<number>(props.baseline);
   const braidingUniform = useAnimatableUniform<number>(props.braiding);
+  const breathingUniform = useAnimatableUniform<number>(props.breathing);
 
   const layersKey = props.layers
     .map(
@@ -140,7 +149,15 @@ export function WavesShader(props: WavesShaderProps) {
         .add(LINE_STAGGER)
         .mul(layerIndex);
       const wave = sin(wavePhase.add(lineStagger));
-      const layerY = yBase.add(wave.mul(ampValue));
+
+      // Slow per-line height pulse. depthWeight fades the pulse toward the
+      // back of the stack (last layers barely breathe), matching the
+      // reference. The envelope swings amplitude between (1 − breathing) and
+      // (1 + breathing) times its base value.
+      const depthWeight = 1 - layerIndex / props.layers.length;
+      const pulse = sin(time.add(layerIndex * PULSE_STAGGER));
+      const envelope = pulse.mul(breathingUniform).mul(depthWeight).add(1);
+      const layerY = yBase.add(wave.mul(ampValue).mul(envelope));
 
       const width = layerY.mul(150).abs().reciprocal().mul(thicknessValue).mul(glowValue);
 
@@ -185,6 +202,7 @@ export function WavesShader(props: WavesShaderProps) {
     thicknessUniform,
     baselineUniform,
     braidingUniform,
+    breathingUniform,
   ]);
 
   return null;
