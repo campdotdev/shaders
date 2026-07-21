@@ -13,6 +13,7 @@ export interface Params {
   speed: number;
   glow: number;
   thickness: number;
+  softness: number;
   baseline: number;
   braiding: number;
   breathing: number;
@@ -28,6 +29,7 @@ export const INITIAL: Params = {
   speed: 1,
   glow: 0.72,
   thickness: 0.65,
+  softness: 0,
   baseline: 0.08,
   braiding: 0.6,
   breathing: 0.5,

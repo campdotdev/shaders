@@ -49,6 +49,12 @@ export interface WavesProps {
    */
   thickness?: AnimatableProp<number>;
   /**
+   * How fuzzy the line bodies are. 0 = crisp ribbons with a defined edge,
+   * 1 = fully soft gaussian glow. Defaults to 0. Accepts a static value or
+   * an animation signal.
+   */
+  softness?: AnimatableProp<number>;
+  /**
    * Vertical shift applied to all lines, as a fraction of half the canvas
    * height. Positive lifts, negative drops. Defaults to 0.08. Accepts a
    * static value or an animation signal.
@@ -84,6 +90,7 @@ export function Waves({
   speed = 1,
   glow = 0.72,
   thickness = 0.65,
+  softness = 0,
   baseline = 0.08,
   braiding = 0.6,
   breathing = 0.5,
@@ -97,6 +104,7 @@ export function Waves({
       frequency={frequency}
       glow={glow}
       layers={layers}
+      softness={softness}
       speed={speed}
       thickness={thickness}
     />
