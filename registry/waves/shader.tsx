@@ -80,7 +80,7 @@ const DEFAULT_LAYER_COLOR = '#ff6f6a';
 // Half the core band's height at thickness 1, in canvas units. Gate-tunable.
 const BAND_HALF_WIDTH = 0.02;
 // Halo brightness relative to the core. Gate-tunable.
-const HALO_WEIGHT = 0.15;
+const HALO_WEIGHT = 0.4;
 // Keeps the 1/distance halo finite at the line center. Gate-tunable.
 const HALO_SOFTENING = 0.003;
 

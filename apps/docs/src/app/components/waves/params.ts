@@ -32,9 +32,9 @@ export const INITIAL: Params = {
   braiding: 0.6,
   breathing: 0.5,
   layers: [
-    { color: palette.red.light, amplitude: 0.14, glow: 0.55, thickness: 0.45 },
-    { color: palette.amber.base, amplitude: 0.17, glow: 0.62, thickness: 0.55 },
+    { color: palette.red.light, amplitude: 0.14, glow: 0.55, thickness: 0.65 },
+    { color: palette.amber.base, amplitude: 0.17, glow: 0.62, thickness: 0.65 },
     { color: palette.green.base, amplitude: 0.2, glow: 0.7, thickness: 0.65 },
-    { color: palette.blue.light, amplitude: 0.23, glow: 0.78, thickness: 0.75 },
+    { color: palette.blue.light, amplitude: 0.23, glow: 0.78, thickness: 0.65 },
   ],
 };
