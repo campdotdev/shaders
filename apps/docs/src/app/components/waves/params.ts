@@ -14,6 +14,7 @@ export interface Params {
   glow: number;
   thickness: number;
   baseline: number;
+  braiding: number;
   layers: Layer[];
 }
 
@@ -27,6 +28,7 @@ export const INITIAL: Params = {
   glow: 0.72,
   thickness: 0.65,
   baseline: 0.08,
+  braiding: 0.6,
   layers: [
     { color: palette.red.light, amplitude: 0.14, glow: 0.55, thickness: 0.45 },
     { color: palette.amber.base, amplitude: 0.17, glow: 0.62, thickness: 0.55 },

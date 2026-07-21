@@ -54,6 +54,12 @@ export interface WavesProps {
    * static value or an animation signal.
    */
   baseline?: AnimatableProp<number>;
+  /**
+   * How restlessly lines weave apart and re-converge. 0 = a frozen braid
+   * that scrolls as one. 1 matches the reference feel. Defaults to 0.6.
+   * Accepts a static value or an animation signal.
+   */
+  braiding?: AnimatableProp<number>;
 }
 
 // Interim default layer set — Task 7 replaces it with the redesigned
@@ -73,11 +79,13 @@ export function Waves({
   glow = 0.72,
   thickness = 0.65,
   baseline = 0.08,
+  braiding = 0.6,
 }: WavesProps) {
   return (
     <WavesShader
       amplitude={amplitude}
       baseline={baseline}
+      braiding={braiding}
       frequency={frequency}
       glow={glow}
       layers={layers}

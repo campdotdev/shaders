@@ -30,6 +30,7 @@ const formatJsx = (params: Params) =>
     glow={${formatNumber(params.glow)}}
     thickness={${formatNumber(params.thickness)}}
     baseline={${formatNumber(params.baseline)}}
+    braiding={${formatNumber(params.braiding)}}
     layers={[
     ${formatLayers(params.layers)}
     ]}
@@ -44,6 +45,7 @@ const formatParams = (params: Params) =>
   glow: ${formatNumber(params.glow)},
   thickness: ${formatNumber(params.thickness)},
   baseline: ${formatNumber(params.baseline)},
+  braiding: ${formatNumber(params.braiding)},
   layers: [
     ${formatLayers(params.layers)}
   ],
@@ -81,6 +83,7 @@ export default function WavesPage() {
     pane.addBinding(local, 'glow', { min: 0, max: 3, step: 0.01 });
     pane.addBinding(local, 'thickness', { min: 0.1, max: 4, step: 0.01 });
     pane.addBinding(local, 'baseline', { min: -1, max: 1, step: 0.01 });
+    pane.addBinding(local, 'braiding', { min: 0, max: 2, step: 0.01 });
     pane.addBlade({ view: 'separator' });
 
     const layersFolder = pane.addFolder({ title: 'Layers' });

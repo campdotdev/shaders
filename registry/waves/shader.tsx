@@ -58,6 +58,12 @@ export interface WavesShaderProps {
    * animation signal.
    */
   baseline: AnimatableProp<number>;
+  /**
+   * How restlessly lines weave apart and re-converge. 0 = a frozen braid
+   * that scrolls as one. 1 matches the reference feel. Accepts a static
+   * value or an animation signal.
+   */
+  braiding: AnimatableProp<number>;
 }
 
 const DEFAULT_AMPLITUDE = 0.2;
@@ -69,6 +75,9 @@ const DEFAULT_LAYER_COLOR = '#ff6f6a';
 const SCROLL_RATE = 2;
 // Fixed phase gap between neighboring lines. Gate-tunable.
 const LINE_STAGGER = 0.5;
+// How fast the braid's phase spread grows per speed-scaled second, at
+// braiding = 1. Gate-tunable.
+const BRAID_RATE = 0.2;
 
 export function WavesShader(props: WavesShaderProps) {
   const shaderContext = useShaderContext();
@@ -79,6 +88,7 @@ export function WavesShader(props: WavesShaderProps) {
   const glowUniform = useAnimatableUniform<number>(props.glow);
   const thicknessUniform = useAnimatableUniform<number>(props.thickness);
   const baselineUniform = useAnimatableUniform<number>(props.baseline);
+  const braidingUniform = useAnimatableUniform<number>(props.braiding);
 
   const layersKey = props.layers
     .map(
@@ -121,7 +131,15 @@ export function WavesShader(props: WavesShaderProps) {
         layer.color ?? DEFAULT_LAYER_COLOR,
       );
 
-      const wave = sin(wavePhase.add(LINE_STAGGER * layerIndex));
+      // Per-line phase stagger with a time-growing term: at braiding 0 the
+      // spread is frozen; above 0 it evolves, so lines periodically pass
+      // through full convergence (spread ≡ 0 mod 2π) and fan back out.
+      const lineStagger = braidingUniform
+        .mul(BRAID_RATE)
+        .mul(time)
+        .add(LINE_STAGGER)
+        .mul(layerIndex);
+      const wave = sin(wavePhase.add(lineStagger));
       const layerY = yBase.add(wave.mul(ampValue));
 
       const width = layerY.mul(150).abs().reciprocal().mul(thicknessValue).mul(glowValue);
@@ -166,6 +184,7 @@ export function WavesShader(props: WavesShaderProps) {
     glowUniform,
     thicknessUniform,
     baselineUniform,
+    braidingUniform,
   ]);
 
   return null;
