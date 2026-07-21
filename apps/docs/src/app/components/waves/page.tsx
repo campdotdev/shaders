@@ -29,6 +29,7 @@ const formatJsx = (params: Params) =>
     speed={${formatNumber(params.speed)}}
     glow={${formatNumber(params.glow)}}
     thickness={${formatNumber(params.thickness)}}
+    softness={${formatNumber(params.softness)}}
     baseline={${formatNumber(params.baseline)}}
     braiding={${formatNumber(params.braiding)}}
     breathing={${formatNumber(params.breathing)}}
@@ -45,6 +46,7 @@ const formatParams = (params: Params) =>
   speed: ${formatNumber(params.speed)},
   glow: ${formatNumber(params.glow)},
   thickness: ${formatNumber(params.thickness)},
+  softness: ${formatNumber(params.softness)},
   baseline: ${formatNumber(params.baseline)},
   braiding: ${formatNumber(params.braiding)},
   breathing: ${formatNumber(params.breathing)},
@@ -84,6 +86,7 @@ export default function WavesPage() {
     pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
     pane.addBinding(local, 'glow', { min: 0, max: 3, step: 0.01 });
     pane.addBinding(local, 'thickness', { min: 0.1, max: 4, step: 0.01 });
+    pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 });
     pane.addBinding(local, 'baseline', { min: -1, max: 1, step: 0.01 });
     pane.addBinding(local, 'braiding', { min: 0, max: 2, step: 0.01 });
     pane.addBinding(local, 'breathing', { min: 0, max: 1, step: 0.01 });

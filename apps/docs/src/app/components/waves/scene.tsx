@@ -32,6 +32,7 @@ export default function WavesScene({
         frequency={params.frequency}
         glow={params.glow}
         layers={layers}
+        softness={params.softness}
         speed={params.speed}
         thickness={params.thickness}
       />
