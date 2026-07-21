@@ -74,10 +74,10 @@ const DEFAULT_LAYER_COLOR = '#ff6f6a';
 // Phase radians the shared wave scrolls per speed-scaled second. Gate-tunable.
 const SCROLL_RATE = 2;
 // Fixed phase gap between neighboring lines. Gate-tunable.
-const LINE_STAGGER = 0.5;
+const LINE_STAGGER = 0.35;
 // How fast the braid's phase spread grows per speed-scaled second, at
 // braiding = 1. Gate-tunable.
-const BRAID_RATE = 0.2;
+const BRAID_RATE = 0.35;
 
 export function WavesShader(props: WavesShaderProps) {
   const shaderContext = useShaderContext();
