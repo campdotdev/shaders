@@ -170,8 +170,8 @@ export default function WavesPage() {
                 color: { formatLocked: true },
               })
               .on('change', (event) => {
+                // Write-back only — the pane-wide 'change' listener syncs.
                 layer.colors[stopIndex] = event.value;
-                sync();
               });
 
             const removeStopButton = stopRow.addButton({ title: 'Remove stop' });
@@ -267,8 +267,8 @@ export default function WavesPage() {
         <h1 style={{ marginTop: 0 }}>&lt;Waves /&gt;</h1>
         <p>
           A coherent bundle of additive wave lines in an analogous blue-to-violet run. The lines
-          share one wave and braid, breathe, and flare apart at a focal point; each line takes a
-          flat color or a gradient.
+          share one wave and braid, breathe, and fray wide toward the canvas edges; each line takes
+          a flat color or a gradient.
         </p>
         <pre
           style={{

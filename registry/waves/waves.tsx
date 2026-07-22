@@ -61,7 +61,7 @@ export interface WavesProps {
   baseline?: AnimatableProp<number>;
   /**
    * How restlessly lines weave apart and re-converge. 0 = a frozen braid
-   * that scrolls as one. 1 matches the reference feel. Defaults to 0.
+   * that scrolls as one. 1 gives a lively weave. Defaults to 0.
    * Accepts a static value or an animation signal.
    */
   braiding?: AnimatableProp<number>;
@@ -99,14 +99,14 @@ export interface WavesProps {
 // hue run (205→340) tracks the brand palette's cool accent arc
 // (sky→blue→violet→purple).
 export const DEFAULT_LAYERS: WaveLayer[] = [
-  { color: ['oklch(0.85 0.12 205)', 'oklch(0.85 0.12 235)'] },
-  { color: ['oklch(0.8 0.14 220)', 'oklch(0.8 0.14 250)'] },
-  { color: ['oklch(0.75 0.16 235)', 'oklch(0.75 0.16 265)'] },
-  { color: ['oklch(0.7 0.17 250)', 'oklch(0.7 0.17 280)'] },
-  { color: ['oklch(0.65 0.17 265)', 'oklch(0.65 0.17 295)'] },
-  { color: ['oklch(0.6 0.16 280)', 'oklch(0.6 0.16 310)'] },
-  { color: ['oklch(0.55 0.15 295)', 'oklch(0.55 0.15 325)'] },
-  { color: ['oklch(0.5 0.13 310)', 'oklch(0.5 0.13 340)'] },
+  { color: ['oklch(0.85 0.12 235)', 'oklch(0.85 0.12 205)'] },
+  { color: ['oklch(0.8 0.14 250)', 'oklch(0.8 0.14 220)'] },
+  { color: ['oklch(0.75 0.16 265)', 'oklch(0.75 0.16 235)'] },
+  { color: ['oklch(0.7 0.17 280)', 'oklch(0.7 0.17 250)'] },
+  { color: ['oklch(0.65 0.17 295)', 'oklch(0.65 0.17 265)'] },
+  { color: ['oklch(0.6 0.16 310)', 'oklch(0.6 0.16 280)'] },
+  { color: ['oklch(0.55 0.15 325)', 'oklch(0.55 0.15 295)'] },
+  { color: ['oklch(0.5 0.13 340)', 'oklch(0.5 0.13 310)'] },
 ];
 
 export function Waves({
