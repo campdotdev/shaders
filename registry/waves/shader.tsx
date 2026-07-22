@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 import { elapsedTime } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
-import { float, max, pow, sin, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { float, max, sin, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
@@ -75,18 +75,12 @@ export interface WavesShaderProps {
    * At 1.5 lines are 2.5× wider at full flare. Accepts a static value or an
    * animation signal.
    */
-  dispersion: AnimatableProp<number>;
-  /**
-   * Horizontal focal point where lines are tightest, −1 (left edge) to 1
-   * (right edge). 0 = canvas center. Accepts a static value or an animation
-   * signal.
-   */
-  dispersionCenter: AnimatableProp<number>;
+  flare: AnimatableProp<number>;
   /**
    * Distance from the focal point at which the fray reaches full width,
    * 0..1 canvas half-widths. Accepts a static value or an animation signal.
    */
-  dispersionRadius: AnimatableProp<number>;
+  flareRadius: AnimatableProp<number>;
 }
 
 const DEFAULT_AMPLITUDE = 0.2;
@@ -110,6 +104,10 @@ const LINE_STAGGER = 0.35;
 const BRAID_RATE = 0.35;
 // Phase gap between neighboring lines' height pulses, radians. Gate-tunable.
 const PULSE_STAGGER = 0.35;
+// Where the flare begins easing in, as a fraction of the focal
+// radius. 0 = a continuous taper from the focal point outward (no dead
+// zone), which stays smooth even at small radii. Gate-tunable.
+const FLARE_START = 0;
 
 export function WavesShader(props: WavesShaderProps) {
   const shaderContext = useShaderContext();
@@ -122,9 +120,8 @@ export function WavesShader(props: WavesShaderProps) {
   const baselineUniform = useAnimatableUniform<number>(props.baseline);
   const braidingUniform = useAnimatableUniform<number>(props.braiding);
   const breathingUniform = useAnimatableUniform<number>(props.breathing);
-  const dispersionUniform = useAnimatableUniform<number>(props.dispersion);
-  const dispersionCenterUniform = useAnimatableUniform<number>(props.dispersionCenter);
-  const dispersionRadiusUniform = useAnimatableUniform<number>(props.dispersionRadius);
+  const flareStrengthUniform = useAnimatableUniform<number>(props.flare);
+  const flareRadiusUniform = useAnimatableUniform<number>(props.flareRadius);
 
   const layersKey = props.layers
     .map(
@@ -147,16 +144,13 @@ export function WavesShader(props: WavesShaderProps) {
     const time = elapsedTime.mul(speedUniform);
     const wavePhase = samplePosition.x.mul(freqUniform).mul(Math.PI).sub(time.mul(SCROLL_RATE));
 
-    // Eighth-power thickness flare: near-zero across the middle, exploding
-    // near the focal radius — a switch with a soft knee. clamp caps it so the
-    // flare plateaus past the radius instead of growing without bound. The
-    // max() guards divide-by-zero at radius 0.
-    const flareInput = samplePosition.x
-      .sub(dispersionCenterUniform)
-      .abs()
-      .div(max(dispersionRadiusUniform, 0.05))
-      .clamp(0, 1);
-    const flare = pow(flareInput, 8).mul(dispersionUniform).add(1);
+    // Thickness flare with C1-smooth ends: smoothstep has zero slope at BOTH
+    // endpoints, so the widening eases in at FLARE_START and eases out at the
+    // radius with no visible crease (a pow+clamp curve Mach-banded there).
+    // Squaring keeps the late-knee character. max() guards radius 0.
+    const flareInput = samplePosition.x.abs().div(max(flareRadiusUniform, 0.05));
+    const flareRamp = smoothstep(float(FLARE_START), float(1), flareInput);
+    const flare = flareRamp.mul(flareRamp).mul(flareStrengthUniform).add(1);
 
     let waveColor = vec3(0, 0, 0);
 
@@ -206,10 +200,15 @@ export function WavesShader(props: WavesShaderProps) {
       // bandT runs 1 at the line center to 0 at the band edge; s²(3−2s) is
       // the smoothstep polynomial.
       const distanceFromLine = layerY.abs();
-      const halfWidth = thicknessValue.mul(BAND_HALF_WIDTH).mul(flare);
+      const baseHalfWidth = thicknessValue.mul(BAND_HALF_WIDTH);
+      const halfWidth = baseHalfWidth.mul(flare);
       const bandT = distanceFromLine.div(halfWidth).oneMinus().max(0);
       const core = bandT.mul(bandT).mul(float(3).sub(bandT.mul(2)));
-      const halo = halfWidth.mul(HALO_WEIGHT).div(distanceFromLine.add(HALO_SOFTENING));
+      // The halo rides the UNFLARED width: its 1/distance field is nonzero
+      // canvas-wide, so flaring it lifts the whole background past the knee
+      // and paints a vertical brightness step (the reference flares only the
+      // band).
+      const halo = baseHalfWidth.mul(HALO_WEIGHT).div(distanceFromLine.add(HALO_SOFTENING));
       const intensity = core.add(halo).mul(glowValue);
 
       waveColor = waveColor.add(
@@ -254,9 +253,8 @@ export function WavesShader(props: WavesShaderProps) {
     baselineUniform,
     braidingUniform,
     breathingUniform,
-    dispersionUniform,
-    dispersionCenterUniform,
-    dispersionRadiusUniform,
+    flareStrengthUniform,
+    flareRadiusUniform,
   ]);
 
   return null;

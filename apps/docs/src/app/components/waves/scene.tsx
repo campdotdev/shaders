@@ -29,9 +29,8 @@ export default function WavesScene({
         baseline={params.baseline}
         braiding={params.braiding}
         breathing={params.breathing}
-        dispersion={params.dispersion}
-        dispersionCenter={params.dispersionCenter}
-        dispersionRadius={params.dispersionRadius}
+        flare={params.flare}
+        flareRadius={params.flareRadius}
         frequency={params.frequency}
         glow={params.glow}
         layers={layers}
