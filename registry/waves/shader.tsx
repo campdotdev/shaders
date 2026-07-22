@@ -124,8 +124,14 @@ const DEFAULT_LAYER_COLOR = '#ff6f6a';
 // Half of the saturated body's height at thickness 1, in canvas units.
 // Gate-tunable.
 const BAND_HALF_WIDTH = 0.02;
-// Keeps the divide finite at the spine, where distance is 0. Canvas units.
-const SPINE_EPSILON = 1e-4;
+// Distance beyond the body edge at which the halo falloff hits its knee,
+// in canvas units. Fixed — deliberately NOT scaled by thickness, so
+// widening a line translates its edge without amplifying its light.
+// Matches the default line's half-width. Gate-tunable.
+const HALO_SCALE = 0.013;
+// Keeps the divide finite at the body edge, where the outside distance is
+// 0. Canvas units.
+const EDGE_EPSILON = 1e-4;
 // Falloff exponent at glow 0: a near-cliff edge. Gate-tunable.
 const EXPONENT_CRISP = 6;
 // Falloff exponent at glow 1: the laser's 1/distance haze. Gate-tunable.
@@ -274,18 +280,20 @@ export function WavesShader({
       const layerY = yBase.add(wave.mul(ampValue).mul(envelope));
 
       // Overdriven-glow profile: one divergent glow field under a soft
-      // ceiling. rawGlow explodes toward the spine and falls off as
-      // (w/d)^p away from it; 1 − e^(−x) pins everything past the knee at
-      // 1 (the solid body) while leaving the dim tail nearly untouched.
-      // Thickness moves the saturation boundary — width, never brightness.
+      // ceiling. The falloff is measured from the body's EDGE, not its
+      // spine: inside the body distanceOutside is 0, so the field is huge
+      // and 1 − e^(−x) pins it at 1 (the solid plateau). Thickness
+      // TRANSLATES the edge outward — the tail beyond it never scales
+      // with width, so widening a line adds body, never scene light.
       const distanceFromLine = layerY.abs();
       const halfWidth = thicknessValue.mul(BAND_HALF_WIDTH).mul(flare);
+      const distanceOutside = distanceFromLine.sub(halfWidth).max(0);
       // Glow picks the falloff exponent — a softness dial, not a gain. Low
       // glow → high exponent → the tail dies within a pixel of the body
       // (crisp ribbon). High glow → exponent 1 → the 1/distance laser
       // haze. clamp keeps per-layer scaling inside the mapped range.
       const exponent = mix(float(EXPONENT_CRISP), float(EXPONENT_HAZY), glowValue.clamp(0, 1));
-      const rawGlow = halfWidth.div(distanceFromLine.add(SPINE_EPSILON)).pow(exponent);
+      const rawGlow = float(HALO_SCALE).div(distanceOutside.add(EDGE_EPSILON)).pow(exponent);
       // Brightness multiplies AFTER the ceiling: pre-ceiling scaling can't
       // dim a divergent profile (the plateau still saturates to 1) — it
       // only moves the shoulder, which reads as width.
