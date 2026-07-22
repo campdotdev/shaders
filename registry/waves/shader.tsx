@@ -106,16 +106,16 @@ export interface WavesShaderProps {
 }
 
 const DEFAULT_AMPLITUDE = 0.2;
-const DEFAULT_GLOW = 0.72;
 const DEFAULT_THICKNESS = 0.65;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
-// Half the core band's height at thickness 1, in canvas units. Gate-tunable.
+// Half of the saturated body's height at thickness 1, in canvas units.
+// Gate-tunable.
 const BAND_HALF_WIDTH = 0.02;
-// Halo brightness relative to the core. Gate-tunable.
-const HALO_WEIGHT = 0.4;
-// Keeps the 1/distance halo finite at the line center. Gate-tunable.
-const HALO_SOFTENING = 0.003;
+// Keeps the divide finite at the spine, where distance is 0. Canvas units.
+const SPINE_EPSILON = 1e-4;
+// Falloff exponent while glow is unwired (Phase 1 only): mid softness.
+const FIXED_EXPONENT = 3;
 
 // Phase radians the shared wave scrolls per speed-scaled second. Gate-tunable.
 const SCROLL_RATE = 2;
@@ -206,8 +206,6 @@ export function WavesShader({
         layer.amplitude === undefined
           ? ampUniform
           : ampUniform.mul(layer.amplitude / DEFAULT_AMPLITUDE);
-      const glowValue =
-        layer.glow === undefined ? glowUniform : glowUniform.mul(layer.glow / DEFAULT_GLOW);
       const thicknessValue =
         layer.thickness === undefined
           ? thicknessUniform
@@ -253,21 +251,15 @@ export function WavesShader({
       const envelope = pulse.mul(breathingUniform).mul(depthWeight).add(1);
       const layerY = yBase.add(wave.mul(ampValue).mul(envelope));
 
-      // Hybrid profile: a crisp smoothstep core inside a finite band, plus a
-      // subdued 1/distance halo so the lines keep their luminous identity.
-      // bandT runs 1 at the line center to 0 at the band edge; s²(3−2s) is
-      // the smoothstep polynomial.
+      // Overdriven-glow profile: one divergent glow field under a soft
+      // ceiling. rawGlow explodes toward the spine and falls off as
+      // (w/d)^p away from it; 1 − e^(−x) pins everything past the knee at
+      // 1 (the solid body) while leaving the dim tail nearly untouched.
+      // Thickness moves the saturation boundary — width, never brightness.
       const distanceFromLine = layerY.abs();
-      const baseHalfWidth = thicknessValue.mul(BAND_HALF_WIDTH);
-      const halfWidth = baseHalfWidth.mul(flare);
-      const bandT = distanceFromLine.div(halfWidth).oneMinus().max(0);
-      const core = bandT.mul(bandT).mul(float(3).sub(bandT.mul(2)));
-      // The halo rides the UNFLARED width: its 1/distance field is nonzero
-      // canvas-wide, so flaring it lifts the whole background past the knee
-      // and paints a vertical brightness step (the reference flares only the
-      // band).
-      const halo = baseHalfWidth.mul(HALO_WEIGHT).div(distanceFromLine.add(HALO_SOFTENING));
-      const intensity = core.add(halo).mul(glowValue);
+      const halfWidth = thicknessValue.mul(BAND_HALF_WIDTH).mul(flare);
+      const rawGlow = halfWidth.div(distanceFromLine.add(SPINE_EPSILON)).pow(FIXED_EXPONENT);
+      const intensity = rawGlow.negate().exp().oneMinus();
 
       waveColor = waveColor.add(vec3(lineColor).mul(intensity));
     }
