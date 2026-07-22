@@ -135,10 +135,11 @@ const DEFAULT_LAYER_COLOR = '#ff6f6a';
 // Half of the saturated body's height at thickness 1, in canvas units.
 // Gate-tunable.
 const BAND_HALF_WIDTH = 0.02;
-// Distance beyond the body edge at which the halo falloff hits its knee,
-// in canvas units. Fixed — deliberately NOT scaled by thickness, so
-// widening a line translates its edge without amplifying its light.
-// Matches the default line's half-width. Gate-tunable.
+// Ceiling on the halo falloff scale (distance beyond the body edge at
+// which it hits its knee), in canvas units. Lines at or above the default
+// width wear this fixed skirt — widening never amplifies light — while
+// thinner bodies carry a proportionally thinner skirt, so a needle body
+// reads needle-thin. Matches the default line's half-width. Gate-tunable.
 const HALO_SCALE = 0.013;
 // Keeps the divide finite at the body edge, where the outside distance is
 // 0. Canvas units.
@@ -313,7 +314,10 @@ export function WavesShader({
       // (crisp ribbon). High glow → exponent 1 → the 1/distance laser
       // haze. clamp keeps per-layer scaling inside the mapped range.
       const exponent = mix(float(EXPONENT_CRISP), float(EXPONENT_HAZY), glowValue.clamp(0, 1));
-      const rawGlow = float(HALO_SCALE).div(distanceOutside.add(EDGE_EPSILON)).pow(exponent);
+      // min caps the skirt for wide lines and shrinks it with the body for
+      // thin ones — apparent width tracks thickness all the way down.
+      const haloScale = halfWidth.min(HALO_SCALE);
+      const rawGlow = haloScale.div(distanceOutside.add(EDGE_EPSILON)).pow(exponent);
       // Brightness multiplies AFTER the ceiling: pre-ceiling scaling can't
       // dim a divergent profile (the plateau still saturates to 1) — it
       // only moves the shoulder, which reads as width.
