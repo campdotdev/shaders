@@ -4,6 +4,7 @@ export interface Layer {
   colors: string[];
   amplitude: number;
   glow: number;
+  brightness: number;
   thickness: number;
 }
 
@@ -12,6 +13,7 @@ export interface Params {
   frequency: number;
   speed: number;
   glow: number;
+  brightness: number;
   thickness: number;
   baseline: number;
   braiding: number;
@@ -34,6 +36,7 @@ export const INITIAL: Params = {
   frequency: 1,
   speed: 1,
   glow: 0.5,
+  brightness: 1,
   thickness: 0.65,
   baseline: 0,
   braiding: 0,
@@ -47,48 +50,56 @@ export const INITIAL: Params = {
       colors: ['oklch(0.85 0.12 235)', 'oklch(0.85 0.12 205)'],
       amplitude: 0.2,
       glow: 0.5,
+      brightness: 1,
       thickness: 0.65,
     },
     {
       colors: ['oklch(0.8 0.14 250)', 'oklch(0.8 0.14 220)'],
       amplitude: 0.2,
       glow: 0.5,
+      brightness: 1,
       thickness: 0.65,
     },
     {
       colors: ['oklch(0.75 0.16 265)', 'oklch(0.75 0.16 235)'],
       amplitude: 0.2,
       glow: 0.5,
+      brightness: 1,
       thickness: 0.65,
     },
     {
       colors: ['oklch(0.7 0.17 280)', 'oklch(0.7 0.17 250)'],
       amplitude: 0.2,
       glow: 0.5,
+      brightness: 1,
       thickness: 0.65,
     },
     {
       colors: ['oklch(0.65 0.17 295)', 'oklch(0.65 0.17 265)'],
       amplitude: 0.2,
       glow: 0.5,
+      brightness: 1,
       thickness: 0.65,
     },
     {
       colors: ['oklch(0.6 0.16 310)', 'oklch(0.6 0.16 280)'],
       amplitude: 0.2,
       glow: 0.5,
+      brightness: 1,
       thickness: 0.65,
     },
     {
       colors: ['oklch(0.55 0.15 325)', 'oklch(0.55 0.15 295)'],
       amplitude: 0.2,
       glow: 0.5,
+      brightness: 1,
       thickness: 0.65,
     },
     {
       colors: ['oklch(0.5 0.13 340)', 'oklch(0.5 0.13 310)'],
       amplitude: 0.2,
       glow: 0.5,
+      brightness: 1,
       thickness: 0.65,
     },
   ],

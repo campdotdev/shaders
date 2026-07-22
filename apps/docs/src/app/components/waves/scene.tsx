@@ -22,6 +22,7 @@ export default function WavesScene({
       color: layer.colors.length === 1 && firstColor !== undefined ? firstColor : layer.colors,
       amplitude: layer.amplitude,
       glow: layer.glow,
+      brightness: layer.brightness,
       thickness: layer.thickness,
     };
   });
@@ -33,6 +34,7 @@ export default function WavesScene({
         baseline={params.baseline}
         braiding={params.braiding}
         breathing={params.breathing}
+        brightness={params.brightness}
         colorDrift={params.colorDrift}
         colorSpace={params.colorSpace}
         flare={params.flare}

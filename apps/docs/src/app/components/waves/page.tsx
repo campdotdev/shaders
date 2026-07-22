@@ -28,7 +28,7 @@ const formatColor = (colors: string[]) =>
   colors.length === 1 ? `'${colors[0]}'` : `[${colors.map((color) => `'${color}'`).join(', ')}]`;
 
 const formatLayer = (layer: Layer) =>
-  `{ color: ${formatColor(layer.colors)}, amplitude: ${formatNumber(layer.amplitude)}, glow: ${formatNumber(layer.glow)}, thickness: ${formatNumber(layer.thickness)} }`;
+  `{ color: ${formatColor(layer.colors)}, amplitude: ${formatNumber(layer.amplitude)}, glow: ${formatNumber(layer.glow)}, brightness: ${formatNumber(layer.brightness)}, thickness: ${formatNumber(layer.thickness)} }`;
 
 const formatLayers = (layers: Layer[]) => layers.map(formatLayer).join(',\n    ');
 
@@ -42,6 +42,7 @@ const formatJsx = (params: Params) =>
     frequency={${formatNumber(params.frequency)}}
     speed={${formatNumber(params.speed)}}
     glow={${formatNumber(params.glow)}}
+    brightness={${formatNumber(params.brightness)}}
     thickness={${formatNumber(params.thickness)}}
     baseline={${formatNumber(params.baseline)}}
     braiding={${formatNumber(params.braiding)}}
@@ -62,6 +63,7 @@ const formatParams = (params: Params) =>
   frequency: ${formatNumber(params.frequency)},
   speed: ${formatNumber(params.speed)},
   glow: ${formatNumber(params.glow)},
+  brightness: ${formatNumber(params.brightness)},
   thickness: ${formatNumber(params.thickness)},
   baseline: ${formatNumber(params.baseline)},
   braiding: ${formatNumber(params.braiding)},
@@ -108,6 +110,7 @@ export default function WavesPage() {
     pane.addBinding(local, 'frequency', { min: 0.1, max: 10, step: 0.05 });
     pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
     pane.addBinding(local, 'glow', { min: 0, max: 1, step: 0.01 });
+    pane.addBinding(local, 'brightness', { min: 0, max: 2, step: 0.01 });
     pane.addBinding(local, 'thickness', { min: 0.1, max: 4, step: 0.01 });
     pane.addBinding(local, 'baseline', { min: -1, max: 1, step: 0.01 });
     pane.addBinding(local, 'braiding', { min: 0, max: 2, step: 0.01 });
@@ -143,6 +146,7 @@ export default function WavesPage() {
 
         row.addBinding(layer, 'amplitude', { min: 0, max: 0.5, step: 0.005 });
         row.addBinding(layer, 'glow', { min: 0, max: 1, step: 0.01 });
+        row.addBinding(layer, 'brightness', { min: 0, max: 2, step: 0.01 });
         row.addBinding(layer, 'thickness', { min: 0.1, max: 4, step: 0.01 });
 
         const stopsFolder = row.addFolder({ title: 'Colors' });
@@ -219,6 +223,7 @@ export default function WavesPage() {
           colors: last ? [...last.colors] : ['oklch(0.6 0.15 250)'],
           amplitude: last?.amplitude ?? INITIAL.amplitude,
           glow: last?.glow ?? INITIAL.glow,
+          brightness: last?.brightness ?? INITIAL.brightness,
           thickness: last?.thickness ?? INITIAL.thickness,
         };
 

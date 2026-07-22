@@ -32,6 +32,8 @@ interface WavesShaderLayer {
   amplitude?: number;
   /** This line's softness. */
   glow?: number;
+  /** This line's brightness. */
+  brightness?: number;
   /** This line's width. */
   thickness?: number;
 }
@@ -64,6 +66,12 @@ export interface WavesShaderProps {
    * signal.
    */
   glow: AnimatableProp<number>;
+  /**
+   * Light output of the lines, 0 = invisible, 1 = full. Dims uniformly
+   * without changing apparent width. Accepts a static value or an
+   * animation signal.
+   */
+  brightness: AnimatableProp<number>;
   /**
    * Master line width. Larger values give broader lines. Accepts a static
    * value or an animation signal.
@@ -109,6 +117,7 @@ export interface WavesShaderProps {
 
 const DEFAULT_AMPLITUDE = 0.2;
 const DEFAULT_GLOW = 0.5;
+const DEFAULT_BRIGHTNESS = 1;
 const DEFAULT_THICKNESS = 0.65;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
@@ -142,6 +151,7 @@ export function WavesShader({
   frequency,
   speed,
   glow,
+  brightness,
   thickness,
   baseline,
   braiding,
@@ -157,6 +167,7 @@ export function WavesShader({
   const freqUniform = useAnimatableUniform<number>(frequency);
   const speedUniform = useAnimatableUniform<number>(speed);
   const glowUniform = useAnimatableUniform<number>(glow);
+  const brightnessUniform = useAnimatableUniform<number>(brightness);
   const thicknessUniform = useAnimatableUniform<number>(thickness);
   const baselineUniform = useAnimatableUniform<number>(baseline);
   const braidingUniform = useAnimatableUniform<number>(braiding);
@@ -168,7 +179,7 @@ export function WavesShader({
   const layersKey = layers
     .map(
       (layer) =>
-        `${Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}`,
+        `${Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.brightness ?? ''}|${layer.thickness ?? ''}`,
     )
     .join('||');
 
@@ -213,6 +224,10 @@ export function WavesShader({
           : ampUniform.mul(layer.amplitude / DEFAULT_AMPLITUDE);
       const glowValue =
         layer.glow === undefined ? glowUniform : glowUniform.mul(layer.glow / DEFAULT_GLOW);
+      const brightnessValue =
+        layer.brightness === undefined
+          ? brightnessUniform
+          : brightnessUniform.mul(layer.brightness / DEFAULT_BRIGHTNESS);
       const thicknessValue =
         layer.thickness === undefined
           ? thicknessUniform
@@ -271,7 +286,10 @@ export function WavesShader({
       // haze. clamp keeps per-layer scaling inside the mapped range.
       const exponent = mix(float(EXPONENT_CRISP), float(EXPONENT_HAZY), glowValue.clamp(0, 1));
       const rawGlow = halfWidth.div(distanceFromLine.add(SPINE_EPSILON)).pow(exponent);
-      const intensity = rawGlow.negate().exp().oneMinus();
+      // Brightness multiplies AFTER the ceiling: pre-ceiling scaling can't
+      // dim a divergent profile (the plateau still saturates to 1) — it
+      // only moves the shoulder, which reads as width.
+      const intensity = rawGlow.negate().exp().oneMinus().mul(brightnessValue);
 
       waveColor = waveColor.add(vec3(lineColor).mul(intensity));
     }
@@ -309,6 +327,7 @@ export function WavesShader({
     freqUniform,
     speedUniform,
     glowUniform,
+    brightnessUniform,
     thicknessUniform,
     baselineUniform,
     braidingUniform,
