@@ -35,7 +35,7 @@ export const INITIAL: Params = {
   speed: 1,
   glow: 0.72,
   thickness: 0.65,
-  baseline: 0.08,
+  baseline: 0,
   braiding: 0.6,
   breathing: 0.5,
   flare: 1.5,
