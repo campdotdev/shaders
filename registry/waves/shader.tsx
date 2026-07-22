@@ -25,7 +25,11 @@ interface WavesShaderLayer {
 }
 
 export interface WavesShaderProps {
-  /** The wave lines to draw. Lines emit light additively — overlaps brighten. */
+  /**
+   * The wave lines to draw. Lines emit light additively — overlaps
+   * brighten. The first line breathes deepest; later lines calm toward the
+   * back.
+   */
   layers: WavesShaderLayer[];
   /**
    * Wave height of the bundle, as a fraction of half the canvas height.

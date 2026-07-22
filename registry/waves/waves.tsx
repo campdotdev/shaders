@@ -21,7 +21,11 @@ export interface WaveLayer {
 }
 
 export interface WavesProps {
-  /** The wave lines to draw. Lines emit light additively — overlaps brighten. */
+  /**
+   * The wave lines to draw. Lines emit light additively — overlaps
+   * brighten. The first line breathes deepest; later lines calm toward the
+   * back.
+   */
   layers?: WaveLayer[];
   /**
    * Wave height of the bundle, as a fraction of half the canvas height.
@@ -88,13 +92,18 @@ export interface WavesProps {
   colorSpace?: ColorSpace;
 }
 
-// Interim default layer set — Task 7 replaces it with the redesigned
-// 8-line palette.
+// Default layer set: an 8-line analogous blue→violet bundle. Lightness falls
+// along the array for depth; all other per-line fields ride the globals —
+// variation comes from the movement system.
 export const DEFAULT_LAYERS: WaveLayer[] = [
-  { color: '#ff6f6a', amplitude: 0.2, glow: 0.72, thickness: 0.65 }, // palette.red.light
-  { color: '#ecb100', amplitude: 0.2, glow: 0.72, thickness: 0.65 }, // palette.amber.base
-  { color: '#0ae24b', amplitude: 0.2, glow: 0.72, thickness: 0.65 }, // palette.green.base
-  { color: '#4370f0', amplitude: 0.2, glow: 0.72, thickness: 0.65 }, // palette.blue.light
+  { color: 'oklch(0.85 0.12 220)' },
+  { color: 'oklch(0.8 0.14 235)' },
+  { color: 'oklch(0.75 0.16 250)' },
+  { color: 'oklch(0.7 0.17 265)' },
+  { color: 'oklch(0.65 0.17 280)' },
+  { color: 'oklch(0.6 0.16 295)' },
+  { color: 'oklch(0.55 0.15 310)' },
+  { color: 'oklch(0.5 0.13 325)' },
 ];
 
 export function Waves({
