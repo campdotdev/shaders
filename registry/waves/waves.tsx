@@ -61,7 +61,7 @@ export interface WavesProps {
   baseline?: AnimatableProp<number>;
   /**
    * How restlessly lines weave apart and re-converge. 0 = a frozen braid
-   * that scrolls as one. 1 matches the reference feel. Defaults to 0.6.
+   * that scrolls as one. 1 matches the reference feel. Defaults to 0.
    * Accepts a static value or an animation signal.
    */
   braiding?: AnimatableProp<number>;
@@ -92,19 +92,21 @@ export interface WavesProps {
   colorSpace?: ColorSpace;
 }
 
-// Default layer set: an 8-line analogous blue→violet bundle. Lightness falls
-// along the array for depth; all other per-line fields ride the globals —
-// variation comes from the movement system. The hue run (220→325) tracks the
-// brand palette's cool accent arc (sky→blue→violet→purple).
+// Default layer set: an 8-line analogous blue→violet bundle. Each line is a
+// gentle 30° hue gradient along its length (so colorDrift is visible out of
+// the box); lightness falls along the array for depth; all other per-line
+// fields ride the globals — variation comes from the movement system. The
+// hue run (205→340) tracks the brand palette's cool accent arc
+// (sky→blue→violet→purple).
 export const DEFAULT_LAYERS: WaveLayer[] = [
-  { color: 'oklch(0.85 0.12 220)' },
-  { color: 'oklch(0.8 0.14 235)' },
-  { color: 'oklch(0.75 0.16 250)' },
-  { color: 'oklch(0.7 0.17 265)' },
-  { color: 'oklch(0.65 0.17 280)' },
-  { color: 'oklch(0.6 0.16 295)' },
-  { color: 'oklch(0.55 0.15 310)' },
-  { color: 'oklch(0.5 0.13 325)' },
+  { color: ['oklch(0.85 0.12 205)', 'oklch(0.85 0.12 235)'] },
+  { color: ['oklch(0.8 0.14 220)', 'oklch(0.8 0.14 250)'] },
+  { color: ['oklch(0.75 0.16 235)', 'oklch(0.75 0.16 265)'] },
+  { color: ['oklch(0.7 0.17 250)', 'oklch(0.7 0.17 280)'] },
+  { color: ['oklch(0.65 0.17 265)', 'oklch(0.65 0.17 295)'] },
+  { color: ['oklch(0.6 0.16 280)', 'oklch(0.6 0.16 310)'] },
+  { color: ['oklch(0.55 0.15 295)', 'oklch(0.55 0.15 325)'] },
+  { color: ['oklch(0.5 0.13 310)', 'oklch(0.5 0.13 340)'] },
 ];
 
 export function Waves({
@@ -115,7 +117,7 @@ export function Waves({
   glow = 0.72,
   thickness = 0.65,
   baseline = 0,
-  braiding = 0.6,
+  braiding = 0,
   breathing = 0.5,
   flare = 1.5,
   flareRadius = 0.9,
