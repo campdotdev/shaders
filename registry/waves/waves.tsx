@@ -18,15 +18,18 @@ export interface WaveLayer {
   glow?: number;
   /** This line's brightness. */
   brightness?: number;
+  /** This line's opacity. */
+  opacity?: number;
   /** This line's width. */
   thickness?: number;
 }
 
 export interface WavesProps {
   /**
-   * The wave lines to draw. Lines emit light additively — overlaps
-   * brighten. The first line breathes deepest; later lines calm toward the
-   * back.
+   * The wave lines to draw. At opacity 0.5 (the default) lines emit light
+   * additively — overlaps brighten. Above 0.5, bodies cover the lines
+   * behind them: the first line is frontmost. The first line breathes
+   * deepest; later lines calm toward the back.
    */
   layers?: WaveLayer[];
   /**
@@ -57,6 +60,13 @@ export interface WavesProps {
    * or an animation signal.
    */
   brightness?: AnimatableProp<number>;
+  /**
+   * Line presence on a three-look dial, 0..1. 0 = invisible; 0.5 = pure
+   * light — overlaps add and brighten; 1 = solid ribbons — the first
+   * layer is frontmost and covers the rest. Defaults to 0.5. Accepts a
+   * static value or an animation signal.
+   */
+  opacity?: AnimatableProp<number>;
   /**
    * Master line width. Larger values give broader lines. Defaults to 0.65.
    * Accepts a static value or an animation signal.
@@ -125,6 +135,7 @@ export function Waves({
   speed = 1,
   glow = 0.5,
   brightness = 1,
+  opacity = 0.5,
   thickness = 0.65,
   baseline = 0,
   braiding = 0,
@@ -148,6 +159,7 @@ export function Waves({
       frequency={frequency}
       glow={glow}
       layers={layers}
+      opacity={opacity}
       speed={speed}
       thickness={thickness}
     />

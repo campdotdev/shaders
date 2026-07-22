@@ -23,6 +23,7 @@ export default function WavesScene({
       amplitude: layer.amplitude,
       glow: layer.glow,
       brightness: layer.brightness,
+      opacity: layer.opacity,
       thickness: layer.thickness,
     };
   });
@@ -42,6 +43,7 @@ export default function WavesScene({
         frequency={params.frequency}
         glow={params.glow}
         layers={layers}
+        opacity={params.opacity}
         speed={params.speed}
         thickness={params.thickness}
       />

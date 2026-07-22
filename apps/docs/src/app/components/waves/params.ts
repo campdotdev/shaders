@@ -5,6 +5,7 @@ export interface Layer {
   amplitude: number;
   glow: number;
   brightness: number;
+  opacity: number;
   thickness: number;
 }
 
@@ -14,6 +15,7 @@ export interface Params {
   speed: number;
   glow: number;
   brightness: number;
+  opacity: number;
   thickness: number;
   baseline: number;
   braiding: number;
@@ -37,6 +39,7 @@ export const INITIAL: Params = {
   speed: 1,
   glow: 0.5,
   brightness: 1,
+  opacity: 0.5,
   thickness: 0.65,
   baseline: 0,
   braiding: 0,
@@ -51,6 +54,7 @@ export const INITIAL: Params = {
       amplitude: 0.2,
       glow: 0.5,
       brightness: 1,
+      opacity: 0.5,
       thickness: 0.65,
     },
     {
@@ -58,6 +62,7 @@ export const INITIAL: Params = {
       amplitude: 0.2,
       glow: 0.5,
       brightness: 1,
+      opacity: 0.5,
       thickness: 0.65,
     },
     {
@@ -65,6 +70,7 @@ export const INITIAL: Params = {
       amplitude: 0.2,
       glow: 0.5,
       brightness: 1,
+      opacity: 0.5,
       thickness: 0.65,
     },
     {
@@ -72,6 +78,7 @@ export const INITIAL: Params = {
       amplitude: 0.2,
       glow: 0.5,
       brightness: 1,
+      opacity: 0.5,
       thickness: 0.65,
     },
     {
@@ -79,6 +86,7 @@ export const INITIAL: Params = {
       amplitude: 0.2,
       glow: 0.5,
       brightness: 1,
+      opacity: 0.5,
       thickness: 0.65,
     },
     {
@@ -86,6 +94,7 @@ export const INITIAL: Params = {
       amplitude: 0.2,
       glow: 0.5,
       brightness: 1,
+      opacity: 0.5,
       thickness: 0.65,
     },
     {
@@ -93,6 +102,7 @@ export const INITIAL: Params = {
       amplitude: 0.2,
       glow: 0.5,
       brightness: 1,
+      opacity: 0.5,
       thickness: 0.65,
     },
     {
@@ -100,6 +110,7 @@ export const INITIAL: Params = {
       amplitude: 0.2,
       glow: 0.5,
       brightness: 1,
+      opacity: 0.5,
       thickness: 0.65,
     },
   ],

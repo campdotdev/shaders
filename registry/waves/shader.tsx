@@ -34,15 +34,18 @@ interface WavesShaderLayer {
   glow?: number;
   /** This line's brightness. */
   brightness?: number;
+  /** This line's opacity. */
+  opacity?: number;
   /** This line's width. */
   thickness?: number;
 }
 
 export interface WavesShaderProps {
   /**
-   * The wave lines to draw. Lines emit light additively — overlaps
-   * brighten. The first line breathes deepest; later lines calm toward the
-   * back.
+   * The wave lines to draw. At opacity 0.5 (the default) lines emit light
+   * additively — overlaps brighten. Above 0.5, bodies cover the lines
+   * behind them: the first line is frontmost. The first line breathes
+   * deepest; later lines calm toward the back.
    */
   layers: WavesShaderLayer[];
   /**
@@ -72,6 +75,13 @@ export interface WavesShaderProps {
    * animation signal.
    */
   brightness: AnimatableProp<number>;
+  /**
+   * Line presence on a three-look dial, 0..1. 0 = invisible; 0.5 = pure
+   * light — overlaps add and brighten; 1 = solid ribbons — the first
+   * layer is frontmost and covers the rest. Accepts a static value or an
+   * animation signal.
+   */
+  opacity: AnimatableProp<number>;
   /**
    * Master line width. Larger values give broader lines. Accepts a static
    * value or an animation signal.
@@ -118,6 +128,7 @@ export interface WavesShaderProps {
 const DEFAULT_AMPLITUDE = 0.2;
 const DEFAULT_GLOW = 0.5;
 const DEFAULT_BRIGHTNESS = 1;
+const DEFAULT_OPACITY = 0.5;
 const DEFAULT_THICKNESS = 0.65;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
@@ -158,6 +169,7 @@ export function WavesShader({
   speed,
   glow,
   brightness,
+  opacity,
   thickness,
   baseline,
   braiding,
@@ -174,6 +186,7 @@ export function WavesShader({
   const speedUniform = useAnimatableUniform<number>(speed);
   const glowUniform = useAnimatableUniform<number>(glow);
   const brightnessUniform = useAnimatableUniform<number>(brightness);
+  const opacityUniform = useAnimatableUniform<number>(opacity);
   const thicknessUniform = useAnimatableUniform<number>(thickness);
   const baselineUniform = useAnimatableUniform<number>(baseline);
   const braidingUniform = useAnimatableUniform<number>(braiding);
@@ -185,7 +198,7 @@ export function WavesShader({
   const layersKey = layers
     .map(
       (layer) =>
-        `${Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.brightness ?? ''}|${layer.thickness ?? ''}`,
+        `${Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.brightness ?? ''}|${layer.opacity ?? ''}|${layer.thickness ?? ''}`,
     )
     .join('||');
 
@@ -221,7 +234,10 @@ export function WavesShader({
 
     let waveColor = vec3(0, 0, 0);
 
-    for (const [layerIndex, layer] of layers.entries()) {
+    // Painter's order: iterate back-to-front so the FIRST layer in the
+    // array composites last — frontmost when opacity occludes. layerIndex
+    // keeps its array meaning for the stagger and pulse math.
+    for (const [layerIndex, layer] of [...layers.entries()].reverse()) {
       // Globals are master controls. Per-layer values preserve relative
       // differences by scaling those globals against the component defaults.
       const ampValue =
@@ -234,6 +250,10 @@ export function WavesShader({
         layer.brightness === undefined
           ? brightnessUniform
           : brightnessUniform.mul(layer.brightness / DEFAULT_BRIGHTNESS);
+      const opacityValue =
+        layer.opacity === undefined
+          ? opacityUniform
+          : opacityUniform.mul(layer.opacity / DEFAULT_OPACITY);
       const thicknessValue =
         layer.thickness === undefined
           ? thicknessUniform
@@ -299,7 +319,22 @@ export function WavesShader({
       // only moves the shoulder, which reads as width.
       const intensity = rawGlow.negate().exp().oneMinus().mul(brightnessValue);
 
-      waveColor = waveColor.add(vec3(lineColor).mul(intensity));
+      // Three-look opacity dial. The lower half (0..0.5) fades the line's
+      // own light in — 0.5 is full light with zero occlusion, the pure
+      // additive look. The upper half (0.5..1) keeps full light and ramps
+      // occlusion: what's already painted (the lines BEHIND this one) is
+      // dimmed before this line's light adds on top, reaching solid
+      // alpha-over ribbons at 1. The occlusion clamp guards brightness
+      // overdrive (intensity > 1) pushing it past full cover.
+      const dial = opacityValue.clamp(0, 1);
+      const lightGain = dial.mul(2).min(1);
+      const occlusionGain = dial.mul(2).sub(1).max(0);
+      const occlusion = intensity.mul(occlusionGain).clamp(0, 1);
+
+      waveColor = vec3(lineColor)
+        .mul(intensity)
+        .mul(lightGain)
+        .add(waveColor.mul(occlusion.oneMinus()));
     }
 
     const material = new MeshBasicNodeMaterial();
@@ -336,6 +371,7 @@ export function WavesShader({
     speedUniform,
     glowUniform,
     brightnessUniform,
+    opacityUniform,
     thicknessUniform,
     baselineUniform,
     braidingUniform,
