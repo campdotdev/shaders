@@ -66,6 +66,24 @@ export interface WavesProps {
    * Accepts a static value or an animation signal.
    */
   breathing?: AnimatableProp<number>;
+  /**
+   * How strongly lines fray wide at the ends. 0 = uniform width everywhere.
+   * At 1.5 lines are 2.5× wider at full flare. Defaults to 1.5. Accepts a
+   * static value or an animation signal.
+   */
+  dispersion?: AnimatableProp<number>;
+  /**
+   * Horizontal focal point where lines are tightest, −1 (left edge) to 1
+   * (right edge). 0 = canvas center. Defaults to 0. Accepts a static value
+   * or an animation signal.
+   */
+  dispersionCenter?: AnimatableProp<number>;
+  /**
+   * Distance from the focal point at which the fray reaches full width,
+   * 0..1 canvas half-widths. Defaults to 0.9. Accepts a static value or an
+   * animation signal.
+   */
+  dispersionRadius?: AnimatableProp<number>;
 }
 
 // Interim default layer set — Task 7 replaces it with the redesigned
@@ -87,6 +105,9 @@ export function Waves({
   baseline = 0.08,
   braiding = 0.6,
   breathing = 0.5,
+  dispersion = 1.5,
+  dispersionCenter = 0,
+  dispersionRadius = 0.9,
 }: WavesProps) {
   return (
     <WavesShader
@@ -94,6 +115,9 @@ export function Waves({
       baseline={baseline}
       braiding={braiding}
       breathing={breathing}
+      dispersion={dispersion}
+      dispersionCenter={dispersionCenter}
+      dispersionRadius={dispersionRadius}
       frequency={frequency}
       glow={glow}
       layers={layers}

@@ -16,6 +16,9 @@ export interface Params {
   baseline: number;
   braiding: number;
   breathing: number;
+  dispersion: number;
+  dispersionCenter: number;
+  dispersionRadius: number;
   layers: Layer[];
 }
 
@@ -31,6 +34,9 @@ export const INITIAL: Params = {
   baseline: 0.08,
   braiding: 0.6,
   breathing: 0.5,
+  dispersion: 1.5,
+  dispersionCenter: 0,
+  dispersionRadius: 0.9,
   layers: [
     { color: palette.red.light, amplitude: 0.2, glow: 0.72, thickness: 0.65 },
     { color: palette.amber.base, amplitude: 0.2, glow: 0.72, thickness: 0.65 },
