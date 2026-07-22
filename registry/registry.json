@@ -54,7 +54,7 @@
     },
     "waves": {
       "file": "waves/waves.tsx",
-      "description": "Coherent additive wave bundle. Lines share one wave and braid, breathe, and fray at a focal dispersion point, with per-line flat or gradient color.",
+      "description": "Coherent additive wave bundle. Lines share one wave and braid, breathe, and fray wide toward the canvas edges, with per-line flat or gradient color.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "sin",

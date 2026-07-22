@@ -4,8 +4,19 @@ import { useEffect } from 'react';
 
 import { colorRamp, type ColorSpace, elapsedTime } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
-import { float, fract, max, sin, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
+import {
+  float,
+  fract,
+  max,
+  type ShaderNodeObject,
+  sin,
+  smoothstep,
+  uv,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
 import { parseColor, toColorRampStops } from '../utils/color';
 
@@ -64,8 +75,8 @@ export interface WavesShaderProps {
   baseline: AnimatableProp<number>;
   /**
    * How restlessly lines weave apart and re-converge. 0 = a frozen braid
-   * that scrolls as one. 1 matches the reference feel. Accepts a static
-   * value or an animation signal.
+   * that scrolls as one. 1 gives a lively weave. Accepts a static value or
+   * an animation signal.
    */
   braiding: AnimatableProp<number>;
   /**
@@ -120,22 +131,36 @@ const PULSE_STAGGER = 0.35;
 // zone), which stays smooth even at small radii. Gate-tunable.
 const FLARE_START = 0;
 
-export function WavesShader(props: WavesShaderProps) {
+export function WavesShader({
+  layers,
+  amplitude,
+  frequency,
+  speed,
+  glow,
+  thickness,
+  baseline,
+  braiding,
+  breathing,
+  flare: flareStrength,
+  flareRadius,
+  colorDrift,
+  colorSpace,
+}: WavesShaderProps) {
   const shaderContext = useShaderContext();
 
-  const ampUniform = useAnimatableUniform<number>(props.amplitude);
-  const freqUniform = useAnimatableUniform<number>(props.frequency);
-  const speedUniform = useAnimatableUniform<number>(props.speed);
-  const glowUniform = useAnimatableUniform<number>(props.glow);
-  const thicknessUniform = useAnimatableUniform<number>(props.thickness);
-  const baselineUniform = useAnimatableUniform<number>(props.baseline);
-  const braidingUniform = useAnimatableUniform<number>(props.braiding);
-  const breathingUniform = useAnimatableUniform<number>(props.breathing);
-  const flareStrengthUniform = useAnimatableUniform<number>(props.flare);
-  const flareRadiusUniform = useAnimatableUniform<number>(props.flareRadius);
-  const colorDriftUniform = useAnimatableUniform<number>(props.colorDrift);
+  const ampUniform = useAnimatableUniform<number>(amplitude);
+  const freqUniform = useAnimatableUniform<number>(frequency);
+  const speedUniform = useAnimatableUniform<number>(speed);
+  const glowUniform = useAnimatableUniform<number>(glow);
+  const thicknessUniform = useAnimatableUniform<number>(thickness);
+  const baselineUniform = useAnimatableUniform<number>(baseline);
+  const braidingUniform = useAnimatableUniform<number>(braiding);
+  const breathingUniform = useAnimatableUniform<number>(breathing);
+  const flareStrengthUniform = useAnimatableUniform<number>(flareStrength);
+  const flareRadiusUniform = useAnimatableUniform<number>(flareRadius);
+  const colorDriftUniform = useAnimatableUniform<number>(colorDrift);
 
-  const layersKey = props.layers
+  const layersKey = layers
     .map(
       (layer) =>
         `${Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}`,
@@ -165,14 +190,16 @@ export function WavesShader(props: WavesShaderProps) {
     const flare = flareRamp.mul(flareRamp).mul(flareStrengthUniform).add(1);
 
     // Gradient sample coordinate, shared by all gradient lines: canvas x
-    // drifted over time, then ping-pong wrapped (0→1→0). Mirroring instead
-    // of hard-wrapping means a drifting gradient never shows a seam.
-    const driftedX = uv().x.sub(elapsedTime.mul(colorDriftUniform));
-    const rampT = fract(driftedX.mul(0.5)).mul(2).sub(1).abs();
+    // drifted on the speed-scaled clock (speed 0 freezes gradients too),
+    // then ping-pong wrapped (0→1→0) so a drifting gradient never shows a
+    // seam. The half-period phase shift keeps stop 0 at the LEFT edge at
+    // drift 0, matching LinearGradient's stop direction.
+    const driftedX = uv().x.sub(time.mul(colorDriftUniform));
+    const rampT = fract(driftedX.mul(0.5).add(0.5)).mul(2).sub(1).abs();
 
     let waveColor = vec3(0, 0, 0);
 
-    for (const [layerIndex, layer] of props.layers.entries()) {
+    for (const [layerIndex, layer] of layers.entries()) {
       // Globals are master controls. Per-layer values preserve relative
       // differences by scaling those globals against the component defaults.
       const ampValue =
@@ -188,12 +215,12 @@ export function WavesShader(props: WavesShaderProps) {
 
       const layerColor = layer.color ?? DEFAULT_LAYER_COLOR;
 
-      let lineColor;
+      let lineColor: ShaderNodeObject<Node>;
 
       if (Array.isArray(layerColor) && layerColor.length > 1) {
         const rampStops = toColorRampStops(layerColor.map((stopColor) => ({ color: stopColor })));
 
-        lineColor = colorRamp(rampT, rampStops, props.colorSpace);
+        lineColor = colorRamp(rampT, rampStops, colorSpace);
       } else {
         const singleColor = Array.isArray(layerColor)
           ? (layerColor[0] ?? DEFAULT_LAYER_COLOR)
@@ -217,7 +244,7 @@ export function WavesShader(props: WavesShaderProps) {
       // back of the stack (last layers barely breathe), matching the
       // reference. The envelope swings amplitude between (1 − breathing) and
       // (1 + breathing) times its base value.
-      const depthWeight = 1 - layerIndex / props.layers.length;
+      const depthWeight = 1 - layerIndex / layers.length;
       // Sine-of-sine shaping: still swings −1..1, but the slope hits zero at
       // the extremes, so the pulse dwells fully-swollen / fully-flattened and
       // moves quickly through the middle.
@@ -267,7 +294,7 @@ export function WavesShader(props: WavesShaderProps) {
         /* same */
       }
     };
-    // layersKey is a stable string proxy for props.layers — listing the
+    // layersKey is a stable string proxy for layers — listing the
     // array itself would trigger rebuild on identity-only changes. Matches
     // LinearGradient's pattern.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,7 +312,7 @@ export function WavesShader(props: WavesShaderProps) {
     flareStrengthUniform,
     flareRadiusUniform,
     colorDriftUniform,
-    props.colorSpace,
+    colorSpace,
   ]);
 
   return null;
