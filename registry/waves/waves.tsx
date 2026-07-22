@@ -55,7 +55,7 @@ export interface WavesProps {
   thickness?: AnimatableProp<number>;
   /**
    * Vertical shift applied to all lines, as a fraction of half the canvas
-   * height. Positive lifts, negative drops. Defaults to 0.08. Accepts a
+   * height. Positive lifts, negative drops. Defaults to 0. Accepts a
    * static value or an animation signal.
    */
   baseline?: AnimatableProp<number>;
@@ -114,7 +114,7 @@ export function Waves({
   speed = 1,
   glow = 0.72,
   thickness = 0.65,
-  baseline = 0.08,
+  baseline = 0,
   braiding = 0.6,
   breathing = 0.5,
   flare = 1.5,
