@@ -58,3 +58,6 @@ docs/superpowers/
 
 # Local-only agent memory (kept off GitHub); AGENTS.md + the CLAUDE.md pointer are tracked
 MEMORY.md
+
+# Machine-local Claude Code permission state
+.claude/settings.local.json
