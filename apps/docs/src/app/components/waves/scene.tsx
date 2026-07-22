@@ -15,12 +15,16 @@ export default function WavesScene({
   params?: Params;
   children?: ReactNode;
 } = {}) {
-  const layers: WaveLayer[] = params.layers.map((layer) => ({
-    color: layer.color,
-    amplitude: layer.amplitude,
-    glow: layer.glow,
-    thickness: layer.thickness,
-  }));
+  const layers: WaveLayer[] = params.layers.map((layer) => {
+    const [firstColor] = layer.colors;
+
+    return {
+      color: layer.colors.length === 1 && firstColor !== undefined ? firstColor : layer.colors,
+      amplitude: layer.amplitude,
+      glow: layer.glow,
+      thickness: layer.thickness,
+    };
+  });
 
   return (
     <ShaderScene>
@@ -30,6 +34,7 @@ export default function WavesScene({
         braiding={params.braiding}
         breathing={params.breathing}
         colorDrift={params.colorDrift}
+        colorSpace={params.colorSpace}
         flare={params.flare}
         flareRadius={params.flareRadius}
         frequency={params.frequency}

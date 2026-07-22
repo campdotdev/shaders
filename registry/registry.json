@@ -54,9 +54,22 @@
     },
     "waves": {
       "file": "waves/waves.tsx",
-      "description": "Additive proximity-glow wave field with per-layer color, amplitude, frequency, speed, glow, thickness, offset, and waviness plus global glow, thickness, and baseline controls.",
+      "description": "Coherent additive wave bundle. Lines share one wave and braid, breathe, and fray at a focal dispersion point, with per-line flat or gradient color.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["cos", "uv", "vec2", "vec3", "vec4", "elapsedTime", "uniform"],
+      "uses_primitives": [
+        "sin",
+        "uv",
+        "vec2",
+        "vec3",
+        "vec4",
+        "float",
+        "fract",
+        "max",
+        "smoothstep",
+        "elapsedTime",
+        "uniform",
+        "colorRamp"
+      ],
       "tier": 1
     },
     "mesh-gradient": {

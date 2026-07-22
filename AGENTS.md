@@ -62,7 +62,7 @@ These rules exist because Matter doubles as a shader-learning project for its au
 - **No emojis** in code or commit messages.
 - **JSDoc on every user-facing prop.** All registry component props — the wrapper `*Props` and the `*ShaderProps` mirror, plus nested types like `WaveLayer`/`ColorStop` — carry JSDoc: what the prop controls, 0/1 semantics for normalized props, units, and the default in prose (wrapper only; the mirror drops "Defaults to …"). Every `AnimatableProp<T>` prop ends its comment with "Accepts a static value or an animation signal."; plain props don't.
 - **Prop names use everyday words, not GPU jargon.** Prefer `waviness` over `turbulence`, `coverage`/`radius` over `falloff`, `balance` over `bias`. When two components share a concept, they share the name (e.g. `center`).
-- **YAGNI hard.** Don't add features beyond the current task. No inert props for API symmetry (e.g. `colorSpace` was deliberately NOT added to non-interpolating components like waves/grain/aurora).
+- **YAGNI hard.** Don't add features beyond the current task. No inert props for API symmetry (e.g. `colorSpace` was deliberately NOT added to non-interpolating components like grain/aurora).
 
 ## Design rules
 
@@ -101,7 +101,7 @@ These rules exist because Matter doubles as a shader-learning project for its au
 11. **Consume `uniform(...)` as an argument, not a chained receiver, in TSL math.** `uv().sub(cursorUniform)` works; chaining methods off a raw uniform node silently produces wrong GPU values despite typechecking. Build expressions from `uv()`/`vec2(...)` and pass uniforms as args.
 12. **three ships two standalone bundles** (`three.module.js`, `three.webgpu.js`); importing both duplicates three core (`Cannot read properties of undefined (reading 'usedTimes')` on dispose). Alias all three subpaths to the webgpu bundle (see `apps/docs/next.config.ts`).
 13. **Hooks owning long-lived disposables must be Strict-Mode-safe.** Collapse create/attach/dispose into one `useEffect`; see `useCursor.ts` for the canonical pattern.
-14. **Never rebuild a `NodeMaterial` on prop change — push values through stable `uniform(...)` nodes.** Hold live values in a stable `Vector2`/`Vector3` (`useMemo([])`), wrap in a stable `uniform(vec)`, push prop → `vec.set(...)` in a light effect; the material effect depends only on stable references and runs once per mount. Known exceptions: `LinearGradient` and `SimplexNoise` rebuild on `colors`/`stops` because `colorRamp` bakes literals — acceptable until a feature drives colors at 60Hz, at which point the fix is widening `colorRamp` to accept uniform nodes, NOT patching the components.
+14. **Never rebuild a `NodeMaterial` on prop change — push values through stable `uniform(...)` nodes.** Hold live values in a stable `Vector2`/`Vector3` (`useMemo([])`), wrap in a stable `uniform(vec)`, push prop → `vec.set(...)` in a light effect; the material effect depends only on stable references and runs once per mount. Known exceptions: `LinearGradient`, `SimplexNoise`, and `Waves` rebuild on `colors`/`stops` because `colorRamp` bakes literals — acceptable until a feature drives colors at 60Hz, at which point the fix is widening `colorRamp` to accept uniform nodes, NOT patching the components.
 15. **`useShaderMaterial(build)` rebuilds whenever `build`'s reference changes — by design.** Callers must memoize the build callback (or hoist it). A test asserts this; don't remove the dep.
 16. **Arrays/tuples passed as props need a stable proxy in effect deps** — stringify (`colors.join('|')`) or route fixed-size tuples through a `Vector2`/`Vector3` uniform (see vignette's `center`). Never list raw arrays in a heavy effect's deps.
 17. **Output dithering is scene-wide, in display space.** `ShaderScene` builds `outputNode = dither(renderOutput(composed))` with `outputColorTransform = false`. Never add per-component `dither()` in a `colorNode` — double-dithers and runs in linear space. The exported `dither()` primitive is for Mode 2 only. Gamut, like dither, is scene-level — keep both off per-component Tweakpane panels.
@@ -111,9 +111,9 @@ These rules exist because Matter doubles as a shader-learning project for its au
 
 ## Color system (shipped — how the pieces relate)
 
-- **`colorSpace` prop** (interpolation space) on interpolating components only: `LinearGradient`, `MeshGradient`, `SimplexNoise` (via `colorRamp`), `Vignette` (via `mixColor`). Default `oklab` on components; primitives default `linear`. Lives in `packages/matter/src/primitives/color-space/`.
+- **`colorSpace` prop** (interpolation space) on interpolating components only: `LinearGradient`, `MeshGradient`, `SimplexNoise` (via `colorRamp`), `Vignette` (via `mixColor`), `Waves` (gradient lines via `colorRamp`). Default `oklab` on components; primitives default `linear`. Lives in `packages/matter/src/primitives/color-space/`.
 - **`gamut` prop** on `<ShaderScene>`: `'auto' | 'srgb' | 'p3'`, default `auto` (detects via `(color-gamut: p3)`, re-resolves on monitor change).
-- **Orthogonal concerns**: `colorSpace` = mixing math; `gamut` = output framebuffer; wide-gamut **input** is just the decode (`oklch()`/`oklab()` strings through `parseColor` → unclamped linear-sRGB) and needs zero mixing props. Additive-light components (aurora, waves) don't interpolate, so they get no mixing props — but they accept oklch input.
+- **Orthogonal concerns**: `colorSpace` = mixing math; `gamut` = output framebuffer; wide-gamut **input** is just the decode (`oklch()`/`oklab()` strings through `parseColor` → unclamped linear-sRGB) and needs zero mixing props. Additive-light components that don't interpolate (aurora) get no mixing props — but they accept oklch input. `Waves` interpolates when a line's color is a gradient, so it takes `colorSpace` even though its lines are additive.
 
 ## Open threads (as of 2026-07-17)
 
