@@ -8,6 +8,7 @@ import {
   float,
   fract,
   max,
+  mix,
   type ShaderNodeObject,
   sin,
   smoothstep,
@@ -29,7 +30,7 @@ interface WavesShaderLayer {
   color?: string | string[];
   /** This line's wave height. */
   amplitude?: number;
-  /** This line's brightness. */
+  /** This line's softness. */
   glow?: number;
   /** This line's width. */
   thickness?: number;
@@ -58,13 +59,14 @@ export interface WavesShaderProps {
    */
   speed: AnimatableProp<number>;
   /**
-   * Master brightness of the lines. 0 = invisible. Accepts a static value
-   * or an animation signal.
+   * Edge softness and halo reach, 0..1. 0 = a crisp ribbon with a tight
+   * edge; 1 = a long luminous haze. Accepts a static value or an animation
+   * signal.
    */
   glow: AnimatableProp<number>;
   /**
-   * Master line width. Larger values give broader, softer lines. Accepts a
-   * static value or an animation signal.
+   * Master line width. Larger values give broader lines. Accepts a static
+   * value or an animation signal.
    */
   thickness: AnimatableProp<number>;
   /**
@@ -106,6 +108,7 @@ export interface WavesShaderProps {
 }
 
 const DEFAULT_AMPLITUDE = 0.2;
+const DEFAULT_GLOW = 0.5;
 const DEFAULT_THICKNESS = 0.65;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
@@ -114,8 +117,10 @@ const DEFAULT_LAYER_COLOR = '#ff6f6a';
 const BAND_HALF_WIDTH = 0.02;
 // Keeps the divide finite at the spine, where distance is 0. Canvas units.
 const SPINE_EPSILON = 1e-4;
-// Falloff exponent while glow is unwired (Phase 1 only): mid softness.
-const FIXED_EXPONENT = 3;
+// Falloff exponent at glow 0: a near-cliff edge. Gate-tunable.
+const EXPONENT_CRISP = 6;
+// Falloff exponent at glow 1: the laser's 1/distance haze. Gate-tunable.
+const EXPONENT_HAZY = 1;
 
 // Phase radians the shared wave scrolls per speed-scaled second. Gate-tunable.
 const SCROLL_RATE = 2;
@@ -206,6 +211,8 @@ export function WavesShader({
         layer.amplitude === undefined
           ? ampUniform
           : ampUniform.mul(layer.amplitude / DEFAULT_AMPLITUDE);
+      const glowValue =
+        layer.glow === undefined ? glowUniform : glowUniform.mul(layer.glow / DEFAULT_GLOW);
       const thicknessValue =
         layer.thickness === undefined
           ? thicknessUniform
@@ -258,7 +265,12 @@ export function WavesShader({
       // Thickness moves the saturation boundary — width, never brightness.
       const distanceFromLine = layerY.abs();
       const halfWidth = thicknessValue.mul(BAND_HALF_WIDTH).mul(flare);
-      const rawGlow = halfWidth.div(distanceFromLine.add(SPINE_EPSILON)).pow(FIXED_EXPONENT);
+      // Glow picks the falloff exponent — a softness dial, not a gain. Low
+      // glow → high exponent → the tail dies within a pixel of the body
+      // (crisp ribbon). High glow → exponent 1 → the 1/distance laser
+      // haze. clamp keeps per-layer scaling inside the mapped range.
+      const exponent = mix(float(EXPONENT_CRISP), float(EXPONENT_HAZY), glowValue.clamp(0, 1));
+      const rawGlow = halfWidth.div(distanceFromLine.add(SPINE_EPSILON)).pow(exponent);
       const intensity = rawGlow.negate().exp().oneMinus();
 
       waveColor = waveColor.add(vec3(lineColor).mul(intensity));

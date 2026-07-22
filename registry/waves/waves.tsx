@@ -14,7 +14,7 @@ export interface WaveLayer {
   color?: string | string[];
   /** This line's wave height. */
   amplitude?: number;
-  /** This line's brightness. */
+  /** This line's softness. */
   glow?: number;
   /** This line's width. */
   thickness?: number;
@@ -44,13 +44,14 @@ export interface WavesProps {
    */
   speed?: AnimatableProp<number>;
   /**
-   * Master brightness of the lines. 0 = invisible. Defaults to 0.72.
-   * Accepts a static value or an animation signal.
+   * Edge softness and halo reach, 0..1. 0 = a crisp ribbon with a tight
+   * edge; 1 = a long luminous haze. Defaults to 0.5. Accepts a static
+   * value or an animation signal.
    */
   glow?: AnimatableProp<number>;
   /**
-   * Master line width. Larger values give broader, softer lines. Defaults
-   * to 0.65. Accepts a static value or an animation signal.
+   * Master line width. Larger values give broader lines. Defaults to 0.65.
+   * Accepts a static value or an animation signal.
    */
   thickness?: AnimatableProp<number>;
   /**
@@ -114,7 +115,7 @@ export function Waves({
   amplitude = 0.2,
   frequency = 1,
   speed = 1,
-  glow = 0.72,
+  glow = 0.5,
   thickness = 0.65,
   baseline = 0,
   braiding = 0,
