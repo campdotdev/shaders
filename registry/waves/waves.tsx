@@ -16,6 +16,8 @@ export interface WaveLayer {
   amplitude?: number;
   /** This line's softness. */
   glow?: number;
+  /** This line's brightness. */
+  brightness?: number;
   /** This line's width. */
   thickness?: number;
 }
@@ -49,6 +51,12 @@ export interface WavesProps {
    * value or an animation signal.
    */
   glow?: AnimatableProp<number>;
+  /**
+   * Light output of the lines, 0 = invisible, 1 = full. Dims uniformly
+   * without changing apparent width. Defaults to 1. Accepts a static value
+   * or an animation signal.
+   */
+  brightness?: AnimatableProp<number>;
   /**
    * Master line width. Larger values give broader lines. Defaults to 0.65.
    * Accepts a static value or an animation signal.
@@ -116,6 +124,7 @@ export function Waves({
   frequency = 1,
   speed = 1,
   glow = 0.5,
+  brightness = 1,
   thickness = 0.65,
   baseline = 0,
   braiding = 0,
@@ -131,6 +140,7 @@ export function Waves({
       baseline={baseline}
       braiding={braiding}
       breathing={breathing}
+      brightness={brightness}
       colorDrift={colorDrift}
       colorSpace={colorSpace}
       flare={flare}
