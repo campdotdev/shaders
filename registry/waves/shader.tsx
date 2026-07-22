@@ -4,7 +4,7 @@ import { useEffect } from 'react';
 
 import { elapsedTime } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
-import { exp, float, mix, sin, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { float, sin, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
@@ -52,12 +52,6 @@ export interface WavesShaderProps {
    * static value or an animation signal.
    */
   thickness: AnimatableProp<number>;
-  /**
-   * How fuzzy the line bodies are. 0 = crisp ribbons with a defined edge,
-   * 1 = fully soft gaussian glow. Accepts a static value or an animation
-   * signal.
-   */
-  softness: AnimatableProp<number>;
   /**
    * Vertical shift applied to all lines, as a fraction of half the canvas
    * height. Positive lifts, negative drops. Accepts a static value or an
@@ -108,7 +102,6 @@ export function WavesShader(props: WavesShaderProps) {
   const speedUniform = useAnimatableUniform<number>(props.speed);
   const glowUniform = useAnimatableUniform<number>(props.glow);
   const thicknessUniform = useAnimatableUniform<number>(props.thickness);
-  const softnessUniform = useAnimatableUniform<number>(props.softness);
   const baselineUniform = useAnimatableUniform<number>(props.baseline);
   const braidingUniform = useAnimatableUniform<number>(props.braiding);
   const breathingUniform = useAnimatableUniform<number>(props.breathing);
@@ -184,13 +177,7 @@ export function WavesShader(props: WavesShaderProps) {
       const distanceFromLine = layerY.abs();
       const halfWidth = thicknessValue.mul(BAND_HALF_WIDTH);
       const bandT = distanceFromLine.div(halfWidth).oneMinus().max(0);
-      const crispCore = bandT.mul(bandT).mul(float(3).sub(bandT.mul(2)));
-      // Gaussian body of the same visual width: e^(−4(d/h)²) ≈ 0.02 at the
-      // band edge, but with no hard cutoff — softness cross-fades the core
-      // from crisp ribbon to pure soft glow.
-      const gaussWidth = distanceFromLine.div(halfWidth);
-      const gaussianCore = exp(gaussWidth.mul(gaussWidth).mul(-4));
-      const core = mix(crispCore, gaussianCore, softnessUniform);
+      const core = bandT.mul(bandT).mul(float(3).sub(bandT.mul(2)));
       const halo = halfWidth.mul(HALO_WEIGHT).div(distanceFromLine.add(HALO_SOFTENING));
       const intensity = core.add(halo).mul(glowValue);
 
@@ -233,7 +220,6 @@ export function WavesShader(props: WavesShaderProps) {
     speedUniform,
     glowUniform,
     thicknessUniform,
-    softnessUniform,
     baselineUniform,
     braidingUniform,
     breathingUniform,

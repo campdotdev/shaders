@@ -49,12 +49,6 @@ export interface WavesProps {
    */
   thickness?: AnimatableProp<number>;
   /**
-   * How fuzzy the line bodies are. 0 = crisp ribbons with a defined edge,
-   * 1 = fully soft gaussian glow. Defaults to 0. Accepts a static value or
-   * an animation signal.
-   */
-  softness?: AnimatableProp<number>;
-  /**
    * Vertical shift applied to all lines, as a fraction of half the canvas
    * height. Positive lifts, negative drops. Defaults to 0.08. Accepts a
    * static value or an animation signal.
@@ -77,10 +71,10 @@ export interface WavesProps {
 // Interim default layer set — Task 7 replaces it with the redesigned
 // 8-line palette.
 export const DEFAULT_LAYERS: WaveLayer[] = [
-  { color: '#ff6f6a', amplitude: 0.14, glow: 0.55, thickness: 0.65 }, // palette.red.light
-  { color: '#ecb100', amplitude: 0.17, glow: 0.62, thickness: 0.65 }, // palette.amber.base
-  { color: '#0ae24b', amplitude: 0.2, glow: 0.7, thickness: 0.65 }, // palette.green.base
-  { color: '#4370f0', amplitude: 0.23, glow: 0.78, thickness: 0.65 }, // palette.blue.light
+  { color: '#ff6f6a', amplitude: 0.2, glow: 0.72, thickness: 0.65 }, // palette.red.light
+  { color: '#ecb100', amplitude: 0.2, glow: 0.72, thickness: 0.65 }, // palette.amber.base
+  { color: '#0ae24b', amplitude: 0.2, glow: 0.72, thickness: 0.65 }, // palette.green.base
+  { color: '#4370f0', amplitude: 0.2, glow: 0.72, thickness: 0.65 }, // palette.blue.light
 ];
 
 export function Waves({
@@ -90,7 +84,6 @@ export function Waves({
   speed = 1,
   glow = 0.72,
   thickness = 0.65,
-  softness = 0,
   baseline = 0.08,
   braiding = 0.6,
   breathing = 0.5,
@@ -104,7 +97,6 @@ export function Waves({
       frequency={frequency}
       glow={glow}
       layers={layers}
-      softness={softness}
       speed={speed}
       thickness={thickness}
     />
