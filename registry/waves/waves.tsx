@@ -1,5 +1,6 @@
 'use client';
 
+import type { ColorSpace } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import { WavesShader } from './shader';
@@ -9,8 +10,8 @@ import { WavesShader } from './shader';
  * for this line only; omit a field to use the global value as-is.
  */
 export interface WaveLayer {
-  /** Line color — hex, `oklch()`, or `oklab()`. */
-  color?: string;
+  /** Single color, or 2+ stops forming a gradient along the line — hex, `oklch()`, or `oklab()`. */
+  color?: string | string[];
   /** This line's wave height. */
   amplitude?: number;
   /** This line's brightness. */
@@ -78,6 +79,13 @@ export interface WavesProps {
    * animation signal.
    */
   flareRadius?: AnimatableProp<number>;
+  /**
+   * Rate the gradient slides along each line. 0 pins it to the canvas.
+   * Defaults to 0.15. Accepts a static value or an animation signal.
+   */
+  colorDrift?: AnimatableProp<number>;
+  /** Interpolation space for gradient lines. Defaults to oklab. */
+  colorSpace?: ColorSpace;
 }
 
 // Interim default layer set — Task 7 replaces it with the redesigned
@@ -101,6 +109,8 @@ export function Waves({
   breathing = 0.5,
   flare = 1.5,
   flareRadius = 0.9,
+  colorDrift = 0.15,
+  colorSpace = 'oklab',
 }: WavesProps) {
   return (
     <WavesShader
@@ -108,6 +118,8 @@ export function Waves({
       baseline={baseline}
       braiding={braiding}
       breathing={breathing}
+      colorDrift={colorDrift}
+      colorSpace={colorSpace}
       flare={flare}
       flareRadius={flareRadius}
       frequency={frequency}

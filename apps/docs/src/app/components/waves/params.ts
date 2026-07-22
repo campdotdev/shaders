@@ -1,7 +1,7 @@
 import { palette } from '../../../lib/palette';
 
 export interface Layer {
-  color: string;
+  color: string | string[];
   amplitude: number;
   glow: number;
   thickness: number;
@@ -18,6 +18,7 @@ export interface Params {
   breathing: number;
   flare: number;
   flareRadius: number;
+  colorDrift: number;
   layers: Layer[];
 }
 
@@ -35,8 +36,14 @@ export const INITIAL: Params = {
   breathing: 0.5,
   flare: 1.5,
   flareRadius: 0.9,
+  colorDrift: 0.15,
   layers: [
-    { color: palette.red.light, amplitude: 0.2, glow: 0.72, thickness: 0.65 },
+    {
+      color: ['oklch(0.75 0.16 250)', 'oklch(0.6 0.2 310)'],
+      amplitude: 0.2,
+      glow: 0.72,
+      thickness: 0.65,
+    },
     { color: palette.amber.base, amplitude: 0.2, glow: 0.72, thickness: 0.65 },
     { color: palette.green.base, amplitude: 0.2, glow: 0.72, thickness: 0.65 },
     { color: palette.blue.light, amplitude: 0.2, glow: 0.72, thickness: 0.65 },
