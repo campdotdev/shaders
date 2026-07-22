@@ -32,6 +32,9 @@ const formatJsx = (params: Params) =>
     baseline={${formatNumber(params.baseline)}}
     braiding={${formatNumber(params.braiding)}}
     breathing={${formatNumber(params.breathing)}}
+    dispersion={${formatNumber(params.dispersion)}}
+    dispersionCenter={${formatNumber(params.dispersionCenter)}}
+    dispersionRadius={${formatNumber(params.dispersionRadius)}}
     layers={[
     ${formatLayers(params.layers)}
     ]}
@@ -48,6 +51,9 @@ const formatParams = (params: Params) =>
   baseline: ${formatNumber(params.baseline)},
   braiding: ${formatNumber(params.braiding)},
   breathing: ${formatNumber(params.breathing)},
+  dispersion: ${formatNumber(params.dispersion)},
+  dispersionCenter: ${formatNumber(params.dispersionCenter)},
+  dispersionRadius: ${formatNumber(params.dispersionRadius)},
   layers: [
     ${formatLayers(params.layers)}
   ],
@@ -87,6 +93,9 @@ export default function WavesPage() {
     pane.addBinding(local, 'baseline', { min: -1, max: 1, step: 0.01 });
     pane.addBinding(local, 'braiding', { min: 0, max: 2, step: 0.01 });
     pane.addBinding(local, 'breathing', { min: 0, max: 1, step: 0.01 });
+    pane.addBinding(local, 'dispersion', { min: 0, max: 6, step: 0.05 });
+    pane.addBinding(local, 'dispersionCenter', { min: -1, max: 1, step: 0.01 });
+    pane.addBinding(local, 'dispersionRadius', { min: 0.05, max: 1.5, step: 0.01 });
     pane.addBlade({ view: 'separator' });
 
     const layersFolder = pane.addFolder({ title: 'Layers' });
