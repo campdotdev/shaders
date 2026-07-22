@@ -11,13 +11,20 @@ Matter ships as three coordinated npm packages: `@lovo/matter` (engine), `@lovo/
 
 ## Unreleased
 
+**Breaking change — `Waves` rebuilt around one shared wave.**
+
+The old Waves gave every layer its own `frequency`, `speed`, `offset`, and `waviness`, so getting multiple lines to move together was mostly luck. Those per-layer fields are gone. Every line now renders one shared wave, and the motion comes from two new props: `braiding` weaves the lines apart and back together over time, and `breathing` pulses their heights on a slow cycle, strongest on the first layer. Two more props, `flare` and `flareRadius`, widen the line ends into a soft fray toward the canvas edges.
+
+`color` on a layer now accepts either a single color or an array of stops that form a gradient along the line; `colorDrift` slides the gradient and `colorSpace` (default `oklab`) sets the mixing space. The line profile is different too, a crisp core with a soft halo instead of the old glow spikes, and the default set is eight blue-to-violet lines.
+
+Components ship by copy-paste, so installed copies keep rendering as before; re-add `waves` through the CLI to get the rebuild. If you had custom `layers`, they will render differently: the removed movement fields have no equivalent.
+
 **Registry components: prop renames and prop docs.** Every Tier 1 component prop now has JSDoc hover documentation, and a few props got plainer names. Components ship by copy-paste, so your installed copies are unaffected; re-add a component through the CLI to get the new names.
 
 - `Aurora`: `turbulence` → `waviness`, `falloff` → `coverage`
 - `Vignette`: `falloff` → `radius`
 - `SimplexNoise`: `bias` → `balance`
 - `LinearGradient`: `focalPoint` → `center`; `interactive` removed (cursor following was dropped from all components)
-- `Waves`: `WaveLayer.turbulence` → `waviness`
 - `Grain`: `grainBlend` → `blend`
 
 ## 0.2.0
