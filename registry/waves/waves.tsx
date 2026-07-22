@@ -94,7 +94,8 @@ export interface WavesProps {
 
 // Default layer set: an 8-line analogous blue→violet bundle. Lightness falls
 // along the array for depth; all other per-line fields ride the globals —
-// variation comes from the movement system.
+// variation comes from the movement system. The hue run (220→325) tracks the
+// brand palette's cool accent arc (sky→blue→violet→purple).
 export const DEFAULT_LAYERS: WaveLayer[] = [
   { color: 'oklch(0.85 0.12 220)' },
   { color: 'oklch(0.8 0.14 235)' },
