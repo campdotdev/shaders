@@ -17,7 +17,7 @@ const WavesScene = dynamic(() => import('./scene'), { ssr: false });
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
 const formatLayer = (layer: Layer) =>
-  `{ color: '${layer.color}', amplitude: ${formatNumber(layer.amplitude)}, glow: ${formatNumber(layer.glow)}, thickness: ${formatNumber(layer.thickness)} }`;
+  `{ color: ${Array.isArray(layer.color) ? `[${layer.color.map((color) => `'${color}'`).join(', ')}]` : `'${layer.color}'`}, amplitude: ${formatNumber(layer.amplitude)}, glow: ${formatNumber(layer.glow)}, thickness: ${formatNumber(layer.thickness)} }`;
 
 const formatLayers = (layers: Layer[]) => layers.map(formatLayer).join(',\n    ');
 
@@ -93,6 +93,7 @@ export default function WavesPage() {
     pane.addBinding(local, 'breathing', { min: 0, max: 1, step: 0.01 });
     pane.addBinding(local, 'flare', { min: 0, max: 6, step: 0.05 });
     pane.addBinding(local, 'flareRadius', { min: 0.05, max: 1.5, step: 0.01 });
+    pane.addBinding(local, 'colorDrift', { min: 0, max: 1, step: 0.01 });
     pane.addBlade({ view: 'separator' });
 
     const layersFolder = pane.addFolder({ title: 'Layers' });
@@ -108,7 +109,7 @@ export default function WavesPage() {
           expanded: layerIndex === 0,
         });
 
-        row.addBinding(layer, 'color');
+        if (!Array.isArray(layer.color)) row.addBinding(layer, 'color');
         row.addBinding(layer, 'amplitude', { min: 0, max: 0.3, step: 0.005 });
         row.addBinding(layer, 'glow', { min: 0, max: 3, step: 0.01 });
         row.addBinding(layer, 'thickness', { min: 0.1, max: 4, step: 0.01 });

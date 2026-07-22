@@ -29,6 +29,7 @@ export default function WavesScene({
         baseline={params.baseline}
         braiding={params.braiding}
         breathing={params.breathing}
+        colorDrift={params.colorDrift}
         flare={params.flare}
         flareRadius={params.flareRadius}
         frequency={params.frequency}

@@ -2,20 +2,20 @@
 
 import { useEffect } from 'react';
 
-import { elapsedTime } from '@lovo/matter';
+import { colorRamp, type ColorSpace, elapsedTime } from '@lovo/matter';
 import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
-import { float, max, sin, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { float, fract, max, sin, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
-import { parseColor } from '../utils/color';
+import { parseColor, toColorRampStops } from '../utils/color';
 
 /**
  * A single wave line. Each numeric field scales the matching global prop
  * for this line only; omit a field to use the global value as-is.
  */
 interface WavesShaderLayer {
-  /** Line color — hex, `oklch()`, or `oklab()`. */
-  color?: string;
+  /** Single color, or 2+ stops forming a gradient along the line — hex, `oklch()`, or `oklab()`. */
+  color?: string | string[];
   /** This line's wave height. */
   amplitude?: number;
   /** This line's brightness. */
@@ -81,6 +81,13 @@ export interface WavesShaderProps {
    * 0..1 canvas half-widths. Accepts a static value or an animation signal.
    */
   flareRadius: AnimatableProp<number>;
+  /**
+   * Rate the gradient slides along each line. 0 pins it to the canvas.
+   * Accepts a static value or an animation signal.
+   */
+  colorDrift: AnimatableProp<number>;
+  /** Interpolation space for gradient lines. */
+  colorSpace: ColorSpace;
 }
 
 const DEFAULT_AMPLITUDE = 0.2;
@@ -122,11 +129,12 @@ export function WavesShader(props: WavesShaderProps) {
   const breathingUniform = useAnimatableUniform<number>(props.breathing);
   const flareStrengthUniform = useAnimatableUniform<number>(props.flare);
   const flareRadiusUniform = useAnimatableUniform<number>(props.flareRadius);
+  const colorDriftUniform = useAnimatableUniform<number>(props.colorDrift);
 
   const layersKey = props.layers
     .map(
       (layer) =>
-        `${layer.color ?? ''}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}`,
+        `${Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.thickness ?? ''}`,
     )
     .join('||');
 
@@ -152,6 +160,12 @@ export function WavesShader(props: WavesShaderProps) {
     const flareRamp = smoothstep(float(FLARE_START), float(1), flareInput);
     const flare = flareRamp.mul(flareRamp).mul(flareStrengthUniform).add(1);
 
+    // Gradient sample coordinate, shared by all gradient lines: canvas x
+    // drifted over time, then ping-pong wrapped (0→1→0). Mirroring instead
+    // of hard-wrapping means a drifting gradient never shows a seam.
+    const driftedX = uv().x.sub(elapsedTime.mul(colorDriftUniform));
+    const rampT = fract(driftedX.mul(0.5)).mul(2).sub(1).abs();
+
     let waveColor = vec3(0, 0, 0);
 
     for (const [layerIndex, layer] of props.layers.entries()) {
@@ -168,9 +182,22 @@ export function WavesShader(props: WavesShaderProps) {
           ? thicknessUniform
           : thicknessUniform.mul(layer.thickness / DEFAULT_THICKNESS);
 
-      const [redChannel, greenChannel, blueChannel] = parseColor(
-        layer.color ?? DEFAULT_LAYER_COLOR,
-      );
+      const layerColor = layer.color ?? DEFAULT_LAYER_COLOR;
+
+      let lineColor;
+
+      if (Array.isArray(layerColor) && layerColor.length > 1) {
+        const rampStops = toColorRampStops(layerColor.map((stopColor) => ({ color: stopColor })));
+
+        lineColor = colorRamp(rampT, rampStops, props.colorSpace);
+      } else {
+        const singleColor = Array.isArray(layerColor)
+          ? (layerColor[0] ?? DEFAULT_LAYER_COLOR)
+          : layerColor;
+        const [redChannel, greenChannel, blueChannel] = parseColor(singleColor);
+
+        lineColor = vec3(redChannel, greenChannel, blueChannel);
+      }
 
       // Per-line phase stagger with a time-growing term: at braiding 0 the
       // spread is frozen; above 0 it evolves, so lines periodically pass
@@ -211,9 +238,7 @@ export function WavesShader(props: WavesShaderProps) {
       const halo = baseHalfWidth.mul(HALO_WEIGHT).div(distanceFromLine.add(HALO_SOFTENING));
       const intensity = core.add(halo).mul(glowValue);
 
-      waveColor = waveColor.add(
-        vec3(intensity.mul(redChannel), intensity.mul(greenChannel), intensity.mul(blueChannel)),
-      );
+      waveColor = waveColor.add(vec3(lineColor).mul(intensity));
     }
 
     const material = new MeshBasicNodeMaterial();
@@ -255,6 +280,8 @@ export function WavesShader(props: WavesShaderProps) {
     breathingUniform,
     flareStrengthUniform,
     flareRadiusUniform,
+    colorDriftUniform,
+    props.colorSpace,
   ]);
 
   return null;
