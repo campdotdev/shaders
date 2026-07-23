@@ -20,11 +20,6 @@ export default function WavesScene({
 
     return {
       color: layer.colors.length === 1 && firstColor !== undefined ? firstColor : layer.colors,
-      amplitude: layer.amplitude,
-      glow: layer.glow,
-      brightness: layer.brightness,
-      opacity: layer.opacity,
-      thickness: layer.thickness,
     };
   });
 
@@ -41,9 +36,9 @@ export default function WavesScene({
         flare={params.flare}
         flareRadius={params.flareRadius}
         frequency={params.frequency}
-        glow={params.glow}
         layers={layers}
         opacity={params.opacity}
+        softness={params.softness}
         speed={params.speed}
         thickness={params.thickness}
       />

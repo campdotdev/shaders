@@ -5,31 +5,18 @@ import type { AnimatableProp } from '@lovo/matter-react';
 
 import { WavesShader } from './shader';
 
-/**
- * A single wave line. Each numeric field scales the matching global prop
- * for this line only; omit a field to use the global value as-is.
- */
+/** A single wave line: a flat color or a gradient along its length. */
 export interface WaveLayer {
   /** Single color, or 2+ stops forming a gradient along the line — hex, `oklch()`, or `oklab()`. */
   color?: string | string[];
-  /** This line's wave height. */
-  amplitude?: number;
-  /** This line's softness. */
-  glow?: number;
-  /** This line's brightness. */
-  brightness?: number;
-  /** This line's opacity. */
-  opacity?: number;
-  /** This line's width. */
-  thickness?: number;
 }
 
 export interface WavesProps {
   /**
-   * The wave lines to draw. At opacity 0.5 (the default) lines emit light
-   * additively — overlaps brighten. Above 0.5, bodies cover the lines
-   * behind them: the first line is frontmost. The first line breathes
-   * deepest; later lines calm toward the back.
+   * The wave lines to draw. Bodies are surfaces — the first line is
+   * frontmost and covers those behind it per its opacity — while halos
+   * add as light. The first line breathes deepest; later lines calm
+   * toward the back.
    */
   layers?: WaveLayer[];
   /**
@@ -50,21 +37,22 @@ export interface WavesProps {
   speed?: AnimatableProp<number>;
   /**
    * Edge softness and halo reach, 0..1. 0 = a crisp ribbon with a tight
-   * edge; 1 = a long luminous haze. Defaults to 0.5. Accepts a static
-   * value or an animation signal.
+   * edge; 1 = a long soft haze. Shape only — brightness controls the
+   * halo's light. Defaults to 0.5. Accepts a static value or an
+   * animation signal.
    */
-  glow?: AnimatableProp<number>;
+  softness?: AnimatableProp<number>;
   /**
-   * Light output of the lines, 0 = invisible, 1 = full. Dims uniformly
-   * without changing apparent width. Defaults to 1. Accepts a static value
-   * or an animation signal.
+   * Halo luminosity. 0 = no halo — a bare hard-edged ribbon; 1 = the
+   * neutral look; higher values drive the halo hot. The body stays
+   * pinned at its color. Defaults to 1. Accepts a static value or an
+   * animation signal.
    */
   brightness?: AnimatableProp<number>;
   /**
-   * Line presence on a three-look dial, 0..1. 0 = invisible; 0.5 = pure
-   * light — overlaps add and brighten; 1 = solid ribbons — the first
-   * layer is frontmost and covers the rest. Defaults to 0.5. Accepts a
-   * static value or an animation signal.
+   * Body opacity, 0..1. 0 = no body — lines render as pure light; 1 =
+   * solid ribbons that cover the lines behind them. Halos are unaffected.
+   * Defaults to 1. Accepts a static value or an animation signal.
    */
   opacity?: AnimatableProp<number>;
   /**
@@ -133,9 +121,9 @@ export function Waves({
   amplitude = 0.2,
   frequency = 1,
   speed = 1,
-  glow = 0.5,
+  softness = 0.5,
   brightness = 1,
-  opacity = 0.5,
+  opacity = 1,
   thickness = 0.65,
   baseline = 0,
   braiding = 0,
@@ -157,9 +145,9 @@ export function Waves({
       flare={flare}
       flareRadius={flareRadius}
       frequency={frequency}
-      glow={glow}
       layers={layers}
       opacity={opacity}
+      softness={softness}
       speed={speed}
       thickness={thickness}
     />
