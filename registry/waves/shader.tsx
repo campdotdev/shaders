@@ -21,31 +21,18 @@ import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/web
 
 import { parseColor, toColorRampStops } from '../utils/color';
 
-/**
- * A single wave line. Each numeric field scales the matching global prop
- * for this line only; omit a field to use the global value as-is.
- */
+/** A single wave line: a flat color or a gradient along its length. */
 interface WavesShaderLayer {
   /** Single color, or 2+ stops forming a gradient along the line — hex, `oklch()`, or `oklab()`. */
   color?: string | string[];
-  /** This line's wave height. */
-  amplitude?: number;
-  /** This line's softness. */
-  glow?: number;
-  /** This line's brightness. */
-  brightness?: number;
-  /** This line's opacity. */
-  opacity?: number;
-  /** This line's width. */
-  thickness?: number;
 }
 
 export interface WavesShaderProps {
   /**
-   * The wave lines to draw. At opacity 0.5 (the default) lines emit light
-   * additively — overlaps brighten. Above 0.5, bodies cover the lines
-   * behind them: the first line is frontmost. The first line breathes
-   * deepest; later lines calm toward the back.
+   * The wave lines to draw. Bodies are surfaces — the first line is
+   * frontmost and covers those behind it per its opacity — while halos
+   * add as light. The first line breathes deepest; later lines calm
+   * toward the back.
    */
   layers: WavesShaderLayer[];
   /**
@@ -65,21 +52,20 @@ export interface WavesShaderProps {
   speed: AnimatableProp<number>;
   /**
    * Edge softness and halo reach, 0..1. 0 = a crisp ribbon with a tight
-   * edge; 1 = a long luminous haze. Accepts a static value or an animation
-   * signal.
+   * edge; 1 = a long soft haze. Shape only — brightness controls the
+   * halo's light. Accepts a static value or an animation signal.
    */
-  glow: AnimatableProp<number>;
+  softness: AnimatableProp<number>;
   /**
-   * Light output of the lines, 0 = invisible, 1 = full. Dims uniformly
-   * without changing apparent width. Accepts a static value or an
-   * animation signal.
+   * Halo luminosity. 0 = no halo — a bare hard-edged ribbon; 1 = the
+   * neutral look; higher values drive the halo hot. The body stays
+   * pinned at its color. Accepts a static value or an animation signal.
    */
   brightness: AnimatableProp<number>;
   /**
-   * Line presence on a three-look dial, 0..1. 0 = invisible; 0.5 = pure
-   * light — overlaps add and brighten; 1 = solid ribbons — the first
-   * layer is frontmost and covers the rest. Accepts a static value or an
-   * animation signal.
+   * Body opacity, 0..1. 0 = no body — lines render as pure light; 1 =
+   * solid ribbons that cover the lines behind them. Halos are unaffected.
+   * Accepts a static value or an animation signal.
    */
   opacity: AnimatableProp<number>;
   /**
@@ -125,11 +111,6 @@ export interface WavesShaderProps {
   colorSpace: ColorSpace;
 }
 
-const DEFAULT_AMPLITUDE = 0.2;
-const DEFAULT_GLOW = 0.5;
-const DEFAULT_BRIGHTNESS = 1;
-const DEFAULT_OPACITY = 0.5;
-const DEFAULT_THICKNESS = 0.65;
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
 // Half of the saturated body's height at thickness 1, in canvas units.
@@ -144,10 +125,17 @@ const HALO_SCALE = 0.013;
 // Keeps the divide finite at the body edge, where the outside distance is
 // 0. Canvas units.
 const EDGE_EPSILON = 1e-4;
-// Falloff exponent at glow 0: a near-cliff edge. Gate-tunable.
+// Falloff exponent at softness 0: a near-cliff edge. Gate-tunable.
 const EXPONENT_CRISP = 6;
-// Falloff exponent at glow 1: the laser's 1/distance haze. Gate-tunable.
+// Falloff exponent at softness 1: the laser's 1/distance haze.
+// Gate-tunable.
 const EXPONENT_HAZY = 1;
+// Halo light per unit of brightness: brightness 1 drives the skirt at
+// this multiplier, reproducing the neutral look. Gate-tunable.
+const DRIVE_SCALE = 2;
+// Width of the body's anti-aliased edge beyond its half-width, in canvas
+// units (roughly 1.5px on a typical canvas). Gate-tunable.
+const BODY_EDGE = 0.004;
 
 // Phase radians the shared wave scrolls per speed-scaled second. Gate-tunable.
 const SCROLL_RATE = 2;
@@ -168,7 +156,7 @@ export function WavesShader({
   amplitude,
   frequency,
   speed,
-  glow,
+  softness,
   brightness,
   opacity,
   thickness,
@@ -185,7 +173,7 @@ export function WavesShader({
   const ampUniform = useAnimatableUniform<number>(amplitude);
   const freqUniform = useAnimatableUniform<number>(frequency);
   const speedUniform = useAnimatableUniform<number>(speed);
-  const glowUniform = useAnimatableUniform<number>(glow);
+  const softnessUniform = useAnimatableUniform<number>(softness);
   const brightnessUniform = useAnimatableUniform<number>(brightness);
   const opacityUniform = useAnimatableUniform<number>(opacity);
   const thicknessUniform = useAnimatableUniform<number>(thickness);
@@ -197,10 +185,7 @@ export function WavesShader({
   const colorDriftUniform = useAnimatableUniform<number>(colorDrift);
 
   const layersKey = layers
-    .map(
-      (layer) =>
-        `${Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')}|${layer.amplitude ?? ''}|${layer.glow ?? ''}|${layer.brightness ?? ''}|${layer.opacity ?? ''}|${layer.thickness ?? ''}`,
-    )
+    .map((layer) => (Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')))
     .join('||');
 
   useEffect(() => {
@@ -233,33 +218,27 @@ export function WavesShader({
     const driftedX = uv().x.sub(time.mul(colorDriftUniform));
     const rampT = fract(driftedX.mul(0.5).add(0.5)).mul(2).sub(1).abs();
 
+    // With per-line overrides gone, the profile math is shared by every
+    // line; only the spine position and color vary per layer.
+    const halfWidth = thicknessUniform.mul(BAND_HALF_WIDTH).mul(flare);
+    // Softness picks the falloff exponent — shape only, not a gain. Low
+    // softness → high exponent → the tail dies within a pixel of the body
+    // (crisp ribbon). High softness → exponent 1 → the 1/distance laser
+    // haze.
+    const exponent = mix(float(EXPONENT_CRISP), float(EXPONENT_HAZY), softnessUniform.clamp(0, 1));
+    // min caps the skirt for wide lines and shrinks it with the body for
+    // thin ones — apparent width tracks thickness all the way down.
+    const haloScale = halfWidth.min(HALO_SCALE);
+    // max(0) guards a negative brightness signal inverting the field.
+    const drive = brightnessUniform.mul(DRIVE_SCALE).max(0);
+    const bodyOpacity = opacityUniform.clamp(0, 1);
+
     let waveColor = vec3(0, 0, 0);
 
     // Painter's order: iterate back-to-front so the FIRST layer in the
     // array composites last — frontmost when opacity occludes. layerIndex
     // keeps its array meaning for the stagger and pulse math.
     for (const [layerIndex, layer] of [...layers.entries()].reverse()) {
-      // Globals are master controls. Per-layer values preserve relative
-      // differences by scaling those globals against the component defaults.
-      const ampValue =
-        layer.amplitude === undefined
-          ? ampUniform
-          : ampUniform.mul(layer.amplitude / DEFAULT_AMPLITUDE);
-      const glowValue =
-        layer.glow === undefined ? glowUniform : glowUniform.mul(layer.glow / DEFAULT_GLOW);
-      const brightnessValue =
-        layer.brightness === undefined
-          ? brightnessUniform
-          : brightnessUniform.mul(layer.brightness / DEFAULT_BRIGHTNESS);
-      const opacityValue =
-        layer.opacity === undefined
-          ? opacityUniform
-          : opacityUniform.mul(layer.opacity / DEFAULT_OPACITY);
-      const thicknessValue =
-        layer.thickness === undefined
-          ? thicknessUniform
-          : thicknessUniform.mul(layer.thickness / DEFAULT_THICKNESS);
-
       const layerColor = layer.color ?? DEFAULT_LAYER_COLOR;
 
       let lineColor: ShaderNodeObject<Node>;
@@ -298,47 +277,32 @@ export function WavesShader({
       const pulseBase = sin(time.add(layerIndex * PULSE_STAGGER));
       const pulse = sin(pulseBase.mul(Math.PI / 2));
       const envelope = pulse.mul(breathingUniform).mul(depthWeight).add(1);
-      const layerY = yBase.add(wave.mul(ampValue).mul(envelope));
+      const layerY = yBase.add(wave.mul(ampUniform).mul(envelope));
 
-      // Overdriven-glow profile: one divergent glow field under a soft
-      // ceiling. The falloff is measured from the body's EDGE, not its
-      // spine: inside the body distanceOutside is 0, so the field is huge
-      // and 1 − e^(−x) pins it at 1 (the solid plateau). Thickness
-      // TRANSLATES the edge outward — the tail beyond it never scales
-      // with width, so widening a line adds body, never scene light.
+      // Line geometry: distance measured from the body's EDGE, not its
+      // spine — inside the body distanceOutside is 0. Thickness
+      // TRANSLATES the edge outward; the halo skirt beyond it never
+      // scales with width, so widening a line adds body, never light.
       const distanceFromLine = layerY.abs();
-      const halfWidth = thicknessValue.mul(BAND_HALF_WIDTH).mul(flare);
       const distanceOutside = distanceFromLine.sub(halfWidth).max(0);
-      // Glow picks the falloff exponent — a softness dial, not a gain. Low
-      // glow → high exponent → the tail dies within a pixel of the body
-      // (crisp ribbon). High glow → exponent 1 → the 1/distance laser
-      // haze. clamp keeps per-layer scaling inside the mapped range.
-      const exponent = mix(float(EXPONENT_CRISP), float(EXPONENT_HAZY), glowValue.clamp(0, 1));
-      // min caps the skirt for wide lines and shrinks it with the body for
-      // thin ones — apparent width tracks thickness all the way down.
-      const haloScale = halfWidth.min(HALO_SCALE);
-      const rawGlow = haloScale.div(distanceOutside.add(EDGE_EPSILON)).pow(exponent);
-      // Brightness multiplies AFTER the ceiling: pre-ceiling scaling can't
-      // dim a divergent profile (the plateau still saturates to 1) — it
-      // only moves the shoulder, which reads as width.
-      const intensity = rawGlow.negate().exp().oneMinus().mul(brightnessValue);
+      // Model S — a line is two ingredients. The BODY is a surface: crisp
+      // anti-aliased edge, composited source-over with opacity as its
+      // alpha. The HALO is additive light: brightness drives its
+      // intensity, softness its falloff shape. Surfaces blend and
+      // occlude; light sums.
+      const bodyCoverage = smoothstep(float(0), float(BODY_EDGE), distanceOutside).oneMinus();
+      const rawGlow = haloScale.div(distanceOutside.add(EDGE_EPSILON)).pow(exponent).mul(drive);
+      const haloLight = rawGlow.negate().exp().oneMinus();
 
-      // Three-look opacity dial. The lower half (0..0.5) fades the line's
-      // own light in — 0.5 is full light with zero occlusion, the pure
-      // additive look. The upper half (0.5..1) keeps full light and ramps
-      // occlusion: what's already painted (the lines BEHIND this one) is
-      // dimmed before this line's light adds on top, reaching solid
-      // alpha-over ribbons at 1. The occlusion clamp guards brightness
-      // overdrive (intensity > 1) pushing it past full cover.
-      const dial = opacityValue.clamp(0, 1);
-      const lightGain = dial.mul(2).min(1);
-      const occlusionGain = dial.mul(2).sub(1).max(0);
-      const occlusion = intensity.mul(occlusionGain).clamp(0, 1);
+      // Source-over: this line's body covers everything painted so far
+      // (lines AND halos behind it), with textbook-monotonic opacity.
+      const bodyAlpha = bodyCoverage.mul(bodyOpacity);
 
-      waveColor = vec3(lineColor)
-        .mul(intensity)
-        .mul(lightGain)
-        .add(waveColor.mul(occlusion.oneMinus()));
+      waveColor = vec3(mix(waveColor, vec3(lineColor), bodyAlpha));
+      // The halo adds as light, masked by this line's own painted body so
+      // the glow rings the ribbon instead of overexposing it. At opacity
+      // 0 the mask vanishes and the whole line renders as pure light.
+      waveColor = waveColor.add(vec3(lineColor).mul(haloLight).mul(bodyAlpha.oneMinus()));
     }
 
     const material = new MeshBasicNodeMaterial();
@@ -373,7 +337,7 @@ export function WavesShader({
     ampUniform,
     freqUniform,
     speedUniform,
-    glowUniform,
+    softnessUniform,
     brightnessUniform,
     opacityUniform,
     thicknessUniform,

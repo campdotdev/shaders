@@ -27,8 +27,7 @@ const formatNumber = (numericValue: number) => String(Math.round(numericValue * 
 const formatColor = (colors: string[]) =>
   colors.length === 1 ? `'${colors[0]}'` : `[${colors.map((color) => `'${color}'`).join(', ')}]`;
 
-const formatLayer = (layer: Layer) =>
-  `{ color: ${formatColor(layer.colors)}, amplitude: ${formatNumber(layer.amplitude)}, glow: ${formatNumber(layer.glow)}, brightness: ${formatNumber(layer.brightness)}, opacity: ${formatNumber(layer.opacity)}, thickness: ${formatNumber(layer.thickness)} }`;
+const formatLayer = (layer: Layer) => `{ color: ${formatColor(layer.colors)} }`;
 
 const formatLayers = (layers: Layer[]) => layers.map(formatLayer).join(',\n    ');
 
@@ -41,7 +40,7 @@ const formatJsx = (params: Params) =>
     amplitude={${formatNumber(params.amplitude)}}
     frequency={${formatNumber(params.frequency)}}
     speed={${formatNumber(params.speed)}}
-    glow={${formatNumber(params.glow)}}
+    softness={${formatNumber(params.softness)}}
     brightness={${formatNumber(params.brightness)}}
     opacity={${formatNumber(params.opacity)}}
     thickness={${formatNumber(params.thickness)}}
@@ -63,7 +62,7 @@ const formatParams = (params: Params) =>
   amplitude: ${formatNumber(params.amplitude)},
   frequency: ${formatNumber(params.frequency)},
   speed: ${formatNumber(params.speed)},
-  glow: ${formatNumber(params.glow)},
+  softness: ${formatNumber(params.softness)},
   brightness: ${formatNumber(params.brightness)},
   opacity: ${formatNumber(params.opacity)},
   thickness: ${formatNumber(params.thickness)},
@@ -111,7 +110,7 @@ export default function WavesPage() {
     pane.addBinding(local, 'amplitude', { min: 0, max: 0.5, step: 0.005 });
     pane.addBinding(local, 'frequency', { min: 0.1, max: 10, step: 0.05 });
     pane.addBinding(local, 'speed', { min: 0, max: 4, step: 0.05 });
-    pane.addBinding(local, 'glow', { min: 0, max: 1, step: 0.01 });
+    pane.addBinding(local, 'softness', { min: 0, max: 1, step: 0.01 });
     pane.addBinding(local, 'brightness', { min: 0, max: 2, step: 0.01 });
     pane.addBinding(local, 'opacity', { min: 0, max: 1, step: 0.001 });
     pane.addBinding(local, 'thickness', { min: 0.01, max: 8, step: 0.01 });
@@ -146,12 +145,6 @@ export default function WavesPage() {
           title: `Layer ${layerIndex}`,
           expanded: layerIndex === 0,
         });
-
-        row.addBinding(layer, 'amplitude', { min: 0, max: 0.5, step: 0.005 });
-        row.addBinding(layer, 'glow', { min: 0, max: 1, step: 0.01 });
-        row.addBinding(layer, 'brightness', { min: 0, max: 2, step: 0.01 });
-        row.addBinding(layer, 'opacity', { min: 0, max: 1, step: 0.001 });
-        row.addBinding(layer, 'thickness', { min: 0.01, max: 8, step: 0.01 });
 
         const stopsFolder = row.addFolder({ title: 'Colors' });
 
@@ -225,11 +218,6 @@ export default function WavesPage() {
         const last = local.layers[local.layers.length - 1];
         const next: Layer = {
           colors: last ? [...last.colors] : ['oklch(0.6 0.15 250)'],
-          amplitude: last?.amplitude ?? INITIAL.amplitude,
-          glow: last?.glow ?? INITIAL.glow,
-          brightness: last?.brightness ?? INITIAL.brightness,
-          opacity: last?.opacity ?? INITIAL.opacity,
-          thickness: last?.thickness ?? INITIAL.thickness,
         };
 
         local.layers.push(next);
