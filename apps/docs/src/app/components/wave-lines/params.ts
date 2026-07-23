@@ -22,8 +22,8 @@ export interface Params {
   lines: Line[];
 }
 
-export const MIN_LAYERS = 1;
-export const MAX_LAYERS = 12;
+export const MIN_LINES = 1;
+export const MAX_LINES = 12;
 export const MIN_STOPS = 1;
 export const MAX_STOPS = 4;
 

@@ -13,9 +13,9 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 import {
   INITIAL,
   type Line,
-  MAX_LAYERS,
+  MAX_LINES,
   MAX_STOPS,
-  MIN_LAYERS,
+  MIN_LINES,
   MIN_STOPS,
   type Params,
 } from './params';
@@ -27,15 +27,15 @@ const formatNumber = (numericValue: number) => String(Math.round(numericValue * 
 const formatColor = (colors: string[]) =>
   colors.length === 1 ? `'${colors[0]}'` : `[${colors.map((color) => `'${color}'`).join(', ')}]`;
 
-const formatLayer = (layer: Line) => `{ color: ${formatColor(layer.colors)} }`;
+const formatLine = (line: Line) => `{ color: ${formatColor(line.colors)} }`;
 
-const formatLayers = (layers: Line[]) => layers.map(formatLayer).join(',\n    ');
+const formatLines = (lines: Line[]) => lines.map(formatLine).join(',\n    ');
 
 const formatJsx = (params: Params) =>
   `<ShaderScene>
   <WaveLines
     lines={[
-    ${formatLayers(params.lines)}
+    ${formatLines(params.lines)}
     ]}
     amplitude={${formatNumber(params.amplitude)}}
     frequency={${formatNumber(params.frequency)}}
@@ -57,7 +57,7 @@ const formatJsx = (params: Params) =>
 const formatParams = (params: Params) =>
   `{
   lines: [
-    ${formatLayers(params.lines)}
+    ${formatLines(params.lines)}
   ],
   amplitude: ${formatNumber(params.amplitude)},
   frequency: ${formatNumber(params.frequency)},
@@ -96,7 +96,7 @@ export default function WaveLinesPage() {
 
     pane.addButton({ title: 'Reset all' }).on('click', () => {
       Object.assign(local, structuredClone(INITIAL));
-      rebuildLayers();
+      rebuildLines();
       pane.refresh();
       sync();
     });
@@ -132,28 +132,28 @@ export default function WaveLinesPage() {
     });
     pane.addBlade({ view: 'separator' });
 
-    const layersFolder = pane.addFolder({ title: 'Layers' });
+    const linesFolder = pane.addFolder({ title: 'Lines' });
 
     // Tweakpane folders are static; to render variable-length lists we
-    // dispose every child of the layers folder and rebuild on each mutation.
-    // Disposing a layer's folder cascades to its nested stops folder too.
-    const rebuildLayers = () => {
-      for (const child of [...layersFolder.children]) child.dispose();
+    // dispose every child of the lines folder and rebuild on each mutation.
+    // Disposing a line's folder cascades to its nested stops folder too.
+    const rebuildLines = () => {
+      for (const child of [...linesFolder.children]) child.dispose();
 
-      local.lines.forEach((layer, layerIndex) => {
-        const row = layersFolder.addFolder({
-          title: `Layer ${layerIndex}`,
-          expanded: layerIndex === 0,
+      local.lines.forEach((line, lineIndex) => {
+        const row = linesFolder.addFolder({
+          title: `Line ${lineIndex}`,
+          expanded: lineIndex === 0,
         });
 
         const stopsFolder = row.addFolder({ title: 'Colors' });
 
-        // Same dispose-and-rebuild approach, one level deeper: each layer's
+        // Same dispose-and-rebuild approach, one level deeper: each line's
         // color stops are their own dynamic list.
         const rebuildStops = () => {
           for (const child of [...stopsFolder.children]) child.dispose();
 
-          layer.colors.forEach((color, stopIndex) => {
+          line.colors.forEach((color, stopIndex) => {
             const stopRow = stopsFolder.addFolder({
               title: `Stop ${stopIndex}`,
               expanded: true,
@@ -172,14 +172,14 @@ export default function WaveLinesPage() {
               })
               .on('change', (event) => {
                 // Write-back only — the pane-wide 'change' listener syncs.
-                layer.colors[stopIndex] = event.value;
+                line.colors[stopIndex] = event.value;
               });
 
             const removeStopButton = stopRow.addButton({ title: 'Remove stop' });
 
-            if (layer.colors.length <= MIN_STOPS) removeStopButton.disabled = true;
+            if (line.colors.length <= MIN_STOPS) removeStopButton.disabled = true;
             removeStopButton.on('click', () => {
-              layer.colors.splice(stopIndex, 1);
+              line.colors.splice(stopIndex, 1);
               rebuildStops();
               sync();
             });
@@ -187,13 +187,13 @@ export default function WaveLinesPage() {
 
           const addStopButton = stopsFolder.addButton({ title: '+ Add stop' });
 
-          if (layer.colors.length >= MAX_STOPS) addStopButton.disabled = true;
+          if (line.colors.length >= MAX_STOPS) addStopButton.disabled = true;
           addStopButton.on('click', () => {
-            const last = layer.colors[layer.colors.length - 1];
+            const last = line.colors[line.colors.length - 1];
             // Duplicate the last stop's color so the new stop is visible.
             const nextColor = last ?? 'oklch(0.6 0.15 250)';
 
-            layer.colors.push(nextColor);
+            line.colors.push(nextColor);
             rebuildStops();
             sync();
           });
@@ -201,32 +201,32 @@ export default function WaveLinesPage() {
 
         rebuildStops();
 
-        const removeLayerButton = row.addButton({ title: 'Remove layer' });
+        const removeLineButton = row.addButton({ title: 'Remove line' });
 
-        if (local.lines.length <= MIN_LAYERS) removeLayerButton.disabled = true;
-        removeLayerButton.on('click', () => {
-          local.lines.splice(layerIndex, 1);
-          rebuildLayers();
+        if (local.lines.length <= MIN_LINES) removeLineButton.disabled = true;
+        removeLineButton.on('click', () => {
+          local.lines.splice(lineIndex, 1);
+          rebuildLines();
           sync();
         });
       });
 
-      const addLayerButton = layersFolder.addButton({ title: '+ Add layer' });
+      const addLineButton = linesFolder.addButton({ title: '+ Add line' });
 
-      if (local.lines.length >= MAX_LAYERS) addLayerButton.disabled = true;
-      addLayerButton.on('click', () => {
+      if (local.lines.length >= MAX_LINES) addLineButton.disabled = true;
+      addLineButton.on('click', () => {
         const last = local.lines[local.lines.length - 1];
         const next: Line = {
           colors: last ? [...last.colors] : ['oklch(0.6 0.15 250)'],
         };
 
         local.lines.push(next);
-        rebuildLayers();
+        rebuildLines();
         sync();
       });
     };
 
-    rebuildLayers();
+    rebuildLines();
 
     pane.on('change', sync);
 
