@@ -264,7 +264,7 @@ export default function WavesPage() {
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
         <h1 style={{ marginTop: 0 }}>&lt;Waves /&gt;</h1>
         <p>
-          A coherent bundle of additive wave lines in an analogous blue-to-violet run. The lines
+          A coherent bundle of glowing wave ribbons in an analogous blue-to-violet run. The lines
           share one wave and braid, breathe, and fray wide toward the canvas edges; each line takes
           a flat color or a gradient.
         </p>
