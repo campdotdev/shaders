@@ -54,7 +54,7 @@
     },
     "waves": {
       "file": "waves/waves.tsx",
-      "description": "Coherent additive wave bundle. Lines share one wave and braid, breathe, and fray wide toward the canvas edges, with per-line flat or gradient color.",
+      "description": "Coherent wave-line bundle: translucent ribbon bodies wrapped in additive halo light. Lines share one wave and braid, breathe, and fray wide toward the canvas edges, with per-line flat or gradient color.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "sin",
@@ -65,6 +65,10 @@
         "float",
         "fract",
         "max",
+        "min",
+        "mix",
+        "pow",
+        "exp",
         "smoothstep",
         "elapsedTime",
         "uniform",

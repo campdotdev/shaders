@@ -15,9 +15,17 @@ Matter ships as three coordinated npm packages: `@lovo/matter` (engine), `@lovo/
 
 The old Waves gave every layer its own `frequency`, `speed`, `offset`, and `waviness`, so getting multiple lines to move together was mostly luck. Those per-layer fields are gone. Every line now renders one shared wave, and the motion comes from two new props: `braiding` weaves the lines apart and back together over time, and `breathing` pulses their heights on a slow cycle, strongest on the first layer. Two more props, `flare` and `flareRadius`, widen the line ends into a soft fray toward the canvas edges.
 
-`color` on a layer now accepts either a single color or an array of stops that form a gradient along the line; `colorDrift` slides the gradient and `colorSpace` (default `oklab`) sets the mixing space. The line profile is different too, a crisp core with a soft halo instead of the old glow spikes, and the default set is eight blue-to-violet lines.
+`color` on a layer now accepts either a single color or an array of stops that form a gradient along the line; `colorDrift` slides the gradient and `colorSpace` (default `oklab`) sets the mixing space. The default set is eight blue-to-violet lines.
 
 Components ship by copy-paste, so installed copies keep rendering as before; re-add `waves` through the CLI to get the rebuild. If you had custom `layers`, they will render differently: the removed movement fields have no equivalent.
+
+**Breaking change — `Waves` lines are now ribbons wrapped in light.**
+
+The rebuild above still drew every line as pure added light, which kept the controls tangled: thicker lines made the whole canvas brighter, and `glow` changed brightness and edge softness at the same time. A line is now two parts with one control each. The body is a surface: `thickness` sets its width and `opacity` its transparency, from 0 (no body, the line renders as pure light) to 1 (solid ribbons that cover the lines behind them; the first layer sits in front). The halo is light: `softness` shapes how it falls off and `brightness` sets how much it casts. `glow` is gone, split into `softness` and `brightness`.
+
+Per-layer overrides (`amplitude`, `glow`, `thickness` on a layer) are gone too. A layer is just a color or gradient now, and lines differ through color, the movement system, and paint order. Defaults changed to show the new look: wide translucent ribbons with slow drifting gradients.
+
+Same copy-paste rule: installed copies keep rendering as before; re-add `waves` through the CLI to get the new line rendering.
 
 **Registry components: prop renames and prop docs.** Every Tier 1 component prop now has JSDoc hover documentation, and a few props got plainer names. Components ship by copy-paste, so your installed copies are unaffected; re-add a component through the CLI to get the new names.
 
