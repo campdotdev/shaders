@@ -32,13 +32,13 @@ export interface WavesProps {
   frequency?: AnimatableProp<number>;
   /**
    * Drift rate of the wave motion, shared by every line. 0 freezes the
-   * lines. Defaults to 1. Accepts a static value or an animation signal.
+   * lines. Defaults to 0.5. Accepts a static value or an animation signal.
    */
   speed?: AnimatableProp<number>;
   /**
    * Edge softness and halo reach, 0..1. 0 = a crisp ribbon with a tight
    * edge; 1 = a long soft haze. Shape only — brightness controls the
-   * halo's light. Defaults to 0.5. Accepts a static value or an
+   * halo's light. Defaults to 0.75. Accepts a static value or an
    * animation signal.
    */
   softness?: AnimatableProp<number>;
@@ -52,12 +52,12 @@ export interface WavesProps {
   /**
    * Body opacity, 0..1. 0 = no body — lines render as pure light; 1 =
    * solid ribbons that cover the lines behind them. Halos are unaffected.
-   * Defaults to 1. Accepts a static value or an animation signal.
+   * Defaults to 0.25. Accepts a static value or an animation signal.
    */
   opacity?: AnimatableProp<number>;
   /**
-   * Master line width. Larger values give broader lines. Defaults to 0.65.
-   * Accepts a static value or an animation signal.
+   * Master line width. Larger values give broader lines. Defaults to
+   * 3.75. Accepts a static value or an animation signal.
    */
   thickness?: AnimatableProp<number>;
   /**
@@ -80,19 +80,19 @@ export interface WavesProps {
   breathing?: AnimatableProp<number>;
   /**
    * How strongly lines fray wide at the ends. 0 = uniform width everywhere.
-   * At 1.5 lines are 2.5× wider at full flare. Defaults to 1.5. Accepts a
+   * At 1.5 lines are 2.5× wider at full flare. Defaults to 2. Accepts a
    * static value or an animation signal.
    */
   flare?: AnimatableProp<number>;
   /**
    * Distance from the focal point at which the fray reaches full width,
-   * 0..1 canvas half-widths. Defaults to 0.9. Accepts a static value or an
-   * animation signal.
+   * 0..1 canvas half-widths. Defaults to 0.92. Accepts a static value or
+   * an animation signal.
    */
   flareRadius?: AnimatableProp<number>;
   /**
    * Rate the gradient slides along each line. 0 pins it to the canvas.
-   * Defaults to 0.15. Accepts a static value or an animation signal.
+   * Defaults to 0.7. Accepts a static value or an animation signal.
    */
   colorDrift?: AnimatableProp<number>;
   /** Interpolation space for gradient lines. Defaults to oklab. */
@@ -120,17 +120,17 @@ export function Waves({
   layers = DEFAULT_LAYERS,
   amplitude = 0.2,
   frequency = 1,
-  speed = 1,
-  softness = 0.5,
+  speed = 0.5,
+  softness = 0.75,
   brightness = 1,
-  opacity = 1,
-  thickness = 0.65,
+  opacity = 0.25,
+  thickness = 3.75,
   baseline = 0,
   braiding = 0,
   breathing = 0.5,
-  flare = 1.5,
-  flareRadius = 0.9,
-  colorDrift = 0.15,
+  flare = 2,
+  flareRadius = 0.92,
+  colorDrift = 0.7,
   colorSpace = 'oklab',
 }: WavesProps) {
   return (
