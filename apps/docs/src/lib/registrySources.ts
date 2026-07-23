@@ -9,7 +9,7 @@ type RegistrySlug =
   | 'linear-gradient'
   | 'simplex-noise'
   | 'dot-field'
-  | 'waves'
+  | 'wave-lines'
   | 'mesh-gradient'
   | 'aurora';
 
@@ -17,7 +17,7 @@ const SLUG_FILES: Record<RegistrySlug, string> = {
   'linear-gradient': 'linear-gradient/linear-gradient.tsx',
   'simplex-noise': 'simplex-noise/simplex-noise.tsx',
   'dot-field': 'dot-field.tsx',
-  waves: 'waves.tsx',
+  'wave-lines': 'wave-lines.tsx',
   'mesh-gradient': 'mesh-gradient/mesh-gradient.tsx',
   aurora: 'aurora/aurora.tsx',
 };

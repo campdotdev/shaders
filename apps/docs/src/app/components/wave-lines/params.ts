@@ -1,6 +1,6 @@
 import type { ColorSpace } from '@lovo/matter';
 
-export interface Layer {
+export interface Line {
   colors: string[];
 }
 
@@ -19,7 +19,7 @@ export interface Params {
   flareRadius: number;
   colorDrift: number;
   colorSpace: ColorSpace;
-  layers: Layer[];
+  lines: Line[];
 }
 
 export const MIN_LAYERS = 1;
@@ -27,7 +27,7 @@ export const MAX_LAYERS = 12;
 export const MIN_STOPS = 1;
 export const MAX_STOPS = 4;
 
-// Mirrors the <Waves /> wrapper defaults (registry/waves/waves.tsx) exactly.
+// Mirrors the <WaveLines /> wrapper defaults (registry/wave-lines/wave-lines.tsx) exactly.
 export const INITIAL: Params = {
   amplitude: 0.2,
   frequency: 1,
@@ -43,7 +43,7 @@ export const INITIAL: Params = {
   flareRadius: 0.92,
   colorDrift: 0.7,
   colorSpace: 'oklab',
-  layers: [
+  lines: [
     {
       colors: ['oklch(0.85 0.12 235)', 'oklch(0.85 0.12 205)'],
     },
