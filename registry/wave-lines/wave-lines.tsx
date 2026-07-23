@@ -3,22 +3,22 @@
 import type { ColorSpace } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
-import { WavesShader } from './shader';
+import { WaveLinesShader } from './shader';
 
 /** A single wave line: a flat color or a gradient along its length. */
-export interface WaveLayer {
+export interface WaveLine {
   /** Single color, or 2+ stops forming a gradient along the line — hex, `oklch()`, or `oklab()`. */
   color?: string | string[];
 }
 
-export interface WavesProps {
+export interface WaveLinesProps {
   /**
    * The wave lines to draw. Bodies are surfaces — the first line is
    * frontmost and covers those behind it per its opacity — while halos
    * add as light. The first line breathes deepest; later lines calm
    * toward the back.
    */
-  layers?: WaveLayer[];
+  lines?: WaveLine[];
   /**
    * Wave height of the bundle, as a fraction of half the canvas height.
    * 0 = flat lines. Defaults to 0.2. Accepts a static value or an animation
@@ -99,13 +99,13 @@ export interface WavesProps {
   colorSpace?: ColorSpace;
 }
 
-// Default layer set: an 8-line analogous blue→violet bundle. Each line is a
+// Default line set: an 8-line analogous blue→violet bundle. Each line is a
 // gentle 30° hue gradient along its length (so colorDrift is visible out of
 // the box); lightness falls along the array for depth; all other per-line
 // fields ride the globals — variation comes from the movement system. The
 // hue run (205→340) tracks the brand palette's cool accent arc
 // (sky→blue→violet→purple).
-export const DEFAULT_LAYERS: WaveLayer[] = [
+export const DEFAULT_LINES: WaveLine[] = [
   { color: ['oklch(0.85 0.12 235)', 'oklch(0.85 0.12 205)'] },
   { color: ['oklch(0.8 0.14 250)', 'oklch(0.8 0.14 220)'] },
   { color: ['oklch(0.75 0.16 265)', 'oklch(0.75 0.16 235)'] },
@@ -116,8 +116,8 @@ export const DEFAULT_LAYERS: WaveLayer[] = [
   { color: ['oklch(0.5 0.13 340)', 'oklch(0.5 0.13 310)'] },
 ];
 
-export function Waves({
-  layers = DEFAULT_LAYERS,
+export function WaveLines({
+  lines = DEFAULT_LINES,
   amplitude = 0.2,
   frequency = 1,
   speed = 0.5,
@@ -132,9 +132,9 @@ export function Waves({
   flareRadius = 0.92,
   colorDrift = 0.7,
   colorSpace = 'oklab',
-}: WavesProps) {
+}: WaveLinesProps) {
   return (
-    <WavesShader
+    <WaveLinesShader
       amplitude={amplitude}
       baseline={baseline}
       braiding={braiding}
@@ -145,7 +145,7 @@ export function Waves({
       flare={flare}
       flareRadius={flareRadius}
       frequency={frequency}
-      layers={layers}
+      lines={lines}
       opacity={opacity}
       softness={softness}
       speed={speed}

@@ -9,7 +9,7 @@
     "./simplex-noise": "./simplex-noise/simplex-noise.tsx",
     "./dot-field": "./dot-field/dot-field.tsx",
     "./grain": "./grain/grain.tsx",
-    "./waves": "./waves/waves.tsx",
+    "./wave-lines": "./wave-lines/wave-lines.tsx",
     "./mesh-gradient": "./mesh-gradient/mesh-gradient.tsx",
     "./aurora": "./aurora/aurora.tsx",
     "./vignette": "./vignette/vignette.tsx"

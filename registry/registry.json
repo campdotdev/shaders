@@ -52,8 +52,8 @@
       "uses_primitives": ["grain", "uv", "vec4", "uniform", "elapsedTime", "floor"],
       "tier": 1
     },
-    "waves": {
-      "file": "waves/waves.tsx",
+    "wave-lines": {
+      "file": "wave-lines/wave-lines.tsx",
       "description": "Coherent wave-line bundle: translucent ribbon bodies wrapped in additive halo light. Lines share one wave and braid, breathe, and fray wide toward the canvas edges, with per-line flat or gradient color.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [

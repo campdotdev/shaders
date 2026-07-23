@@ -22,19 +22,19 @@ import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/web
 import { parseColor, toColorRampStops } from '../utils/color';
 
 /** A single wave line: a flat color or a gradient along its length. */
-interface WavesShaderLayer {
+interface WaveLinesShaderLine {
   /** Single color, or 2+ stops forming a gradient along the line — hex, `oklch()`, or `oklab()`. */
   color?: string | string[];
 }
 
-export interface WavesShaderProps {
+export interface WaveLinesShaderProps {
   /**
    * The wave lines to draw. Bodies are surfaces — the first line is
    * frontmost and covers those behind it per its opacity — while halos
    * add as light. The first line breathes deepest; later lines calm
    * toward the back.
    */
-  layers: WavesShaderLayer[];
+  lines: WaveLinesShaderLine[];
   /**
    * Wave height of the bundle, as a fraction of half the canvas height.
    * 0 = flat lines. Accepts a static value or an animation signal.
@@ -151,8 +151,8 @@ const PULSE_STAGGER = 0.35;
 // zone), which stays smooth even at small radii. Gate-tunable.
 const FLARE_START = 0;
 
-export function WavesShader({
-  layers,
+export function WaveLinesShader({
+  lines,
   amplitude,
   frequency,
   speed,
@@ -167,7 +167,7 @@ export function WavesShader({
   flareRadius,
   colorDrift,
   colorSpace,
-}: WavesShaderProps) {
+}: WaveLinesShaderProps) {
   const shaderContext = useShaderContext();
 
   const ampUniform = useAnimatableUniform<number>(amplitude);
@@ -184,8 +184,8 @@ export function WavesShader({
   const flareRadiusUniform = useAnimatableUniform<number>(flareRadius);
   const colorDriftUniform = useAnimatableUniform<number>(colorDrift);
 
-  const layersKey = layers
-    .map((layer) => (Array.isArray(layer.color) ? layer.color.join(',') : (layer.color ?? '')))
+  const linesKey = lines
+    .map((line) => (Array.isArray(line.color) ? line.color.join(',') : (line.color ?? '')))
     .join('||');
 
   useEffect(() => {
@@ -238,7 +238,7 @@ export function WavesShader({
     // Painter's order: iterate back-to-front so the FIRST layer in the
     // array composites last — frontmost when opacity occludes. layerIndex
     // keeps its array meaning for the stagger and pulse math.
-    for (const [layerIndex, layer] of [...layers.entries()].reverse()) {
+    for (const [layerIndex, layer] of [...lines.entries()].reverse()) {
       const layerColor = layer.color ?? DEFAULT_LAYER_COLOR;
 
       let lineColor: ShaderNodeObject<Node>;
@@ -267,10 +267,10 @@ export function WavesShader({
       const wave = sin(wavePhase.add(lineStagger));
 
       // Slow per-line height pulse. depthWeight fades the pulse toward the
-      // back of the stack (last layers barely breathe), matching the
+      // back of the stack (last lines barely breathe), matching the
       // reference. The envelope swings amplitude between (1 − breathing) and
       // (1 + breathing) times its base value.
-      const depthWeight = 1 - layerIndex / layers.length;
+      const depthWeight = 1 - layerIndex / lines.length;
       // Sine-of-sine shaping: still swings −1..1, but the slope hits zero at
       // the extremes, so the pulse dwells fully-swollen / fully-flattened and
       // moves quickly through the middle.
@@ -327,13 +327,13 @@ export function WavesShader({
         /* same */
       }
     };
-    // layersKey is a stable string proxy for layers — listing the
+    // linesKey is a stable string proxy for lines — listing the
     // array itself would trigger rebuild on identity-only changes. Matches
     // LinearGradient's pattern.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     shaderContext,
-    layersKey,
+    linesKey,
     ampUniform,
     freqUniform,
     speedUniform,
