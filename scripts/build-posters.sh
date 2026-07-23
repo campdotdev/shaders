@@ -28,7 +28,7 @@ for pair in \
   "aurora:jpg:#0b0f1a" \
   "grain:jpg" \
   "mesh-gradient:jpg" \
-  "waves:jpg" \
+  "wave-lines:jpg" \
   "vignette:jpg" \
   "dot-field:png"; do
   name="${pair%%:*}"

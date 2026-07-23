@@ -150,7 +150,7 @@ interface CursorRippleOptions {
   speed?: number      // default 6
   amplitude?: number  // default 0.5
 }`,
-    usedBy: ['waves'],
+    usedBy: ['wave-lines'],
     controls: [
       { name: 'amplitude', min: 0, max: 0.2, step: 0.005, default: 0.05 },
       { name: 'falloff', min: 1, max: 10, step: 0.5, default: 4 },
@@ -166,7 +166,7 @@ interface CursorRippleOptions {
 // prefers-reduced-motion and any setReducedMotionPolicy override.
 // Import from '@lovo/matter'. For raw uncapped time, import from
 // 'three/tsl' directly.`,
-    usedBy: ['linear-gradient', 'simplex-noise', 'waves', 'mesh-gradient', 'aurora'],
+    usedBy: ['linear-gradient', 'simplex-noise', 'wave-lines', 'mesh-gradient', 'aurora'],
     controls: [],
   },
 ];

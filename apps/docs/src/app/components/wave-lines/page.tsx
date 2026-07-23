@@ -12,7 +12,7 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import {
   INITIAL,
-  type Layer,
+  type Line,
   MAX_LAYERS,
   MAX_STOPS,
   MIN_LAYERS,
@@ -20,22 +20,22 @@ import {
   type Params,
 } from './params';
 
-const WavesScene = dynamic(() => import('./scene'), { ssr: false });
+const WaveLinesScene = dynamic(() => import('./scene'), { ssr: false });
 
 const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
 
 const formatColor = (colors: string[]) =>
   colors.length === 1 ? `'${colors[0]}'` : `[${colors.map((color) => `'${color}'`).join(', ')}]`;
 
-const formatLayer = (layer: Layer) => `{ color: ${formatColor(layer.colors)} }`;
+const formatLayer = (layer: Line) => `{ color: ${formatColor(layer.colors)} }`;
 
-const formatLayers = (layers: Layer[]) => layers.map(formatLayer).join(',\n    ');
+const formatLayers = (layers: Line[]) => layers.map(formatLayer).join(',\n    ');
 
 const formatJsx = (params: Params) =>
   `<ShaderScene>
-  <Waves
-    layers={[
-    ${formatLayers(params.layers)}
+  <WaveLines
+    lines={[
+    ${formatLayers(params.lines)}
     ]}
     amplitude={${formatNumber(params.amplitude)}}
     frequency={${formatNumber(params.frequency)}}
@@ -56,8 +56,8 @@ const formatJsx = (params: Params) =>
 
 const formatParams = (params: Params) =>
   `{
-  layers: [
-    ${formatLayers(params.layers)}
+  lines: [
+    ${formatLayers(params.lines)}
   ],
   amplitude: ${formatNumber(params.amplitude)},
   frequency: ${formatNumber(params.frequency)},
@@ -75,7 +75,7 @@ const formatParams = (params: Params) =>
   colorSpace: '${params.colorSpace}',
 }`;
 
-export default function WavesPage() {
+export default function WaveLinesPage() {
   const paneContainerRef = useRef<HTMLDivElement>(null);
   const [params, setParams] = useState<Params>(() => structuredClone(INITIAL));
 
@@ -85,7 +85,7 @@ export default function WavesPage() {
     if (!container) return;
 
     const local: Params = structuredClone(INITIAL);
-    const pane = new Pane({ container, title: '<Waves>' });
+    const pane = new Pane({ container, title: '<WaveLines>' });
 
     // Pre-release wide-gamut color picker (docs-only). The built-in Tweakpane
     // picker is sRGB and rejects oklch()/oklab() strings; color-plus adapts its
@@ -140,7 +140,7 @@ export default function WavesPage() {
     const rebuildLayers = () => {
       for (const child of [...layersFolder.children]) child.dispose();
 
-      local.layers.forEach((layer, layerIndex) => {
+      local.lines.forEach((layer, layerIndex) => {
         const row = layersFolder.addFolder({
           title: `Layer ${layerIndex}`,
           expanded: layerIndex === 0,
@@ -203,9 +203,9 @@ export default function WavesPage() {
 
         const removeLayerButton = row.addButton({ title: 'Remove layer' });
 
-        if (local.layers.length <= MIN_LAYERS) removeLayerButton.disabled = true;
+        if (local.lines.length <= MIN_LAYERS) removeLayerButton.disabled = true;
         removeLayerButton.on('click', () => {
-          local.layers.splice(layerIndex, 1);
+          local.lines.splice(layerIndex, 1);
           rebuildLayers();
           sync();
         });
@@ -213,14 +213,14 @@ export default function WavesPage() {
 
       const addLayerButton = layersFolder.addButton({ title: '+ Add layer' });
 
-      if (local.layers.length >= MAX_LAYERS) addLayerButton.disabled = true;
+      if (local.lines.length >= MAX_LAYERS) addLayerButton.disabled = true;
       addLayerButton.on('click', () => {
-        const last = local.layers[local.layers.length - 1];
-        const next: Layer = {
+        const last = local.lines[local.lines.length - 1];
+        const next: Line = {
           colors: last ? [...last.colors] : ['oklch(0.6 0.15 250)'],
         };
 
-        local.layers.push(next);
+        local.lines.push(next);
         rebuildLayers();
         sync();
       });
@@ -239,12 +239,12 @@ export default function WavesPage() {
     <main style={{ minHeight: '100vh', position: 'relative' }}>
       <div data-shader-demo style={{ position: 'relative', background: '#0a0a14' }}>
         <DemoPoster
-          alt="Waves shader preview: an eight-line blue-to-violet wave bundle braiding and breathing over a dark field"
-          src="/posters/waves.jpg"
+          alt="WaveLines shader preview: an eight-line blue-to-violet wave bundle braiding and breathing over a dark field"
+          src="/posters/wave-lines.jpg"
         >
-          <WavesScene params={params}>
+          <WaveLinesScene params={params}>
             <VisualTestPause />
-          </WavesScene>
+          </WaveLinesScene>
         </DemoPoster>
         <div
           aria-hidden="true"
@@ -262,7 +262,7 @@ export default function WavesPage() {
         />
       </div>
       <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-        <h1 style={{ marginTop: 0 }}>&lt;Waves /&gt;</h1>
+        <h1 style={{ marginTop: 0 }}>&lt;WaveLines /&gt;</h1>
         <p>
           A coherent bundle of glowing wave ribbons in an analogous blue-to-violet run. The lines
           share one wave and braid, breathe, and fray wide toward the canvas edges; each line takes

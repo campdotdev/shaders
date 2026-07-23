@@ -4,7 +4,7 @@ const COMPONENTS = [
   { slug: 'linear-gradient', label: '<LinearGradient>' },
   { slug: 'simplex-noise', label: '<SimplexNoise>' },
   { slug: 'dot-field', label: '<DotField>' },
-  { slug: 'waves', label: '<Waves>' },
+  { slug: 'wave-lines', label: '<WaveLines>' },
   { slug: 'mesh-gradient', label: '<MeshGradient>' },
   { slug: 'aurora', label: '<Aurora>' },
 ] as const;

@@ -3,29 +3,29 @@
 import type { ReactNode } from 'react';
 
 import { ShaderScene } from '@lovo/matter-react';
-import { Waves } from '@matter/registry/waves';
-import type { WaveLayer } from '@matter/registry/waves';
+import { WaveLines } from '@matter/registry/wave-lines';
+import type { WaveLine } from '@matter/registry/wave-lines';
 
 import { INITIAL, type Params } from './params';
 
-export default function WavesScene({
+export default function WaveLinesScene({
   params = INITIAL,
   children,
 }: {
   params?: Params;
   children?: ReactNode;
 } = {}) {
-  const layers: WaveLayer[] = params.layers.map((layer) => {
-    const [firstColor] = layer.colors;
+  const lines: WaveLine[] = params.lines.map((line) => {
+    const [firstColor] = line.colors;
 
     return {
-      color: layer.colors.length === 1 && firstColor !== undefined ? firstColor : layer.colors,
+      color: line.colors.length === 1 && firstColor !== undefined ? firstColor : line.colors,
     };
   });
 
   return (
     <ShaderScene>
-      <Waves
+      <WaveLines
         amplitude={params.amplitude}
         baseline={params.baseline}
         braiding={params.braiding}
@@ -36,7 +36,7 @@ export default function WavesScene({
         flare={params.flare}
         flareRadius={params.flareRadius}
         frequency={params.frequency}
-        layers={layers}
+        lines={lines}
         opacity={params.opacity}
         softness={params.softness}
         speed={params.speed}

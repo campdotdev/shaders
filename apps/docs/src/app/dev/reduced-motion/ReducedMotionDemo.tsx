@@ -8,7 +8,9 @@ import { ShaderScene } from '@lovo/matter-react';
 import { LinearGradient } from '@matter/registry/linear-gradient';
 import { Pane } from 'tweakpane';
 
-const Waves = dynamic(() => import('@matter/registry/waves').then((m) => m.Waves), { ssr: false });
+const WaveLines = dynamic(() => import('@matter/registry/wave-lines').then((m) => m.WaveLines), {
+  ssr: false,
+});
 
 const INITIAL_PARAMS: { policy: ReducedMotionPolicy } = { policy: 'auto' };
 
@@ -68,14 +70,14 @@ export function ReducedMotionDemo() {
               fontWeight: 600,
             }}
           >
-            Waves
+            WaveLines
           </p>
           <p style={{ margin: '0 0 0.5rem', fontSize: '0.8rem', color: '#666' }}>
             The waves should freeze when policy is paused.
           </p>
           <div style={{ position: 'relative', width: 600, height: 400 }}>
             <ShaderScene style={{ borderRadius: 8 }}>
-              <Waves />
+              <WaveLines />
             </ShaderScene>
           </div>
         </div>
