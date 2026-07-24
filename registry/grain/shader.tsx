@@ -17,8 +17,9 @@ export type GrainBlend = 'additive' | 'subtractive';
 
 export interface GrainShaderProps {
   /**
-   * Peak luminance deviation added or subtracted per pixel. 0 = no grain.
-   * Accepts a static value or an animation signal.
+   * Grain strength: each pixel's brightness shifts by a random amount up to
+   * half this value in either direction. 0 = no grain. Accepts a static
+   * value or an animation signal.
    */
   intensity: AnimatableProp<number>;
   /**

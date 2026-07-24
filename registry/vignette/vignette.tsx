@@ -23,8 +23,8 @@ export interface VignetteProps {
    */
   feather?: AnimatableProp<number>;
   /**
-   * Vignette center in normalized UV; `[0.5, 0.5]` is centered. Defaults to
-   * `[0.5, 0.5]`.
+   * Vignette center, 0..1 across the canvas; `[0.5, 0.5]` is centered and
+   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`.
    */
   center?: [number, number];
   /**

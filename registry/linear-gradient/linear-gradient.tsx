@@ -24,9 +24,11 @@ export interface LinearGradientProps {
    */
   angle?: AnimatableProp<number>;
   /**
-   * Anchor point of the gradient in normalized UV; `[0.5, 0.5]` is centered.
-   * The point on screen where the first color stop sits. Defaults to
-   * `[0.5, 0.5]`. Accepts a static value or an animation signal.
+   * Anchor point of the gradient, 0..1 across the canvas; `[0.5, 0.5]` is
+   * centered and `[0, 0]` is the top-left corner. The middle of the color
+   * ramp sits at the anchor, so moving it slides the whole gradient along
+   * its direction. Defaults to `[0.5, 0.5]`. Accepts a static value or an
+   * animation signal.
    */
   center?: AnimatableProp<readonly [number, number]>;
   /**

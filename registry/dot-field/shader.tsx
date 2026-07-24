@@ -23,7 +23,7 @@ import { parseColor } from '../utils/color';
 export interface DotFieldShaderProps {
   /** Grid cell size in pixels. Accepts a static value or an animation signal. */
   spacing: AnimatableProp<number>;
-  /** Dot radius in pixels. Accepts a static value or an animation signal. */
+  /** Dot diameter in pixels. Accepts a static value or an animation signal. */
   dotSize: AnimatableProp<number>;
   /** Dot color — hex, `oklch()`, or `oklab()`. */
   color: string;
@@ -47,7 +47,10 @@ export interface DotFieldShaderProps {
    * (uniform field). Accepts a static value or an animation signal.
    */
   decay: AnimatableProp<number>;
-  /** Ripple origin in normalized UV; `[0.5, 0.5]` is centered. */
+  /**
+   * Ripple origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
+   * `[0, 0]` is the top-left corner.
+   */
   center: [number, number];
 }
 
@@ -184,8 +187,11 @@ export function DotFieldShader({
   const centerVec = useMemo(() => new Vector2(0.5, 0.5), []);
   const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
 
+  // The y flip (1 - y) converts the prop's screen-style coordinates (y grows
+  // downward, [0, 0] top-left — the shared convention for every `center`
+  // prop) into the mesh's uv space, where v grows upward.
   useEffect(() => {
-    centerVec.set(center[0], center[1]);
+    centerVec.set(center[0], 1 - center[1]);
   }, [centerVec, center]);
 
   // The canvas resolution in pixels, needed because spacing/dotSize/
