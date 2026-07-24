@@ -1,5 +1,12 @@
 'use client';
 
+// The wave lines' GPU half. Every line is two ingredients: a BODY (a solid
+// surface with a crisp edge that covers lines behind it, like paint) and a
+// HALO (additive light that sums with everything, like a glow). All lines
+// share one wave, one clock, and one width profile — coherent group motion
+// comes from that shared architecture, with per-line variation limited to a
+// phase stagger, a depth-weighted height pulse, and color. The wrapper
+// (./wave-lines.tsx) supplies the props.
 import { useEffect } from 'react';
 
 import { colorRamp, type ColorSpace, elapsedTime } from '@lovo/matter';
@@ -113,6 +120,14 @@ export interface WaveLinesShaderProps {
 
 const DEFAULT_LAYER_COLOR = '#ff6f6a';
 
+// ---------------------------------------------
+// Tuning constants
+// ---------------------------------------------
+// "Gate-tunable" marks values whose settings were approved by eye at the
+// visual gates — safe to retune, but expect to re-judge the look. "Canvas
+// units" are the shader's -1..1 coordinate space (see samplePosition below),
+// so 0.02 spans 1% of the canvas height.
+
 // Half of the saturated body's height at thickness 1, in canvas units.
 // Gate-tunable.
 const BAND_HALF_WIDTH = 0.02;
@@ -170,6 +185,10 @@ export function WaveLinesShader({
 }: WaveLinesShaderProps) {
   const shaderContext = useShaderContext();
 
+  // Every dial lives in a uniform (a value the CPU can update each frame
+  // without rebuilding the shader), tracking either a static number or an
+  // animation signal. These are scalar uniforms, so chaining methods off
+  // them below is safe (the vec-uniform chaining gotcha doesn't apply).
   const ampUniform = useAnimatableUniform<number>(amplitude);
   const freqUniform = useAnimatableUniform<number>(frequency);
   const speedUniform = useAnimatableUniform<number>(speed);
@@ -184,13 +203,26 @@ export function WaveLinesShader({
   const flareRadiusUniform = useAnimatableUniform<number>(flareRadius);
   const colorDriftUniform = useAnimatableUniform<number>(colorDrift);
 
+  // Content fingerprint of the lines array (colors only — that's all a line
+  // carries). The build effect keys on this string, so a re-render passing a
+  // new array with the same contents doesn't rebuild the material.
   const linesKey = lines
     .map((line) => (Array.isArray(line.color) ? line.color.join(',') : (line.color ?? '')))
     .join('||');
 
+  // ---------------------------------------------
+  // Build the material and mount the mesh
+  // ---------------------------------------------
+  // Runs once per mount — and again when the line colors or color space
+  // change, because colorRamp bakes gradient stops into the compiled shader.
   useEffect(() => {
     if (!shaderContext) return;
 
+    // ---------------------------------------------
+    // Shared coordinates and motion
+    // ---------------------------------------------
+    // Map uv (0..1) to canvas units (-1..1 on both axes, origin at the
+    // center) — the space every constant above is expressed in.
     const samplePosition = vec2(uv().x.mul(2).sub(1), uv().y.mul(2).sub(1));
 
     const yBase = samplePosition.y.add(baselineUniform);
@@ -218,6 +250,9 @@ export function WaveLinesShader({
     const driftedX = uv().x.sub(time.mul(colorDriftUniform));
     const rampT = fract(driftedX.mul(0.5).add(0.5)).mul(2).sub(1).abs();
 
+    // ---------------------------------------------
+    // Shared line profile: width, falloff, light
+    // ---------------------------------------------
     // With per-line overrides gone, the profile math is shared by every
     // line; only the spine position and color vary per layer.
     const halfWidth = thicknessUniform.mul(BAND_HALF_WIDTH).mul(flare);
@@ -235,6 +270,9 @@ export function WaveLinesShader({
 
     let waveColor = vec3(0, 0, 0);
 
+    // ---------------------------------------------
+    // Paint the lines, back to front
+    // ---------------------------------------------
     // Painter's order: iterate back-to-front so the FIRST layer in the
     // array composites last — frontmost when opacity occludes. layerIndex
     // keeps its array meaning for the stagger and pulse math.

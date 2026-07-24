@@ -1,5 +1,10 @@
 'use client';
 
+// Public face of the dot field: owns the props, their JSDoc, and their
+// defaults, then delegates to DotFieldShader (./shader.tsx), which draws a
+// pixel-spaced grid of dots and ripples them outward from a center point.
+// Render it inside a <ShaderScene>; the gaps between dots are transparent,
+// so it can sit over other layers.
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import { DotFieldShader } from './shader';

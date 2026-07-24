@@ -1,5 +1,10 @@
 'use client';
 
+// The simplex-noise field's GPU half. Each pixel samples a 3D noise field
+// (x/y from screen position, z from time, so the pattern morphs in place
+// rather than scrolling), then the raw noise value runs through a chain of
+// 0..1 shaping steps — balance, contrast, banding — before picking a color
+// from the ramp. The wrapper (./simplex-noise.tsx) supplies the props.
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -75,42 +80,81 @@ export function SimplexNoiseShader({
   hueInterpolation,
 }: SimplexNoiseShaderProps) {
   const shaderContext = useShaderContext();
+
+  // The animated dials live in uniforms (values the CPU can update each
+  // frame without rebuilding the shader), tracking either a static number or
+  // an animation signal.
   const scaleUniform = useAnimatableUniform<number>(scale);
   const speedUniform = useAnimatableUniform<number>(speed);
   const contrastUniform = useAnimatableUniform<number>(contrast);
   const balanceUniform = useAnimatableUniform<number>(balance);
   const softnessUniform = useAnimatableUniform<number>(softness);
 
+  // Content fingerprint of the stops array (colors + positions). The build
+  // effect keys on this string, so a re-render that passes a new array with
+  // the same contents doesn't rebuild the material.
   const stopsKey = colorStopsKey(stops);
 
+  // The seed becomes a 2D offset of the sampling window. The Vector2 and its
+  // uniform are created once; the effect below writes into them, so changing
+  // the seed re-positions the pattern without recompiling the material.
   const seedVec = useMemo(() => new Vector2(0, 0), []);
   const seedUniform = useMemo(() => uniform(seedVec), [seedVec]);
 
   useEffect(() => {
+    // Multiplying the seed by two unrelated constants (12.9898/78.233, a
+    // classic shader-hashing pair) spreads consecutive seeds far apart in
+    // both axes, so seed 1 and seed 2 land in unrelated regions of the noise
+    // field instead of one step apart. The scene renders on demand, so poke
+    // the scheduler to show the change.
     seedVec.set(seed * 12.9898, seed * 78.233);
     shaderContext?.scheduler.requestRender();
   }, [shaderContext, seedVec, seed]);
 
+  // ---------------------------------------------
+  // Build the material and mount the mesh
+  // ---------------------------------------------
+  // Runs once per mount — and again only when the stops or color space
+  // change, because colorRamp bakes the stop colors into the compiled shader
+  // as constants. Every dial above flows through uniforms without touching
+  // this effect.
   useEffect(
     () => {
       if (!shaderContext) return;
 
+      // Where to sample the noise field. uv() is the pixel's 0..1 position;
+      // multiplying by scale zooms out so roughly `scale` noise features
+      // span the canvas, and the seed offset slides the whole window to a
+      // different neighborhood. Time rides in as a third dimension: as z
+      // advances the pattern morphs in place, rather than sliding sideways
+      // the way an x/y offset would.
       const sampleXY = uv().mul(scaleUniform).add(seedUniform);
       const samplePoint = vec3(sampleXY, elapsedTime.mul(speedUniform));
+
+      // simplexNoise returns roughly -1..1; (x + 1) / 2 rescales it to the
+      // 0..1 range the ramp and the shaping steps below expect.
       const rawNoise = simplexNoise(samplePoint);
       const normalized = rawNoise.add(1).mul(0.5);
 
       // Balance: shift the noise scalar earlier (<0.5) or later (>0.5) into the
       // color ramp. 0.5 is identity. In 2-color mode this reads as dark/light;
       // in multi-color mode it leans toward the first or last colors in the array.
+      // The (balance - 0.5) * 2 mapping turns the 0..1 dial into a -1..+1
+      // shift, so either end of the dial can push every value past a ramp
+      // extreme; the clamp catches what overshoots.
       const balanceShift = balanceUniform.sub(0.5).mul(2);
       const balanced = clamp(normalized.add(balanceShift), 0, 1);
 
       // Contrast: linear scale around 0.5. 1 is identity, >1 pushes values toward
       // the ramp extremes (first/last colors), <1 pulls them toward the middle.
+      // The subtract/scale/add-back sandwich stretches distances from the
+      // midpoint while leaving the midpoint itself fixed.
       const contrastedValue = clamp(balanced.sub(0.5).mul(contrastUniform).add(0.5), 0, 1);
 
       // Softness: blend between quantized contour bands (0) and smooth ramp (1).
+      // quantize() rounds the 0..1 value to one of `stepCount` flat levels —
+      // one band per color stop, which is what makes the posterized look line
+      // up with the palette.
       const stepCount = Math.max(stops.length, 1);
       const quantized = quantize(contrastedValue, stepCount);
       const bandedValue = mix(quantized, contrastedValue, softnessUniform);

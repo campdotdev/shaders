@@ -1,5 +1,11 @@
 'use client';
 
+// The dot field's GPU half. The trick that makes a "grid of dots" cheap: no
+// dot is ever drawn as an object. Instead every pixel figures out which grid
+// cell it lives in, how far it sits from that cell's (ripple-displaced) dot
+// center, and shades itself dot-colored or transparent based on that
+// distance. All sizing props are in real pixels, so the shader also tracks
+// the canvas resolution to convert between pixels and cell units.
 import { useEffect, useMemo } from 'react';
 
 import { displace, elapsedTime, signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
@@ -58,10 +64,22 @@ function buildDotFieldMaterial(
 ): MeshBasicNodeMaterial {
   const [redChannel, greenChannel, blueChannel] = color;
 
+  // ---------------------------------------------
+  // Carve the canvas into grid cells
+  // ---------------------------------------------
+  // Convert the pixel's uv (0..1) into "cell space": center it (so the grid
+  // is anchored to the middle of the canvas), scale by the resolution to get
+  // real pixels, then divide by spacing so one unit = one grid cell.
+  // round() gives the whole-number id of the nearest cell — every pixel in a
+  // cell shares it — and subtracting it leaves the pixel's position within
+  // its cell (-0.5..0.5, with 0 at the dot center).
   const cellCoord = uv().sub(0.5).mul(resUniform).div(spacingUniform);
   const cellIndex = round(cellCoord);
   const cellLocal = cellCoord.sub(cellIndex);
 
+  // ---------------------------------------------
+  // The ripple: a traveling wave radiating from center
+  // ---------------------------------------------
   // Ripple origin snapped to the nearest dot, in the same integer lattice space
   // as the cells. vec2(0).add(centerUniform) lifts the bare uniform into a node
   // receiver so the chain stays Gotcha #12-safe (uniforms only ever arguments).
@@ -76,28 +94,53 @@ function buildDotFieldMaterial(
   const dirFromCenter = toCell.div(distCells.add(0.001));
   const distToCenterPx = distCells.mul(spacingUniform);
 
-  // Traveling wave: crests move outward as elapsedTime grows.
+  // Traveling wave: crests move outward as elapsedTime grows. Distance over
+  // wavelength counts how many crests fit between here and the origin;
+  // subtracting time * speed slides the whole pattern outward; sin() over
+  // that (scaled to a full circle per crest) turns it into a smooth
+  // push/pull between -1 and 1. Because the wave is evaluated per DOT (from
+  // cellIndex, not per pixel), each dot moves as one rigid piece.
   const phase = distToCenterPx.div(wavelengthUniform).sub(elapsedTime.mul(speedUniform));
   const wave = sin(phase.mul(Math.PI * 2));
 
   // Fade the wave with distance so the ripple settles toward the edges.
+  // Distance is measured in half-diagonals of the canvas (0 at center, ~1 in
+  // the far corners); exp(-distance * decay) starts at full strength and
+  // dies off exponentially — decay 0 disables the fade entirely.
   const distNorm = distToCenterPx.div(length(resUniform).mul(0.5));
   const falloff = exp(distNorm.mul(decayUniform).mul(-1));
 
-  // Push each dot radially by the (faded) wave, in cell-local units.
+  // Push each dot radially by the (faded) wave, in cell-local units. The
+  // offset is NEGATED because moving the sampling point one way renders the
+  // shape the opposite way (displace() adds to the sample position; see the
+  // SDF caveat in the engine's displace primitive).
   const offset = dirFromCenter.mul(wave).mul(amplitudeUniform).mul(falloff);
   const displacedLocal = displace(cellLocal, offset.mul(-1));
 
+  // Dot radius converted from pixels into cell units (one cell = `spacing`
+  // pixels): dotSize / (spacing * 2) — the /2 means `dotSize` lands on
+  // screen as the dot's diameter. zeroScalar is another lift-the-uniform
+  // trick: starting the chain from a plain node keeps the scalar uniforms in
+  // argument position.
   const zeroScalar = vec2(0).x;
   const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
+
+  // Signed distance to the dot's edge: negative inside the circle, positive
+  // outside, zero exactly on the rim.
   const sdf = signedDistanceFieldCircle(displacedLocal, radius);
 
+  // smoothstep with its edges REVERSED (high to low) flips the ramp: pixels
+  // deeper than 0.01 inside the rim get 1, pixels past 0.01 outside get 0,
+  // and the 0.02-cell band across the rim fades smoothly — that band is the
+  // anti-aliasing that keeps dot edges from stair-stepping.
   const antialiasWidth = 0.01;
   const dotMask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
   const dotColor = mix(vec3(0, 0, 0), vec3(redChannel, greenChannel, blueChannel), dotMask);
 
   const material = new MeshBasicNodeMaterial();
 
+  // Alpha carries the dot mask, so the space between dots is transparent and
+  // whatever rendered beneath this layer shows through.
   material.colorNode = vec4(dotColor, dotMask);
 
   return material;
@@ -116,6 +159,9 @@ export function DotFieldShader({
   const shaderContext = useShaderContext();
   const resize = useResize();
 
+  // The animated dials live in uniforms (values the CPU can update each
+  // frame without rebuilding the shader), tracking either a static number or
+  // an animation signal.
   const spacingUniform = useAnimatableUniform<number>(spacing);
   const dotSizeUniform = useAnimatableUniform<number>(dotSize);
   const speedUniform = useAnimatableUniform<number>(speed);
@@ -123,7 +169,17 @@ export function DotFieldShader({
   const wavelengthUniform = useAnimatableUniform<number>(wavelength);
   const decayUniform = useAnimatableUniform<number>(decay);
 
+  // Decoded to linear rgb once per color string. The channels get baked into
+  // the compiled shader as constants, which is why a color change is one of
+  // the two things (with a context change) that rebuilds the material below.
   const parsedColor = useMemo(() => parseColor(color), [color]);
+
+  // ---------------------------------------------
+  // Stable vectors the effects write into
+  // ---------------------------------------------
+  // Vector + uniform created once, then mutated with .set() — the build
+  // effect depends only on these stable references, so moving `center` or
+  // resizing the canvas updates the picture without recompiling.
 
   const centerVec = useMemo(() => new Vector2(0.5, 0.5), []);
   const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
@@ -132,6 +188,9 @@ export function DotFieldShader({
     centerVec.set(center[0], center[1]);
   }, [centerVec, center]);
 
+  // The canvas resolution in pixels, needed because spacing/dotSize/
+  // wavelength are pixel-valued props. Starts at a 1920x1080 placeholder
+  // until the first real measurement lands.
   const resVec = useMemo(() => new Vector2(1920, 1080), []);
   const resUniform = useMemo(() => uniform(resVec), [resVec]);
 
@@ -145,6 +204,12 @@ export function DotFieldShader({
     );
   }, [resize, resVec]);
 
+  // ---------------------------------------------
+  // Build the material and mount the mesh
+  // ---------------------------------------------
+  // The 2x2 plane exactly fills ShaderScene's camera view. All the dial
+  // uniforms are stable references, so in practice this runs once per mount
+  // and again only when the color string changes.
   useEffect(() => {
     if (!shaderContext) return;
 

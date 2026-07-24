@@ -1,5 +1,11 @@
 'use client';
 
+// The linear gradient's GPU half. The wrapper (./linear-gradient.tsx) passes
+// resolved props down; this component turns them into shader inputs, builds
+// a full-screen plane whose color is computed per pixel, and mounts it into
+// the shared ShaderScene. The gradient itself is one projection: each pixel's
+// position is measured along a direction vector and that distance picks a
+// color from the ramp.
 import { useEffect, useMemo } from 'react';
 
 import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
@@ -45,6 +51,9 @@ export interface LinearGradientShaderProps {
   hueInterpolation: HueInterpolation;
 }
 
+// `center` can be a static [x, y] pair or an animation signal. This guard
+// picks out the static case so the effect below knows it can read the
+// numbers directly.
 const isPoint = (value: unknown): value is readonly [number, number] =>
   Array.isArray(value) &&
   value.length === 2 &&
@@ -61,13 +70,31 @@ export function LinearGradientShader({
 }: LinearGradientShaderProps) {
   const shaderContext = useShaderContext();
 
+  // A literal speed of 0 means nothing on screen ever changes (an animation
+  // signal might move later, so it doesn't count). Telling the scene lets its
+  // frame scheduler go idle instead of re-rendering an unchanging image.
   const isStatic = typeof speed === 'number' && speed === 0;
 
   useStaticSceneHint(isStatic);
 
+  // Content fingerprint of the stops array (colors + positions). The build
+  // effect below keys on this string, so a re-render that passes a new array
+  // with the same contents doesn't rebuild the material.
   const stopsKey = colorStopsKey(stops);
 
+  // Speed lives in a uniform (a value the CPU can update each frame without
+  // rebuilding the shader). useAnimatableUniform keeps it current whether the
+  // prop is a static number or an animation signal.
   const speedUniform = useAnimatableUniform<number>(speed);
+
+  // ---------------------------------------------
+  // Stable vectors the prop effects write into
+  // ---------------------------------------------
+  // Each Vector2 and its uniform wrapper are created once and never replaced.
+  // The effects below push new prop values into the vectors with .set(), and
+  // the GPU reads the updated numbers on the next frame. Because the build
+  // effect depends only on these stable references, changing `angle` or
+  // `center` never tears down and recompiles the material.
 
   const centerVec = useMemo(() => new Vector2(0.5, 0.5), []);
   const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
@@ -75,6 +102,10 @@ export function LinearGradientShader({
   const dirVec = useMemo(() => new Vector2(1, 0), []);
   const dirNode = useMemo(() => uniform(dirVec), [dirVec]);
 
+  // Turn the angle prop (degrees) into a unit direction vector on the CPU —
+  // cos/sin of the angle — so the shader never does the trig itself. The
+  // scene renders on demand, so after mutating the vector we poke the
+  // scheduler to make the change visible even while the scene sits idle.
   useEffect(() => {
     const angleValue = typeof angle === 'number' ? angle : 0;
     const angleRadians = angleValue * (Math.PI / 180);
@@ -83,6 +114,10 @@ export function LinearGradientShader({
     shaderContext?.scheduler.requestRender();
   }, [shaderContext, dirVec, angle]);
 
+  // Push the center prop into its vector. The y flip (1 - y) converts from
+  // the prop's screen-style coordinates (y grows downward, like CSS) into UV
+  // space (the mesh's built-in 0..1 surface coordinates, where v grows
+  // upward) — without it, moving the anchor "down" would move the gradient up.
   useEffect(() => {
     if (isPoint(center)) {
       centerVec.set(center[0], 1 - center[1]);
@@ -92,11 +127,26 @@ export function LinearGradientShader({
     shaderContext?.scheduler.requestRender();
   }, [shaderContext, centerVec, center]);
 
+  // ---------------------------------------------
+  // Build the material and mount the mesh
+  // ---------------------------------------------
+  // Runs once per mount — and again only when the stops or color space
+  // change, because colorRamp bakes the stop colors into the compiled shader
+  // as constants rather than uniforms. Everything else flows through the
+  // stable uniforms above without touching this effect.
   useEffect(() => {
     if (!shaderContext) return;
 
     const rampStops = toColorRampStops(stops);
 
+    // Project each pixel onto the gradient axis. uv() is the pixel's position
+    // on the plane (0..1 both ways); subtracting the anchor and taking the
+    // dot product with the unit direction gives a signed distance along that
+    // direction — 0 at the anchor, positive ahead of it, negative behind.
+    // Adding 0.5 shifts that distance into ramp coordinates, placing the
+    // ramp's midpoint at the anchor. With the defaults (centered anchor,
+    // angle 0) this reduces to plain left-to-right u: 0 at the left edge,
+    // 1 at the right.
     const gradientCoord = uv().sub(centerUniform).dot(dirNode).add(0.5);
 
     // Cosine-smoothed ping-pong: (1 - cos(π·x)) / 2 has period 2, peaks at x=1
@@ -117,12 +167,17 @@ export function LinearGradientShader({
       smoothstep(0, 0.01, speedUniform),
     );
 
+    // An unlit material whose per-pixel color comes from colorNode (a node
+    // graph compiled to GPU code) — colorRamp maps the 0..1 coordinate to a
+    // color, interpolating between stops in the chosen color space.
     const material = new MeshBasicNodeMaterial();
 
     const gradientColor = colorRamp(animatedGradientCoord, rampStops, colorSpace, hueInterpolation);
 
     material.colorNode = gradientColor;
 
+    // A 2x2 plane exactly fills ShaderScene's camera view (-1..1 across both
+    // axes), so the gradient covers the whole canvas.
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
     shaderContext.scene.add(mesh);

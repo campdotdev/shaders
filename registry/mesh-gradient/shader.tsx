@@ -1,5 +1,12 @@
 'use client';
 
+// The mesh gradient's GPU half. The pixel's journey: center the coordinates,
+// twist them by a slowly-drifting noise angle (different per pixel, which is
+// what "melts" the shape), ripple them with sine waves, then blend four
+// palette colors across the warped space — two side by side on top, two on
+// the bottom, with soft seams. All eight palette colors live in uniforms, so
+// changing `palettes` restyles the gradient without recompiling the shader —
+// unlike the ramp-based components, which bake colors in.
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -56,8 +63,13 @@ export interface MeshGradientShaderProps {
   hueInterpolation: HueInterpolation;
 }
 
+// Tilt of the left/right color seam, in radians (-5 degrees). A perfectly
+// vertical seam reads as two rectangles; the small tilt hides the geometry.
 const LAYER_ROT_RAD = (-5 * Math.PI) / 180;
 
+// One palette entry -> one stable color uniform. The Vector3 and uniform are
+// created once; when the color string changes, the effect re-decodes it into
+// the same vector, so the material never rebuilds for a palette change.
 function useColorUniform(hex: string) {
   const vec = useMemo(
     () => {
@@ -111,6 +123,9 @@ export function MeshGradientShader({
   const frequencyUniform = useAnimatableUniform<number>(frequency);
   const amplitudeUniform = useAnimatableUniform<number>(amplitude);
 
+  // Canvas aspect ratio (width/height), used to un-stretch the rotation
+  // below. Starts from the current size (16:9 fallback while the canvas
+  // reports 0) and follows every resize.
   const [initialWidth, initialHeight] = resize.get();
   const aspectNode = useMemo(
     () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
@@ -131,20 +146,40 @@ export function MeshGradientShader({
   useEffect(() => {
     if (!shaderContext) return;
 
-    // ---- Centered UVs --------------------------------------------------
+    // ---------------------------------------------
+    // Centered coordinates
+    // ---------------------------------------------
+    // Shift uv (0..1) so the origin sits at the canvas center; the rotation
+    // below then pivots around the middle instead of the bottom-left corner.
     const centeredUv = uv().sub(vec2(0.5, 0.5));
 
-    // ---- Noise-driven rotation angle ----------------------------------
+    // ---------------------------------------------
+    // Noise-driven rotation angle
+    // ---------------------------------------------
+    // Sample smooth noise at (slow time, x*y) and rescale its -1..1 output
+    // to 0..1. Because x*y differs across the canvas, every pixel gets its
+    // OWN angle — the "rotation" is really a smooth per-pixel swirl, which
+    // is what melts the four-corner layout into organic blobs. The time axis
+    // drifts the swirl slowly no matter what `speed` is doing.
     const slowTime = elapsedTime.mul(0.05);
     const noiseInput = vec2(slowTime, centeredUv.x.mul(centeredUv.y));
     const degree01 = simplexNoise(noiseInput).mul(0.5).add(0.5); // [0, 1]
     // angle = (degree01 - 0.5) * (720° in radians) + 180° in radians
     //       = (degree01 - 0.5) * 4π + π
+    // i.e. up to two full turns in either direction, biased a half-turn.
     const TWO_TURNS_RAD = Math.PI * 4;
     const ROT_BIAS_RAD = Math.PI;
     const angle = degree01.sub(0.5).mul(TWO_TURNS_RAD).add(ROT_BIAS_RAD);
 
-    // ---- Aspect-corrected rotation -----------------------------------
+    // ---------------------------------------------
+    // Aspect-corrected rotation
+    // ---------------------------------------------
+    // A full uv unit spans the whole width on x but the whole height on y,
+    // so on a non-square canvas equal uv distances cover unequal pixel
+    // distances — rotating in raw uv would shear the picture. Dividing y by
+    // the aspect ratio first puts both axes in the same units, the rotation
+    // happens in that square space, and multiplying back afterwards returns
+    // to uv units.
     const aspect = aspectNode;
     const aspectCorrectedY = centeredUv.y.div(aspect);
     const cosineValue = cos(angle);
@@ -155,7 +190,16 @@ export function MeshGradientShader({
     const rotatedY = rotatedYUnit.mul(aspect);
     const rotatedUv = vec2(rotatedX, rotatedY);
 
-    // ---- Sine domain warp --------------------------------------------
+    // ---------------------------------------------
+    // Sine domain warp
+    // ---------------------------------------------
+    // Ripple the coordinates before the colors are looked up: each axis is
+    // nudged by a sine of the OTHER axis, so straight color seams come out
+    // wavy. `frequency` sets how many bends fit across the canvas; the sine
+    // is DIVIDED by `amplitude`, which is why larger amplitude values mean a
+    // gentler warp. The y warp runs at 1.5x the frequency and 2x the
+    // strength of the x warp — twin asymmetries that keep the ripples from
+    // lining up into a visible grid. `speed` scrolls both sines over time.
     const timeScaledBySpeed = elapsedTime.mul(speedUniform);
     const warpX = sin(rotatedUv.y.mul(frequencyUniform).add(timeScaledBySpeed)).div(
       amplitudeUniform,
@@ -165,7 +209,16 @@ export function MeshGradientShader({
       .mul(2);
     const warpedUv = vec2(rotatedUv.x.add(warpX), rotatedUv.y.add(warpY));
 
-    // ---- Time-cycling palette ----------------------------------------
+    // ---------------------------------------------
+    // Time-cycling palette
+    // ---------------------------------------------
+    // sin() ping-pongs -1..1 forever; the sign/pow sandwich applies easing
+    // without breaking the symmetry (pow on the absolute value curves the
+    // shape, sign restores the direction). cycleEase < 1 flattens the curve
+    // near the extremes — each palette holds longer with snappier
+    // hand-offs; > 1 does the opposite, lingering in the blended middle.
+    // The +1, *0.5 rescale turns the result into the 0..1 mix factor used
+    // to cross-fade each of the four corner colors between palette A and B.
     const cycleTime = elapsedTime.mul(cycleSpeedUniform);
     const cycle = sin(cycleTime);
     const eased = sign(cycle)
@@ -178,7 +231,21 @@ export function MeshGradientShader({
     const color2 = mixColor(paletteAColor2, paletteBColor2, eased, colorSpace, hueInterpolation);
     const color3 = mixColor(paletteAColor3, paletteBColor3, eased, colorSpace, hueInterpolation);
 
-    // ---- Two-layer smoothstep blend ---------------------------------
+    // ---------------------------------------------
+    // Four corners, two seams
+    // ---------------------------------------------
+    // Lay the four colors out with two soft seams. The horizontal seam
+    // position is measured along a slightly tilted axis (LAYER_ROT_RAD);
+    // smoothstep turns position into a 0..1 blend weight, and each
+    // a*(1-t) + b*t pair is a plain linear blend written out. Rows first:
+    // the top row blends color2 (left) into color1 (right), the bottom row
+    // color3 into color0. Then the vertical smoothstep — with its edges
+    // reversed, so it's 0 near the top and 1 near the bottom — blends the
+    // two rows. The seam bands (-0.3..0.2 and 0.5..-0.3) are deliberately
+    // off-center so neither seam cuts the canvas in equal halves. In the
+    // un-warped layout that puts color2 top-left, color1 top-right, color3
+    // bottom-left, color0 bottom-right; the swirl and warp then smear those
+    // anchors into each other.
     const layerCosine = Math.cos(LAYER_ROT_RAD);
     const layerSine = Math.sin(LAYER_ROT_RAD);
     const layerX = warpedUv.x.mul(layerCosine).sub(warpedUv.y.mul(layerSine));

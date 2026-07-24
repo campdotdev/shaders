@@ -1,3 +1,8 @@
+// Shared color plumbing for every registry component: decode color strings
+// into linear rgb, fingerprint stop arrays for effect deps, and convert
+// user-facing ColorStop[] props into the engine's ColorRampStop[] shape.
+// This file ships alongside each component the CLI copies out, so it stays
+// dependency-light (engine + TSL only).
 import { type ColorRampStop, parseColorString } from '@lovo/matter';
 import { vec3 } from 'three/tsl';
 

@@ -1,5 +1,10 @@
 'use client';
 
+// Public face of the wave lines: owns the props, their JSDoc, and their
+// defaults, then delegates to WaveLinesShader (./shader.tsx), which draws a
+// bundle of waving ribbons — each a solid body plus an additive light halo —
+// sharing one wave so they move as a coherent group. Render it inside a
+// <ShaderScene>.
 import type { ColorSpace } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
