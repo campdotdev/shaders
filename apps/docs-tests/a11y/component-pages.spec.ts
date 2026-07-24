@@ -8,7 +8,7 @@ const routes = [
   '/components/aurora',
   '/components/dot-field',
   '/components/simplex-noise',
-  '/components/waves',
+  '/components/wave-lines',
   '/recipes',
 ];
 
