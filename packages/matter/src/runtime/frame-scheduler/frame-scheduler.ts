@@ -1,6 +1,18 @@
+// The heart of Matter's render-on-demand system: one requestAnimationFrame
+// loop per scene, with clients (render callbacks) ticked every frame. The
+// interesting part is that the loop can STOP — components vote on whether
+// anything is animating (setIdle), and when the votes say "all static" the
+// scheduler runs one last flush tick (so the final state lands on screen)
+// and then queues nothing until a vote changes or requestRender() pokes it.
+// Its companions: visibility.ts pauses the loop when the tab is hidden,
+// intersection.ts when the canvas scrolls out of view.
+
 export interface SchedulerTick {
+  /** Seconds since the previous tick. */
   delta: number;
+  /** Seconds since the scheduler's first tick. */
   elapsed: number;
+  /** The rAF timestamp, in milliseconds. */
   now: number;
 }
 

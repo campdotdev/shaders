@@ -1,3 +1,9 @@
+// Accessibility: honors the OS "prefers reduced motion" setting. The whole
+// mechanism is one shared uniform — a time-scale factor (1 = full speed,
+// 0.3 = slowed, 0 = frozen) that the engine's elapsedTime is multiplied by
+// (see primitives/time). When the OS setting or the app-level policy
+// override changes, the uniform's value changes and every animation built
+// on elapsedTime slows or freezes together, with no per-component work.
 import { uniform } from 'three/tsl';
 
 export type ReducedMotionPolicy = 'auto' | 'off' | 'slow' | 'paused';
@@ -73,8 +79,9 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
   // SSR watcher: scale() respects policy override but does not emit
   // subscription events (the engine has no way to notify SSR-created
   // watchers because they are not added to state.watchers — but in
-  // practice CLAUDE.md gotcha #10 requires `ssr: false` for any component
-  // that touches the matter engine).
+  // practice the AGENTS.md gotcha on three/webgpu referencing `self` at
+  // module load requires `ssr: false` for any component that touches the
+  // matter engine).
   if (typeof matchMedia !== 'function') {
     return {
       scale: () => computeScale(false),

@@ -1,3 +1,10 @@
+// Wide-gamut (Display P3) output support. three 0.170 has no native WebGPU
+// P3 path, so this file does two off-road things: registers the P3 color
+// spaces from three's addon (below), and manually re-configures the
+// GPUCanvasContext for 'display-p3' (applyCanvasGamut). A future three bump
+// that configures the canvas color space itself should DELETE the manual
+// reconfigure. "Gamut" = the range of colors a display can show; P3 is the
+// wider range most modern screens have beyond sRGB.
 import { ColorManagement, SRGBColorSpace } from 'three';
 import {
   DisplayP3ColorSpace,

@@ -1,3 +1,16 @@
+// The color-space module's contract, and the map of the module:
+//   - types.ts (this file): the interface every space implements
+//   - registry.ts: ColorSpace keyword -> implementation lookup
+//   - transfer.ts: sRGB gamma encode/decode
+//   - linear/oklab/oklch/lch/hsl/hsv.ts: the six space implementations
+//   - hue.ts: which way around the color wheel cylindrical spaces travel
+//   - mix-color.ts + ../color-ramp: the consumers (2-color blend, N-stop ramp)
+//   - cpu-convert.ts: CPU-side color-string parsing for prop decode
+//
+// "Rectangular" spaces (linear, oklab) store a color as three independent
+// axes, so blending is a plain per-axis mix. "Cylindrical" spaces (oklch,
+// lch, hsl, hsv) store hue as an ANGLE on a wheel — blending needs to pick
+// an arc around that wheel, which is hue.ts's whole job.
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 

@@ -1,3 +1,9 @@
+// CPU-side color decode. Props arrive as strings ('#8b5cf6',
+// 'oklch(0.7 0.15 280)') and get parsed HERE, in JavaScript, once — the GPU
+// only ever sees the resulting linear-rgb numbers. The oklab/oklch math
+// mirrors the TSL versions in oklab.ts exactly (same matrices), and the
+// unit tests on parseColorString are what PROVE wide-gamut decode works —
+// headless browsers can't render P3 for a pixel test.
 import { srgbChannelToLinear } from './transfer.js';
 
 /**

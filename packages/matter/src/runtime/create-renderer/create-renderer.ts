@@ -1,3 +1,8 @@
+// Renderer construction: wraps three's WebGPURenderer (which silently falls
+// back to WebGL2 where WebGPU is missing — notably headless browsers) and
+// applies Matter's defaults: transparent clear, capped pixel ratio, output
+// gamut, and a resize helper with the logical-size guard described inline.
+// ShaderScene calls this once per mount; Mode 2 users can call it directly.
 import { Color, Vector2 } from 'three';
 import { WebGPURenderer } from 'three/webgpu';
 

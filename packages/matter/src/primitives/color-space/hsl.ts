@@ -1,3 +1,11 @@
+// HSL — the classic color-picker space (hue wheel, saturation, lightness).
+// Unlike oklab/oklch it is NOT perceptually uniform; it's defined
+// geometrically on gamma-encoded sRGB values, so the conversion round-trips
+// through transfer.ts and the space is inherently sRGB-only. Offered
+// because its retro mixing behavior (rainbow sweeps, even lightness ramps
+// in the numeric sense) is sometimes exactly the look wanted. The
+// conversions use Sam Hocevar's branchless formulation — see hsv.ts for
+// the reference GLSL.
 import type { ShaderNodeObject } from 'three/tsl';
 import { abs, clamp, fract, max, min, mix, step, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';

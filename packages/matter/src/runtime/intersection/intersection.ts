@@ -1,3 +1,7 @@
+// Part of the render-on-demand system (see frame-scheduler.ts): a tiny
+// pub/sub wrapper around IntersectionObserver, so the scene can stop
+// rendering while its canvas is scrolled out of the viewport.
+
 export interface IntersectionWatcher {
   isInView(): boolean;
   /** Subscribe to changes. Receives the new in-view state. Returns unsubscribe. */

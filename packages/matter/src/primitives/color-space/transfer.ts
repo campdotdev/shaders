@@ -1,3 +1,10 @@
+// sRGB gamma conversion. Screens don't store brightness linearly: sRGB
+// channels are gamma-encoded so more precision goes to dark tones, where
+// eyes are most sensitive. Color MATH, though, only works right on linear
+// values (where 0.5 really is half the light of 1.0). These helpers convert
+// each way — decode ("EOTF") from encoded to linear, encode ("OETF") back.
+// The TSL versions avoid if/else by computing both segments of the piecewise
+// curve and picking one with step/mix, which GPUs prefer.
 import type { ShaderNodeObject } from 'three/tsl';
 import { mix, pow, step } from 'three/tsl';
 import type { Node } from 'three/webgpu';
