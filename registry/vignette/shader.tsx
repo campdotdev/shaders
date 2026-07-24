@@ -1,5 +1,9 @@
 'use client';
 
+// The vignette's GPU half: a post-process pass that measures each pixel's
+// distance from a focal point and blends the already-rendered image toward
+// `color` as that distance grows. The wrapper (./vignette.tsx) supplies the
+// props; the engine's mixColor() does the color-space-aware blending.
 import { useEffect, useMemo } from 'react';
 
 import { mixColor } from '@lovo/matter';
@@ -52,9 +56,22 @@ export function VignetteShader({
   colorSpace,
   hueInterpolation,
 }: VignetteShaderProps) {
+  // The three animated dials live in uniforms (values the CPU can update
+  // each frame without rebuilding the shader), tracking either a static
+  // number or an animation signal.
   const intensityUniform = useAnimatableUniform(intensity);
   const featherUniform = useAnimatableUniform(feather);
   const radiusUniform = useAnimatableUniform(radius);
+
+  // ---------------------------------------------
+  // Stable vectors the prop effects write into
+  // ---------------------------------------------
+  // Each vector and its uniform wrapper are created once and never replaced;
+  // the effects push new prop values in with .set(). The pass at the bottom
+  // depends only on these stable references, so changing `center` or `color`
+  // updates the picture without tearing down and recompiling the pass. This
+  // also keeps the raw `center` array out of the heavy effect's deps — the
+  // tuple gets a fresh identity every render.
 
   const centerVec = useMemo(
     () => new Vector2(center[0], center[1]),
@@ -67,6 +84,9 @@ export function VignetteShader({
     centerVec.set(center[0], center[1]);
   }, [center, centerVec]);
 
+  // The color prop decodes once into linear rgb channels (parseColor handles
+  // hex and wide-gamut oklch/oklab strings); the effect below re-decodes
+  // whenever the string changes.
   const colorVec = useMemo(
     () => {
       const [redChannel, greenChannel, blueChannel] = parseColor(color);
@@ -85,6 +105,14 @@ export function VignetteShader({
     colorVec.set(redChannel, greenChannel, blueChannel);
   }, [color, colorVec]);
 
+  // ---------------------------------------------
+  // Track the canvas aspect ratio
+  // ---------------------------------------------
+  // The distance math below needs width/height to keep the vignette
+  // circular. The uniform starts from the current canvas size (falling back
+  // to 16:9 when the canvas hasn't been laid out yet and reports 0), then an
+  // effect re-reads it on mount and follows every resize. The zero guards
+  // skip nonsense ratios while the canvas is collapsed.
   const resize = useResize();
   const [initialWidth, initialHeight] = resize.get();
   const aspectNode = useMemo(
@@ -103,13 +131,30 @@ export function VignetteShader({
     });
   }, [resize, aspectNode]);
 
+  // ---------------------------------------------
+  // The pass: distance -> mask -> blend
+  // ---------------------------------------------
+  // A post-process pass: the callback receives each already-rendered pixel
+  // (`input`, rgba) and returns a replacement.
   usePostProcessPass(
     (input) => {
+      // How far is this pixel from the focal point? uv() is the pixel's
+      // 0..1 position on the canvas. Multiplying the horizontal offset by
+      // width/height converts it into the same units as the vertical offset
+      // — without that, length() would measure an ellipse stretched to the
+      // canvas shape instead of a circle.
       const aspect = aspectNode;
       const centered = uv().sub(centerUniform);
       const corrected = vec2(centered.x.mul(aspect), centered.y);
       const distance = length(corrected);
 
+      // Where the fade begins. oneMinus() flips the 0..1 feather dial:
+      // feather 0 puts the start at radius itself (zero-width band — a hard
+      // ring), feather 1 puts it at the focal point (the fade spans the
+      // whole radius). smoothstep then eases 0 -> 1 across that band, so the
+      // mask is 0 inside featherStart, 1 past radius, and an S-curve in
+      // between. Intensity scales the whole mask: the blend amount per
+      // pixel, 0 = untouched, 1 = fully `color` at the edge.
       const featherStart = radiusUniform.mul(featherUniform.oneMinus());
       const mask = smoothstep(featherStart, radiusUniform, distance);
       const factor = mask.mul(intensityUniform);

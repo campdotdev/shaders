@@ -39,9 +39,19 @@ import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/web
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
+// The aurora's GPU half. Unlike the flat 2D components, this one fakes a 3D
+// scene: each pixel shoots a view ray toward a virtual horizon and marches
+// along it in 60 steps (a "raymarch" — sampling a field at successive
+// distances and accumulating what it hits). At every step it samples a
+// layered noise field; where the noise creases, light accumulates, and the
+// creases stack up into the curtain ribbons. Depth also picks the color:
+// near slices take the ramp's first stops, far slices the last.
+//
 // Aurora technique inspired by nimitz's "Auroras" (shadertoy.com/view/XtGGRt):
 // triangle-noise fbm, depth-sliced raymarch, average-then-accumulate
-// compositing. Original TSL implementation
+// compositing. Original TSL implementation. ("fbm" = fractal Brownian
+// motion: the same noise stacked at several zoom levels — octaves — so big
+// billows carry fine detail.)
 
 type TSLValue = ShaderNodeObject<Node>;
 
@@ -173,9 +183,13 @@ export function AuroraShader({
 
   // Stable string proxy for the stops array — colors/positions are baked
   // into the ramp as literals, so a content change must rebuild the
-  // material, but an identity-only change must not (gotcha #17/#19).
+  // material, but an identity-only change must not (see the AGENTS.md
+  // gotchas on uniform stability and array props in effect deps).
   const stopsKey = colorStopsKey(stops);
 
+  // Canvas aspect ratio (width/height), used to un-stretch the view ray on
+  // wide canvases. Starts from the current size (16:9 fallback while the
+  // canvas reports 0) and follows every resize.
   const [initialWidth, initialHeight] = resize.get();
   const aspectNode = useMemo(
     () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
@@ -193,6 +207,12 @@ export function AuroraShader({
     });
   }, [resize, aspectNode]);
 
+  // ---------------------------------------------
+  // Build the material and mount the mesh
+  // ---------------------------------------------
+  // Runs once per mount — and again only when the stops or color space
+  // change, because colorRamp bakes the stop colors into the compiled
+  // shader. The dials all flow through uniforms.
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
     const rampStops = toColorRampStops(stops);
@@ -203,7 +223,12 @@ export function AuroraShader({
     // alpha a second time and everything dims quadratically (MAT-45).
     material.premultipliedAlpha = true;
 
+    // Fn() wraps the body in a reusable GPU function node; the trailing ()
+    // calls it once to produce the node the material renders.
     const auroraNode = Fn(() => {
+      // ---------------------------------------------
+      // Aim the view ray
+      // ---------------------------------------------
       // Screen uv → NDC; x carries the aspect so ribbons don't stretch on
       // wide canvases. y maps the canvas bottom to just above the
       // geometry's horizon (march distances flip negative below
@@ -220,6 +245,9 @@ export function AuroraShader({
       const warpPhase = elapsedTime.mul(speedUniform).mul(0.02);
       const domainPhase = elapsedTime.mul(speedUniform).mul(0.01);
 
+      // ---------------------------------------------
+      // March the ray, accumulating light
+      // ---------------------------------------------
       // Per-pixel jitter seed: decorrelates slice offsets pixel-to-pixel so
       // the discrete march dissolves into grain instead of contour banding.
       const jitterSeed = hashNoise(screenCoordinate.xy);
@@ -279,7 +307,11 @@ export function AuroraShader({
         accumulated.addAssign(runningAverage.mul(extinction).mul(smoothstep(0, 5, stepIndex)));
       });
 
-      // coverage is a screen-space reveal: 0 hides the aurora, 1 covers the canvas, in between a soft fade line sweeps up from the bottom.
+      // ---------------------------------------------
+      // Coverage reveal and soft-clip
+      // ---------------------------------------------
+      // coverage is a screen-space reveal: 0 hides the aurora, 1 covers the
+      // canvas, in between a soft fade line sweeps up from the bottom.
       const fadeEdge = float(1).sub(coverageUniform).mul(1.4);
       const horizonMask = smoothstep(fadeEdge.sub(0.4), fadeEdge, uv().y);
 

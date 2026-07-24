@@ -1,5 +1,9 @@
 'use client';
 
+// Public face of the simplex-noise field: owns the props, their JSDoc, and
+// their defaults, then delegates to SimplexNoiseShader (./shader.tsx), which
+// samples a noise field per pixel and maps the result onto a color ramp.
+// Render it inside a <ShaderScene>.
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 

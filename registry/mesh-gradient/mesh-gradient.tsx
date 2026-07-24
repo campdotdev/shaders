@@ -1,5 +1,10 @@
 'use client';
 
+// Public face of the mesh gradient: owns the props, their JSDoc, and their
+// defaults, then delegates to MeshGradientShader (./shader.tsx), which
+// anchors four colors near the canvas corners, melts the boundaries with a
+// noise-driven warp, and cross-fades the whole thing between two palettes.
+// Render it inside a <ShaderScene>.
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
@@ -50,6 +55,8 @@ export interface MeshGradientProps {
   hueInterpolation?: HueInterpolation;
 }
 
+// A cool set and a warm set; the shader cross-fades between them over time,
+// so the default look breathes from green/teal into amber/red and back.
 const DEFAULT_PALETTES: [Palette, Palette] = [
   [
     '#bcdc33', // palette.lime.base

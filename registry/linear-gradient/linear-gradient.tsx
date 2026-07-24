@@ -1,5 +1,9 @@
 'use client';
 
+// Public face of the linear gradient: this file owns the props, their JSDoc,
+// and their default values, then hands everything to LinearGradientShader
+// (./shader.tsx), which does the actual GPU work. Render it inside a
+// <ShaderScene> — the component draws nothing on its own.
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
@@ -40,6 +44,9 @@ export interface LinearGradientProps {
   hueInterpolation?: HueInterpolation;
 }
 
+// Three neighboring hues (violet -> purple -> magenta). Keeping the stops
+// close on the color wheel means the in-between colors stay saturated
+// instead of washing out toward gray.
 const DEFAULT_STOPS: ColorStop[] = [
   { color: '#661acc' }, // palette.violet.base
   { color: '#9e00ba' }, // palette.purple.base
