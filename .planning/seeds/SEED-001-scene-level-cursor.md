@@ -11,7 +11,7 @@ scope: Medium
 
 ## Why This Matters
 
-Today, every cursor-reactive component (`LinearGradient`, `DotField`, `Waves`, etc.) instantiates its own `CursorInput` via `useCursor()`. Each instance attaches its own pointer listeners and ticks on its own RAF/scheduler client, even when they're siblings inside the same `<ShaderScene>` watching the same canvas.
+Today, every cursor-reactive component (`LinearGradient`, `DotField`, `WaveLines`, etc.) instantiates its own `CursorInput` via `useCursor()`. Each instance attaches its own pointer listeners and ticks on its own RAF/scheduler client, even when they're siblings inside the same `<ShaderScene>` watching the same canvas.
 
 Two consequences:
 1. **Runtime waste** — N components in one scene means N `CursorInput` instances doing the same pointer-tracking math. Currently masked because no scene uses more than one cursor-reactive component, but the cost compounds as the library grows.
@@ -50,7 +50,7 @@ Related code in the current codebase:
 - [packages/matter/src/inputs/cursor-input/cursor-input.ts](packages/matter/src/inputs/cursor-input/cursor-input.ts) — the engine-side input that gets instantiated N times today
 - [registry/linear-gradient/linear-gradient.tsx](registry/linear-gradient/linear-gradient.tsx) — example consumer (MAT-7 deliverable)
 - [registry/dot-field.tsx](registry/dot-field.tsx) — example consumer
-- [registry/waves.tsx](registry/waves.tsx) — example consumer
+- [registry/wave-lines/wave-lines.tsx](registry/wave-lines/wave-lines.tsx) — example consumer
 
 ## Notes
 
