@@ -1,5 +1,10 @@
 'use client';
 
+// Debug overlay: a small corner readout of the enclosing scene's frame rate
+// and tick count. Handy for verifying the render-on-demand system — the fps
+// stalls and the tick counter freezes when the scene goes idle. Fps is
+// averaged over 500ms windows so the number is readable instead of jumping
+// every frame.
 import { type CSSProperties, useContext, useEffect, useRef, useState } from 'react';
 
 import { ShaderContext } from '../../context/shader-context.js';

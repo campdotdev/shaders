@@ -1,5 +1,9 @@
 'use client';
 
+// Canvas size as an animatable signal: [width, height, devicePixelRatio],
+// updating on element resize AND on pixel-density changes (browser zoom, or
+// the window dragged to a monitor with different scaling). Components use it
+// to keep pixel-valued props and aspect corrections honest.
 import { useEffect, useState } from 'react';
 
 import { createSignal } from '../../internal/create-signal.js';
@@ -37,6 +41,7 @@ export function useResize(): ResizeSignal {
 
     setSignal(newSignal);
 
+    // Re-measure and notify, deduping so listeners only hear real changes.
     const emit = () => {
       const next: ResizeValue = [
         canvas.clientWidth,
@@ -53,6 +58,12 @@ export function useResize(): ResizeSignal {
 
     observer.observe(canvas);
 
+    // Watching devicePixelRatio is the awkward part: there's no DPR-change
+    // event, only matchMedia against a query pinned to the CURRENT value —
+    // `(resolution: 2dppx)` fires once when the density stops being 2, and
+    // never again. So each firing re-arms a fresh query pinned to the NEW
+    // density (tearing down the spent one), and the watch keeps working
+    // across any number of zoom levels or monitor moves.
     let mediaQueryList: MediaQueryList | null = null;
     let mediaQueryListener: (() => void) | null = null;
     const setupDprWatch = () => {
