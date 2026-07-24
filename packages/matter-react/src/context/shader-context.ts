@@ -5,6 +5,12 @@ import type { Camera, Scene } from 'three';
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
+// The contract between <ShaderScene> and everything rendered inside it:
+// the scene fills this in once its renderer is up, and every child hook
+// (useShaderContext, usePostProcessPass, useResize, ...) reads from it.
+// Null means "not inside a mounted scene" — hooks stub themselves out.
+
+/** A post-process step: takes the composed pixel (rgba), returns its replacement. */
 export type PostProcessTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
 export interface ShaderContextValue {

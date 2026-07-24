@@ -1,5 +1,9 @@
 'use client';
 
+// Page scroll as an animatable signal: [scrollY in pixels, progress 0..1
+// through the whole document]. Scroll events are coalesced to at most one
+// notification per animation frame — scroll can fire far faster than the
+// display refreshes, and shaders can't use the extra samples anyway.
 import { useEffect, useState } from 'react';
 
 import { createSignal } from '../../internal/create-signal.js';

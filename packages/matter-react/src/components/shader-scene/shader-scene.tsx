@@ -1,5 +1,12 @@
 'use client';
 
+// Mode 1's heart. <ShaderScene> owns everything the shader components can't
+// own themselves: the canvas, the renderer (WebGPU with WebGL2 fallback),
+// ONE three.js scene that all children mount their meshes into, the
+// post-process chain overlays register with, the render-on-demand frame
+// loop, and the pause behaviors (hidden tab, off-screen canvas). Children
+// receive all of it through ShaderContext and render no DOM of their own —
+// composition is stacking children, painting into this one scene.
 import { type CSSProperties, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 
 import {
@@ -97,6 +104,8 @@ export function ShaderScene({
 
           return;
         }
+        // A flat orthographic view spanning -1..1 both ways — the reason
+        // every registry component's 2x2 plane exactly fills the canvas.
         const scene = new Scene();
         const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
 
@@ -108,6 +117,10 @@ export function ShaderScene({
         postProcessing.outputColorTransform = false;
         const scheduler = new FrameScheduler();
 
+        // The post-process chain: base pass first (the children's meshes
+        // rendered to a texture), then each registered overlay transform in
+        // MOUNT ORDER — a Map iterates in insertion order, so <Grain> after
+        // <Vignette> grains the vignetted image.
         const overlays = new Map<symbol, PostProcessTransform>();
 
         const basePassNode = vec4(pass(scene, camera));
@@ -212,6 +225,8 @@ export function ShaderScene({
           renderer.dispose();
         };
 
+        // Publishing the context is what lets children mount their meshes —
+        // until this state lands, every child hook sees null and no-ops.
         setShaderContext({ renderer, scene, camera, scheduler, registerOverlay });
       } catch (caughtError) {
         if (cancelled) return;
