@@ -55,6 +55,7 @@ blob-report/
 
 # Local-only design docs and plans (kept off GitHub)
 docs/superpowers/
+.planning/
 
 # Local-only agent memory (kept off GitHub); AGENTS.md + the CLAUDE.md pointer are tracked
 MEMORY.md
