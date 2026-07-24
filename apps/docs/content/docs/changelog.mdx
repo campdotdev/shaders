@@ -11,6 +11,12 @@ Matter ships as three coordinated npm packages: `@lovo/matter` (engine), `@lovo/
 
 ## Unreleased
 
+**Breaking change — `Waves` is now `WaveLines`.**
+
+The old name read as water. The component draws glowing lines, so it's renamed to match: add it with `matter-cli add wave-lines`, import `WaveLines`, and pass `lines` instead of `layers` (the per-line type is `WaveLine`, formerly `WaveLayer`). Nothing else moved: same props, same rendering, no visual change.
+
+Components ship by copy-paste, so installed copies keep working under the old name; re-add `wave-lines` through the CLI to pick up the new one.
+
 **Breaking change — `Waves` rebuilt around one shared wave.**
 
 The old Waves gave every layer its own `frequency`, `speed`, `offset`, and `waviness`, so getting multiple lines to move together was mostly luck. Those per-layer fields are gone. Every line now renders one shared wave, and the motion comes from two new props: `braiding` weaves the lines apart and back together over time, and `breathing` pulses their heights on a slow cycle, strongest on the first layer. Two more props, `flare` and `flareRadius`, widen the line ends into a soft fray toward the canvas edges.
