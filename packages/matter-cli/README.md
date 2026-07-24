@@ -129,7 +129,7 @@ import { ShaderPoster } from '@lovo/matter-react/poster';
 
 ## v1 components
 
-`linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `waves`.
+`linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `wave-lines`.
 
 Each component depends on `@lovo/matter` and `@lovo/matter-react`, which you install separately:
 
