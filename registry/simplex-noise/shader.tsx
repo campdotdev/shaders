@@ -15,7 +15,12 @@ import {
   quantize,
   simplexNoise,
 } from '@lovo/matter';
-import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
+import {
+  type AnimatableProp,
+  useAnimatableUniform,
+  useShaderContext,
+  useStaticSceneHint,
+} from '@lovo/matter-react';
 import { clamp, mix, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
@@ -80,6 +85,13 @@ export function SimplexNoiseShader({
   hueInterpolation,
 }: SimplexNoiseShaderProps) {
   const shaderContext = useShaderContext();
+
+  // A literal speed of 0 freezes the pattern, so nothing ever changes on
+  // screen (an animation signal might move later and doesn't count). Telling
+  // the scene lets its frame scheduler go idle instead of re-rendering.
+  const isStatic = typeof speed === 'number' && speed === 0;
+
+  useStaticSceneHint(isStatic);
 
   // The animated dials live in uniforms (values the CPU can update each
   // frame without rebuilding the shader), tracking either a static number or

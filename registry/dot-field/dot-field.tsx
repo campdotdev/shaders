@@ -16,7 +16,7 @@ export interface DotFieldProps {
    */
   spacing?: AnimatableProp<number>;
   /**
-   * Dot radius in pixels. Defaults to 3. Accepts a static value or an
+   * Dot diameter in pixels. Defaults to 3. Accepts a static value or an
    * animation signal.
    */
   dotSize?: AnimatableProp<number>;
@@ -45,8 +45,8 @@ export interface DotFieldProps {
    */
   decay?: AnimatableProp<number>;
   /**
-   * Ripple origin in normalized UV; `[0.5, 0.5]` is centered. Defaults to
-   * `[0.5, 0.5]`.
+   * Ripple origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
+   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`.
    */
   center?: [number, number];
 }

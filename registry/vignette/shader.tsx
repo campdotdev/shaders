@@ -31,7 +31,10 @@ export interface VignetteShaderProps {
    * Accepts a static value or an animation signal.
    */
   feather: AnimatableProp<number>;
-  /** Vignette center in normalized UV; `[0.5, 0.5]` is centered. */
+  /**
+   * Vignette center, 0..1 across the canvas; `[0.5, 0.5]` is centered and
+   * `[0, 0]` is the top-left corner.
+   */
   center: [number, number];
   /**
    * Normalized distance from `center` at which the vignette reaches full
@@ -72,6 +75,11 @@ export function VignetteShader({
   // updates the picture without tearing down and recompiling the pass. This
   // also keeps the raw `center` array out of the heavy effect's deps — the
   // tuple gets a fresh identity every render.
+  //
+  // Unlike the mesh components, `center` needs NO y flip here: the
+  // post-process quad's uv is already screen-style (v = 0 at the top), so
+  // the prop's top-left-origin coordinates pass straight through. Verified
+  // by poster render — don't "fix" this to match the mesh components.
 
   const centerVec = useMemo(
     () => new Vector2(center[0], center[1]),
