@@ -39,6 +39,12 @@ export interface ColorRampStop {
  * travel (default `'shorter'`); it's inert for rectangular spaces (linear/oklab).
  *
  * Falls back to the first/last stop's color outside the bracketing positions.
+ *
+ * Stop colors and positions are read at build time — callers pass literal
+ * vec3s, which compile into the shader as constants. That's why every
+ * component that uses colorRamp rebuilds its material when its colors
+ * change. Widening stops to accept uniform nodes is deliberately deferred
+ * until something needs to drive ramp colors at interactive frequency.
  */
 export function colorRamp(
   t: TSLNode,

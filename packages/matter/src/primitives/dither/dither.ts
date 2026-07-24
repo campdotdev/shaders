@@ -27,7 +27,9 @@ function bayer8(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 }
 
 /**
- * Add a sub-LSB ordered dither to break up 8-bit quantization banding (most
+ * Add a sub-LSB ordered dither — noise smaller than one display brightness
+ * step, laid out in a fixed repeating tile rather than random — to break up
+ * 8-bit quantization banding (most
  * visible on smooth gradients and on wide-gamut/P3 output, where the same 256
  * levels span a wider gamut so each step is a coarser perceptual jump).
  *

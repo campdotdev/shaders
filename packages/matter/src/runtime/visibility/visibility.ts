@@ -1,3 +1,7 @@
+// Part of the render-on-demand system (see frame-scheduler.ts): a tiny
+// pub/sub wrapper around the browser's "is this tab visible" signal, so the
+// scene can stop rendering entirely while the user is on another tab.
+
 export interface VisibilityWatcher {
   isVisible(): boolean;
   /** Subscribe to changes. Receives the new visibility state. Returns unsubscribe. */

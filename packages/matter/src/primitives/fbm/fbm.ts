@@ -15,7 +15,7 @@ export interface FractalNoiseOptions {
 }
 
 /**
- * Fractal Brownian Motion — sum of N octaves of 2D simplex noise.
+ * Fractal Brownian Motion — sum of N octaves of simplex noise.
  *
  * Each octave samples noise at a higher frequency (× `lacunarity`) and lower
  * amplitude (× `gain`) than the previous one, AND at a translated coordinate
@@ -58,9 +58,9 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
     // decorrelated. The scalar broadcasts across all components of `p`
     // (works for vec2 and vec3 inputs alike).
     //
-    // Build the chain functionally from `p`: gotcha #12 doesn't apply
-    // because `p` is uv-rooted, but the TSLNode union still requires
-    // functional form on this hop.
+    // Build the chain functionally from `p`: the vec-uniform-as-receiver
+    // gotcha doesn't apply because `p` is uv-rooted, but the TSLNode union
+    // still requires functional form on this hop.
     const pAtFreq = add(mul(p, frequency), i * 100);
     const layer = simplexNoise(pAtFreq).mul(amplitude);
 

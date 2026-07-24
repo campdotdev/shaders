@@ -1,3 +1,10 @@
+// OKLab — the default mixing space for Matter's interpolating components.
+// It's built so equal numeric steps look like equal visual steps: L is
+// perceived lightness, a runs green<->red, b runs blue<->yellow. Blending
+// here avoids the muddy midpoints and lightness dips that raw rgb mixing
+// produces. The conversion (Björn Ottosson's published matrices) goes
+// rgb -> LMS (roughly, the eye's three cone responses) -> cube root (the
+// perceptual nonlinearity) -> Lab axes; the inverse retraces the steps.
 import type { ShaderNodeObject } from 'three/tsl';
 import { cbrt, mix, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';

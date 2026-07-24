@@ -108,6 +108,11 @@ export class CursorInput {
    */
   tick(delta: number): void {
     if (this.disposed) return;
+    // Frame-rate-independent smoothing: raising `smoothing` to the power of
+    // elapsed frames-worth-of-time means the same fraction of the remaining
+    // gap closes per real second whether the display runs 30, 60, or 144 fps
+    // — a plain `lerp(value, target, 0.1)` per frame would chase faster on
+    // faster screens.
     const factor = this.smoothing === 0 ? 1 : 1 - Math.pow(this.smoothing, delta * 60);
     const prev0 = this.value[0];
     const prev1 = this.value[1];

@@ -1,3 +1,8 @@
+// HSV — HSL's sibling picker space (hue, saturation, value/brightness);
+// value 1 is the pure hue where HSL needs lightness 0.5. Like HSL it's a
+// geometric construction on gamma-encoded sRGB (round-trips through
+// transfer.ts, sRGB-only, not perceptually uniform), offered for its
+// characteristic mixing look rather than correctness.
 import type { ShaderNodeObject } from 'three/tsl';
 import { abs, clamp, fract, min, mix, step, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';

@@ -5,10 +5,13 @@ import type { Node } from 'three/webgpu';
 import type { TSLNode } from '../color-ramp/color-ramp.js';
 
 /**
- * 2D simplex noise sampled at a point. Returns a scalar TSL node in
- * approximately [-1, 1] (MaterialX's mx_noise_float is roughly that range).
+ * Simplex noise sampled at a point — smooth, organic randomness (nearby
+ * inputs give nearby outputs). Returns a scalar TSL node in approximately
+ * [-1, 1] (MaterialX's mx_noise_float is roughly that range).
  *
- * @param p — Vec2 TSL node (typically `uv()` or a scaled/offset uv).
+ * @param p — Vec2 or Vec3 TSL node (typically `uv()` or a scaled/offset uv;
+ *   passing a vec3 with time as the third axis makes the pattern morph in
+ *   place — see the simplex-noise registry component).
  *
  * Built on top of three's `mx_noise_float`; we wrap it so consumers have a
  * stable import path through `@lovo/matter` and we can swap the
