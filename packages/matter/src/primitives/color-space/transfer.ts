@@ -21,8 +21,8 @@ export function srgbChannelToLinear(channel: number): number {
 
 /**
  * Linear-sRGB channel -> sRGB-encoded. The inverse of `srgbChannelToLinear`
- * (standard sRGB OETF). Values outside [0,1] pass through the same curve, so
- * the caller decides whether to clamp — `ColorArea` clamps only for display.
+ * (standard sRGB OETF). Values outside [0,1] pass through the same curve rather
+ * than being clamped, so callers that need displayable bytes clamp at their end.
  */
 export function linearChannelToSrgb(channel: number): number {
   return channel <= 0.0031308 ? channel * 12.92 : 1.055 * channel ** (1 / 2.4) - 0.055;
