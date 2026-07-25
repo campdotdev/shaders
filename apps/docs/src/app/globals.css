@@ -53,11 +53,6 @@ a:hover {
   isolation: isolate;
 }
 
-[data-tweakpane-host] {
-  max-height: calc(100% - 2rem);
-  overflow-y: auto;
-}
-
 .codeblock {
   margin: 1rem 0;
 }
@@ -264,4 +259,32 @@ a:hover {
 .select-item[data-highlighted] {
   background: var(--accent);
   color: var(--bg);
+}
+
+/* ---- Demo page layout ---- */
+
+.demo-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 896px) minmax(0, 20rem);
+  gap: 1.5rem;
+  align-items: start;
+  padding: 1.5rem;
+}
+
+.demo-layout-controls {
+  position: sticky;
+  top: 1.5rem;
+  max-height: calc(100vh - 3rem);
+  overflow-y: auto;
+}
+
+@media (max-width: 1024px) {
+  .demo-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .demo-layout-controls {
+    position: static;
+    max-height: none;
+  }
 }
