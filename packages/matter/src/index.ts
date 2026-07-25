@@ -17,8 +17,11 @@ export type { ColorRampStop, TSLNode } from './primitives/color-ramp/color-ramp.
 export {
   mixColor,
   srgbChannelToLinear,
+  linearChannelToSrgb,
   oklabToLinearSrgb,
   oklchToLinearSrgb,
+  linearSrgbToOklab,
+  linearSrgbToOklch,
   parseColorString,
 } from './primitives/color-space/index.js';
 export type { ColorSpace, HueInterpolation } from './primitives/color-space/index.js';

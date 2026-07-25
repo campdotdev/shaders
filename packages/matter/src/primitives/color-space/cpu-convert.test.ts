@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { oklabToLinearSrgb, oklchToLinearSrgb, parseColorString } from './cpu-convert.js';
-import { srgbChannelToLinear } from './transfer.js';
+import {
+  linearSrgbToOklab,
+  linearSrgbToOklch,
+  oklabToLinearSrgb,
+  oklchToLinearSrgb,
+  parseColorString,
+} from './cpu-convert.js';
+import { linearChannelToSrgb, srgbChannelToLinear } from './transfer.js';
 
 const closeTo = (value: number, target: number, tolerance = 1e-3) =>
   Math.abs(value - target) <= tolerance;
@@ -73,5 +79,73 @@ describe('parseColorString', () => {
 
   it('throws on unrecognized syntax', () => {
     expect(() => parseColorString('rebeccapurple')).toThrow();
+  });
+});
+
+describe('linearSrgbToOklab', () => {
+  it('maps linear-sRGB white back to the OKLab white point', () => {
+    const [lightness, greenRed, blueYellow] = linearSrgbToOklab(1, 1, 1);
+
+    expect(closeTo(lightness, 1)).toBe(true);
+    expect(closeTo(greenRed, 0)).toBe(true);
+    expect(closeTo(blueYellow, 0)).toBe(true);
+  });
+
+  it('round-trips through oklabToLinearSrgb', () => {
+    const [red, green, blue] = oklabToLinearSrgb(0.7, 0.15, -0.1);
+    const [lightness, greenRed, blueYellow] = linearSrgbToOklab(red, green, blue);
+
+    expect(closeTo(lightness, 0.7)).toBe(true);
+    expect(closeTo(greenRed, 0.15)).toBe(true);
+    expect(closeTo(blueYellow, -0.1)).toBe(true);
+  });
+});
+
+describe('linearSrgbToOklch', () => {
+  it('round-trips an in-gamut color through oklchToLinearSrgb', () => {
+    const [red, green, blue] = oklchToLinearSrgb(0.6, 0.12, 250);
+    const [lightness, chroma, hueDegrees] = linearSrgbToOklch(red, green, blue);
+
+    expect(closeTo(lightness, 0.6)).toBe(true);
+    expect(closeTo(chroma, 0.12)).toBe(true);
+    expect(closeTo(hueDegrees, 250, 1e-2)).toBe(true);
+  });
+
+  it('round-trips a color outside the sRGB gamut', () => {
+    // Negative and >1 channels must survive the trip — the picker has to place
+    // the handle for wide-gamut palette colors, not just displayable ones.
+    const [red, green, blue] = oklchToLinearSrgb(0.87, 0.34, 142);
+    const [lightness, chroma, hueDegrees] = linearSrgbToOklch(red, green, blue);
+
+    expect(closeTo(lightness, 0.87)).toBe(true);
+    expect(closeTo(chroma, 0.34)).toBe(true);
+    expect(closeTo(hueDegrees, 142, 1e-2)).toBe(true);
+  });
+
+  it('reports hue in [0, 360)', () => {
+    const [red, green, blue] = oklchToLinearSrgb(0.5, 0.1, 350);
+    const [, , hueDegrees] = linearSrgbToOklch(red, green, blue);
+
+    expect(hueDegrees).toBeGreaterThanOrEqual(0);
+    expect(hueDegrees).toBeLessThan(360);
+    expect(closeTo(hueDegrees, 350, 1e-2)).toBe(true);
+  });
+
+  it('round-trips a hex color through parseColorString', () => {
+    const [red, green, blue] = parseColorString('#8c0067');
+    const [lightness, chroma, hueDegrees] = linearSrgbToOklch(red, green, blue);
+    const [backRed, backGreen, backBlue] = oklchToLinearSrgb(lightness, chroma, hueDegrees);
+
+    expect(closeTo(backRed, red)).toBe(true);
+    expect(closeTo(backGreen, green)).toBe(true);
+    expect(closeTo(backBlue, blue)).toBe(true);
+  });
+});
+
+describe('linearChannelToSrgb', () => {
+  it('inverts srgbChannelToLinear across the piecewise boundary', () => {
+    for (const encoded of [0, 0.01, 0.04045, 0.2, 0.5, 1]) {
+      expect(closeTo(linearChannelToSrgb(srgbChannelToLinear(encoded)), encoded)).toBe(true);
+    }
   });
 });

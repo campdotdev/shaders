@@ -45,6 +45,59 @@ export function oklchToLinearSrgb(
   return oklabToLinearSrgb(lightness, greenRed, blueYellow);
 }
 
+// -------------------------------------------------
+// The other direction: colors back into OKLch
+// -------------------------------------------------
+// The picker needs the reverse trip. Given a color the user pasted, where do
+// the lightness / chroma / hue sliders sit? These are the same two matrices as
+// above, applied forwards rather than inverted, with a cube root where the
+// forward path cubes.
+
+/**
+ * Extended linear-sRGB -> OKLab (L, a, b). Inverse of `oklabToLinearSrgb`.
+ * Inputs outside [0,1] are fine and expected — wide-gamut palette colors decode
+ * to channels below 0 or above 1, and `Math.cbrt` handles negatives correctly,
+ * so those colors round-trip instead of collapsing to the gamut edge.
+ */
+export function linearSrgbToOklab(
+  red: number,
+  green: number,
+  blue: number,
+): [number, number, number] {
+  const longCone = 0.4122214708 * red + 0.5363325363 * green + 0.0514459929 * blue;
+  const mediumCone = 0.2119034982 * red + 0.6806995451 * green + 0.1073969566 * blue;
+  const shortCone = 0.0883024619 * red + 0.2817188376 * green + 0.6299787005 * blue;
+
+  const longRoot = Math.cbrt(longCone);
+  const mediumRoot = Math.cbrt(mediumCone);
+  const shortRoot = Math.cbrt(shortCone);
+
+  return [
+    0.2104542553 * longRoot + 0.793617785 * mediumRoot - 0.0040720468 * shortRoot,
+    1.9779984951 * longRoot - 2.428592205 * mediumRoot + 0.4505937099 * shortRoot,
+    0.0259040371 * longRoot + 0.7827717662 * mediumRoot - 0.808675766 * shortRoot,
+  ];
+}
+
+/**
+ * Extended linear-sRGB -> OKLch (L, C, h-in-degrees). Chroma is the distance
+ * from the neutral axis and hue is the angle around it, so this is just OKLab's
+ * (a, b) pair read in polar form. Hue is normalized to [0, 360) because a
+ * slider can't sit at -110.
+ */
+export function linearSrgbToOklch(
+  red: number,
+  green: number,
+  blue: number,
+): [number, number, number] {
+  const [lightness, greenRed, blueYellow] = linearSrgbToOklab(red, green, blue);
+
+  const chroma = Math.sqrt(greenRed * greenRed + blueYellow * blueYellow);
+  const hueDegrees = (Math.atan2(blueYellow, greenRed) * 180) / Math.PI;
+
+  return [lightness, chroma, (hueDegrees + 360) % 360];
+}
+
 /** Parse `50%` -> 0.5 or a bare number. `scale` is the value of 100% (default 1). */
 function parseComponent(token: string, scale: number): number {
   const trimmed = token.trim();
