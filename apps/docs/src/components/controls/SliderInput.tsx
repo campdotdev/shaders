@@ -56,6 +56,7 @@ export function SliderInput({
   return (
     <div className="controls-field">
       <Slider.Root
+        className="slider-root"
         format={format}
         largeStep={largeStep ?? step * 10}
         max={max}
