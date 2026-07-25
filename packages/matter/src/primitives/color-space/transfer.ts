@@ -19,6 +19,15 @@ export function srgbChannelToLinear(channel: number): number {
   return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
 }
 
+/**
+ * Linear-sRGB channel -> sRGB-encoded. The inverse of `srgbChannelToLinear`
+ * (standard sRGB OETF). Values outside [0,1] pass through the same curve, so
+ * the caller decides whether to clamp — `ColorArea` clamps only for display.
+ */
+export function linearChannelToSrgb(channel: number): number {
+  return channel <= 0.0031308 ? channel * 12.92 : 1.055 * channel ** (1 / 2.4) - 0.055;
+}
+
 /** TSL: vec3 sRGB-encoded -> linear-sRGB (branchless via step/mix). */
 export function srgbToLinear(srgb: TSLNode): ShaderNodeObject<Node> {
   // pow(srgb, 1) normalizes the TSLNode union into a chainable node (no-op).
