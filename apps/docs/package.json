@@ -12,6 +12,7 @@
     "clean": "rm -rf .next .turbo out *.tsbuildinfo"
   },
   "dependencies": {
+    "@base-ui/react": "^1.6.0",
     "@lovo/matter": "workspace:*",
     "@lovo/matter-react": "workspace:*",
     "@matter/registry": "workspace:*",
