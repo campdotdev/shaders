@@ -1,5 +1,12 @@
+// The CLI's entry point: just the command table. Each action lazy-imports
+// its implementation so `matter-cli --help` stays instant and poster's heavy
+// dependencies (esbuild, the user's playwright) load only when actually
+// used. Real logic lives in ./commands/*; each run* function takes an
+// injectable IO (cwd + log) so tests can run commands against a temp
+// directory and capture output.
 import { Command } from 'commander';
 
+// Stamped with the package version by tsup at build time.
 declare const __VERSION__: string;
 
 function fail(caughtError: unknown): never {

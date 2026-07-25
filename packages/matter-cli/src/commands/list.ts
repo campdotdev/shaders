@@ -1,3 +1,7 @@
+// `matter-cli list`: prints the registry's component catalog (slug,
+// description, tier). Unlike the other commands it works without a
+// matter.config.json — it falls back to the default registry URL so users
+// can browse before running init.
 import { configExists, DEFAULT_MATTER_CONFIG, readMatterConfig } from '../config/matterConfig.js';
 import { fetchRegistry } from '../registry/fetchRegistry.js';
 import { resolveRef } from '../registry/ref.js';

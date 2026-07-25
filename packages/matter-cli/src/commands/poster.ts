@@ -1,3 +1,10 @@
+// `matter-cli poster`: renders a user's shader component to a static image
+// for use as a <ShaderPoster> stand-in. This file validates the flags and
+// runs the four-stage pipeline, each stage its own module:
+//   1. poster/bundle.ts     — esbuild the harness + user file, in memory
+//   2. poster/server.ts     — serve the bundle on a throwaway local server
+//   3. poster/playwright.ts — drive headless Chromium and screenshot
+//   4. harness/             — the in-browser side that mounts the component
 import { mkdir, stat } from 'node:fs/promises';
 import { dirname, extname, resolve } from 'node:path';
 

@@ -1,3 +1,9 @@
+// Poster pipeline stage 1 (of bundle -> server -> playwright -> harness):
+// esbuild the harness entry together with the user's component file into a
+// single in-memory JS bundle — nothing is written to disk. The user's file
+// is injected by path through an esbuild `define` placeholder, and all
+// imports resolve against the USER's project (absWorkingDir/nodePaths), so
+// the poster renders with the exact package versions their app uses.
 import { build } from 'esbuild';
 import { access, readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';

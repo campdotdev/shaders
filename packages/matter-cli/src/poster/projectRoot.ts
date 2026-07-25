@@ -1,6 +1,12 @@
 import { access } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
+/**
+ * Nearest package.json above the user's source file = their project root.
+ * The poster pipeline resolves everything against it: esbuild pulls the
+ * component's dependencies from the USER's node_modules (their react, their
+ * @lovo/matter), and playwright is looked up there too.
+ */
 export async function findProjectRoot(fromPath: string): Promise<string> {
   let dir = dirname(resolve(fromPath));
 

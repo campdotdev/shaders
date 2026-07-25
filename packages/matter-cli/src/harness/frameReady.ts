@@ -1,3 +1,9 @@
+// Answers "when is the canvas worth screenshotting?" — the harness can't
+// read WebGPU pixels from JS, so readiness is inferred structurally: once a
+// canvas exists with real dimensions and has held them for a few animation
+// frames, the first frame must have composited. The playwright stage polls
+// the __matterReady flag this sets.
+
 declare global {
   interface Window {
     __matterReady?: boolean;
