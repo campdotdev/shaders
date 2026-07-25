@@ -168,6 +168,18 @@ a:hover {
 
 /* ---- Slider ---- */
 
+/*
+ * Slider.Root renders its own wrapper div around Label and Control. Without
+ * this, that wrapper becomes .controls-field's grid item instead of Label and
+ * Control themselves, collapsing the label+track into one column. `display:
+ * contents` removes the wrapper from layout so its children take its place as
+ * direct grid items -- landing Label in column 1 and Control in column 2,
+ * same as SelectInput's label/trigger pair.
+ */
+.slider-root {
+  display: contents;
+}
+
 .slider-control {
   display: flex;
   align-items: center;
