@@ -1,3 +1,8 @@
+// The poster pipeline's in-browser half: the page that actually runs the
+// user's component. It imports the user's module (path baked in by
+// bundle.ts), mounts the requested export under a React root, freezes the
+// animation clock for a deterministic capture, and installs the readiness
+// watcher the screenshot side polls for.
 import type React from 'react';
 
 import { setReducedMotionPolicy } from '@lovo/matter';

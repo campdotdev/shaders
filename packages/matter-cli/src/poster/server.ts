@@ -1,3 +1,7 @@
+// Poster pipeline stage 2: a throwaway localhost server with exactly three
+// routes — the harness HTML, the bundled JS, and a config JSON carrying the
+// render dimensions. Listening on port 0 lets the OS pick any free port;
+// the server exists only for the seconds the screenshot takes.
 import { createServer, type Server } from 'node:http';
 import type { AddressInfo } from 'node:net';
 

@@ -1,3 +1,7 @@
+// One reader for both registry transports: https:// for the real registry
+// on GitHub, file:// for tests and local registry development — every
+// command works against a local checkout by pointing registryUrl at a
+// file:// path.
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 

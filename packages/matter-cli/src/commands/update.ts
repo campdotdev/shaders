@@ -1,3 +1,8 @@
+// `matter-cli update`: re-fetch components that already live in
+// componentsDir (all of them when no names are given). After figuring out
+// which local files correspond to registry entries, it delegates the actual
+// fetching and writing to `add` — update IS add, restricted to components
+// you already have.
 import type { Dirent } from 'node:fs';
 import { readdir } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
@@ -71,6 +76,9 @@ export async function runUpdate(
 
   io.log(`Updating ${toUpdate.length} component(s) from ${registryUrl}…`);
 
+  // Hand the FULLY RESOLVED url to add as its registry override — the ref
+  // placeholder is already substituted, so add's own resolution pass leaves
+  // it untouched and both commands are guaranteed to hit the same registry.
   await runAdd(
     toUpdate,
     {

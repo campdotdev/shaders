@@ -1,3 +1,9 @@
+// Poster pipeline stage 3: drive a headless Chromium to the local harness
+// page, wait for the harness to flag its first stable frame (__matterReady,
+// set by harness/frameReady.ts), then screenshot the canvas element.
+// Playwright is deliberately NOT a dependency of this package — it's
+// resolved from the USER's project at runtime so the CLI stays light and
+// the browser build matches whatever the user already installed.
 import { access } from 'node:fs/promises';
 import { writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';

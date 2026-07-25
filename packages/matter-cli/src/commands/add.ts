@@ -1,3 +1,8 @@
+// `matter-cli add`: the copy-paste flow the whole Tier 1 model is built on.
+// Fetch the registry index, resolve each requested slug to a source file,
+// download it, rewrite its import specifiers for the user's project (see
+// transforms/rewriteImports), write it into componentsDir, and finish by
+// listing the npm packages the component needs.
 import { access, mkdir, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
@@ -39,6 +44,8 @@ export async function runAdd(
 
   const resolved = components.map((slug) => resolveComponent(slug, registry, registryUrl));
 
+  // Check EVERY target for collisions before writing ANY file, so a refused
+  // overwrite can't leave a half-copied set on disk.
   if (opts.force !== true) {
     for (const resolvedComponent of resolved) {
       const targetPath = join(io.cwd, matterConfig.componentsDir, resolvedComponent.entry.file);

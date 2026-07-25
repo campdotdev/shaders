@@ -1,3 +1,5 @@
+// Field-by-field validation of a parsed matter.config.json, with error
+// messages prefixed by the file path so a bad config points at itself.
 import type { MatterConfig } from './matterConfig.js';
 
 function isRecord(value: unknown): value is Record<string, unknown> {

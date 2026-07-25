@@ -1,3 +1,6 @@
+// `matter-cli init`: one-time setup — writes the starter matter.config.json
+// (components directory, registry URL template, import aliases) into the
+// user's project and points them at the fields worth editing.
 import {
   configExists,
   configPath,

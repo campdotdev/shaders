@@ -1,3 +1,9 @@
+// matter.config.json: the one file the CLI reads from a user's project.
+// Where copied components land (componentsDir), where they come from
+// (registryUrl — a template whose ${ref} slot is filled with a git tag,
+// branch, or commit at fetch time), and how import specifiers get rewritten
+// (aliases). This module owns the schema, defaults, read/write, and the
+// ${ref} substitution.
 import { access, readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 
