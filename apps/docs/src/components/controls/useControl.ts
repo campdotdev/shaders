@@ -16,7 +16,9 @@ import { type ControlPath, normalizePath, type PathInput } from './store';
 export function useResolvedPath(path: PathInput): ControlPath {
   const prefix = usePathPrefix();
   const normalized = normalizePath(path);
-  const key = normalized.join('.');
+  // JSON.stringify, not join('.') -- a segment could itself contain a dot
+  // and collide with a structurally different path under a plain join.
+  const key = JSON.stringify(normalized);
 
   return useMemo(
     () => [...prefix, ...normalized],

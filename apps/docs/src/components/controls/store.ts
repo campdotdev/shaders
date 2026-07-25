@@ -71,29 +71,51 @@ function readAtPath(root: unknown, path: ControlPath): unknown {
  * Returns a copy of `target` with `value` written at `path`, sharing every
  * branch the path doesn't touch. Recursion bottoms out when the path is empty,
  * at which point the value replaces whatever was there.
+ *
+ * The recursion below shrinks to `rest` of the path on each call, but error
+ * messages always read `path` — the full, original path captured by this
+ * closure — so a bad segment three levels deep still names the whole path,
+ * not just the tail the recursion had left to walk.
  */
 function writeAtPath(target: unknown, path: ControlPath, value: unknown): unknown {
-  const [head, ...rest] = path;
+  function write(current: unknown, remaining: ControlPath): unknown {
+    const [head, ...rest] = remaining;
 
-  if (head === undefined) return value;
+    if (head === undefined) return value;
 
-  if (Array.isArray(target)) {
-    const index = Number(head);
-    const next = [...(target as unknown[])];
+    if (Array.isArray(current)) {
+      const index = Number(head);
 
-    next[index] = writeAtPath(next[index], rest, value);
+      // Number('') and Number of a non-digit key both produce NaN, and
+      // `next[NaN] = ...` silently sets a non-index property that array
+      // spread and iteration never see again — the write would vanish with
+      // no error instead of throwing like every other bad-path case here.
+      if (!Number.isInteger(index)) {
+        throw new Error(
+          `Control path "${describePath(path)}" hit a non-index array key at "${String(head)}".`,
+        );
+      }
 
-    return next;
+      const next = [...(current as unknown[])];
+
+      next[index] = write(next[index], rest);
+
+      return next;
+    }
+
+    if (current === null || typeof current !== 'object') {
+      throw new Error(
+        `Control path "${describePath(path)}" hit a non-object at "${String(head)}".`,
+      );
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- non-array objects are keyed by arbitrary strings here; the non-object check above is all the narrowing TS can verify
+    const record = current as Record<string, unknown>;
+
+    return { ...record, [String(head)]: write(record[String(head)], rest) };
   }
 
-  if (target === null || typeof target !== 'object') {
-    throw new Error(`Control path "${describePath(path)}" hit a non-object at "${String(head)}".`);
-  }
-
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- non-array objects are keyed by arbitrary strings here; the non-object check above is all the narrowing TS can verify
-  const record = target as Record<string, unknown>;
-
-  return { ...record, [String(head)]: writeAtPath(record[String(head)], rest, value) };
+  return write(target, path);
 }
 
 // -------------------------------------------------

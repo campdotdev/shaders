@@ -31,12 +31,14 @@ export function PathPrefixProvider({
   children: ReactNode;
 }) {
   const parent = useContext(PathPrefixContext);
-  // Joined on the segments themselves so a row keeps one prefix identity
-  // across re-renders; a fresh array each render would defeat the memo in
-  // useResolvedPath and make every path read a new subscription.
+  // Keyed on the segments themselves (via JSON.stringify, not join('.') --
+  // a segment could itself contain a dot and collide with a different path)
+  // so a row keeps one prefix identity across re-renders; a fresh array each
+  // render would defeat the memo in useResolvedPath and make every path read
+  // a new subscription.
   const prefix = useMemo(
     () => [...parent, ...segments],
-    [parent, segments.join('.')], // eslint-disable-line react-hooks/exhaustive-deps
+    [parent, JSON.stringify(segments)], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
   return <PathPrefixContext.Provider value={prefix}>{children}</PathPrefixContext.Provider>;
