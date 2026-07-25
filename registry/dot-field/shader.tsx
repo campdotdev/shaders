@@ -85,7 +85,8 @@ function buildDotFieldMaterial(
   // ---------------------------------------------
   // Ripple origin snapped to the nearest dot, in the same integer lattice space
   // as the cells. vec2(0).add(centerUniform) lifts the bare uniform into a node
-  // receiver so the chain stays Gotcha #12-safe (uniforms only ever arguments).
+  // receiver so the chain stays safe (the vec-uniform-as-receiver gotcha —
+  // chaining directly off a vec uniform silently produces wrong GPU values).
   const originIndex = round(
     vec2(0, 0).add(centerUniform).sub(0.5).mul(resUniform).div(spacingUniform),
   );
