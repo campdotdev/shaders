@@ -16,10 +16,12 @@ export default function WaveLinesScene({
   children?: ReactNode;
 } = {}) {
   const lines: WaveLine[] = params.lines.map((line) => {
-    const [firstColor] = line.colors;
+    const [firstColor] = line.color;
 
+    // A single color is passed as a bare string (flat line); two or more become
+    // a gradient along the line.
     return {
-      color: line.colors.length === 1 && firstColor !== undefined ? firstColor : line.colors,
+      color: line.color.length === 1 && firstColor !== undefined ? firstColor : line.color,
     };
   });
 
