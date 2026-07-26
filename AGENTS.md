@@ -30,7 +30,7 @@ Milestone history lives in git tags and `docs/superpowers/plans/`. Don't trust a
 - **Three-tier model**: Tier 1 = polished components (`<LinearGradient>` etc., delivered via shadcn-style CLI copy-paste from `registry/`); Tier 2 = TSL primitives in the engine package (`fractalNoise`, `voronoi`, etc.); Tier 3 = recipes (TSL snippets in the docs site).
 - **Three packages**: `@lovo/matter` (engine, framework-agnostic), `@lovo/matter-react` (React binding), `@lovo/matter-cli` (copy-paste delivery).
 - **Two rendering modes** (no auto-detection of `@react-three/fiber`): Mode 1 — every Tier 1 component is bare and requires an explicit `<ShaderScene>` wrap; composition is stacking children in one scene. Mode 2 — `useShaderMaterial` inside the user's own r3f `<Canvas>`.
-- **Stack**: TypeScript 5 strict, pnpm 10 workspaces, Node 22 (`.node-version` = 22.22.2 — see the Node gotcha below), Turborepo (orchestration, **not** Turbopack), tsup, ESLint 9 flat config, Prettier 3 + `@trivago/prettier-plugin-sort-imports`, Vite + Vitest, Next.js 15 (docs), Tweakpane (docs playground panels), Playwright visual regression.
+- **Stack**: TypeScript 5 strict, pnpm 10 workspaces, Node 22 (`.node-version` = 22.22.2 — see the Node gotcha below), Turborepo (orchestration, **not** Turbopack), tsup, ESLint 9 flat config, Prettier 3 + `@trivago/prettier-plugin-sort-imports`, Vite + Vitest, Next.js 15 (docs), own headless controls on Base UI (docs demo panels; Tweakpane remains only in `/dev` playgrounds), Playwright visual regression.
 
 For architecture, public APIs, the component catalog, and the animation/signal protocol — read the spec. Decision history is in the spec's Appendix A.
 
@@ -74,7 +74,7 @@ These rules exist because Matter doubles as a shader-learning project for its au
 - Create depth with lightness, not hue: ≥0.10 L delta in OKLCH between stops.
 - Subtle for backgrounds, bold for accents; check text contrast at the lightest AND darkest points.
 
-**Demo color controls** (docs Tweakpane panels): always the wide-gamut `tweakpane-plugin-color-plus` picker, never the built-in sRGB one. Register the plugin per-pane, bind with `view: 'color-plus'`, `color: { formatLocked: true }`, and make the INITIAL value an `oklch()`/`oklab()` string — a hex initial locks the picker to sRGB and silently defeats wide-gamut input. Pure black is `oklch(0 0 0)`.
+**Demo color controls** (docs demo panels): use `<ColorInput>` from `apps/docs/src/components/controls/`. It edits in OKLCH and always writes `oklch()` strings, which is what keeps wide-gamut input working — `parseColorString` accepts only hex, `oklch()`, and `oklab()`, and a picker that emits `rgb()`/`hsl()` throws. Initial values in `params.ts` should be `oklch()` strings. Pure black is `oklch(0 0 0)`. The two `/dev` playgrounds still use Tweakpane and its color-plus plugin; that guidance applies there only.
 
 ## Environment and build gotchas
 
@@ -109,6 +109,8 @@ These rules exist because Matter doubles as a shader-learning project for its au
 18. **Light-emitting transparent layers need `material.premultipliedAlpha = true`.** Any component whose colorNode emits light-contribution rgb with coverage alpha (aurora-style) double-multiplies by alpha under default NormalBlending, quadratically dimming soft wisps.
 19. **"Shader looks cropped/compressed/zoomed" → check `renderer.getSize()` vs canvas client size FIRST**, not uv/camera math. The renderer once stuck at the 300×150 canvas default (logical-size guard + ResizeObserver fixed it). Headless Playwright falls back to WebGL2 here (`navigator.gpu` truthy but device init fails).
 20. **Wide-gamut P3 output reaches into renderer internals** (three 0.170 has no native WebGPU P3 path): we register the ColorSpaces addon via `ColorManagement.define` and manually re-`configure()` the `GPUCanvasContext` in `packages/matter/src/runtime/create-renderer/gamut.ts`. A future three bump should delete the manual reconfigure. P3 output can't be pixel-asserted in headless Playwright — decode is proven by `parseColorString` unit tests; widening is validated by eye on a P3 display. `hsl`/`hsv` color spaces clamp to sRGB first (negative-channel `pow()` breaks WGSL const-eval otherwise).
+21. **Colors commit on release in the demo panels, numbers commit live.** `LinearGradient`, `SimplexNoise`, and `WaveLines` rebuild their `NodeMaterial` when colors change (see the colorRamp gotcha), so a continuously-firing color drag would recompile the shader every frame. `ColorInput` holds a draft and writes to the store on pointer release; `SliderInput` writes on every change because numeric props ride stable `uniform(...)` nodes.
+22. **Subscribing to a container in the demo control store re-renders everything under it.** `writeAtPath` rebuilds every object and array along the written path, so a component that subscribes to the root params object or to a list's array re-renders on every write anywhere inside it — and the control components are deliberately unmemoized, so that cascades. Subscribe to a leaf, or to a stable primitive like a list's `length`, and read containers non-reactively at event time via `useControlStore()` (see `ControlPanel`'s copy buttons and `ListInput`'s add/remove).
 
 ## Color system (shipped — how the pieces relate)
 
@@ -119,7 +121,7 @@ These rules exist because Matter doubles as a shader-learning project for its au
 ## Open threads (as of 2026-07-17)
 
 - **Aurora organic variance** — two deferred seeds from MAT-46: horizon variance (curtain lower border too straight) and per-ribbon vibrancy layers. MAT-48 rebuilt the shader since (triangle-noise fbm, depth-indexed ramp), so re-evaluate both against the current `registry/aurora/shader.tsx` before acting. Needs a design brainstorm first, per shader rule 5 above.
-- **`colorRamp` uniform-node widening** — deferred until something drives ramp colors at interactive frequency (gotcha 14).
+- **`colorRamp` uniform-node widening** — deferred until something drives ramp colors at interactive frequency (gotcha 14). Measured on this branch: the demo panels commit colors on release rather than continuously (gotcha 21), and on `wave-lines` — 16 baked colors, the library's largest ramp — releasing a color drag still produces a brief but perceptible stutter, one material rebuild per gesture. Acceptable; sixty rebuilds a second would not have been. Commit-on-release is load-bearing for that, so the widening stays deferred, now with a real data point instead of a guess.
 - **Aurora `horizon`/`sky` background colors** — arguably shouldn't exist (background is the user's job); removing is a breaking redesign, needs its own ticket.
 
 ## Out of scope (firm — don't drift)
