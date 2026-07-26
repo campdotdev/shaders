@@ -1,18 +1,18 @@
 'use client';
 
 /**
- * The popover's contents: the chroma/lightness plane, hue slider, keyboard
- * lightness/chroma sliders, and a text field that accepts any color string
- * the engine parses. ColorInput mounts this only while the popover is open,
- * so this component's own unmount is exactly "the popover just closed."
+ * The popover's contents: one slider per OKLCH channel, and a text field that
+ * accepts any color string the engine parses. ColorInput mounts this only while
+ * the popover is open, so this component's own unmount is exactly "the popover
+ * just closed."
  */
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
-import { Slider } from '@base-ui/react/slider';
+import { oklchInGamut, oklchToGamut } from '@lovo/matter';
+import { useDisplayGamut } from '@lovo/matter-react';
 
-import { ColorArea } from './color/ColorArea';
-import { HueSlider } from './color/HueSlider';
-import { formatOklch, MAX_CHROMA, type OklchColor, parseToOklch } from './color/oklch';
+import { ChannelSlider } from './color/ChannelSlider';
+import { formatOklch, type OklchColor, parseToOklch } from './color/oklch';
 import type { PathInput } from './store';
 import { usePropValue, useSetProp } from './useControl';
 
@@ -100,24 +100,10 @@ export function ColorPopoverContents({ path, label }: { path: PathInput; label: 
 
   return (
     <>
-      <ColorArea color={color} onCommit={commit} onPreview={setDraft} />
-      <HueSlider color={color} onCommit={commit} onPreview={setDraft} />
-      <PopoverSlider
-        label="Lightness"
-        max={1}
-        onCommit={commit}
-        onPreview={(next) => setDraft({ ...color, lightness: next })}
-        step={0.01}
-        value={color.lightness}
-      />
-      <PopoverSlider
-        label="Chroma"
-        max={MAX_CHROMA}
-        onCommit={commit}
-        onPreview={(next) => setDraft({ ...color, chroma: next })}
-        step={0.005}
-        value={color.chroma}
-      />
+      <GamutPreview color={color} />
+      <ChannelSlider channel="lightness" color={color} onCommit={commit} onPreview={setDraft} />
+      <ChannelSlider channel="chroma" color={color} onCommit={commit} onPreview={setDraft} />
+      <ChannelSlider channel="hue" color={color} onCommit={commit} onPreview={setDraft} />
       <input
         aria-invalid={typedIsInvalid}
         aria-label={`${label} value`}
@@ -134,37 +120,57 @@ export function ColorPopoverContents({ path, label }: { path: PathInput; label: 
   );
 }
 
-function PopoverSlider({
-  label,
-  value,
-  max,
-  step,
-  onPreview,
-  onCommit,
-}: {
-  label: string;
-  value: number;
-  max: number;
-  step: number;
-  onPreview: (next: number) => void;
-  onCommit: () => void;
-}) {
+/**
+ * The colour as it will actually land, in a box that is always the same height
+ * so the panel never resizes under the pointer mid-drag. Three shapes:
+ *
+ * - fits sRGB: one wide swatch, nothing to compare it against
+ * - needs P3 and this monitor has P3: the colour beside its sRGB fallback
+ * - needs more than this monitor can show: a dashed placeholder saying so,
+ *   beside the fallback, because painting a swatch there would be a lie — the
+ *   browser would clamp it and it would look identical to the fallback
+ *
+ * The fallback comes from the engine's `oklchToGamut`, which sheds chroma while
+ * holding lightness and hue. That is not what happens today if the shader is
+ * asked for sRGB output — a narrow framebuffer clamps each channel on its own,
+ * which shifts lightness and hue as well. So this previews the better of the two
+ * behaviours, and the gap between them is its own piece of work.
+ */
+function GamutPreview({ color }: { color: OklchColor }) {
+  // Resolved the same way <ShaderScene gamut="auto"> resolves it, so the panel
+  // and the shader never disagree about what this screen can do.
+  const displayGamut = useDisplayGamut('auto');
+  const { lightness, chroma, hue } = color;
+  const exact = formatOklch(color);
+
+  if (oklchInGamut(lightness, chroma, hue, 'srgb')) {
+    return (
+      <div className="gamut-preview">
+        <span className="gamut-preview-swatch" style={{ background: exact }} />
+      </div>
+    );
+  }
+
+  const [, fallbackChroma] = oklchToGamut(lightness, chroma, hue, 'srgb');
+  const fallback = formatOklch({ chroma: fallbackChroma, hue, lightness });
+  const withinP3 = oklchInGamut(lightness, chroma, hue, 'p3');
+
   return (
-    <Slider.Root
-      max={max}
-      min={0}
-      onValueChange={(next) => onPreview(next)}
-      onValueCommitted={onCommit}
-      step={step}
-      value={value}
-    >
-      <Slider.Label className="controls-field-label">{label}</Slider.Label>
-      <Slider.Control className="slider-control">
-        <Slider.Track className="slider-track">
-          <Slider.Indicator className="slider-indicator" />
-          <Slider.Thumb className="slider-thumb" />
-        </Slider.Track>
-      </Slider.Control>
-    </Slider.Root>
+    <div className="gamut-preview gamut-preview-split">
+      {withinP3 && displayGamut === 'p3' ? (
+        <span className="gamut-preview-swatch" style={{ background: exact }}>
+          <span className="gamut-preview-label">P3</span>
+        </span>
+      ) : (
+        <span className="gamut-preview-swatch gamut-preview-empty">
+          <span className="gamut-preview-note">
+            {withinP3 ? 'Needs a P3 display' : 'No display shows this'}
+          </span>
+        </span>
+      )}
+      <span className="gamut-preview-swatch" style={{ background: fallback }}>
+        <span className="gamut-preview-label">Fallback</span>
+      </span>
+    </div>
   );
 }
