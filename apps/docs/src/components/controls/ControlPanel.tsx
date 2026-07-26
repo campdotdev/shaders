@@ -2,26 +2,29 @@
 
 /**
  * The panel shell: title, the Reset / Copy actions, and whatever controls the
- * page puts inside it. The copy callbacks are passed in rather than computed
- * here because only the page knows its component name — see copy.ts.
+ * page puts inside it. Copy strings are built from the store's live snapshot
+ * inside the click handlers, not from a subscribed prop — reading the store
+ * only at click time (via useControlStore, which does not subscribe) keeps
+ * this panel from re-rendering on every drag tick of every sibling control.
  */
 import { type ReactNode, useState } from 'react';
 
+import { useControlStore } from './context';
+import { type CopyConfig, formatJsx, formatParams } from './copy';
 import { useResetControls } from './useControl';
 
 const COPIED_FEEDBACK_MS = 1200;
 
 export function ControlPanel({
   title,
-  onCopyJsx,
-  onCopyParams,
+  copyConfig,
   children,
 }: {
   title: string;
-  onCopyJsx: () => string;
-  onCopyParams: () => string;
+  copyConfig: CopyConfig;
   children: ReactNode;
 }) {
+  const store = useControlStore();
   const reset = useResetControls();
   const [copied, setCopied] = useState<'jsx' | 'params' | null>(null);
 
@@ -39,12 +42,16 @@ export function ControlPanel({
         <button className="controls-button" onClick={reset} type="button">
           Reset all
         </button>
-        <button className="controls-button" onClick={() => copy('jsx', onCopyJsx())} type="button">
+        <button
+          className="controls-button"
+          onClick={() => copy('jsx', formatJsx(copyConfig, store.getSnapshot()))}
+          type="button"
+        >
           {copied === 'jsx' ? 'Copied' : 'Copy JSX'}
         </button>
         <button
           className="controls-button"
-          onClick={() => copy('params', onCopyParams())}
+          onClick={() => copy('params', formatParams(store.getSnapshot()))}
           type="button"
         >
           {copied === 'params' ? 'Copied' : 'Copy params'}
