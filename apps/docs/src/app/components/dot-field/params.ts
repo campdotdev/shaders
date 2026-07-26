@@ -8,8 +8,7 @@ export interface Params {
   amplitude: number;
   wavelength: number;
   decay: number;
-  centerX: number;
-  centerY: number;
+  center: [number, number];
 }
 
 export const INITIAL: Params = {
@@ -20,6 +19,5 @@ export const INITIAL: Params = {
   amplitude: 0.15,
   wavelength: 150,
   decay: 0.65,
-  centerX: 0.5,
-  centerY: 0.5,
+  center: [0.5, 0.5],
 };

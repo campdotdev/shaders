@@ -18,7 +18,7 @@ export default function DotFieldScene({
     <ShaderScene>
       <DotField
         amplitude={params.amplitude}
-        center={[params.centerX, params.centerY]}
+        center={params.center}
         color={params.color}
         decay={params.decay}
         dotSize={params.dotSize}

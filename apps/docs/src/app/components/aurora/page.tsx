@@ -1,226 +1,134 @@
 'use client';
 
+/**
+ * Aurora demo page: shader preview plus an owned control panel for the
+ * curtain's motion, shape, and color mixing.
+ */
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
 
-import { Pane } from 'tweakpane';
-import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
-
+import {
+  COLOR_SPACE_OPTIONS,
+  ColorInput,
+  ControlPanel,
+  ControlsProvider,
+  createControlStore,
+  DemoLayout,
+  HUE_ARC_OPTIONS,
+  ListInput,
+  Section,
+  SelectInput,
+  SliderInput,
+  useSnapshot,
+} from '@/components/controls';
 import { DemoPoster } from '@/components/DemoPoster';
-import { addCopyButtons } from '@/lib/paneUtils';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { type AuroraParams, INITIAL, MAX_STOPS, MIN_STOPS, type PlainColorStop } from './params';
 
 const AuroraScene = dynamic(() => import('./scene'), { ssr: false });
 
-const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
+const COPY_CONFIG = { componentName: 'Aurora' } as const;
 
-const formatStops = (stops: PlainColorStop[]) =>
-  stops
-    .map((stop) => `{ color: '${stop.color}', position: ${formatNumber(stop.position)} }`)
-    .join(',\n      ');
+/** A new stop clones the last stop's color so the addition is visible. */
+const createStop = (stops: readonly PlainColorStop[]): PlainColorStop => {
+  const last = stops[stops.length - 1];
 
-const formatJsx = (params: AuroraParams) =>
-  `<ShaderScene>
-  <Aurora
-    intensity={${formatNumber(params.intensity)}}
-    speed={${formatNumber(params.speed)}}
-    waviness={${formatNumber(params.waviness)}}
-    coverage={${formatNumber(params.coverage)}}
-    colorSpace="${params.colorSpace}"
-    hueInterpolation="${params.hueInterpolation}"
-    stops={[
-      ${formatStops(params.stops)},
-    ]}
-  />
-</ShaderScene>`;
+  return { color: last?.color ?? 'oklch(0.6 0 0)', position: 1 };
+};
 
-const formatParams = (params: AuroraParams) =>
-  `{
-  intensity: ${formatNumber(params.intensity)},
-  speed: ${formatNumber(params.speed)},
-  waviness: ${formatNumber(params.waviness)},
-  coverage: ${formatNumber(params.coverage)},
-  colorSpace: '${params.colorSpace}',
-  hueInterpolation: '${params.hueInterpolation}',
-  stops: [
-    ${formatStops(params.stops)},
-  ],
-}`;
-
-export default function AuroraPage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null);
-  const [params, setParams] = useState<AuroraParams>(() => structuredClone(INITIAL));
-
-  useEffect(() => {
-    const container = paneContainerRef.current;
-
-    if (!container) return;
-
-    const local: AuroraParams = structuredClone(INITIAL);
-    const pane = new Pane({ container, title: '<Aurora>' });
-
-    // Pre-release wide-gamut color picker (docs-only). The built-in Tweakpane
-    // picker is sRGB and rejects oklch()/oklab() strings; color-plus adapts its
-    // UI to the bound color's gamut.
-    pane.registerPlugin(TweakpanePluginColorPlus);
-
-    const sync = () => setParams(structuredClone(local));
-
-    pane.addButton({ title: 'Reset all' }).on('click', () => {
-      Object.assign(local, structuredClone(INITIAL));
-      rebuildStops();
-      pane.refresh();
-      sync();
-    });
-
-    addCopyButtons(
-      pane,
-      () => formatJsx(local),
-      () => formatParams(local),
-    );
-
-    const globals = pane.addFolder({ title: 'Global' });
-
-    globals.addBinding(local, 'intensity', { min: 0, max: 3, step: 0.01 });
-    globals.addBinding(local, 'speed', { min: 0, max: 3, step: 0.01 });
-    globals.addBinding(local, 'waviness', { min: 0, max: 3, step: 0.01 });
-    globals.addBinding(local, 'coverage', { min: 0, max: 1, step: 0.01 });
-    globals.addBinding(local, 'colorSpace', {
-      options: {
-        OKLab: 'oklab',
-        OKLch: 'oklch',
-        Linear: 'linear',
-        LCH: 'lch',
-        HSL: 'hsl',
-        HSV: 'hsv',
-      },
-    });
-    globals.addBinding(local, 'hueInterpolation', {
-      label: 'hue arc',
-      options: {
-        shorter: 'shorter',
-        longer: 'longer',
-        increasing: 'increasing',
-        decreasing: 'decreasing',
-      },
-    });
-    pane.addBlade({ view: 'separator' });
-
-    const stopsFolder = pane.addFolder({ title: 'Stops (low → high altitude)' });
-
-    // Tweakpane folders are static; to render variable-length lists we dispose
-    // every child of the stops folder and rebuild on each mutation.
-    const rebuildStops = () => {
-      for (const child of [...stopsFolder.children]) child.dispose();
-
-      local.stops.forEach((stop, stopIndex) => {
-        const row = stopsFolder.addFolder({
-          title: `Stop ${stopIndex}`,
-          expanded: stopIndex === 0,
-        });
-
-        // Wide-gamut picker (color-plus). `formatLocked` keeps the written-back
-        // value in the bound color's format (oklch here) no matter how the
-        // picker is used.
-        row.addBinding(stop, 'color', {
-          label: 'color',
-          view: 'color-plus',
-          color: { formatLocked: true },
-        });
-        row.addBinding(stop, 'position', { min: 0, max: 1, step: 0.01 });
-
-        const removeButton = row.addButton({ title: 'Remove stop' });
-
-        if (local.stops.length <= MIN_STOPS) removeButton.disabled = true;
-        removeButton.on('click', () => {
-          local.stops.splice(stopIndex, 1);
-          rebuildStops();
-          sync();
-        });
-      });
-
-      const addButton = stopsFolder.addButton({ title: '+ Add stop' });
-
-      if (local.stops.length >= MAX_STOPS) addButton.disabled = true;
-      addButton.on('click', () => {
-        const last = local.stops[local.stops.length - 1];
-        // Duplicate the last stop's color so the new stop is visible.
-        const nextColor = last?.color ?? 'oklch(0.6 0 0)';
-
-        local.stops.push({ color: nextColor, position: 1 });
-        rebuildStops();
-        sync();
-      });
-    };
-
-    rebuildStops();
-
-    pane.on('change', sync);
-
-    return () => {
-      pane.dispose();
-    };
-  }, []);
+function AuroraDemo() {
+  const params = useSnapshot<AuroraParams>();
 
   return (
-    <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div
-        data-shader-demo
-        style={{
-          position: 'relative',
-          // sRGB approximation of the reference sky the aurora was tuned
-          // against — the component itself is transparent.
-          background: 'linear-gradient(to top, #193157, #1b2138)',
-        }}
+    <DemoPoster
+      alt="Aurora shader preview: green and teal light curtains with a blue veil and pink fringe over a dark backdrop"
+      src="/posters/aurora.jpg"
+    >
+      <AuroraScene params={params}>
+        <VisualTestPause />
+      </AuroraScene>
+    </DemoPoster>
+  );
+}
+
+function AuroraControls() {
+  return (
+    <ControlPanel copyConfig={COPY_CONFIG} title="<Aurora>">
+      <Section title="Motion">
+        <SliderInput label="Speed" max={3} min={0} path="speed" step={0.01} />
+        <SliderInput label="Waviness" max={3} min={0} path="waviness" step={0.01} />
+      </Section>
+      <Section title="Shape">
+        <SliderInput label="Intensity" max={3} min={0} path="intensity" step={0.01} />
+        <SliderInput label="Coverage" max={1} min={0} path="coverage" step={0.01} />
+      </Section>
+      <Section title="Mixing">
+        <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
+        <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
+      </Section>
+      <ListInput<PlainColorStop>
+        createItem={createStop}
+        itemLabel="stop"
+        label="Stops (low to high altitude)"
+        max={MAX_STOPS}
+        min={MIN_STOPS}
+        path="stops"
       >
-        <DemoPoster
-          alt="Aurora shader preview: green and teal light curtains with a blue veil and pink fringe over a dark backdrop"
-          src="/posters/aurora.jpg"
-        >
-          <AuroraScene params={params}>
-            <VisualTestPause />
-          </AuroraScene>
-        </DemoPoster>
-        <div
-          aria-hidden="true"
-          data-tweakpane-host
-          ref={paneContainerRef}
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            zIndex: 10,
-            width: '320px',
-            maxHeight: 'calc(100% - 2rem)',
-            overflowY: 'auto',
-          }}
-        />
-      </div>
-      <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-        <h1 style={{ marginTop: 0 }}>&lt;Aurora /&gt;</h1>
-        <pre
-          style={{
-            background: '#1a1a2a',
-            color: '#e0e0f0',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            fontSize: '0.85rem',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {`<ShaderScene>
+        {() => (
+          <>
+            <ColorInput label="Color" path="color" />
+            <SliderInput label="Position" max={1} min={0} path="position" step={0.01} />
+          </>
+        )}
+      </ListInput>
+    </ControlPanel>
+  );
+}
+
+export default function AuroraPage() {
+  const store = useMemo(() => createControlStore<AuroraParams>(INITIAL), []);
+
+  return (
+    <ControlsProvider store={store}>
+      <main style={{ minHeight: '100vh' }}>
+        <DemoLayout controls={<AuroraControls />}>
+          <div
+            data-shader-demo
+            style={{
+              position: 'relative',
+              // sRGB approximation of the reference sky the aurora was tuned
+              // against — the component itself is transparent.
+              background: 'linear-gradient(to top, #193157, #1b2138)',
+            }}
+          >
+            <AuroraDemo />
+          </div>
+        </DemoLayout>
+        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
+          <h1 style={{ marginTop: 0 }}>&lt;Aurora /&gt;</h1>
+          <pre
+            style={{
+              background: '#1a1a2a',
+              color: '#e0e0f0',
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              fontSize: '0.85rem',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {`<ShaderScene>
   <Aurora intensity={1} stops={[...]} />
 </ShaderScene>`}
-        </pre>
-        <p>
-          The aurora fills its scene; compose with the container. For a curtain band hanging in a
-          wide dark sky, place a short ShaderScene near the top of a taller dark section.{' '}
-          <code>coverage</code> reveals the curtain from the bottom up — 1 covers the canvas, 0
-          hides it.
-        </p>
-      </section>
-    </main>
+          </pre>
+          <p>
+            The aurora fills its scene; compose with the container. For a curtain band hanging in a
+            wide dark sky, place a short ShaderScene near the top of a taller dark section.{' '}
+            <code>coverage</code> reveals the curtain from the bottom up — 1 covers the canvas, 0
+            hides it.
+          </p>
+        </section>
+      </main>
+    </ControlsProvider>
   );
 }

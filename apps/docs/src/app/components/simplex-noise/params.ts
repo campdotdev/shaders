@@ -11,12 +11,7 @@ export interface Params {
   seed: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
-  colorCount: number;
-  color0: string;
-  color1: string;
-  color2: string;
-  color3: string;
-  color4: string;
+  colors: string[];
 }
 
 export const INITIAL: Params = {
@@ -28,10 +23,11 @@ export const INITIAL: Params = {
   seed: 0,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
-  colorCount: 5,
-  color0: palette.blue.base,
-  color1: palette.violet.base,
-  color2: palette.purple.base,
-  color3: palette.magenta.base,
-  color4: palette.teal.base,
+  colors: [
+    palette.blue.base,
+    palette.violet.base,
+    palette.purple.base,
+    palette.magenta.base,
+    palette.teal.base,
+  ],
 };
