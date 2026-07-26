@@ -56,6 +56,7 @@ export default defineConfig([
           allowDefaultProject: [
             'packages/matter/*.config.{ts,mts,cts}',
             'packages/matter-react/*.config.{ts,mts,cts}',
+            'apps/docs/vitest.config.ts',
             'packages/*/posters/*.{ts,tsx}',
           ],
           defaultProject: 'tsconfig.eslint.json',
@@ -141,6 +142,7 @@ export default defineConfig([
     files: [
       'packages/*/src/**/*.test.{ts,tsx}',
       'packages/*/src/**/*.spec.{ts,tsx}',
+      'apps/*/src/**/*.test.{ts,tsx}',
       'apps/docs-tests/**/*.{ts,tsx}',
       'packages/*/src/test-setup.ts',
     ],
