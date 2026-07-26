@@ -7,7 +7,9 @@ const routes = [
   '/components/mesh-gradient',
   '/components/aurora',
   '/components/dot-field',
+  '/components/grain',
   '/components/simplex-noise',
+  '/components/vignette',
   '/components/wave-lines',
   '/recipes',
 ];
@@ -20,7 +22,6 @@ for (const route of routes) {
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa'])
       .disableRules(['color-contrast'])
-      .exclude('[data-tweakpane-host]')
       .analyze();
 
     if (results.violations.length > 0) {
