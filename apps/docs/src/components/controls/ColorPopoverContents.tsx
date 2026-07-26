@@ -50,6 +50,11 @@ export function ColorPopoverContents({ path, label }: { path: PathInput; label: 
 
     setProp(path, formatOklch(draft));
     setDraft(null);
+    // A drag is a more recent gesture than any un-submitted typed value, so
+    // it should win outright rather than have the unmount flush re-apply a
+    // stale typed string over it later.
+    setTyped(null);
+    setTypedIsInvalid(false);
   };
 
   const commitTyped = () => {
