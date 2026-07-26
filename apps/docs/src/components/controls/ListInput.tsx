@@ -96,6 +96,11 @@ export function ListInput<TItem>({
   const addLabel = `Add ${itemLabel}`;
   const addAriaLabel = `${addLabel} to ${qualifier}`;
 
+  // A fixed-size list (min === max, e.g. mesh-gradient's two 4-color
+  // palettes) has no legal add/remove — rendering permanently-disabled
+  // buttons would just be dead affordances, so skip them entirely.
+  const fixedSize = min === max;
+
   return (
     <fieldset className="controls-section">
       <legend className="controls-list-header">
@@ -116,15 +121,17 @@ export function ListInput<TItem>({
             <li className="controls-list-row" key={index}>
               <div className="controls-list-row-header">
                 <span>{ownLabel}</span>
-                <button
-                  aria-label={removeAriaLabel}
-                  className="controls-list-remove"
-                  disabled={count <= min}
-                  onClick={() => removeAt(index)}
-                  type="button"
-                >
-                  {removeLabel}
-                </button>
+                {!fixedSize && (
+                  <button
+                    aria-label={removeAriaLabel}
+                    className="controls-list-remove"
+                    disabled={count <= min}
+                    onClick={() => removeAt(index)}
+                    type="button"
+                  >
+                    {removeLabel}
+                  </button>
+                )}
               </div>
               <PathPrefixProvider segments={[...segments, index]}>
                 <ListBreadcrumbContext.Provider value={[...ancestorBreadcrumb, ownLabel]}>
@@ -135,15 +142,17 @@ export function ListInput<TItem>({
           );
         })}
       </ul>
-      <button
-        aria-label={addAriaLabel}
-        className="controls-button"
-        disabled={count >= max}
-        onClick={add}
-        type="button"
-      >
-        {addLabel}
-      </button>
+      {!fixedSize && (
+        <button
+          aria-label={addAriaLabel}
+          className="controls-button"
+          disabled={count >= max}
+          onClick={add}
+          type="button"
+        >
+          {addLabel}
+        </button>
+      )}
     </fieldset>
   );
 }
