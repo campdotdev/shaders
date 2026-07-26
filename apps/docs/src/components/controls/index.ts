@@ -1,3 +1,4 @@
+export { ColorInput } from './ColorInput';
 export { ControlsProvider, PathPrefixProvider } from './context';
 export { ControlPanel } from './ControlPanel';
 export { formatJsx, formatParams } from './copy';
