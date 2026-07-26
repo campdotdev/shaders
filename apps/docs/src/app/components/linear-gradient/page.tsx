@@ -1,13 +1,23 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
 
-import { Pane } from 'tweakpane';
-import * as TweakpanePluginColorPlus from 'tweakpane-plugin-color-plus';
-
+import {
+  COLOR_SPACE_OPTIONS,
+  ColorInput,
+  ControlPanel,
+  ControlsProvider,
+  createControlStore,
+  DemoLayout,
+  HUE_ARC_OPTIONS,
+  ListInput,
+  Section,
+  SelectInput,
+  SliderInput,
+  useSnapshot,
+} from '@/components/controls';
 import { DemoPoster } from '@/components/DemoPoster';
-import { addCopyButtons } from '@/lib/paneUtils';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { INITIAL, MAX_STOPS, MIN_STOPS } from './params';
@@ -15,198 +25,98 @@ import type { Params, Stop } from './params';
 
 const LinearGradientScene = dynamic(() => import('./scene'), { ssr: false });
 
-const formatNumber = (numericValue: number) => String(Math.round(numericValue * 10000) / 10000);
+const COPY_CONFIG = { componentName: 'LinearGradient' } as const;
 
-const formatStops = (stops: Stop[]) =>
-  stops
-    .map((stop) => `{ color: '${stop.color}', position: ${formatNumber(stop.position)} }`)
-    .join(',\n      ');
+/**
+ * A new stop duplicates the last stop's color so it's visible immediately, and
+ * slots in halfway between the last position and 1.0.
+ */
+const createStop = (stops: readonly Stop[]): Stop => {
+  const last = stops[stops.length - 1];
 
-const formatJsx = (params: Params) =>
-  `<ShaderScene>
-  <LinearGradient
-    stops={[
-      ${formatStops(params.stops)},
-    ]}
-    angle={${formatNumber(params.angle)}}
-    speed={${formatNumber(params.speed)}}
-    center={[${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}]}
-    colorSpace="${params.colorSpace}"
-    hueInterpolation="${params.hueInterpolation}"
-  />
-</ShaderScene>`;
+  return {
+    color: last?.color ?? 'oklch(0.6 0 0)',
+    position: last !== undefined ? (last.position + 1) / 2 : 1,
+  };
+};
 
-const formatParams = (params: Params) =>
-  `{
-  stops: [
-    ${params.stops
-      .map((stop) => `{ color: '${stop.color}', position: ${formatNumber(stop.position)} }`)
-      .join(',\n    ')},
-  ],
-  angle: ${formatNumber(params.angle)},
-  speed: ${formatNumber(params.speed)},
-  center: [${formatNumber(params.centerX)}, ${formatNumber(params.centerY)}],
-  colorSpace: '${params.colorSpace}',
-  hueInterpolation: '${params.hueInterpolation}',
-}`;
-
-export default function LinearGradientPage() {
-  const paneContainerRef = useRef<HTMLDivElement>(null);
-  const [params, setParams] = useState<Params>(() => structuredClone(INITIAL));
-
-  useEffect(() => {
-    const container = paneContainerRef.current;
-
-    if (!container) return;
-
-    const local: Params = structuredClone(INITIAL);
-    const pane = new Pane({ container, title: '<LinearGradient>' });
-
-    // Pre-release wide-gamut color picker (docs-only). The built-in Tweakpane
-    // picker is sRGB and rejects oklch()/oklab() strings; color-plus adapts its
-    // UI to the bound color's gamut.
-    pane.registerPlugin(TweakpanePluginColorPlus);
-    const sync = () => setParams(structuredClone(local));
-
-    pane.addButton({ title: 'Reset all' }).on('click', () => {
-      Object.assign(local, structuredClone(INITIAL));
-      // local.stops bindings reference the previous stop objects; rebuild the
-      // dynamic folder so new bindings point at the fresh ones.
-      rebuildStops();
-      pane.refresh();
-      sync();
-    });
-
-    addCopyButtons(
-      pane,
-      () => formatJsx(local),
-      () => formatParams(local),
-    );
-
-    pane.addBinding(local, 'angle', { min: 0, max: 360, step: 1 });
-    pane.addBinding(local, 'speed', { min: 0, max: 2, step: 0.01 });
-    pane.addBinding(local, 'centerX', { label: 'center x', min: 0, max: 1, step: 0.01 });
-    pane.addBinding(local, 'centerY', { label: 'center y', min: 0, max: 1, step: 0.01 });
-    pane.addBinding(local, 'colorSpace', {
-      options: {
-        OKLab: 'oklab',
-        OKLch: 'oklch',
-        Linear: 'linear',
-        LCH: 'lch',
-        HSL: 'hsl',
-        HSV: 'hsv',
-      },
-    });
-    pane.addBinding(local, 'hueInterpolation', {
-      label: 'hue arc',
-      options: {
-        shorter: 'shorter',
-        longer: 'longer',
-        increasing: 'increasing',
-        decreasing: 'decreasing',
-      },
-    });
-    pane.addBlade({ view: 'separator' });
-
-    const stopsFolder = pane.addFolder({ title: 'Color stops' });
-
-    // Tweakpane folders are static; to render variable-length lists we
-    // dispose every child of the stops folder and rebuild on each mutation.
-    const rebuildStops = () => {
-      for (const child of [...stopsFolder.children]) child.dispose();
-
-      local.stops.forEach((stop, stopIndex) => {
-        const row = stopsFolder.addFolder({ title: `Stop ${stopIndex}`, expanded: true });
-
-        // Wide-gamut picker (color-plus). `formatLocked` keeps the written-back
-        // value in the bound color's format (oklch here) no matter how the picker
-        // is manipulated, so every stop stays in a format parseColor supports
-        // (hex / oklch / oklab) rather than emitting rgb()/hsl()/display-p3().
-        row.addBinding(stop, 'color', {
-          label: 'color',
-          view: 'color-plus',
-          color: { formatLocked: true },
-        });
-        row.addBinding(stop, 'position', { label: 'position', min: 0, max: 1, step: 0.01 });
-
-        const removeButton = row.addButton({ title: 'Remove stop' });
-
-        if (local.stops.length <= MIN_STOPS) removeButton.disabled = true;
-        removeButton.on('click', () => {
-          local.stops.splice(stopIndex, 1);
-          rebuildStops();
-          sync();
-        });
-      });
-
-      const addButton = stopsFolder.addButton({ title: '+ Add stop' });
-
-      if (local.stops.length >= MAX_STOPS) addButton.disabled = true;
-      addButton.on('click', () => {
-        const last = local.stops[local.stops.length - 1];
-        // New stop slots in halfway between the current last position and 1.0.
-        // Color duplicates the last stop's color so the new stop is visible
-        // and immediately editable rather than appearing as a random hex.
-        const nextColor = last?.color ?? 'oklch(0.6 0 0)';
-        const nextPosition = last !== undefined ? (last.position + 1) / 2 : 1;
-
-        local.stops.push({ color: nextColor, position: nextPosition });
-        rebuildStops();
-        sync();
-      });
-    };
-
-    rebuildStops();
-
-    pane.on('change', sync);
-
-    return () => {
-      pane.dispose();
-    };
-  }, []);
+function LinearGradientDemo() {
+  const params = useSnapshot<Params>();
 
   return (
-    <main style={{ minHeight: '100vh', position: 'relative' }}>
-      <div data-shader-demo style={{ position: 'relative' }}>
-        <DemoPoster
-          alt="Linear gradient shader preview: vertical gradient from violet to purple to magenta"
-          src="/posters/linear-gradient.png"
-        >
-          <LinearGradientScene params={params}>
-            <VisualTestPause />
-          </LinearGradientScene>
-        </DemoPoster>
-        <div
-          aria-hidden="true"
-          data-tweakpane-host
-          ref={paneContainerRef}
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            zIndex: 10,
-            width: '320px',
-          }}
-        />
-      </div>
-      <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-        <h1 style={{ marginTop: 0 }}>&lt;LinearGradient /&gt;</h1>
-        <p>Animated linear gradient. The simplest, foundational Matter component.</p>
-        <pre
-          style={{
-            background: '#1a1a2a',
-            color: '#e0e0f0',
-            padding: '1rem',
-            borderRadius: '0.5rem',
-            fontSize: '0.85rem',
-            whiteSpace: 'pre-wrap',
-          }}
-        >
-          {`<ShaderScene>
+    <DemoPoster
+      alt="Linear gradient shader preview: vertical gradient from violet to purple to magenta"
+      src="/posters/linear-gradient.png"
+    >
+      <LinearGradientScene params={params}>
+        <VisualTestPause />
+      </LinearGradientScene>
+    </DemoPoster>
+  );
+}
+
+function LinearGradientControls() {
+  return (
+    <ControlPanel copyConfig={COPY_CONFIG} title="<LinearGradient>">
+      <Section title="Motion">
+        <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
+        <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
+        <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />
+        <SliderInput label="Center y" max={1} min={0} path="center.1" step={0.01} />
+      </Section>
+      <Section title="Mixing">
+        <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
+        <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
+      </Section>
+      <ListInput<Stop>
+        createItem={createStop}
+        itemLabel="stop"
+        label="Color stops"
+        max={MAX_STOPS}
+        min={MIN_STOPS}
+        path="stops"
+      >
+        {() => (
+          <>
+            <ColorInput label="Color" path="color" />
+            <SliderInput label="Position" max={1} min={0} path="position" step={0.01} />
+          </>
+        )}
+      </ListInput>
+    </ControlPanel>
+  );
+}
+
+export default function LinearGradientPage() {
+  const store = useMemo(() => createControlStore<Params>(INITIAL), []);
+
+  return (
+    <ControlsProvider store={store}>
+      <main style={{ minHeight: '100vh' }}>
+        <DemoLayout controls={<LinearGradientControls />}>
+          <div data-shader-demo style={{ position: 'relative' }}>
+            <LinearGradientDemo />
+          </div>
+        </DemoLayout>
+        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
+          <h1 style={{ marginTop: 0 }}>&lt;LinearGradient /&gt;</h1>
+          <p>Animated linear gradient. The simplest, foundational Matter component.</p>
+          <pre
+            style={{
+              background: '#1a1a2a',
+              color: '#e0e0f0',
+              padding: '1rem',
+              borderRadius: '0.5rem',
+              fontSize: '0.85rem',
+              whiteSpace: 'pre-wrap',
+            }}
+          >
+            {`<ShaderScene>
   <LinearGradient />
 </ShaderScene>`}
-        </pre>
-      </section>
-    </main>
+          </pre>
+        </section>
+      </main>
+    </ControlsProvider>
   );
 }
