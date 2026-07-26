@@ -24,15 +24,18 @@ import {
 import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-import { INITIAL, type Params } from './params';
+import { INITIAL, MAX_STOPS, MIN_STOPS, type Params, type PlainColorStop } from './params';
 
 const SimplexNoiseScene = dynamic(() => import('./scene'), { ssr: false });
 
 const COPY_CONFIG = { componentName: 'SimplexNoise' } as const;
 
 /** A new ramp color clones the last one so the addition is visible. */
-const createColor = (colors: readonly string[]): string =>
-  colors[colors.length - 1] ?? 'oklch(0.6 0.15 250)';
+const createStop = (stops: readonly PlainColorStop[]): PlainColorStop => {
+  const last = stops[stops.length - 1];
+
+  return { color: last?.color ?? 'oklch(0.6 0.15 250)' };
+};
 
 function SimplexNoiseDemo() {
   const params = useSnapshot<Params>();
@@ -64,15 +67,15 @@ function SimplexNoiseControls() {
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
         <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
       </Section>
-      <ListInput<string>
-        createItem={createColor}
+      <ListInput<PlainColorStop>
+        createItem={createStop}
         itemLabel="color"
         label="Colors"
-        max={5}
-        min={2}
-        path="colors"
+        max={MAX_STOPS}
+        min={MIN_STOPS}
+        path="stops"
       >
-        {() => <ColorInput label="Color" path="" />}
+        {() => <ColorInput label="Color" path="color" />}
       </ListInput>
     </ControlPanel>
   );

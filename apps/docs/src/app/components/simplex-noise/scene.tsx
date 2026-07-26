@@ -15,7 +15,7 @@ export default function SimplexNoiseScene({
   params?: Params;
   children?: ReactNode;
 } = {}) {
-  const stops: ColorStop[] = params.colors.map((color) => ({ color }));
+  const stops: ColorStop[] = params.stops;
 
   return (
     <ShaderScene>
