@@ -1,8 +1,9 @@
 /**
- * The color model behind ColorInput. Every color in this codebase is authored
- * as an oklch() string, and everything the picker writes back is one too — the
- * engine's parseColorString accepts only #rrggbb, oklch(), and oklab(), and
- * throws on anything else, so emitting rgb() or hsl() would crash the shader.
+ * The color model behind the color picker. Every color in this codebase is
+ * authored as an oklch() string, and everything the picker writes back is one
+ * too — the engine's parseColorString accepts only #rrggbb, oklch(), and
+ * oklab(), and throws on anything else, so emitting rgb() or hsl() would crash
+ * the shader.
  */
 import { linearSrgbToOklch, parseColorString } from '@lovo/matter';
 
@@ -55,10 +56,23 @@ export function parseToOklch(input: string): OklchColor {
       const readComponent = (token: string, percentScale: number) =>
         token.endsWith('%') ? (parseFloat(token) / 100) * percentScale : parseFloat(token);
 
+      const lightness = readComponent(lightnessToken, 1);
+      const chroma = readComponent(chromaToken, MAX_CHROMA);
+      const hue = parseFloat(hueToken.replace(/deg$/, ''));
+
+      // parseFloat silently returns NaN for a non-numeric token ("abc") rather
+      // than throwing, which would otherwise let a broken value ride all the
+      // way to formatOklch and come out as the unparseable "oklch(NaN NaN NaN)".
+      if (!Number.isFinite(lightness) || !Number.isFinite(chroma) || !Number.isFinite(hue)) {
+        throw new Error(`Invalid oklch() color: "${input}"`);
+      }
+
       return {
-        lightness: readComponent(lightnessToken, 1),
-        chroma: readComponent(chromaToken, MAX_CHROMA),
-        hue: parseFloat(hueToken.replace(/deg$/, '')),
+        lightness,
+        chroma,
+        // Wraps into [0, 360) so a pasted out-of-range hue (420deg, -30deg)
+        // matches the type's documented range instead of passing straight through.
+        hue: ((hue % 360) + 360) % 360,
       };
     }
   }

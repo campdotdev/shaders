@@ -27,8 +27,11 @@ export function HueSlider({
   onPreview,
   onCommit,
 }: {
+  /** The color the track's gradient and thumb position are drawn from. */
   color: OklchColor;
+  /** Fires continuously while dragging or arrow-stepping — updates the popup only. */
   onPreview: (next: OklchColor) => void;
+  /** Fires once the drag or key press settles — this is what reaches the store. */
   onCommit: () => void;
 }) {
   return (
