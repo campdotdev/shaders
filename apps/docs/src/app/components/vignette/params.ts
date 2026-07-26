@@ -3,8 +3,7 @@ import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 export interface VignetteParams {
   intensity: number;
   feather: number;
-  centerX: number;
-  centerY: number;
+  center: [number, number];
   radius: number;
   color: string;
   colorSpace: ColorSpace;
@@ -14,8 +13,7 @@ export interface VignetteParams {
 export const INITIAL: VignetteParams = {
   intensity: 0.3,
   feather: 0.6,
-  centerX: 0.5,
-  centerY: 0.5,
+  center: [0.5, 0.5],
   radius: 0.6,
   color: 'oklch(0.05 0.023 0)',
   colorSpace: 'oklab',

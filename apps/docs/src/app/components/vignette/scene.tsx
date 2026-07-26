@@ -19,7 +19,7 @@ export default function VignetteScene({
     <ShaderScene>
       <LinearGradient />
       <Vignette
-        center={[params.centerX, params.centerY]}
+        center={params.center}
         color={params.color}
         colorSpace={params.colorSpace}
         feather={params.feather}
