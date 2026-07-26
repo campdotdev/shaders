@@ -189,9 +189,6 @@ importers:
       serve:
         specifier: ^14.2.6
         version: 14.2.6
-      tweakpane-plugin-color-plus:
-        specifier: ^0.4.1
-        version: 0.4.1(tweakpane@4.0.5)
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
@@ -4024,12 +4021,6 @@ packages:
   turbo@2.9.7:
     resolution: {integrity: sha512-epxzqVO2s0IxcSWcgb+qKrtco8isfe7g3VtiS6hkYnEK4A9XQDZbrtavQ6MtWR1KoQn+1fUomaQth2rfRHlUlg==}
     hasBin: true
-
-  tweakpane-plugin-color-plus@0.4.1:
-    resolution: {integrity: sha512-S9meaQt1RPmDhFBiBtV/RI50K2m2sawHXAWJ93wFs7cLEiEkys/hw/79if+UR/31qUh+dY/5BaeucnFXabyifg==}
-    engines: {node: '>=20.19.0'}
-    peerDependencies:
-      tweakpane: ^4.0.0
 
   tweakpane@4.0.5:
     resolution: {integrity: sha512-rxEXdSI+ArlG1RyO6FghC4ZUX8JkEfz8F3v1JuteXSV0pEtHJzyo07fcDG+NsJfN5L39kSbCYbB9cBGHyuI/tQ==}
@@ -8348,11 +8339,6 @@ snapshots:
       '@turbo/linux-arm64': 2.9.7
       '@turbo/windows-64': 2.9.7
       '@turbo/windows-arm64': 2.9.7
-
-  tweakpane-plugin-color-plus@0.4.1(tweakpane@4.0.5):
-    dependencies:
-      '@tweakpane/core': 2.0.5
-      tweakpane: 4.0.5
 
   tweakpane@4.0.5: {}
 
