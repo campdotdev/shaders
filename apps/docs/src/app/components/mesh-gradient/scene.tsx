@@ -3,9 +3,29 @@
 import type { ReactNode } from 'react';
 
 import { ShaderScene } from '@lovo/matter-react';
-import { MeshGradient } from '@matter/registry/mesh-gradient';
+import { MeshGradient, type Palette } from '@matter/registry/mesh-gradient';
 
 import { INITIAL, type Params } from './params';
+
+const FALLBACK_COLOR = 'oklch(0.6 0.15 250)';
+
+/**
+ * The store holds each palette as a plain string[] so the palette list
+ * controls can read its length; the component wants a fixed four-color
+ * tuple. The panel pins both lists to exactly four items via ListInput's
+ * min/max, so the fallback only matters if a caller feeds this scene a
+ * malformed params object directly.
+ */
+const toPalette = (colors: readonly string[]): Palette => {
+  const [first, second, third, fourth] = colors;
+
+  return [
+    first ?? FALLBACK_COLOR,
+    second ?? FALLBACK_COLOR,
+    third ?? FALLBACK_COLOR,
+    fourth ?? FALLBACK_COLOR,
+  ];
+};
 
 export default function MeshGradientScene({
   params = INITIAL,
@@ -14,6 +34,8 @@ export default function MeshGradientScene({
   params?: Params;
   children?: ReactNode;
 } = {}) {
+  const [paletteA, paletteB] = params.palettes;
+
   return (
     <ShaderScene>
       <MeshGradient
@@ -23,10 +45,7 @@ export default function MeshGradientScene({
         cycleSpeed={params.cycleSpeed}
         frequency={params.frequency}
         hueInterpolation={params.hueInterpolation}
-        palettes={[
-          [params.a0, params.a1, params.a2, params.a3],
-          [params.b0, params.b1, params.b2, params.b3],
-        ]}
+        palettes={[toPalette(paletteA), toPalette(paletteB)]}
         speed={params.speed}
       />
       {children}
