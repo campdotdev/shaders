@@ -1,10 +1,8 @@
 // CPU-side color conversion: decode and encode. Props arrive as color strings
-// ('#8b5cf6', 'oklch(0.7 0.15 280)') and get parsed to linear-rgb HERE in JavaScript,
-// once — the GPU only ever sees the resulting linear-rgb numbers. The UI also needs
-// the reverse: linear-rgb back to OKLab/OKLch so the picker knows where to place
-// sliders. The oklab/oklch math mirrors the TSL versions in oklab.ts exactly (same
-// matrices), and the unit tests on parseColorString prove wide-gamut decode works —
-// headless browsers can't render P3 for a pixel test.
+// ('#8b5cf6', 'oklch(0.7 0.15 280)') and get parsed to linear-rgb HERE in
+// JavaScript, once — the GPU only ever sees the resulting numbers. The reverse
+// direction, linear-rgb back to OKLab/OKLch, lets the docs color picker know
+// where to place its sliders. Matrices mirror the TSL versions in oklab.ts exactly.
 import { srgbChannelToLinear } from './transfer.js';
 
 /**
