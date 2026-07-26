@@ -53,6 +53,13 @@ a:hover {
   isolation: isolate;
 }
 
+/* Scroll-clips the floating Tweakpane host on demo pages not yet migrated to
+   the owned controls panel. Remove once the last such page migrates. */
+[data-tweakpane-host] {
+  max-height: calc(100% - 2rem);
+  overflow-y: auto;
+}
+
 .codeblock {
   margin: 1rem 0;
 }

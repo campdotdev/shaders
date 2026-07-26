@@ -8,8 +8,6 @@ import {
   ControlsProvider,
   createControlStore,
   DemoLayout,
-  formatJsx,
-  formatParams,
   Section,
   SelectInput,
   SliderInput,
@@ -50,14 +48,8 @@ function GrainDemo() {
 }
 
 function GrainControls() {
-  const params = useSnapshot<GrainParams>();
-
   return (
-    <ControlPanel
-      onCopyJsx={() => formatJsx(COPY_CONFIG, params)}
-      onCopyParams={() => formatParams(params)}
-      title="<Grain>"
-    >
+    <ControlPanel copyConfig={COPY_CONFIG} title="<Grain>">
       <Section title="Grain">
         <SliderInput label="Intensity" max={1} min={0} path="intensity" step={0.01} />
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
