@@ -2,16 +2,16 @@
 
 /**
  * A variable-length list of anything — gradient stops, palette colors, wave
- * lines. Each row wraps its children in a path prefix, so a control inside it
- * can say path="color" and land on stops[2].color without knowing its index —
- * which is also what lets lists nest (colors inside lines). Add/remove write
- * the whole array back, cheaply, via the store's per-path structural sharing.
+ * lines. Rows wrap their children in a path prefix, so path="color" inside row
+ * 2 lands on stops[2].color without knowing its index — and lets lists nest.
+ * Subscribes to the array's length only: a nested write rebuilds the whole
+ * array's identity, so reading the array itself here would re-render every row.
  */
 import type { ReactNode } from 'react';
 
-import { PathPrefixProvider } from './context';
+import { PathPrefixProvider, useControlStore } from './context';
 import { normalizePath, type PathInput } from './store';
-import { usePropValue, useSetProp } from './useControl';
+import { usePropValue, useResolvedPath, useSetProp } from './useControl';
 
 export interface ListInputProps<TItem> {
   path: PathInput;
@@ -37,11 +37,27 @@ export function ListInput<TItem>({
   itemLabel = 'item',
   children,
 }: ListInputProps<TItem>) {
-  const items = usePropValue<TItem[]>(path);
+  const store = useControlStore();
   const setProp = useSetProp();
+  const resolvedPath = useResolvedPath(path);
   const segments = normalizePath(path);
 
+  // The only reactive read in this component. Writing any nested field (e.g.
+  // stops[1].position) rebuilds every container from the root down to that
+  // field, including this array, so subscribing to the array itself would
+  // re-render every row on every drag anywhere in the list. The count is a
+  // plain number, stable unless a row is actually added or removed.
+  const count = usePropValue<number>([...segments, 'length']);
+
+  // Reads the live array without subscribing to it -- used only inside click
+  // handlers, where a stale-by-one-tick read would never happen anyway.
+  const readItems = (): TItem[] =>
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- getAtPath returns unknown; TItem is the caller-supplied item shape for this list
+    store.getAtPath(resolvedPath) as TItem[];
+
   const removeAt = (index: number) => {
+    const items = readItems();
+
     setProp(
       path,
       items.filter((_unused, itemIndex) => itemIndex !== index),
@@ -49,6 +65,8 @@ export function ListInput<TItem>({
   };
 
   const add = () => {
+    const items = readItems();
+
     setProp(path, [...items, createItem(items)]);
   };
 
@@ -56,16 +74,20 @@ export function ListInput<TItem>({
     <div className="controls-section">
       <div className="controls-list-header">
         <span className="controls-section-title">{label}</span>
-        <span>{`${items.length} / ${max}`}</span>
+        <span>{`${count} / ${max}`}</span>
       </div>
       <ul className="controls-list">
-        {items.map((_item, index) => (
+        {/* Rows are positional, not identity-keyed: removing row 1 genuinely
+            shifts row 2 into its place, and the path prefix follows the
+            position. A stable per-item id would be dead weight here since
+            nothing animates or preserves per-row UI state across a shift. */}
+        {Array.from({ length: count }, (_unused, index) => (
           <li className="controls-list-row" key={index}>
             <div className="controls-list-row-header">
               <span>{`${itemLabel} ${index + 1}`}</span>
               <button
                 className="controls-list-remove"
-                disabled={items.length <= min}
+                disabled={count <= min}
                 onClick={() => removeAt(index)}
                 type="button"
               >
@@ -78,12 +100,7 @@ export function ListInput<TItem>({
           </li>
         ))}
       </ul>
-      <button
-        className="controls-button"
-        disabled={items.length >= max}
-        onClick={add}
-        type="button"
-      >
+      <button className="controls-button" disabled={count >= max} onClick={add} type="button">
         {`Add ${itemLabel}`}
       </button>
     </div>
