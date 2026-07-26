@@ -2,6 +2,10 @@ import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 
 import { palette } from '../../../lib/palette';
 
+export interface PlainColorStop {
+  color: string;
+}
+
 export interface Params {
   scale: number;
   speed: number;
@@ -11,8 +15,11 @@ export interface Params {
   seed: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
-  colors: string[];
+  stops: PlainColorStop[];
 }
+
+export const MIN_STOPS = 2;
+export const MAX_STOPS = 5;
 
 export const INITIAL: Params = {
   scale: 10,
@@ -23,11 +30,11 @@ export const INITIAL: Params = {
   seed: 0,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
-  colors: [
-    palette.blue.base,
-    palette.violet.base,
-    palette.purple.base,
-    palette.magenta.base,
-    palette.teal.base,
+  stops: [
+    { color: palette.blue.base },
+    { color: palette.violet.base },
+    { color: palette.purple.base },
+    { color: palette.magenta.base },
+    { color: palette.teal.base },
   ],
 };
