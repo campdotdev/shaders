@@ -4,7 +4,6 @@ export { ControlPanel } from './ControlPanel';
 export { formatJsx, formatParams } from './copy';
 export type { CopyConfig } from './copy';
 export { DemoLayout } from './DemoLayout';
-export { Field } from './Field';
 export { ListInput } from './ListInput';
 export { COLOR_SPACE_OPTIONS, HUE_ARC_OPTIONS } from './options';
 export { Section } from './Section';

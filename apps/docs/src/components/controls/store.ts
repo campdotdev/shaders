@@ -1,13 +1,10 @@
 /**
  * The state backing a demo page's control panel. Holds one params object and
- * hands out reads addressed by path ('lines.3.colors.0'), so each control can
- * subscribe to just its own field instead of the whole object.
- *
- * Writes rebuild only the objects along the path — see writeAtPath below. That
- * structural sharing is what makes the subscription granularity real: untouched
- * siblings keep their identity, so React skips re-rendering the controls bound
- * to them. Without it, every control re-renders on every keystroke and the
- * whole reason for not using Context disappears.
+ * hands out reads/writes addressed by path ('lines.3.colors.0'), so each
+ * control can subscribe to just its own field instead of the whole object.
+ * Writes rebuild only the objects along the path (see writeAtPath below) —
+ * untouched siblings keep their identity, so React skips re-rendering the
+ * controls bound to them.
  */
 
 export type PathSegment = string | number;
