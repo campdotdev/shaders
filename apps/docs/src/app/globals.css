@@ -1,23 +1,28 @@
+/* Chrome colors come from the `moss` scale in src/lib/palette.ts — the brand
+   neutral, hue 120. CSS cannot import the palette, so these are literals; when
+   moss changes, change them here too. The step each value came from is named
+   so the pairing stays checkable. Accent and link are deliberately still the
+   old periwinkle and do not belong to the palette yet. */
 :root {
-  --bg: #0b0b14;
-  --bg-muted: #15151f;
-  --fg: #e8e8f0;
-  --fg-muted: #9a9aaa;
+  --bg: #0d0f06; /* moss[0] */
+  --bg-muted: #14170c; /* moss[1] */
+  --fg: #e8e8e8; /* moss[11] */
+  --fg-muted: #8d9184; /* moss[8] */
   --accent: #88aaff;
   --link: #88aaff;
-  --code-bg: #161622;
-  --border: #1f1f2c;
+  --code-bg: #14170c; /* moss[1] */
+  --border: #212419; /* moss[2] */
 }
 
 [data-theme='light'] {
   --bg: #ffffff;
-  --bg-muted: #f4f4f7;
-  --fg: #14141a;
-  --fg-muted: #5a5a66;
+  --bg-muted: #e8e8e8; /* moss[11] */
+  --fg: #0d0f06; /* moss[0] */
+  --fg-muted: #45483c; /* moss[5] */
   --accent: #5570ff;
   --link: #4860dd;
-  --code-bg: #f0f0f4;
-  --border: #e3e3e9;
+  --code-bg: #e8e8e8; /* moss[11] */
+  --border: #d1d2cf; /* moss[10] */
 }
 
 html {
