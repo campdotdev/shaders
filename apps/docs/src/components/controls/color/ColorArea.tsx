@@ -73,6 +73,9 @@ export function ColorArea({
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const areaRef = useRef<HTMLDivElement>(null);
   const isDraggingRef = useRef(false);
+  // Snapshot of `color` from the moment the current drag started, so a
+  // cancelled gesture (see handlePointerCancel) has something to revert to.
+  const dragStartColorRef = useRef(color);
 
   // Repaint whenever the hue changes; lightness and chroma only move the handle.
   useEffect(() => {
@@ -95,6 +98,7 @@ export function ColorArea({
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
     isDraggingRef.current = true;
+    dragStartColorRef.current = color;
     areaRef.current?.setPointerCapture(event.pointerId);
     readPosition(event.clientX, event.clientY);
   };
@@ -111,10 +115,26 @@ export function ColorArea({
     onCommit();
   };
 
+  // A cancelled gesture (browser takes over for a scroll/system gesture,
+  // touch interruption, etc.) never fires pointerup. The browser releases
+  // capture on its own, but the dragging flag has to be cleared here too, or
+  // a later plain hover with no button held would re-enter readPosition and
+  // start firing onPreview. A cancelled drag shouldn't commit, so this reverts
+  // the preview to the color the drag started from instead of leaving the
+  // popup showing an in-flight value that was never stored.
+  const handlePointerCancel = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!isDraggingRef.current) return;
+
+    isDraggingRef.current = false;
+    areaRef.current?.releasePointerCapture(event.pointerId);
+    onPreview(dragStartColorRef.current);
+  };
+
   return (
     <div
       aria-hidden="true"
       className="color-area"
+      onPointerCancel={handlePointerCancel}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
