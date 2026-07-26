@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Grain demo page: shader preview plus an owned control panel for the
+ * noise's intensity, animation speed, and blend mode.
+ */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 

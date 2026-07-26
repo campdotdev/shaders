@@ -1,5 +1,10 @@
 'use client';
 
+/**
+ * WaveLines demo page: shader preview plus an owned control panel for
+ * motion, shape, and light, plus a nested list of lines, each with its own
+ * color stops.
+ */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 

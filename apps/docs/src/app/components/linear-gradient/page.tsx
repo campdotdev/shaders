@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * LinearGradient demo page: shader preview plus an owned control panel for
+ * the gradient's angle, motion, mixing, and its list of color stops.
+ */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 

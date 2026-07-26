@@ -1,5 +1,9 @@
 'use client';
 
+/**
+ * Vignette demo page: shader preview plus an owned control panel for the
+ * mask's shape (intensity, feather, radius, center) and color mixing.
+ */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 
