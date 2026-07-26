@@ -7,11 +7,19 @@
  * Subscribes to the array's length only: a nested write rebuilds the whole
  * array's identity, so reading the array itself here would re-render every row.
  */
-import type { ReactNode } from 'react';
+import { createContext, type ReactNode, useContext } from 'react';
 
 import { PathPrefixProvider, useControlStore } from './context';
 import { normalizePath, type PathInput } from './store';
 import { usePropValue, useResolvedPath, useSetProp } from './useControl';
+
+/**
+ * Ambient trail of ancestor row labels ("line 5") so a nested list's add/remove
+ * buttons can name which parent row they belong to. Without this, every line's
+ * Colors list produces buttons reading plain "Remove stop 1" -- identical text
+ * repeated across all 8 lines, which a screen reader has no other way to tell apart.
+ */
+const ListBreadcrumbContext = createContext<readonly string[]>([]);
 
 export interface ListInputProps<TItem> {
   path: PathInput;
@@ -41,6 +49,7 @@ export function ListInput<TItem>({
   const setProp = useSetProp();
   const resolvedPath = useResolvedPath(path);
   const segments = normalizePath(path);
+  const ancestorBreadcrumb = useContext(ListBreadcrumbContext);
 
   // The only reactive read in this component. Writing any nested field (e.g.
   // stops[1].position) rebuilds every container from the root down to that
@@ -70,6 +79,13 @@ export function ListInput<TItem>({
     setProp(path, [...items, createItem(items)]);
   };
 
+  // Undefined (no aria-label override) when this list has no ancestor row, so
+  // a top-level list's buttons keep their existing accessible name -- only a
+  // nested list needs the extra "from line 5" / "to line 5" qualifier.
+  const addLabel = `Add ${itemLabel}`;
+  const addAriaLabel =
+    ancestorBreadcrumb.length > 0 ? `${addLabel} to ${ancestorBreadcrumb.join(' > ')}` : undefined;
+
   return (
     <div className="controls-section">
       <div className="controls-list-header">
@@ -81,27 +97,45 @@ export function ListInput<TItem>({
             shifts row 2 into its place, and the path prefix follows the
             position. A stable per-item id would be dead weight here since
             nothing animates or preserves per-row UI state across a shift. */}
-        {Array.from({ length: count }, (_unused, index) => (
-          <li className="controls-list-row" key={index}>
-            <div className="controls-list-row-header">
-              <span>{`${itemLabel} ${index + 1}`}</span>
-              <button
-                className="controls-list-remove"
-                disabled={count <= min}
-                onClick={() => removeAt(index)}
-                type="button"
-              >
-                {`Remove ${itemLabel} ${index + 1}`}
-              </button>
-            </div>
-            <PathPrefixProvider segments={[...segments, index]}>
-              {children(index)}
-            </PathPrefixProvider>
-          </li>
-        ))}
+        {Array.from({ length: count }, (_unused, index) => {
+          const ownLabel = `${itemLabel} ${index + 1}`;
+          const removeLabel = `Remove ${ownLabel}`;
+          const removeAriaLabel =
+            ancestorBreadcrumb.length > 0
+              ? `${removeLabel} from ${ancestorBreadcrumb.join(' > ')}`
+              : undefined;
+
+          return (
+            <li className="controls-list-row" key={index}>
+              <div className="controls-list-row-header">
+                <span>{ownLabel}</span>
+                <button
+                  aria-label={removeAriaLabel}
+                  className="controls-list-remove"
+                  disabled={count <= min}
+                  onClick={() => removeAt(index)}
+                  type="button"
+                >
+                  {removeLabel}
+                </button>
+              </div>
+              <PathPrefixProvider segments={[...segments, index]}>
+                <ListBreadcrumbContext.Provider value={[...ancestorBreadcrumb, ownLabel]}>
+                  {children(index)}
+                </ListBreadcrumbContext.Provider>
+              </PathPrefixProvider>
+            </li>
+          );
+        })}
       </ul>
-      <button className="controls-button" disabled={count >= max} onClick={add} type="button">
-        {`Add ${itemLabel}`}
+      <button
+        aria-label={addAriaLabel}
+        className="controls-button"
+        disabled={count >= max}
+        onClick={add}
+        type="button"
+      >
+        {addLabel}
       </button>
     </div>
   );

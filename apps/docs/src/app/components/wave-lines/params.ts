@@ -1,7 +1,12 @@
 import type { ColorSpace } from '@lovo/matter';
 
-export interface Line {
-  colors: string[];
+/**
+ * One line's colors. Always an array here even when it holds a single color --
+ * the control iterates it either way. `scene.tsx` collapses a one-entry array to
+ * a bare string, which is the flat-color form <WaveLines> expects.
+ */
+export interface WaveLineParams {
+  color: string[];
 }
 
 export interface Params {
@@ -19,7 +24,7 @@ export interface Params {
   flareRadius: number;
   colorDrift: number;
   colorSpace: ColorSpace;
-  lines: Line[];
+  lines: WaveLineParams[];
 }
 
 export const MIN_LINES = 1;
@@ -45,28 +50,28 @@ export const INITIAL: Params = {
   colorSpace: 'oklab',
   lines: [
     {
-      colors: ['oklch(0.85 0.12 235)', 'oklch(0.85 0.12 205)'],
+      color: ['oklch(0.85 0.12 235)', 'oklch(0.85 0.12 205)'],
     },
     {
-      colors: ['oklch(0.8 0.14 250)', 'oklch(0.8 0.14 220)'],
+      color: ['oklch(0.8 0.14 250)', 'oklch(0.8 0.14 220)'],
     },
     {
-      colors: ['oklch(0.75 0.16 265)', 'oklch(0.75 0.16 235)'],
+      color: ['oklch(0.75 0.16 265)', 'oklch(0.75 0.16 235)'],
     },
     {
-      colors: ['oklch(0.7 0.17 280)', 'oklch(0.7 0.17 250)'],
+      color: ['oklch(0.7 0.17 280)', 'oklch(0.7 0.17 250)'],
     },
     {
-      colors: ['oklch(0.65 0.17 295)', 'oklch(0.65 0.17 265)'],
+      color: ['oklch(0.65 0.17 295)', 'oklch(0.65 0.17 265)'],
     },
     {
-      colors: ['oklch(0.6 0.16 310)', 'oklch(0.6 0.16 280)'],
+      color: ['oklch(0.6 0.16 310)', 'oklch(0.6 0.16 280)'],
     },
     {
-      colors: ['oklch(0.55 0.15 325)', 'oklch(0.55 0.15 295)'],
+      color: ['oklch(0.55 0.15 325)', 'oklch(0.55 0.15 295)'],
     },
     {
-      colors: ['oklch(0.5 0.13 340)', 'oklch(0.5 0.13 310)'],
+      color: ['oklch(0.5 0.13 340)', 'oklch(0.5 0.13 310)'],
     },
   ],
 };
