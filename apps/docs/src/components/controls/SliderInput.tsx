@@ -27,7 +27,7 @@ export interface SliderInputProps {
   decimals?: number;
 }
 
-/** 0.05 -> 2, 1 -> 0. Keeps the readout from showing 0.6000000000000001. */
+/** 0.05 -> 2, 1 -> 0. Matches the readout's decimal places to what `step` implies. */
 const decimalsForStep = (step: number) =>
   step >= 1 ? 0 : Math.min(4, Math.ceil(-Math.log10(step)));
 
@@ -74,6 +74,7 @@ export function SliderInput({
         </Slider.Control>
       </Slider.Root>
       <NumberField.Root
+        format={format}
         max={max}
         min={min}
         onValueChange={(next) => {
