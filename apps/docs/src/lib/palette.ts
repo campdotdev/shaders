@@ -9,9 +9,9 @@
  *
  * The two spaces are hand-maintained and NOT mechanical conversions of each
  * other: the oklch scales push chroma beyond the sRGB gamut (see `limeScale`),
- * which is the whole point of the wide-gamut demo pickers. The color-plus picker
- * locks its format to the bound value, so a demo that wants wide-gamut input must
- * bind an `oklch()` string (e.g. `paletteOklch.gray[8]`), not the hex form. Keep
+ * which is the whole point of the wide-gamut demo pickers. `ColorInput` always
+ * writes `oklch()` strings, so a demo that wants wide-gamut input must bind an
+ * `oklch()` string (e.g. `paletteOklch.gray[8]`), not the hex form. Keep
  * the two forms visually paired when editing, but expect the numbers to diverge.
  */
 
