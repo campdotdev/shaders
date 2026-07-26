@@ -14,10 +14,16 @@ import {
 } from 'three/examples/jsm/math/ColorSpaces.js';
 import type { WebGPURenderer } from 'three/webgpu';
 
+import type { OutputGamut } from '../../primitives/color-space/cpu-convert.js';
 import type { GpuBackend } from './create-renderer.js';
 
-/** The output color gamut the renderer encodes its framebuffer for. */
-export type OutputGamut = 'srgb' | 'p3';
+/**
+ * The output color gamut the renderer encodes its framebuffer for. Defined
+ * alongside the CPU color conversions rather than here, so the gamut a color is
+ * mapped into and the gamut the framebuffer is encoded for are the same type
+ * rather than two identical unions that could drift apart.
+ */
+export type { OutputGamut };
 
 // three 0.170 core registers only sRGB and linear-sRGB in ColorManagement. The
 // Display P3 spaces ship as an addon that does NOT self-register, so we define
