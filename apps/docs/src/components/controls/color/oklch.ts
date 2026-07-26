@@ -3,15 +3,16 @@
  * as an oklch() string, and everything the picker writes back is one too — the
  * engine's parseColorString accepts only #rrggbb, oklch(), and oklab(), and
  * throws on anything else, so emitting rgb() or hsl() would crash the shader.
- *
+ */
+import { linearSrgbToOklch, parseColorString } from '@lovo/matter';
+
+/**
  * OKLCH in one line: lightness is how bright (0 black, 1 white), chroma is how
  * colorful (0 grey, and there is no fixed maximum — it depends on hue and
  * lightness), hue is the angle around the color wheel in degrees. Unlike HSL it
  * is perceptually uniform, so equal steps look equal, and unlike hex it can
  * describe colors outside the sRGB gamut that a P3 display can actually show.
  */
-import { linearSrgbToOklch, parseColorString } from '@lovo/matter';
-
 export interface OklchColor {
   /** 0 = black, 1 = white. */
   lightness: number;

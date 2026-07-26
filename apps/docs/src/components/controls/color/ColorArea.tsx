@@ -1,19 +1,10 @@
 'use client';
 
 /**
- * The chroma-by-lightness plane at one hue, painted pixel by pixel.
- *
- * Why a canvas and not stacked CSS gradients (the usual trick): that trick works
- * for HSV because saturation and value really are a white overlay and a black
- * overlay on a pure hue. OKLCH has no equivalent decomposition, and the shape of
- * the reachable region curves differently at every hue — so the only honest way
- * to draw it is to evaluate the color at each pixel.
- *
- * Pixels outside the sRGB gamut are drawn semi-transparent, letting the
- * checkerboard behind show through. The visible edge of the solid region IS the
- * gamut boundary. The canvas is an sRGB surface, so it cannot show wide-gamut
- * color accurately — it can only show where the boundary falls. The swatch and
- * the shader itself do render those colors correctly.
+ * The chroma-by-lightness plane at one hue, painted pixel by pixel rather than
+ * with the usual stacked-CSS-gradient trick — OKLCH has no white/black overlay
+ * decomposition the way HSV does, so the plane's shape has to be evaluated
+ * pixel by pixel at every hue. Pairs with HueSlider, which picks the hue.
  */
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef } from 'react';
 
@@ -30,6 +21,11 @@ const OUT_OF_GAMUT_ALPHA = 70;
 const toByte = (linearChannel: number) =>
   Math.round(Math.min(1, Math.max(0, linearChannelToSrgb(linearChannel))) * 255);
 
+// Pixels outside the sRGB gamut are written semi-transparent, letting the
+// checkerboard in .color-area's CSS show through — the visible edge of the
+// solid region IS the gamut boundary. The canvas itself is an sRGB surface, so
+// it cannot display wide-gamut color accurately; it can only show where the
+// boundary falls. The swatch and the shader do render those colors correctly.
 function paintPlane(canvas: HTMLCanvasElement, hue: number) {
   const context = canvas.getContext('2d');
 
