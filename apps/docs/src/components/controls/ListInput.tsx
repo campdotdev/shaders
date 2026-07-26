@@ -18,6 +18,10 @@ import { usePropValue, useResolvedPath, useSetProp } from './useControl';
  * buttons can name which parent row they belong to. Without this, every line's
  * Colors list produces buttons reading plain "Remove stop 1" -- identical text
  * repeated across all 8 lines, which a screen reader has no other way to tell apart.
+ * Only rows contribute to this trail (never a list's own heading label) — a
+ * nested list qualifies its buttons from the row it lives in ("line 5"), not
+ * from its own heading ("Colors"), so the two don't double up into "stop 2
+ * from Colors from line 5".
  */
 const ListBreadcrumbContext = createContext<readonly string[]>([]);
 
@@ -79,19 +83,25 @@ export function ListInput<TItem>({
     setProp(path, [...items, createItem(items)]);
   };
 
-  // Undefined (no aria-label override) when this list has no ancestor row, so
-  // a top-level list's buttons keep their existing accessible name -- only a
-  // nested list needs the extra "from line 5" / "to line 5" qualifier.
+  // What this list's own add/remove buttons name themselves after. A nested
+  // list (inside another list's row) already has a row to point to -- "line
+  // 5" -- and pointing to that instead of this list's own heading is what
+  // keeps the wave-lines case reading "stop 2 from line 5" rather than
+  // "stop 2 from Colors from line 5". A top-level list has no row, so it
+  // falls back to its own heading -- otherwise sibling lists like mesh-
+  // gradient's "Palette A" and "Palette B" would produce identical button
+  // names ("Add color", "Remove color 1") with nothing to tell them apart.
+  const qualifier = ancestorBreadcrumb.length > 0 ? ancestorBreadcrumb.join(' > ') : label;
+
   const addLabel = `Add ${itemLabel}`;
-  const addAriaLabel =
-    ancestorBreadcrumb.length > 0 ? `${addLabel} to ${ancestorBreadcrumb.join(' > ')}` : undefined;
+  const addAriaLabel = `${addLabel} to ${qualifier}`;
 
   return (
-    <div className="controls-section">
-      <div className="controls-list-header">
+    <fieldset className="controls-section">
+      <legend className="controls-list-header">
         <span className="controls-section-title">{label}</span>
         <span>{`${count} / ${max}`}</span>
-      </div>
+      </legend>
       <ul className="controls-list">
         {/* Rows are positional, not identity-keyed: removing row 1 genuinely
             shifts row 2 into its place, and the path prefix follows the
@@ -100,10 +110,7 @@ export function ListInput<TItem>({
         {Array.from({ length: count }, (_unused, index) => {
           const ownLabel = `${itemLabel} ${index + 1}`;
           const removeLabel = `Remove ${ownLabel}`;
-          const removeAriaLabel =
-            ancestorBreadcrumb.length > 0
-              ? `${removeLabel} from ${ancestorBreadcrumb.join(' > ')}`
-              : undefined;
+          const removeAriaLabel = `${removeLabel} from ${qualifier}`;
 
           return (
             <li className="controls-list-row" key={index}>
@@ -137,6 +144,6 @@ export function ListInput<TItem>({
       >
         {addLabel}
       </button>
-    </div>
+    </fieldset>
   );
 }

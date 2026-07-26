@@ -418,7 +418,11 @@ a:hover {
 }
 
 .controls-list-header {
+  /* A <legend> otherwise sizes to its content instead of filling the
+     <fieldset>, which collapses the space `justify-content` needs to push
+     the "n / max" count to the far edge. */
   display: flex;
+  width: 100%;
   align-items: baseline;
   justify-content: space-between;
   color: var(--fg-muted);
