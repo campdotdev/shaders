@@ -98,4 +98,27 @@ describe('brand palette', () => {
 
     expect(drifted).toEqual([]);
   });
+
+  it('keeps gray free of any tint', () => {
+    const tinted = paletteOklch.gray.filter((value) => componentsOf(value).chroma > 0.0005);
+
+    expect(tinted).toEqual([]);
+  });
+
+  it('holds moss on the brand hue wherever it carries tint', () => {
+    // Chroma 0 leaves hue undefined, so the lightest step is exempt by design.
+    const offHue = paletteOklch.moss.filter((value) => {
+      const { chroma, hue } = componentsOf(value);
+
+      return chroma > 0.0005 && Math.abs(hue - 120) > 0.5;
+    });
+
+    expect(offHue).toEqual([]);
+  });
+
+  it('gives both neutral scales the same lightness ladder', () => {
+    const lightnessOf = (value: string) => componentsOf(value).lightness.toFixed(3);
+
+    expect(paletteOklch.moss.map(lightnessOf)).toEqual(paletteOklch.gray.map(lightnessOf));
+  });
 });

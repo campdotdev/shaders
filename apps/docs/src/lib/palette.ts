@@ -14,7 +14,7 @@
  * the wide-gamut demo pickers — they just no longer reach past what a display
  * can actually produce. `ColorInput` always writes `oklch()` strings, so a demo
  * that wants wide-gamut input must bind an `oklch()` string (e.g.
- * `paletteOklch.gray[8]`), not the hex form.
+ * `paletteOklch.moss[8]`), not the hex form.
  *
  * Two rules when editing, both load-bearing. Chroma has a ceiling that varies
  * with lightness and hue, and asking for more does not make a color more vivid —
@@ -25,45 +25,96 @@
  * the hex from it with `oklchToGamut(..., 'srgb')` rather than by clipping.
  */
 
-const black = {
-  hex: '#0B0F0D',
-  oklch: 'oklch(0.163 0.008 163.8)',
-} as const;
-
-const white = {
-  hex: '#E7E9E7',
-  oklch: 'oklch(0.932 0.003 145.5)',
-} as const;
-
+/**
+ * Untinted neutral. This is the scale shaders reach for: a tint here would bias
+ * gradient mixing and drag a brand cast into output that should read as neutral.
+ * Shares its lightness ladder with `moss`, so `gray[n]` and `moss[n]` are the
+ * same brightness and swapping between them never shifts a layout's weight.
+ */
 const gray = {
   hex: [
-    '#0B0F0D',
-    '#131614',
-    '#202421',
-    '#2B302D',
-    '#363B38',
-    '#424844',
-    '#535A55',
-    '#6D736E',
-    '#8B918C',
-    '#A1A6A1',
-    '#D0D3CF',
-    '#E7E9E7',
+    '#0E0E0E',
+    '#151515',
+    '#232323',
+    '#2E2E2E',
+    '#393939',
+    '#464646',
+    '#585858',
+    '#717171',
+    '#8F8F8F',
+    '#A4A4A4',
+    '#D2D2D2',
+    '#E8E8E8',
   ],
   oklch: [
-    'oklch(0.163 0.008 163.8)',
-    'oklch(0.196 0.006 156.6)',
-    'oklch(0.255 0.008 153.3)',
-    'oklch(0.303 0.009 159.6)',
-    'oklch(0.346 0.008 159.7)',
-    'oklch(0.395 0.010 156.7)',
-    'oklch(0.460 0.012 154.8)',
-    'oklch(0.549 0.011 150.6)',
-    'oklch(0.650 0.010 150.6)',
-    'oklch(0.720 0.009 145.5)',
-    'oklch(0.863 0.006 137.8)',
-    'oklch(0.932 0.003 145.5)',
+    'oklch(0.163 0 0)',
+    'oklch(0.196 0 0)',
+    'oklch(0.255 0 0)',
+    'oklch(0.303 0 0)',
+    'oklch(0.346 0 0)',
+    'oklch(0.395 0 0)',
+    'oklch(0.460 0 0)',
+    'oklch(0.549 0 0)',
+    'oklch(0.650 0 0)',
+    'oklch(0.720 0 0)',
+    'oklch(0.863 0 0)',
+    'oklch(0.932 0 0)',
   ],
+} as const;
+
+/**
+ * Brand neutral: the same ladder as `gray`, rotated onto the brand hue (120,
+ * matching `limeScale`) and given just enough chroma to read as green-tinted
+ * without behaving like a color. This is what docs chrome and marketing
+ * surfaces use.
+ *
+ * Chroma holds at 0.020 through the dark and mid range, then tapers to 0 by the
+ * lightest step — near white, any chroma reads as a cast rather than a neutral.
+ * 0.020 is far inside sRGB everywhere on this ladder (the tightest headroom is
+ * 0.039, at the darkest step), so the hex and oklch forms are the same color
+ * with no gamut fitting between them.
+ */
+const moss = {
+  hex: [
+    '#0D0F06',
+    '#14170C',
+    '#212419',
+    '#2D3025',
+    '#383B30',
+    '#45483C',
+    '#565A4D',
+    '#6F7366',
+    '#8D9184',
+    '#A3A69C',
+    '#D1D2CF',
+    '#E8E8E8',
+  ],
+  oklch: [
+    'oklch(0.163 0.020 120)',
+    'oklch(0.196 0.020 120)',
+    'oklch(0.255 0.020 120)',
+    'oklch(0.303 0.020 120)',
+    'oklch(0.346 0.020 120)',
+    'oklch(0.395 0.020 120)',
+    'oklch(0.460 0.020 120)',
+    'oklch(0.549 0.020 120)',
+    'oklch(0.650 0.020 120)',
+    'oklch(0.720 0.015 120)',
+    'oklch(0.863 0.005 120)',
+    'oklch(0.932 0.000 120)',
+  ],
+} as const;
+
+/** Page anchor: the brand's green-black. The darkest step of `moss`. */
+const black = {
+  hex: moss.hex[0],
+  oklch: moss.oklch[0],
+} as const;
+
+/** Page anchor: the brand's off-white. The lightest step of `moss`. */
+const white = {
+  hex: moss.hex[11],
+  oklch: moss.oklch[11],
 } as const;
 
 const limeScale = {
@@ -228,6 +279,7 @@ export const palette = {
   black: black.hex,
   white: white.hex,
   gray: gray.hex,
+  moss: moss.hex,
   limeScale: limeScale.hex,
   brandLime: brandLime.hex,
   red: red.hex,
@@ -249,6 +301,7 @@ export const paletteOklch = {
   black: black.oklch,
   white: white.oklch,
   gray: gray.oklch,
+  moss: moss.oklch,
   limeScale: limeScale.oklch,
   brandLime: brandLime.oklch,
   red: red.oklch,
