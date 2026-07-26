@@ -53,13 +53,6 @@ a:hover {
   isolation: isolate;
 }
 
-/* Scroll-clips the floating Tweakpane host on demo pages not yet migrated to
-   the owned controls panel. Remove once the last such page migrates. */
-[data-tweakpane-host] {
-  max-height: calc(100% - 2rem);
-  overflow-y: auto;
-}
-
 .codeblock {
   margin: 1rem 0;
 }
@@ -420,9 +413,12 @@ a:hover {
 .controls-list-header {
   /* A <legend> otherwise sizes to its content instead of filling the
      <fieldset>, which collapses the space `justify-content` needs to push
-     the "n / max" count to the far edge. */
+     the "n / max" count to the far edge. Browsers also give <legend> ~2px of
+     inline padding by default; reset it like .controls-section-title does,
+     or this header sits slightly inset next to sibling rows. */
   display: flex;
   width: 100%;
+  padding: 0;
   align-items: baseline;
   justify-content: space-between;
   color: var(--fg-muted);
