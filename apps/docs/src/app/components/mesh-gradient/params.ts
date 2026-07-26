@@ -14,6 +14,9 @@ export interface Params {
   palettes: [string[], string[]];
 }
 
+/** Each palette is fixed at four colors — MeshGradient's prop shape, not a UI choice. */
+export const PALETTE_SIZE = 4;
+
 export const INITIAL: Params = {
   speed: 2,
   frequency: 5,

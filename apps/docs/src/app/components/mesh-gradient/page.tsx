@@ -25,7 +25,7 @@ import {
 import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-import { INITIAL, type Params } from './params';
+import { INITIAL, PALETTE_SIZE, type Params } from './params';
 
 const MeshGradientScene = dynamic(() => import('./scene'), { ssr: false });
 
@@ -70,8 +70,8 @@ function MeshGradientControls() {
         createItem={createColor}
         itemLabel="color"
         label="Palette A"
-        max={4}
-        min={4}
+        max={PALETTE_SIZE}
+        min={PALETTE_SIZE}
         path="palettes.0"
       >
         {() => <ColorInput label="Color" path="" />}
@@ -80,8 +80,8 @@ function MeshGradientControls() {
         createItem={createColor}
         itemLabel="color"
         label="Palette B"
-        max={4}
-        min={4}
+        max={PALETTE_SIZE}
+        min={PALETTE_SIZE}
         path="palettes.1"
       >
         {() => <ColorInput label="Color" path="" />}
