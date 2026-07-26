@@ -7,12 +7,22 @@
  * that expose one space at a time — consumers keep referencing `palette.red.base`
  * / `paletteOklch.red.base` exactly as before.
  *
- * The two spaces are hand-maintained and NOT mechanical conversions of each
- * other: the oklch scales push chroma beyond the sRGB gamut (see `limeScale`),
- * which is the whole point of the wide-gamut demo pickers. `ColorInput` always
- * writes `oklch()` strings, so a demo that wants wide-gamut input must bind an
- * `oklch()` string (e.g. `paletteOklch.gray[8]`), not the hex form. Keep
- * the two forms visually paired when editing, but expect the numbers to diverge.
+ * The two forms are the same color at two saturations, not two different colors.
+ * Every `oklch` value sits inside Display-P3; each `hex` is that same color
+ * refitted to sRGB by shedding chroma at constant lightness and hue. The oklch
+ * scales still reach past sRGB (see `limeScale`) — that is the whole point of
+ * the wide-gamut demo pickers — they just no longer reach past what a display
+ * can actually produce. `ColorInput` always writes `oklch()` strings, so a demo
+ * that wants wide-gamut input must bind an `oklch()` string (e.g.
+ * `paletteOklch.gray[8]`), not the hex form.
+ *
+ * Two rules when editing, both load-bearing. Chroma has a ceiling that varies
+ * with lightness and hue, and asking for more does not make a color more vivid —
+ * the framebuffer clips each channel independently, which drags hue along with
+ * it. Before this pass `sky.dark` asked for 0.145 chroma where P3 allows 0.109,
+ * and clipping landed it 14.7 degrees off its stated hue. So: keep every oklch
+ * value inside P3 (`oklchInGamut` from `@lovo/matter` is the check), and derive
+ * the hex from it with `oklchToGamut(..., 'srgb')` rather than by clipping.
  */
 
 const black = {
@@ -60,27 +70,27 @@ const limeScale = {
   hex: [
     '#111505',
     '#171C04',
-    '#242E00',
-    '#2F3C00',
-    '#3A4A00',
-    '#465900',
-    '#576E00',
-    '#6E8A00',
-    '#91AF00',
-    '#A3C100',
+    '#252D00',
+    '#313B00',
+    '#3C4800',
+    '#485700',
+    '#5A6B01',
+    '#728701',
+    '#93AD02',
+    '#A4C102',
     '#CCE288',
     '#E3F0BD',
   ],
   oklch: [
     'oklch(0.185 0.031 120)',
     'oklch(0.216 0.043 120)',
-    'oklch(0.280 0.080 120)',
-    'oklch(0.331 0.111 120)',
-    'oklch(0.377 0.137 120)',
-    'oklch(0.428 0.161 120)',
-    'oklch(0.496 0.184 120)',
-    'oklch(0.585 0.205 120)',
-    'oklch(0.703 0.205 120)',
+    'oklch(0.280 0.077 120)',
+    'oklch(0.331 0.091 120)',
+    'oklch(0.377 0.104 120)',
+    'oklch(0.428 0.118 120)',
+    'oklch(0.496 0.136 120)',
+    'oklch(0.585 0.161 120)',
+    'oklch(0.703 0.194 120)',
     'oklch(0.761 0.186 120)',
     'oklch(0.875 0.117 120)',
     'oklch(0.933 0.068 120)',
@@ -95,9 +105,9 @@ const brandLime = {
 
 /** Accent: red (h=25). */
 const red = {
-  hex: { light: '#ff6f6a', base: '#ff0029', dark: '#b60010' },
+  hex: { light: '#ff837c', base: '#fe022b', dark: '#b0011b' },
   oklch: {
-    light: 'oklch(0.748 0.200 25)',
+    light: 'oklch(0.748 0.194 25)',
     base: 'oklch(0.628 0.258 25)',
     dark: 'oklch(0.478 0.210 25)',
   },
@@ -105,17 +115,17 @@ const red = {
 
 /** Accent: orange (h=55). */
 const orange = {
-  hex: { light: '#ff9c4d', base: '#ee6600', dark: '#ac4400' },
+  hex: { light: '#ff9f5a', base: '#df7301', dark: '#9e5001' },
   oklch: {
     light: 'oklch(0.788 0.155 55)',
-    base: 'oklch(0.668 0.205 55)',
-    dark: 'oklch(0.518 0.165 55)',
+    base: 'oklch(0.668 0.188 55)',
+    dark: 'oklch(0.518 0.145 55)',
   },
 } as const;
 
 /** Accent: amber (h=85). */
 const amber = {
-  hex: { light: '#ffd57a', base: '#ecb100', dark: '#b38400' },
+  hex: { light: '#ffd67d', base: '#eab102', dark: '#b18501' },
   oklch: {
     light: 'oklch(0.892 0.120 85)',
     base: 'oklch(0.792 0.168 85)',
@@ -135,7 +145,7 @@ const lime = {
 
 /** Accent: green (h=145.897). Base matches Aurora's original spring green. */
 const green = {
-  hex: { light: '#84fa90', base: '#0ae24b', dark: '#00ab34' },
+  hex: { light: '#84fa90', base: '#0ae24b', dark: '#02ab36' },
   oklch: {
     light: 'oklch(0.892 0.180 145.897)',
     base: 'oklch(0.795 0.242 145.897)',
@@ -145,7 +155,7 @@ const green = {
 
 /** Accent: teal (h=175). */
 const teal = {
-  hex: { light: '#77ebce', base: '#00cda6', dark: '#00987a' },
+  hex: { light: '#77ebce', base: '#03c8a7', dark: '#01947b' },
   oklch: {
     light: 'oklch(0.865 0.115 175)',
     base: 'oklch(0.745 0.165 175)',
@@ -155,21 +165,21 @@ const teal = {
 
 /** Accent: cyan (h=205). */
 const cyan = {
-  hex: { light: '#5abfca', base: '#009eaf', dark: '#006e7c' },
+  hex: { light: '#5abfca', base: '#029ba7', dark: '#016a73' },
   oklch: {
     light: 'oklch(0.748 0.095 205)',
     base: 'oklch(0.628 0.135 205)',
-    dark: 'oklch(0.478 0.115 205)',
+    dark: 'oklch(0.478 0.108 205)',
   },
 } as const;
 
 /** Accent: sky (h=235). */
 const sky = {
-  hex: { light: '#1b9fda', base: '#007bc6', dark: '#004d87' },
+  hex: { light: '#1b9fda', base: '#0179a9', dark: '#004d6c' },
   oklch: {
     light: 'oklch(0.665 0.135 235)',
-    base: 'oklch(0.545 0.175 235)',
-    dark: 'oklch(0.395 0.145 235)',
+    base: 'oklch(0.545 0.151 235)',
+    dark: 'oklch(0.395 0.109 235)',
   },
 } as const;
 
@@ -185,7 +195,7 @@ const blue = {
 
 /** Accent: violet (h=293.328). Base matches Aurora's original violet. */
 const violet = {
-  hex: { light: '#825ddb', base: '#661acc', dark: '#43008e' },
+  hex: { light: '#825ddb', base: '#661acc', dark: '#43008d' },
   oklch: {
     light: 'oklch(0.580 0.185 293.328)',
     base: 'oklch(0.460 0.238 293.328)',
@@ -195,17 +205,17 @@ const violet = {
 
 /** Accent: purple (h=320). */
 const purple = {
-  hex: { light: '#ba5bcf', base: '#9e00ba', dark: '#66007b' },
+  hex: { light: '#ba5bcf', base: '#9e01b9', dark: '#610073' },
   oklch: {
     light: 'oklch(0.630 0.190 320)',
     base: 'oklch(0.510 0.245 320)',
-    dark: 'oklch(0.360 0.200 320)',
+    dark: 'oklch(0.360 0.185 320)',
   },
 } as const;
 
 /** Accent: magenta (h=343.895). Base matches Aurora's original magenta. */
 const magenta = {
-  hex: { light: '#e765b8', base: '#cc1a99', dark: '#8c0067' },
+  hex: { light: '#e765b8', base: '#cc1a99', dark: '#8a0165' },
   oklch: {
     light: 'oklch(0.693 0.185 343.895)',
     base: 'oklch(0.573 0.232 343.895)',
