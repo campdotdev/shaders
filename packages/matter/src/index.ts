@@ -5,7 +5,6 @@ export type {
   GpuRenderer,
   GpuBackend,
   CreateRendererOptions,
-  OutputGamut,
 } from './runtime/create-renderer/create-renderer.js';
 
 export { CursorInput } from './inputs/cursor-input/cursor-input.js';
@@ -22,9 +21,12 @@ export {
   oklchToLinearSrgb,
   linearSrgbToOklab,
   linearSrgbToOklch,
+  linearSrgbToLinearDisplayP3,
+  oklchInGamut,
+  oklchToGamut,
   parseColorString,
 } from './primitives/color-space/index.js';
-export type { ColorSpace, HueInterpolation } from './primitives/color-space/index.js';
+export type { ColorSpace, HueInterpolation, OutputGamut } from './primitives/color-space/index.js';
 
 export { simplexNoise } from './primitives/noise/noise.js';
 

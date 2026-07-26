@@ -44,6 +44,113 @@ export function oklchToLinearSrgb(
   return oklabToLinearSrgb(lightness, greenRed, blueYellow);
 }
 
+/**
+ * Extended linear-sRGB -> extended linear Display-P3. Both spaces share the D65
+ * white point, so this is one 3x3 matrix and no chromatic adaptation. P3's
+ * primaries sit further out, so the same physical color needs smaller
+ * coordinates here: a color whose sRGB channels overshoot [0,1] can land inside
+ * the P3 cube, which is what "wide gamut" means in practice.
+ *
+ * Nothing is clamped. A color outside P3 as well returns channels outside
+ * [0,1], so callers can test gamut membership on the result. The coefficients
+ * carry ten digits so each row sums to exactly 1, which keeps white landing on
+ * white rather than a rounding step past it — a gamut test tight enough to be
+ * useful near black would otherwise call white out of gamut.
+ *
+ * Used by the docs color picker, which asks where the sRGB and P3 gamut
+ * boundaries fall so it can draw them. The renderer's own P3 output path
+ * doesn't come through here — that goes through three's ColorSpaces addon (see
+ * `runtime/create-renderer/gamut.ts`).
+ */
+export function linearSrgbToLinearDisplayP3(
+  red: number,
+  green: number,
+  blue: number,
+): [number, number, number] {
+  return [
+    0.8224619687 * red + 0.1775380313 * green,
+    0.0331941989 * red + 0.9668058011 * green,
+    0.0170826307 * red + 0.0723974407 * green + 0.9105199286 * blue,
+  ];
+}
+
+// -------------------------------------------------
+// Fitting a color into a gamut it doesn't fit in
+// -------------------------------------------------
+
+/** A set of colors a display can show. P3 contains sRGB entirely. */
+export type OutputGamut = 'srgb' | 'p3';
+
+/** Slack on the [0,1] channel test. Small enough to keep the boundary honest near black. */
+const GAMUT_EPSILON = 1e-9;
+
+/** 24 halvings resolves chroma to well under a part in a million. */
+const GAMUT_BISECTION_STEPS = 24;
+
+/**
+ * Whether a display of this gamut can show the color at all.
+ *
+ * The epsilon is deliberately tiny. A loose tolerance accepts colors whose
+ * channels are merely small, and because a narrower gamut maps a given OKLCH
+ * color to smaller channel values, sRGB would then appear to "contain" more
+ * chroma than P3 down near black — a boundary that bulges exactly where it
+ * should taper.
+ */
+export function oklchInGamut(
+  lightness: number,
+  chroma: number,
+  hueDegrees: number,
+  gamut: OutputGamut,
+): boolean {
+  const [red, green, blue] = oklchToLinearSrgb(lightness, chroma, hueDegrees);
+  const channels =
+    gamut === 'p3' ? linearSrgbToLinearDisplayP3(red, green, blue) : [red, green, blue];
+
+  return channels.every((channel) => channel >= -GAMUT_EPSILON && channel <= 1 + GAMUT_EPSILON);
+}
+
+/**
+ * The nearest color `gamut` can actually show — what CSS calls a fallback.
+ * Chroma is reduced until the color fits; **lightness and hue come back
+ * untouched**. Colors that already fit are returned exactly as given.
+ *
+ * That restraint is the entire point, and it is what separates this from the
+ * channel clipping a narrow framebuffer does on its own. Clipping clamps red,
+ * green, and blue independently, which changes the ratios between them and so
+ * moves the color: `oklch(0.748 0.2 25)` clips to lightness 0.717, and
+ * `oklch(0.585 0.205 120)` clips 2.5 degrees off its hue. Shedding chroma along
+ * a constant lightness and hue gives up saturation and nothing else, which is
+ * the one axis a viewer on a narrow display cannot see anyway.
+ *
+ * Found by bisection rather than solved: chroma 0 is grey and always fits, the
+ * requested chroma does not, so halving walks onto the boundary from inside.
+ */
+export function oklchToGamut(
+  lightness: number,
+  chroma: number,
+  hueDegrees: number,
+  gamut: OutputGamut,
+): [number, number, number] {
+  if (oklchInGamut(lightness, chroma, hueDegrees, gamut)) {
+    return [lightness, chroma, hueDegrees];
+  }
+
+  let inside = 0;
+  let outside = chroma;
+
+  for (let step = 0; step < GAMUT_BISECTION_STEPS; step += 1) {
+    const middle = (inside + outside) / 2;
+
+    if (oklchInGamut(lightness, middle, hueDegrees, gamut)) {
+      inside = middle;
+    } else {
+      outside = middle;
+    }
+  }
+
+  return [lightness, inside, hueDegrees];
+}
+
 // -------------------------------------------------
 // The other direction: colors back into OKLch
 // -------------------------------------------------
