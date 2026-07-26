@@ -473,7 +473,7 @@ export function PaletteView() {
                 }}
               >
                 {[
-                  { name: 'lime', color: brandLimeMid },
+                  { name: 'brandLime', color: brandLimeMid },
                   ...ACCENTS.map((accent) => ({ name: accent.name, color: accent.oklch.base })),
                 ].map(({ name: chipName, color }) => (
                   <div
