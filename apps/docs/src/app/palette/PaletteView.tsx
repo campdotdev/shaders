@@ -319,8 +319,8 @@ export function PaletteView() {
           <div>
             <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Matter palette</h1>
             <p style={{ color: subFg, fontSize: 14, margin: '4px 0 0' }}>
-              Brand lime + gray keep their full 12-step scales. Other colors get just three steps:
-              dark, mid (most vibrant), light.
+              Gray (untinted), moss (brand chrome), and the brand lime scale run the full twelve
+              steps. Accents get three: dark, base (most vibrant), light.
             </p>
           </div>
           <button

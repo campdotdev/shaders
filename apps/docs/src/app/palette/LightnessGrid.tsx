@@ -1,11 +1,11 @@
 'use client';
 
-// One chart for the whole palette. Every scale is a row and the horizontal axis
-// is lightness, so scales can be compared directly: where the neutrals sit
-// against the brand ramp, and which lightnesses the accents actually cover.
-// Positions are continuous rather than snapped to the neutral ladder — snapping
-// collides, because amber and green each round two of their three steps into
-// one column.
+// One chart for the whole palette, rendered by PaletteView and reading colors
+// from @/lib/palette. Every scale is a row and the horizontal axis is lightness,
+// so scales can be compared directly: where the neutrals sit against the brand
+// ramp, and which lightnesses the accents actually cover. Positions are continuous
+// rather than snapped to the neutral ladder because snapping collides — amber and
+// green each round two of their three steps into one column.
 import { linearSrgbToOklch, parseColorString } from '@lovo/matter';
 
 import { palette, paletteOklch } from '@/lib/palette';
@@ -22,7 +22,12 @@ function lightnessOf(value: string): number {
 
 /** Lightness to a left offset in percent. */
 function axisPosition(lightness: number): number {
-  return ((lightness - AXIS_MIN) / (AXIS_MAX - AXIS_MIN)) * 100;
+  const percent = ((lightness - AXIS_MIN) / (AXIS_MAX - AXIS_MIN)) * 100;
+
+  // Clamp to 0-100: AXIS_MIN and AXIS_MAX are wider than today's palette bounds
+  // (darkest 0.163, lightest 0.933), so a future color outside this range renders
+  // at the container edge rather than disappearing off-screen.
+  return Math.max(0, Math.min(100, percent));
 }
 
 interface RowEntry {
