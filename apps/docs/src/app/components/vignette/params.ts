@@ -10,7 +10,8 @@ export interface VignetteParams {
   hueInterpolation: HueInterpolation;
 }
 
-// Mirrors the <Vignette /> wrapper defaults (registry/vignette/vignette.tsx) exactly.
+// Mirrors the <Vignette /> wrapper defaults (registry/vignette/vignette.tsx),
+// except radius: the demo opens at 0.6 where the component defaults to 0.7.
 export const INITIAL: VignetteParams = {
   intensity: 0.3,
   feather: 0.6,
