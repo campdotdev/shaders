@@ -13,7 +13,6 @@
     "apps/docs/content/**",
     "**/*.mdx",
     "apps/playground/**",
-    "apps/docs/src/lib/palette.gen.ts",
     "packages/matter-cli/src/test-fixtures/**"
   ],
   "ignoreDependencies": [

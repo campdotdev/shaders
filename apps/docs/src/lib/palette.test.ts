@@ -24,12 +24,8 @@ function flattenPalette(): Array<{ label: string; value: string }> {
   for (const [name, group] of Object.entries(paletteOklch)) {
     if (typeof group === 'string') {
       entries.push({ label: name, value: group });
-    } else if (Array.isArray(group)) {
-      group.forEach((value, index) => entries.push({ label: `${name}[${index}]`, value }));
     } else {
-      for (const [step, value] of Object.entries(group)) {
-        entries.push({ label: `${name}.${step}`, value });
-      }
+      group.forEach((value, index) => entries.push({ label: `${name}[${index}]`, value }));
     }
   }
 
@@ -91,6 +87,25 @@ function flattenDemoColors(): Array<{ label: string; value: string }> {
   return entries;
 }
 
+/**
+ * The twelve accent hues. Every one is a twelve-step scale on the same ladder
+ * the neutrals use, so they can all be walked the same way.
+ */
+const ACCENT_NAMES = [
+  'red',
+  'orange',
+  'amber',
+  'lime',
+  'green',
+  'teal',
+  'cyan',
+  'sky',
+  'blue',
+  'violet',
+  'purple',
+  'magenta',
+] as const;
+
 describe('brand palette', () => {
   it('keeps every color inside Display-P3', () => {
     const outside = flattenPalette().filter(({ value }) => {
@@ -126,17 +141,11 @@ describe('brand palette', () => {
 
       if (typeof group === 'string') {
         pairs = [[name, group, oklchGroup as string]];
-      } else if (Array.isArray(group)) {
+      } else {
         pairs = group.map((hex, index) => [
           `${name}[${index}]`,
           hex,
           (oklchGroup as readonly string[])[index] ?? '',
-        ]);
-      } else {
-        pairs = Object.entries(group).map(([step, hex]) => [
-          `${name}.${step}`,
-          hex,
-          (oklchGroup as Record<string, string>)[step] ?? '',
         ]);
       }
 
@@ -155,8 +164,15 @@ describe('brand palette', () => {
         // drift, could fail it.
         if (fromHex.chroma > 0.015 && fromOklch.chroma > 0.015) {
           const gap = Math.abs(fromHex.hue - fromOklch.hue);
+          // Near black, one 8-bit step is a large slice of a low-chroma color,
+          // so quantization alone swings hue further than it does higher up the
+          // ladder — the worst accent entry at L=0.196 lands 3.79 degrees off,
+          // and nothing at L>=0.303 exceeds 1.75. Loosening the dark end beats
+          // exempting it. Channel clipping, the failure this guards against,
+          // once moved an accent 14.7 degrees, so 5 still catches it.
+          const tolerance = fromOklch.lightness <= 0.3 ? 5 : 3;
 
-          if (Math.min(gap, 360 - gap) > 3) {
+          if (Math.min(gap, 360 - gap) > tolerance) {
             drifted.push(`${label} hue`);
           }
         }
@@ -187,6 +203,39 @@ describe('brand palette', () => {
     const lightnessOf = (value: string) => componentsOf(value).lightness.toFixed(3);
 
     expect(paletteOklch.moss.map(lightnessOf)).toEqual(paletteOklch.gray.map(lightnessOf));
+  });
+
+  it('puts every accent on the shared neutral ladder', () => {
+    // The whole point of the twelve-step rework: red[8] and gray[8] are the
+    // same brightness, so swapping one for the other never shifts a layout's
+    // weight. Comparing at 3 decimals matches how the values are authored.
+    const lightnessOf = (value: string) => componentsOf(value).lightness.toFixed(3);
+    const ladder = paletteOklch.gray.map(lightnessOf);
+
+    for (const name of ACCENT_NAMES) {
+      expect(paletteOklch[name].map(lightnessOf), name).toEqual(ladder);
+    }
+  });
+
+  it('raises each accent chroma monotonically to its peak rung', () => {
+    // Each hue reaches the most saturated version of itself that P3 can show
+    // at one rung, and climbs to it without wobbling. Past the peak the curve
+    // is allowed to fall steeply — that is the gamut ceiling collapsing toward
+    // white, not a mistake, so nothing is asserted about the descent.
+    const breaks: string[] = [];
+
+    for (const name of ACCENT_NAMES) {
+      const chromas = paletteOklch[name].map((value) => componentsOf(value).chroma);
+      const peak = chromas.indexOf(Math.max(...chromas));
+
+      for (let rung = 1; rung <= peak; rung += 1) {
+        if ((chromas[rung] ?? 0) <= (chromas[rung - 1] ?? 0)) {
+          breaks.push(`${name}[${rung}]`);
+        }
+      }
+    }
+
+    expect(breaks).toEqual([]);
   });
 
   it('keeps globals.css hex literals in sync with the palette steps they cite', () => {
