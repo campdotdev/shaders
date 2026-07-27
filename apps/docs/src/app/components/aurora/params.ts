@@ -31,7 +31,7 @@ export const INITIAL: AuroraParams = {
   stops: [
     { color: paletteOklch.green[10], position: 0 },
     { color: paletteOklch.teal[9], position: 0.35 },
-    { color: paletteOklch.sky[7], position: 0.7 },
-    { color: paletteOklch.magenta[6], position: 1 },
+    { color: paletteOklch.sky[9], position: 0.7 },
+    { color: paletteOklch.magenta[8], position: 1 },
   ],
 };

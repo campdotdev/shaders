@@ -14,14 +14,14 @@ import { AuroraShader } from './shader';
 export type { ColorStop } from '../utils/color';
 
 // Depth ramp, near → far: oxygen green up close, teal mid, sky and magenta in
-// the distance. The ramp dims monotonically with distance, making the far
-// stops recede in a shader that adds light rather than covering what is
-// behind it.
+// the distance. The stops stay bright because the shader's atmospheric
+// extinction makes the far colours dim with distance, not the source values
+// themselves.
 export const DEFAULT_STOPS: ColorStop[] = [
   { color: '#00fc53', position: 0 }, // palette.green[10]
   { color: '#00c0a0', position: 0.35 }, // palette.teal[9]
-  { color: '#007bab', position: 0.7 }, // palette.sky[7]
-  { color: '#9a0372', position: 1 }, // palette.magenta[6]
+  { color: '#00b2f6', position: 0.7 }, // palette.sky[9]
+  { color: '#f600b8', position: 1 }, // palette.magenta[8]
 ];
 
 export interface AuroraProps {
