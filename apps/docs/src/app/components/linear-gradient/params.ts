@@ -27,7 +27,7 @@ export const INITIAL: Params = {
   hueInterpolation: 'shorter',
   stops: [
     { color: paletteOklch.violet[8], position: 0 },
-    { color: paletteOklch.purple[8], position: 0.5 },
-    { color: paletteOklch.magenta[6], position: 1 },
+    { color: paletteOklch.purple[6], position: 0.5 },
+    { color: paletteOklch.magenta[4], position: 1 },
   ],
 };

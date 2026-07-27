@@ -51,8 +51,8 @@ export interface LinearGradientProps {
 // instead of washing out toward gray.
 const DEFAULT_STOPS: ColorStop[] = [
   { color: '#986dff' }, // palette.violet[8]
-  { color: '#db0bff' }, // palette.purple[8]
-  { color: '#9a0372' }, // palette.magenta[6]
+  { color: '#88109e' }, // palette.purple[6]
+  { color: '#611649' }, // palette.magenta[4]
 ];
 
 export function LinearGradient({
