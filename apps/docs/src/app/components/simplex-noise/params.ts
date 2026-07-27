@@ -31,10 +31,10 @@ export const INITIAL: Params = {
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
-    { color: palette.blue[6] },
+    { color: palette.sky[1] },
+    { color: palette.blue[4] },
     { color: palette.violet[6] },
-    { color: palette.purple[6] },
-    { color: palette.magenta[6] },
-    { color: palette.teal[6] },
+    { color: palette.purple[9] },
+    { color: palette.magenta[11] },
   ],
 };
