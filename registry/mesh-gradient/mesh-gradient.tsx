@@ -59,16 +59,16 @@ export interface MeshGradientProps {
 // so the default look breathes from green/teal into amber/red and back.
 const DEFAULT_PALETTES: [Palette, Palette] = [
   [
-    '#bcdc33', // palette.lime.base
-    '#0ae24b', // palette.green.base
-    '#00cda6', // palette.teal.base
-    '#007bc6', // palette.sky.base
+    '#849c00', // palette.lime[8]
+    '#00ad36', // palette.green[8]
+    '#00a78b', // palette.teal[8]
+    '#009bd6', // palette.sky[8]
   ],
   [
-    '#ecb100', // palette.amber.base
-    '#ee6600', // palette.orange.base
-    '#ff0029', // palette.red.base
-    '#cc1a99', // palette.magenta.base
+    '#b48700', // palette.amber[8]
+    '#d76f00', // palette.orange[8]
+    '#ff333c', // palette.red[8]
+    '#f600b8', // palette.magenta[8]
   ],
 ];
 

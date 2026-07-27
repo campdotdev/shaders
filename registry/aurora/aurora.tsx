@@ -16,10 +16,10 @@ export type { ColorStop } from '../utils/color';
 // Depth ramp, near → far: oxygen green up close, teal mid, ionized blue and
 // pink fringe in the distance.
 export const DEFAULT_STOPS: ColorStop[] = [
-  { color: '#0ae24b', position: 0 },
-  { color: '#00cda6', position: 0.35 },
-  { color: '#1b9fda', position: 0.7 },
-  { color: '#e765b8', position: 1 },
+  { color: '#00ad36', position: 0 }, // palette.green[8]
+  { color: '#00a78b', position: 0.35 }, // palette.teal[8]
+  { color: '#9fdbff', position: 0.7 }, // palette.sky[10]
+  { color: '#ffb9e1', position: 1 }, // palette.magenta[10]
 ];
 
 export interface AuroraProps {
