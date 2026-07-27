@@ -29,9 +29,9 @@ export const INITIAL: AuroraParams = {
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
-    { color: paletteOklch.green[8], position: 0 },
-    { color: paletteOklch.teal[8], position: 0.35 },
-    { color: paletteOklch.sky[10], position: 0.7 },
-    { color: paletteOklch.magenta[10], position: 1 },
+    { color: paletteOklch.green[10], position: 0 },
+    { color: paletteOklch.teal[9], position: 0.35 },
+    { color: paletteOklch.sky[7], position: 0.7 },
+    { color: paletteOklch.magenta[5], position: 1 },
   ],
 };
