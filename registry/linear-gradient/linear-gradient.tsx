@@ -50,9 +50,9 @@ export interface LinearGradientProps {
 // close on the color wheel means the in-between colors stay saturated
 // instead of washing out toward gray.
 const DEFAULT_STOPS: ColorStop[] = [
-  { color: '#661acc' }, // palette.violet.base
-  { color: '#9e00ba' }, // palette.purple.base
-  { color: '#8c0067' }, // palette.magenta.dark
+  { color: '#986dff' }, // palette.violet[8]
+  { color: '#db0bff' }, // palette.purple[8]
+  { color: '#9a0372' }, // palette.magenta[6]
 ];
 
 export function LinearGradient({

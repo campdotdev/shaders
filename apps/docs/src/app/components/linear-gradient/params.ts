@@ -26,8 +26,8 @@ export const INITIAL: Params = {
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
-    { color: paletteOklch.violet.base, position: 0 },
-    { color: paletteOklch.purple.base, position: 0.5 },
-    { color: paletteOklch.magenta.dark, position: 1 },
+    { color: paletteOklch.violet[8], position: 0 },
+    { color: paletteOklch.purple[8], position: 0.5 },
+    { color: paletteOklch.magenta[6], position: 1 },
   ],
 };
