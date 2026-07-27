@@ -16,7 +16,7 @@
 }
 
 [data-theme='light'] {
-  --bg: #ffffff;
+  --bg: #ffffff; /* pure white on purpose: moss tops out at L=0.932, short of white */
   --bg-muted: #e8e8e8; /* moss[11] */
   --fg: #0d0f06; /* moss[0] */
   --fg-muted: #45483c; /* moss[5] */

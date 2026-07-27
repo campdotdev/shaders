@@ -3,6 +3,9 @@
 // intended tint. Reads L/C/h back through @lovo/matter's own conversions rather
 // than parsing strings, so the assertions use the same math the renderer does.
 import { linearSrgbToOklch, oklchInGamut, parseColorString } from '@lovo/matter';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { INITIAL as auroraParams } from '../app/components/aurora/params';
@@ -15,7 +18,7 @@ import { INITIAL as waveLinesParams } from '../app/components/wave-lines/params'
 import { palette, paletteOklch } from './palette';
 
 /** Every color in the palette as a flat list, labelled by where it lives. */
-export function flattenPalette(): Array<{ label: string; value: string }> {
+function flattenPalette(): Array<{ label: string; value: string }> {
   const entries: Array<{ label: string; value: string }> = [];
 
   for (const [name, group] of Object.entries(paletteOklch)) {
@@ -145,7 +148,11 @@ describe('brand palette', () => {
           drifted.push(`${label} lightness`);
         }
 
-        // Hue is meaningless without chroma, so near-neutrals are exempt.
+        // Hue is meaningless without chroma, so near-neutrals are exempt. This
+        // floor sits exactly on moss[9]'s chroma (0.015), so that step is
+        // currently exempt by a hair too — nudging its chroma up would pull it
+        // into the checked set, where 8-bit quantization noise, not real
+        // drift, could fail it.
         if (fromHex.chroma > 0.015 && fromOklch.chroma > 0.015) {
           const gap = Math.abs(fromHex.hue - fromOklch.hue);
 
@@ -180,5 +187,53 @@ describe('brand palette', () => {
     const lightnessOf = (value: string) => componentsOf(value).lightness.toFixed(3);
 
     expect(paletteOklch.moss.map(lightnessOf)).toEqual(paletteOklch.gray.map(lightnessOf));
+  });
+
+  it('keeps globals.css hex literals in sync with the palette steps they cite', () => {
+    // CSS cannot import palette.ts, so globals.css hand-copies hex literals and
+    // names their source step in a trailing comment, e.g. `#a4c102; /*
+    // limeScale[9], brand chartreuse */`. This walks every such annotation and
+    // checks the literal still matches the step it claims to be.
+    const globalsCssPath = join(dirname(fileURLToPath(import.meta.url)), '../app/globals.css');
+    const globalsCss = readFileSync(globalsCssPath, 'utf-8');
+
+    const annotationPattern = /#([0-9a-f]{6});\s*\/\*\s*([a-zA-Z]+)\[(\d+)\][^*]*\*\//gi;
+    const mismatches: string[] = [];
+    let annotationCount = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = annotationPattern.exec(globalsCss)) !== null) {
+      const [, hex, scaleName, indexText] = match;
+
+      // noUncheckedIndexedAccess types every capture group as possibly
+      // undefined, even though the regex requires all three groups to match --
+      // narrow explicitly rather than asserting.
+      if (hex === undefined || scaleName === undefined || indexText === undefined) {
+        continue;
+      }
+
+      annotationCount += 1;
+
+      const scale = palette[scaleName as keyof typeof palette];
+
+      if (!Array.isArray(scale)) {
+        mismatches.push(`${scaleName}[${indexText}] does not name a known palette scale`);
+        continue;
+      }
+
+      const step = scale[Number(indexText)];
+
+      if (step === undefined || step.toLowerCase() !== `#${hex.toLowerCase()}`) {
+        mismatches.push(
+          `${scaleName}[${indexText}] is #${hex} in globals.css but ${step ?? 'undefined'} in the palette`,
+        );
+      }
+    }
+
+    // A regex that silently stops matching would let this test pass on zero
+    // annotations, so pin a floor: globals.css annotates well over a dozen
+    // values today, and this only needs to prove the pattern still fires.
+    expect(annotationCount).toBeGreaterThanOrEqual(8);
+    expect(mismatches).toEqual([]);
   });
 });

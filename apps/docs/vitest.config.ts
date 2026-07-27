@@ -13,7 +13,7 @@ export default defineConfig({
     // referencing `self` at module load, so plain Node fails here the same
     // way packages/matter and packages/matter-react would without happy-dom.
     environment: 'happy-dom',
-    include: ['src/**/*.test.ts'],
+    include: ['src/**/*.test.{ts,tsx}'],
     passWithNoTests: true,
   },
 });

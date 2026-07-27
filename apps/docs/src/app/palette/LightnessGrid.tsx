@@ -22,6 +22,19 @@ function lightnessOf(value: string): number {
   return linearSrgbToOklch(...parseColorString(value))[0];
 }
 
+/** Hue of any palette color, read back through the engine's own math. */
+function hueOf(value: string): number {
+  return linearSrgbToOklch(...parseColorString(value))[2];
+}
+
+// The palette's hues are authored to at most 3 decimals, but the round trip
+// through linear-sRGB reintroduces floating-point noise past that (145.897
+// comes back as 145.89699999999998). Rounding to 3 decimals recovers the
+// authored value so the label matches what the palette actually declares.
+function roundedHue(value: number): number {
+  return Math.round(value * 1000) / 1000;
+}
+
 /** Lightness to a left offset in percent. */
 function axisPosition(lightness: number): number {
   const percent = ((lightness - AXIS_MIN) / (AXIS_MAX - AXIS_MIN)) * 100;
@@ -65,13 +78,12 @@ function scaleRow(
 
 function accentRow(
   name: string,
-  hue: number,
   hexes: { light: string; base: string; dark: string },
   oklchs: { light: string; base: string; dark: string },
 ): Row {
   return {
     name,
-    note: `h=${hue}`,
+    note: `h=${roundedHue(hueOf(oklchs.base))}`,
     entries: (['dark', 'base', 'light'] as const).map((step) => ({
       color: hexes[step],
       source: oklchs[step],
@@ -90,18 +102,18 @@ const BRAND_ROWS: Row[] = [
 ];
 
 const ACCENT_ROWS: Row[] = [
-  accentRow('red', 25, palette.red, paletteOklch.red),
-  accentRow('orange', 55, palette.orange, paletteOklch.orange),
-  accentRow('amber', 85, palette.amber, paletteOklch.amber),
-  accentRow('lime', 120, palette.lime, paletteOklch.lime),
-  accentRow('green', 145.897, palette.green, paletteOklch.green),
-  accentRow('teal', 175, palette.teal, paletteOklch.teal),
-  accentRow('cyan', 205, palette.cyan, paletteOklch.cyan),
-  accentRow('sky', 235, palette.sky, paletteOklch.sky),
-  accentRow('blue', 265.847, palette.blue, paletteOklch.blue),
-  accentRow('violet', 293.328, palette.violet, paletteOklch.violet),
-  accentRow('purple', 320, palette.purple, paletteOklch.purple),
-  accentRow('magenta', 343.895, palette.magenta, paletteOklch.magenta),
+  accentRow('red', palette.red, paletteOklch.red),
+  accentRow('orange', palette.orange, paletteOklch.orange),
+  accentRow('amber', palette.amber, paletteOklch.amber),
+  accentRow('lime', palette.lime, paletteOklch.lime),
+  accentRow('green', palette.green, paletteOklch.green),
+  accentRow('teal', palette.teal, paletteOklch.teal),
+  accentRow('cyan', palette.cyan, paletteOklch.cyan),
+  accentRow('sky', palette.sky, paletteOklch.sky),
+  accentRow('blue', palette.blue, paletteOklch.blue),
+  accentRow('violet', palette.violet, paletteOklch.violet),
+  accentRow('purple', palette.purple, paletteOklch.purple),
+  accentRow('magenta', palette.magenta, paletteOklch.magenta),
 ];
 
 /** Tick positions: the shared neutral ladder, drawn behind every row. */
