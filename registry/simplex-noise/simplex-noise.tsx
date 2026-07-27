@@ -64,11 +64,11 @@ export interface SimplexNoiseProps {
 }
 
 const DEFAULT_STOPS: ColorStop[] = [
-  { color: '#5e88f5' }, // palette.blue[8]
-  { color: '#986dff' }, // palette.violet[8]
-  { color: '#db0bff' }, // palette.purple[8]
-  { color: '#f600b8' }, // palette.magenta[8]
-  { color: '#00a78b' }, // palette.teal[8]
+  { color: '#170dff' }, // palette.blue[6]
+  { color: '#670ed1' }, // palette.violet[6]
+  { color: '#88109e' }, // palette.purple[6]
+  { color: '#9a0372' }, // palette.magenta[6]
+  { color: '#006755' }, // palette.teal[6]
 ];
 
 export function SimplexNoise({
