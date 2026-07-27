@@ -13,13 +13,15 @@ import { AuroraShader } from './shader';
 
 export type { ColorStop } from '../utils/color';
 
-// Depth ramp, near → far: oxygen green up close, teal mid, ionized blue and
-// pink fringe in the distance.
+// Depth ramp, near → far: oxygen green up close, teal mid, sky and magenta in
+// the distance. Each stop is at least 0.10 darker than the one before it,
+// making distance read as distance in a shader that adds light rather than
+// covering what is behind it.
 export const DEFAULT_STOPS: ColorStop[] = [
-  { color: '#00ad36', position: 0 }, // palette.green[8]
-  { color: '#00a78b', position: 0.35 }, // palette.teal[8]
-  { color: '#9fdbff', position: 0.7 }, // palette.sky[10]
-  { color: '#ffb9e1', position: 1 }, // palette.magenta[10]
+  { color: '#00fc53', position: 0 }, // palette.green[10]
+  { color: '#00c0a0', position: 0.35 }, // palette.teal[9]
+  { color: '#007bab', position: 0.7 }, // palette.sky[7]
+  { color: '#79125a', position: 1 }, // palette.magenta[5]
 ];
 
 export interface AuroraProps {
