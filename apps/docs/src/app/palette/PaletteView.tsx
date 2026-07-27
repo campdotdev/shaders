@@ -301,7 +301,7 @@ export function PaletteView() {
   const auroraOld = AURORA.map((auroraEntry) => auroraEntry.oldHex);
   const auroraNew = AURORA.map((auroraEntry) => auroraEntry.newColor);
 
-  // Brand lime mid step (index 9 of the 12-step brand scale = #A3C100)
+  // Brand lime mid step (index 9 of the 12-step brand scale = #A4C102)
   const brandLimeMid = limeScaleOklch[9];
 
   return (
