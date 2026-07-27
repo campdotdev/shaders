@@ -60,16 +60,16 @@ export interface MeshGradientProps {
 // walks the lightness ladder for visual depth.
 const DEFAULT_PALETTES: [Palette, Palette] = [
   [
-    '#00f4cc', // palette.teal[10]
-    '#00ad36', // palette.green[8]
-    '#006086', // palette.sky[6]
-    '#0c1f9e', // palette.blue[4]
+    'oklch(0.863 0.221 175)', // palette.teal[10]
+    'oklch(0.650 0.256 145.897)', // palette.green[8]
+    'oklch(0.460 0.107 235)', // palette.sky[6]
+    'oklch(0.346 0.198 265.847)', // palette.blue[4]
   ],
   [
-    '#ffc94c', // palette.amber[10]
-    '#f68000', // palette.orange[9]
-    '#d40022', // palette.red[7]
-    '#79125a', // palette.magenta[5]
+    'oklch(0.863 0.185 85)', // palette.amber[10]
+    'oklch(0.720 0.203 55)', // palette.orange[9]
+    'oklch(0.549 0.239 25)', // palette.red[7]
+    'oklch(0.395 0.153 343.895)', // palette.magenta[5]
   ],
 ];
 
