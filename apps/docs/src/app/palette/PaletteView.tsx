@@ -70,7 +70,7 @@ const ACCENTS: AccentEntry[] = [
 // there's no hue-for-hue pairing to draw anymore, just two independent
 // four-color sets that can be compared as compositions.
 
-/** Aurora's four hand-picked launch hexes, in curtain order (near → far). */
+/** Aurora's four original hand-picked default hexes. */
 const AURORA_OLD_HEXES = ['#09E24B', '#1837E6', '#661ACC', '#CC1A99'];
 
 interface AuroraStop {
@@ -296,8 +296,8 @@ export function PaletteView() {
           <div>
             <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Matter palette</h1>
             <p style={{ color: subFg, fontSize: 14, margin: '4px 0 0' }}>
-              Every scale in the system — gray, moss, the brand lime scale, and all twelve accents —
-              runs the same twelve-step lightness ladder.
+              Gray, moss, and all twelve accents share one twelve-step lightness ladder; the brand
+              lime scale runs a ladder of its own.
             </p>
           </div>
           <button
