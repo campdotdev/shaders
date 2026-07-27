@@ -1,10 +1,24 @@
 'use client';
 
+import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
 import { palette, paletteOklch } from '@/lib/palette';
 
-const { black, white, gray } = palette;
+/**
+ * `LightnessGrid` reads colors through `@lovo/matter`'s `linearSrgbToOklch` /
+ * `parseColorString`, which pulls in the bundled WebGPU renderer and crashes
+ * any server render that reaches it (the three/webgpu SSR gotcha in
+ * AGENTS.md). Loading it client-only, the same way `ColorInput` loads its
+ * popover contents, keeps the rest of this page — which needs none of that —
+ * servable.
+ */
+const LightnessGrid = dynamic(
+  () => import('./LightnessGrid').then((module) => module.LightnessGrid),
+  { ssr: false },
+);
+
+const { black, white, gray, moss } = palette;
 const {
   limeScale: limeScaleOklch,
   lime: limeOklch,
@@ -326,14 +340,23 @@ export function PaletteView() {
             {bg === 'dark' ? 'Light bg' : 'Dark bg'}
           </button>
         </header>
+        {/* ── Everything, on one axis ── */}
+        <Section
+          bg={bg}
+          subtitle="Every scale on a shared lightness axis. Neutrals and the brand ramp span the full ladder; each accent's dark/base/light sits where its lightness actually falls."
+          title="The whole palette"
+        >
+          <LightnessGrid bg={bg} />
+        </Section>
         {/* ── Brand foundation ── */}
         <Section
           bg={bg}
-          subtitle="Brand lime and brand gray keep their full 12-step scales because they're used broadly across the site (chrome, type, panels, accents). Brand black/white are the page anchors."
+          subtitle="Two neutrals on one lightness ladder: gray is untinted and serves the shader palette, moss carries the brand hue and dresses the site. Brand black/white are the moss end steps."
           title="Brand foundation"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <ScaleRow bg={bg} hexes={gray} name="gray" sub="brand" />
+            <ScaleRow bg={bg} hexes={gray} name="gray" sub="untinted · shaders" />
+            <ScaleRow bg={bg} hexes={moss} name="moss" sub="h=120 · brand chrome" />
             <ScaleRow
               bg={bg}
               brandStep={10}
@@ -460,9 +483,14 @@ export function PaletteView() {
           title="Bases on ink + paper"
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-            {([black, white] as const).map((bgColor) => (
+            {(
+              [
+                { name: 'black', color: black },
+                { name: 'white', color: white },
+              ] as const
+            ).map(({ name: bgName, color: bgColor }) => (
               <div
-                key={bgColor}
+                key={bgName}
                 style={{
                   background: bgColor,
                   borderRadius: 10,
