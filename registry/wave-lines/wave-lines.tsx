@@ -104,21 +104,30 @@ export interface WaveLinesProps {
   colorSpace?: ColorSpace;
 }
 
-// Default line set: an 8-line analogous blue→violet bundle. Each line is a
-// gentle 30° hue gradient along its length (so colorDrift is visible out of
-// the box); lightness falls along the array for depth; all other per-line
-// fields ride the globals — variation comes from the movement system. The
-// hue run (205→340) tracks the brand palette's cool accent arc
-// (sky→blue→violet→purple).
+// Default line set: an 8-line analogous cyan→magenta bundle drawn from the
+// brand palette's accent scales. Each line takes one rung of the shared
+// twelve-step lightness ladder — rung 10 at the front down to rung 3 at the
+// back — so depth comes from the ladder rather than hand-picked lightnesses.
+// The two stops per line are neighbouring accents on the palette's 30° hue
+// grid, which gives each line a gradient along its length (so colorDrift is
+// visible out of the box) and sweeps the bundle cyan→magenta front to back.
 export const DEFAULT_LINES: WaveLine[] = [
-  { color: ['oklch(0.85 0.094 235)', 'oklch(0.85 0.12 205)'] },
-  { color: ['oklch(0.8 0.113 250)', 'oklch(0.8 0.14 220)'] },
-  { color: ['oklch(0.75 0.138 265)', 'oklch(0.75 0.16 235)'] },
-  { color: ['oklch(0.7 0.17 280)', 'oklch(0.7 0.17 250)'] },
-  { color: ['oklch(0.65 0.17 295)', 'oklch(0.65 0.17 265)'] },
-  { color: ['oklch(0.6 0.16 310)', 'oklch(0.6 0.16 280)'] },
-  { color: ['oklch(0.55 0.15 325)', 'oklch(0.55 0.15 295)'] },
-  { color: ['oklch(0.5 0.13 340)', 'oklch(0.5 0.13 310)'] },
+  // palette.sky[10], palette.cyan[10]
+  { color: ['oklch(0.863 0.083 235)', 'oklch(0.863 0.150 205)'] },
+  // palette.blue[9], palette.cyan[9]
+  { color: ['oklch(0.720 0.116 265.847)', 'oklch(0.720 0.164 205)'] },
+  // palette.blue[8], palette.sky[8]
+  { color: ['oklch(0.650 0.169 265.847)', 'oklch(0.650 0.173 235)'] },
+  // palette.violet[7], palette.sky[7]
+  { color: ['oklch(0.549 0.298 293.328)', 'oklch(0.549 0.138 235)'] },
+  // palette.violet[6], palette.blue[6]
+  { color: ['oklch(0.460 0.248 293.328)', 'oklch(0.460 0.313 265.847)'] },
+  // palette.purple[5], palette.blue[5]
+  { color: ['oklch(0.395 0.167 320)', 'oklch(0.395 0.251 265.847)'] },
+  // palette.purple[4], palette.violet[4]
+  { color: ['oklch(0.346 0.132 320)', 'oklch(0.346 0.155 293.328)'] },
+  // palette.magenta[3], palette.violet[3]
+  { color: ['oklch(0.303 0.094 343.895)', 'oklch(0.303 0.119 293.328)'] },
 ];
 
 export function WaveLines({
