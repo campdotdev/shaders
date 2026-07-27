@@ -50,13 +50,13 @@ export const INITIAL: Params = {
   colorSpace: 'oklab',
   lines: [
     {
-      color: ['oklch(0.85 0.12 235)', 'oklch(0.85 0.12 205)'],
+      color: ['oklch(0.85 0.094 235)', 'oklch(0.85 0.12 205)'],
     },
     {
-      color: ['oklch(0.8 0.14 250)', 'oklch(0.8 0.14 220)'],
+      color: ['oklch(0.8 0.113 250)', 'oklch(0.8 0.14 220)'],
     },
     {
-      color: ['oklch(0.75 0.16 265)', 'oklch(0.75 0.16 235)'],
+      color: ['oklch(0.75 0.138 265)', 'oklch(0.75 0.16 235)'],
     },
     {
       color: ['oklch(0.7 0.17 280)', 'oklch(0.7 0.17 250)'],

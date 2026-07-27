@@ -5,6 +5,13 @@
 import { linearSrgbToOklch, oklchInGamut, parseColorString } from '@lovo/matter';
 import { describe, expect, it } from 'vitest';
 
+import { INITIAL as auroraParams } from '../app/components/aurora/params';
+import { INITIAL as dotFieldParams } from '../app/components/dot-field/params';
+import { INITIAL as linearGradientParams } from '../app/components/linear-gradient/params';
+import { INITIAL as meshGradientParams } from '../app/components/mesh-gradient/params';
+import { INITIAL as simplexNoiseParams } from '../app/components/simplex-noise/params';
+import { INITIAL as vignetteParams } from '../app/components/vignette/params';
+import { INITIAL as waveLinesParams } from '../app/components/wave-lines/params';
 import { palette, paletteOklch } from './palette';
 
 /** Every color in the palette as a flat list, labelled by where it lives. */
@@ -38,9 +45,62 @@ function componentsOf(value: string): { lightness: number; chroma: number; hue: 
   return { lightness, chroma, hue };
 }
 
+/**
+ * Every color a demo params module hand-authors, flattened and labelled by
+ * where it lives. These never flow through `palette.ts`, so `flattenPalette`
+ * above can't see them — this is the walk that would have caught the three
+ * wave-lines colors that started this hardening effort.
+ */
+function flattenDemoColors(): Array<{ label: string; value: string }> {
+  const entries: Array<{ label: string; value: string }> = [];
+
+  auroraParams.stops.forEach(({ color }, index) => {
+    entries.push({ label: `aurora stops[${index}]`, value: color });
+  });
+
+  entries.push({ label: 'dot-field color', value: dotFieldParams.color });
+
+  linearGradientParams.stops.forEach(({ color }, index) => {
+    entries.push({ label: `linear-gradient stops[${index}]`, value: color });
+  });
+
+  meshGradientParams.palettes.forEach((colors, paletteIndex) => {
+    colors.forEach((color, index) => {
+      entries.push({ label: `mesh-gradient palettes[${paletteIndex}][${index}]`, value: color });
+    });
+  });
+
+  simplexNoiseParams.stops.forEach(({ color }, index) => {
+    entries.push({ label: `simplex-noise stops[${index}]`, value: color });
+  });
+
+  entries.push({ label: 'vignette color', value: vignetteParams.color });
+
+  waveLinesParams.lines.forEach((line, lineIndex) => {
+    line.color.forEach((color, stopIndex) => {
+      entries.push({
+        label: `wave-lines lines[${lineIndex}].color[${stopIndex}]`,
+        value: color,
+      });
+    });
+  });
+
+  return entries;
+}
+
 describe('brand palette', () => {
   it('keeps every color inside Display-P3', () => {
     const outside = flattenPalette().filter(({ value }) => {
+      const { lightness, chroma, hue } = componentsOf(value);
+
+      return !oklchInGamut(lightness, chroma, hue, 'p3');
+    });
+
+    expect(outside.map((entry) => `${entry.label} ${entry.value}`)).toEqual([]);
+  });
+
+  it('keeps every demo params color inside Display-P3', () => {
+    const outside = flattenDemoColors().filter(({ value }) => {
       const { lightness, chroma, hue } = componentsOf(value);
 
       return !oklchInGamut(lightness, chroma, hue, 'p3');

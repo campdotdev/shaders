@@ -111,9 +111,9 @@ export interface WaveLinesProps {
 // hue run (205→340) tracks the brand palette's cool accent arc
 // (sky→blue→violet→purple).
 export const DEFAULT_LINES: WaveLine[] = [
-  { color: ['oklch(0.85 0.12 235)', 'oklch(0.85 0.12 205)'] },
-  { color: ['oklch(0.8 0.14 250)', 'oklch(0.8 0.14 220)'] },
-  { color: ['oklch(0.75 0.16 265)', 'oklch(0.75 0.16 235)'] },
+  { color: ['oklch(0.85 0.094 235)', 'oklch(0.85 0.12 205)'] },
+  { color: ['oklch(0.8 0.113 250)', 'oklch(0.8 0.14 220)'] },
+  { color: ['oklch(0.75 0.138 265)', 'oklch(0.75 0.16 235)'] },
   { color: ['oklch(0.7 0.17 280)', 'oklch(0.7 0.17 250)'] },
   { color: ['oklch(0.65 0.17 295)', 'oklch(0.65 0.17 265)'] },
   { color: ['oklch(0.6 0.16 310)', 'oklch(0.6 0.16 280)'] },
