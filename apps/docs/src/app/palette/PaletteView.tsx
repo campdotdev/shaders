@@ -276,6 +276,7 @@ function AccentTriad({ accent, bg }: { accent: AccentEntry; bg: string }) {
                 background: color,
                 height: 64,
                 borderRadius: 8,
+                border: swatchBorder(bg === 'dark' ? 'dark' : 'light'),
                 boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
               }}
               title={color}
@@ -501,6 +502,7 @@ export function PaletteView() {
                   background: bgColor,
                   borderRadius: 10,
                   padding: 20,
+                  border: swatchBorder(bg === 'dark' ? 'dark' : 'light'),
                   display: 'grid',
                   gridTemplateColumns: 'repeat(7, 1fr)',
                   gap: 10,
