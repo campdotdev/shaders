@@ -1,5 +1,7 @@
 import type { ColorSpace } from '@lovo/matter';
 
+import { paletteOklch } from '../../../lib/palette';
+
 /**
  * One line's colors. Always an array here even when it holds a single color --
  * the control iterates it either way. `scene.tsx` collapses a one-entry array to
@@ -50,28 +52,28 @@ export const INITIAL: Params = {
   colorSpace: 'oklab',
   lines: [
     {
-      color: ['oklch(0.85 0.094 235)', 'oklch(0.85 0.12 205)'],
+      color: [paletteOklch.sky[10] ?? '', paletteOklch.cyan[10] ?? ''],
     },
     {
-      color: ['oklch(0.8 0.113 250)', 'oklch(0.8 0.14 220)'],
+      color: [paletteOklch.blue[9] ?? '', paletteOklch.cyan[9] ?? ''],
     },
     {
-      color: ['oklch(0.75 0.138 265)', 'oklch(0.75 0.16 235)'],
+      color: [paletteOklch.blue[8] ?? '', paletteOklch.sky[8] ?? ''],
     },
     {
-      color: ['oklch(0.7 0.17 280)', 'oklch(0.7 0.17 250)'],
+      color: [paletteOklch.violet[7] ?? '', paletteOklch.sky[7] ?? ''],
     },
     {
-      color: ['oklch(0.65 0.17 295)', 'oklch(0.65 0.17 265)'],
+      color: [paletteOklch.violet[6] ?? '', paletteOklch.blue[6] ?? ''],
     },
     {
-      color: ['oklch(0.6 0.16 310)', 'oklch(0.6 0.16 280)'],
+      color: [paletteOklch.purple[5] ?? '', paletteOklch.blue[5] ?? ''],
     },
     {
-      color: ['oklch(0.55 0.15 325)', 'oklch(0.55 0.15 295)'],
+      color: [paletteOklch.purple[4] ?? '', paletteOklch.violet[4] ?? ''],
     },
     {
-      color: ['oklch(0.5 0.13 340)', 'oklch(0.5 0.13 310)'],
+      color: [paletteOklch.magenta[3] ?? '', paletteOklch.violet[3] ?? ''],
     },
   ],
 };
