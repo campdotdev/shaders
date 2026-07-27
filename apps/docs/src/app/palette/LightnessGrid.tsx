@@ -28,9 +28,9 @@ function hueOf(value: string): number {
 }
 
 // The palette's hues are authored to at most 3 decimals, but the round trip
-// through linear-sRGB reintroduces floating-point noise past that (145.897
-// comes back as 145.89699999999998). Rounding to 3 decimals recovers the
-// authored value so the label matches what the palette actually declares.
+// through linear-sRGB reintroduces floating-point noise past that: green's
+// authored 145.897 comes back as 145.89699335925496. Rounding to 3 decimals
+// recovers the authored value so the label matches what the palette declares.
 function roundedHue(value: number): number {
   return Math.round(value * 1000) / 1000;
 }
