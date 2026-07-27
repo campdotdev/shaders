@@ -15,7 +15,7 @@ export const INITIAL: VignetteParams = {
   feather: 0.6,
   center: [0.5, 0.5],
   radius: 0.6,
-  color: 'oklch(0.05 0.023 0)',
+  color: 'oklch(0.05 0.022 0)',
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
 };

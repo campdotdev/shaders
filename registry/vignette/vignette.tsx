@@ -35,7 +35,7 @@ export interface VignetteProps {
   radius?: AnimatableProp<number>;
   /**
    * Color blended in toward the edges (hex, `oklch()`, or `oklab()`).
-   * Defaults to `'oklch(0.05 0.023 0)'`.
+   * Defaults to `'oklch(0.05 0.022 0)'`.
    */
   color?: string;
   /** Color space the overlay blend is computed in. Defaults to `'oklab'`. */
@@ -52,7 +52,7 @@ export function Vignette({
   feather = 0.6,
   center = [0.5, 0.5],
   radius = 0.7,
-  color = 'oklch(0.05 0.023 0)',
+  color = 'oklch(0.05 0.022 0)',
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
 }: VignetteProps) {
