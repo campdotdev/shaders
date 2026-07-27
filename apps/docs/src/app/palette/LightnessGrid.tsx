@@ -4,8 +4,9 @@
 // from @/lib/palette. Every scale is a row and the horizontal axis is lightness,
 // so scales can be compared directly: where the neutrals sit against the brand
 // ramp, and which lightnesses the accents actually cover. Positions are continuous
-// rather than snapped to the neutral ladder because snapping collides — amber and
-// green each round two of their three steps into one column.
+// rather than snapped to the neutral ladder, which is now a formality for the
+// accents — every one of them sits on a tick — but still matters for limeScale,
+// whose ramp has a ladder of its own.
 import { linearSrgbToOklch, parseColorString } from '@lovo/matter';
 
 import { palette, paletteOklch } from '@/lib/palette';
@@ -76,20 +77,11 @@ function scaleRow(
   };
 }
 
-function accentRow(
-  name: string,
-  hexes: { light: string; base: string; dark: string },
-  oklchs: { light: string; base: string; dark: string },
-): Row {
-  return {
-    name,
-    note: `h=${roundedHue(hueOf(oklchs.base))}`,
-    entries: (['dark', 'base', 'light'] as const).map((step) => ({
-      color: hexes[step],
-      source: oklchs[step],
-      label: step,
-    })),
-  };
+function accentRow(name: string, hexes: readonly string[], oklchs: readonly string[]): Row {
+  // The hue label is read back from a mid scale step rather than hardcoded, so
+  // it cannot drift from the values. Rung 8 is a safe pick for every accent:
+  // it carries plenty of chroma, and hue is only meaningful where chroma is.
+  return scaleRow(name, `h=${roundedHue(hueOf(oklchs[8] ?? ''))}`, hexes, oklchs);
 }
 
 const NEUTRAL_ROWS: Row[] = [
@@ -201,9 +193,9 @@ export function LightnessGrid({ bg }: { bg: 'dark' | 'light' }) {
         ))}
       </div>
       <p style={{ color: subFg, fontSize: 12, margin: 0 }}>
-        Vertical rules mark the twelve-step lightness ladder the neutrals share. Accents sit at
-        their true lightness, which is why none of them reach the dark end — the system has no
-        accent below L=0.34.
+        Vertical rules mark the twelve-step lightness ladder every scale except limeScale shares.
+        Accents land exactly on it, which is the point — the same-numbered step of any two scales is
+        the same brightness.
       </p>
     </div>
   );

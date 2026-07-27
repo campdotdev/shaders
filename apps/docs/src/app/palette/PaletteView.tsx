@@ -39,47 +39,52 @@ const {
 
 // ───────────────────────── Accent data ─────────────────────────
 
-interface AccentSteps {
-  light: string;
-  base: string;
-  dark: string;
-}
 interface AccentEntry {
   name: string;
   angle: number;
-  steps: AccentSteps;
-  oklch: AccentSteps;
+  /** Twelve steps, darkest first, in their wide-gamut oklch form. */
+  oklch: readonly string[];
 }
 
 const ACCENTS: AccentEntry[] = [
-  { name: 'red', angle: 25, steps: palette.red, oklch: redOklch },
-  { name: 'orange', angle: 55, steps: palette.orange, oklch: orangeOklch },
-  { name: 'amber', angle: 85, steps: palette.amber, oklch: amberOklch },
-  { name: 'lime', angle: 120, steps: palette.lime, oklch: limeOklch },
-  { name: 'green', angle: 145.897, steps: palette.green, oklch: greenOklch },
-  { name: 'teal', angle: 175, steps: palette.teal, oklch: tealOklch },
-  { name: 'cyan', angle: 205, steps: palette.cyan, oklch: cyanOklch },
-  { name: 'sky', angle: 235, steps: palette.sky, oklch: skyOklch },
-  { name: 'blue', angle: 265.847, steps: palette.blue, oklch: blueOklch },
-  { name: 'violet', angle: 293.328, steps: palette.violet, oklch: violetOklch },
-  { name: 'purple', angle: 320, steps: palette.purple, oklch: purpleOklch },
-  { name: 'magenta', angle: 343.895, steps: palette.magenta, oklch: magentaOklch },
+  { name: 'red', angle: 25, oklch: redOklch },
+  { name: 'orange', angle: 55, oklch: orangeOklch },
+  { name: 'amber', angle: 85, oklch: amberOklch },
+  { name: 'lime', angle: 120, oklch: limeOklch },
+  { name: 'green', angle: 145.897, oklch: greenOklch },
+  { name: 'teal', angle: 175, oklch: tealOklch },
+  { name: 'cyan', angle: 205, oklch: cyanOklch },
+  { name: 'sky', angle: 235, oklch: skyOklch },
+  { name: 'blue', angle: 265.847, oklch: blueOklch },
+  { name: 'violet', angle: 293.328, oklch: violetOklch },
+  { name: 'purple', angle: 320, oklch: purpleOklch },
+  { name: 'magenta', angle: 343.895, oklch: magentaOklch },
 ];
 
 // ───────────────────────── Aurora old → new ─────────────────────────
+//
+// Aurora originally shipped four hand-picked hexes. It now defaults to four
+// stops pulled from the palette instead — but not one rung of one hue: the
+// stops sit at different rungs (green[10], teal[9], sky[9], magenta[8]) and
+// two of the four hues (teal, sky) didn't exist in the old lineup at all. So
+// there's no hue-for-hue pairing to draw anymore, just two independent
+// four-color sets that can be compared as compositions.
 
-interface AuroraEntry {
-  name: string;
-  oldHex: string;
-  newRef: string;
-  newColor: string;
+/** Aurora's four hand-picked launch hexes, in curtain order (near → far). */
+const AURORA_OLD_HEXES = ['#09E24B', '#1837E6', '#661ACC', '#CC1A99'];
+
+interface AuroraStop {
+  /** Palette reference this stop pulls its color from. */
+  ref: string;
+  color: string;
 }
 
-const AURORA: AuroraEntry[] = [
-  { name: 'green', oldHex: '#09E24B', newRef: 'green.base', newColor: greenOklch.base },
-  { name: 'blue', oldHex: '#1837E6', newRef: 'blue.base', newColor: blueOklch.base },
-  { name: 'violet', oldHex: '#661ACC', newRef: 'violet.base', newColor: violetOklch.base },
-  { name: 'magenta', oldHex: '#CC1A99', newRef: 'magenta.base', newColor: magentaOklch.base },
+/** Aurora's current default stops (see `DEFAULT_STOPS` in `registry/aurora/aurora.tsx`), in curtain order. */
+const AURORA_NEW_STOPS: AuroraStop[] = [
+  { ref: 'green[10]', color: greenOklch[10] },
+  { ref: 'teal[9]', color: tealOklch[9] },
+  { ref: 'sky[9]', color: skyOklch[9] },
+  { ref: 'magenta[8]', color: magentaOklch[8] },
 ];
 
 // ───────────────────────── Components ─────────────────────────
@@ -114,13 +119,18 @@ function Section({
 function ScaleRow({
   name,
   sub,
-  hexes,
+  swatches,
   bg,
   brandStep,
 }: {
   name: string;
   sub?: string;
-  hexes: readonly string[];
+  /**
+   * The twelve colors to paint, darkest first. Neutrals pass their hex form;
+   * accents pass oklch so a wide-gamut display shows the chroma the scale
+   * actually reaches.
+   */
+  swatches: readonly string[];
   bg: string;
   brandStep?: number;
 }) {
@@ -145,7 +155,7 @@ function ScaleRow({
         ) : null}
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 4 }}>
-        {hexes.map((color, stepIndex) => {
+        {swatches.map((color, stepIndex) => {
           const stepNum = stepIndex + 1;
           const ringed = brandStep === stepNum;
 
@@ -250,45 +260,6 @@ function GradientBlock({
   );
 }
 
-function AccentTriad({ accent, bg }: { accent: AccentEntry; bg: string }) {
-  const fg = bg === 'dark' ? white : black;
-  const subFg = bg === 'dark' ? gray[7] : gray[6];
-
-  return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-      <div>
-        <div style={{ fontSize: 14, fontWeight: 600, color: fg }}>{accent.name}</div>
-        <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: 11, color: subFg }}>
-          h={accent.angle}
-        </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
-        {(
-          [
-            { label: 'light', color: accent.oklch.light },
-            { label: 'base', color: accent.oklch.base },
-            { label: 'dark', color: accent.oklch.dark },
-          ] as const
-        ).map(({ label, color }) => (
-          <div key={label} style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-            <div
-              style={{
-                background: color,
-                height: 64,
-                borderRadius: 8,
-                border: swatchBorder(bg === 'dark' ? 'dark' : 'light'),
-                boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
-              }}
-              title={color}
-            />
-            <div style={{ fontSize: 11, color: subFg, textAlign: 'center' }}>{label}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 // ───────────────────────── Page ─────────────────────────
 
 export function PaletteView() {
@@ -298,8 +269,7 @@ export function PaletteView() {
   const subFg = bg === 'dark' ? gray[7] : gray[6];
   const border = bg === 'dark' ? gray[2] : gray[10];
 
-  const auroraOld = AURORA.map((auroraEntry) => auroraEntry.oldHex);
-  const auroraNew = AURORA.map((auroraEntry) => auroraEntry.newColor);
+  const auroraNew = AURORA_NEW_STOPS.map((stop) => stop.color);
 
   // Brand lime mid step (index 9 of the 12-step brand scale = #A4C102)
   const brandLimeMid = limeScaleOklch[9];
@@ -326,8 +296,8 @@ export function PaletteView() {
           <div>
             <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Matter palette</h1>
             <p style={{ color: subFg, fontSize: 14, margin: '4px 0 0' }}>
-              Gray (untinted), moss (brand chrome), and the brand lime scale run the full twelve
-              steps. Accents get three: dark, base (most vibrant), light.
+              Every scale in the system — gray, moss, the brand lime scale, and all twelve accents —
+              runs the same twelve-step lightness ladder.
             </p>
           </div>
           <button
@@ -350,7 +320,7 @@ export function PaletteView() {
         {/* ── Everything, on one axis ── */}
         <Section
           bg={bg}
-          subtitle="Every scale on a shared lightness axis. Neutrals and the brand ramp span the full ladder; each accent's dark/base/light sits where its lightness actually falls."
+          subtitle="Every scale on a shared lightness axis. Neutrals and every accent land on the same twelve-step ladder; the brand lime scale runs a ladder of its own."
           title="The whole palette"
         >
           <LightnessGrid bg={bg} />
@@ -362,14 +332,14 @@ export function PaletteView() {
           title="Brand foundation"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <ScaleRow bg={bg} hexes={gray} name="gray" sub="untinted · shaders" />
-            <ScaleRow bg={bg} hexes={moss} name="moss" sub="h=120 · brand chrome" />
+            <ScaleRow bg={bg} name="gray" sub="untinted · shaders" swatches={gray} />
+            <ScaleRow bg={bg} name="moss" sub="h=120 · brand chrome" swatches={moss} />
             <ScaleRow
               bg={bg}
               brandStep={10}
-              hexes={limeScaleOklch}
               name="limeScale"
               sub="brand · h=120 · 12 steps"
+              swatches={limeScaleOklch}
             />
           </div>
           <div
@@ -387,45 +357,41 @@ export function PaletteView() {
         {/* ── Accent palette ── */}
         <Section
           bg={bg}
-          subtitle="Hand-tuned in OKLCH so `base` lands at or near Aurora's vibrancy. The four Aurora-anchored hues (green/blue/violet/magenta) match Aurora's original hexes within 1 byte by design."
-          title="Accent palette — 12 hues × light / base / dark"
+          subtitle="Twelve hues on the same twelve-step lightness ladder as the neutrals, so red[8] and gray[8] are the same brightness. Chroma at each step is as much as Display-P3 holds there, tapering away from each hue's own most-saturated step — which is why the vivid step sits at a different index per hue."
+          title="Accent palette — 12 hues x 12 steps"
         >
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 28 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {ACCENTS.map((accent) => (
-              <AccentTriad accent={accent} bg={bg} key={accent.name} />
+              <ScaleRow
+                bg={bg}
+                key={accent.name}
+                name={accent.name}
+                sub={`h=${accent.angle}`}
+                swatches={accent.oklch}
+              />
             ))}
           </div>
         </Section>
         {/* ── Aurora comparison ── */}
         <Section
           bg={bg}
-          subtitle="The with-depth variant: dark-step picks for blue and violet preserve Aurora's bright-top / deep-bottoms feel."
-          title="Aurora — old vs new defaults"
+          subtitle="Aurora's four launch hexes against the palette stops its defaults use today — four independent picks each, not a hue-for-hue swap."
+          title="Aurora — launch hexes vs current defaults"
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16 }}>
-              {AURORA.map((auroraEntry) => (
-                <div
-                  key={auroraEntry.name}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-                >
-                  <ColorBlock
-                    bg={bg}
-                    color={auroraEntry.oldHex}
-                    label={`${auroraEntry.name} (old)`}
-                    sub={auroraEntry.oldHex}
-                  />
-                  <ColorBlock
-                    bg={bg}
-                    color={auroraEntry.newColor}
-                    label="new defaults"
-                    sub={auroraEntry.newRef}
-                  />
-                </div>
+              {AURORA_NEW_STOPS.map((stop) => (
+                <ColorBlock
+                  bg={bg}
+                  color={stop.color}
+                  key={stop.ref}
+                  label={stop.ref}
+                  sub={stop.color}
+                />
               ))}
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
-              <GradientBlock bg={bg} colors={auroraOld} label="Aurora stack (old)" />
+              <GradientBlock bg={bg} colors={AURORA_OLD_HEXES} label="Aurora stack (old)" />
               <GradientBlock bg={bg} colors={auroraNew} label="Aurora stack (new defaults)" />
             </div>
           </div>
@@ -444,18 +410,18 @@ export function PaletteView() {
             />
             <GradientBlock
               bg={bg}
-              colors={[violetOklch.dark, blueOklch.base, brandLimeMid]}
-              label="Cool ramp: violet/dark → blue/base → brand lime"
+              colors={[violetOklch[6], blueOklch[8], brandLimeMid]}
+              label="Cool ramp: violet[6] → blue[8] → brand lime"
             />
             <GradientBlock
               bg={bg}
-              colors={[magentaOklch.dark, magentaOklch.base, amberOklch.base]}
-              label="Warm ramp: magenta/dark → magenta/base → amber/base"
+              colors={[magentaOklch[6], magentaOklch[8], amberOklch[8]]}
+              label="Warm ramp: magenta[6] → magenta[8] → amber[8]"
             />
             <GradientBlock
               bg={bg}
-              colors={[blueOklch.light, violetOklch.light, magentaOklch.light]}
-              label="Soft pastel: blue/light → violet/light → magenta/light"
+              colors={[blueOklch[10], violetOklch[10], magentaOklch[10]]}
+              label="Soft pastel: blue[10] → violet[10] → magenta[10]"
             />
             <GradientBlock
               bg={bg}
@@ -465,29 +431,29 @@ export function PaletteView() {
             <GradientBlock
               bg={bg}
               colors={[
-                redOklch.base,
-                orangeOklch.base,
-                amberOklch.base,
-                limeOklch.base,
+                redOklch[8],
+                orangeOklch[8],
+                amberOklch[8],
+                limeOklch[8],
                 brandLimeMid,
-                greenOklch.base,
-                tealOklch.base,
-                cyanOklch.base,
-                skyOklch.base,
-                blueOklch.base,
-                violetOklch.base,
-                purpleOklch.base,
-                magentaOklch.base,
+                greenOklch[8],
+                tealOklch[8],
+                cyanOklch[8],
+                skyOklch[8],
+                blueOklch[8],
+                violetOklch[8],
+                purpleOklch[8],
+                magentaOklch[8],
               ]}
-              label="All bases around the wheel"
+              label="All rung-8 accents around the wheel"
             />
           </div>
         </Section>
         {/* ── Stress test ── */}
         <Section
           bg={bg}
-          subtitle="Stress test — do all 12 base accents and brand lime read on both brand backgrounds?"
-          title="Bases on ink + paper"
+          subtitle="Stress test — do all 12 rung-8 accents and brand lime read on both brand backgrounds?"
+          title="Rung 8 on ink + paper"
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             {(
@@ -510,7 +476,7 @@ export function PaletteView() {
               >
                 {[
                   { name: 'brandLime', color: brandLimeMid },
-                  ...ACCENTS.map((accent) => ({ name: accent.name, color: accent.oklch.base })),
+                  ...ACCENTS.map((accent) => ({ name: accent.name, color: accent.oklch[8] ?? '' })),
                 ].map(({ name: chipName, color }) => (
                   <div
                     key={chipName}
