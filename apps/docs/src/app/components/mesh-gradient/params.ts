@@ -1,6 +1,6 @@
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 
-import { palette } from '../../../lib/palette';
+import { paletteOklch } from '../../../lib/palette';
 
 export interface Params {
   speed: number;
@@ -26,7 +26,7 @@ export const INITIAL: Params = {
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   palettes: [
-    [palette.lime[8], palette.green[8], palette.teal[8], palette.sky[8]],
-    [palette.amber[8], palette.orange[8], palette.red[8], palette.magenta[8]],
+    [paletteOklch.lime[8], paletteOklch.green[8], paletteOklch.teal[8], paletteOklch.sky[8]],
+    [paletteOklch.amber[8], paletteOklch.orange[8], paletteOklch.red[8], paletteOklch.magenta[8]],
   ],
 };

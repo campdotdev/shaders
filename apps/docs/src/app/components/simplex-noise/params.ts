@@ -1,6 +1,6 @@
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 
-import { palette } from '../../../lib/palette';
+import { paletteOklch } from '../../../lib/palette';
 
 export interface PlainColorStop {
   color: string;
@@ -31,10 +31,10 @@ export const INITIAL: Params = {
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
-    { color: palette.sky[1] },
-    { color: palette.blue[4] },
-    { color: palette.violet[6] },
-    { color: palette.purple[9] },
-    { color: palette.magenta[11] },
+    { color: paletteOklch.sky[1] },
+    { color: paletteOklch.blue[4] },
+    { color: paletteOklch.violet[6] },
+    { color: paletteOklch.purple[9] },
+    { color: paletteOklch.magenta[11] },
   ],
 };
