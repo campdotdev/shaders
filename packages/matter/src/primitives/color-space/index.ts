@@ -2,7 +2,6 @@ export { mixColor } from './mix-color.js';
 export {
   oklabToLinearSrgb,
   oklchToLinearSrgb,
-  linearSrgbToOklab,
   linearSrgbToOklch,
   linearSrgbToLinearDisplayP3,
   oklchInGamut,
