@@ -56,19 +56,20 @@ export interface MeshGradientProps {
 }
 
 // A cool set and a warm set; the shader cross-fades between them over time,
-// so the default look breathes from green/teal into amber/red and back.
+// so the default look cycles across teal/green and amber/red. Each palette
+// walks the lightness ladder for visual depth.
 const DEFAULT_PALETTES: [Palette, Palette] = [
   [
-    '#849c00', // palette.lime[8]
+    '#00f4cc', // palette.teal[10]
     '#00ad36', // palette.green[8]
-    '#00a78b', // palette.teal[8]
-    '#009bd6', // palette.sky[8]
+    '#006086', // palette.sky[6]
+    '#0c1f9e', // palette.blue[4]
   ],
   [
-    '#b48700', // palette.amber[8]
-    '#d76f00', // palette.orange[8]
-    '#ff333c', // palette.red[8]
-    '#f600b8', // palette.magenta[8]
+    '#ffc94c', // palette.amber[10]
+    '#f68000', // palette.orange[9]
+    '#d40022', // palette.red[7]
+    '#79125a', // palette.magenta[5]
   ],
 ];
 
