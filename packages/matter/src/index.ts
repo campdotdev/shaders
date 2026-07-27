@@ -19,7 +19,6 @@ export {
   linearChannelToSrgb,
   oklabToLinearSrgb,
   oklchToLinearSrgb,
-  linearSrgbToOklab,
   linearSrgbToOklch,
   linearSrgbToLinearDisplayP3,
   oklchInGamut,
