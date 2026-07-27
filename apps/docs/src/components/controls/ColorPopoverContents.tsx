@@ -79,14 +79,16 @@ export function ColorPopoverContents({ path, label }: { path: PathInput; label: 
   // Closing the popover (Escape, outside press) unmounts this component
   // without necessarily running a pointerup/blur first, so a drag or typed
   // edit that never released here would otherwise vanish with no commit.
-  // Flush both on the way out: a pending drag always wins, and a pending
-  // typed value commits only if it's valid — an invalid, abandoned entry is
-  // deliberately discarded rather than written to the store as-is.
+  // Flush whichever is pending on the way out, drag first: it is the later
+  // gesture of the two, so it wins outright rather than having a typed string
+  // from before it land on top. A pending typed value commits only if it is
+  // valid — an invalid, abandoned entry is deliberately discarded rather than
+  // written to the store as-is.
   useEffect(() => {
     return () => {
-      if (draftRef.current !== null) setProp(path, formatOklch(draftRef.current));
-
-      if (typedRef.current !== null && !typedIsInvalidRef.current) {
+      if (draftRef.current !== null) {
+        setProp(path, formatOklch(draftRef.current));
+      } else if (typedRef.current !== null && !typedIsInvalidRef.current) {
         try {
           setProp(path, formatOklch(parseToOklch(typedRef.current)));
         } catch {
