@@ -18,10 +18,10 @@ export type { ColorStop } from '../utils/color';
 // extinction makes the far colours dim with distance, not the source values
 // themselves.
 export const DEFAULT_STOPS: ColorStop[] = [
-  { color: '#00fc53', position: 0 }, // palette.green[10]
-  { color: '#00c0a0', position: 0.35 }, // palette.teal[9]
-  { color: '#00b2f6', position: 0.7 }, // palette.sky[9]
-  { color: '#f600b8', position: 1 }, // palette.magenta[8]
+  { color: 'oklch(0.863 0.320 145.897)', position: 0 }, // palette.green[10]
+  { color: 'oklch(0.720 0.178 175)', position: 0.35 }, // palette.teal[9]
+  { color: 'oklch(0.720 0.184 235)', position: 0.7 }, // palette.sky[9]
+  { color: 'oklch(0.650 0.309 343.895)', position: 1 }, // palette.magenta[8]
 ];
 
 export interface AuroraProps {

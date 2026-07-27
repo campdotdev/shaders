@@ -66,11 +66,11 @@ export interface SimplexNoiseProps {
 // Twilight palette: stops walk the shared lightness ladder so each is at least
 // 0.10 lighter than the one before, creating depth that makes the ramp readable.
 const DEFAULT_STOPS: ColorStop[] = [
-  { color: '#09171f' }, // palette.sky[1]
-  { color: '#0c1f9e' }, // palette.blue[4]
-  { color: '#670ed1' }, // palette.violet[6]
-  { color: '#e365ff' }, // palette.purple[9]
-  { color: '#ffdef0' }, // palette.magenta[11]
+  { color: 'oklch(0.196 0.025 235)' }, // palette.sky[1]
+  { color: 'oklch(0.346 0.198 265.847)' }, // palette.blue[4]
+  { color: 'oklch(0.460 0.248 293.328)' }, // palette.violet[6]
+  { color: 'oklch(0.720 0.250 320)' }, // palette.purple[9]
+  { color: 'oklch(0.932 0.047 343.895)' }, // palette.magenta[11]
 ];
 
 export function SimplexNoise({
