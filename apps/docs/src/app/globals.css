@@ -1,15 +1,16 @@
 /* Chrome colors come from the `moss` scale in src/lib/palette.ts — the brand
    neutral, hue 120. CSS cannot import the palette, so these are literals; when
    moss changes, change them here too. The step each value came from is named
-   so the pairing stays checkable. Accent and link are deliberately still the
-   old periwinkle and do not belong to the palette yet. */
+   so the pairing stays checkable. Accent and link now use the brand chartreuse
+   from limeScale; the two themes take different steps because a single value
+   cannot clear contrast on both white and near-black. */
 :root {
   --bg: #0d0f06; /* moss[0] */
   --bg-muted: #14170c; /* moss[1] */
   --fg: #e8e8e8; /* moss[11] */
-  --fg-muted: #8d9184; /* moss[8] */
-  --accent: #88aaff;
-  --link: #88aaff;
+  --fg-muted: #a3a69c; /* moss[9] */
+  --accent: #a4c102; /* limeScale[9], brand chartreuse */
+  --link: #a4c102; /* limeScale[9], brand chartreuse */
   --code-bg: #14170c; /* moss[1] */
   --border: #212419; /* moss[2] */
 }
@@ -19,8 +20,8 @@
   --bg-muted: #e8e8e8; /* moss[11] */
   --fg: #0d0f06; /* moss[0] */
   --fg-muted: #45483c; /* moss[5] */
-  --accent: #5570ff;
-  --link: #4860dd;
+  --accent: #5a6b01; /* limeScale[6] */
+  --link: #5a6b01; /* limeScale[6] */
   --code-bg: #e8e8e8; /* moss[11] */
   --border: #d1d2cf; /* moss[10] */
 }
