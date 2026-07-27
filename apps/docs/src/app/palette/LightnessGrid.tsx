@@ -10,6 +10,8 @@ import { linearSrgbToOklch, parseColorString } from '@lovo/matter';
 
 import { palette, paletteOklch } from '@/lib/palette';
 
+import { swatchBorder } from './swatch-border';
+
 // Axis bounds, a little wider than the darkest and lightest colors in the
 // system so end swatches are not clipped by the container edge.
 const AXIS_MIN = 0.15;
@@ -110,11 +112,13 @@ function GridRow({
   fg,
   subFg,
   border,
+  bg,
 }: {
   row: Row;
   fg: string;
   subFg: string;
   border: string;
+  bg: 'dark' | 'light';
 }) {
   return (
     <div
@@ -152,6 +156,7 @@ function GridRow({
               height: 36,
               borderRadius: 4,
               background: entry.color,
+              border: swatchBorder(bg),
             }}
             title={`${row.name} / ${entry.label} · ${entry.color} · ${entry.source}`}
           />
@@ -170,17 +175,17 @@ export function LightnessGrid({ bg }: { bg: 'dark' | 'light' }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {NEUTRAL_ROWS.map((row) => (
-          <GridRow border={border} fg={fg} key={row.name} row={row} subFg={subFg} />
+          <GridRow bg={bg} border={border} fg={fg} key={row.name} row={row} subFg={subFg} />
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {BRAND_ROWS.map((row) => (
-          <GridRow border={border} fg={fg} key={row.name} row={row} subFg={subFg} />
+          <GridRow bg={bg} border={border} fg={fg} key={row.name} row={row} subFg={subFg} />
         ))}
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {ACCENT_ROWS.map((row) => (
-          <GridRow border={border} fg={fg} key={row.name} row={row} subFg={subFg} />
+          <GridRow bg={bg} border={border} fg={fg} key={row.name} row={row} subFg={subFg} />
         ))}
       </div>
       <p style={{ color: subFg, fontSize: 12, margin: 0 }}>

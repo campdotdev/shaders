@@ -5,6 +5,8 @@ import { useState } from 'react';
 
 import { palette, paletteOklch } from '@/lib/palette';
 
+import { swatchBorder } from './swatch-border';
+
 /**
  * `LightnessGrid` reads colors through `@lovo/matter`'s `linearSrgbToOklch` /
  * `parseColorString`, which pulls in the bundled WebGPU renderer and crashes
@@ -158,7 +160,9 @@ function ScaleRow({
                   background: color,
                   height: 42,
                   borderRadius: 4,
-                  border: ringed ? `1px solid ${fg}` : 'none',
+                  border: ringed
+                    ? `1px solid ${fg}`
+                    : swatchBorder(bg === 'dark' ? 'dark' : 'light'),
                   outline: ringed ? `2px solid ${color}` : 'none',
                   outlineOffset: 2,
                 }}
@@ -204,6 +208,7 @@ function ColorBlock({
           background: color,
           height,
           borderRadius: 10,
+          border: swatchBorder(bg === 'dark' ? 'dark' : 'light'),
           boxShadow: '0 1px 2px rgba(0,0,0,0.15)',
         }}
       />
@@ -237,6 +242,7 @@ function GradientBlock({
         style={{
           height,
           borderRadius: 10,
+          border: swatchBorder(bg === 'dark' ? 'dark' : 'light'),
           background: `linear-gradient(135deg, ${colors.join(', ')})`,
         }}
       />
@@ -510,6 +516,9 @@ export function PaletteView() {
                       background: color,
                       height: 56,
                       borderRadius: 6,
+                      // The panel is a fixed black/white, independent of the page
+                      // theme, so the border follows the panel, not `bg`.
+                      border: swatchBorder(bgName === 'black' ? 'dark' : 'light'),
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
