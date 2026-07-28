@@ -131,8 +131,8 @@ describe('brand palette', () => {
     // The hex is the sRGB-fitted twin of the oklch: it may shed chroma, but
     // lightness and hue must survive. Channel clipping, the thing this guards
     // against, moves hue instead — it once put sky.dark 14.7 degrees off.
-    // Tolerances sit just above the real worst case (0.0016 and 1.84 degrees),
-    // which is 8-bit quantization, not drift.
+    // The real worst case today (see the tolerance comments below) is 8-bit
+    // quantization, not drift.
     const drifted: string[] = [];
 
     for (const [name, group] of Object.entries(palette)) {
