@@ -271,7 +271,7 @@ export function PaletteView() {
 
   const auroraNew = AURORA_NEW_STOPS.map((stop) => stop.color);
 
-  // Brand lime mid step (index 9 of the 12-step brand scale = #A4C102)
+  // Brand lime mid step: index 9 of the 12-step brand scale (limeScale[9]).
   const brandLimeMid = limeScaleOklch[9];
 
   return (
