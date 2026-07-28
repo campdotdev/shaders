@@ -447,10 +447,17 @@ describe('brand palette', () => {
 
     // Same reasoning as the globals.css floor: a regex or line-pairing bug
     // that stops matching would otherwise pass silently on zero citations.
-    // The five files cite 28 annotations today (36 individual literals, since
-    // wave-lines' two-color lines each carry two); a floor well under that
-    // only needs to prove the walk still fires.
-    expect(annotationCount).toBeGreaterThanOrEqual(20);
+    // But 20, not "well under 36", is the floor that actually matters here:
+    // aurora + linear-gradient + mesh-gradient + simplex-noise cite 20
+    // literals through the same-line form alone (4 + 3 + 8 + 5), and
+    // wave-lines supplies the other 16 only through the line-above fallback
+    // (its 8 two-color citations x 2 literals each). A floor at or below 20
+    // would keep passing even if that fallback path silently broke and
+    // wave-lines stopped being walked at all -- the one shape this test was
+    // written to cover. 30 sits above what the same-line files can reach on
+    // their own and comfortably below the real count of 36, so it proves
+    // wave-lines is still being read without tripping on ordinary palette edits.
+    expect(annotationCount).toBeGreaterThanOrEqual(30);
     expect(mismatches).toEqual([]);
   });
 });
