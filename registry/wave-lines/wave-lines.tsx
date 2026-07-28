@@ -114,21 +114,21 @@ export interface WaveLinesProps {
 // lines 0 and 7 carry unique hue pairs at the arc ends, an efficient packing
 // of eight lines across a six-accent arc spaced roughly 30° apart.
 export const DEFAULT_LINES: WaveLine[] = [
-  // palette.sky[10], palette.cyan[10]
+  // paletteOklch.sky[10], paletteOklch.cyan[10]
   { color: ['oklch(0.863 0.083 235)', 'oklch(0.863 0.150 205)'] },
-  // palette.blue[9], palette.sky[9]
+  // paletteOklch.blue[9], paletteOklch.sky[9]
   { color: ['oklch(0.720 0.116 265.847)', 'oklch(0.720 0.184 235)'] },
-  // palette.blue[8], palette.sky[8]
+  // paletteOklch.blue[8], paletteOklch.sky[8]
   { color: ['oklch(0.650 0.169 265.847)', 'oklch(0.650 0.173 235)'] },
-  // palette.violet[7], palette.blue[7]
+  // paletteOklch.violet[7], paletteOklch.blue[7]
   { color: ['oklch(0.549 0.298 293.328)', 'oklch(0.549 0.248 265.847)'] },
-  // palette.violet[6], palette.blue[6]
+  // paletteOklch.violet[6], paletteOklch.blue[6]
   { color: ['oklch(0.460 0.248 293.328)', 'oklch(0.460 0.313 265.847)'] },
-  // palette.purple[5], palette.violet[5]
+  // paletteOklch.purple[5], paletteOklch.violet[5]
   { color: ['oklch(0.395 0.167 320)', 'oklch(0.395 0.196 293.328)'] },
-  // palette.purple[4], palette.violet[4]
+  // paletteOklch.purple[4], paletteOklch.violet[4]
   { color: ['oklch(0.346 0.132 320)', 'oklch(0.346 0.155 293.328)'] },
-  // palette.magenta[3], palette.purple[3]
+  // paletteOklch.magenta[3], paletteOklch.purple[3]
   { color: ['oklch(0.303 0.094 343.895)', 'oklch(0.303 0.102 320)'] },
 ];
 
