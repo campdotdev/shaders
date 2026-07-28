@@ -13,12 +13,15 @@
  * lime 30 percent; there is no fixed "step N is the vivid one" rule, and the
  * vivid rung is derivable as the highest-chroma entry in the array.
  *
- * Two rules when editing, both load-bearing and both asserted by
- * `palette.test.ts`. Keep every oklch value inside P3 — asking for more chroma
- * than a display can show does not make a color more vivid, it makes the
- * framebuffer clip each channel independently and drag hue along with it. And
+ * Two rules when editing, both load-bearing. Keep every oklch value inside
+ * P3 — asking for more chroma than a display can show does not make a color
+ * more vivid, it makes the framebuffer clip each channel independently and
+ * drag hue along with it. `palette.test.ts` asserts this rule directly. And
  * derive each hex from its oklch twin with `oklchToGamut(..., 'srgb')`, which
- * sheds chroma at constant lightness and hue, rather than by clipping.
+ * sheds chroma at constant lightness and hue, rather than by clipping —
+ * `palette.test.ts` only checks the consequence (hex and oklch agreeing on
+ * lightness and hue), not the derivation method, so a hex that shed more
+ * chroma than sRGB required would still pass.
  *
  * Expect the descent past a peak to look steep for some hues — sky drops from
  * 0.184 chroma at rung 9 to 0.083 at rung 10. That is the gamut ceiling
