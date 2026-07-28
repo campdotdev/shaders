@@ -41,7 +41,7 @@ export const INITIAL: Params = {
   speed: 0.5,
   softness: 0.75,
   brightness: 1,
-  opacity: 0.25,
+  opacity: 0.85,
   thickness: 3.75,
   baseline: 0,
   braiding: 0,
