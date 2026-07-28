@@ -51,29 +51,13 @@ export const INITIAL: Params = {
   colorDrift: 0.7,
   colorSpace: 'oklab',
   lines: [
-    {
-      color: [paletteOklch.sky[10], paletteOklch.cyan[10]],
-    },
-    {
-      color: [paletteOklch.blue[9], paletteOklch.cyan[9]],
-    },
-    {
-      color: [paletteOklch.blue[8], paletteOklch.sky[8]],
-    },
-    {
-      color: [paletteOklch.violet[7], paletteOklch.sky[7]],
-    },
-    {
-      color: [paletteOklch.violet[6], paletteOklch.blue[6]],
-    },
-    {
-      color: [paletteOklch.purple[5], paletteOklch.blue[5]],
-    },
-    {
-      color: [paletteOklch.purple[4], paletteOklch.violet[4]],
-    },
-    {
-      color: [paletteOklch.magenta[3], paletteOklch.violet[3]],
-    },
+    { color: [paletteOklch.sky[10], paletteOklch.cyan[10]] },
+    { color: [paletteOklch.blue[9], paletteOklch.sky[9]] },
+    { color: [paletteOklch.blue[8], paletteOklch.sky[8]] },
+    { color: [paletteOklch.violet[7], paletteOklch.blue[7]] },
+    { color: [paletteOklch.violet[6], paletteOklch.blue[6]] },
+    { color: [paletteOklch.purple[5], paletteOklch.violet[5]] },
+    { color: [paletteOklch.purple[4], paletteOklch.violet[4]] },
+    { color: [paletteOklch.magenta[3], paletteOklch.purple[3]] },
   ],
 };
