@@ -156,7 +156,7 @@ function ScaleRow({
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(12, 1fr)', gap: 4 }}>
         {swatches.map((color, stepIndex) => {
-          const stepNum = stepIndex + 1;
+          const stepNum = stepIndex;
           const ringed = brandStep === stepNum;
 
           return (
@@ -336,7 +336,7 @@ export function PaletteView() {
             <ScaleRow bg={bg} name="moss" sub="h=120 · brand chrome" swatches={moss} />
             <ScaleRow
               bg={bg}
-              brandStep={10}
+              brandStep={9}
               name="limeScale"
               sub="brand · h=120 · 12 steps"
               swatches={limeScaleOklch}
@@ -426,7 +426,7 @@ export function PaletteView() {
             <GradientBlock
               bg={bg}
               colors={[limeScaleOklch[3], limeScaleOklch[6], limeScaleOklch[9]]}
-              label="Brand lime scale ramp (steps 4 → 7 → 10)"
+              label="Brand lime scale ramp (steps 3 → 6 → 9)"
             />
             <GradientBlock
               bg={bg}
