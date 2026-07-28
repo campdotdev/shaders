@@ -57,7 +57,7 @@ export interface WaveLinesProps {
   /**
    * Body opacity, 0..1. 0 = no body — lines render as pure light; 1 =
    * solid ribbons that cover the lines behind them. Halos are unaffected.
-   * Defaults to 0.25. Accepts a static value or an animation signal.
+   * Defaults to 0.85. Accepts a static value or an animation signal.
    */
   opacity?: AnimatableProp<number>;
   /**
@@ -138,7 +138,7 @@ export function WaveLines({
   speed = 0.5,
   softness = 0.75,
   brightness = 1,
-  opacity = 0.25,
+  opacity = 0.85,
   thickness = 3.75,
   baseline = 0,
   braiding = 0,
