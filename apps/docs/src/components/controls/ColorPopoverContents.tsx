@@ -8,7 +8,7 @@
  */
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
-import { useDisplayGamut } from '@lovo/matter-react';
+import { useDisplayGamut } from '@lovo/matter-react/gamut';
 import { oklchInGamut, oklchToGamut } from '@lovo/matter/color';
 
 import { ChannelSlider } from './color/ChannelSlider';
