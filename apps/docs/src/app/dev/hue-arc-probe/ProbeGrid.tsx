@@ -3,8 +3,9 @@
 import { useEffect } from 'react';
 
 import type { HueInterpolation } from '@lovo/matter';
-import { colorRamp, srgbChannelToLinear } from '@lovo/matter';
+import { colorRamp } from '@lovo/matter';
 import { ShaderScene, useShaderContext } from '@lovo/matter-react';
+import { srgbChannelToLinear } from '@lovo/matter/color';
 import type { ShaderNodeObject } from 'three/tsl';
 import { mix, step, uv, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
