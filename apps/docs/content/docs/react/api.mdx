@@ -95,6 +95,36 @@ Renders fallback content when WebGPU is unavailable or initialization fails. Wra
 
 See [SSR and fallbacks](/react/guides/ssr-and-fallbacks) for the full pattern.
 
+## `<ShaderPoster>`
+
+A static stand-in shown until the shader's first content frame is on screen, and again whenever the renderer is rebuilt. If the renderer never initializes, the poster simply stays up.
+
+`poster` takes any node, not a URL — it renders inside an absolutely-positioned wrapper covering the boundary, so a `next/image` with `fill` works as-is and a plain `<img>` only needs width and height at 100%.
+
+Imported from its own entry point, which has no path to three and so server-renders:
+
+```tsx
+import { ShaderPoster } from '@lovo/matter-react/poster'
+
+<ShaderPoster poster={<img alt="" src="/hero-poster.avif" style={{ width: '100%', height: '100%' }} />}>
+  <ShaderScene>
+    <Aurora />
+  </ShaderScene>
+</ShaderPoster>
+```
+
+## `useDisplayGamut`
+
+Resolves a gamut preference to what the display can actually show. Pass `'srgb'` or `'p3'` to fix it, or `'auto'` to query `(color-gamut: p3)` and re-resolve when the window moves to another monitor.
+
+```tsx
+import { useDisplayGamut } from '@lovo/matter-react/gamut'
+
+const gamut = useDisplayGamut('auto') // 'srgb' | 'p3'
+```
+
+Also on its own three-free entry point — the hook only asks `matchMedia` a question, and returns `'srgb'` when there's no `window`, so it is safe during a server render. See [SSR and fallbacks](/react/guides/ssr-and-fallbacks#the-three-free-subpaths).
+
 ## `useStaticSceneHint`
 
 Marks the scene as static — renders once on mount, then only on prop / signal changes. Use for decorative shaders without time-based animation.
