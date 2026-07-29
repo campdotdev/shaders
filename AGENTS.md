@@ -8,20 +8,8 @@ You are working on **Matter** — a React shader component library on WebGPU + T
 | ----------------------------------------- | ---------------------------------------------------------------------------------------- |
 | Full design — what we're building and why | `docs/superpowers/specs/2026-05-02-matter-design.md`                                     |
 | Feature specs and implementation plans    | `docs/superpowers/specs/`, `docs/superpowers/plans/`                                     |
-| Engine, React binding, CLI                | `packages/matter/`, `packages/matter-react/`, `packages/matter-cli/`                     |
-| Tier 1 components                         | `registry/`                                                                              |
-| Docs site                                 | `apps/docs/`                                                                             |
-| Shared tooling                            | `tooling/eslint-config/`, `tooling/tsconfig/`                                            |
 
 > **Note:** `docs/superpowers/` (specs and plans) is gitignored — it exists only on machines it's been synced to. On a fresh clone those paths are absent; this file plus git history are the portable orientation.
-
-**At session start**, get oriented:
-
-```bash
-git log --oneline | head -20      # what's been done recently
-git tag | tail -5                 # recent releases
-git status                        # uncommitted changes?
-```
 
 Milestone history lives in git tags and `docs/superpowers/plans/`. Don't trust any hardcoded status table — check the tags.
 
@@ -30,7 +18,6 @@ Milestone history lives in git tags and `docs/superpowers/plans/`. Don't trust a
 - **Three-tier model**: Tier 1 = polished components (`<LinearGradient>` etc., delivered via shadcn-style CLI copy-paste from `registry/`); Tier 2 = TSL primitives in the engine package (`fractalNoise`, `voronoi`, etc.); Tier 3 = recipes (TSL snippets in the docs site).
 - **Three packages**: `@lovo/matter` (engine, framework-agnostic), `@lovo/matter-react` (React binding), `@lovo/matter-cli` (copy-paste delivery).
 - **Two rendering modes** (no auto-detection of `@react-three/fiber`): Mode 1 — every Tier 1 component is bare and requires an explicit `<ShaderScene>` wrap; composition is stacking children in one scene. Mode 2 — `useShaderMaterial` inside the user's own r3f `<Canvas>`.
-- **Stack**: TypeScript 5 strict, pnpm 10 workspaces, Node 22 (`.node-version` = 22.22.2 — see the Node gotcha below), Turborepo (orchestration, **not** Turbopack), tsup, ESLint 9 flat config, Prettier 3 + `@trivago/prettier-plugin-sort-imports`, Vite + Vitest, Next.js 15 (docs), own headless controls on Base UI (docs demo panels; Tweakpane remains only in `/dev` playgrounds), Playwright visual regression.
 
 For architecture, public APIs, the component catalog, and the animation/signal protocol — read the spec. Decision history is in the spec's Appendix A.
 
@@ -58,7 +45,7 @@ These rules exist because Matter doubles as a shader-learning project for its au
 
 - **Destructure props in component signatures.** Never `props.X` access. Wrappers set defaults inline: `function MeshGradient({ speed = 2 }: MeshGradientProps)`. Order destructured fields to match the interface declaration.
 - **Clear names over abbreviations.** No `u`, `cfg`, `ctx`, `cb`. Exceptions: conventional loop counters and math/shader locals that mirror the math (`x`, `y`).
-- **TypeScript**: strict mode, `verbatimModuleSyntax`, `noUncheckedIndexedAccess`, `import type` for type-only imports.
+- **TypeScript**: `import type` for type-only imports.
 - **TDD where applicable**: tests-first for Tier 2 primitives and CLI logic. For shader visuals, the "test" is a docs demo + Playwright visual regression — don't try to unit test "does this gradient look right" or mock the GPU.
 - **No emojis** in code or commit messages.
 - **JSDoc on every user-facing prop.** All registry component props — the wrapper `*Props` and the `*ShaderProps` mirror, plus nested types like `WaveLine`/`ColorStop` — carry JSDoc: what the prop controls, 0/1 semantics for normalized props, units, and the default in prose (wrapper only; the mirror drops "Defaults to …"). Every `AnimatableProp<T>` prop ends its comment with "Accepts a static value or an animation signal."; plain props don't.
