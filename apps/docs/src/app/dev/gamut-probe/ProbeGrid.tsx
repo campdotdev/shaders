@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 
-import { oklchToLinearSrgb } from '@lovo/matter';
 import { ShaderScene, useShaderContext } from '@lovo/matter-react';
+import { oklchToLinearSrgb } from '@lovo/matter/color';
 import { vec3, vec4 } from 'three/tsl';
 
 import { addPlaneMesh } from '@/lib/meshUtils';
