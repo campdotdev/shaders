@@ -3,7 +3,7 @@
 // JavaScript, once — the GPU only ever sees the resulting numbers. The reverse
 // direction, linear-rgb back to OKLab/OKLch, lets the docs color picker know
 // where to place its sliders. Matrices mirror the TSL versions in oklab.ts exactly.
-import { srgbChannelToLinear } from './transfer.js';
+import { srgbChannelToLinear } from './cpu-transfer.js';
 
 /**
  * OKLab (L, a, b) -> extended linear-sRGB. CPU mirror of the TSL `oklabToLinear`

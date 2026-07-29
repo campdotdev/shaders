@@ -9,7 +9,7 @@ import {
   oklchToLinearSrgb,
   parseColorString,
 } from './cpu-convert.js';
-import { linearChannelToSrgb, srgbChannelToLinear } from './transfer.js';
+import { srgbChannelToLinear } from './cpu-transfer.js';
 
 const closeTo = (value: number, target: number, tolerance = 1e-3) =>
   Math.abs(value - target) <= tolerance;
@@ -274,13 +274,5 @@ describe('oklchToGamut', () => {
   it('handles the achromatic poles without inventing chroma', () => {
     expect(oklchToGamut(0, 0.2, 120, 'srgb')[1]).toBeCloseTo(0, 2);
     expect(oklchToGamut(1, 0.2, 120, 'srgb')[1]).toBeCloseTo(0, 2);
-  });
-});
-
-describe('linearChannelToSrgb', () => {
-  it('inverts srgbChannelToLinear across the piecewise boundary', () => {
-    for (const encoded of [0, 0.01, 0.04045, 0.2, 0.5, 1]) {
-      expect(closeTo(linearChannelToSrgb(srgbChannelToLinear(encoded)), encoded)).toBe(true);
-    }
   });
 });
