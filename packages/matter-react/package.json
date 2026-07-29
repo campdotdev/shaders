@@ -43,6 +43,11 @@
       "types": "./dist/poster.d.ts",
       "import": "./dist/poster.js",
       "require": "./dist/poster.cjs"
+    },
+    "./gamut": {
+      "types": "./dist/gamut.d.ts",
+      "import": "./dist/gamut.js",
+      "require": "./dist/gamut.cjs"
     }
   },
   "publishConfig": {
