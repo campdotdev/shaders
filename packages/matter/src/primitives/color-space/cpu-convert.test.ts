@@ -82,6 +82,30 @@ describe('parseColorString', () => {
   it('throws on unrecognized syntax', () => {
     expect(() => parseColorString('rebeccapurple')).toThrow();
   });
+
+  it('throws on non-numeric oklch() components', () => {
+    expect(() => parseColorString('oklch(abc def ghi)')).toThrow(/Invalid oklch/);
+  });
+
+  it('throws on a non-numeric oklch() hue carrying a deg suffix', () => {
+    expect(() => parseColorString('oklch(0.7 0.15 abcdeg)')).toThrow(/Invalid oklch/);
+  });
+
+  it('throws on non-numeric oklab() components', () => {
+    expect(() => parseColorString('oklab(abc def ghi)')).toThrow(/Invalid oklab/);
+  });
+
+  it('throws on hex digits that are not hex', () => {
+    expect(() => parseColorString('#gggggg')).toThrow(/Invalid hex/);
+  });
+
+  it('throws on hex longer than six digits rather than silently truncating', () => {
+    expect(() => parseColorString('#abcdefgh')).toThrow(/Invalid hex/);
+  });
+
+  it('throws on three-digit hex shorthand, which is not supported', () => {
+    expect(() => parseColorString('#abc')).toThrow(/Invalid hex/);
+  });
 });
 
 describe('linearSrgbToOklab', () => {
