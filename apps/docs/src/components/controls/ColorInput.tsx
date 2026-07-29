@@ -1,26 +1,21 @@
 'use client';
 
 /**
- * A color prop's swatch trigger. The popover contents (the three channel
- * sliders and the text field) live in a dynamically-imported module because
- * they read the display's gamut through `@lovo/matter-react`, whose barrel
- * reaches `ShaderScene` and therefore three/webgpu — which reads `self` at
- * module load and crashes any server render. The color math itself is no longer
- * the problem: that comes from `@lovo/matter/color`, which is three-free.
- * `stored` is already a canonical oklch() string, so the trigger needs none of
- * it either way.
+ * A color prop's swatch trigger. Clicking it opens the popover holding the three
+ * channel sliders and the text field; `stored` is already a canonical oklch()
+ * string, so the trigger itself only has to paint it.
+ *
+ * This used to load the popover through `next/dynamic` with `ssr: false`,
+ * because reaching the color math meant importing three/webgpu, which reads
+ * `self` at module load. Both halves of that now come from three-free subpaths
+ * (`@lovo/matter/color` and `@lovo/matter-react/gamut`), so it is a plain
+ * import.
  */
-import dynamic from 'next/dynamic';
-
 import { Popover } from '@base-ui/react/popover';
 
+import { ColorPopoverContents } from './ColorPopoverContents';
 import type { PathInput } from './store';
 import { usePropValue } from './useControl';
-
-const ColorPopoverContents = dynamic(
-  () => import('./ColorPopoverContents').then((module) => module.ColorPopoverContents),
-  { ssr: false },
-);
 
 export interface ColorInputProps {
   path: PathInput;
