@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   output: 'export',
   images: { unoptimized: true },
+  // `pnpm lint` runs ESLint over the whole repo and CI enforces it, so letting
+  // `next build` lint too just runs the same rules a second time. Turning it off
+  // here is not a way of skipping the check — it is saying where the check lives.
+  eslint: { ignoreDuringBuilds: true },
   transpilePackages: ['@lovo/matter', '@lovo/matter-react', '@matter/registry'],
   webpack(config: WebpackConfig): WebpackConfig {
     config.resolve = config.resolve ?? {};
