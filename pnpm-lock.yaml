@@ -183,9 +183,6 @@ importers:
       '@types/three':
         specifier: ^0.170.0
         version: 0.170.0
-      happy-dom:
-        specifier: ^15.0.0
-        version: 15.11.7
       pagefind:
         specifier: ^1.5.2
         version: 1.5.2

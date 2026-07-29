@@ -6,13 +6,12 @@ export default defineConfig({
   // @ts-expect-error -- oxc is not in UserConfig types yet; this is the documented workaround
   oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } },
   test: {
+    // No DOM environment on purpose. These tests are pure color math, and
+    // running them in plain Node means a future test that imports root
+    // @lovo/matter fails here — three/webgpu reads `self` at module load — the
+    // same way it would fail in a server render. Import from
+    // @lovo/matter/color instead.
     name: '@matter/docs',
-    // @lovo/matter is one bundled entry point: importing any export (even a
-    // pure color-math function) runs the whole module, which pulls in
-    // three/webgpu. That hits the AGENTS.md gotcha on three/webgpu
-    // referencing `self` at module load, so plain Node fails here the same
-    // way packages/matter and packages/matter-react would without happy-dom.
-    environment: 'happy-dom',
     include: ['src/**/*.test.{ts,tsx}'],
     passWithNoTests: true,
   },
