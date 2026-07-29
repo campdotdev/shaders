@@ -27,7 +27,7 @@ export default defineConfig([
   ]),
   {
     files: ['**/*.{js,mjs,cjs,jsx}'],
-    extends: [js.configs.recommended, reactHooks.configs['recommended-latest']],
+    extends: [js.configs.recommended, reactHooks.configs.flat['recommended-latest']],
     languageOptions: {
       ecmaVersion: 'latest',
       globals: { ...globals.browser, ...globals.node },
