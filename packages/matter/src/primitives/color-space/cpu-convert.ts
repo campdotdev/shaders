@@ -227,16 +227,28 @@ function functionArgs(input: string, prefix: string): string[] {
 }
 
 /**
+ * `#rrggbb` and nothing else. No 3-digit shorthand, and no trailing characters:
+ * without the anchors, `#abcdefgh` would slice its first six digits, ignore the
+ * rest, and return a perfectly finite wrong color.
+ */
+const HEX_COLOR = /^[0-9a-fA-F]{6}$/;
+
+/**
  * Parse a color string to **extended** linear-sRGB. Accepts `#rrggbb`,
  * `oklab(L a b)`, and `oklch(L C H)` (CSS Color 4 syntax: L/C may be percentages,
  * H may carry a `deg` suffix, an optional `/ alpha` is parsed and dropped).
- * Throws on any other syntax.
+ * Throws on any other syntax, on components that are not numbers, and on hex
+ * that is not exactly six digits.
  */
 export function parseColorString(input: string): [number, number, number] {
   const value = input.trim();
 
   if (value.startsWith('#')) {
     const hex = value.slice(1);
+
+    if (!HEX_COLOR.test(hex)) {
+      throw new Error(`Invalid hex color: "${input}". Use #rrggbb.`);
+    }
 
     return [
       srgbChannelToLinear(parseInt(hex.slice(0, 2), 16) / 255),
@@ -256,6 +268,14 @@ export function parseColorString(input: string): [number, number, number] {
     const chroma = parseComponent(chromaToken, 0.4);
     const hueDegrees = parseFloat(hueToken.replace(/deg$/, ''));
 
+    // parseFloat answers NaN for a non-numeric token rather than throwing, and
+    // NaN does not fail loudly: it rides into colorRamp or mixColor, gets baked
+    // into a literal, and reaches the GPU as a blank shader with a clean
+    // console. Checking here names the offending string at the call site.
+    if (!Number.isFinite(lightness) || !Number.isFinite(chroma) || !Number.isFinite(hueDegrees)) {
+      throw new Error(`Invalid oklch() color: "${input}"`);
+    }
+
     return oklchToLinearSrgb(lightness, chroma, hueDegrees);
   }
 
@@ -266,11 +286,15 @@ export function parseColorString(input: string): [number, number, number] {
       throw new Error(`Invalid oklab() color: "${input}"`);
     }
 
-    return oklabToLinearSrgb(
-      parseComponent(lightnessToken, 1),
-      parseComponent(aToken, 0.4),
-      parseComponent(bToken, 0.4),
-    );
+    const lightness = parseComponent(lightnessToken, 1);
+    const greenRed = parseComponent(aToken, 0.4);
+    const blueYellow = parseComponent(bToken, 0.4);
+
+    if (!Number.isFinite(lightness) || !Number.isFinite(greenRed) || !Number.isFinite(blueYellow)) {
+      throw new Error(`Invalid oklab() color: "${input}"`);
+    }
+
+    return oklabToLinearSrgb(lightness, greenRed, blueYellow);
   }
 
   throw new Error(`Unsupported color syntax: "${input}". Use #rrggbb, oklch(...), or oklab(...).`);
