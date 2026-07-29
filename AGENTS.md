@@ -102,9 +102,11 @@ These rules exist because Matter doubles as a shader-learning project for its au
 
 ## Color system (shipped — how the pieces relate)
 
-- **`colorSpace` prop** (interpolation space) on interpolating components only: `LinearGradient`, `MeshGradient`, `SimplexNoise` (via `colorRamp`), `Vignette` (via `mixColor`), `WaveLines` (gradient lines via `colorRamp`). Default `oklab` on components; primitives default `linear`. Lives in `packages/matter/src/primitives/color-space/`.
+- **`colorSpace` prop** (interpolation space) on the six components that blend two colors: `Aurora`, `LinearGradient`, `MeshGradient`, `SimplexNoise`, `WaveLines` (all via `colorRamp`) and `Vignette` (via `mixColor`). Default `oklab` on all six. `DotField` and `Grain` don't take it — they never compute a midpoint. Primitive defaults differ from each other: `colorRamp` defaults to `linear`, `mixColor` to `oklab`. Lives in `packages/matter/src/primitives/color-space/`.
+- **`hueInterpolation` prop** on five of those six — `WaveLines` omits it and takes `colorRamp`'s default arc. Only cylindrical spaces (`oklch`/`lch`/`hsl`/`hsv`) read it.
 - **`gamut` prop** on `<ShaderScene>`: `'auto' | 'srgb' | 'p3'`, default `auto` (detects via `(color-gamut: p3)`, re-resolves on monitor change).
-- **Orthogonal concerns**: `colorSpace` = mixing math; `gamut` = output framebuffer; wide-gamut **input** is just the decode (`oklch()`/`oklab()` strings through `parseColor` → unclamped linear-sRGB) and needs zero mixing props. Additive-light components that don't interpolate (aurora) get no mixing props — but they accept oklch input. `WaveLines` interpolates when a line's color is a gradient, so it takes `colorSpace` even though its lines are additive.
+- **Orthogonal concerns**: `colorSpace` = mixing math; `gamut` = output framebuffer; wide-gamut **input** is just the decode (`oklch()`/`oklab()` strings through `parseColor` → unclamped linear-sRGB) and needs zero mixing props. Aurora is additive but still blends along a depth-indexed ramp, which is why it takes `colorSpace` — being additive is not the test; computing a midpoint is.
+- **User-facing docs**: `apps/docs/content/docs/guides/color.mdx`. Keep it in step when any of the above changes.
 
 ## Open threads (as of 2026-07-25)
 
