@@ -5,6 +5,13 @@
 // reads `self` at module load. color.test.ts proves that property rather than
 // trusting it. The root barrel re-exports all of these, so this is an
 // additional door, not a replacement one.
+//
+// These imports go straight to the leaf modules (cpu-convert.js,
+// cpu-transfer.js), not through `./primitives/color-space/index.js`. That
+// barrel also re-exports `mixColor` from `mix-color.js`, which imports
+// `three/tsl` — routing through it here would quietly drag three back into
+// this three-free entry point. color.test.ts would catch the regression, but
+// importing the leaves directly is what prevents it from being written.
 
 export {
   linearSrgbToLinearDisplayP3,
