@@ -1,11 +1,14 @@
 'use client';
 
 /**
- * A color prop's swatch trigger. The popover contents (plane, hue slider,
- * lightness/chroma sliders, text field) live in a dynamically-imported
- * module — parsing color strings pulls in `@lovo/matter`'s bundled WebGPU
- * renderer, which crashes any server render that reaches it. `stored` is
- * already a canonical oklch() string, so the trigger itself needs none of that.
+ * A color prop's swatch trigger. The popover contents (the three channel
+ * sliders and the text field) live in a dynamically-imported module because
+ * they read the display's gamut through `@lovo/matter-react`, whose barrel
+ * reaches `ShaderScene` and therefore three/webgpu — which reads `self` at
+ * module load and crashes any server render. The color math itself is no longer
+ * the problem: that comes from `@lovo/matter/color`, which is three-free.
+ * `stored` is already a canonical oklch() string, so the trigger needs none of
+ * it either way.
  */
 import dynamic from 'next/dynamic';
 

@@ -1,24 +1,11 @@
 'use client';
 
-import dynamic from 'next/dynamic';
 import { useState } from 'react';
 
 import { palette, paletteOklch } from '@/lib/palette';
 
+import { LightnessGrid } from './LightnessGrid';
 import { swatchBorder } from './swatch-border';
-
-/**
- * `LightnessGrid` reads colors through `@lovo/matter`'s `linearSrgbToOklch` /
- * `parseColorString`, which pulls in the bundled WebGPU renderer and crashes
- * any server render that reaches it (the three/webgpu SSR gotcha in
- * AGENTS.md). Loading it client-only, the same way `ColorInput` loads its
- * popover contents, keeps the rest of this page — which needs none of that —
- * servable.
- */
-const LightnessGrid = dynamic(
-  () => import('./LightnessGrid').then((module) => module.LightnessGrid),
-  { ssr: false },
-);
 
 const { black, white, gray, moss } = palette;
 const {
