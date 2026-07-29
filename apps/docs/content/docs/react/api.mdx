@@ -30,6 +30,7 @@ import { ShaderScene } from '@lovo/matter-react'
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
 | `dprMax` | `number` | `2` | Maximum device pixel ratio to render at. |
+| `gamut` | `'auto' \| 'srgb' \| 'p3'` | `'auto'` | Output color gamut. `'auto'` detects via `(color-gamut: p3)` and re-resolves when the window moves to another display. See [the color guide](/guides/color#gamut--what-the-output-can-hold). |
 | `pauseOffscreen` | `boolean` | `true` | Whether to pause rendering when the canvas leaves the viewport. |
 | `style` | `CSSProperties` | — | Forwarded to the canvas container. |
 | `className` | `string` | — | Forwarded to the canvas container. |
