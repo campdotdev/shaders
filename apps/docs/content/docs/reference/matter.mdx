@@ -59,9 +59,27 @@ import { time as rawTime } from 'three/tsl'
 - **`getReducedMotionTimeScale()`** — get the current animation time scale (0, 0.3, or 1).
 - **`createReducedMotionWatcher()`** — subscribe to policy changes.
 
+## Color math — `@lovo/matter/color`
+
+CPU-side color conversion, run once in JavaScript when a prop is parsed. The GPU only ever sees the resulting numbers.
+
+These are also exported from the root entry, but prefer the subpath: it has no path to three, so it can be imported during a server render, where the root entry cannot. See [SSR and fallbacks](/react/guides/ssr-and-fallbacks#the-three-free-subpaths).
+
+```ts
+import { parseColorString, linearSrgbToOklch } from '@lovo/matter/color'
+```
+
+- `parseColorString(input)` → extended linear-sRGB. Accepts `#rrggbb`, `#rrggbbaa` (alpha dropped), `oklab(L a b)`, and `oklch(L C H)`. Throws on anything else, including components that aren't numbers.
+- `oklabToLinearSrgb(l, a, b)` / `oklchToLinearSrgb(l, c, h)` → extended linear-sRGB. Not clamped: colors outside sRGB come back with channels below 0 or above 1.
+- `linearSrgbToOklch(r, g, b)` → `[l, c, h]`, hue normalized to [0, 360).
+- `linearSrgbToLinearDisplayP3(r, g, b)` → extended linear Display-P3.
+- `oklchInGamut(l, c, h, gamut)` → whether a display of that gamut can show the color.
+- `oklchToGamut(l, c, h, gamut)` → the nearest color it can, found by shedding chroma while holding lightness and hue.
+- `srgbChannelToLinear(channel)` / `linearChannelToSrgb(channel)` — the sRGB transfer curve, one channel at a time.
+
 ## Type exports
 
-The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vector2`, `ColorRampStop`, `TSLNode`, `FractalNoiseOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`.
+The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vector2`, `ColorRampStop`, `TSLNode`, `FractalNoiseOptions`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`, `OutputGamut`, `ColorSpace`, `HueInterpolation`.
 
 <Callout>
   For React-specific exports (`<ShaderScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@lovo/matter`.
