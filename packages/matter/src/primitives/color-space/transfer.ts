@@ -1,32 +1,13 @@
-// sRGB gamma conversion. Screens don't store brightness linearly: sRGB
-// channels are gamma-encoded so more precision goes to dark tones, where
-// eyes are most sensitive. Color MATH, though, only works right on linear
-// values (where 0.5 really is half the light of 1.0). These helpers convert
-// each way — decode ("EOTF") from encoded to linear, encode ("OETF") back.
-// The TSL versions avoid if/else by computing both segments of the piecewise
-// curve and picking one with step/mix, which GPUs prefer.
+// The TSL half of sRGB gamma conversion — the same two curves as
+// cpu-transfer.ts, built as shader nodes instead of scalar functions. These
+// avoid if/else by computing both segments of the piecewise curve and picking
+// one with step/mix, which GPUs prefer: a branch makes every lane wait for
+// both sides anyway, so the arithmetic is free by comparison.
 import type { ShaderNodeObject } from 'three/tsl';
 import { mix, pow, step } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
-
-/**
- * sRGB-encoded channel in [0,1] -> linear-sRGB. Standard sRGB EOTF.
- * Mirrors three's `convertSRGBToLinear` (e.g. 0.5 -> 0.21404114).
- */
-export function srgbChannelToLinear(channel: number): number {
-  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
-}
-
-/**
- * Linear-sRGB channel -> sRGB-encoded. The inverse of `srgbChannelToLinear`
- * (standard sRGB OETF). Values outside [0,1] pass through the same curve rather
- * than being clamped, so callers that need displayable bytes clamp at their end.
- */
-export function linearChannelToSrgb(channel: number): number {
-  return channel <= 0.0031308 ? channel * 12.92 : 1.055 * channel ** (1 / 2.4) - 0.055;
-}
 
 /** TSL: vec3 sRGB-encoded -> linear-sRGB (branchless via step/mix). */
 export function srgbToLinear(srgb: TSLNode): ShaderNodeObject<Node> {
