@@ -16,6 +16,35 @@ Matter is fundamentally a client runtime — it needs `navigator.gpu`, which doe
 - Matter components are always client components.
 - Pages that import them either need `'use client'` themselves, or they need to load Matter via `next/dynamic` with SSR disabled.
 
+That applies to anything reaching the renderer. It does not apply to every export both packages have, which is what the subpaths below are for.
+
+## The three-free subpaths
+
+Some of what Matter ships is plain arithmetic that never touches the GPU: parsing a color string, converting between OKLCH and linear sRGB, asking whether a display can show a color. Those reach `three/webgpu` only because the root entry re-exports the renderer alongside them, so each has a second entry point that doesn't.
+
+| Import from | Instead of | For |
+| --- | --- | --- |
+| `@lovo/matter/color` | `@lovo/matter` | `parseColorString`, the OKLab/OKLCH conversions, the gamut helpers, the sRGB transfer functions |
+| `@lovo/matter-react/gamut` | `@lovo/matter-react` | `useDisplayGamut` |
+| `@lovo/matter-react/poster` | `@lovo/matter-react` | `<ShaderPoster>` |
+
+```tsx
+// Server-renders fine — no path to three.
+import { parseColorString, linearSrgbToOklch } from '@lovo/matter/color'
+
+export default function Swatch({ color }: { color: string }) {
+  const [lightness] = linearSrgbToOklch(...parseColorString(color))
+
+  return <span data-dark={lightness < 0.5}>{color}</span>
+}
+```
+
+The functions are the same ones the root entry exports; the only difference is what comes along with the import. So this is not a reduced or "lite" build — reach for the subpath whenever you need only the scalar half, and keep `ssr: false` for anything that renders a scene.
+
+<Callout>
+  Each subpath is covered by a test that imports it with no DOM present. `three/webgpu` reads `self` at module load, so if three ever creeps back into one of these graphs the import throws and the test fails, rather than the breakage surfacing as a crashed server render.
+</Callout>
+
 ## Next.js — the dynamic import pattern
 
 ```tsx
@@ -101,6 +130,8 @@ To show something in its place, wrap it in `<ShaderPoster>`: the poster stays up
 
 ## What gets server-rendered
 
-If you wrap Matter in `next/dynamic` with `ssr: false`, **nothing** Matter-related ships in the server HTML. That's correct — there's nothing useful to render server-side. The fallback inside `<FallbackBoundary>` is what users see during hydration and on unsupported browsers.
+If you wrap a scene in `next/dynamic` with `ssr: false`, nothing from that subtree ships in the server HTML — which is right, because a canvas has nothing useful to say before it has a GPU. The fallback inside `<FallbackBoundary>` is what users see during hydration and on unsupported browsers.
+
+The subpaths are the exception, and worth remembering when you reach for `ssr: false` reflexively. A page that reads colors with `@lovo/matter/color`, or checks the display gamut with `@lovo/matter-react/gamut`, or shows a `<ShaderPoster>` while the scene loads, renders all of that on the server normally. Only the scene itself has to wait.
 
 If you have SEO-critical content that's currently hidden behind a Matter component, lift it out into the surrounding RSC. Matter is for decoration; the surrounding page is for content.
