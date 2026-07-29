@@ -13,19 +13,25 @@ export type { CursorInputOptions, Vector2 } from './inputs/cursor-input/cursor-i
 export { colorRamp } from './primitives/color-ramp/color-ramp.js';
 export type { ColorRampStop, TSLNode } from './primitives/color-ramp/color-ramp.js';
 
+export { mixColor } from './primitives/color-space/index.js';
+export type { ColorSpace, HueInterpolation } from './primitives/color-space/index.js';
+
+// Re-exported from the ./color subpath, which is where these actually live.
+// Keeping them here means no existing import breaks; new call sites in the docs
+// site are pushed to the subpath by a lint rule in the root eslint config,
+// because reaching color math through this barrel drags in three/webgpu.
 export {
-  mixColor,
-  srgbChannelToLinear,
   linearChannelToSrgb,
-  oklabToLinearSrgb,
-  oklchToLinearSrgb,
-  linearSrgbToOklch,
   linearSrgbToLinearDisplayP3,
+  linearSrgbToOklch,
+  oklabToLinearSrgb,
   oklchInGamut,
   oklchToGamut,
+  oklchToLinearSrgb,
   parseColorString,
-} from './primitives/color-space/index.js';
-export type { ColorSpace, HueInterpolation, OutputGamut } from './primitives/color-space/index.js';
+  srgbChannelToLinear,
+} from './color.js';
+export type { OutputGamut } from './color.js';
 
 export { simplexNoise } from './primitives/noise/noise.js';
 
