@@ -74,7 +74,7 @@ import { parseColorString, linearSrgbToOklch } from '@lovo/matter/color'
 - `linearSrgbToOklch(r, g, b)` → `[l, c, h]`, hue normalized to [0, 360).
 - `linearSrgbToLinearDisplayP3(r, g, b)` → extended linear Display-P3.
 - `oklchInGamut(l, c, h, gamut)` → whether a display of that gamut can show the color.
-- `oklchToGamut(l, c, h, gamut)` → the nearest color it can, found by shedding chroma while holding lightness and hue.
+- `oklchToGamut(l, c, h, gamut)` → `[l, c, h]` in OKLCH. The nearest color the gamut can show, found by shedding chroma while holding lightness and hue unchanged.
 - `srgbChannelToLinear(channel)` / `linearChannelToSrgb(channel)` — the sRGB transfer curve, one channel at a time.
 
 ## Type exports
