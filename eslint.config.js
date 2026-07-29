@@ -163,4 +163,40 @@ export default defineConfig([
       'no-plusplus': 'off',
     },
   },
+  {
+    // The docs site server-renders. Reaching CPU color math through the root
+    // @lovo/matter entry pulls in the renderer, and three/webgpu reads `self`
+    // at module load — so the wrong import crashes at render time, which is far
+    // too late to notice. @lovo/matter/color carries the same functions with no
+    // path to three. Banning the names rather than the specifier is deliberate:
+    // it lets /dev playgrounds keep importing colorRamp and friends from the
+    // root, which is correct, while still catching the scalar functions.
+    files: ['apps/docs/**/*.{ts,tsx}'],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: '@lovo/matter',
+              importNames: [
+                'linearChannelToSrgb',
+                'linearSrgbToLinearDisplayP3',
+                'linearSrgbToOklch',
+                'oklabToLinearSrgb',
+                'oklchInGamut',
+                'oklchToGamut',
+                'oklchToLinearSrgb',
+                'parseColorString',
+                'srgbChannelToLinear',
+              ],
+              allowTypeImports: true,
+              message:
+                "Import CPU color math from '@lovo/matter/color'. The root entry pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
+            },
+          ],
+        },
+      ],
+    },
+  },
 ]);
