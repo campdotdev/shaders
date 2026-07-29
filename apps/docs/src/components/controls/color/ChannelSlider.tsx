@@ -24,7 +24,7 @@ import {
   linearSrgbToLinearDisplayP3,
   oklchInGamut,
   oklchToLinearSrgb,
-} from '@lovo/matter';
+} from '@lovo/matter/color';
 
 import { MAX_CHROMA, type OklchColor } from './oklch';
 

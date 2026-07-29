@@ -2,7 +2,7 @@
 // correction: colors no display can show, and neutral scales drifting off their
 // intended tint. Reads L/C/h back through @lovo/matter's own conversions rather
 // than parsing strings, so the assertions use the same math the renderer does.
-import { linearSrgbToOklch, oklchInGamut, parseColorString } from '@lovo/matter';
+import { linearSrgbToOklch, oklchInGamut, parseColorString } from '@lovo/matter/color';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';

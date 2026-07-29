@@ -8,8 +8,8 @@
  */
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
-import { oklchInGamut, oklchToGamut } from '@lovo/matter';
 import { useDisplayGamut } from '@lovo/matter-react';
+import { oklchInGamut, oklchToGamut } from '@lovo/matter/color';
 
 import { ChannelSlider } from './color/ChannelSlider';
 import { formatOklch, type OklchColor, parseToOklch } from './color/oklch';
