@@ -1,0 +1,75 @@
+---
+title: Color
+description: Interpolation space, output gamut, and wide-gamut input — three separate things that look like one.
+section: guides
+order: 15
+---
+
+# Color
+
+Matter has three color controls that sound related and are not. `colorSpace` decides how two colors blend. `gamut` decides what the framebuffer can hold. Wide-gamut input is neither — it's just what happens when you write a color that sRGB can't express. Most confusion here comes from assuming one of them does another's job.
+
+## `colorSpace` — how colors blend
+
+When a component fades red into blue, something has to decide what sits in the middle. `colorSpace` is that decision, and it changes the result a lot:
+
+- **`oklab`** (the default) is perceptually uniform, so the midpoint looks like the midpoint. Blends stay the same brightness the whole way across.
+- **`linear`** blends raw light. Physically correct, and usually too dark through the middle for a gradient you want people to look at.
+- **`oklch`**, **`lch`**, **`hsl`**, **`hsv`** are cylindrical: they store hue as an angle, so blending travels *around* a wheel rather than straight across. Red to blue through oklch passes through magenta; through oklab it passes through grey-purple.
+
+Six components take it, all defaulting to `oklab`:
+
+| Takes `colorSpace` | Doesn't |
+| --- | --- |
+| `<Aurora>`, `<LinearGradient>`, `<MeshGradient>`, `<SimplexNoise>`, `<Vignette>`, `<WaveLines>` | `<DotField>`, `<Grain>` |
+
+The two without it never blend two colors — there is no midpoint to compute, so the prop would be inert. Adding it for symmetry would be a prop that does nothing.
+
+### `hueInterpolation`
+
+Cylindrical spaces have a second question: which way around the wheel? `hueInterpolation` takes the CSS Color 4 keywords — `shorter` (default), `longer`, `increasing`, `decreasing`. The first two pick an arc by length; the last two pick by direction, which is what keeps a multi-stop ramp marching one way instead of doubling back.
+
+It's on `<Aurora>`, `<LinearGradient>`, `<MeshGradient>`, `<SimplexNoise>`, and `<Vignette>`. `<WaveLines>` takes `colorSpace` but not this one, so its gradients use the default arc.
+
+Rectangular spaces (`linear`, `oklab`) ignore it entirely.
+
+<Callout>
+  `hsl` and `hsv` clamp to sRGB before converting, so they cannot carry a wide-gamut color through a blend. The other four don't clamp. If you're feeding in `oklch()` values outside sRGB, blend in `oklab` or `oklch`.
+</Callout>
+
+## `gamut` — what the output can hold
+
+On `<ShaderScene>`, not on components, because it's a property of the framebuffer everything draws into:
+
+```tsx
+<ShaderScene gamut="auto">
+  <MeshGradient />
+</ShaderScene>
+```
+
+`'auto'` is the default. It queries `(color-gamut: p3)` and re-resolves when the window moves to a different display, so a laptop screen and an external monitor each get what they can show. `'srgb'` and `'p3'` pin it.
+
+Pinning `'p3'` on a display that can't show P3 doesn't give you more color — the hardware clamps at the end regardless. Pinning `'srgb'` on a display that can is the one that costs you something.
+
+## Wide-gamut input
+
+This is the part that needs no props at all. Write a color in `oklch()` or `oklab()` and Matter decodes it to unclamped linear-sRGB, so a color outside the sRGB cube stays outside it, all the way to the framebuffer:
+
+```tsx
+// Greener than sRGB can express. Survives if the output gamut allows it.
+<LinearGradient colors={['oklch(0.86 0.28 142)', 'oklch(0.55 0.2 265)']} />
+```
+
+Hex can't do this — `#rrggbb` has no way to say "outside sRGB." That's the whole reason the palette in this repo is authored in `oklch()`.
+
+## How the three fit together
+
+Think of it as a pipeline, one control per stage:
+
+1. **Input decode** — your color strings become linear-sRGB. Unclamped, so wide-gamut values survive. No prop.
+2. **Blending** — `colorSpace` (and `hueInterpolation`) decide the path between two colors.
+3. **Output** — `gamut` decides what the framebuffer holds, and the display clamps whatever it can't show.
+
+They compose independently. A wide-gamut `oklch()` input blended in `oklab` and written to a `p3` framebuffer is the common case, and none of those three choices constrains the others. Reaching for `colorSpace` to fix a color that looks dull on a wide display is the usual mistake — that's stage 3's job.
+
+For the CPU-side functions behind stage 1 — `parseColorString`, the conversions, the gamut helpers — see [the engine reference](/reference/matter#color-math--lovomattercolor). They import from `@lovo/matter/color` and run on the server.
