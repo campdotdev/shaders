@@ -164,13 +164,17 @@ export default defineConfig([
     },
   },
   {
-    // The docs site server-renders. Reaching CPU color math through the root
-    // @lovo/matter entry pulls in the renderer, and three/webgpu reads `self`
-    // at module load — so the wrong import crashes at render time, which is far
-    // too late to notice. @lovo/matter/color carries the same functions with no
-    // path to three. Banning the names rather than the specifier is deliberate:
-    // it lets /dev playgrounds keep importing colorRamp and friends from the
-    // root, which is correct, while still catching the scalar functions.
+    // The docs site server-renders, and both packages have a root entry that
+    // reaches three/webgpu — the engine's through the renderer, the binding's
+    // through ShaderScene. three/webgpu reads `self` at module load, so the
+    // wrong import crashes at render time, which is far too late to notice.
+    // Each has a three-free subpath carrying the same code: @lovo/matter/color
+    // and @lovo/matter-react/gamut.
+    //
+    // Banning the names rather than the specifiers is deliberate: it lets /dev
+    // playgrounds keep importing colorRamp, ShaderScene and friends from the
+    // roots, which is correct, while still catching the pieces that have a
+    // three-free door.
     files: ['apps/docs/**/*.{ts,tsx}'],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
@@ -193,6 +197,13 @@ export default defineConfig([
               allowTypeImports: true,
               message:
                 "Import CPU color math from '@lovo/matter/color'. The root entry pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
+            },
+            {
+              name: '@lovo/matter-react',
+              importNames: ['useDisplayGamut'],
+              allowTypeImports: true,
+              message:
+                "Import useDisplayGamut from '@lovo/matter-react/gamut'. The root entry re-exports ShaderScene and so pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
             },
           ],
         },
