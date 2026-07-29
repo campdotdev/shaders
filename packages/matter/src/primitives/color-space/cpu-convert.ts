@@ -227,18 +227,21 @@ function functionArgs(input: string, prefix: string): string[] {
 }
 
 /**
- * `#rrggbb` and nothing else. No 3-digit shorthand, and no trailing characters:
- * without the anchors, `#abcdefgh` would slice its first six digits, ignore the
- * rest, and return a perfectly finite wrong color.
+ * `#rrggbb` or `#rrggbbaa`, and nothing else. No 3-digit shorthand, and no
+ * trailing characters: without the anchors, `#abcdefgh` would slice its first
+ * six digits, ignore the rest, and return a perfectly finite wrong color. The
+ * optional trailing pair mirrors how `oklch()`/`oklab()` handle alpha below —
+ * parsed for validation, then dropped, because this function's return type has
+ * no room for a fourth channel.
  */
-const HEX_COLOR = /^[0-9a-fA-F]{6}$/;
+const HEX_COLOR = /^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/;
 
 /**
- * Parse a color string to **extended** linear-sRGB. Accepts `#rrggbb`,
- * `oklab(L a b)`, and `oklch(L C H)` (CSS Color 4 syntax: L/C may be percentages,
- * H may carry a `deg` suffix, an optional `/ alpha` is parsed and dropped).
- * Throws on any other syntax, on components that are not numbers, and on hex
- * that is not exactly six digits.
+ * Parse a color string to **extended** linear-sRGB. Accepts `#rrggbb` and
+ * `#rrggbbaa` (alpha parsed and dropped), `oklab(L a b)`, and `oklch(L C H)`
+ * (CSS Color 4 syntax: L/C may be percentages, H may carry a `deg` suffix, an
+ * optional `/ alpha` is parsed and dropped). Throws on any other syntax, on
+ * components that are not numbers, and on hex that is not six or eight digits.
  */
 export function parseColorString(input: string): [number, number, number] {
   const value = input.trim();
@@ -247,7 +250,7 @@ export function parseColorString(input: string): [number, number, number] {
     const hex = value.slice(1);
 
     if (!HEX_COLOR.test(hex)) {
-      throw new Error(`Invalid hex color: "${input}". Use #rrggbb.`);
+      throw new Error(`Invalid hex color: "${input}". Use #rrggbb or #rrggbbaa.`);
     }
 
     return [

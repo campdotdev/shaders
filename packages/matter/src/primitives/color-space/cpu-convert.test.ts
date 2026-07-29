@@ -83,8 +83,8 @@ describe('parseColorString', () => {
     expect(() => parseColorString('rebeccapurple')).toThrow();
   });
 
-  it('throws on non-numeric oklch() components', () => {
-    expect(() => parseColorString('oklch(abc def ghi)')).toThrow(/Invalid oklch/);
+  it('throws on non-numeric oklch() components, naming the offending string', () => {
+    expect(() => parseColorString('oklch(abc def ghi)')).toThrow(/oklch\(abc def ghi\)/);
   });
 
   it('throws on a non-numeric oklch() hue carrying a deg suffix', () => {
@@ -99,7 +99,14 @@ describe('parseColorString', () => {
     expect(() => parseColorString('#gggggg')).toThrow(/Invalid hex/);
   });
 
-  it('throws on hex longer than six digits rather than silently truncating', () => {
+  it('parses 8-digit hex the same as 6-digit, dropping the alpha pair', () => {
+    const withAlpha = parseColorString('#ff0000ff');
+    const withoutAlpha = parseColorString('#ff0000');
+
+    expect(withAlpha).toEqual(withoutAlpha);
+  });
+
+  it('throws on hex whose digits are not hex even at eight characters', () => {
     expect(() => parseColorString('#abcdefgh')).toThrow(/Invalid hex/);
   });
 
