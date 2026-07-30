@@ -60,6 +60,8 @@ function RadialGradientControls() {
         <SliderInput label="Radius" max={2} min={0.01} path="radius" step={0.01} />
         <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />
         <SliderInput label="Center y" max={1} min={0} path="center.1" step={0.01} />
+        <SliderInput label="Stretch" max={4} min={0.05} path="stretch" step={0.01} />
+        <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
       </Section>
       <Section title="Mixing">
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />

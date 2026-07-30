@@ -16,7 +16,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { clamp, length, uniform, uv, vec2 } from 'three/tsl';
+import { clamp, cos, length, sin, uniform, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
@@ -37,6 +37,17 @@ export interface RadialGradientShaderProps {
    * corners. Accepts a static value or an animation signal.
    */
   radius: AnimatableProp<number>;
+  /**
+   * Squashes the circle into an ellipse. 1 is a circle; above 1 stretches it
+   * wider, below 1 stretches it taller. Accepts a static value or an animation
+   * signal.
+   */
+  stretch: AnimatableProp<number>;
+  /**
+   * Rotation of the ellipse in degrees, counterclockwise. Inert while
+   * `stretch` is 1. Accepts a static value or an animation signal.
+   */
+  angle: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. */
   colorSpace: ColorSpace;
   /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
@@ -48,10 +59,16 @@ export interface RadialGradientShaderProps {
 // look like, without producing a 0/0 NaN at the exact center pixel.
 const MIN_RADIUS = 0.001;
 
+// Guards the divide when stretch reaches 0, where the ellipse would otherwise
+// be infinitely wide.
+const MIN_STRETCH = 0.001;
+
 export function RadialGradientShader({
   stops,
   center,
   radius,
+  stretch,
+  angle,
   colorSpace,
   hueInterpolation,
 }: RadialGradientShaderProps) {
@@ -71,6 +88,8 @@ export function RadialGradientShader({
   // rebuilding the shader. useAnimatableUniform keeps it current whether the
   // prop is a plain number or an animation signal.
   const radiusUniform = useAnimatableUniform<number>(radius);
+  const stretchUniform = useAnimatableUniform<number>(stretch);
+  const angleUniform = useAnimatableUniform<number>(angle);
 
   // ---------------------------------------------
   // Stable vectors the prop effects write into
@@ -146,6 +165,28 @@ export function RadialGradientShader({
     // out wide on a wide canvas.
     const corrected = vec2(centered.x.mul(aspectNode), centered.y);
 
+    // Rotate the sampled point by MINUS the angle. Rotating the point
+    // backwards is how you rotate the shape forwards: each pixel asks "where
+    // would I be if the ellipse were axis-aligned?", the squash below answers
+    // in that convenient frame, and the result reads as an ellipse tilted by
+    // +angle. Doing it the other way round would do nothing at all — rotation
+    // preserves length, so a rotation applied after the squash cancels out
+    // entirely by the time length() runs. Degrees go in because that is what
+    // the prop takes; radians are what the trig wants.
+    const angleRadians = angleUniform.mul(Math.PI / 180);
+    const angleCos = cos(angleRadians);
+    const angleSin = sin(angleRadians);
+    const rotated = vec2(
+      corrected.x.mul(angleCos).add(corrected.y.mul(angleSin)),
+      corrected.y.mul(angleCos).sub(corrected.x.mul(angleSin)),
+    );
+
+    // Dividing x by stretch means a pixel has to sit further out horizontally
+    // to reach the same measured distance, so above 1 the shape reaches wider
+    // and below 1 it pinches in and reads as taller. The axis this acts along
+    // is the ellipse's LONG one only when stretch is above 1.
+    const shaped = vec2(rotated.x.div(stretchUniform.max(MIN_STRETCH)), rotated.y);
+
     // Distance from the canvas center to a corner, in those same corrected
     // units. Dividing by it is what makes radius 1 mean "the ramp finishes
     // exactly at the corners" on any canvas shape, instead of meaning a raw
@@ -160,7 +201,7 @@ export function RadialGradientShader({
     // but being explicit here is load-bearing once repeat arrives in Task 3,
     // because an unclamped value would fold back into the ramp instead.
     const gradientCoord = clamp(
-      length(corrected).div(halfDiagonal).div(radiusUniform.max(MIN_RADIUS)),
+      length(shaped).div(halfDiagonal).div(radiusUniform.max(MIN_RADIUS)),
       0,
       1,
     );
@@ -199,6 +240,8 @@ export function RadialGradientShader({
     shaderContext,
     stopsKey,
     radiusUniform,
+    stretchUniform,
+    angleUniform,
     centerUniform,
     aspectNode,
     colorSpace,

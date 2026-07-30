@@ -33,6 +33,19 @@ export interface RadialGradientProps {
    * Defaults to 1. Accepts a static value or an animation signal.
    */
   radius?: AnimatableProp<number>;
+  /**
+   * Squashes the circle into an ellipse. 1 is a circle; above 1 stretches it
+   * wider, below 1 stretches it taller. Defaults to 1. Accepts a static value
+   * or an animation signal.
+   */
+  stretch?: AnimatableProp<number>;
+  /**
+   * Rotation of the ellipse in degrees, counterclockwise. At 0 `stretch` acts
+   * horizontally, at 90 it acts vertically. Has no visible effect while
+   * `stretch` is 1, because a circle looks the same at every angle. Defaults
+   * to 0. Accepts a static value or an animation signal.
+   */
+  angle?: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. Defaults to `'oklab'`. */
   colorSpace?: ColorSpace;
   /**
@@ -57,16 +70,20 @@ export function RadialGradient({
   stops = DEFAULT_STOPS,
   center = [0.5, 0.5],
   radius = 1,
+  stretch = 1,
+  angle = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
 }: RadialGradientProps) {
   return (
     <RadialGradientShader
+      angle={angle}
       center={center}
       colorSpace={colorSpace}
       hueInterpolation={hueInterpolation}
       radius={radius}
       stops={stops}
+      stretch={stretch}
     />
   );
 }
