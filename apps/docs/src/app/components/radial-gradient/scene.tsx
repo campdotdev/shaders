@@ -23,12 +23,14 @@ export default function RadialGradientScene({
   return (
     <ShaderScene>
       <RadialGradient
+        angle={params.angle}
         center={params.center}
         colorSpace={params.colorSpace}
         hueInterpolation={params.hueInterpolation}
         key={remountKey}
         radius={params.radius}
         stops={params.stops}
+        stretch={params.stretch}
       />
       {children}
     </ShaderScene>
