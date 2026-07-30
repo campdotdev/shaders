@@ -9,6 +9,8 @@ import { useEffect, useMemo } from 'react';
 
 import { uniform } from 'three/tsl';
 
+import { useShaderContext } from '../use-shader-context/use-shader-context.js';
+
 export interface AnimatableSignal<T> {
   get(): T;
   on(event: 'change', cb: (value: T) => void): () => void;
@@ -31,6 +33,11 @@ const isSignal = <T>(value: AnimatableProp<T>): value is AnimatableSignal<T> => 
 };
 
 export function useAnimatableUniform<T>(value: AnimatableProp<T>): ReturnType<typeof uniform<T>> {
+  // Null outside a mounted <ShaderScene> (Mode 2, or a bare unit test), in
+  // which case there is no scheduler to poke and the writes below are all
+  // this hook does.
+  const shaderContext = useShaderContext();
+
   // Created once and NEVER replaced: materials capture this node when they
   // compile, so its identity has to survive re-renders — a fresh uniform per
   // render would force a material rebuild every time.
@@ -45,18 +52,28 @@ export function useAnimatableUniform<T>(value: AnimatableProp<T>): ReturnType<ty
   // subscription — writes go straight to uniformNode.value with no React
   // re-render, which is what makes 60Hz animation cheap. Static values are
   // pushed once per prop change.
+  //
+  // Every write is followed by a scheduler poke, because the scene renders on
+  // demand. A component that has voted itself static — a gradient at speed 0,
+  // say — parks the frame loop, and then a bare uniform write reaches the GPU
+  // and is never drawn: the new value sits there until something else happens
+  // to trigger a frame. Dragging a slider would change the number and repaint
+  // nothing. requestRender() returns immediately unless the scheduler really
+  // is idle, so a scene that is already animating pays one property read.
   useEffect(() => {
-    if (isSignal(value)) {
-      const unsub = value.on('change', (next) => {
-        uniformNode.value = next;
-      });
+    const scheduler = shaderContext?.scheduler;
 
-      return unsub;
+    if (isSignal(value)) {
+      return value.on('change', (next) => {
+        uniformNode.value = next;
+        scheduler?.requestRender();
+      });
     }
     uniformNode.value = value;
+    scheduler?.requestRender();
 
     return undefined;
-  }, [value, uniformNode]);
+  }, [shaderContext, value, uniformNode]);
 
   return uniformNode;
 }
