@@ -120,6 +120,24 @@
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["uv", "vec2", "vec3", "vec4", "mix", "smoothstep", "length", "uniform"],
       "tier": 1
+    },
+    "radial-gradient": {
+      "file": "radial-gradient/radial-gradient.tsx",
+      "description": "A color ramp radiating from a point, with an elliptical shape control and seamless repeating rings. The radial counterpart to LinearGradient.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": [
+        "colorRamp",
+        "clamp",
+        "cos",
+        "sin",
+        "fract",
+        "length",
+        "uv",
+        "vec2",
+        "elapsedTime",
+        "uniform"
+      ],
+      "tier": 1
     }
   }
 }

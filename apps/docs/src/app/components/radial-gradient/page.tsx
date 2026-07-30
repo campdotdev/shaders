@@ -21,6 +21,7 @@ import {
   SliderInput,
   useSnapshot,
 } from '@/components/controls';
+import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { INITIAL, MAX_STOPS, MIN_STOPS } from './params';
@@ -47,9 +48,14 @@ function RadialGradientDemo() {
   const params = useSnapshot<Params>();
 
   return (
-    <RadialGradientScene params={params}>
-      <VisualTestPause />
-    </RadialGradientScene>
+    <DemoPoster
+      alt="Radial gradient shader preview: a pink core fading through purple into deep blue at the edges"
+      src="/posters/radial-gradient.jpg"
+    >
+      <RadialGradientScene params={params}>
+        <VisualTestPause />
+      </RadialGradientScene>
+    </DemoPoster>
   );
 }
 

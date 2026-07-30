@@ -4,6 +4,7 @@ import { expect, test } from '@playwright/test';
 const routes = [
   '/',
   '/components/linear-gradient',
+  '/components/radial-gradient',
   '/components/mesh-gradient',
   '/components/aurora',
   '/components/dot-field',
