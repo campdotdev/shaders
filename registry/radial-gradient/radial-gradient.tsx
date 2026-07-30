@@ -53,6 +53,12 @@ export interface RadialGradientProps {
    * static value or an animation signal.
    */
   repeat?: AnimatableProp<number>;
+  /**
+   * How fast the ramp drifts outward from the center. 0 holds it still.
+   * Combined with `repeat` above 1 this reads as rings travelling outward.
+   * Defaults to 0. Accepts a static value or an animation signal.
+   */
+  speed?: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. Defaults to `'oklab'`. */
   colorSpace?: ColorSpace;
   /**
@@ -62,15 +68,17 @@ export interface RadialGradientProps {
   hueInterpolation?: HueInterpolation;
 }
 
-// A warm sunset. The three hues sit 30 degrees apart (amber 85 -> orange 55 ->
-// red 25), close enough on the wheel that the in-between colors stay saturated
-// instead of washing toward gray, and each stop is at least 0.15 darker than
-// the one before it in OKLCH lightness — depth comes from the lightness drop,
-// not the hue walk.
+// A hot pink core cooling through purple into deep blue. The hues walk one
+// direction around the wheel (344 -> 320 -> 266) and stay on the same side of
+// it, so no pair is complementary and the blended midpoints keep their chroma
+// instead of washing toward gray. Depth comes from the lightness drop —
+// 0.720 -> 0.460 -> 0.303 in OKLCH, each step well past the 0.10 minimum —
+// rather than from the hue walk. This mirrors the linear gradient's default,
+// which shares the purple middle stop and travels the other way.
 const DEFAULT_STOPS: ColorStop[] = [
-  { color: 'oklch(0.720 0.164 85)' }, // paletteOklch.amber[9]
-  { color: 'oklch(0.460 0.109 55)' }, // paletteOklch.orange[6]
-  { color: 'oklch(0.303 0.090 25)' }, // paletteOklch.red[3]
+  { color: 'oklch(0.720 0.281 343.895)' }, // paletteOklch.magenta[9]
+  { color: 'oklch(0.460 0.211 320)' }, // paletteOklch.purple[6]
+  { color: 'oklch(0.303 0.152 265.847)' }, // paletteOklch.blue[3]
 ];
 
 export function RadialGradient({
@@ -80,6 +88,7 @@ export function RadialGradient({
   stretch = 1,
   angle = 0,
   repeat = 1,
+  speed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
 }: RadialGradientProps) {
@@ -91,6 +100,7 @@ export function RadialGradient({
       hueInterpolation={hueInterpolation}
       radius={radius}
       repeat={repeat}
+      speed={speed}
       stops={stops}
       stretch={stretch}
     />

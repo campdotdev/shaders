@@ -30,6 +30,7 @@ export default function RadialGradientScene({
         key={remountKey}
         radius={params.radius}
         repeat={params.repeat}
+        speed={params.speed}
         stops={params.stops}
         stretch={params.stretch}
       />

@@ -56,6 +56,9 @@ function RadialGradientDemo() {
 function RadialGradientControls() {
   return (
     <ControlPanel copyConfig={COPY_CONFIG} title="<RadialGradient>">
+      <Section title="Motion">
+        <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
+      </Section>
       <Section title="Shape">
         <SliderInput label="Radius" max={2} min={0.01} path="radius" step={0.01} />
         <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />

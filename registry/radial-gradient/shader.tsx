@@ -8,7 +8,7 @@
 // a color from the ramp.
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, type HueInterpolation } from '@lovo/matter';
+import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -56,6 +56,11 @@ export interface RadialGradientShaderProps {
    * animation signal.
    */
   repeat: AnimatableProp<number>;
+  /**
+   * How fast the ramp drifts outward from the center. 0 holds it still.
+   * Accepts a static value or an animation signal.
+   */
+  speed: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. */
   colorSpace: ColorSpace;
   /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
@@ -77,8 +82,10 @@ const MIN_STRETCH = 0.001;
 // this beats a plain fract() is the fold: fract() would snap the last stop
 // straight back to the first at every ring boundary, a hard seam for any
 // palette whose ends differ, whereas this runs the ramp back out the way it
-// came. On 0..1 it is exactly the identity, which is what makes repeat 1 a
-// true no-op.
+// came. On 0..1 it reduces to the identity, which is what makes repeat 1 a
+// no-op — exactly so in real arithmetic, and to within one ulp on the GPU,
+// where the two subtractions each round (measured: one pixel in 153,600
+// differing by 1 of 255).
 const pingPong = (value: ShaderNodeObject<Node>): ShaderNodeObject<Node> =>
   fract(value.mul(0.5)).mul(2).sub(1).abs().oneMinus();
 
@@ -89,15 +96,20 @@ export function RadialGradientShader({
   stretch,
   angle,
   repeat,
+  speed,
   colorSpace,
   hueInterpolation,
 }: RadialGradientShaderProps) {
   const shaderContext = useShaderContext();
 
-  // Nothing in this phase moves on its own, so the scene's frame scheduler can
-  // park instead of re-rendering an unchanging image. Task 4 replaces this
-  // with a speed-aware version.
-  useStaticSceneHint(true);
+  // A literal speed of 0 means nothing on screen ever changes (an animation
+  // signal might move later, so it doesn't count). Telling the scene lets its
+  // frame scheduler go idle instead of re-rendering an unchanging image. A
+  // signal on any of the dials still shows up: every uniform write pokes the
+  // scheduler, so an idle scene wakes for exactly the frames a signal ticks.
+  const isStatic = typeof speed === 'number' && speed === 0;
+
+  useStaticSceneHint(isStatic);
 
   // Content fingerprint of the stops array (colors + positions). The build
   // effect below keys on this string, so a re-render that passes a new array
@@ -111,6 +123,7 @@ export function RadialGradientShader({
   const stretchUniform = useAnimatableUniform<number>(stretch);
   const angleUniform = useAnimatableUniform<number>(angle);
   const repeatUniform = useAnimatableUniform<number>(repeat);
+  const speedUniform = useAnimatableUniform<number>(speed);
 
   // ---------------------------------------------
   // Stable vectors the prop effects write into
@@ -156,8 +169,8 @@ export function RadialGradientShader({
     return resize.on('change', ([updatedWidth, updatedHeight]) => {
       if (updatedWidth > 0 && updatedHeight > 0) {
         aspectNode.value = updatedWidth / updatedHeight;
-        // The scene is hinted static, so a resize would update the uniform and
-        // never repaint without this.
+        // At speed 0 the scene is hinted static, so without this poke a
+        // resize would update the uniform and never repaint.
         shaderContext?.scheduler.requestRender();
       }
     });
@@ -232,7 +245,15 @@ export function RadialGradientShader({
     // load-bearing: an unclamped value would let the region beyond `radius`
     // fold back into the ramp instead of holding the last stop, which would
     // change the picture even at repeat 1.
-    const rampCoord = pingPong(gradientCoord.mul(repeatUniform));
+    //
+    // Subtracting time slides the pattern outward — a given ramp value has to
+    // sit further from the center as the clock advances, the same convention
+    // DotField's ripple uses. No gate is needed around the animation the way
+    // LinearGradient needs one: its animated form is a cosine that differs
+    // from its static form, so a zero speed would still bend the ramp, whereas
+    // here the triangle IS the static form and the time term multiplies out to
+    // nothing at speed 0.
+    const rampCoord = pingPong(gradientCoord.mul(repeatUniform).sub(elapsedTime.mul(speedUniform)));
 
     // An unlit material whose per-pixel color comes from colorNode (a node
     // graph compiled to GPU code) — colorRamp maps the 0..1 coordinate to a
@@ -271,6 +292,7 @@ export function RadialGradientShader({
     stretchUniform,
     angleUniform,
     repeatUniform,
+    speedUniform,
     centerUniform,
     aspectNode,
     colorSpace,
