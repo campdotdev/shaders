@@ -46,6 +46,13 @@ export interface RadialGradientProps {
    * to 0. Accepts a static value or an animation signal.
    */
   angle?: AnimatableProp<number>;
+  /**
+   * How many times the ramp runs between the center and `radius`. 1 is a
+   * single pass; above 1 gives concentric rings. The ramp reverses on each
+   * pass, so ring boundaries never show a hard seam. Defaults to 1. Accepts a
+   * static value or an animation signal.
+   */
+  repeat?: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. Defaults to `'oklab'`. */
   colorSpace?: ColorSpace;
   /**
@@ -72,6 +79,7 @@ export function RadialGradient({
   radius = 1,
   stretch = 1,
   angle = 0,
+  repeat = 1,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
 }: RadialGradientProps) {
@@ -82,6 +90,7 @@ export function RadialGradient({
       colorSpace={colorSpace}
       hueInterpolation={hueInterpolation}
       radius={radius}
+      repeat={repeat}
       stops={stops}
       stretch={stretch}
     />

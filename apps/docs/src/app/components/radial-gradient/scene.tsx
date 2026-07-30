@@ -29,6 +29,7 @@ export default function RadialGradientScene({
         hueInterpolation={params.hueInterpolation}
         key={remountKey}
         radius={params.radius}
+        repeat={params.repeat}
         stops={params.stops}
         stretch={params.stretch}
       />

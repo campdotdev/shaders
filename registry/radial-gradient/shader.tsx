@@ -16,7 +16,9 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { clamp, cos, length, sin, uniform, uv, vec2 } from 'three/tsl';
+import type { ShaderNodeObject } from 'three/tsl';
+import { clamp, cos, fract, length, sin, uniform, uv, vec2 } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
@@ -48,6 +50,12 @@ export interface RadialGradientShaderProps {
    * `stretch` is 1. Accepts a static value or an animation signal.
    */
   angle: AnimatableProp<number>;
+  /**
+   * How many times the ramp runs between the center and `radius`. 1 is a
+   * single pass; above 1 gives concentric rings. Accepts a static value or an
+   * animation signal.
+   */
+  repeat: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. */
   colorSpace: ColorSpace;
   /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
@@ -63,12 +71,24 @@ const MIN_RADIUS = 0.001;
 // be infinitely wide.
 const MIN_STRETCH = 0.001;
 
+// Triangle wave, period 2, running 0 -> 1 -> 0. fract(x/2) ramps 0..1 across
+// two units; doubling and subtracting 1 turns that into -1..1; abs() folds the
+// negative half up into a V; oneMinus() turns the V into a peak. The reason
+// this beats a plain fract() is the fold: fract() would snap the last stop
+// straight back to the first at every ring boundary, a hard seam for any
+// palette whose ends differ, whereas this runs the ramp back out the way it
+// came. On 0..1 it is exactly the identity, which is what makes repeat 1 a
+// true no-op.
+const pingPong = (value: ShaderNodeObject<Node>): ShaderNodeObject<Node> =>
+  fract(value.mul(0.5)).mul(2).sub(1).abs().oneMinus();
+
 export function RadialGradientShader({
   stops,
   center,
   radius,
   stretch,
   angle,
+  repeat,
   colorSpace,
   hueInterpolation,
 }: RadialGradientShaderProps) {
@@ -90,6 +110,7 @@ export function RadialGradientShader({
   const radiusUniform = useAnimatableUniform<number>(radius);
   const stretchUniform = useAnimatableUniform<number>(stretch);
   const angleUniform = useAnimatableUniform<number>(angle);
+  const repeatUniform = useAnimatableUniform<number>(repeat);
 
   // ---------------------------------------------
   // Stable vectors the prop effects write into
@@ -206,12 +227,19 @@ export function RadialGradientShader({
       1,
     );
 
+    // Multiplying by repeat runs the ramp that many times before the radius.
+    // gradientCoord is already clamped to 0..1, and that ordering is
+    // load-bearing: an unclamped value would let the region beyond `radius`
+    // fold back into the ramp instead of holding the last stop, which would
+    // change the picture even at repeat 1.
+    const rampCoord = pingPong(gradientCoord.mul(repeatUniform));
+
     // An unlit material whose per-pixel color comes from colorNode (a node
     // graph compiled to GPU code) — colorRamp maps the 0..1 coordinate to a
     // color, interpolating between stops in the chosen color space.
     const material = new MeshBasicNodeMaterial();
 
-    material.colorNode = colorRamp(gradientCoord, rampStops, colorSpace, hueInterpolation);
+    material.colorNode = colorRamp(rampCoord, rampStops, colorSpace, hueInterpolation);
 
     // A 2x2 plane exactly fills ShaderScene's camera view (-1..1 across both
     // axes), so the gradient covers the whole canvas.
@@ -242,6 +270,7 @@ export function RadialGradientShader({
     radiusUniform,
     stretchUniform,
     angleUniform,
+    repeatUniform,
     centerUniform,
     aspectNode,
     colorSpace,
