@@ -22,6 +22,12 @@ fi
 # name:format[:background] pairs (png for the flat shaders, jpg for the busy
 # ones; background is optional and only needed for shaders with a transparent
 # base layer, e.g. aurora, so they flatten onto a sensible color)
+#
+# radial-gradient is the exception to "flat means png": PNG's row filters
+# predict each pixel from its left and upper neighbours, which crushes a linear
+# gradient (every row identical, 35 KB) but does almost nothing for a radial one
+# (every row different, 1.3 MB). JPEG lands at 36 KB with no banding visible at
+# poster size.
 for pair in \
   "linear-gradient:png" \
   "simplex-noise:png" \
@@ -30,7 +36,8 @@ for pair in \
   "mesh-gradient:jpg" \
   "wave-lines:jpg" \
   "vignette:jpg" \
-  "dot-field:png"; do
+  "dot-field:png" \
+  "radial-gradient:jpg"; do
   name="${pair%%:*}"
   rest="${pair#*:}"
   format="${rest%%:*}"
