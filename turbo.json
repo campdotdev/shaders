@@ -4,6 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": ["INCLUDE_DEV_ROUTES"],
       "outputs": ["dist/**", ".next/**", "out/**", ".turbo/**"]
     },
     "dev": {
