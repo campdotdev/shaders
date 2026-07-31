@@ -123,7 +123,7 @@
     },
     "radial-gradient": {
       "file": "radial-gradient/radial-gradient.tsx",
-      "description": "A color ramp radiating from a point, with an elliptical shape control and seamless repeating rings. The radial counterpart to LinearGradient.",
+      "description": "A color ramp radiating from a point, with an elliptical shape control and repeating concentric rings. The radial counterpart to LinearGradient.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "colorRamp",

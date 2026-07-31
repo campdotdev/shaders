@@ -48,9 +48,10 @@ export interface RadialGradientProps {
   angle?: AnimatableProp<number>;
   /**
    * How many times the ramp runs between the center and `radius`. 1 is a
-   * single pass; above 1 gives concentric rings. The ramp reverses on each
-   * pass, so ring boundaries never show a hard seam. Defaults to 1. Accepts a
-   * static value or an animation signal.
+   * single pass; above 1 gives concentric rings. Each ring runs the stops in
+   * the same direction and then snaps back to the first, so unless your first
+   * and last stop match you get a visible edge at every ring boundary.
+   * Defaults to 1. Accepts a static value or an animation signal.
    */
   repeat?: AnimatableProp<number>;
   /**
