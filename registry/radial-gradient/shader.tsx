@@ -16,9 +16,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import type { ShaderNodeObject } from 'three/tsl';
-import { clamp, cos, fract, length, sin, uniform, uv, vec2 } from 'three/tsl';
-import type { Node } from 'three/webgpu';
+import { clamp, cos, fract, length, mix, sin, step, uniform, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
@@ -52,8 +50,9 @@ export interface RadialGradientShaderProps {
   angle: AnimatableProp<number>;
   /**
    * How many times the ramp runs between the center and `radius`. 1 is a
-   * single pass; above 1 gives concentric rings. Accepts a static value or an
-   * animation signal.
+   * single pass; above 1 gives concentric rings, each running the stops in the
+   * same direction and snapping back to the first at its outer edge. Accepts a
+   * static value or an animation signal.
    */
   repeat: AnimatableProp<number>;
   /**
@@ -75,19 +74,6 @@ const MIN_RADIUS = 0.001;
 // Guards the divide when stretch reaches 0, where the ellipse would otherwise
 // be infinitely wide.
 const MIN_STRETCH = 0.001;
-
-// Triangle wave, period 2, running 0 -> 1 -> 0. fract(x/2) ramps 0..1 across
-// two units; doubling and subtracting 1 turns that into -1..1; abs() folds the
-// negative half up into a V; oneMinus() turns the V into a peak. The reason
-// this beats a plain fract() is the fold: fract() would snap the last stop
-// straight back to the first at every ring boundary, a hard seam for any
-// palette whose ends differ, whereas this runs the ramp back out the way it
-// came. On 0..1 it reduces to the identity, which is what makes repeat 1 a
-// no-op — exactly so in real arithmetic, and to within one ulp on the GPU,
-// where the two subtractions each round (measured: one pixel in 153,600
-// differing by 1 of 255).
-const pingPong = (value: ShaderNodeObject<Node>): ShaderNodeObject<Node> =>
-  fract(value.mul(0.5)).mul(2).sub(1).abs().oneMinus();
 
 export function RadialGradientShader({
   stops,
@@ -240,20 +226,29 @@ export function RadialGradientShader({
       1,
     );
 
-    // Multiplying by repeat runs the ramp that many times before the radius.
-    // gradientCoord is already clamped to 0..1, and that ordering is
-    // load-bearing: an unclamped value would let the region beyond `radius`
-    // fold back into the ramp instead of holding the last stop, which would
-    // change the picture even at repeat 1.
+    // Multiplying by repeat and taking the fractional part turns the 0..1
+    // coordinate into that many sweeps of the ramp, each running the first stop
+    // to the last and then snapping back. The snap is a real hard edge unless
+    // the palette's ends happen to match, and that is the intended look here:
+    // rings that read as the gradient repeated, rather than mirrored bands.
     //
     // Subtracting time slides the pattern outward — a given ramp value has to
     // sit further from the center as the clock advances, the same convention
     // DotField's ripple uses. No gate is needed around the animation the way
-    // LinearGradient needs one: its animated form is a cosine that differs
-    // from its static form, so a zero speed would still bend the ramp, whereas
-    // here the triangle IS the static form and the time term multiplies out to
+    // LinearGradient needs one: its animated form is a cosine that differs from
+    // its static form, so a zero speed would still bend the ramp, whereas here
+    // the sawtooth IS the static form and the time term multiplies out to
     // nothing at speed 0.
-    const rampCoord = pingPong(gradientCoord.mul(repeatUniform).sub(elapsedTime.mul(speedUniform)));
+    const swept = fract(gradientCoord.mul(repeatUniform).sub(elapsedTime.mul(speedUniform)));
+
+    // Past the radius the clamp above pins gradientCoord at exactly 1, where
+    // fract() returns 0 — which would flood everything outside the radius with
+    // the FIRST stop instead of the last, contradicting what `radius` promises
+    // when it is below 1. Holding 1 out there fixes that, and it also makes the
+    // whole expression collapse to gradientCoord at repeat 1: fract(x) is
+    // exactly x for x in 0..1, so the prop is a bit-exact no-op rather than an
+    // approximate one.
+    const rampCoord = mix(swept, 1, step(1, gradientCoord));
 
     // An unlit material whose per-pixel color comes from colorNode (a node
     // graph compiled to GPU code) — colorRamp maps the 0..1 coordinate to a
