@@ -66,9 +66,14 @@ export interface RadialGradientShaderProps {
   hueInterpolation: HueInterpolation;
 }
 
-// Guards the divide when radius reaches 0. Small enough that radius 0 reads as
-// "the whole canvas is the last color", which is what a zero radius should
-// look like, without producing a 0/0 NaN at the exact center pixel.
+// Floors both sides of the radius divide below. On the denominator it keeps a
+// radius of 0 from dividing by zero; on the numerator it keeps the exact center
+// pixel, where the measured distance is 0, from turning that into 0/0. Using
+// one constant for both works because they are in the same units (1 = the
+// canvas corner), and it is what makes radius 0 read as "the whole canvas is
+// the last color" at the center too, not just around it — the ratio bottoms out
+// at exactly 1 instead of 0. Small enough that at any normal radius the floor
+// only touches a sub-pixel disk at the center.
 const MIN_RADIUS = 0.001;
 
 // Guards the divide when stretch reaches 0, where the ellipse would otherwise
@@ -216,12 +221,15 @@ export function RadialGradientShader({
     const halfDiagonal = length(vec2(aspectNode.mul(0.5), 0.5));
 
     // 0 at the center, 1 at the corners, then divided by the radius dial so a
-    // smaller radius finishes the ramp sooner. Clamping holds the last stop
-    // everywhere past the radius — the same thing colorRamp does on its own,
-    // but being explicit here is load-bearing once repeat arrives in Task 3,
-    // because an unclamped value would fold back into the ramp instead.
+    // smaller radius finishes the ramp sooner. Both sides of that divide are
+    // floored at MIN_RADIUS, so a radius of 0 lands on 1 across the whole
+    // canvas rather than leaving a one-pixel ramp stranded at the center.
+    // Clamping holds the last stop everywhere past the radius — the same thing
+    // colorRamp does on its own, but being explicit here is load-bearing for
+    // the repeat below, which would otherwise fold the overhang back into the
+    // ramp instead of leaving it pinned.
     const gradientCoord = clamp(
-      length(shaped).div(halfDiagonal).div(radiusUniform.max(MIN_RADIUS)),
+      length(shaped).div(halfDiagonal).max(MIN_RADIUS).div(radiusUniform.max(MIN_RADIUS)),
       0,
       1,
     );
