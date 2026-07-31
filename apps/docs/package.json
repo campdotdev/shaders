@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev -p 3000",
+    "dev": "INCLUDE_DEV_ROUTES=1 next dev -p 3000",
     "build": "next build && pagefind --site out",
     "preview": "serve out -p 3000",
     "typecheck": "tsc --noEmit",

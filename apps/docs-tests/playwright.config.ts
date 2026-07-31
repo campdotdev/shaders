@@ -17,8 +17,13 @@ export default defineConfig({
     trace: 'on-first-retry',
   },
   webServer: {
+    // INCLUDE_DEV_ROUTES makes next.config.ts treat `page.dev.tsx` as a page,
+    // which is how the four probes under app/dev reach the router. Four visual
+    // specs render against them, and this builds the production bundle rather
+    // than running the dev server, so without the flag those specs 404. The
+    // deploy build omits it, which is the point — see next.config.ts.
     command:
-      'pnpm turbo run build --filter=@matter/docs --force && pnpm --filter @matter/docs preview',
+      'INCLUDE_DEV_ROUTES=1 pnpm turbo run build --filter=@matter/docs --force && pnpm --filter @matter/docs preview',
     url: 'http://localhost:3000',
     reuseExistingServer: !process.env.CI,
     timeout: 180_000,
