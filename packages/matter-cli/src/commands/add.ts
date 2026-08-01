@@ -3,7 +3,7 @@
 // download it, rewrite its import specifiers for the user's project (see
 // transforms/rewriteImports), write it into componentsDir, and finish by
 // listing the npm packages the component needs.
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 
 import { readMatterConfig, resolveRegistryUrl } from '../config/matterConfig.js';
@@ -87,7 +87,10 @@ export async function runAdd(
   for (const file of planned) {
     const existing = await readFileIfExists(file.targetPath);
 
-    if (existing === file.contents) continue;
+    // Compare on content, not bytes. A Windows checkout with core.autocrlf
+    // turns the CLI's own LF into CRLF, and that is the same file, not an edit
+    // the user needs to be warned about.
+    if (existing !== null && sameText(existing, file.contents)) continue;
     if (existing !== null && opts.force !== true) {
       throw new Error(
         `${file.targetPath} already exists and differs from the registry copy. Pass --force to overwrite.`,
@@ -97,8 +100,31 @@ export async function runAdd(
     toWrite.push(file);
   }
 
-  for (const { targetPath, contents } of toWrite) {
+  // Create the directories, then check containment a second time against the
+  // paths the filesystem actually resolves to. The check above is lexical, and
+  // a symlink already sitting inside componentsDir points somewhere it can't
+  // see — `<componentsDir>/utils` linked to /etc is textually well inside. Both
+  // passes run before any write, so a refusal still leaves no partial copy.
+  for (const { targetPath } of toWrite) {
     await mkdir(dirname(targetPath), { recursive: true });
+  }
+  if (toWrite.length > 0) {
+    // componentsRoot may itself be a symlink the user set up deliberately, so
+    // compare real paths against a real root rather than the lexical one.
+    const realRoot = await realpath(componentsRoot);
+
+    for (const { targetPath } of toWrite) {
+      const realParent = await realpath(dirname(targetPath));
+
+      if (realParent !== realRoot && !realParent.startsWith(realRoot + sep)) {
+        throw new Error(
+          `${targetPath} resolves through a link to ${realParent}, outside ${realRoot}. Refusing to write it.`,
+        );
+      }
+    }
+  }
+
+  for (const { targetPath, contents } of toWrite) {
     await writeFile(targetPath, contents, 'utf-8');
     io.log(`Wrote ${targetPath}`);
   }
@@ -132,6 +158,11 @@ function resolveComponent(
   }
 
   return { slug, entry };
+}
+
+/** Equal ignoring line-ending style. */
+function sameText(left: string, right: string): boolean {
+  return left.replaceAll('\r\n', '\n') === right.replaceAll('\r\n', '\n');
 }
 
 /** Current contents of a file, or null when it isn't there yet. */

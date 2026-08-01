@@ -1,4 +1,4 @@
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -222,6 +222,48 @@ describe('runAdd (multi-file components)', () => {
     ).rejects.toThrow(/escaped\.tsx.*outside/s);
 
     await rm(inlineDir, { recursive: true, force: true });
+  });
+
+  it('treats a file differing only in line endings as unchanged', async () => {
+    await seedConfig();
+    const base = join(dir, 'src/components/matter');
+
+    await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
+
+    // What git hands a Windows checkout with core.autocrlf=true. Same file.
+    const asWritten = await readFile(join(base, 'utils/color.ts'), 'utf-8');
+
+    await writeFile(join(base, 'utils/color.ts'), asWritten.replaceAll('\n', '\r\n'), 'utf-8');
+
+    await runAdd(['sibling-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
+
+    expect(await readFile(join(base, 'sibling-component/shader.tsx'), 'utf-8')).toContain(
+      'SiblingShader',
+    );
+    // Skipped, so the user's line endings survive untouched.
+    expect(await readFile(join(base, 'utils/color.ts'), 'utf-8')).toContain('\r\n');
+  });
+
+  it('refuses to write through a symlink that escapes componentsDir', async () => {
+    await seedConfig();
+    const base = join(dir, 'src/components/matter');
+    const outside = join(dir, 'outside');
+
+    await mkdir(outside, { recursive: true });
+    await mkdir(base, { recursive: true });
+    // A directory inside componentsDir that really lives elsewhere. The
+    // resolve() check can't see this — the path is lexically well inside.
+    await symlink(outside, join(base, 'utils'), 'dir');
+
+    await expect(
+      runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() }),
+    ).rejects.toThrow(/outside/);
+
+    await expect(readFile(join(outside, 'color.ts'), 'utf-8')).rejects.toThrow(/ENOENT/);
+    // Refused before anything landed, same as the other collision paths.
+    await expect(
+      readFile(join(base, 'nested-component/nested-component.tsx'), 'utf-8'),
+    ).rejects.toThrow(/ENOENT/);
   });
 
   it('overwrites a diverged file with --force', async () => {
