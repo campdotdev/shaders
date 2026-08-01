@@ -147,9 +147,11 @@ describe('runAdd (multi-file components)', () => {
       },
     );
 
+    // Logged paths use the OS separator, so build the expected tail the same way.
+    const sharedFile = join('utils', 'color.ts');
     const written = log.mock.calls
       .map((call) => call[0] as string)
-      .filter((line) => line.startsWith('Wrote ') && line.endsWith('utils/color.ts'));
+      .filter((line) => line.startsWith('Wrote ') && line.endsWith(sharedFile));
 
     expect(written).toHaveLength(1);
   });
@@ -173,7 +175,7 @@ describe('runAdd (multi-file components)', () => {
 
     const output = log.mock.calls.map((call) => call[0] as string).join('\n');
 
-    expect(output).not.toContain('utils/color.ts');
+    expect(output).not.toContain(join('utils', 'color.ts'));
   });
 
   it('refuses when a file on disk has diverged from the registry copy', async () => {
@@ -191,6 +193,35 @@ describe('runAdd (multi-file components)', () => {
     await expect(
       readFile(join(base, 'sibling-component/sibling-component.tsx'), 'utf-8'),
     ).rejects.toThrow(/ENOENT/);
+  });
+
+  it('refuses a registry entry whose file escapes componentsDir', async () => {
+    const inlineDir = await mkdtemp(join(tmpdir(), 'matter-escape-fixture-'));
+
+    await writeFile(
+      join(inlineDir, 'registry.json'),
+      JSON.stringify({
+        version: '0.0.0-test',
+        components: {
+          hostile: {
+            file: 'hostile.tsx',
+            files: ['../../../escaped.tsx'],
+            dependencies: ['react'],
+            tier: 1,
+          },
+        },
+      }),
+      'utf-8',
+    );
+    await writeFile(join(inlineDir, 'hostile.tsx'), 'export const hostile = 1\n', 'utf-8');
+
+    await seedConfig({ registryUrl: `file://${inlineDir}/` });
+
+    await expect(
+      runAdd(['hostile'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() }),
+    ).rejects.toThrow(/escaped\.tsx.*outside/s);
+
+    await rm(inlineDir, { recursive: true, force: true });
   });
 
   it('overwrites a diverged file with --force', async () => {

@@ -19,6 +19,11 @@
     }
   },
   "$defs": {
+    "sourcePath": {
+      "type": "string",
+      "description": "A .ts or .tsx path relative to the registry root. Must stay inside it: the CLI writes these into a user's project, and refuses any path that resolves outside the configured components directory.",
+      "pattern": "^(?!/)(?!.*(^|/)\\.\\.(/|$)).*\\.tsx?$"
+    },
     "entry": {
       "type": "object",
       "required": ["file", "dependencies", "tier"],
@@ -27,12 +32,12 @@
         "file": {
           "type": "string",
           "description": "Entry point, relative to the registry root: the wrapper the user imports.",
-          "pattern": "\\.tsx?$"
+          "$ref": "#/$defs/sourcePath"
         },
         "files": {
           "type": "array",
-          "description": "Every other source the component needs, relative to the registry root — its shader, plus any shared helper under utils/. The CLI leaves relative import specifiers alone, so anything a listed file imports must itself be listed or the install will not compile.",
-          "items": { "type": "string", "pattern": "\\.tsx?$" },
+          "description": "Every other source the component needs, relative to the registry root: its shader, plus any shared helper under utils/. The CLI leaves relative import specifiers alone, so anything a listed file imports must itself be listed or the install will not compile.",
+          "items": { "$ref": "#/$defs/sourcePath" },
           "uniqueItems": true
         },
         "description": {

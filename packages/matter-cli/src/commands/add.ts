@@ -4,7 +4,7 @@
 // transforms/rewriteImports), write it into componentsDir, and finish by
 // listing the npm packages the component needs.
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
-import { dirname, join } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
 
 import { readMatterConfig, resolveRegistryUrl } from '../config/matterConfig.js';
 import {
@@ -50,11 +50,29 @@ export async function runAdd(
   // matter how many components in this invocation want it.
   const sourceFiles = [...new Set(resolved.flatMap((component) => entryFiles(component.entry)))];
 
+  // A registry is remote data, so a declared path is not trusted to stay put.
+  // Resolve every target inside componentsDir before anything is fetched: a
+  // `../` in an entry would otherwise read and write outside the project. The
+  // separator on the prefix check matters — it keeps `matter` from matching a
+  // sibling directory named `matter-elsewhere`.
+  const componentsRoot = resolve(io.cwd, matterConfig.componentsDir);
+  const targets = sourceFiles.map((file) => {
+    const targetPath = resolve(componentsRoot, file);
+
+    if (targetPath !== componentsRoot && !targetPath.startsWith(componentsRoot + sep)) {
+      throw new Error(
+        `Registry declares ${file}, which resolves outside ${componentsRoot}. Refusing to write it.`,
+      );
+    }
+
+    return { file, targetPath };
+  });
+
   // Fetch and rewrite everything up front. Nothing here touches disk, and the
   // collision check below needs the finished contents to compare against.
   const planned = await Promise.all(
-    sourceFiles.map(async (file) => ({
-      targetPath: join(io.cwd, matterConfig.componentsDir, file),
+    targets.map(async ({ file, targetPath }) => ({
+      targetPath,
       contents: rewriteImports(await fetchComponentSource(registryUrl, file), matterConfig.aliases),
     })),
   );
