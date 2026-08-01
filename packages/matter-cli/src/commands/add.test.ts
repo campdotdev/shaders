@@ -244,6 +244,34 @@ describe('runAdd (multi-file components)', () => {
     expect(await readFile(join(base, 'utils/color.ts'), 'utf-8')).toContain('\r\n');
   });
 
+  it('refuses when a target file is itself a symlink, dangling or not', async () => {
+    const outside = join(dir, 'outside');
+
+    for (const [name, linkTarget] of [
+      ['dangling', join(outside, 'stolen-dangling.ts')],
+      ['existing', join(outside, 'stolen-existing.ts')],
+    ] as const) {
+      await rm(join(dir, 'src'), { recursive: true, force: true });
+      await seedConfig();
+      await mkdir(outside, { recursive: true });
+      await mkdir(join(dir, 'src/components/matter/utils'), { recursive: true });
+      if (name === 'existing') await writeFile(linkTarget, '// theirs\n', 'utf-8');
+      // A dangling link is the sharper case: the existence check reads through
+      // it, finds nothing, and would happily create the file outside.
+      await symlink(linkTarget, join(dir, 'src/components/matter/utils/color.ts'));
+
+      await expect(
+        runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() }),
+      ).rejects.toThrow(/symbolic link/i);
+
+      if (name === 'dangling') {
+        await expect(readFile(linkTarget, 'utf-8')).rejects.toThrow(/ENOENT/);
+      } else {
+        expect(await readFile(linkTarget, 'utf-8')).toBe('// theirs\n');
+      }
+    }
+  });
+
   it('refuses to write through a symlink that escapes componentsDir', async () => {
     await seedConfig();
     const base = join(dir, 'src/components/matter');
