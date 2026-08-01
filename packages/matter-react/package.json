@@ -1,6 +1,6 @@
 {
   "name": "@lovo/matter-react",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "React binding for Matter — MatterScene, useShaderMaterial, input hooks.",
   "keywords": [
     "components",
