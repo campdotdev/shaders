@@ -3,7 +3,7 @@
 // download it, rewrite its import specifiers for the user's project (see
 // transforms/rewriteImports), write it into componentsDir, and finish by
 // listing the npm packages the component needs.
-import { access, mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 
 import { readMatterConfig, resolveRegistryUrl } from '../config/matterConfig.js';
@@ -44,37 +44,48 @@ export async function runAdd(
 
   const resolved = components.map((slug) => resolveComponent(slug, registry, registryUrl));
 
-  // Check EVERY target for collisions before writing ANY file, so a refused
-  // overwrite can't leave a half-copied set on disk.
-  if (opts.force !== true) {
-    for (const resolvedComponent of resolved) {
-      const targetPath = join(io.cwd, matterConfig.componentsDir, resolvedComponent.entry.file);
+  // One component means several files, and two components can claim the same
+  // shared helper — every component but grain imports utils/color.ts. Flatten
+  // to distinct paths so a shared file is checked, fetched and written once no
+  // matter how many components in this invocation want it.
+  const sourceFiles = [...new Set(resolved.flatMap((component) => entryFiles(component.entry)))];
 
-      if (await fileExists(targetPath)) {
-        throw new Error(`${targetPath} already exists. Pass --force to overwrite.`);
-      }
-    }
-  }
-
-  const fetched = await Promise.all(
-    resolved.map(async (resolvedComponent) => {
-      const source = await fetchComponentSource(registryUrl, resolvedComponent.entry.file);
-
-      return { ...resolvedComponent, source };
-    }),
+  // Fetch and rewrite everything up front. Nothing here touches disk, and the
+  // collision check below needs the finished contents to compare against.
+  const planned = await Promise.all(
+    sourceFiles.map(async (file) => ({
+      targetPath: join(io.cwd, matterConfig.componentsDir, file),
+      contents: rewriteImports(await fetchComponentSource(registryUrl, file), matterConfig.aliases),
+    })),
   );
 
-  const allDeps = new Set<string>();
+  // Resolve EVERY target before writing ANY file, so a refused overwrite can't
+  // leave a half-copied set on disk. A file already holding exactly what we
+  // would write is not a conflict — that is the ordinary case for a shared
+  // helper a previous add already installed, and skipping it keeps a second
+  // `add` from failing on a file it wrote itself.
+  const toWrite = [];
 
-  for (const fetchedComponent of fetched) {
-    const targetPath = join(io.cwd, matterConfig.componentsDir, fetchedComponent.entry.file);
-    const rewritten = rewriteImports(fetchedComponent.source, matterConfig.aliases);
+  for (const file of planned) {
+    const existing = await readFileIfExists(file.targetPath);
 
-    await mkdir(dirname(targetPath), { recursive: true });
-    await writeFile(targetPath, rewritten, 'utf-8');
-    io.log(`Wrote ${targetPath}`);
-    for (const dep of fetchedComponent.entry.dependencies) allDeps.add(dep);
+    if (existing === file.contents) continue;
+    if (existing !== null && opts.force !== true) {
+      throw new Error(
+        `${file.targetPath} already exists and differs from the registry copy. Pass --force to overwrite.`,
+      );
+    }
+
+    toWrite.push(file);
   }
+
+  for (const { targetPath, contents } of toWrite) {
+    await mkdir(dirname(targetPath), { recursive: true });
+    await writeFile(targetPath, contents, 'utf-8');
+    io.log(`Wrote ${targetPath}`);
+  }
+
+  const allDeps = new Set(resolved.flatMap((component) => component.entry.dependencies));
 
   const sortedDeps = [...allDeps].sort();
 
@@ -82,6 +93,11 @@ export async function runAdd(
   io.log(`This component requires: ${sortedDeps.join(', ')}`);
   io.log('Install with your package manager, e.g.:');
   io.log(`npm install ${sortedDeps.join(' ')}`);
+}
+
+/** Entry point first, then the rest of the component's sources. */
+function entryFiles(entry: RegistryEntry): string[] {
+  return [entry.file, ...(entry.files ?? [])];
 }
 
 function resolveComponent(
@@ -100,14 +116,13 @@ function resolveComponent(
   return { slug, entry };
 }
 
-async function fileExists(filePath: string): Promise<boolean> {
+/** Current contents of a file, or null when it isn't there yet. */
+async function readFileIfExists(filePath: string): Promise<string | null> {
   try {
-    await access(filePath);
-
-    return true;
+    return await readFile(filePath, 'utf-8');
   } catch (caughtError) {
     if (caughtError instanceof Error && 'code' in caughtError && caughtError.code === 'ENOENT')
-      return false;
+      return null;
     throw caughtError;
   }
 }

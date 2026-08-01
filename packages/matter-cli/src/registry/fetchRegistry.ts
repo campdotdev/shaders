@@ -4,7 +4,14 @@
 import { readUrl } from './readUrl.js';
 
 export interface RegistryEntry {
+  /** Entry point: the component wrapper the user imports. */
   file: string;
+  /**
+   * Every other source the component needs, relative to the registry root —
+   * its shader, plus any shared helper under `utils/`. Optional so an entry
+   * that really is a single file stays valid.
+   */
+  files?: string[];
   description?: string;
   dependencies: string[];
   uses_primitives?: string[];

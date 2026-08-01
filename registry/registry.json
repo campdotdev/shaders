@@ -4,6 +4,7 @@
   "components": {
     "linear-gradient": {
       "file": "linear-gradient/linear-gradient.tsx",
+      "files": ["linear-gradient/shader.tsx", "utils/color.ts"],
       "description": "Animated linear gradient. The simplest, foundational Matter component.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "elapsedTime", "uniform"],
@@ -11,6 +12,7 @@
     },
     "simplex-noise": {
       "file": "simplex-noise/simplex-noise.tsx",
+      "files": ["simplex-noise/shader.tsx", "utils/color.ts"],
       "description": "Evolving 3D simplex noise with color ramp, contour bands, and brightness/contrast histogram shaping.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
@@ -28,7 +30,8 @@
     },
     "dot-field": {
       "file": "dot-field/dot-field.tsx",
-      "description": "Tiled dot field with center-anchored ripple displacement — the architecturally-validating Matter component.",
+      "files": ["dot-field/shader.tsx", "utils/color.ts"],
+      "description": "Tiled dot field with center-anchored ripple displacement \u2014 the architecturally-validating Matter component.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "signedDistanceFieldCircle",
@@ -47,6 +50,7 @@
     },
     "grain": {
       "file": "grain/grain.tsx",
+      "files": ["grain/shader.tsx"],
       "description": "Additive or subtractive film grain overlay. Stacks on top of any base component inside <ShaderScene>.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["grain", "uv", "vec4", "uniform", "elapsedTime", "floor"],
@@ -54,6 +58,7 @@
     },
     "wave-lines": {
       "file": "wave-lines/wave-lines.tsx",
+      "files": ["wave-lines/shader.tsx", "utils/color.ts"],
       "description": "Coherent wave-line bundle: translucent ribbon bodies wrapped in additive halo light. Lines share one wave and braid, breathe, and fray wide toward the canvas edges, with per-line flat or gradient color.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
@@ -78,6 +83,7 @@
     },
     "mesh-gradient": {
       "file": "mesh-gradient/mesh-gradient.tsx",
+      "files": ["mesh-gradient/shader.tsx", "utils/color.ts"],
       "description": "Warped 4-color fluid gradient with time-cycling palette and film grain. Linear/Stripe marketing-page style.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
@@ -99,6 +105,7 @@
     },
     "aurora": {
       "file": "aurora/aurora.tsx",
+      "files": ["aurora/shader.tsx", "utils/color.ts"],
       "description": "Four color-seeded noise curtains sharing one atmospheric noise field, layered over a dusk sky.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
@@ -116,6 +123,7 @@
     },
     "vignette": {
       "file": "vignette/vignette.tsx",
+      "files": ["vignette/shader.tsx", "utils/color.ts"],
       "description": "Radial darkening at the canvas edges. Stacks on top of any base component inside <ShaderScene>.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["uv", "vec2", "vec3", "vec4", "mix", "smoothstep", "length", "uniform"],
@@ -123,6 +131,7 @@
     },
     "radial-gradient": {
       "file": "radial-gradient/radial-gradient.tsx",
+      "files": ["radial-gradient/shader.tsx", "utils/color.ts"],
       "description": "A color ramp radiating from a point, with an elliptical shape control and repeating concentric rings. The radial counterpart to LinearGradient.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [

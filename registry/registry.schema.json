@@ -1,0 +1,61 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/lovo-hq/matter/blob/main/registry/registry.schema.json",
+  "title": "Matter registry index",
+  "description": "The index @lovo/matter-cli reads to copy Tier 1 components into a user's project.",
+  "type": "object",
+  "required": ["version", "components"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": {
+      "type": "string",
+      "description": "Registry format version, independent of the package versions."
+    },
+    "components": {
+      "type": "object",
+      "description": "Component slug to entry. The slug is what a user passes to `matter add`.",
+      "additionalProperties": { "$ref": "#/$defs/entry" }
+    }
+  },
+  "$defs": {
+    "entry": {
+      "type": "object",
+      "required": ["file", "dependencies", "tier"],
+      "additionalProperties": false,
+      "properties": {
+        "file": {
+          "type": "string",
+          "description": "Entry point, relative to the registry root: the wrapper the user imports.",
+          "pattern": "\\.tsx?$"
+        },
+        "files": {
+          "type": "array",
+          "description": "Every other source the component needs, relative to the registry root — its shader, plus any shared helper under utils/. The CLI leaves relative import specifiers alone, so anything a listed file imports must itself be listed or the install will not compile.",
+          "items": { "type": "string", "pattern": "\\.tsx?$" },
+          "uniqueItems": true
+        },
+        "description": {
+          "type": "string",
+          "description": "One line, shown by `matter list`."
+        },
+        "dependencies": {
+          "type": "array",
+          "description": "npm packages the component needs. Printed as an install hint after `matter add`.",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "uses_primitives": {
+          "type": "array",
+          "description": "Tier 2 primitives the component builds on. Documentation only; the CLI does not read it.",
+          "items": { "type": "string" },
+          "uniqueItems": true
+        },
+        "tier": {
+          "description": "1 = polished component, 2 = primitive, 3 = recipe.",
+          "enum": [1, 2, 3]
+        }
+      }
+    }
+  }
+}
