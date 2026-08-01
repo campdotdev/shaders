@@ -3,7 +3,7 @@
 // download it, rewrite its import specifiers for the user's project (see
 // transforms/rewriteImports), write it into componentsDir, and finish by
 // listing the npm packages the component needs.
-import { mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 
 import { readMatterConfig, resolveRegistryUrl } from '../config/matterConfig.js';
@@ -85,6 +85,16 @@ export async function runAdd(
   const toWrite = [];
 
   for (const file of planned) {
+    // A symlink where a source file should be is never something the CLI put
+    // there, and writing follows it wherever it points. A dangling one is the
+    // sharper case: the existence check below reads through it, finds nothing,
+    // and would create the file at the far end without even asking for --force.
+    if (await isSymbolicLink(file.targetPath)) {
+      throw new Error(
+        `${file.targetPath} is a symbolic link. Refusing to write through it — remove it first.`,
+      );
+    }
+
     const existing = await readFileIfExists(file.targetPath);
 
     // Compare on content, not bytes. A Windows checkout with core.autocrlf
@@ -158,6 +168,17 @@ function resolveComponent(
   }
 
   return { slug, entry };
+}
+
+/** True when the path exists and is a symlink. lstat does not follow links. */
+async function isSymbolicLink(filePath: string): Promise<boolean> {
+  try {
+    return (await lstat(filePath)).isSymbolicLink();
+  } catch (caughtError) {
+    if (caughtError instanceof Error && 'code' in caughtError && caughtError.code === 'ENOENT')
+      return false;
+    throw caughtError;
+  }
 }
 
 /** Equal ignoring line-ending style. */
