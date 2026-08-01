@@ -101,6 +101,115 @@ describe('runAdd (single component, no aliases)', () => {
   });
 });
 
+describe('runAdd (multi-file components)', () => {
+  it('writes every file the entry lists, not just the entry point', async () => {
+    await seedConfig();
+    await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
+    const base = join(dir, 'src/components/matter');
+
+    expect(await readFile(join(base, 'nested-component/nested-component.tsx'), 'utf-8')).toContain(
+      'NestedComponent',
+    );
+    expect(await readFile(join(base, 'nested-component/shader.tsx'), 'utf-8')).toContain(
+      'NestedShader',
+    );
+    expect(await readFile(join(base, 'utils/color.ts'), 'utf-8')).toContain('ColorStop');
+  });
+
+  it('refuses the whole set when a non-entry file already exists, writing nothing', async () => {
+    await seedConfig();
+    const base = join(dir, 'src/components/matter');
+
+    await mkdir(join(base, 'nested-component'), { recursive: true });
+    await writeFile(join(base, 'nested-component/shader.tsx'), 'mine', 'utf-8');
+
+    await expect(
+      runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() }),
+    ).rejects.toThrow(/shader\.tsx.*already exists/s);
+
+    // The point of checking before writing: a refused set leaves no partial copy.
+    await expect(
+      readFile(join(base, 'nested-component/nested-component.tsx'), 'utf-8'),
+    ).rejects.toThrow(/ENOENT/);
+    expect(await readFile(join(base, 'nested-component/shader.tsx'), 'utf-8')).toBe('mine');
+  });
+
+  it('writes a file shared by two components in one invocation exactly once', async () => {
+    await seedConfig();
+    const log = vi.fn();
+
+    await runAdd(
+      ['nested-component', 'sibling-component'],
+      { cliVersion: VERSION },
+      {
+        cwd: dir,
+        log,
+      },
+    );
+
+    const written = log.mock.calls
+      .map((call) => call[0] as string)
+      .filter((line) => line.startsWith('Wrote ') && line.endsWith('utils/color.ts'));
+
+    expect(written).toHaveLength(1);
+  });
+
+  it('skips a file already on disk with identical content, so a later add succeeds', async () => {
+    await seedConfig();
+    const base = join(dir, 'src/components/matter');
+
+    // Last week: add one component, which brings utils/color.ts with it.
+    await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
+
+    // Today: add another that shares it. The shared file is already there and
+    // unchanged, which is not a conflict.
+    const log = vi.fn();
+
+    await runAdd(['sibling-component'], { cliVersion: VERSION }, { cwd: dir, log });
+
+    expect(await readFile(join(base, 'sibling-component/shader.tsx'), 'utf-8')).toContain(
+      'SiblingShader',
+    );
+
+    const output = log.mock.calls.map((call) => call[0] as string).join('\n');
+
+    expect(output).not.toContain('utils/color.ts');
+  });
+
+  it('refuses when a file on disk has diverged from the registry copy', async () => {
+    await seedConfig();
+    const base = join(dir, 'src/components/matter');
+
+    await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
+    await writeFile(join(base, 'utils/color.ts'), '// my own edits\n', 'utf-8');
+
+    await expect(
+      runAdd(['sibling-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() }),
+    ).rejects.toThrow(/color\.ts already exists and differs.*--force/s);
+
+    expect(await readFile(join(base, 'utils/color.ts'), 'utf-8')).toBe('// my own edits\n');
+    await expect(
+      readFile(join(base, 'sibling-component/sibling-component.tsx'), 'utf-8'),
+    ).rejects.toThrow(/ENOENT/);
+  });
+
+  it('overwrites a diverged file with --force', async () => {
+    await seedConfig();
+    const base = join(dir, 'src/components/matter');
+
+    await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
+    await writeFile(join(base, 'utils/color.ts'), '// my own edits\n', 'utf-8');
+
+    await runAdd(
+      ['sibling-component'],
+      { force: true, cliVersion: VERSION },
+      { cwd: dir, log: vi.fn() },
+    );
+
+    expect(await readFile(join(base, 'utils/color.ts'), 'utf-8')).toContain('ColorStop');
+  });
+});
+
 describe('runAdd (multi-component + dedup + alias rewriting)', () => {
   it('writes multiple components in one invocation against a custom registry', async () => {
     const inlineDir = await mkdtemp(join(tmpdir(), 'matter-multi-fixture-'));

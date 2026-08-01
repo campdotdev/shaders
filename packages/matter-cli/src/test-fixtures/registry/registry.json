@@ -7,6 +7,22 @@
       "dependencies": ["react"],
       "uses_primitives": [],
       "tier": 1
+    },
+    "nested-component": {
+      "file": "nested-component/nested-component.tsx",
+      "files": ["nested-component/shader.tsx", "utils/color.ts"],
+      "description": "A multi-file synthetic component used by matter-cli tests. Not shipped.",
+      "dependencies": ["react"],
+      "uses_primitives": [],
+      "tier": 1
+    },
+    "sibling-component": {
+      "file": "sibling-component/sibling-component.tsx",
+      "files": ["sibling-component/shader.tsx", "utils/color.ts"],
+      "description": "A second multi-file synthetic component sharing utils/color.ts. Not shipped.",
+      "dependencies": ["react"],
+      "uses_primitives": [],
+      "tier": 1
     }
   }
 }
