@@ -70,6 +70,28 @@ describe('registry.json declares every file its components import', () => {
     }
   });
 
+  it('has no two paths that collide on a case-insensitive filesystem', () => {
+    // macOS and Windows fold case, so `utils/color.ts` and `utils/Color.ts`
+    // would be one file on disk. `add` dedupes by path string and cannot tell,
+    // so the second write would silently replace the first and ship a
+    // component missing a source. Catch it here, where the paths are authored,
+    // rather than making the CLI guess at the user's filesystem semantics.
+    const byFoldedPath = new Map<string, string>();
+    const collisions: string[] = [];
+
+    for (const entry of Object.values(registry.components)) {
+      for (const file of [entry.file, ...(entry.files ?? [])]) {
+        const folded = file.toLowerCase();
+        const seen = byFoldedPath.get(folded);
+
+        if (seen !== undefined && seen !== file) collisions.push(`${seen} vs ${file}`);
+        byFoldedPath.set(folded, file);
+      }
+    }
+
+    expect(collisions).toEqual([]);
+  });
+
   it('points $schema at a file that exists', async () => {
     const schemaRef = (registry as { $schema?: string }).$schema;
 

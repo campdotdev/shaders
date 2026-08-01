@@ -30,9 +30,8 @@
       "additionalProperties": false,
       "properties": {
         "file": {
-          "type": "string",
           "description": "Entry point, relative to the registry root: the wrapper the user imports.",
-          "$ref": "#/$defs/sourcePath"
+          "allOf": [{ "$ref": "#/$defs/sourcePath" }]
         },
         "files": {
           "type": "array",
