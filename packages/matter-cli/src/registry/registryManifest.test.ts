@@ -7,7 +7,7 @@
 // This reads the real registry/ at the repo root rather than a fixture — the
 // point is to catch a component added later that forgets to list its shader.
 import { readFile } from 'node:fs/promises';
-import { dirname, join, resolve } from 'node:path';
+import { dirname, join, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
@@ -15,9 +15,18 @@ import type { Registry } from './fetchRegistry.js';
 
 const REGISTRY_ROOT = fileURLToPath(new URL('../../../../registry/', import.meta.url));
 
-/** Every relative specifier in a source file, e.g. `./shader`, `../utils/color`. */
+/**
+ * Every relative specifier in a source file, e.g. `./shader`, `../utils/color`.
+ * Both quote styles and `import(...)` are matched: Prettier keeps the registry
+ * on single quotes today, but this test is the guard, and a guard that quietly
+ * skips a file it doesn't recognise is worse than no guard.
+ */
 function relativeImports(source: string): string[] {
-  return [...source.matchAll(/from\s+'(\.[^']*)'/g)].flatMap((match) => match[1] ?? []);
+  const patterns = [/from\s+['"](\.[^'"]*)['"]/g, /import\(\s*['"](\.[^'"]*)['"]\s*\)/g];
+
+  return patterns.flatMap((pattern) =>
+    [...source.matchAll(pattern)].flatMap((match) => match[1] ?? []),
+  );
 }
 
 /** Drop the extension so `./shader` and `shader.tsx` compare equal. */
@@ -44,7 +53,9 @@ describe('registry.json declares every file its components import', () => {
         // Resolve against the importing file's directory, then back to a
         // registry-root-relative key so it can be matched against `declared`.
         const target = resolve(dirname(join(REGISTRY_ROOT, file)), specifier);
-        const key = withoutExtension(target.slice(REGISTRY_ROOT.length));
+        // registry.json spells paths with forward slashes; resolve() hands back
+        // the OS separator, so normalise before comparing.
+        const key = withoutExtension(target.slice(REGISTRY_ROOT.length).split(sep).join('/'));
 
         if (!declaredKeys.has(key)) missing.push(`${file} imports ${specifier}`);
       }
