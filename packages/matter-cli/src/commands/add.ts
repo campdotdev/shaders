@@ -3,10 +3,11 @@
 // download it, rewrite its import specifiers for the user's project (see
 // transforms/rewriteImports), write it into componentsDir, and finish by
 // listing the npm packages the component needs.
-import { lstat, mkdir, readFile, realpath, writeFile } from 'node:fs/promises';
+import { lstat, mkdir, readFile, realpath } from 'node:fs/promises';
 import { dirname, resolve, sep } from 'node:path';
 
 import { readMatterConfig, resolveRegistryUrl } from '../config/matterConfig.js';
+import { writeFileNoFollow } from '../fs/writeFileNoFollow.js';
 import {
   fetchComponentSource,
   fetchRegistry,
@@ -134,8 +135,11 @@ export async function runAdd(
     }
   }
 
+  // writeFileNoFollow, not writeFile: the lstat above and the write below are
+  // two separate operations, and the guarantee has to hold at the moment of
+  // writing, not a moment before it.
   for (const { targetPath, contents } of toWrite) {
-    await writeFile(targetPath, contents, 'utf-8');
+    await writeFileNoFollow(targetPath, contents);
     io.log(`Wrote ${targetPath}`);
   }
 
