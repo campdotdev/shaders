@@ -10,13 +10,13 @@ import { useEffect, useMemo } from 'react';
 import {
   colorRamp,
   type ColorSpace,
-  elapsedTime,
   type HueInterpolation,
   quantize,
   simplexNoise,
 } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useShaderContext,
   useStaticSceneHint,
@@ -95,9 +95,11 @@ export function SimplexNoiseShader({
 
   // The animated dials live in uniforms (values the CPU can update each
   // frame without rebuilding the shader), tracking either a static number or
-  // an animation signal.
+  // an animation signal. Speed is the exception: useAnimatableSpeed
+  // integrates it into a phase uniform (speed x delta summed each frame), so
+  // a speed change shifts the morphing tempo without snapping the pattern.
   const scaleUniform = useAnimatableUniform<number>(scale);
-  const speedUniform = useAnimatableUniform<number>(speed);
+  const phaseUniform = useAnimatableSpeed(speed);
   const contrastUniform = useAnimatableUniform<number>(contrast);
   const balanceUniform = useAnimatableUniform<number>(balance);
   const softnessUniform = useAnimatableUniform<number>(softness);
@@ -134,14 +136,13 @@ export function SimplexNoiseShader({
     () => {
       if (!shaderContext) return;
 
-      // Where to sample the noise field. uv() is the pixel's 0..1 position;
       // multiplying by scale zooms out so roughly `scale` noise features
       // span the canvas, and the seed offset slides the whole window to a
-      // different neighborhood. Time rides in as a third dimension: as z
-      // advances the pattern morphs in place, rather than sliding sideways
-      // the way an x/y offset would.
+      // different neighborhood. The accumulated phase rides in as a third
+      // dimension: as z advances the pattern morphs in place, rather than
+      // sliding sideways the way an x/y offset would.
       const sampleXY = uv().mul(scaleUniform).add(seedUniform);
-      const samplePoint = vec3(sampleXY, elapsedTime.mul(speedUniform));
+      const samplePoint = vec3(sampleXY, phaseUniform);
 
       // simplexNoise returns roughly -1..1; (x + 1) / 2 rescales it to the
       // 0..1 range the ramp and the shaping steps below expect.
@@ -203,7 +204,7 @@ export function SimplexNoiseShader({
     [
       shaderContext,
       scaleUniform,
-      speedUniform,
+      phaseUniform,
       contrastUniform,
       balanceUniform,
       softnessUniform,
