@@ -16,8 +16,8 @@ import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 export interface AnimatablePointOptions {
   /**
    * Treat the incoming pair as a screen-style point - `[0, 0]` at the
-   * top-left, y growing downward, the way CSS reads - and convert it into uv
-   * space, where v grows upward. Off by default: this is a general hook for
+   * top-left, y growing downward, like CSS - and convert it into uv space,
+   * where v grows upward. Off by default: this is a general hook for
    * animatable pairs, not a `center` hook, so it does not presume a
    * coordinate convention.
    */

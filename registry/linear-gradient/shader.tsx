@@ -81,7 +81,7 @@ export function LinearGradientShader({
   const speedUniform = useAnimatableUniform<number>(speed);
 
   // screenOrigin converts the prop's screen-style coordinates (y grows
-  // downward, [0, 0] top-left, the way CSS reads) into uv space — the mesh's
+  // downward, [0, 0] top-left, like CSS) into uv space — the mesh's
   // built-in 0..1 surface coordinates, where v grows upward. Without it,
   // moving the anchor "down" would slide the gradient up.
   const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
