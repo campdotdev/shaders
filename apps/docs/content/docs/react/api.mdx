@@ -94,6 +94,21 @@ function Inner({ center }: { center: AnimatableProp<readonly [number, number]> }
 
 `screenOrigin: true` treats the incoming pair as a screen-style point — `[0, 0]` at the top-left, y growing downward, like CSS — and converts it to uv space, where v grows upward. Both coordinates are expected normalized to `[0, 1]`: the conversion is just `v = 1 - y`, with no scaling, so pixel coordinates won't land where you expect. It's off by default.
 
+## `useAnimatableSpeed`
+
+The animation glue behind every registry component's `speed` prop. It does not return a speed uniform — it returns a scalar **phase** uniform, integrating speed over time on the CPU:
+
+```tsx
+import { useAnimatableSpeed, type AnimatableProp } from '@lovo/matter-react'
+
+function Inner({ speed }: { speed: AnimatableProp<number> }) {
+  const phaseUniform = useAnimatableSpeed(speed)
+  // phaseUniform.value grows by speed x delta each frame, scaled by reduced motion
+}
+```
+
+Each scheduler tick adds `speed × delta` (scaled for `prefers-reduced-motion`) to a running total, rather than multiplying elapsed time by speed. That distinction matters: a product form re-evaluates the whole elapsed history whenever speed changes, so the pattern visibly snaps; the integral form only changes the growth rate, so a speed change shifts tempo smoothly from wherever the pattern already is. Accepts a static number or an animation signal, same as the other animatable hooks.
+
 ## `<FallbackBoundary>`
 
 Renders fallback content when WebGPU is unavailable or initialization fails. Wrap any Matter subtree:
