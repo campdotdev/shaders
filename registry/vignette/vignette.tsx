@@ -24,9 +24,10 @@ export interface VignetteProps {
   feather?: AnimatableProp<number>;
   /**
    * Vignette center, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`.
+   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`. Accepts a
+   * static value or an animation signal.
    */
-  center?: [number, number];
+  center?: AnimatableProp<readonly [number, number]>;
   /**
    * Normalized distance from `center` at which the vignette reaches full
    * strength. Smaller values close the vignette in sooner. Defaults to 0.7.
