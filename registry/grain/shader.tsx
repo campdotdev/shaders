@@ -4,9 +4,10 @@
 // the engine's grain() primitive (a screen-position hash); this file decides
 // the two things layered on top of it: how often the pattern re-rolls
 // (speed) and how the noise combines with the image underneath (blend).
-import { elapsedTime, grain } from '@lovo/matter';
+import { grain } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatableSpeed,
   useAnimatableUniform,
   usePostProcessPass,
   useStaticSceneHint,
@@ -36,11 +37,14 @@ export interface GrainShaderProps {
 }
 
 export function GrainShader({ intensity, speed, blend }: GrainShaderProps) {
-  // Both props live in uniforms (values the CPU can update each frame
+  // Intensity lives in a uniform (a value the CPU can update each frame
   // without rebuilding the shader), tracking either a static number or an
-  // animation signal.
+  // animation signal. Speed is integrated instead: useAnimatableSpeed
+  // accumulates speed x delta into a phase uniform each frame, so changing
+  // speed shifts the tempo without snapping the pattern (a time x speed
+  // product would re-evaluate the whole elapsed history at the new rate).
   const intensityUniform = useAnimatableUniform<number>(intensity);
-  const speedUniform = useAnimatableUniform<number>(speed);
+  const phaseUniform = useAnimatableSpeed(speed);
 
   // A literal speed of 0 freezes the pattern, so nothing ever changes on
   // screen (an animation signal might move later and doesn't count). Telling
@@ -54,13 +58,13 @@ export function GrainShader({ intensity, speed, blend }: GrainShaderProps) {
   // layers in the scene flows through here.
   usePostProcessPass(
     (input) => {
-      // Quantize time into whole steps so the pattern re-rolls in discrete
-      // ticks instead of shifting continuously. floor(seconds * speed * 60)
+      // Quantize the phase into whole steps so the pattern re-rolls in
+      // discrete ticks instead of shifting continuously. floor(phase * 60)
       // increments every 1/(speed*60) seconds: at speed 1 the grain re-rolls
       // 60 times a second (fresh noise every frame at 60 fps); at lower
-      // speeds each pattern holds longer; at 0 the argument never advances
-      // and the pattern freezes.
-      const grainTime = floor(elapsedTime.mul(speedUniform).mul(60));
+      // speeds each pattern holds longer; at 0 the phase never advances and
+      // the pattern freezes.
+      const grainTime = floor(phaseUniform.mul(60));
 
       // A per-pixel random value centered on zero (roughly -intensity/2 to
       // +intensity/2), derived from the pixel's screen position and the time
@@ -84,7 +88,7 @@ export function GrainShader({ intensity, speed, blend }: GrainShaderProps) {
 
       return input.sub(vec4(positive, positive, positive, 0));
     },
-    [intensityUniform, speedUniform, blend],
+    [intensityUniform, phaseUniform, blend],
   );
 
   return null;

@@ -9,8 +9,13 @@
 // (./wave-lines.tsx) supplies the props.
 import { useEffect } from 'react';
 
-import { colorRamp, type ColorSpace, elapsedTime } from '@lovo/matter';
-import { type AnimatableProp, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
+import { colorRamp, type ColorSpace } from '@lovo/matter';
+import {
+  type AnimatableProp,
+  useAnimatableSpeed,
+  useAnimatableUniform,
+  useShaderContext,
+} from '@lovo/matter-react';
 import {
   float,
   fract,
@@ -189,9 +194,12 @@ export function WaveLinesShader({
   // without rebuilding the shader), tracking either a static number or an
   // animation signal. These are scalar uniforms, so chaining methods off
   // them below is safe (the vec-uniform chaining gotcha doesn't apply).
+  // Speed is integrated by useAnimatableSpeed into a phase uniform
+  // (speed x delta summed each frame), so a speed change shifts the tempo
+  // without snapping the lines.
   const ampUniform = useAnimatableUniform<number>(amplitude);
   const freqUniform = useAnimatableUniform<number>(frequency);
-  const speedUniform = useAnimatableUniform<number>(speed);
+  const phaseUniform = useAnimatableSpeed(speed);
   const softnessUniform = useAnimatableUniform<number>(softness);
   const brightnessUniform = useAnimatableUniform<number>(brightness);
   const opacityUniform = useAnimatableUniform<number>(opacity);
@@ -228,10 +236,12 @@ export function WaveLinesShader({
     const yBase = samplePosition.y.add(baselineUniform);
 
     // One shared clock and one shared wave phase for every line — coherence
-    // comes from the architecture, not from per-line tuning. frequency = full
+    // comes from the architecture, not from per-line tuning. The clock is
+    // the CPU-accumulated phase (speed x delta summed each frame), so a
+    // speed change shifts the tempo without snapping. frequency = full
     // wave cycles across the canvas width (x spans 2, so the PI factor makes
     // frequency 1 exactly one cycle).
-    const time = elapsedTime.mul(speedUniform);
+    const time = phaseUniform;
     const wavePhase = samplePosition.x.mul(freqUniform).mul(Math.PI).sub(time.mul(SCROLL_RATE));
 
     // Thickness flare with C1-smooth ends: smoothstep has zero slope at BOTH
@@ -374,7 +384,7 @@ export function WaveLinesShader({
     linesKey,
     ampUniform,
     freqUniform,
-    speedUniform,
+    phaseUniform,
     softnessUniform,
     brightnessUniform,
     opacityUniform,
