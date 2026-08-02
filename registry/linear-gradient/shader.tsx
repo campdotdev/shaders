@@ -11,6 +11,7 @@ import { useEffect, useMemo } from 'react';
 import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatablePoint,
   useAnimatableUniform,
   useShaderContext,
   useStaticSceneHint,
@@ -52,15 +53,6 @@ export interface LinearGradientShaderProps {
   hueInterpolation: HueInterpolation;
 }
 
-// `center` can be a static [x, y] pair or an animation signal. This guard
-// picks out the static case so the effect below knows it can read the
-// numbers directly.
-const isPoint = (value: unknown): value is readonly [number, number] =>
-  Array.isArray(value) &&
-  value.length === 2 &&
-  typeof value[0] === 'number' &&
-  typeof value[1] === 'number';
-
 export function LinearGradientShader({
   stops,
   angle,
@@ -88,18 +80,16 @@ export function LinearGradientShader({
   // prop is a static number or an animation signal.
   const speedUniform = useAnimatableUniform<number>(speed);
 
-  // ---------------------------------------------
-  // Stable vectors the prop effects write into
-  // ---------------------------------------------
-  // Each Vector2 and its uniform wrapper are created once and never replaced.
-  // The effects below push new prop values into the vectors with .set(), and
-  // the GPU reads the updated numbers on the next frame. Because the build
-  // effect depends only on these stable references, changing `angle` or
-  // `center` never tears down and recompiles the material.
+  // screenOrigin converts the prop's screen-style coordinates (y grows
+  // downward, [0, 0] top-left, the way CSS reads) into uv space — the mesh's
+  // built-in 0..1 surface coordinates, where v grows upward. Without it,
+  // moving the anchor "down" would slide the gradient up.
+  const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
 
-  const centerVec = useMemo(() => new Vector2(0.5, 0.5), []);
-  const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
-
+  // A unit direction vector created once and never replaced. The angle effect
+  // below writes cos/sin into it with .set(), and because the build effect
+  // depends only on the stable uniform wrapper, changing `angle` never
+  // recompiles the material.
   const dirVec = useMemo(() => new Vector2(1, 0), []);
   const dirNode = useMemo(() => uniform(dirVec), [dirVec]);
 
@@ -114,19 +104,6 @@ export function LinearGradientShader({
     dirVec.set(Math.cos(angleRadians), Math.sin(angleRadians));
     shaderContext?.scheduler.requestRender();
   }, [shaderContext, dirVec, angle]);
-
-  // Push the center prop into its vector. The y flip (1 - y) converts from
-  // the prop's screen-style coordinates (y grows downward, like CSS) into UV
-  // space (the mesh's built-in 0..1 surface coordinates, where v grows
-  // upward) — without it, moving the anchor "down" would move the gradient up.
-  useEffect(() => {
-    if (isPoint(center)) {
-      centerVec.set(center[0], 1 - center[1]);
-    } else {
-      centerVec.set(0.5, 0.5);
-    }
-    shaderContext?.scheduler.requestRender();
-  }, [shaderContext, centerVec, center]);
 
   // ---------------------------------------------
   // Build the material and mount the mesh
