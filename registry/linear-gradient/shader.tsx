@@ -8,10 +8,11 @@
 // color from the ramp.
 import { useEffect } from 'react';
 
-import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
+import { colorRamp, type ColorSpace, type HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatablePoint,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useShaderContext,
   useStaticSceneHint,
@@ -76,9 +77,12 @@ export function LinearGradientShader({
   const stopsKey = colorStopsKey(stops);
 
   // Speed lives in a uniform (a value the CPU can update each frame without
-  // rebuilding the shader). useAnimatableUniform keeps it current whether the
-  // prop is a static number or an animation signal.
+  // rebuilding the shader) — kept ONLY for the GPU-side static/animated gate
+  // below. The motion itself comes from the accumulated phase: speed x delta
+  // summed on the CPU each frame, so changing speed shifts the tempo without
+  // snapping (a time x speed product re-evaluates the whole history).
   const speedUniform = useAnimatableUniform<number>(speed);
+  const phaseUniform = useAnimatableSpeed(speed);
 
   // screenOrigin converts the prop's screen-style coordinates (y grows
   // downward, [0, 0] top-left, like CSS) into uv space — the mesh's
@@ -128,10 +132,7 @@ export function LinearGradientShader({
     // animation on the GPU: when speedUniform ≤ 0 the mix picks gradientCoord
     // exactly (no S-curve distortion); above ~0.01 it fades into the cosine
     // animation. No JS-side branch, no material rebuild on speed changes.
-    const cosineAnimated = sub(
-      1,
-      cos(gradientCoord.add(elapsedTime.mul(speedUniform)).mul(Math.PI)),
-    ).mul(0.5);
+    const cosineAnimated = sub(1, cos(gradientCoord.add(phaseUniform).mul(Math.PI))).mul(0.5);
     const animatedGradientCoord = mix(
       gradientCoord,
       cosineAnimated,
@@ -174,6 +175,7 @@ export function LinearGradientShader({
     shaderContext,
     stopsKey,
     speedUniform,
+    phaseUniform,
     centerUniform,
     angleUniform,
     colorSpace,
