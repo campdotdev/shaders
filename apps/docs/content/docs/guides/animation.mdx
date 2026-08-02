@@ -7,7 +7,7 @@ order: 10
 
 # Animation
 
-Matter doesn't ship its own animation library. Component props that need to animate accept either a static value or a **signal** — anything with a `get()` and `subscribe(callback)` shape. Motion's `MotionValue`, Jotai atoms with a wrapper, custom signal libraries — they all work, because Matter just reads the current value and subscribes to changes.
+Matter doesn't ship its own animation library. Component props that need to animate accept either a static value or a **signal** — anything with a `get()` and `on('change', callback)` shape. Motion's `MotionValue`, Jotai atoms with a wrapper, custom signal libraries — they all work, because Matter just reads the current value and subscribes to changes.
 
 ## The signal contract
 
@@ -16,14 +16,14 @@ A signal is any object shaped like:
 ```ts
 interface AnimatableSignal<T> {
   get(): T
-  subscribe(callback: (value: T) => void): () => void
+  on(event: 'change', callback: (value: T) => void): () => void
 }
 ```
 
 When a Matter component receives a signal as a prop, it:
 
-1. Reads `signal.get()` once to seed the uniform.
-2. Subscribes for updates and writes the new value into the GPU uniform on every change.
+1. Reads `signal.get()` to seed the uniform — on mount, and again whenever the signal is swapped for another.
+2. Subscribes with `on('change', …)` and writes each new value into the GPU uniform.
 3. Unsubscribes on unmount.
 
 The animation engine doesn't run on the CPU per-frame — values flow straight into the uniform and the GPU does the rest.
@@ -80,7 +80,7 @@ function Cursor() {
 
 ## Animating any uniform
 
-If a component doesn't expose the prop you want, `useAnimatableUniform` is the lower-level escape hatch — give it any TSL `uniform` plus a signal, and it wires the subscription up for you. See [the React API](/react/api) for the full signature.
+If you're wiring up a custom shader, `useAnimatableUniform` is the lower-level escape hatch — pass it a static value or a signal and it returns a TSL uniform node that tracks it. `useAnimatablePoint` does the same for `[x, y]` pairs like `center`. See [the React API](/react/api) for the full signatures.
 
 ## What Matter does NOT ship
 
