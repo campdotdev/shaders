@@ -1,5 +1,6 @@
 export { useAnimatableUniform } from './use-animatable-uniform/use-animatable-uniform.js';
 export { useAnimatablePoint } from './use-animatable-point/use-animatable-point.js';
+export { useAnimatableSpeed } from './use-animatable-speed/use-animatable-speed.js';
 export type { AnimatableProp, AnimatableSignal } from './animatable-signal/animatable-signal.js';
 export type { AnimatablePointOptions } from './use-animatable-point/use-animatable-point.js';
 
