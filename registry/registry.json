@@ -7,7 +7,7 @@
       "files": ["linear-gradient/shader.tsx", "utils/color.ts"],
       "description": "Animated linear gradient. The simplest, foundational Matter component.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "elapsedTime", "uniform"],
+      "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "uniform"],
       "tier": 1
     },
     "simplex-noise": {
@@ -23,7 +23,6 @@
         "mix",
         "uv",
         "vec3",
-        "elapsedTime",
         "uniform"
       ],
       "tier": 1
@@ -53,7 +52,7 @@
       "files": ["grain/shader.tsx"],
       "description": "Additive or subtractive film grain overlay. Stacks on top of any base component inside <ShaderScene>.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["grain", "uv", "vec4", "uniform", "elapsedTime", "floor"],
+      "uses_primitives": ["grain", "uv", "vec4", "uniform", "floor"],
       "tier": 1
     },
     "wave-lines": {
@@ -75,7 +74,6 @@
         "pow",
         "exp",
         "smoothstep",
-        "elapsedTime",
         "uniform",
         "colorRamp"
       ],
@@ -116,7 +114,6 @@
         "vec2",
         "vec3",
         "vec4",
-        "elapsedTime",
         "uniform"
       ],
       "tier": 1
@@ -143,7 +140,6 @@
         "length",
         "uv",
         "vec2",
-        "elapsedTime",
         "uniform"
       ],
       "tier": 1

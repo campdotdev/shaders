@@ -136,6 +136,7 @@ export function SimplexNoiseShader({
     () => {
       if (!shaderContext) return;
 
+      // Where to sample the noise field. uv() is the pixel's 0..1 position;
       // multiplying by scale zooms out so roughly `scale` noise features
       // span the canvas, and the seed offset slides the whole window to a
       // different neighborhood. The accumulated phase rides in as a third
