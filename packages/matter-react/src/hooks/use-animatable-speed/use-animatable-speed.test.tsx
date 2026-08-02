@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, StrictMode } from 'react';
 
 import { getReducedMotionTimeScale } from '@lovo/matter';
 import type { SchedulerClient, SchedulerTick } from '@lovo/matter';
@@ -39,6 +39,26 @@ const makeWrapper = (scheduler: FakeScheduler) => {
       >
         {children}
       </ShaderContext.Provider>
+    );
+  }
+
+  return Wrapper;
+};
+
+// Same provider as makeWrapper, but nested in <StrictMode> so React
+// double-invokes the integrator effect (mount, cleanup, remount) on test
+// setup, the same way it does in development. This is what proves the
+// scheduler ends up with exactly one accumulator client, not two.
+const makeStrictWrapper = (scheduler: FakeScheduler) => {
+  function Wrapper({ children }: { children: ReactNode }) {
+    return (
+      <StrictMode>
+        <ShaderContext.Provider
+          value={{ scheduler } as unknown as React.ContextType<typeof ShaderContext>}
+        >
+          {children}
+        </ShaderContext.Provider>
+      </StrictMode>
     );
   }
 
@@ -186,6 +206,18 @@ describe('useAnimatableSpeed', () => {
     scheduler.requestRender.mockClear();
     set(5);
     expect(scheduler.requestRender).not.toHaveBeenCalled();
+  });
+
+  it('leaves exactly one accumulator client after a Strict Mode double-mount', () => {
+    const scheduler = new FakeScheduler();
+    const { result } = renderHook(() => useAnimatableSpeed(1), {
+      wrapper: makeStrictWrapper(scheduler),
+    });
+
+    scheduler.tick(0.1);
+    // Two accumulators would double-count the same tick and land at 0.2.
+    expect(phaseOf(result)).toBeCloseTo(0.1);
+    expect(scheduler.clients.size).toBe(1);
   });
 
   it('works outside a ShaderScene, where there is no scheduler', () => {
