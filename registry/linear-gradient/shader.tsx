@@ -6,7 +6,7 @@
 // the shared ShaderScene. The gradient itself is one projection: each pixel's
 // position is measured along a direction vector and that distance picks a
 // color from the ramp.
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
 import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
 import {
@@ -16,8 +16,8 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { cos, mix, smoothstep, sub, uniform, uv } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
+import { cos, mix, sin, smoothstep, sub, uv, vec2 } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
@@ -86,24 +86,7 @@ export function LinearGradientShader({
   // moving the anchor "down" would slide the gradient up.
   const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
 
-  // A unit direction vector created once and never replaced. The angle effect
-  // below writes cos/sin into it with .set(), and because the build effect
-  // depends only on the stable uniform wrapper, changing `angle` never
-  // recompiles the material.
-  const dirVec = useMemo(() => new Vector2(1, 0), []);
-  const dirNode = useMemo(() => uniform(dirVec), [dirVec]);
-
-  // Turn the angle prop (degrees) into a unit direction vector on the CPU —
-  // cos/sin of the angle — so the shader never does the trig itself. The
-  // scene renders on demand, so after mutating the vector we poke the
-  // scheduler to make the change visible even while the scene sits idle.
-  useEffect(() => {
-    const angleValue = typeof angle === 'number' ? angle : 0;
-    const angleRadians = angleValue * (Math.PI / 180);
-
-    dirVec.set(Math.cos(angleRadians), Math.sin(angleRadians));
-    shaderContext?.scheduler.requestRender();
-  }, [shaderContext, dirVec, angle]);
+  const angleUniform = useAnimatableUniform<number>(angle);
 
   // ---------------------------------------------
   // Build the material and mount the mesh
@@ -117,6 +100,13 @@ export function LinearGradientShader({
 
     const rampStops = toColorRampStops(stops);
 
+    // Degrees to radians, then the unit direction. Scalar uniforms are safe
+    // as chained receivers, so the multiply reads left to right; the vec2 is
+    // built from the results rather than chained off a vec uniform, which is
+    // the form gotcha 11 requires.
+    const angleRadians = angleUniform.mul(Math.PI / 180);
+    const direction = vec2(cos(angleRadians), sin(angleRadians));
+
     // Project each pixel onto the gradient axis. uv() is the pixel's position
     // on the plane (0..1 both ways); subtracting the anchor and taking the
     // dot product with the unit direction gives a signed distance along that
@@ -125,7 +115,7 @@ export function LinearGradientShader({
     // ramp's midpoint at the anchor. With the defaults (centered anchor,
     // angle 0) this reduces to plain left-to-right u: 0 at the left edge,
     // 1 at the right.
-    const gradientCoord = uv().sub(centerUniform).dot(dirNode).add(0.5);
+    const gradientCoord = uv().sub(centerUniform).dot(direction).add(0.5);
 
     // Cosine-smoothed ping-pong: (1 - cos(π·x)) / 2 has period 2, peaks at x=1
     // and troughs at x=0/2 — same rhythm as a triangle wave but C∞ smooth so
@@ -177,7 +167,15 @@ export function LinearGradientShader({
     // is intentionally omitted to avoid rebuilds on identity-only changes.
     // Animatable uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shaderContext, stopsKey, speedUniform, centerUniform, dirNode, colorSpace, hueInterpolation]);
+  }, [
+    shaderContext,
+    stopsKey,
+    speedUniform,
+    centerUniform,
+    angleUniform,
+    colorSpace,
+    hueInterpolation,
+  ]);
 
   return null;
 }
