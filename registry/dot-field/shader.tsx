@@ -11,6 +11,7 @@ import { useEffect, useMemo } from 'react';
 import { displace, elapsedTime, signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatablePoint,
   useAnimatableUniform,
   useResize,
   useShaderContext,
@@ -49,9 +50,10 @@ export interface DotFieldShaderProps {
   decay: AnimatableProp<number>;
   /**
    * Ripple origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner.
+   * `[0, 0]` is the top-left corner. Accepts a static value or an animation
+   * signal.
    */
-  center: [number, number];
+  center: AnimatableProp<readonly [number, number]>;
 }
 
 function buildDotFieldMaterial(
@@ -178,22 +180,7 @@ export function DotFieldShader({
   // the two things (with a context change) that rebuilds the material below.
   const parsedColor = useMemo(() => parseColor(color), [color]);
 
-  // ---------------------------------------------
-  // Stable vectors the effects write into
-  // ---------------------------------------------
-  // Vector + uniform created once, then mutated with .set() — the build
-  // effect depends only on these stable references, so moving `center` or
-  // resizing the canvas updates the picture without recompiling.
-
-  const centerVec = useMemo(() => new Vector2(0.5, 0.5), []);
-  const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
-
-  // The y flip (1 - y) converts the prop's screen-style coordinates (y grows
-  // downward, [0, 0] top-left — the shared convention for every `center`
-  // prop) into the mesh's uv space, where v grows upward.
-  useEffect(() => {
-    centerVec.set(center[0], 1 - center[1]);
-  }, [centerVec, center]);
+  const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
 
   // The canvas resolution in pixels, needed because spacing/dotSize/
   // wavelength are pixel-valued props. Starts at a 1920x1080 placeholder

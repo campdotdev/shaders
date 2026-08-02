@@ -11,13 +11,14 @@ import { useEffect, useMemo } from 'react';
 import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatablePoint,
   useAnimatableUniform,
   useResize,
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
 import { clamp, cos, fract, length, mix, sin, step, uniform, uv, vec2 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
@@ -29,9 +30,10 @@ export interface RadialGradientShaderProps {
   stops: ColorStop[];
   /**
    * Where the gradient starts, 0..1 across the canvas; `[0.5, 0.5]` is
-   * centered and `[0, 0]` is the top-left corner.
+   * centered and `[0, 0]` is the top-left corner. Accepts a static value or an
+   * animation signal.
    */
-  center: [number, number];
+  center: AnimatableProp<readonly [number, number]>;
   /**
    * How far out the ramp reaches its last color, where 1 lands at the canvas
    * corners. Accepts a static value or an animation signal.
@@ -116,27 +118,12 @@ export function RadialGradientShader({
   const repeatUniform = useAnimatableUniform<number>(repeat);
   const speedUniform = useAnimatableUniform<number>(speed);
 
-  // ---------------------------------------------
-  // Stable vectors the prop effects write into
-  // ---------------------------------------------
-  // The Vector2 and its uniform wrapper are created once and never replaced.
-  // The effect below pushes new prop values in with .set(), and the GPU reads
-  // the updated numbers on the next frame. Because the build effect depends
-  // only on these stable references, moving the center never tears down and
-  // recompiles the material.
-
-  const centerVec = useMemo(() => new Vector2(0.5, 0.5), []);
-  const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
-
-  // The y flip (1 - y) converts the prop's screen-style coordinates (y grows
-  // downward, like CSS) into UV space — the mesh's built-in 0..1 surface
-  // coordinates, where v grows upward. Without it, moving the center "down"
-  // would move the gradient up. Vignette deliberately does NOT flip, because a
-  // post-process quad's uv is already screen-style; both are correct.
-  useEffect(() => {
-    centerVec.set(center[0], 1 - center[1]);
-    shaderContext?.scheduler.requestRender();
-  }, [shaderContext, centerVec, center]);
+  // screenOrigin converts the prop's screen-style coordinates (y grows
+  // downward, like CSS) into uv space, where v grows upward — without it,
+  // moving the center "down" would move the gradient up. Vignette deliberately
+  // does NOT convert, because a post-process quad's uv is already
+  // screen-style; both are correct.
+  const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
 
   // ---------------------------------------------
   // Track the canvas aspect ratio

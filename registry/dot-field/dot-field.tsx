@@ -46,9 +46,10 @@ export interface DotFieldProps {
   decay?: AnimatableProp<number>;
   /**
    * Ripple origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`.
+   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`. Accepts a
+   * static value or an animation signal.
    */
-  center?: [number, number];
+  center?: AnimatableProp<readonly [number, number]>;
 }
 
 export function DotField({

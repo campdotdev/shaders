@@ -23,9 +23,10 @@ export interface RadialGradientProps {
    * centered and `[0, 0]` is the top-left corner. Note this is the ramp's
    * origin — the first stop sits here and the colors run outward — unlike the
    * linear gradient's `center`, which slides the ramp's midpoint along its
-   * axis. Defaults to `[0.5, 0.5]`.
+   * axis. Defaults to `[0.5, 0.5]`. Accepts a static value or an animation
+   * signal.
    */
-  center?: [number, number];
+  center?: AnimatableProp<readonly [number, number]>;
   /**
    * How far out the ramp reaches its last color, where 1 lands at the canvas
    * corners. Below 1 the gradient tightens toward the center and the final
