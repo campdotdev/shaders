@@ -180,6 +180,10 @@ export function DotFieldShader({
   // the two things (with a context change) that rebuilds the material below.
   const parsedColor = useMemo(() => parseColor(color), [color]);
 
+  // screenOrigin converts the prop's screen-style coordinates (y grows
+  // downward, [0, 0] top-left, the way CSS reads) into uv space, where v
+  // grows upward — without it, moving the center "down" would move the
+  // ripples up.
   const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
 
   // The canvas resolution in pixels, needed because spacing/dotSize/
