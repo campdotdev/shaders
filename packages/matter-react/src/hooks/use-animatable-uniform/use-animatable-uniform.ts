@@ -50,10 +50,18 @@ export function useAnimatableUniform<T>(value: AnimatableProp<T>): ReturnType<ty
     const scheduler = shaderContext?.scheduler;
 
     if (isSignal(value)) {
-      return value.on('change', (next) => {
+      const write = (next: T) => {
         uniformNode.value = next;
         scheduler?.requestRender();
-      });
+      };
+
+      // Seed from the signal's current value before subscribing: this effect
+      // also runs when one signal is swapped for another, and the new source
+      // may not tick for a while — without the seed the uniform would keep
+      // showing the previous signal's last value.
+      write(value.get());
+
+      return value.on('change', write);
     }
     uniformNode.value = value;
     scheduler?.requestRender();

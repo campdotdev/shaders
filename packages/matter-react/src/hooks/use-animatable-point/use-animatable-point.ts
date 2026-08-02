@@ -67,6 +67,12 @@ export function useAnimatablePoint(
     };
 
     if (signal) {
+      // Seed from the signal's current value before subscribing: this effect
+      // also runs when one signal is swapped for another, and the new source
+      // may not tick for a while - without the seed the uniform would keep
+      // showing the previous signal's last value.
+      write(signal.get());
+
       return signal.on('change', write);
     }
     write([staticX, staticY]);

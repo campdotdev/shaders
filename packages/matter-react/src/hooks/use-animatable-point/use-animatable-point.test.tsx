@@ -76,6 +76,18 @@ describe('useAnimatablePoint', () => {
     expect(read(result.current).y).toBe(0.9);
   });
 
+  it('seeds from a swapped-in signal before it ticks', () => {
+    const first = makeSignal<readonly [number, number]>([0.1, 0.2]);
+    const second = makeSignal<readonly [number, number]>([0.7, 0.8]);
+    const { result, rerender } = renderHook(({ v }) => useAnimatablePoint(v), {
+      initialProps: { v: first.signal },
+    });
+
+    rerender({ v: second.signal });
+    expect(read(result.current).x).toBe(0.7);
+    expect(read(result.current).y).toBe(0.8);
+  });
+
   it('unsubscribes from a signal on unmount', () => {
     const { signal, set } = makeSignal<readonly [number, number]>([0.1, 0.2]);
     const { result, unmount } = renderHook(() => useAnimatablePoint(signal));
