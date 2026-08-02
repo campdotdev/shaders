@@ -10,12 +10,13 @@ import { mixColor } from '@lovo/matter';
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatablePoint,
   useAnimatableUniform,
   usePostProcessPass,
   useResize,
 } from '@lovo/matter-react';
 import { length, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
-import { Vector2, Vector3 } from 'three/webgpu';
+import { Vector3 } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
 
@@ -33,9 +34,10 @@ export interface VignetteShaderProps {
   feather: AnimatableProp<number>;
   /**
    * Vignette center, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner.
+   * `[0, 0]` is the top-left corner. Accepts a static value or an animation
+   * signal.
    */
-  center: [number, number];
+  center: AnimatableProp<readonly [number, number]>;
   /**
    * Normalized distance from `center` at which the vignette reaches full
    * strength. Smaller values close the vignette in sooner.
@@ -76,21 +78,10 @@ export function VignetteShader({
   // also keeps the raw `center` array out of the heavy effect's deps — the
   // tuple gets a fresh identity every render.
   //
-  // Unlike the mesh components, `center` needs NO y flip here: the
-  // post-process quad's uv is already screen-style (v = 0 at the top), so
-  // the prop's top-left-origin coordinates pass straight through. Verified
-  // by poster render — don't "fix" this to match the mesh components.
-
-  const centerVec = useMemo(
-    () => new Vector2(center[0], center[1]),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-  const centerUniform = useMemo(() => uniform(centerVec), [centerVec]);
-
-  useEffect(() => {
-    centerVec.set(center[0], center[1]);
-  }, [center, centerVec]);
+  // No screenOrigin conversion, on purpose: this is a post-process pass, and a
+  // full-screen quad's uv is already screen-style. The mesh-based components
+  // convert because a mesh's v grows upward; this one has nothing to convert.
+  const centerUniform = useAnimatablePoint(center);
 
   // The color prop decodes once into linear rgb channels (parseColor handles
   // hex and wide-gamut oklch/oklab strings); the effect below re-decodes
