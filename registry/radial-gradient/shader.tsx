@@ -8,10 +8,11 @@
 // a color from the ramp.
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, elapsedTime, type HueInterpolation } from '@lovo/matter';
+import { colorRamp, type ColorSpace, type HueInterpolation } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatablePoint,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
@@ -111,12 +112,15 @@ export function RadialGradientShader({
 
   // Radius lives in a uniform — a value the CPU can update each frame without
   // rebuilding the shader. useAnimatableUniform keeps it current whether the
-  // prop is a plain number or an animation signal.
+  // prop is a plain number or an animation signal. Speed is the exception:
+  // useAnimatableSpeed integrates it into a phase uniform (speed x delta
+  // summed each frame), so a speed change shifts the sweep tempo without
+  // snapping the rings.
   const radiusUniform = useAnimatableUniform<number>(radius);
   const stretchUniform = useAnimatableUniform<number>(stretch);
   const angleUniform = useAnimatableUniform<number>(angle);
   const repeatUniform = useAnimatableUniform<number>(repeat);
-  const speedUniform = useAnimatableUniform<number>(speed);
+  const phaseUniform = useAnimatableSpeed(speed);
 
   // screenOrigin converts the prop's screen-style coordinates (y grows
   // downward, like CSS) into uv space, where v grows upward — without it,
@@ -227,14 +231,14 @@ export function RadialGradientShader({
     // the palette's ends happen to match, and that is the intended look here:
     // rings that read as the gradient repeated, rather than mirrored bands.
     //
-    // Subtracting time slides the pattern outward — a given ramp value has to
-    // sit further from the center as the clock advances, the same convention
-    // DotField's ripple uses. No gate is needed around the animation the way
-    // LinearGradient needs one: its animated form is a cosine that differs from
-    // its static form, so a zero speed would still bend the ramp, whereas here
-    // the sawtooth IS the static form and the time term multiplies out to
-    // nothing at speed 0.
-    const swept = fract(gradientCoord.mul(repeatUniform).sub(elapsedTime.mul(speedUniform)));
+    // Subtracting the phase slides the pattern outward — a given ramp value
+    // has to sit further from the center as the phase advances, the same
+    // convention DotField's ripple uses. No gate is needed around the
+    // animation the way LinearGradient needs one: its animated form is a
+    // cosine that differs from its static form, so a zero speed would still
+    // bend the ramp, whereas here the sawtooth IS the static form and the
+    // phase simply stops advancing at speed 0.
+    const swept = fract(gradientCoord.mul(repeatUniform).sub(phaseUniform));
 
     // Past the radius the clamp above pins gradientCoord at exactly 1, where
     // fract() returns 0 — which would flood everything outside the radius with
@@ -282,7 +286,7 @@ export function RadialGradientShader({
     stretchUniform,
     angleUniform,
     repeatUniform,
-    speedUniform,
+    phaseUniform,
     centerUniform,
     aspectNode,
     colorSpace,

@@ -8,10 +8,11 @@
 // the canvas resolution to convert between pixels and cell units.
 import { useEffect, useMemo } from 'react';
 
-import { displace, elapsedTime, signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
+import { displace, signedDistanceFieldCircle, type TSLNode } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatablePoint,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
@@ -59,7 +60,7 @@ export interface DotFieldShaderProps {
 function buildDotFieldMaterial(
   spacingUniform: TSLNode,
   dotSizeUniform: TSLNode,
-  speedUniform: TSLNode,
+  phaseUniform: TSLNode,
   amplitudeUniform: TSLNode,
   wavelengthUniform: TSLNode,
   decayUniform: TSLNode,
@@ -100,13 +101,15 @@ function buildDotFieldMaterial(
   const dirFromCenter = toCell.div(distCells.add(0.001));
   const distToCenterPx = distCells.mul(spacingUniform);
 
-  // Traveling wave: crests move outward as elapsedTime grows. Distance over
+  // Traveling wave: crests move outward as the phase grows. Distance over
   // wavelength counts how many crests fit between here and the origin;
-  // subtracting time * speed slides the whole pattern outward; sin() over
-  // that (scaled to a full circle per crest) turns it into a smooth
-  // push/pull between -1 and 1. Because the wave is evaluated per DOT (from
-  // cellIndex, not per pixel), each dot moves as one rigid piece.
-  const phase = distToCenterPx.div(wavelengthUniform).sub(elapsedTime.mul(speedUniform));
+  // subtracting the accumulated phase (speed x delta summed on the CPU each
+  // frame, so a speed change shifts the ripple tempo without snapping it)
+  // slides the whole pattern outward; sin() over that (scaled to a full
+  // circle per crest) turns it into a smooth push/pull between -1 and 1.
+  // Because the wave is evaluated per DOT (from cellIndex, not per pixel),
+  // each dot moves as one rigid piece.
+  const phase = distToCenterPx.div(wavelengthUniform).sub(phaseUniform);
   const wave = sin(phase.mul(Math.PI * 2));
 
   // Fade the wave with distance so the ripple settles toward the edges.
@@ -167,10 +170,12 @@ export function DotFieldShader({
 
   // The animated dials live in uniforms (values the CPU can update each
   // frame without rebuilding the shader), tracking either a static number or
-  // an animation signal.
+  // an animation signal. Speed is the exception: useAnimatableSpeed
+  // integrates it into a phase uniform (speed x delta summed each frame), so
+  // a speed change shifts the ripple tempo without snapping the pattern.
   const spacingUniform = useAnimatableUniform<number>(spacing);
   const dotSizeUniform = useAnimatableUniform<number>(dotSize);
-  const speedUniform = useAnimatableUniform<number>(speed);
+  const phaseUniform = useAnimatableSpeed(speed);
   const amplitudeUniform = useAnimatableUniform<number>(amplitude);
   const wavelengthUniform = useAnimatableUniform<number>(wavelength);
   const decayUniform = useAnimatableUniform<number>(decay);
@@ -214,7 +219,7 @@ export function DotFieldShader({
     const material = buildDotFieldMaterial(
       spacingUniform,
       dotSizeUniform,
-      speedUniform,
+      phaseUniform,
       amplitudeUniform,
       wavelengthUniform,
       decayUniform,
@@ -244,7 +249,7 @@ export function DotFieldShader({
     parsedColor,
     spacingUniform,
     dotSizeUniform,
-    speedUniform,
+    phaseUniform,
     amplitudeUniform,
     wavelengthUniform,
     decayUniform,

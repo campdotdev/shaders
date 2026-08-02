@@ -18,6 +18,7 @@ import {
 } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
@@ -107,7 +108,7 @@ export function MeshGradientShader({
 
   const [paletteA, paletteB] = palettes;
 
-  const cycleSpeedUniform = useAnimatableUniform<number>(cycleSpeed);
+  const cyclePhaseUniform = useAnimatableSpeed(cycleSpeed);
   const cycleEaseUniform = useAnimatableUniform<number>(cycleEase);
 
   const paletteAColor0 = useColorUniform(paletteA[0]);
@@ -119,7 +120,7 @@ export function MeshGradientShader({
   const paletteBColor2 = useColorUniform(paletteB[2]);
   const paletteBColor3 = useColorUniform(paletteB[3]);
 
-  const speedUniform = useAnimatableUniform<number>(speed);
+  const phaseUniform = useAnimatableSpeed(speed);
   const frequencyUniform = useAnimatableUniform<number>(frequency);
   const amplitudeUniform = useAnimatableUniform<number>(amplitude);
 
@@ -199,12 +200,11 @@ export function MeshGradientShader({
     // is DIVIDED by `amplitude`, which is why larger amplitude values mean a
     // gentler warp. The y warp runs at 1.5x the frequency and 2x the
     // strength of the x warp — twin asymmetries that keep the ripples from
-    // lining up into a visible grid. `speed` scrolls both sines over time.
-    const timeScaledBySpeed = elapsedTime.mul(speedUniform);
-    const warpX = sin(rotatedUv.y.mul(frequencyUniform).add(timeScaledBySpeed)).div(
-      amplitudeUniform,
-    );
-    const warpY = sin(rotatedUv.x.mul(frequencyUniform).mul(1.5).add(timeScaledBySpeed))
+    // lining up into a visible grid. The accumulated phase (speed x delta
+    // summed on the CPU) scrolls both sines, so a speed change shifts the
+    // scroll tempo without snapping the ripples.
+    const warpX = sin(rotatedUv.y.mul(frequencyUniform).add(phaseUniform)).div(amplitudeUniform);
+    const warpY = sin(rotatedUv.x.mul(frequencyUniform).mul(1.5).add(phaseUniform))
       .div(amplitudeUniform)
       .mul(2);
     const warpedUv = vec2(rotatedUv.x.add(warpX), rotatedUv.y.add(warpY));
@@ -219,8 +219,7 @@ export function MeshGradientShader({
     // hand-offs; > 1 does the opposite, lingering in the blended middle.
     // The +1, *0.5 rescale turns the result into the 0..1 mix factor used
     // to cross-fade each of the four corner colors between palette A and B.
-    const cycleTime = elapsedTime.mul(cycleSpeedUniform);
-    const cycle = sin(cycleTime);
+    const cycle = sin(cyclePhaseUniform);
     const eased = sign(cycle)
       .mul(pow(abs(cycle), cycleEaseUniform))
       .add(1)
@@ -281,10 +280,10 @@ export function MeshGradientShader({
   }, [
     shaderContext,
     aspectNode,
-    speedUniform,
+    phaseUniform,
     frequencyUniform,
     amplitudeUniform,
-    cycleSpeedUniform,
+    cyclePhaseUniform,
     cycleEaseUniform,
     paletteAColor0,
     paletteAColor1,

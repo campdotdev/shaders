@@ -2,15 +2,10 @@
 
 import { useEffect, useMemo } from 'react';
 
-import {
-  colorRamp,
-  type ColorSpace,
-  elapsedTime,
-  type HueInterpolation,
-  type TSLNode,
-} from '@lovo/matter';
+import { colorRamp, type ColorSpace, type HueInterpolation, type TSLNode } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
@@ -177,7 +172,9 @@ export function AuroraShader({
   const resize = useResize();
 
   const intensityUniform = useAnimatableUniform<number>(intensity);
-  const speedUniform = useAnimatableUniform<number>(speed);
+  // Speed is integrated on the CPU into a phase uniform (speed x delta per
+  // frame), so tempo changes glide instead of snapping the curtain.
+  const phaseUniform = useAnimatableSpeed(speed);
   const wavinessUniform = useAnimatableUniform<number>(waviness);
   const coverageUniform = useAnimatableUniform<number>(coverage);
 
@@ -240,10 +237,10 @@ export function AuroraShader({
       // Virtual camera looking toward the horizon (+z); z sets the fov.
       const rayDirection = normalize(vec3(ndcX, ndcY, 1.064));
 
-      // speed scales both time phases together so shimmer and drift stay
-      // coupled.
-      const warpPhase = elapsedTime.mul(speedUniform).mul(0.02);
-      const domainPhase = elapsedTime.mul(speedUniform).mul(0.01);
+      // Both motion phases derive from the same accumulated phase, so
+      // shimmer and drift stay coupled and keep their 2:1 rate ratio.
+      const warpPhase = phaseUniform.mul(0.02);
+      const domainPhase = phaseUniform.mul(0.01);
 
       // ---------------------------------------------
       // March the ray, accumulating light
@@ -350,7 +347,7 @@ export function AuroraShader({
     colorSpace,
     hueInterpolation,
     intensityUniform,
-    speedUniform,
+    phaseUniform,
     wavinessUniform,
     coverageUniform,
     aspectNode,
