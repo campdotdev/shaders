@@ -86,6 +86,9 @@ export function LinearGradientShader({
   // moving the anchor "down" would slide the gradient up.
   const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
 
+  // Angle lives in a scalar uniform; useAnimatableUniform keeps it current
+  // whether the prop is a static number or an animation signal. The build
+  // effect below derives the direction vector from it in the shader.
   const angleUniform = useAnimatableUniform<number>(angle);
 
   // ---------------------------------------------

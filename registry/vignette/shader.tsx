@@ -68,20 +68,13 @@ export function VignetteShader({
   const featherUniform = useAnimatableUniform(feather);
   const radiusUniform = useAnimatableUniform(radius);
 
-  // ---------------------------------------------
-  // Stable vectors the prop effects write into
-  // ---------------------------------------------
-  // Each vector and its uniform wrapper are created once and never replaced;
-  // the effects push new prop values in with .set(). The pass at the bottom
-  // depends only on these stable references, so changing `center` or `color`
-  // updates the picture without tearing down and recompiling the pass. This
-  // also keeps the raw `center` array out of the heavy effect's deps — the
-  // tuple gets a fresh identity every render.
-  //
-  // No screenOrigin conversion, on purpose: this is a post-process pass, and a
-  // full-screen quad's uv is already screen-style. The mesh-based components
-  // convert because a mesh's v grows upward; this one has nothing to convert.
   const centerUniform = useAnimatablePoint(center);
+
+  // The color vector the decode effect writes into
+  // The Vector3 and its uniform wrapper are created once and never replaced;
+  // the effect below decodes the color prop and pushes channels in with .set().
+  // Because the pass depends only on the stable wrapper, color changes never
+  // re-register the pass.
 
   // The color prop decodes once into linear rgb channels (parseColor handles
   // hex and wide-gamut oklch/oklab strings); the effect below re-decodes
