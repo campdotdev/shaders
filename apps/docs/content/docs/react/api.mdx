@@ -84,12 +84,15 @@ The returned node keeps its identity for the component's lifetime, so a material
 The `[x, y]` sibling, for props like `center`. Same contract — static pair or signal in, one stable `vec2` uniform out, backed by a single `Vector2` mutated in place:
 
 ```tsx
-import { useAnimatablePoint } from '@lovo/matter-react'
+import { useAnimatablePoint, type AnimatableProp } from '@lovo/matter-react'
 
-const centerUniform = useAnimatablePoint(center, { screenOrigin: true })
+function Inner({ center }: { center: AnimatableProp<readonly [number, number]> }) {
+  const centerUniform = useAnimatablePoint(center, { screenOrigin: true })
+  // centerUniform.value is a Vector2, mutated in place on every change
+}
 ```
 
-`screenOrigin: true` treats the incoming pair as a screen-style point — `[0, 0]` at the top-left, y growing downward, like CSS — and converts it to uv space, where v grows upward. It's off by default.
+`screenOrigin: true` treats the incoming pair as a screen-style point — `[0, 0]` at the top-left, y growing downward, like CSS — and converts it to uv space, where v grows upward. Both coordinates are expected normalized to `[0, 1]`: the conversion is just `v = 1 - y`, with no scaling, so pixel coordinates won't land where you expect. It's off by default.
 
 ## `<FallbackBoundary>`
 
