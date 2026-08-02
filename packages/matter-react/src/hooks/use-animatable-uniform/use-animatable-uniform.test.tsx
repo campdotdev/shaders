@@ -69,6 +69,17 @@ describe('useAnimatableUniform', () => {
     expect((result.current as unknown as { value: number }).value).toBe(0.7);
   });
 
+  it('seeds from a swapped-in signal before it ticks', () => {
+    const first = makeSignal(0.1);
+    const second = makeSignal(0.7);
+    const { result, rerender } = renderHook(({ v }) => useAnimatableUniform(v), {
+      initialProps: { v: first.signal },
+    });
+
+    rerender({ v: second.signal });
+    expect((result.current as unknown as { value: number }).value).toBe(0.7);
+  });
+
   it('unsubscribes from signal on unmount', () => {
     const { signal, set } = makeSignal(0.1);
     const { result, unmount } = renderHook(() => useAnimatableUniform(signal));
