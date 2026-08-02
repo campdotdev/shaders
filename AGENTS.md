@@ -13,6 +13,8 @@ You are working on **Matter** — a React shader component library on WebGPU + T
 
 Milestone history lives in git tags and `docs/superpowers/plans/`. Don't trust any hardcoded status table — check the tags.
 
+**Division of labor:** `docs/superpowers/` holds the artifacts for work in flight right now — the spec and plan being built against today. Linear is the only place for project management and tracking: backlog, deferred threads, and status live there, never in this file or in a spec.
+
 ## Project shape (30-second version)
 
 - **Three-tier model**: Tier 1 = polished components (`<LinearGradient>` etc., delivered via shadcn-style CLI copy-paste from `registry/`); Tier 2 = TSL primitives in the engine package (`fractalNoise`, `voronoi`, etc.); Tier 3 = recipes (TSL snippets in the docs site).
