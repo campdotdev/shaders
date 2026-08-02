@@ -66,21 +66,30 @@ All three are Strict-Mode-safe (no leaked listeners on dev double-mount) and mus
 
 ## `useAnimatableUniform`
 
-Low-level animation glue. Pass a TSL `uniform` and a signal, get bidirectional wiring:
+Low-level animation glue. Pass an animatable prop — a static value or a signal — and get back a stable TSL uniform node that tracks it:
 
 ```tsx
-import { useAnimatableUniform } from '@lovo/matter-react'
-import { uniform } from 'three/tsl'
+import { useAnimatableUniform, type AnimatableProp } from '@lovo/matter-react'
 
-const reachUniform = uniform(0.3)
-
-function Inner({ reachSignal }) {
-  useAnimatableUniform(reachUniform, reachSignal)
-  // reachUniform.value updates on every signal change
+function Inner({ reach }: { reach: AnimatableProp<number> }) {
+  const reachUniform = useAnimatableUniform(reach)
+  // reachUniform.value updates on every signal change — no React re-render
 }
 ```
 
-Tier 1 components call this internally for their public props. You only need it when wiring up a custom shader.
+The returned node keeps its identity for the component's lifetime, so a material can capture it at compile time; signal updates write straight to `.value` and never touch React. Tier 1 components call this internally for their public props. You only need it when wiring up a custom shader.
+
+## `useAnimatablePoint`
+
+The `[x, y]` sibling, for props like `center`. Same contract — static pair or signal in, one stable `vec2` uniform out, backed by a single `Vector2` mutated in place:
+
+```tsx
+import { useAnimatablePoint } from '@lovo/matter-react'
+
+const centerUniform = useAnimatablePoint(center, { screenOrigin: true })
+```
+
+`screenOrigin: true` treats the incoming pair as a screen-style point — `[0, 0]` at the top-left, y growing downward, like CSS — and converts it to uv space, where v grows upward. It's off by default.
 
 ## `<FallbackBoundary>`
 
