@@ -9,28 +9,14 @@ import { useEffect, useMemo } from 'react';
 
 import { uniform } from 'three/tsl';
 
+import {
+  type AnimatableProp,
+  type AnimatableSignal,
+  isSignal,
+} from '../animatable-signal/animatable-signal.js';
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 
-export interface AnimatableSignal<T> {
-  get(): T;
-  on(event: 'change', cb: (value: T) => void): () => void;
-}
-
-export type AnimatableProp<T> = T | AnimatableSignal<T>;
-
-// Duck-type check: a signal is anything carrying callable get/on. A protocol
-// check (rather than instanceof) is what lets foreign objects like Motion's
-// MotionValue qualify without Matter depending on any animation library.
-const isSignal = <T>(value: AnimatableProp<T>): value is AnimatableSignal<T> => {
-  if (typeof value !== 'object' || value === null) return false;
-
-  return (
-    'get' in value &&
-    typeof value.get === 'function' &&
-    'on' in value &&
-    typeof value.on === 'function'
-  );
-};
+export type { AnimatableProp, AnimatableSignal };
 
 export function useAnimatableUniform<T>(value: AnimatableProp<T>): ReturnType<typeof uniform<T>> {
   // Null outside a mounted <ShaderScene> (Mode 2, or a bare unit test), in
