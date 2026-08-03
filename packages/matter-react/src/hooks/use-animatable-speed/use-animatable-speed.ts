@@ -89,7 +89,19 @@ export function useAnimatableSpeed(
 
     scheduler.add(accumulate);
 
-    return () => scheduler.remove(accumulate);
+    // Accumulated phase is wall-clock history, which makes it invisible to
+    // the harness that keeps visual tests reproducible: resetting the
+    // renderer clock rewinds elapsedTime but not this uniform. Registering
+    // with the scheduler's reset channel lets that harness rewind the phase
+    // to a known origin in the same breath.
+    const unsubscribeReset = scheduler.onPhaseReset(() => {
+      phaseUniform.value = 0;
+    });
+
+    return () => {
+      scheduler.remove(accumulate);
+      unsubscribeReset();
+    };
   }, [shaderContext, phaseUniform]);
 
   return phaseUniform;

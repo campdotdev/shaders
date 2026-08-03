@@ -14,6 +14,7 @@ import { useAnimatableSpeed } from './use-animatable-speed.js';
 // exact delta without stubbing requestAnimationFrame.
 class FakeScheduler {
   clients = new Set<SchedulerClient>();
+  phaseResetListeners = new Set<() => void>();
   requestRender = vi.fn();
 
   add(client: SchedulerClient): void {
@@ -22,6 +23,16 @@ class FakeScheduler {
 
   remove(client: SchedulerClient): void {
     this.clients.delete(client);
+  }
+
+  onPhaseReset(listener: () => void): () => void {
+    this.phaseResetListeners.add(listener);
+
+    return () => this.phaseResetListeners.delete(listener);
+  }
+
+  resetPhases(): void {
+    for (const listener of this.phaseResetListeners) listener();
   }
 
   tick(delta: number): void {
@@ -218,6 +229,44 @@ describe('useAnimatableSpeed', () => {
     // Two accumulators would double-count the same tick and land at 0.2.
     expect(phaseOf(result)).toBeCloseTo(0.1);
     expect(scheduler.clients.size).toBe(1);
+  });
+
+  it('zeroes the accumulated phase when the scheduler fires a phase reset', () => {
+    const scheduler = new FakeScheduler();
+    const { result } = renderHook(() => useAnimatableSpeed(1), {
+      wrapper: makeWrapper(scheduler),
+    });
+
+    scheduler.tick(0.1);
+    expect(phaseOf(result)).toBeCloseTo(0.1);
+
+    scheduler.resetPhases();
+    expect(phaseOf(result)).toBe(0);
+
+    // The accumulator keeps integrating from the new epoch.
+    scheduler.tick(0.05);
+    expect(phaseOf(result)).toBeCloseTo(0.05);
+  });
+
+  it('unsubscribes its phase-reset listener on unmount', () => {
+    const scheduler = new FakeScheduler();
+    const { unmount } = renderHook(() => useAnimatableSpeed(1), {
+      wrapper: makeWrapper(scheduler),
+    });
+
+    expect(scheduler.phaseResetListeners.size).toBe(1);
+    unmount();
+    expect(scheduler.phaseResetListeners.size).toBe(0);
+  });
+
+  it('leaves exactly one phase-reset listener after a Strict Mode double-mount', () => {
+    const scheduler = new FakeScheduler();
+
+    renderHook(() => useAnimatableSpeed(1), {
+      wrapper: makeStrictWrapper(scheduler),
+    });
+
+    expect(scheduler.phaseResetListeners.size).toBe(1);
   });
 
   it('works outside a ShaderScene, where there is no scheduler', () => {
