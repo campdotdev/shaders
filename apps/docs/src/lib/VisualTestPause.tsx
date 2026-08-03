@@ -44,7 +44,13 @@ function useVisualTestPause(): void {
       frame += 1;
 
       if (frame === 1) {
+        // Two time sources feed the shaders and both must rewind for the
+        // captured frame to be reproducible: the renderer clock (elapsedTime)
+        // and the CPU-side phase accumulators (useAnimatableSpeed), which
+        // integrate wall-clock deltas from mount and would otherwise carry a
+        // load-timing-dependent residual into the screenshot.
         resetRendererClock(ctx.renderer.three);
+        ctx.scheduler.resetPhases();
 
         return;
       }
