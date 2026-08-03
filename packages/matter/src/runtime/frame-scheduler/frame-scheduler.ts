@@ -20,6 +20,7 @@ export type SchedulerClient = (tick: SchedulerTick) => void;
 
 export class FrameScheduler {
   private readonly clients = new Set<SchedulerClient>();
+  private readonly phaseResetListeners = new Set<() => void>();
   private rafId: number | null = null;
   private running = false;
   private paused = false;
@@ -78,6 +79,34 @@ export class FrameScheduler {
   dispose(): void {
     this.stop();
     this.clients.clear();
+    this.phaseResetListeners.clear();
+  }
+
+  /**
+   * Register a callback for `resetPhases()`. Returns the unsubscribe.
+   *
+   * Phase accumulators (useAnimatableSpeed) integrate wall-clock deltas into
+   * uniforms the scheduler cannot see, so the scheduler brokers resets
+   * instead of performing them: each accumulator registers here and zeroes
+   * its own state when asked.
+   */
+  onPhaseReset(listener: () => void): () => void {
+    this.phaseResetListeners.add(listener);
+
+    return () => {
+      this.phaseResetListeners.delete(listener);
+    };
+  }
+
+  /**
+   * Rewind every registered phase accumulator to zero. The visual-test
+   * harness calls this alongside the renderer clock reset so a captured
+   * frame renders at a reproducible time origin — accumulated phase is
+   * wall-clock history, and without the rewind no two machines capture the
+   * same frame.
+   */
+  resetPhases(): void {
+    for (const listener of this.phaseResetListeners) listener();
   }
 
   /**
