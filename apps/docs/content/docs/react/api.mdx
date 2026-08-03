@@ -103,11 +103,11 @@ import { useAnimatableSpeed, type AnimatableProp } from '@lovo/matter-react'
 
 function Inner({ speed }: { speed: AnimatableProp<number> }) {
   const phaseUniform = useAnimatableSpeed(speed)
-  // phaseUniform.value grows by speed x delta each frame, scaled by reduced motion
+  // phaseUniform.value grows by speed x min(delta, 0.1) each frame, scaled by reduced motion
 }
 ```
 
-Each scheduler tick adds `speed × delta` (scaled for `prefers-reduced-motion`) to a running total, rather than multiplying elapsed time by speed. That distinction matters: a product form re-evaluates the whole elapsed history whenever speed changes, so the pattern visibly snaps; the integral form only changes the growth rate, so a speed change shifts tempo smoothly from wherever the pattern already is. Accepts a static number or an animation signal, same as the other animatable hooks.
+Each scheduler tick adds `speed × min(delta, 0.1)` (scaled for `prefers-reduced-motion`) to a running total, rather than multiplying elapsed time by speed. That distinction matters: a product form re-evaluates the whole elapsed history whenever speed changes, so the pattern visibly snaps; the integral form only changes the growth rate, so a speed change shifts tempo smoothly from wherever the pattern already is. The 0.1-second cap on delta covers the other way a big jump can sneak in: the first tick after a hidden tab or a parked scene reports the entire gap as one delta, and the cap keeps that from snapping the pattern forward by minutes at once. Accepts a static number or an animation signal, same as the other animatable hooks.
 
 ## `<FallbackBoundary>`
 
