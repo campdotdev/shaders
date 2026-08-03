@@ -255,3 +255,38 @@ describe('dispose invariants', () => {
     expect(client).not.toHaveBeenCalled();
   });
 });
+
+describe('FrameScheduler phase reset', () => {
+  it('invokes registered phase-reset listeners on resetPhases()', () => {
+    const scheduler = new FrameScheduler();
+    const listener = vi.fn();
+
+    scheduler.onPhaseReset(listener);
+    scheduler.resetPhases();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it('does not invoke a phase-reset listener after its unsubscribe runs', () => {
+    const scheduler = new FrameScheduler();
+    const listener = vi.fn();
+
+    const unsubscribe = scheduler.onPhaseReset(listener);
+
+    unsubscribe();
+    scheduler.resetPhases();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it('drops phase-reset listeners on dispose', () => {
+    const scheduler = new FrameScheduler();
+    const listener = vi.fn();
+
+    scheduler.onPhaseReset(listener);
+    scheduler.dispose();
+    scheduler.resetPhases();
+
+    expect(listener).not.toHaveBeenCalled();
+  });
+});
