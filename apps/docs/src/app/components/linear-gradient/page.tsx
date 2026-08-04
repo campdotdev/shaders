@@ -65,6 +65,7 @@ function LinearGradientControls() {
       <Section title="Motion">
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
+        <SliderInput label="Repeat" max={8} min={1} path="repeat" step={0.1} />
         <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />
         <SliderInput label="Center y" max={1} min={0} path="center.1" step={0.01} />
       </Section>
