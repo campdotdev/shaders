@@ -17,7 +17,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { cos, mix, sin, smoothstep, sub, uv, vec2 } from 'three/tsl';
+import { cos, fract, mix, sin, smoothstep, sub, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
@@ -41,8 +41,19 @@ export interface LinearGradientShaderProps {
    */
   center: AnimatableProp<readonly [number, number]>;
   /**
-   * Speed of the back-and-forth color drift along the gradient. 0 gives a
-   * static gradient. Accepts a static value or an animation signal.
+   * How many times the stops run across the gradient's span. 1 is a single
+   * pass; above 1 the pattern tiles past both ends, so stripes run edge to
+   * edge at any angle. Each pass runs the stops in the same direction and
+   * snaps back to the first, so unless the first and last stop match there
+   * is a visible edge at every stripe boundary. Values at or below 1 render
+   * as a single pass. Accepts a static value or an animation signal.
+   */
+  repeat: AnimatableProp<number>;
+  /**
+   * Speed of the gradient's motion. At a single pass the colors drift back
+   * and forth along the axis; combined with `repeat` above 1 the stripes
+   * march steadily in the angle's direction instead. 0 gives a static
+   * gradient. Accepts a static value or an animation signal.
    */
   speed: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. */
@@ -58,6 +69,7 @@ export function LinearGradientShader({
   stops,
   angle,
   center,
+  repeat,
   speed,
   colorSpace,
   hueInterpolation,
@@ -94,6 +106,10 @@ export function LinearGradientShader({
   // whether the prop is a static number or an animation signal. The build
   // effect below derives the direction vector from it in the shader.
   const angleUniform = useAnimatableUniform<number>(angle);
+
+  // Repeat rides its own scalar uniform so dragging or animating it never
+  // rebuilds the material; the gate in the build effect reads it on the GPU.
+  const repeatUniform = useAnimatableUniform<number>(repeat);
 
   // ---------------------------------------------
   // Build the material and mount the mesh
@@ -139,12 +155,32 @@ export function LinearGradientShader({
       smoothstep(0, 0.01, speedUniform),
     );
 
+    // Tiled form: multiplying by repeat squeezes that many passes of the
+    // ramp into the span one pass covered, and fract() keeps only the
+    // fractional part, so the coordinate saws 0 -> 1 over and over.
+    // Deliberately no clamp first (RadialGradient clamps because its
+    // coordinate is bounded): the projection above runs past 0..1 at
+    // diagonal angles, and fract tiling that overhang is what fills the
+    // corners with stripes instead of flat end-stop color. Subtracting the
+    // phase means a given ramp value needs a larger coordinate as the phase
+    // grows, so the stripes march along the angle's direction — the barber
+    // pole. No speed gate here: this sawtooth is its own static form, so at
+    // speed 0 the phase simply stops advancing.
+    const tiled = fract(gradientCoord.mul(repeatUniform).sub(phaseUniform));
+
+    // The repeat gate, same trick as the speed gate above: at repeat <= 1
+    // the smoothstep is exactly 0 and the mix returns the single-pass form
+    // bit for bit, so the default render is unchanged from before this prop
+    // existed. Above ~1.01 the tiled form fully takes over; animating repeat
+    // across 1 crosses a narrow morph instead of a hard pop.
+    const rampCoord = mix(animatedGradientCoord, tiled, smoothstep(1, 1.01, repeatUniform));
+
     // An unlit material whose per-pixel color comes from colorNode (a node
     // graph compiled to GPU code) — colorRamp maps the 0..1 coordinate to a
     // color, interpolating between stops in the chosen color space.
     const material = new MeshBasicNodeMaterial();
 
-    const gradientColor = colorRamp(animatedGradientCoord, rampStops, colorSpace, hueInterpolation);
+    const gradientColor = colorRamp(rampCoord, rampStops, colorSpace, hueInterpolation);
 
     material.colorNode = gradientColor;
 
@@ -177,6 +213,7 @@ export function LinearGradientShader({
     speedUniform,
     phaseUniform,
     centerUniform,
+    repeatUniform,
     angleUniform,
     colorSpace,
     hueInterpolation,
