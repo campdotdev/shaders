@@ -32,9 +32,20 @@ export interface LinearGradientProps {
    */
   center?: AnimatableProp<readonly [number, number]>;
   /**
-   * Speed of the back-and-forth color drift along the gradient. 0 gives a
-   * static gradient. Defaults to 0. Accepts a static value or an animation
+   * How many times the stops run across the gradient's span. 1 is a single
+   * pass; above 1 the pattern tiles past both ends, so stripes run edge to
+   * edge at any angle. Each pass runs the stops in the same direction and
+   * snaps back to the first, so unless the first and last stop match there
+   * is a visible edge at every stripe boundary. Values at or below 1 render
+   * as a single pass. Defaults to 1. Accepts a static value or an animation
    * signal.
+   */
+  repeat?: AnimatableProp<number>;
+  /**
+   * Speed of the gradient's motion. At a single pass the colors drift back
+   * and forth along the axis; combined with `repeat` above 1 the stripes
+   * march steadily in the angle's direction instead. 0 gives a static
+   * gradient. Defaults to 0. Accepts a static value or an animation signal.
    */
   speed?: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. Defaults to `'oklab'`. */
@@ -59,6 +70,7 @@ export function LinearGradient({
   stops = DEFAULT_STOPS,
   angle = 0,
   center = [0.5, 0.5],
+  repeat = 1,
   speed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
@@ -69,6 +81,7 @@ export function LinearGradient({
       center={center}
       colorSpace={colorSpace}
       hueInterpolation={hueInterpolation}
+      repeat={repeat}
       speed={speed}
       stops={stops}
     />
