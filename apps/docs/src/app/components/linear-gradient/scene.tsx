@@ -26,6 +26,7 @@ export default function LinearGradientScene({
         colorSpace={params.colorSpace}
         hueInterpolation={params.hueInterpolation}
         key={remountKey}
+        repeat={params.repeat}
         speed={params.speed}
         stops={params.stops}
       />

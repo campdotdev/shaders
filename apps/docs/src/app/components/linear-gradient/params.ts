@@ -10,6 +10,7 @@ export interface Stop {
 export interface Params {
   angle: number;
   speed: number;
+  repeat: number;
   center: [number, number];
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
@@ -22,6 +23,7 @@ export const MAX_STOPS = 6;
 export const INITIAL: Params = {
   angle: 90,
   speed: 0,
+  repeat: 1,
   center: [0.5, 0.5],
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
