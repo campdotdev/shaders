@@ -24,6 +24,12 @@ export interface GodRaysProps {
    */
   density?: AnimatableProp<number>;
   /**
+   * How defined the rays are. 0 is a soft overlapping haze; 1 sharpens the
+   * noise creases into crisp, readable beams. Defaults to 0.5.
+   * Accepts a static value or an animation signal.
+   */
+  definition?: AnimatableProp<number>;
+  /**
    * Overall brightness. 0 hides the rays. Defaults to 1.
    * Accepts a static value or an animation signal.
    */
@@ -39,8 +45,17 @@ export interface GodRaysProps {
 export function GodRays({
   center = [0.5, -0.05],
   density = 12,
+  definition = 0.5,
   intensity = 1,
   speed = 1,
 }: GodRaysProps) {
-  return <GodRaysShader center={center} density={density} intensity={intensity} speed={speed} />;
+  return (
+    <GodRaysShader
+      center={center}
+      definition={definition}
+      density={density}
+      intensity={intensity}
+      speed={speed}
+    />
+  );
 }

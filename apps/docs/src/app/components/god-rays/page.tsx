@@ -47,6 +47,7 @@ function GodRaysControls() {
       <Section title="Shape">
         <SliderInput label="Intensity" max={3} min={0} path="intensity" step={0.01} />
         <SliderInput label="Density" max={32} min={2} path="density" step={0.5} />
+        <SliderInput label="Definition" max={1} min={0} path="definition" step={0.01} />
       </Section>
     </ControlPanel>
   );
