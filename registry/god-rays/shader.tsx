@@ -17,7 +17,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { atan2, cos, Fn, sin, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { atan2, cos, float, Fn, mix, sin, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 export interface GodRaysShaderProps {
@@ -33,6 +33,12 @@ export interface GodRaysShaderProps {
    * Accepts a static value or an animation signal.
    */
   density: AnimatableProp<number>;
+  /**
+   * How defined the rays are. 0 is a soft overlapping haze; 1 sharpens the
+   * noise creases into crisp, readable beams.
+   * Accepts a static value or an animation signal.
+   */
+  definition: AnimatableProp<number>;
   /**
    * Overall brightness. 0 hides the rays.
    * Accepts a static value or an animation signal.
@@ -56,7 +62,34 @@ const DENSITY_TO_CIRCLE = 1 / (2 * Math.PI);
 // ~1/second at speed 1). Higher = busier shimmer.
 const SHIMMER_RATE = 0.05;
 
-export function GodRaysShader({ center, density, intensity, speed }: GodRaysShaderProps) {
+// Exponent for the haze end of the definition dial. Raising the 0..1 field
+// to a power >1 deepens the valleys while leaving peaks near 1 — gentle
+// contrast, wide soft lobes. Higher = darker gaps even at definition 0.
+const SOFT_EXPONENT = 1.6;
+
+// Ridge shaping for the beam end (Aurora's reciprocal-power trick): measure
+// how far the field is from its peak (1 - value), amplify that gap, and take
+// a reciprocal power. Values at the peak stay ~1 while everything else
+// collapses toward 0 — thin bright filaments. GAIN widens/narrows the
+// filaments (higher = thinner); EXPONENT hardens their edges.
+const RIDGE_GAIN = 14;
+const RIDGE_EXPONENT = 1.3;
+
+// mx noise's practical amplitude is well under its nominal ±1 — remapped to
+// 0..1 the field really lives around 0.2..0.8, so a curve that saves its
+// brightness for values near 1 would never fire (the dial read as inverted
+// at the phase-3 gate). This stretches the field about its midpoint before
+// the ridge so genuine noise peaks land on 1. Higher = thicker, brighter
+// filament cores (a wider stretch saturates more of each peak).
+const PEAK_STRETCH = 2.2;
+
+export function GodRaysShader({
+  center,
+  density,
+  definition,
+  intensity,
+  speed,
+}: GodRaysShaderProps) {
   const shaderContext = useShaderContext();
 
   // A literal speed of 0 means nothing on screen ever changes (an animation
@@ -67,6 +100,7 @@ export function GodRaysShader({ center, density, intensity, speed }: GodRaysShad
   useStaticSceneHint(isStatic);
 
   const densityUniform = useAnimatableUniform<number>(density);
+  const definitionUniform = useAnimatableUniform<number>(definition);
   const intensityUniform = useAnimatableUniform<number>(intensity);
   // Speed is integrated on the CPU into a phase uniform (speed x delta per
   // frame), so tempo changes glide instead of snapping the pattern.
@@ -157,7 +191,20 @@ export function GodRaysShader({ center, density, intensity, speed }: GodRaysShad
       );
       const raw = simplexNoise(rayCoord).mul(0.5).add(0.5);
 
-      const lit = raw.mul(intensityUniform).clamp(0, 1);
+      // ---------------------------------------------
+      // Definition — haze vs beams
+      // ---------------------------------------------
+      // Two shapings of the same field, blended by the dial. The soft end
+      // just deepens the valleys; the ridge end collapses everything but the
+      // peaks into darkness so only thin bright filaments survive. The ridge
+      // reads a peak-stretched copy of the field (see PEAK_STRETCH) so real
+      // noise peaks actually reach the curve's bright summit.
+      const soft = raw.pow(SOFT_EXPONENT);
+      const stretched = raw.sub(0.5).mul(PEAK_STRETCH).add(0.5).clamp(0, 1);
+      const ridge = float(1).div(stretched.oneMinus().mul(RIDGE_GAIN).add(1).pow(RIDGE_EXPONENT));
+      const field = mix(soft, ridge, definitionUniform);
+
+      const lit = field.mul(intensityUniform).clamp(0, 1);
 
       // Premultiplied output: rgb is the light itself, alpha its coverage.
       return vec4(vec3(lit), lit);
@@ -183,7 +230,15 @@ export function GodRaysShader({ center, density, intensity, speed }: GodRaysShad
         // same
       }
     };
-  }, [shaderContext, densityUniform, intensityUniform, phaseUniform, centerUniform, aspectNode]);
+  }, [
+    shaderContext,
+    densityUniform,
+    definitionUniform,
+    intensityUniform,
+    phaseUniform,
+    centerUniform,
+    aspectNode,
+  ]);
 
   return null;
 }

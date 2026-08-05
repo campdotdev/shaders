@@ -2,6 +2,7 @@ export interface GodRaysParams {
   centerX: number;
   centerY: number;
   density: number;
+  definition: number;
   intensity: number;
   speed: number;
 }
@@ -12,6 +13,7 @@ export const INITIAL: GodRaysParams = {
   centerX: 0.5,
   centerY: -0.05,
   density: 12,
+  definition: 0.5,
   intensity: 1,
   speed: 1,
 };
