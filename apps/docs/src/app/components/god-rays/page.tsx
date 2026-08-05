@@ -41,8 +41,12 @@ function GodRaysControls() {
         <SliderInput label="Center X" max={1.5} min={-0.5} path="centerX" step={0.01} />
         <SliderInput label="Center Y" max={1.5} min={-0.5} path="centerY" step={0.01} />
       </Section>
+      <Section title="Motion">
+        <SliderInput label="Speed" max={3} min={0} path="speed" step={0.01} />
+      </Section>
       <Section title="Shape">
         <SliderInput label="Intensity" max={3} min={0} path="intensity" step={0.01} />
+        <SliderInput label="Density" max={32} min={2} path="density" step={0.5} />
       </Section>
     </ControlPanel>
   );

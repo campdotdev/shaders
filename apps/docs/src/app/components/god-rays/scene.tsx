@@ -16,7 +16,12 @@ export default function GodRaysScene({
 } = {}) {
   return (
     <ShaderScene>
-      <GodRays center={[params.centerX, params.centerY]} intensity={params.intensity} />
+      <GodRays
+        center={[params.centerX, params.centerY]}
+        density={params.density}
+        intensity={params.intensity}
+        speed={params.speed}
+      />
       {children}
     </ShaderScene>
   );
