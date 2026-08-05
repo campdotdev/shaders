@@ -7,7 +7,7 @@
 // background — stack it above a dark layer.
 import { useEffect, useMemo } from 'react';
 
-import { simplexNoise } from '@lovo/matter';
+import { fractalNoise, simplexNoise } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatablePoint,
@@ -17,7 +17,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { atan2, cos, float, Fn, mix, sin, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { atan2, cos, float, Fn, length, mix, sin, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 export interface GodRaysShaderProps {
@@ -45,11 +45,23 @@ export interface GodRaysShaderProps {
    */
   intensity: AnimatableProp<number>;
   /**
+   * How much rays bend and billow along their length. 0 gives straight,
+   * unwarped spokes; higher values make them wavier and more chaotic.
+   * Accepts a static value or an animation signal.
+   */
+  waviness: AnimatableProp<number>;
+  /**
    * Shimmer rate — how fast rays swell, fade, and hand brightness to their
    * neighbors. 0 freezes the motion.
    * Accepts a static value or an animation signal.
    */
   speed: AnimatableProp<number>;
+  /**
+   * TEMPORARY (build-phase tuning only): dev overrides for the bend/dapple
+   * character constants. Stripped — with the constants baked back in — at
+   * the defaults-tuning gate.
+   */
+  tuning?: { bendAmount?: number; bendFrequency?: number; dappleAmount?: number };
 }
 
 // Converts the density dial (rays per revolution) into the radius of the
@@ -83,12 +95,42 @@ const RIDGE_EXPONENT = 1.3;
 // filament cores (a wider stretch saturates more of each peak).
 const PEAK_STRETCH = 2.2;
 
+// The bend field's angular frequency, as a circle radius in noise space —
+// ~0.6 gives 3-4 independent bend regions per revolution. Higher = more,
+// smaller kinks.
+const BEND_FREQUENCY = 0.6;
+
+// How fast the bend pattern changes along the ray (per unit of normalized
+// distance). Higher = rays that wander back and forth more often.
+const BEND_ALONG = 1.2;
+
+// Bend-pattern drift per phase unit. Kept far below SHIMMER_RATE so the
+// bends evolve lazily under the brightness shimmer.
+const BEND_DRIFT = 0.03;
+
+// Maximum bend in radians at full distance and waviness 1. Turning it up
+// makes rays snake; too high and they cross their neighbors.
+const BEND_AMOUNT = 0.5;
+
+// Dapple field frequency over canvas space. Higher = smaller patches of
+// light and shade riding the beams.
+const DAPPLE_FREQUENCY = 3;
+
+// Dapple drift per phase unit — the patchiness slowly reshuffles.
+const DAPPLE_DRIFT = 0.04;
+
+// How much of the field's brightness the dapple may take away, 0..1. Fixed
+// by design (no prop) unless a gate proves the need for a dial.
+const DAPPLE_AMOUNT = 0.35;
+
 export function GodRaysShader({
   center,
   density,
   definition,
   intensity,
+  waviness,
   speed,
+  tuning,
 }: GodRaysShaderProps) {
   const shaderContext = useShaderContext();
 
@@ -102,6 +144,15 @@ export function GodRaysShader({
   const densityUniform = useAnimatableUniform<number>(density);
   const definitionUniform = useAnimatableUniform<number>(definition);
   const intensityUniform = useAnimatableUniform<number>(intensity);
+  const wavinessUniform = useAnimatableUniform<number>(waviness);
+
+  // TEMPORARY (build-phase tuning only): the character constants ride
+  // uniforms so the dev sliders glide instead of rebuilding the material.
+  const bendAmountUniform = useAnimatableUniform<number>(tuning?.bendAmount ?? BEND_AMOUNT);
+  const bendFrequencyUniform = useAnimatableUniform<number>(
+    tuning?.bendFrequency ?? BEND_FREQUENCY,
+  );
+  const dappleAmountUniform = useAnimatableUniform<number>(tuning?.dappleAmount ?? DAPPLE_AMOUNT);
   // Speed is integrated on the CPU into a phase uniform (speed x delta per
   // frame), so tempo changes glide instead of snapping the pattern.
   const phaseUniform = useAnimatableSpeed(speed);
@@ -165,9 +216,34 @@ export function GodRaysShader({
       const centered = uv().sub(centerUniform);
       const corrected = vec2(centered.x.mul(aspectNode), centered.y);
 
+      // Distance from the canvas center to a corner in those units; dividing
+      // by it makes dist read 0 at the origin and 1 at "corner distance" on
+      // any canvas shape (RadialGradient's convention).
+      const halfDiagonal = length(vec2(aspectNode.mul(0.5), 0.5));
+      const dist = length(corrected).div(halfDiagonal);
+
       // The pixel's direction from the origin, in radians, -PI..PI.
       // 0 points right, PI/2 points up (uv's v grows upward).
       const theta = atan2(corrected.y, corrected.x);
+
+      // ---------------------------------------------
+      // Waviness — bend rays as they travel
+      // ---------------------------------------------
+      // A second, lower-frequency noise field nudges each pixel's ANGLE
+      // before the ray lookup. The same circle-embedding trick keeps the
+      // bends seamless; the third axis mixes progress along the ray with a
+      // slow drift, so a ray bends differently at its tip than at its root
+      // and the bends lazily evolve. Scaling by dist anchors rays straight
+      // at the origin — bends grow with travel, like light through
+      // increasingly disturbed air.
+      const bend = simplexNoise(
+        vec3(
+          cos(theta).mul(bendFrequencyUniform),
+          sin(theta).mul(bendFrequencyUniform),
+          dist.mul(BEND_ALONG).add(phaseUniform.mul(BEND_DRIFT)),
+        ),
+      );
+      const warpedTheta = theta.add(bend.mul(wavinessUniform).mul(bendAmountUniform).mul(dist));
 
       // ---------------------------------------------
       // Ray field — seamless circle embedding
@@ -185,8 +261,8 @@ export function GodRaysShader({
       // sway, nothing streams outward.
       const circleRadius = densityUniform.mul(DENSITY_TO_CIRCLE);
       const rayCoord = vec3(
-        cos(theta).mul(circleRadius),
-        sin(theta).mul(circleRadius),
+        cos(warpedTheta).mul(circleRadius),
+        sin(warpedTheta).mul(circleRadius),
         phaseUniform.mul(SHIMMER_RATE),
       );
       const raw = simplexNoise(rayCoord).mul(0.5).add(0.5);
@@ -204,7 +280,28 @@ export function GodRaysShader({
       const ridge = float(1).div(stretched.oneMinus().mul(RIDGE_GAIN).add(1).pow(RIDGE_EXPONENT));
       const field = mix(soft, ridge, definitionUniform);
 
-      const lit = field.mul(intensityUniform).clamp(0, 1);
+      // ---------------------------------------------
+      // Dapple — patchy life along the beams
+      // ---------------------------------------------
+      // A cheap two-octave fbm over CANVAS space (not polar), so patches of
+      // light and shade drift across the beams the way water caustics
+      // texture underwater shafts. Remapped from [-1,1] to a multiplier
+      // that dips at most DAPPLE_AMOUNT below full brightness.
+      const dapple = fractalNoise(
+        vec3(
+          corrected.x.mul(DAPPLE_FREQUENCY),
+          corrected.y.mul(DAPPLE_FREQUENCY),
+          phaseUniform.mul(DAPPLE_DRIFT),
+        ),
+        { octaves: 2 },
+      )
+        .mul(0.5)
+        .add(0.5);
+      const dappled = field.mul(
+        dapple.mul(dappleAmountUniform).add(dappleAmountUniform.oneMinus()),
+      );
+
+      const lit = dappled.mul(intensityUniform).clamp(0, 1);
 
       // Premultiplied output: rgb is the light itself, alpha its coverage.
       return vec4(vec3(lit), lit);
@@ -235,6 +332,10 @@ export function GodRaysShader({
     densityUniform,
     definitionUniform,
     intensityUniform,
+    wavinessUniform,
+    bendAmountUniform,
+    bendFrequencyUniform,
+    dappleAmountUniform,
     phaseUniform,
     centerUniform,
     aspectNode,

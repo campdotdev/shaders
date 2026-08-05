@@ -35,11 +35,23 @@ export interface GodRaysProps {
    */
   intensity?: AnimatableProp<number>;
   /**
+   * How much rays bend and billow along their length. 0 gives straight,
+   * unwarped spokes; higher values make them wavier and more chaotic.
+   * Defaults to 1. Accepts a static value or an animation signal.
+   */
+  waviness?: AnimatableProp<number>;
+  /**
    * Shimmer rate — how fast rays swell, fade, and hand brightness to their
    * neighbors. 0 freezes the motion. Defaults to 1.
    * Accepts a static value or an animation signal.
    */
   speed?: AnimatableProp<number>;
+  /**
+   * TEMPORARY (build-phase tuning only): dev overrides for the bend/dapple
+   * character constants. Stripped — with the constants baked back in — at
+   * the defaults-tuning gate.
+   */
+  tuning?: { bendAmount?: number; bendFrequency?: number; dappleAmount?: number };
 }
 
 export function GodRays({
@@ -47,7 +59,9 @@ export function GodRays({
   density = 12,
   definition = 0.5,
   intensity = 1,
+  waviness = 1,
   speed = 1,
+  tuning,
 }: GodRaysProps) {
   return (
     <GodRaysShader
@@ -56,6 +70,8 @@ export function GodRays({
       density={density}
       intensity={intensity}
       speed={speed}
+      tuning={tuning}
+      waviness={waviness}
     />
   );
 }
