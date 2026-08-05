@@ -4,7 +4,13 @@ export interface GodRaysParams {
   density: number;
   definition: number;
   intensity: number;
+  waviness: number;
   speed: number;
+  // TEMPORARY (build-phase tuning only) — stripped at the defaults-tuning
+  // gate along with the panel's Tuning section.
+  bendAmount: number;
+  bendFrequency: number;
+  dappleAmount: number;
 }
 
 // Starting values only — the defaults-tuning gate at the end of the build
@@ -15,5 +21,9 @@ export const INITIAL: GodRaysParams = {
   density: 12,
   definition: 0.5,
   intensity: 1,
+  waviness: 1,
   speed: 1,
+  bendAmount: 0.5,
+  bendFrequency: 0.6,
+  dappleAmount: 0.35,
 };

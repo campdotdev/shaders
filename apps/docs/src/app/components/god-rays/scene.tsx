@@ -22,6 +22,12 @@ export default function GodRaysScene({
         density={params.density}
         intensity={params.intensity}
         speed={params.speed}
+        tuning={{
+          bendAmount: params.bendAmount,
+          bendFrequency: params.bendFrequency,
+          dappleAmount: params.dappleAmount,
+        }}
+        waviness={params.waviness}
       />
       {children}
     </ShaderScene>
