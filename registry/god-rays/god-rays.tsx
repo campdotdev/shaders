@@ -18,12 +18,29 @@ export interface GodRaysProps {
    */
   center?: AnimatableProp<readonly [number, number]>;
   /**
+   * Roughly how many rays fit around a full revolution. Higher packs more,
+   * thinner rays; lower gives a few broad ones. Defaults to 12.
+   * Accepts a static value or an animation signal.
+   */
+  density?: AnimatableProp<number>;
+  /**
    * Overall brightness. 0 hides the rays. Defaults to 1.
    * Accepts a static value or an animation signal.
    */
   intensity?: AnimatableProp<number>;
+  /**
+   * Shimmer rate — how fast rays swell, fade, and hand brightness to their
+   * neighbors. 0 freezes the motion. Defaults to 1.
+   * Accepts a static value or an animation signal.
+   */
+  speed?: AnimatableProp<number>;
 }
 
-export function GodRays({ center = [0.5, -0.05], intensity = 1 }: GodRaysProps) {
-  return <GodRaysShader center={center} intensity={intensity} />;
+export function GodRays({
+  center = [0.5, -0.05],
+  density = 12,
+  intensity = 1,
+  speed = 1,
+}: GodRaysProps) {
+  return <GodRaysShader center={center} density={density} intensity={intensity} speed={speed} />;
 }

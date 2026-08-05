@@ -11,11 +11,13 @@ import { simplexNoise } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatablePoint,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
+  useStaticSceneHint,
 } from '@lovo/matter-react';
-import { atan2, Fn, length, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { atan2, cos, Fn, sin, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 export interface GodRaysShaderProps {
@@ -26,20 +28,49 @@ export interface GodRaysShaderProps {
    */
   center: AnimatableProp<readonly [number, number]>;
   /**
+   * Roughly how many rays fit around a full revolution. Higher packs more,
+   * thinner rays; lower gives a few broad ones.
+   * Accepts a static value or an animation signal.
+   */
+  density: AnimatableProp<number>;
+  /**
    * Overall brightness. 0 hides the rays.
    * Accepts a static value or an animation signal.
    */
   intensity: AnimatableProp<number>;
+  /**
+   * Shimmer rate — how fast rays swell, fade, and hand brightness to their
+   * neighbors. 0 freezes the motion.
+   * Accepts a static value or an animation signal.
+   */
+  speed: AnimatableProp<number>;
 }
 
-// How many rays fit around a full revolution. Placeholder constant until the
-// density dial lands in the next phase.
-const RAYS_PER_TURN = 12;
+// Converts the density dial (rays per revolution) into the radius of the
+// circle the noise is sampled on. Simplex features are ~1 unit wide, so a
+// circle of circumference N passes ~N features per revolution:
+// radius = N / (2 * PI).
+const DENSITY_TO_CIRCLE = 1 / (2 * Math.PI);
 
-export function GodRaysShader({ center, intensity }: GodRaysShaderProps) {
+// Noise-space units the pattern morphs per phase unit (phase advances
+// ~1/second at speed 1). Higher = busier shimmer.
+const SHIMMER_RATE = 0.05;
+
+export function GodRaysShader({ center, density, intensity, speed }: GodRaysShaderProps) {
   const shaderContext = useShaderContext();
 
+  // A literal speed of 0 means nothing on screen ever changes (an animation
+  // signal might move later, so it doesn't count). Telling the scene lets its
+  // frame scheduler go idle instead of re-rendering an unchanging image.
+  const isStatic = typeof speed === 'number' && speed === 0;
+
+  useStaticSceneHint(isStatic);
+
+  const densityUniform = useAnimatableUniform<number>(density);
   const intensityUniform = useAnimatableUniform<number>(intensity);
+  // Speed is integrated on the CPU into a phase uniform (speed x delta per
+  // frame), so tempo changes glide instead of snapping the pattern.
+  const phaseUniform = useAnimatableSpeed(speed);
 
   // screenOrigin converts the prop's screen-style coordinates (y grows
   // downward, like CSS) into uv space, where v grows upward — same as
@@ -68,9 +99,12 @@ export function GodRaysShader({ center, intensity }: GodRaysShaderProps) {
     return resize.on('change', ([updatedWidth, updatedHeight]) => {
       if (updatedWidth > 0 && updatedHeight > 0) {
         aspectNode.value = updatedWidth / updatedHeight;
+        // At speed 0 the scene is hinted static, so without this poke a
+        // resize would update the uniform and never repaint.
+        shaderContext?.scheduler.requestRender();
       }
     });
-  }, [resize, aspectNode]);
+  }, [shaderContext, resize, aspectNode]);
 
   // ---------------------------------------------
   // Build the material and mount the mesh
@@ -97,30 +131,31 @@ export function GodRaysShader({ center, intensity }: GodRaysShaderProps) {
       const centered = uv().sub(centerUniform);
       const corrected = vec2(centered.x.mul(aspectNode), centered.y);
 
-      // Distance from the canvas center to a corner in those units; dividing
-      // by it makes dist read 0 at the origin and 1 at "corner distance" on
-      // any canvas shape (RadialGradient's convention).
-      const halfDiagonal = length(vec2(aspectNode.mul(0.5), 0.5));
-      const dist = length(corrected).div(halfDiagonal);
-
       // The pixel's direction from the origin, in radians, -PI..PI.
       // 0 points right, PI/2 points up (uv's v grows upward).
       const theta = atan2(corrected.y, corrected.x);
 
       // ---------------------------------------------
-      // Ray field (naive — this phase only)
+      // Ray field — seamless circle embedding
       // ---------------------------------------------
-      // Simplex noise sampled along a FLAT angular axis: theta scaled so
-      // ~RAYS_PER_TURN noise features fit one revolution (simplex features
-      // are ~1 unit wide). Bright noise peaks read as rays. This has a
-      // visible seam where theta wraps from PI to -PI — the next phase
-      // replaces the flat axis with a circle embedding to fix it.
-      // The second axis drifts slowly with distance so a ray varies a little
-      // along its length without losing coherence.
-      const angularCoord = theta.mul(RAYS_PER_TURN / (2 * Math.PI));
-      const raw = simplexNoise(vec2(angularCoord, dist.mul(0.4)))
-        .mul(0.5)
-        .add(0.5);
+      // Instead of sampling noise along a flat angular axis (which tears
+      // where 360° wraps to 0°), sample it ON A CIRCLE inside 3D noise
+      // space: the point (cos(theta), sin(theta)) * circleRadius traces a
+      // closed loop, so walking a full revolution lands exactly where it
+      // started — seamless by construction. The circle's radius sets how
+      // many noise features the loop passes, i.e. the ray count; because it
+      // is continuous, density can animate freely.
+      //
+      // The phase rides the third axis: sliding the sampling circle through
+      // noise space morphs the pattern IN PLACE — rays swell, fade, and
+      // sway, nothing streams outward.
+      const circleRadius = densityUniform.mul(DENSITY_TO_CIRCLE);
+      const rayCoord = vec3(
+        cos(theta).mul(circleRadius),
+        sin(theta).mul(circleRadius),
+        phaseUniform.mul(SHIMMER_RATE),
+      );
+      const raw = simplexNoise(rayCoord).mul(0.5).add(0.5);
 
       const lit = raw.mul(intensityUniform).clamp(0, 1);
 
@@ -148,7 +183,7 @@ export function GodRaysShader({ center, intensity }: GodRaysShaderProps) {
         // same
       }
     };
-  }, [shaderContext, intensityUniform, centerUniform, aspectNode]);
+  }, [shaderContext, densityUniform, intensityUniform, phaseUniform, centerUniform, aspectNode]);
 
   return null;
 }
