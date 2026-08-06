@@ -18,9 +18,18 @@ export default function GodRaysScene({
     <ShaderScene>
       <GodRays
         center={[params.centerX, params.centerY]}
+        definition={params.definition}
         density={params.density}
         intensity={params.intensity}
+        patchiness={params.patchiness}
         speed={params.speed}
+        tuning={{
+          patchScale: params.patchScale,
+          flowA: params.flowA,
+          flowB: params.flowB,
+          fieldARadial: params.fieldARadial,
+          fieldBRadial: params.fieldBRadial,
+        }}
       />
       {children}
     </ShaderScene>

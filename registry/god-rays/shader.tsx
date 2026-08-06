@@ -53,6 +53,18 @@ export interface GodRaysShaderProps {
    */
   density: AnimatableProp<number>;
   /**
+   * How defined the rays are. 0 is a soft overlapping haze of wide lobes;
+   * 1 narrows them into distinct, separated beams.
+   * Accepts a static value or an animation signal.
+   */
+  definition: AnimatableProp<number>;
+  /**
+   * How broken the rays are along their length. 0 gives long continuous
+   * streaks; 1 chops them into short drifting dashes.
+   * Accepts a static value or an animation signal.
+   */
+  patchiness: AnimatableProp<number>;
+  /**
    * Overall brightness. 0 hides the rays.
    * Accepts a static value or an animation signal.
    */
@@ -63,6 +75,18 @@ export interface GodRaysShaderProps {
    * Accepts a static value or an animation signal.
    */
   speed: AnimatableProp<number>;
+  /**
+   * TEMPORARY (build-phase tuning only): dev overrides for the field
+   * character constants. Stripped — with the constants baked back in — at
+   * the defaults-tuning gate.
+   */
+  tuning?: {
+    patchScale?: number;
+    flowA?: number;
+    flowB?: number;
+    fieldARadial?: number;
+    fieldBRadial?: number;
+  };
 }
 
 // Converts the density dial (rays per revolution) into the radius of the
@@ -94,9 +118,16 @@ const FIELD_B_RADIAL = 1.0;
 const FLOW_A = 0.6;
 const FLOW_B = 0.4;
 
-// Fixed shaping exponent for this phase; becomes the definition dial next.
-// Raising it narrows the bright lobes without ever creating a hard edge.
-const BASE_EXPONENT = 2.0;
+// The definition dial's exponent range: pow(field, exponent) narrows the
+// bright lobes as the exponent climbs, without ever creating a hard edge.
+// EXP_SOFT is the haze end (nearly the raw field); EXP_DEFINED is the
+// separated-beams end. Widening the range makes the dial more dramatic.
+const EXP_SOFT = 1.2;
+const EXP_DEFINED = 4.0;
+
+// How strongly patchiness multiplies field B's along-ray frequency at
+// dial position 1. Higher = the dashes get shorter faster.
+const PATCH_SCALE = 6;
 
 // ---------------------------------------------
 // Value noise (local helper)
@@ -141,7 +172,15 @@ const valueNoise3 = (point: TSLValue): TSLValue => {
   return mix(bottom, top, fade.z);
 };
 
-export function GodRaysShader({ center, density, intensity, speed }: GodRaysShaderProps) {
+export function GodRaysShader({
+  center,
+  density,
+  definition,
+  patchiness,
+  intensity,
+  speed,
+  tuning,
+}: GodRaysShaderProps) {
   const shaderContext = useShaderContext();
 
   // A literal speed of 0 means nothing on screen ever changes (an animation
@@ -152,7 +191,17 @@ export function GodRaysShader({ center, density, intensity, speed }: GodRaysShad
   useStaticSceneHint(isStatic);
 
   const densityUniform = useAnimatableUniform<number>(density);
+  const definitionUniform = useAnimatableUniform<number>(definition);
+  const patchinessUniform = useAnimatableUniform<number>(patchiness);
   const intensityUniform = useAnimatableUniform<number>(intensity);
+
+  // TEMPORARY (build-phase tuning only): the character constants ride
+  // uniforms so the dev sliders glide instead of rebuilding the material.
+  const patchScaleUniform = useAnimatableUniform<number>(tuning?.patchScale ?? PATCH_SCALE);
+  const flowAUniform = useAnimatableUniform<number>(tuning?.flowA ?? FLOW_A);
+  const flowBUniform = useAnimatableUniform<number>(tuning?.flowB ?? FLOW_B);
+  const fieldARadialUniform = useAnimatableUniform<number>(tuning?.fieldARadial ?? FIELD_A_RADIAL);
+  const fieldBRadialUniform = useAnimatableUniform<number>(tuning?.fieldBRadial ?? FIELD_B_RADIAL);
   // Speed is integrated on the CPU into a phase uniform (speed x delta per
   // frame), so tempo changes glide instead of snapping the pattern.
   const phaseUniform = useAnimatableSpeed(speed);
@@ -244,20 +293,33 @@ export function GodRaysShader({ center, density, intensity, speed }: GodRaysShad
       const circleA = densityUniform.mul(FIELD_A_ANGULAR * DENSITY_TO_CIRCLE);
       const circleB = densityUniform.mul(FIELD_B_ANGULAR * DENSITY_TO_CIRCLE);
 
+      // The definition dial is the shaping exponent: pow() pulls the
+      // midtones down while pinning the peaks, so raising it narrows every
+      // bright lobe into a more separated beam — always smoothly, since a
+      // power curve has no threshold to alias against.
+      const exponent = mix(float(EXP_SOFT), float(EXP_DEFINED), definitionUniform);
+
+      // Patchiness multiplies field B's along-ray frequency: the faster B
+      // varies along the ray, the shorter the stretches where both fields
+      // stay bright — long streaks chop into drifting dashes.
+      const fieldBRadialRate = fieldBRadialUniform.mul(
+        patchinessUniform.mul(patchScaleUniform).add(1),
+      );
+
       const fieldA = valueNoise3(
         vec3(
           cos(theta).mul(circleA),
           sin(theta).mul(circleA),
-          dist.mul(FIELD_A_RADIAL).sub(phaseUniform.mul(FLOW_A)),
+          dist.mul(fieldARadialUniform).sub(phaseUniform.mul(flowAUniform)),
         ),
-      ).pow(BASE_EXPONENT);
+      ).pow(exponent);
       const fieldB = valueNoise3(
         vec3(
           cos(theta).mul(circleB),
           sin(theta).mul(circleB),
-          dist.mul(FIELD_B_RADIAL).sub(phaseUniform.mul(FLOW_B)),
+          dist.mul(fieldBRadialRate).sub(phaseUniform.mul(flowBUniform)),
         ),
-      ).pow(BASE_EXPONENT);
+      ).pow(exponent);
 
       const ray = fieldA.mul(fieldB);
 
@@ -287,7 +349,21 @@ export function GodRaysShader({ center, density, intensity, speed }: GodRaysShad
         // same
       }
     };
-  }, [shaderContext, densityUniform, intensityUniform, phaseUniform, centerUniform, aspectNode]);
+  }, [
+    shaderContext,
+    densityUniform,
+    definitionUniform,
+    patchinessUniform,
+    intensityUniform,
+    patchScaleUniform,
+    flowAUniform,
+    flowBUniform,
+    fieldARadialUniform,
+    fieldBRadialUniform,
+    phaseUniform,
+    centerUniform,
+    aspectNode,
+  ]);
 
   return null;
 }

@@ -25,6 +25,18 @@ export interface GodRaysProps {
    */
   density?: AnimatableProp<number>;
   /**
+   * How defined the rays are. 0 is a soft overlapping haze of wide lobes;
+   * 1 narrows them into distinct, separated beams. Defaults to 0.5.
+   * Accepts a static value or an animation signal.
+   */
+  definition?: AnimatableProp<number>;
+  /**
+   * How broken the rays are along their length. 0 gives long continuous
+   * streaks; 1 chops them into short drifting dashes. Defaults to 0.5.
+   * Accepts a static value or an animation signal.
+   */
+  patchiness?: AnimatableProp<number>;
+  /**
    * Overall brightness. 0 hides the rays. Defaults to 1.
    * Accepts a static value or an animation signal.
    */
@@ -35,13 +47,38 @@ export interface GodRaysProps {
    * Accepts a static value or an animation signal.
    */
   speed?: AnimatableProp<number>;
+  /**
+   * TEMPORARY (build-phase tuning only): dev overrides for the field
+   * character constants. Stripped — with the constants baked back in — at
+   * the defaults-tuning gate.
+   */
+  tuning?: {
+    patchScale?: number;
+    flowA?: number;
+    flowB?: number;
+    fieldARadial?: number;
+    fieldBRadial?: number;
+  };
 }
 
 export function GodRays({
   center = [0.5, -0.05],
   density = 12,
+  definition = 0.5,
+  patchiness = 0.5,
   intensity = 1,
   speed = 1,
+  tuning,
 }: GodRaysProps) {
-  return <GodRaysShader center={center} density={density} intensity={intensity} speed={speed} />;
+  return (
+    <GodRaysShader
+      center={center}
+      definition={definition}
+      density={density}
+      intensity={intensity}
+      patchiness={patchiness}
+      speed={speed}
+      tuning={tuning}
+    />
+  );
 }
