@@ -47,6 +47,17 @@ function GodRaysControls() {
       <Section title="Shape">
         <SliderInput label="Intensity" max={3} min={0} path="intensity" step={0.01} />
         <SliderInput label="Density" max={64} min={2} path="density" step={0.5} />
+        <SliderInput label="Definition" max={1} min={0} path="definition" step={0.01} />
+        <SliderInput label="Patchiness" max={1} min={0} path="patchiness" step={0.01} />
+      </Section>
+      {/* TEMPORARY (build-phase tuning only) — stripped at the
+          defaults-tuning gate once the character constants are settled. */}
+      <Section title="Tuning (dev)">
+        <SliderInput label="Patch scale" max={12} min={0} path="patchScale" step={0.1} />
+        <SliderInput label="Flow A" max={1.5} min={0} path="flowA" step={0.01} />
+        <SliderInput label="Flow B" max={1.5} min={0} path="flowB" step={0.01} />
+        <SliderInput label="Field A radial" max={6} min={0.25} path="fieldARadial" step={0.05} />
+        <SliderInput label="Field B radial" max={6} min={0.25} path="fieldBRadial" step={0.05} />
       </Section>
     </ControlPanel>
   );
