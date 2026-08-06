@@ -43,19 +43,10 @@ function GodRaysControls() {
       </Section>
       <Section title="Motion">
         <SliderInput label="Speed" max={3} min={0} path="speed" step={0.01} />
-        <SliderInput label="Waviness" max={3} min={0} path="waviness" step={0.01} />
       </Section>
       <Section title="Shape">
         <SliderInput label="Intensity" max={3} min={0} path="intensity" step={0.01} />
-        <SliderInput label="Density" max={32} min={2} path="density" step={0.5} />
-        <SliderInput label="Definition" max={1} min={0} path="definition" step={0.01} />
-      </Section>
-      {/* TEMPORARY (build-phase tuning only) — stripped at the
-          defaults-tuning gate once the character constants are settled. */}
-      <Section title="Tuning (dev)">
-        <SliderInput label="Bend amount" max={1.5} min={0} path="bendAmount" step={0.01} />
-        <SliderInput label="Bend frequency" max={2} min={0.1} path="bendFrequency" step={0.01} />
-        <SliderInput label="Dapple amount" max={1} min={0} path="dappleAmount" step={0.01} />
+        <SliderInput label="Density" max={64} min={2} path="density" step={0.5} />
       </Section>
     </ControlPanel>
   );
