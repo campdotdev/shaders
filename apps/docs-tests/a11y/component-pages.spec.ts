@@ -8,6 +8,7 @@ const routes = [
   '/components/mesh-gradient',
   '/components/aurora',
   '/components/dot-field',
+  '/components/god-rays',
   '/components/grain',
   '/components/simplex-noise',
   '/components/vignette',

@@ -11,7 +11,8 @@ type RegistrySlug =
   | 'dot-field'
   | 'wave-lines'
   | 'mesh-gradient'
-  | 'aurora';
+  | 'aurora'
+  | 'god-rays';
 
 const SLUG_FILES: Record<RegistrySlug, string> = {
   'linear-gradient': 'linear-gradient/linear-gradient.tsx',
@@ -20,6 +21,7 @@ const SLUG_FILES: Record<RegistrySlug, string> = {
   'wave-lines': 'wave-lines.tsx',
   'mesh-gradient': 'mesh-gradient/mesh-gradient.tsx',
   aurora: 'aurora/aurora.tsx',
+  'god-rays': 'god-rays/god-rays.tsx',
 };
 
 export const readRegistrySource = cache(async (slug: RegistrySlug): Promise<string> => {

@@ -143,6 +143,32 @@
         "uniform"
       ],
       "tier": 1
+    },
+    "god-rays": {
+      "file": "god-rays/god-rays.tsx",
+      "files": ["god-rays/shader.tsx", "utils/color.ts"],
+      "description": "Layered soft light rays radiating from a controllable origin: two flowing noise fields multiplied per color, with patchiness, diffusion, and an interactive source glow.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": [
+        "abs",
+        "atan2",
+        "cos",
+        "sin",
+        "dot",
+        "floor",
+        "fract",
+        "length",
+        "mix",
+        "smoothstep",
+        "step",
+        "pow",
+        "uv",
+        "vec2",
+        "vec3",
+        "vec4",
+        "uniform"
+      ],
+      "tier": 1
     }
   }
 }

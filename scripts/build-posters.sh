@@ -37,7 +37,8 @@ for pair in \
   "wave-lines:jpg" \
   "vignette:jpg" \
   "dot-field:png" \
-  "radial-gradient:jpg"; do
+  "radial-gradient:jpg" \
+  "god-rays:jpg:#0b0f1a"; do
   name="${pair%%:*}"
   rest="${pair#*:}"
   format="${rest%%:*}"

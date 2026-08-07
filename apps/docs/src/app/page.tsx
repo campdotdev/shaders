@@ -7,6 +7,7 @@ const COMPONENTS = [
   { slug: 'wave-lines', label: '<WaveLines>' },
   { slug: 'mesh-gradient', label: '<MeshGradient>' },
   { slug: 'aurora', label: '<Aurora>' },
+  { slug: 'god-rays', label: '<GodRays>' },
 ] as const;
 
 export default function Home() {
