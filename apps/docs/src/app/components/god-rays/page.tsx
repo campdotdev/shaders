@@ -46,15 +46,21 @@ function GodRaysControls() {
       <Section title="Origin">
         <SliderInput label="Center X" max={1.5} min={-0.5} path="centerX" step={0.01} />
         <SliderInput label="Center Y" max={1.5} min={-0.5} path="centerY" step={0.01} />
+        <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
+        <SliderInput label="Spread" max={360} min={10} path="spread" step={1} />
       </Section>
       <Section title="Motion">
         <SliderInput label="Speed" max={3} min={0} path="speed" step={0.01} />
+        <SliderInput label="Waviness" max={3} min={0} path="waviness" step={0.01} />
       </Section>
       <Section title="Shape">
         <SliderInput label="Intensity" max={3} min={0} path="intensity" step={0.01} />
         <SliderInput label="Density" max={64} min={2} path="density" step={0.5} />
-        <SliderInput label="Definition" max={1} min={0} path="definition" step={0.01} />
+        <SliderInput label="Diffusion" max={1} min={0} path="diffusion" step={0.01} />
         <SliderInput label="Patchiness" max={1} min={0} path="patchiness" step={0.01} />
+        <SliderInput label="Radius" max={2} min={0} path="radius" step={0.01} />
+        <SliderInput label="Glow radius" max={1} min={0} path="glowRadius" step={0.01} />
+        <SliderInput label="Glow intensity" max={3} min={0} path="glowIntensity" step={0.01} />
       </Section>
       <ListInput<string>
         createItem={createColor}
@@ -74,6 +80,10 @@ function GodRaysControls() {
         <SliderInput label="Flow B" max={1.5} min={0} path="flowB" step={0.01} />
         <SliderInput label="Field A radial" max={6} min={0.25} path="fieldARadial" step={0.05} />
         <SliderInput label="Field B radial" max={6} min={0.25} path="fieldBRadial" step={0.05} />
+        <SliderInput label="Bend amount" max={1.5} min={0} path="bendAmount" step={0.01} />
+        <SliderInput label="Bend frequency" max={2} min={0} path="bendFrequency" step={0.01} />
+        <SliderInput label="Glow ray boost" max={10} min={0} path="glowRayBoost" step={0.1} />
+        <SliderInput label="Falloff start" max={0.95} min={0.05} path="falloffStart" step={0.01} />
       </Section>
     </ControlPanel>
   );

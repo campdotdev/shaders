@@ -37,6 +37,25 @@ export interface GodRaysProps {
    */
   center?: AnimatableProp<readonly [number, number]>;
   /**
+   * Cone aim in degrees; 0 points right, 90 points up. Inert while `spread`
+   * is 360. Defaults to 270, straight down. Accepts a static value or an
+   * animation signal.
+   */
+  angle?: AnimatableProp<number>;
+  /**
+   * Cone width in degrees; rays outside it fade across a soft feathered
+   * edge. 360 opens the full circle and disables the cone. Defaults to 360
+   * — the hero fan comes from an off-canvas `center` cropped by the frame,
+   * not the cone. Accepts a static value or an animation signal.
+   */
+  spread?: AnimatableProp<number>;
+  /**
+   * Normalized reach at which rays have fully faded: 1 means a centered
+   * origin's rays just touch the canvas corners. Defaults to 1.
+   * Accepts a static value or an animation signal.
+   */
+  radius?: AnimatableProp<number>;
+  /**
    * Roughly how many rays fit around a full revolution before the two-field
    * product thins them. Higher packs more, thinner rays; lower gives a few
    * broad ones. Defaults to 12. Accepts a static value or an animation
@@ -44,17 +63,32 @@ export interface GodRaysProps {
    */
   density?: AnimatableProp<number>;
   /**
-   * How defined the rays are. 0 is a soft overlapping haze of wide lobes;
-   * 1 narrows them into distinct, separated beams. Defaults to 0.5.
-   * Accepts a static value or an animation signal.
+   * How diffuse the light is. 0 keeps the rays distinct, separated beams;
+   * 1 melts them into a soft, bright wash of overlapping lobes. Defaults
+   * to 0.5. Accepts a static value or an animation signal.
    */
-  definition?: AnimatableProp<number>;
+  diffusion?: AnimatableProp<number>;
   /**
    * How broken the rays are along their length. 0 gives long continuous
    * streaks; 1 chops them into short drifting dashes. Defaults to 0.5.
    * Accepts a static value or an animation signal.
    */
   patchiness?: AnimatableProp<number>;
+  /**
+   * How much rays bend and billow along their length. 0 gives straight
+   * spokes. Defaults to 1. Accepts a static value or an animation signal.
+   */
+  waviness?: AnimatableProp<number>;
+  /**
+   * Radius of the glow disc at the ray source. 0 disables it. Defaults to
+   * 0.3. Accepts a static value or an animation signal.
+   */
+  glowRadius?: AnimatableProp<number>;
+  /**
+   * Brightness of the source glow. Defaults to 1. Accepts a static value
+   * or an animation signal.
+   */
+  glowIntensity?: AnimatableProp<number>;
   /**
    * Overall brightness. 0 hides the rays. Defaults to 1.
    * Accepts a static value or an animation signal.
@@ -77,29 +111,45 @@ export interface GodRaysProps {
     flowB?: number;
     fieldARadial?: number;
     fieldBRadial?: number;
+    bendAmount?: number;
+    bendFrequency?: number;
+    glowRayBoost?: number;
+    falloffStart?: number;
   };
 }
 
 export function GodRays({
   colors = DEFAULT_COLORS,
   center = [0.5, -0.05],
+  angle = 270,
+  spread = 360,
+  radius = 1,
   density = 12,
-  definition = 0.5,
+  diffusion = 0.5,
   patchiness = 0.5,
+  waviness = 1,
+  glowRadius = 0.3,
+  glowIntensity = 1,
   intensity = 1,
   speed = 1,
   tuning,
 }: GodRaysProps) {
   return (
     <GodRaysShader
+      angle={angle}
       center={center}
       colors={colors}
-      definition={definition}
       density={density}
+      diffusion={diffusion}
+      glowIntensity={glowIntensity}
+      glowRadius={glowRadius}
       intensity={intensity}
       patchiness={patchiness}
+      radius={radius}
       speed={speed}
+      spread={spread}
       tuning={tuning}
+      waviness={waviness}
     />
   );
 }
