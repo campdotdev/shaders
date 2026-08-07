@@ -51,41 +51,37 @@ export interface GodRaysProps {
   spread?: AnimatableProp<number>;
   /**
    * Normalized reach at which rays have fully faded: 1 means a centered
-   * origin's rays just touch the canvas corners. Defaults to 1.
+   * origin's rays just touch the canvas corners. Defaults to 2, letting the
+   * rays wash past the frame instead of fading inside it.
    * Accepts a static value or an animation signal.
    */
   radius?: AnimatableProp<number>;
   /**
    * Roughly how many rays fit around a full revolution before the two-field
    * product thins them. Higher packs more, thinner rays; lower gives a few
-   * broad ones. Defaults to 12. Accepts a static value or an animation
+   * broad ones. Defaults to 32. Accepts a static value or an animation
    * signal.
    */
   density?: AnimatableProp<number>;
   /**
    * How diffuse the light is. 0 keeps the rays distinct, separated beams;
    * 1 melts them into a soft, bright wash of overlapping lobes. Defaults
-   * to 0.5. Accepts a static value or an animation signal.
+   * to 0.9. Accepts a static value or an animation signal.
    */
   diffusion?: AnimatableProp<number>;
   /**
    * How broken the rays are along their length. 0 gives long continuous
-   * streaks; 1 chops them into short drifting dashes. Defaults to 0.5.
+   * streaks; 1 chops them into short drifting dashes. Defaults to 0.4.
    * Accepts a static value or an animation signal.
    */
   patchiness?: AnimatableProp<number>;
   /**
-   * How much rays bend and billow along their length. 0 gives straight
-   * spokes. Defaults to 1. Accepts a static value or an animation signal.
-   */
-  waviness?: AnimatableProp<number>;
-  /**
    * Radius of the glow disc at the ray source. 0 disables it. Defaults to
-   * 0.3. Accepts a static value or an animation signal.
+   * 0.6. Accepts a static value or an animation signal.
    */
   glowRadius?: AnimatableProp<number>;
   /**
-   * Brightness of the source glow. Defaults to 1. Accepts a static value
+   * Brightness of the source glow. Defaults to 0.7. Accepts a static value
    * or an animation signal.
    */
   glowIntensity?: AnimatableProp<number>;
@@ -100,22 +96,6 @@ export interface GodRaysProps {
    * Accepts a static value or an animation signal.
    */
   speed?: AnimatableProp<number>;
-  /**
-   * TEMPORARY (build-phase tuning only): dev overrides for the field
-   * character constants. Stripped — with the constants baked back in — at
-   * the defaults-tuning gate.
-   */
-  tuning?: {
-    patchScale?: number;
-    flowA?: number;
-    flowB?: number;
-    fieldARadial?: number;
-    fieldBRadial?: number;
-    bendAmount?: number;
-    bendFrequency?: number;
-    glowRayBoost?: number;
-    falloffStart?: number;
-  };
 }
 
 export function GodRays({
@@ -123,16 +103,14 @@ export function GodRays({
   center = [0.5, -0.05],
   angle = 270,
   spread = 360,
-  radius = 1,
-  density = 12,
-  diffusion = 0.5,
-  patchiness = 0.5,
-  waviness = 1,
-  glowRadius = 0.3,
-  glowIntensity = 1,
+  radius = 2,
+  density = 32,
+  diffusion = 0.9,
+  patchiness = 0.4,
+  glowRadius = 0.6,
+  glowIntensity = 0.7,
   intensity = 1,
   speed = 1,
-  tuning,
 }: GodRaysProps) {
   return (
     <GodRaysShader
@@ -148,8 +126,6 @@ export function GodRays({
       radius={radius}
       speed={speed}
       spread={spread}
-      tuning={tuning}
-      waviness={waviness}
     />
   );
 }

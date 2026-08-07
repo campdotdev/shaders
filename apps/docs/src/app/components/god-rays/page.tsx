@@ -2,7 +2,7 @@
 
 /**
  * GodRays demo page: shader preview plus an owned control panel for the ray
- * origin, brightness, and layer colors. Controls grow with the build phases.
+ * origin and cone, motion, shape dials, and layer colors.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -51,7 +51,6 @@ function GodRaysControls() {
       </Section>
       <Section title="Motion">
         <SliderInput label="Speed" max={3} min={0} path="speed" step={0.01} />
-        <SliderInput label="Waviness" max={3} min={0} path="waviness" step={0.01} />
       </Section>
       <Section title="Shape">
         <SliderInput label="Intensity" max={3} min={0} path="intensity" step={0.01} />
@@ -72,19 +71,6 @@ function GodRaysControls() {
       >
         {() => <ColorInput label="Color" path="" />}
       </ListInput>
-      {/* TEMPORARY (build-phase tuning only) — stripped at the
-          defaults-tuning gate once the character constants are settled. */}
-      <Section title="Tuning (dev)">
-        <SliderInput label="Patch scale" max={12} min={0} path="patchScale" step={0.1} />
-        <SliderInput label="Flow A" max={1.5} min={0} path="flowA" step={0.01} />
-        <SliderInput label="Flow B" max={1.5} min={0} path="flowB" step={0.01} />
-        <SliderInput label="Field A radial" max={6} min={0.25} path="fieldARadial" step={0.05} />
-        <SliderInput label="Field B radial" max={6} min={0.25} path="fieldBRadial" step={0.05} />
-        <SliderInput label="Bend amount" max={1.5} min={0} path="bendAmount" step={0.01} />
-        <SliderInput label="Bend frequency" max={2} min={0} path="bendFrequency" step={0.01} />
-        <SliderInput label="Glow ray boost" max={10} min={0} path="glowRayBoost" step={0.1} />
-        <SliderInput label="Falloff start" max={0.95} min={0.05} path="falloffStart" step={0.01} />
-      </Section>
     </ControlPanel>
   );
 }
