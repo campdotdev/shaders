@@ -27,6 +27,24 @@ export interface ConicGradientProps {
    * Accepts a static value or an animation signal.
    */
   center?: AnimatableProp<readonly [number, number]>;
+  /**
+   * Degrees; rotates the whole sweep clockwise. 0 starts the first stop at
+   * 12 o'clock. Note the direction: LinearGradient and RadialGradient's
+   * `angle` turns counterclockwise, but this one follows CSS conic-gradient
+   * and turns clockwise. Defaults to 0. Accepts a static value or an
+   * animation signal.
+   */
+  angle?: AnimatableProp<number>;
+  /**
+   * How many times the ramp runs around the full circle. 1 is a single
+   * sweep; above 1 gives a pinwheel of sectors, below 1 spreads that
+   * fraction of the ramp around the whole circle. Each pass runs the stops
+   * clockwise and then snaps back to the first, so unless your first and
+   * last stop match there is a visible seam at every sector boundary — and
+   * at values that aren't whole numbers, a mismatched wedge where the sweep
+   * closes. Defaults to 1. Accepts a static value or an animation signal.
+   */
+  repeat?: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. Defaults to `'oklab'`. */
   colorSpace?: ColorSpace;
   /**
@@ -55,14 +73,18 @@ const DEFAULT_STOPS: ColorStop[] = [
 export function ConicGradient({
   stops = DEFAULT_STOPS,
   center = [0.5, 0.5],
+  angle = 0,
+  repeat = 1,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
 }: ConicGradientProps) {
   return (
     <ConicGradientShader
+      angle={angle}
       center={center}
       colorSpace={colorSpace}
       hueInterpolation={hueInterpolation}
+      repeat={repeat}
       stops={stops}
     />
   );

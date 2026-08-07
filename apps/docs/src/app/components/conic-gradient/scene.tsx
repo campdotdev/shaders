@@ -23,10 +23,12 @@ export default function ConicGradientScene({
   return (
     <ShaderScene>
       <ConicGradient
+        angle={params.angle}
         center={params.center}
         colorSpace={params.colorSpace}
         hueInterpolation={params.hueInterpolation}
         key={remountKey}
+        repeat={params.repeat}
         stops={params.stops}
       />
       {children}

@@ -65,6 +65,8 @@ function ConicGradientControls() {
       <Section title="Shape">
         <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />
         <SliderInput label="Center y" max={1} min={0} path="center.1" step={0.01} />
+        <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
+        <SliderInput label="Repeat" max={8} min={0.1} path="repeat" step={0.1} />
       </Section>
       <Section title="Mixing">
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />

@@ -12,6 +12,7 @@ import { colorRamp, type ColorSpace, type HueInterpolation } from '@lovo/matter'
 import {
   type AnimatableProp,
   useAnimatablePoint,
+  useAnimatableUniform,
   useResize,
   useShaderContext,
   useStaticSceneHint,
@@ -32,6 +33,19 @@ export interface ConicGradientShaderProps {
    * (y grows downward). Accepts a static value or an animation signal.
    */
   center: AnimatableProp<readonly [number, number]>;
+  /**
+   * Degrees; rotates the whole sweep clockwise (CSS conic-gradient's
+   * direction — the siblings' `angle` turns counterclockwise). Accepts a
+   * static value or an animation signal.
+   */
+  angle: AnimatableProp<number>;
+  /**
+   * How many times the ramp runs around the full circle. Above 1 gives a
+   * pinwheel of sectors, each running the stops clockwise and snapping back
+   * to the first at its boundary. Accepts a static value or an animation
+   * signal.
+   */
+  repeat: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. */
   colorSpace: ColorSpace;
   /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
@@ -41,6 +55,8 @@ export interface ConicGradientShaderProps {
 export function ConicGradientShader({
   stops,
   center,
+  angle,
+  repeat,
   colorSpace,
   hueInterpolation,
 }: ConicGradientShaderProps) {
@@ -61,6 +77,12 @@ export function ConicGradientShader({
   // downward, like CSS) into uv space, where v grows upward — without it,
   // moving the center "down" would move the pivot up.
   const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
+
+  // Angle and repeat live in uniforms — values the CPU can update each frame
+  // without rebuilding the shader. useAnimatableUniform keeps them current
+  // whether the prop is a plain number or an animation signal.
+  const angleUniform = useAnimatableUniform<number>(angle);
+  const repeatUniform = useAnimatableUniform<number>(repeat);
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -124,13 +146,27 @@ export function ConicGradientShader({
     // +0.25 at 3 o'clock, and negative (down to -0.5) on the left half.
     const turns = atan2(corrected.x, corrected.y).mul(1 / (2 * Math.PI));
 
-    // fract wraps the ±0.5-turn range into 0..1: the right half keeps its
-    // 0..0.5 values and the left half's negatives land on 0.5..1, so one
-    // clockwise lap reads the ramp exactly once with no branch. The exact
-    // center pixel has no angle (atan2(0, 0) — WGSL returns 0), so it takes
-    // the ramp's first color; that is one sub-pixel and nothing divides by
-    // zero, so unlike the radial gradient there is nothing to guard.
-    const coord = fract(turns);
+    // The prop is in degrees because that is what people type; the
+    // coordinate is in turns, so divide by 360. Subtracting BEFORE the
+    // repeat multiply below rotates the whole pattern rigidly no matter how
+    // many sectors repeat creates; subtracting after would spin each sector
+    // by a repeat-scaled amount instead. Subtraction (not addition) is what
+    // makes the rotation clockwise: as angle grows, a pixel must sit at a
+    // larger screen angle to land on the same color, so the pattern turns
+    // the same way the sweep runs.
+    const angleTurns = angleUniform.mul(1 / 360);
+
+    // Multiplying by repeat turns one lap of the circle into that many laps
+    // of the ramp. The single fract at the end wraps everything into 0..1 at
+    // once — atan2's negative left half and the repeat overflow together, so
+    // one clockwise lap reads the ramp `repeat` times with no branch. At
+    // angle 0, repeat 1 this collapses bit-exactly to fract(turns), the
+    // plain sweep, because fract(x) is exactly x for x already in 0..1. The
+    // exact center pixel has no angle (atan2(0, 0) — WGSL returns 0), so it
+    // takes whatever color sits at the wrap; that is one sub-pixel and
+    // nothing divides by zero, so unlike the radial gradient there is
+    // nothing to guard.
+    const coord = fract(turns.sub(angleTurns).mul(repeatUniform));
 
     // An unlit material whose per-pixel color comes from colorNode (a node
     // graph compiled to GPU code) — colorRamp maps the 0..1 coordinate to a
@@ -162,7 +198,16 @@ export function ConicGradientShader({
     // is intentionally omitted to avoid rebuilds on identity-only changes.
     // Animatable uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shaderContext, stopsKey, centerUniform, aspectNode, colorSpace, hueInterpolation]);
+  }, [
+    shaderContext,
+    stopsKey,
+    centerUniform,
+    angleUniform,
+    repeatUniform,
+    aspectNode,
+    colorSpace,
+    hueInterpolation,
+  ]);
 
   return null;
 }
