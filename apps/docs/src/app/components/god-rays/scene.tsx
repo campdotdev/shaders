@@ -29,18 +29,6 @@ export default function GodRaysScene({
         radius={params.radius}
         speed={params.speed}
         spread={params.spread}
-        tuning={{
-          patchScale: params.patchScale,
-          flowA: params.flowA,
-          flowB: params.flowB,
-          fieldARadial: params.fieldARadial,
-          fieldBRadial: params.fieldBRadial,
-          bendAmount: params.bendAmount,
-          bendFrequency: params.bendFrequency,
-          glowRayBoost: params.glowRayBoost,
-          falloffStart: params.falloffStart,
-        }}
-        waviness={params.waviness}
       />
       {children}
     </ShaderScene>
