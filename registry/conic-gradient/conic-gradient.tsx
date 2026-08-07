@@ -45,6 +45,14 @@ export interface ConicGradientProps {
    * closes. Defaults to 1. Accepts a static value or an animation signal.
    */
   repeat?: AnimatableProp<number>;
+  /**
+   * Rotation speed of the sweep; positive spins clockwise, matching the
+   * sweep direction, and negative spins the other way. At repeat 1 a speed
+   * of 1 is one full rotation per second; higher repeat cycles the pattern
+   * proportionally faster. 0 holds it still. Defaults to 0. Accepts a
+   * static value or an animation signal.
+   */
+  speed?: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. Defaults to `'oklab'`. */
   colorSpace?: ColorSpace;
   /**
@@ -75,6 +83,7 @@ export function ConicGradient({
   center = [0.5, 0.5],
   angle = 0,
   repeat = 1,
+  speed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
 }: ConicGradientProps) {
@@ -85,6 +94,7 @@ export function ConicGradient({
       colorSpace={colorSpace}
       hueInterpolation={hueInterpolation}
       repeat={repeat}
+      speed={speed}
       stops={stops}
     />
   );

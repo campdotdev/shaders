@@ -62,6 +62,9 @@ function ConicGradientDemo() {
 function ConicGradientControls() {
   return (
     <ControlPanel copyConfig={COPY_CONFIG} title="<ConicGradient>">
+      <Section title="Motion">
+        <SliderInput label="Speed" max={2} min={-2} path="speed" step={0.01} />
+      </Section>
       <Section title="Shape">
         <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />
         <SliderInput label="Center y" max={1} min={0} path="center.1" step={0.01} />

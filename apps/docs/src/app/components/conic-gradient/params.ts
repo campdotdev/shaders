@@ -11,6 +11,7 @@ export interface Params {
   center: [number, number];
   angle: number;
   repeat: number;
+  speed: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   stops: Stop[];
@@ -27,6 +28,7 @@ export const INITIAL: Params = {
   center: [0.5, 0.5],
   angle: 0,
   repeat: 1,
+  speed: 0,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
