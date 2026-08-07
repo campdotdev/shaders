@@ -9,6 +9,8 @@ export interface Stop {
 
 export interface Params {
   center: [number, number];
+  angle: number;
+  repeat: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   stops: Stop[];
@@ -23,6 +25,8 @@ export const MAX_STOPS = 6;
 // panel's Stop type requires them, matching what auto-spacing would compute.
 export const INITIAL: Params = {
   center: [0.5, 0.5],
+  angle: 0,
+  repeat: 1,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
