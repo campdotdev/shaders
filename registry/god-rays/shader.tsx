@@ -104,8 +104,8 @@ export interface GodRaysShaderProps {
    */
   glowRadius: AnimatableProp<number>;
   /**
-   * Brightness of the source glow. Accepts a static value or an animation
-   * signal.
+   * Brightness of the source glow. 0 disables it; negative values clamp
+   * to 0. Accepts a static value or an animation signal.
    */
   glowIntensity: AnimatableProp<number>;
   /**
@@ -168,7 +168,9 @@ const PATCH_SCALE = 6;
 // ---------------------------------------------
 // Converts the glowRadius dial (0..1) into the disc's outer edge, measured
 // in tripled corner-normalized distance (see the dist.mul(3) at the sample
-// site) — the default 0.3 reaches about a tenth of the way to the corners.
+// site): the edge lands at dial * 3.3 / 3 = dial * 1.1 corner units, so the
+// default 0.6 puts it about two-thirds of the way to the corners —
+// GLOW_SHARPEN then pulls the visible falloff well inside that.
 const GLOW_SIZE_SCALE = 3.3;
 
 // Eases the glowIntensity dial before the disc is shaped (pow < 1 lifts
@@ -437,13 +439,15 @@ export function GodRaysShader({
       // ---------------------------------------------
       // A disc of light where the rays converge. dist is tripled so the
       // glow dial spans tight suns to broad hazes within 0..1; the
-      // intensity dial is eased (pow 0.3 lifts its low end), the disc
-      // shaped by a reversed smoothstep, and the whole curve sharpened
-      // (pow 5) so small glows stay tight and hot — adapted from the
-      // reference's midShape. Zero glow collapses the edge to nothing and
-      // the disc vanishes.
+      // intensity dial is clamped at zero (pow with a fractional exponent
+      // is undefined for negative bases in WGSL) then eased (pow 0.3 lifts
+      // its low end), the disc shaped by a reversed smoothstep, and the
+      // whole curve sharpened (pow 5) so small glows stay tight and hot —
+      // adapted from the reference's midShape. Zero glow collapses the
+      // edge to nothing and the disc vanishes.
       const glowEdge = glowRadiusUniform.mul(GLOW_SIZE_SCALE).max(1e-6);
       const glowShape = glowIntensityUniform
+        .max(0)
         .pow(GLOW_CURVE)
         .mul(smoothstep(glowEdge.mul(0.02), glowEdge, dist.mul(3)).oneMinus())
         .pow(GLOW_SHARPEN);

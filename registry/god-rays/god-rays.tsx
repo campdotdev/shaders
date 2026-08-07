@@ -81,8 +81,8 @@ export interface GodRaysProps {
    */
   glowRadius?: AnimatableProp<number>;
   /**
-   * Brightness of the source glow. Defaults to 0.7. Accepts a static value
-   * or an animation signal.
+   * Brightness of the source glow. 0 disables it; negative values clamp
+   * to 0. Defaults to 0.7. Accepts a static value or an animation signal.
    */
   glowIntensity?: AnimatableProp<number>;
   /**
