@@ -14,7 +14,8 @@
     "./aurora": "./aurora/aurora.tsx",
     "./god-rays": "./god-rays/god-rays.tsx",
     "./vignette": "./vignette/vignette.tsx",
-    "./radial-gradient": "./radial-gradient/radial-gradient.tsx"
+    "./radial-gradient": "./radial-gradient/radial-gradient.tsx",
+    "./conic-gradient": "./conic-gradient/conic-gradient.tsx"
   },
   "scripts": {
     "lint": "eslint .",
