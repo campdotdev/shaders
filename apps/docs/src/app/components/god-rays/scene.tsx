@@ -18,6 +18,7 @@ export default function GodRaysScene({
     <ShaderScene>
       <GodRays
         center={[params.centerX, params.centerY]}
+        colors={params.colors}
         definition={params.definition}
         density={params.density}
         intensity={params.intensity}

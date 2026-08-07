@@ -4,8 +4,11 @@
 // down; this component builds a full-screen plane whose per-pixel color is a
 // field of soft light rays radiating from a chosen origin — the product of
 // two flowing polar noise fields, so rays break up along their length and
-// the pattern flickers as the fields slide past each other. The component
-// emits light over a transparent background — stack it above a dark layer.
+// the pattern flickers as the fields slide past each other. Each color in
+// `colors` spawns its own decorrelated copy of that field, and the layers'
+// light adds together — overlapping beams brighten like real light. The
+// component emits light over a transparent background — stack it above a
+// dark layer.
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -37,9 +40,18 @@ import {
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
+import { parseColor } from '../utils/color';
+
 type TSLValue = ShaderNodeObject<Node>;
 
 export interface GodRaysShaderProps {
+  /**
+   * Ray colors, near to far — each color spawns its own decorrelated layer
+   * of rays, later colors progressively finer-textured so they read as
+   * deeper planes. Overlapping layers add their light. Accepts hex,
+   * `oklch()`, or `oklab()` strings.
+   */
+  colors: string[];
   /**
    * Ray origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
    * `[0, 0]` is the top-left corner. Values outside 0..1 park the source
@@ -130,6 +142,29 @@ const EXP_DEFINED = 4.0;
 const PATCH_SCALE = 6;
 
 // ---------------------------------------------
+// Per-layer decorrelation
+// ---------------------------------------------
+// Each color's ray system lives in its own rotated frame with its own
+// angular-frequency multiplier and radial-scale step, so layers read as
+// independent depth planes rather than tinted copies of one pattern. The
+// jitter table is deterministic on purpose (visual regression tests forbid
+// runtime randomness); values are hand-picked to be non-harmonic so no two
+// layers' rays ever lock into step.
+
+// Radians between successive layers' angular frames — far enough apart
+// that layer 2's rays never sit on top of layer 1's.
+const LAYER_ROTATION = 1.0;
+
+// Multiplies each layer's angular frequency (both fields, so the 5:4
+// detune is preserved within a layer). Indexed by layer, up to 5 colors.
+const LAYER_FREQ_JITTER = [1.0, 1.35, 0.8, 1.6, 1.15];
+
+// How much field A's along-ray rate grows per layer (0.4 = layer 3 varies
+// 1.8x faster than layer 0) — deeper layers get finer texture, which is
+// most of the depth illusion.
+const LAYER_RADIAL_STEP = 0.4;
+
+// ---------------------------------------------
 // Value noise (local helper)
 // ---------------------------------------------
 // The engine's simplex noise is mid-heavy with large coherent low basins,
@@ -173,6 +208,7 @@ const valueNoise3 = (point: TSLValue): TSLValue => {
 };
 
 export function GodRaysShader({
+  colors,
   center,
   density,
   definition,
@@ -182,6 +218,13 @@ export function GodRaysShader({
   tuning,
 }: GodRaysShaderProps) {
   const shaderContext = useShaderContext();
+
+  // Stable string proxy for the colors array — the layer colors are baked
+  // into the compiled shader as literals, so a content change must rebuild
+  // the material, but an identity-only change (a parent re-render passing a
+  // fresh array) must not (see the AGENTS.md gotcha on array props in
+  // effect deps).
+  const colorsKey = colors.join('|');
 
   // A literal speed of 0 means nothing on screen ever changes (an animation
   // signal might move later, so it doesn't count). Telling the scene lets its
@@ -248,6 +291,10 @@ export function GodRaysShader({
 
     const material = new MeshBasicNodeMaterial();
 
+    // Decode the color strings into linear rgb triples once per rebuild;
+    // the loop below bakes them into the shader as literals.
+    const layerColors = colors.map(parseColor);
+
     material.transparent = true;
     // rgb below is emitted light (premultiplied); alpha is coverage. Without
     // this flag NormalBlending scales rgb by alpha a second time and the
@@ -276,7 +323,7 @@ export function GodRaysShader({
       const theta = atan2(corrected.y, corrected.x);
 
       // ---------------------------------------------
-      // Ray field — product of two flowing polar noises
+      // Ray field — product of two flowing polar noises, once per color
       // ---------------------------------------------
       // Each field samples noise ON A CIRCLE in 3D noise space — walking a
       // full revolution returns exactly to its start, so 360° is seamless
@@ -289,9 +336,9 @@ export function GodRaysShader({
       // breaks the rays into soft patches, and as the fields slide past
       // each other at different speeds the bright spots form, stretch, and
       // dissolve — interference, not translation. This product IS the
-      // god-rays texture.
-      const circleA = densityUniform.mul(FIELD_A_ANGULAR * DENSITY_TO_CIRCLE);
-      const circleB = densityUniform.mul(FIELD_B_ANGULAR * DENSITY_TO_CIRCLE);
+      // god-rays texture — and each color gets its own decorrelated copy
+      // (rotated frame, jittered frequency, stepped radial rate; see the
+      // per-layer constants above).
 
       // The definition dial is the shaping exponent: pow() pulls the
       // midtones down while pinning the peaks, so raising it narrows every
@@ -306,27 +353,61 @@ export function GodRaysShader({
         patchinessUniform.mul(patchScaleUniform).add(1),
       );
 
-      const fieldA = valueNoise3(
-        vec3(
-          cos(theta).mul(circleA),
-          sin(theta).mul(circleA),
-          dist.mul(fieldARadialUniform).sub(phaseUniform.mul(flowAUniform)),
-        ),
-      ).pow(exponent);
-      const fieldB = valueNoise3(
-        vec3(
-          cos(theta).mul(circleB),
-          sin(theta).mul(circleB),
-          dist.mul(fieldBRadialRate).sub(phaseUniform.mul(flowBUniform)),
-        ),
-      ).pow(exponent);
+      // Layer light is ADDITIVE — overlapping beams brighten each other the
+      // way real light does, so a dark color can tint the sum but never
+      // occlude it (alpha-over compositing was tried first and read as
+      // smoke: a layer's coverage blocked more backdrop than its color's
+      // luminance refilled). Coverage still accumulates over, so alpha
+      // stays a true 0..1 amount for blending with the layers below the
+      // component. This is a JS loop, so it unrolls at shader-build time —
+      // the layer count is a material rebuild, never a uniform.
+      let accumRgb: TSLValue = vec3(0);
+      let accumAlpha: TSLValue = float(0);
 
-      const ray = fieldA.mul(fieldB);
+      layerColors.forEach(([red, green, blue], layerIndex) => {
+        // This layer's own angular frame and frequencies. Rotating theta
+        // spins the whole ray system; the jitter multiplies BOTH circles so
+        // the layer keeps its internal 5:4 detune while disagreeing with
+        // every other layer about where rays sit and how many there are.
+        const layerTheta = theta.add(layerIndex * LAYER_ROTATION);
+        const frequencyJitter = LAYER_FREQ_JITTER[layerIndex] ?? 1;
+        const circleA = densityUniform.mul(FIELD_A_ANGULAR * frequencyJitter * DENSITY_TO_CIRCLE);
+        const circleB = densityUniform.mul(FIELD_B_ANGULAR * frequencyJitter * DENSITY_TO_CIRCLE);
 
-      const lit = ray.mul(intensityUniform).clamp(0, 1);
+        // Deeper layers vary faster along the ray (finer texture reads as
+        // farther away).
+        const layerRadialRateA = fieldARadialUniform.mul(1 + LAYER_RADIAL_STEP * layerIndex);
 
-      // Premultiplied output: rgb is the light itself, alpha its coverage.
-      return vec4(vec3(lit), lit);
+        const fieldA = valueNoise3(
+          vec3(
+            cos(layerTheta).mul(circleA),
+            sin(layerTheta).mul(circleA),
+            dist.mul(layerRadialRateA).sub(phaseUniform.mul(flowAUniform)),
+          ),
+        ).pow(exponent);
+        const fieldB = valueNoise3(
+          vec3(
+            cos(layerTheta).mul(circleB),
+            sin(layerTheta).mul(circleB),
+            dist.mul(fieldBRadialRate).sub(phaseUniform.mul(flowBUniform)),
+          ),
+        ).pow(exponent);
+
+        const ray = fieldA.mul(fieldB);
+
+        // The layer's light joins the sum unconditionally (additive); its
+        // coverage claims only what earlier layers left open (over).
+        const sourceRgb = vec3(red, green, blue).mul(ray);
+
+        accumRgb = accumRgb.add(sourceRgb);
+        accumAlpha = accumAlpha.add(ray.mul(accumAlpha.oneMinus()));
+      });
+
+      // Premultiplied output: rgb is the summed light itself (it can exceed
+      // 1 where beams pile up — the soft-clip arriving with the masks phase
+      // shapes that gracefully), alpha its coverage. Intensity scales the
+      // light, not the coverage.
+      return vec4(accumRgb.mul(intensityUniform), accumAlpha.clamp(0, 1));
     })();
 
     material.colorNode = godRaysNode;
@@ -349,8 +430,12 @@ export function GodRaysShader({
         // same
       }
     };
+    // colorsKey stands in for colors (content proxy; layerColors derives
+    // from it inside the effect).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     shaderContext,
+    colorsKey,
     densityUniform,
     definitionUniform,
     patchinessUniform,

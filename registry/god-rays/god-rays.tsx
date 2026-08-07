@@ -3,13 +3,32 @@
 // Public face of the god rays: owns the props, their JSDoc, and their
 // defaults, then delegates to GodRaysShader (./shader.tsx), which draws soft
 // light rays radiating from an origin point as the product of two flowing
-// noise fields. The rays emit light over a transparent background — stack
-// them above a dark layer inside a <ShaderScene>.
+// noise fields — one decorrelated layer of rays per entry in `colors`. The
+// rays emit light over a transparent background — stack them above a dark
+// layer inside a <ShaderScene>.
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import { GodRaysShader } from './shader';
 
+// Cool analogous palette, near to far — sky blue in front, purple behind
+// it, pink at the back. Layer light is additive, so overlaps bloom toward
+// pale lavender-white; chroma stays high on every stop so partial-strength
+// rays keep their hue instead of graying out.
+export const DEFAULT_COLORS = [
+  'oklch(0.80 0.12 250)',
+  'oklch(0.70 0.16 300)',
+  'oklch(0.75 0.14 345)',
+];
+
 export interface GodRaysProps {
+  /**
+   * Ray colors, near to far — each color spawns its own decorrelated layer
+   * of rays, later colors progressively finer-textured so they read as
+   * deeper planes. Overlapping layers add their light. 2–5 colors as hex,
+   * `oklch()`, or `oklab()` strings. Defaults to a cool blue-to-pink
+   * palette.
+   */
+  colors?: string[];
   /**
    * Ray origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
    * `[0, 0]` is the top-left corner. Values outside 0..1 park the source
@@ -62,6 +81,7 @@ export interface GodRaysProps {
 }
 
 export function GodRays({
+  colors = DEFAULT_COLORS,
   center = [0.5, -0.05],
   density = 12,
   definition = 0.5,
@@ -73,6 +93,7 @@ export function GodRays({
   return (
     <GodRaysShader
       center={center}
+      colors={colors}
       definition={definition}
       density={density}
       intensity={intensity}

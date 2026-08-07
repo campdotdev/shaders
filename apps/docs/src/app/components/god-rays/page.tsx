@@ -2,27 +2,33 @@
 
 /**
  * GodRays demo page: shader preview plus an owned control panel for the ray
- * origin and brightness. Controls grow with the build phases.
+ * origin, brightness, and layer colors. Controls grow with the build phases.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 
 import {
+  ColorInput,
   ControlPanel,
   ControlsProvider,
   createControlStore,
   DemoLayout,
+  ListInput,
   Section,
   SliderInput,
   useSnapshot,
 } from '@/components/controls';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-import { type GodRaysParams, INITIAL } from './params';
+import { type GodRaysParams, INITIAL, MAX_COLORS, MIN_COLORS } from './params';
 
 const GodRaysScene = dynamic(() => import('./scene'), { ssr: false });
 
 const COPY_CONFIG = { componentName: 'GodRays' } as const;
+
+/** A new color clones the last one in the list so the addition is visible. */
+const createColor = (colors: readonly string[]): string =>
+  colors[colors.length - 1] ?? 'oklch(0.8 0.1 80)';
 
 function GodRaysDemo() {
   const params = useSnapshot<GodRaysParams>();
@@ -50,6 +56,16 @@ function GodRaysControls() {
         <SliderInput label="Definition" max={1} min={0} path="definition" step={0.01} />
         <SliderInput label="Patchiness" max={1} min={0} path="patchiness" step={0.01} />
       </Section>
+      <ListInput<string>
+        createItem={createColor}
+        itemLabel="color"
+        label="Colors (near to far)"
+        max={MAX_COLORS}
+        min={MIN_COLORS}
+        path="colors"
+      >
+        {() => <ColorInput label="Color" path="" />}
+      </ListInput>
       {/* TEMPORARY (build-phase tuning only) — stripped at the
           defaults-tuning gate once the character constants are settled. */}
       <Section title="Tuning (dev)">
