@@ -18,6 +18,7 @@ import {
   SliderInput,
   useSnapshot,
 } from '@/components/controls';
+import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { type GodRaysParams, INITIAL, MAX_COLORS, MIN_COLORS } from './params';
@@ -34,9 +35,14 @@ function GodRaysDemo() {
   const params = useSnapshot<GodRaysParams>();
 
   return (
-    <GodRaysScene params={params}>
-      <VisualTestPause />
-    </GodRaysScene>
+    <DemoPoster
+      alt="GodRays shader preview: layered blue, purple, and pink light rays fanning down from above the top edge over a dark backdrop"
+      src="/posters/god-rays.jpg"
+    >
+      <GodRaysScene params={params}>
+        <VisualTestPause />
+      </GodRaysScene>
+    </DemoPoster>
   );
 }
 
