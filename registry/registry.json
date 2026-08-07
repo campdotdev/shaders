@@ -169,6 +169,14 @@
         "uniform"
       ],
       "tier": 1
+    },
+    "conic-gradient": {
+      "file": "conic-gradient/conic-gradient.tsx",
+      "files": ["conic-gradient/shader.tsx", "utils/color.ts"],
+      "description": "A color ramp sweeping clockwise around a center point, with pinwheel repeats and rotation. Completes the CSS gradient trio with LinearGradient and RadialGradient.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": ["colorRamp", "atan2", "fract", "uv", "vec2", "uniform"],
+      "tier": 1
     }
   }
 }
