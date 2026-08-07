@@ -21,6 +21,7 @@ import {
   useStaticSceneHint,
 } from '@lovo/matter-react';
 import {
+  abs,
   atan2,
   cos,
   dot,
@@ -31,6 +32,8 @@ import {
   length,
   mix,
   sin,
+  smoothstep,
+  step,
   uniform,
   uv,
   vec2,
@@ -59,23 +62,55 @@ export interface GodRaysShaderProps {
    */
   center: AnimatableProp<readonly [number, number]>;
   /**
+   * Cone aim in degrees; 0 points right, 90 points up. Inert while `spread`
+   * is 360. Accepts a static value or an animation signal.
+   */
+  angle: AnimatableProp<number>;
+  /**
+   * Cone width in degrees; rays outside it fade across a soft feathered
+   * edge. 360 opens the full circle and disables the cone.
+   * Accepts a static value or an animation signal.
+   */
+  spread: AnimatableProp<number>;
+  /**
+   * Normalized reach at which rays have fully faded: 1 means a centered
+   * origin's rays just touch the canvas corners. Accepts a static value or
+   * an animation signal.
+   */
+  radius: AnimatableProp<number>;
+  /**
    * Roughly how many rays fit around a full revolution before the two-field
    * product thins them. Higher packs more, thinner rays; lower gives a few
    * broad ones. Accepts a static value or an animation signal.
    */
   density: AnimatableProp<number>;
   /**
-   * How defined the rays are. 0 is a soft overlapping haze of wide lobes;
-   * 1 narrows them into distinct, separated beams.
+   * How diffuse the light is. 0 keeps the rays distinct, separated beams;
+   * 1 melts them into a soft, bright wash of overlapping lobes.
    * Accepts a static value or an animation signal.
    */
-  definition: AnimatableProp<number>;
+  diffusion: AnimatableProp<number>;
   /**
    * How broken the rays are along their length. 0 gives long continuous
    * streaks; 1 chops them into short drifting dashes.
    * Accepts a static value or an animation signal.
    */
   patchiness: AnimatableProp<number>;
+  /**
+   * How much rays bend and billow along their length. 0 gives straight
+   * spokes. Accepts a static value or an animation signal.
+   */
+  waviness: AnimatableProp<number>;
+  /**
+   * Radius of the glow disc at the ray source. 0 disables it.
+   * Accepts a static value or an animation signal.
+   */
+  glowRadius: AnimatableProp<number>;
+  /**
+   * Brightness of the source glow. Accepts a static value or an animation
+   * signal.
+   */
+  glowIntensity: AnimatableProp<number>;
   /**
    * Overall brightness. 0 hides the rays.
    * Accepts a static value or an animation signal.
@@ -98,6 +133,10 @@ export interface GodRaysShaderProps {
     flowB?: number;
     fieldARadial?: number;
     fieldBRadial?: number;
+    bendAmount?: number;
+    bendFrequency?: number;
+    glowRayBoost?: number;
+    falloffStart?: number;
   };
 }
 
@@ -130,16 +169,84 @@ const FIELD_B_RADIAL = 1.0;
 const FLOW_A = 0.6;
 const FLOW_B = 0.4;
 
-// The definition dial's exponent range: pow(field, exponent) narrows the
+// The diffusion dial's exponent range: pow(field, exponent) narrows the
 // bright lobes as the exponent climbs, without ever creating a hard edge.
-// EXP_SOFT is the haze end (nearly the raw field); EXP_DEFINED is the
-// separated-beams end. Widening the range makes the dial more dramatic.
+// The dial runs through oneMinus(), so diffusion 0 lands on EXP_DEFINED
+// (distinct, separated beams) and diffusion 1 on EXP_SOFT (nearly the raw
+// field — a soft bright wash). Widening the range makes the dial more
+// dramatic.
 const EXP_SOFT = 1.2;
 const EXP_DEFINED = 4.0;
 
 // How strongly patchiness multiplies field B's along-ray frequency at
 // dial position 1. Higher = the dashes get shorter faster.
 const PATCH_SCALE = 6;
+
+// ---------------------------------------------
+// Waviness — the bend field
+// ---------------------------------------------
+// The bend field's angular frequency, as a circle radius in noise space —
+// ~0.6 gives 3-4 independent bend regions per revolution. Higher = more,
+// smaller kinks.
+const BEND_FREQUENCY = 0.6;
+
+// How fast the bend pattern changes along the ray (per unit of normalized
+// distance). Higher = rays that wander back and forth more often.
+const BEND_ALONG = 1.2;
+
+// Bend-pattern drift per phase unit. Kept far below the flow rates so the
+// bends evolve lazily beneath the streaming ray texture.
+const BEND_DRIFT = 0.03;
+
+// Maximum bend in radians at full distance and waviness 1. Turning it up
+// makes rays snake; too high and they cross their neighbors.
+const BEND_AMOUNT = 0.5;
+
+// ---------------------------------------------
+// Source glow
+// ---------------------------------------------
+// Converts the glowRadius dial (0..1) into the disc's outer edge, measured
+// in tripled corner-normalized distance (see the dist.mul(3) at the sample
+// site) — the default 0.3 reaches about a tenth of the way to the corners.
+const GLOW_SIZE_SCALE = 3.3;
+
+// Eases the glowIntensity dial before the disc is shaped (pow < 1 lifts
+// the low end, so the first bit of the dial already shows a glow).
+const GLOW_CURVE = 0.3;
+
+// Sharpens the disc's brightness curve after sizing (pow > 1 pulls the
+// falloff inward) so small glows stay tight and hot instead of washy.
+const GLOW_SHARPEN = 5;
+
+// How much of each layer's ray brightness folds into the glow: the glow is
+// (1 + boost * ray) * disc, so it flares brighter along each beam and the
+// sun reads as the source of its rays rather than a sticker on top.
+const GLOW_RAY_BOOST = 4;
+
+// ---------------------------------------------
+// Masks — cone, reach, core
+// ---------------------------------------------
+// Soft edge on the cone mask, as a fraction of the half-spread — wider
+// fans get proportionally wider feathers, so no spread setting looks
+// hard-cut.
+const CONE_FEATHER_FRACTION = 0.35;
+
+// Where the radial falloff begins, as a fraction of the radius dial: rays
+// hold full strength out to this fraction of the reach, then ease to zero
+// at the dial itself. Higher = rays hold strength longer and fade only
+// near the boundary, so a given radius fills more of the scene.
+const FALLOFF_START = 0.35;
+
+// Floor for the radius dial inside the math — smoothstep needs its two
+// edges distinct, so a literal 0 radius becomes "invisibly small" instead
+// of undefined.
+const MIN_RADIUS = 1e-4;
+
+// Distance over which rays fade in from the origin. At the exact origin
+// every ray converges on one pixel (the polar singularity) and the noise
+// becomes a kaleidoscopic pinwheel; the glow disc covers that when glow is
+// on, and this fade guards it when glow is 0.
+const CORE_FADE = 0.06;
 
 // ---------------------------------------------
 // Per-layer decorrelation
@@ -210,9 +317,15 @@ const valueNoise3 = (point: TSLValue): TSLValue => {
 export function GodRaysShader({
   colors,
   center,
+  angle,
+  spread,
+  radius,
   density,
-  definition,
+  diffusion,
   patchiness,
+  waviness,
+  glowRadius,
+  glowIntensity,
   intensity,
   speed,
   tuning,
@@ -233,9 +346,15 @@ export function GodRaysShader({
 
   useStaticSceneHint(isStatic);
 
+  const angleUniform = useAnimatableUniform<number>(angle);
+  const spreadUniform = useAnimatableUniform<number>(spread);
+  const radiusUniform = useAnimatableUniform<number>(radius);
   const densityUniform = useAnimatableUniform<number>(density);
-  const definitionUniform = useAnimatableUniform<number>(definition);
+  const diffusionUniform = useAnimatableUniform<number>(diffusion);
   const patchinessUniform = useAnimatableUniform<number>(patchiness);
+  const wavinessUniform = useAnimatableUniform<number>(waviness);
+  const glowRadiusUniform = useAnimatableUniform<number>(glowRadius);
+  const glowIntensityUniform = useAnimatableUniform<number>(glowIntensity);
   const intensityUniform = useAnimatableUniform<number>(intensity);
 
   // TEMPORARY (build-phase tuning only): the character constants ride
@@ -245,6 +364,12 @@ export function GodRaysShader({
   const flowBUniform = useAnimatableUniform<number>(tuning?.flowB ?? FLOW_B);
   const fieldARadialUniform = useAnimatableUniform<number>(tuning?.fieldARadial ?? FIELD_A_RADIAL);
   const fieldBRadialUniform = useAnimatableUniform<number>(tuning?.fieldBRadial ?? FIELD_B_RADIAL);
+  const bendAmountUniform = useAnimatableUniform<number>(tuning?.bendAmount ?? BEND_AMOUNT);
+  const bendFrequencyUniform = useAnimatableUniform<number>(
+    tuning?.bendFrequency ?? BEND_FREQUENCY,
+  );
+  const glowRayBoostUniform = useAnimatableUniform<number>(tuning?.glowRayBoost ?? GLOW_RAY_BOOST);
+  const falloffStartUniform = useAnimatableUniform<number>(tuning?.falloffStart ?? FALLOFF_START);
   // Speed is integrated on the CPU into a phase uniform (speed x delta per
   // frame), so tempo changes glide instead of snapping the pattern.
   const phaseUniform = useAnimatableSpeed(speed);
@@ -323,6 +448,82 @@ export function GodRaysShader({
       const theta = atan2(corrected.y, corrected.x);
 
       // ---------------------------------------------
+      // Waviness — bend rays as they travel
+      // ---------------------------------------------
+      // A low-frequency noise field nudges each pixel's ANGLE before the
+      // ray lookups. The same circle embedding keeps the bends seamless at
+      // 360°; the third axis mixes progress along the ray with a slow
+      // drift, so a ray bends differently at its tip than at its root and
+      // the bends lazily evolve. Scaling by dist anchors rays straight at
+      // the origin — bends grow with travel, like light through
+      // increasingly disturbed air. The local value noise is 0..1, so it
+      // recenters to -1..1 for a signed bend (left or right equally).
+      const bend = valueNoise3(
+        vec3(
+          cos(theta).mul(bendFrequencyUniform),
+          sin(theta).mul(bendFrequencyUniform),
+          dist.mul(BEND_ALONG).add(phaseUniform.mul(BEND_DRIFT)),
+        ),
+      )
+        .mul(2)
+        .sub(1);
+      const warpedTheta = theta.add(bend.mul(wavinessUniform).mul(bendAmountUniform).mul(dist));
+
+      // ---------------------------------------------
+      // Masks — cone, reach, core
+      // ---------------------------------------------
+      // Cone: how far is this pixel's direction from the aim? Subtracting
+      // angles naively breaks at the -PI/PI seam, so the difference is
+      // taken in revolutions and wrapped through fract into -0.5..0.5 —
+      // branchless, seam-free — then scaled back to radians. GEOMETRIC
+      // theta drives this (not warpedTheta): the cone's edges hold still
+      // while the rays sway inside it.
+      const aimRadians = angleUniform.mul(Math.PI / 180);
+      const halfSpread = spreadUniform.mul(Math.PI / 360);
+      const offTurns = theta.sub(aimRadians).mul(1 / (2 * Math.PI));
+      const offAngle = abs(fract(offTurns.add(0.5)).sub(0.5)).mul(2 * Math.PI);
+
+      // The edge softens across a feather proportional to the half-spread.
+      // (Written with .oneMinus() rather than swapped smoothstep edges —
+      // some drivers miscompile a decreasing smoothstep.)
+      const feather = halfSpread.mul(CONE_FEATHER_FRACTION).max(1e-4);
+      const coneEdge = smoothstep(halfSpread.sub(feather), halfSpread, offAngle).oneMinus();
+
+      // At a spread of 360 the cone's two edges meet directly opposite the
+      // aim and the feather would carve a notch there; the step gate forces
+      // the mask fully open at the top of the dial instead.
+      const coneMask = mix(coneEdge, float(1), step(359.99, spreadUniform));
+
+      // Reach: full strength out to falloffStart of the radius dial, then
+      // an ease to zero at the dial itself (corner-normalized like dist, so
+      // radius 1 = a centered origin's rays just reach the corners).
+      const reach = radiusUniform.max(MIN_RADIUS);
+      const radialMask = smoothstep(reach.mul(falloffStartUniform), reach, dist).oneMinus();
+
+      // Core: rays fade IN over the first few percent of distance to hide
+      // the polar singularity (see CORE_FADE). Kept separate from the cone
+      // and reach masks because it must apply before the glow is added —
+      // the glow's whole job is to fill the origin the core fade empties.
+      const coreMask = smoothstep(0, CORE_FADE, dist);
+      const beamMask = coneMask.mul(radialMask);
+
+      // ---------------------------------------------
+      // Source glow — a soft hot disc at the origin
+      // ---------------------------------------------
+      // A disc of light where the rays converge. dist is tripled so the
+      // glow dial spans tight suns to broad hazes within 0..1; the
+      // intensity dial is eased (pow 0.3 lifts its low end), the disc
+      // shaped by a reversed smoothstep, and the whole curve sharpened
+      // (pow 5) so small glows stay tight and hot — adapted from the
+      // reference's midShape. Zero glow collapses the edge to nothing and
+      // the disc vanishes.
+      const glowEdge = glowRadiusUniform.mul(GLOW_SIZE_SCALE).max(1e-6);
+      const glowShape = glowIntensityUniform
+        .pow(GLOW_CURVE)
+        .mul(smoothstep(glowEdge.mul(0.02), glowEdge, dist.mul(3)).oneMinus())
+        .pow(GLOW_SHARPEN);
+
+      // ---------------------------------------------
       // Ray field — product of two flowing polar noises, once per color
       // ---------------------------------------------
       // Each field samples noise ON A CIRCLE in 3D noise space — walking a
@@ -340,11 +541,13 @@ export function GodRaysShader({
       // (rotated frame, jittered frequency, stepped radial rate; see the
       // per-layer constants above).
 
-      // The definition dial is the shaping exponent: pow() pulls the
-      // midtones down while pinning the peaks, so raising it narrows every
-      // bright lobe into a more separated beam — always smoothly, since a
-      // power curve has no threshold to alias against.
-      const exponent = mix(float(EXP_SOFT), float(EXP_DEFINED), definitionUniform);
+      // The diffusion dial drives the shaping exponent: pow() pulls the
+      // midtones down while pinning the peaks, narrowing every bright lobe
+      // into a more separated beam — always smoothly, since a power curve
+      // has no threshold to alias against. oneMinus() flips the dial so
+      // that MORE diffusion means a LOWER exponent: turning it up melts
+      // beams into a soft bright wash instead of sharpening them.
+      const exponent = mix(float(EXP_SOFT), float(EXP_DEFINED), diffusionUniform.oneMinus());
 
       // Patchiness multiplies field B's along-ray frequency: the faster B
       // varies along the ray, the shorter the stretches where both fields
@@ -365,11 +568,12 @@ export function GodRaysShader({
       let accumAlpha: TSLValue = float(0);
 
       layerColors.forEach(([red, green, blue], layerIndex) => {
-        // This layer's own angular frame and frequencies. Rotating theta
-        // spins the whole ray system; the jitter multiplies BOTH circles so
-        // the layer keeps its internal 5:4 detune while disagreeing with
-        // every other layer about where rays sit and how many there are.
-        const layerTheta = theta.add(layerIndex * LAYER_ROTATION);
+        // This layer's own angular frame and frequencies. Rotating the
+        // (bend-warped) theta spins the whole ray system; the jitter
+        // multiplies BOTH circles so the layer keeps its internal 5:4
+        // detune while disagreeing with every other layer about where rays
+        // sit and how many there are.
+        const layerTheta = warpedTheta.add(layerIndex * LAYER_ROTATION);
         const frequencyJitter = LAYER_FREQ_JITTER[layerIndex] ?? 1;
         const circleA = densityUniform.mul(FIELD_A_ANGULAR * frequencyJitter * DENSITY_TO_CIRCLE);
         const circleB = densityUniform.mul(FIELD_B_ANGULAR * frequencyJitter * DENSITY_TO_CIRCLE);
@@ -393,7 +597,20 @@ export function GodRaysShader({
           ),
         ).pow(exponent);
 
-        const ray = fieldA.mul(fieldB);
+        const product = fieldA.mul(fieldB);
+
+        // Assembly order matters here. Rays first fade in from the origin
+        // (core), THEN the glow adds on top — so the glow fills the very
+        // hole the core fade empties instead of being erased by it. The
+        // glow term (1 + boost * ray) * disc flares brighter along this
+        // layer's beams and inherits this layer's color below, which is
+        // what makes the sun read as the source of its rays. Cone and
+        // reach shape the finished layer last, glow included.
+        const fadedRay = product.mul(coreMask);
+        const glowingRay = fadedRay
+          .add(fadedRay.mul(glowRayBoostUniform).add(1).mul(glowShape))
+          .clamp(0, 1);
+        const ray = glowingRay.mul(beamMask);
 
         // The layer's light joins the sum unconditionally (additive); its
         // coverage claims only what earlier layers left open (over).
@@ -403,11 +620,20 @@ export function GodRaysShader({
         accumAlpha = accumAlpha.add(ray.mul(accumAlpha.oneMinus()));
       });
 
-      // Premultiplied output: rgb is the summed light itself (it can exceed
-      // 1 where beams pile up — the soft-clip arriving with the masks phase
-      // shapes that gracefully), alpha its coverage. Intensity scales the
-      // light, not the coverage.
-      return vec4(accumRgb.mul(intensityUniform), accumAlpha.clamp(0, 1));
+      // ---------------------------------------------
+      // Soft-clip output
+      // ---------------------------------------------
+      // Additive layers sum past 1 where beams and glow pile up; the
+      // smoothstep is a shoulder curve that rolls those hot values into
+      // saturation instead of clipping them flat (its top edge sits at 1.1
+      // so even "pure white" keeps a little slope). Intensity feeds the
+      // curve, so brightness pushes into the shoulder rather than past it.
+      // Alpha rides the same curve to keep coverage in step with the light,
+      // then clamps — the output stays premultiplied: rgb is light, alpha
+      // is coverage.
+      const shaped = smoothstep(0, 1.1, vec4(accumRgb, accumAlpha).mul(1.3).mul(intensityUniform));
+
+      return vec4(shaped.rgb, shaped.a.clamp(0, 1));
     })();
 
     material.colorNode = godRaysNode;
@@ -436,15 +662,25 @@ export function GodRaysShader({
   }, [
     shaderContext,
     colorsKey,
+    angleUniform,
+    spreadUniform,
+    radiusUniform,
     densityUniform,
-    definitionUniform,
+    diffusionUniform,
     patchinessUniform,
+    wavinessUniform,
+    glowRadiusUniform,
+    glowIntensityUniform,
     intensityUniform,
     patchScaleUniform,
     flowAUniform,
     flowBUniform,
     fieldARadialUniform,
     fieldBRadialUniform,
+    bendAmountUniform,
+    bendFrequencyUniform,
+    glowRayBoostUniform,
+    falloffStartUniform,
     phaseUniform,
     centerUniform,
     aspectNode,
