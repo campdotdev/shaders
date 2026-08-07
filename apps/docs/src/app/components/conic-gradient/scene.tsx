@@ -29,6 +29,7 @@ export default function ConicGradientScene({
         hueInterpolation={params.hueInterpolation}
         key={remountKey}
         repeat={params.repeat}
+        speed={params.speed}
         stops={params.stops}
       />
       {children}

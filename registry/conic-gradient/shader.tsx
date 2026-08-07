@@ -12,6 +12,7 @@ import { colorRamp, type ColorSpace, type HueInterpolation } from '@lovo/matter'
 import {
   type AnimatableProp,
   useAnimatablePoint,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
@@ -46,6 +47,11 @@ export interface ConicGradientShaderProps {
    * signal.
    */
   repeat: AnimatableProp<number>;
+  /**
+   * Rotation speed of the sweep; positive spins clockwise. 0 holds it
+   * still. Accepts a static value or an animation signal.
+   */
+  speed: AnimatableProp<number>;
   /** Color space the gradient is interpolated in. */
   colorSpace: ColorSpace;
   /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
@@ -57,16 +63,20 @@ export function ConicGradientShader({
   center,
   angle,
   repeat,
+  speed,
   colorSpace,
   hueInterpolation,
 }: ConicGradientShaderProps) {
   const shaderContext = useShaderContext();
 
-  // Nothing animates yet (speed arrives in a later phase), so the scene's
-  // frame scheduler can idle instead of re-rendering an unchanging image. A
-  // signal on `center` still shows up: every uniform write pokes the
+  // A literal speed of 0 means nothing on screen ever changes (an animation
+  // signal might move later, so it doesn't count). Telling the scene lets its
+  // frame scheduler go idle instead of re-rendering an unchanging image. A
+  // signal on any of the dials still shows up: every uniform write pokes the
   // scheduler, so an idle scene wakes for exactly the frames a signal ticks.
-  useStaticSceneHint(true);
+  const isStatic = typeof speed === 'number' && speed === 0;
+
+  useStaticSceneHint(isStatic);
 
   // Content fingerprint of the stops array (colors + positions). The build
   // effect below keys on this string, so a re-render that passes a new array
@@ -83,6 +93,11 @@ export function ConicGradientShader({
   // whether the prop is a plain number or an animation signal.
   const angleUniform = useAnimatableUniform<number>(angle);
   const repeatUniform = useAnimatableUniform<number>(repeat);
+
+  // Speed is integrated, not sampled: useAnimatableSpeed sums speed x delta
+  // into a phase uniform each frame, so changing the dial shifts the
+  // rotation's tempo without snapping its position.
+  const phaseUniform = useAnimatableSpeed(speed);
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -166,7 +181,15 @@ export function ConicGradientShader({
     // takes whatever color sits at the wrap; that is one sub-pixel and
     // nothing divides by zero, so unlike the radial gradient there is
     // nothing to guard.
-    const coord = fract(turns.sub(angleTurns).mul(repeatUniform));
+    //
+    // Subtracting the phase AFTER the repeat multiply spins the pattern
+    // clockwise — a pixel must sit at a larger angle to land on the same
+    // color as the phase advances — and counts in ramp cycles, so at repeat
+    // 1 one phase unit is one full rotation. No gate is needed around the
+    // animation the way LinearGradient needs one: its animated form is a
+    // cosine that differs from its static form, whereas here the sawtooth IS
+    // the static form and the phase simply stops advancing at speed 0.
+    const coord = fract(turns.sub(angleTurns).mul(repeatUniform).sub(phaseUniform));
 
     // An unlit material whose per-pixel color comes from colorNode (a node
     // graph compiled to GPU code) — colorRamp maps the 0..1 coordinate to a
@@ -204,6 +227,7 @@ export function ConicGradientShader({
     centerUniform,
     angleUniform,
     repeatUniform,
+    phaseUniform,
     aspectNode,
     colorSpace,
     hueInterpolation,
