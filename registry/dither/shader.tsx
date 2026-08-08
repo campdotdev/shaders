@@ -16,7 +16,7 @@ import {
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { floor, screenCoordinate, screenSize, uniform, vec3, vec4 } from 'three/tsl';
+import { floor, mix, screenCoordinate, screenSize, step, uniform, vec3, vec4 } from 'three/tsl';
 
 export type { DitherPattern } from '@lovo/matter';
 
@@ -32,6 +32,19 @@ export interface DitherShaderProps {
    * continuously. Accepts a static value or an animation signal.
    */
   levels: AnimatableProp<number>;
+  /**
+   * How strongly the pattern pushes colors across quantization steps.
+   * 0 = clean posterize bands with no dither texture, 1 = classic ordered
+   * dithering, above 1 the texture bleeds into flat areas for a grittier
+   * look. Accepts a static value or an animation signal.
+   */
+  spread: AnimatableProp<number>;
+  /**
+   * Luminance gate: cells darker than this value get dithered, brighter
+   * cells show the pixelated scene untouched. 1 = the whole image, 0 = the
+   * effect is off. Accepts a static value or an animation signal.
+   */
+  threshold: AnimatableProp<number>;
   /** Which threshold map drives the dither (Bayer sizes and friends). */
   pattern: DitherPattern;
 }
@@ -47,12 +60,14 @@ export interface DitherShaderProps {
 // linear-space quantization during the build.
 const GAMMA = 2.2;
 
-export function DitherShader({ pixelSize, levels, pattern }: DitherShaderProps) {
-  // The two dials live in uniforms (values the CPU can update each frame
+export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: DitherShaderProps) {
+  // The dials live in uniforms (values the CPU can update each frame
   // without rebuilding the shader), tracking either a static number or an
   // animation signal.
   const pixelSizeUniform = useAnimatableUniform(pixelSize);
   const levelsUniform = useAnimatableUniform(levels);
+  const spreadUniform = useAnimatableUniform(spread);
+  const thresholdUniform = useAnimatableUniform(threshold);
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
@@ -120,11 +135,17 @@ export function DitherShader({ pixelSize, levels, pattern }: DitherShaderProps) 
       const devicePixel = pixelSizeUniform.mul(dprUniform).max(1);
       const cellCoord = screenCoordinate.xy.div(devicePixel);
 
-      // The cell's threshold in [0, 1): where between two quantization
+      // The cell's map value in [0, 1): where between two quantization
       // levels this cell flips from the lower to the upper one. Neighboring
-      // cells get different thresholds, which is what dissolves banding into
+      // cells get different values, which is what dissolves banding into
       // patterned texture.
-      const threshold = ditherThreshold(pattern, cellCoord);
+      const mapValue = ditherThreshold(pattern, cellCoord);
+
+      // Spread pivots the map around the plain 0.5 round: at 0 every cell
+      // rounds identically (clean posterize bands, no texture), at 1 the map
+      // acts at full strength, and above 1 it overshoots a whole step so
+      // texture bleeds into areas nowhere near a level boundary.
+      const rounding = mapValue.sub(0.5).mul(spreadUniform).add(0.5);
 
       // max(0) first: wide-gamut inputs can carry negative channels, and
       // pow() of a negative breaks WGSL const-eval.
@@ -132,17 +153,28 @@ export function DitherShader({ pixelSize, levels, pattern }: DitherShaderProps) 
         .max(0)
         .pow(1 / GAMMA);
 
-      // Component-wise posterize with the cell's threshold as the rounding
-      // point — the definition of ordered dithering.
-      const quantized = quantize(source, levelsUniform, threshold);
-      const outputRgb = quantized.pow(GAMMA);
+      // Component-wise posterize with the cell's rounding point — the
+      // definition of ordered dithering.
+      const quantized = quantize(source, levelsUniform, rounding);
+      const ditheredRgb = quantized.pow(GAMMA);
+
+      // The luminance gate. Rec. 709 weights on the gamma-encoded color, so
+      // the dial moves perceptually; min(1) keeps additive scenes (which can
+      // exceed 1) inside the 0..1 dial range, so threshold 1 always means
+      // "everything". step(edge, x) is 0 where x < edge, so this is 1 for
+      // cells at or below the dial. The input color is already per-cell
+      // here, which lands the mask crisply on cell boundaries. Ungated
+      // cells show the pixelated scene without posterization.
+      const luminance = source.dot(vec3(0.2126, 0.7152, 0.0722)).min(1);
+      const affected = step(luminance, thresholdUniform);
+      const outputRgb = mix(vec3(input.rgb), ditheredRgb, affected);
 
       // Alpha passes through untouched (same rationale as the engine's
       // anti-banding dither: collapsing it would flash opaque black over
       // transparent frames).
       return vec4(outputRgb, input.a);
     },
-    [pixelSizeUniform, levelsUniform, dprUniform, pattern],
+    [pixelSizeUniform, levelsUniform, spreadUniform, thresholdUniform, dprUniform, pattern],
   );
 
   return null;

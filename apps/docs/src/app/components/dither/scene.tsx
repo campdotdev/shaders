@@ -18,7 +18,13 @@ export default function DitherScene({
   return (
     <ShaderScene>
       <MeshGradient />
-      <Dither levels={params.levels} pattern={params.pattern} pixelSize={params.pixelSize} />
+      <Dither
+        levels={params.levels}
+        pattern={params.pattern}
+        pixelSize={params.pixelSize}
+        spread={params.spread}
+        threshold={params.threshold}
+      />
       {children}
     </ShaderScene>
   );
