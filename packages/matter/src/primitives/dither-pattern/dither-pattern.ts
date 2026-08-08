@@ -1,6 +1,9 @@
+import { DataTexture, NearestFilter, RedFormat, RepeatWrapping, UnsignedByteType } from 'three';
 import type { ShaderNodeObject } from 'three/tsl';
-import { cos, floor, fract, hash } from 'three/tsl';
+import { cos, floor, fract, hash, texture } from 'three/tsl';
 import type { Node } from 'three/webgpu';
+
+import { BLUE_NOISE_SIZE, BLUE_NOISE_TILE } from './blue-noise-tile.js';
 
 // Threshold maps for ordered dithering. Every pattern turns a dither-cell
 // coordinate into a threshold in [0, 1); the caller compares (or adds) that
@@ -16,6 +19,7 @@ export type DitherPattern =
   | 'dots'
   | 'lines'
   | 'white-noise'
+  | 'blue-noise'
   | 'gradient-noise';
 
 // ---------------------------------------------
@@ -101,6 +105,44 @@ function gradientNoise(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 }
 
 // ---------------------------------------------
+// Blue noise
+// ---------------------------------------------
+// Blue noise can't be generated in closed form — the tile is precomputed
+// (see scripts/generate-blue-noise.mjs) and uploaded once as a texture the
+// shader samples. Lazy singleton: no GPU resource is created unless a
+// blue-noise pattern is actually built.
+let blueNoiseTexture: DataTexture | null = null;
+
+function getBlueNoiseTexture(): DataTexture {
+  if (!blueNoiseTexture) {
+    blueNoiseTexture = new DataTexture(
+      BLUE_NOISE_TILE,
+      BLUE_NOISE_SIZE,
+      BLUE_NOISE_SIZE,
+      RedFormat,
+      UnsignedByteType,
+    );
+    blueNoiseTexture.wrapS = RepeatWrapping;
+    blueNoiseTexture.wrapT = RepeatWrapping;
+    blueNoiseTexture.minFilter = NearestFilter;
+    blueNoiseTexture.magFilter = NearestFilter;
+    blueNoiseTexture.needsUpdate = true;
+  }
+
+  return blueNoiseTexture;
+}
+
+function blueNoise(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
+  const cell = floor(coord);
+  // Sample at texel centers (+0.5) so nearest filtering never sits on a
+  // texel boundary; RepeatWrapping makes the 64x64 tile seamless across the
+  // whole cell grid. UnsignedByteType normalizes bytes to 0..1 in the read.
+  const tileUv = fract(cell.add(0.5).div(BLUE_NOISE_SIZE));
+
+  return texture(getBlueNoiseTexture(), tileUv).r;
+}
+
+// ---------------------------------------------
 // Pattern dispatch
 // ---------------------------------------------
 
@@ -128,6 +170,8 @@ export function ditherThreshold(
       return lineScreen(cellCoord);
     case 'white-noise':
       return whiteNoise(cellCoord);
+    case 'blue-noise':
+      return blueNoise(cellCoord);
     case 'gradient-noise':
       return gradientNoise(cellCoord);
     default:
