@@ -64,6 +64,8 @@ function DitherControls() {
         <SelectInput label="Pattern" options={PATTERN_OPTIONS} path="pattern" />
         <SliderInput label="Pixel size" max={24} min={1} path="pixelSize" step={1} />
         <SliderInput label="Levels" max={8} min={2} path="levels" step={1} />
+        <SliderInput label="Spread" max={2} min={0} path="spread" step={0.05} />
+        <SliderInput label="Threshold" max={1} min={0} path="threshold" step={0.01} />
       </Section>
     </ControlPanel>
   );
@@ -92,7 +94,10 @@ export default function DitherPage() {
             the Bayer matrices trade smoothness (8x8) for crunch (2x2). <code>pixelSize</code> sets
             the cell size in CSS pixels, and <code>levels</code> is how many steps each color
             channel is allowed — <code>2</code> is the harshest look, <code>6</code> and up reads as
-            subtle banding.
+            subtle banding. <code>spread</code> dials the pattern&apos;s strength from clean
+            posterize bands (<code>0</code>) to gritty overshoot (<code>2</code>), and{' '}
+            <code>threshold</code> gates the effect by brightness — slide it down to release the
+            highlights until the effect is gone.
           </p>
           <pre
             style={{

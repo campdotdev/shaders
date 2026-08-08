@@ -24,12 +24,40 @@ export interface DitherProps {
    */
   levels?: AnimatableProp<number>;
   /**
+   * How strongly the pattern pushes colors across quantization steps.
+   * 0 = clean posterize bands with no dither texture, 1 = classic ordered
+   * dithering, above 1 the texture bleeds into flat areas for a grittier
+   * look. Defaults to 1. Accepts a static value or an animation signal.
+   */
+  spread?: AnimatableProp<number>;
+  /**
+   * Luminance gate: cells darker than this value get dithered, brighter
+   * cells show the pixelated scene untouched. 1 = the whole image, 0 = the
+   * effect is off. Defaults to 1. Accepts a static value or an animation
+   * signal.
+   */
+  threshold?: AnimatableProp<number>;
+  /**
    * Which threshold map drives the dither. Defaults to `'bayer-8x8'`, the
    * smoothest of the Bayer matrices.
    */
   pattern?: DitherPattern;
 }
 
-export function Dither({ pixelSize = 2, levels = 4, pattern = 'bayer-8x8' }: DitherProps) {
-  return <DitherShader levels={levels} pattern={pattern} pixelSize={pixelSize} />;
+export function Dither({
+  pixelSize = 2,
+  levels = 4,
+  spread = 1,
+  threshold = 1,
+  pattern = 'bayer-8x8',
+}: DitherProps) {
+  return (
+    <DitherShader
+      levels={levels}
+      pattern={pattern}
+      pixelSize={pixelSize}
+      spread={spread}
+      threshold={threshold}
+    />
+  );
 }
