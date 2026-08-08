@@ -18,13 +18,16 @@ import {
   resetRendererClock,
 } from '@lovo/matter';
 import { OrthographicCamera, Scene } from 'three';
-import { pass, renderOutput, vec4 } from 'three/tsl';
+import type { ShaderNodeObject } from 'three/tsl';
+import { pass, passTexture, renderOutput, uv, vec4 } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 import { PostProcessing } from 'three/webgpu';
 
 import {
   type PostProcessTransform,
   ShaderContext,
   type ShaderContextValue,
+  type UvTransform,
 } from '../../context/shader-context.js';
 import { MatterError } from '../../errors/matter-error.js';
 import {
@@ -120,12 +123,36 @@ export function ShaderScene({
         // The post-process chain: base pass first (the children's meshes
         // rendered to a texture), then each registered overlay transform in
         // MOUNT ORDER — a Map iterates in insertion order, so <Grain> after
-        // <Vignette> grains the vignetted image.
+        // <Vignette> grains the vignetted image. UV transforms warp where
+        // the base pass texture is sampled (e.g. <Dither>'s pixel snap) and
+        // compose in mount order too.
         const overlays = new Map<symbol, PostProcessTransform>();
+        const uvTransforms = new Map<symbol, UvTransform>();
 
-        const basePassNode = vec4(pass(scene, camera));
+        const scenePass = pass(scene, camera);
 
         const rebuildOutputNode = () => {
+          // With no UV transforms the pass node samples itself at the screen
+          // coordinate as before. With any registered, resample its texture
+          // at the warped coordinate — uv() here is the output quad's 0..1
+          // screen position.
+          // passTexture wraps the pass's color texture in a sampleable
+          // TextureNode (getTextureNode's typing is too loose to chain .uv
+          // from); its setup() still builds the pass itself, so the scene
+          // renders even though only its texture appears in the graph.
+          const scenePassTexture = passTexture(scenePass, scenePass.getTexture('output'));
+          const basePassNode =
+            uvTransforms.size === 0
+              ? vec4(scenePass)
+              : vec4(
+                  scenePassTexture.uv(
+                    Array.from(uvTransforms.values()).reduce<ShaderNodeObject<Node>>(
+                      (coordinate, transform) => transform(coordinate),
+                      uv(),
+                    ),
+                  ),
+                );
+
           // Overlays (Grain, Vignette, ...) compose in linear working space.
           const composed = Array.from(overlays.values()).reduce(
             (currentPipeline, transform) => transform(currentPipeline),
@@ -151,6 +178,18 @@ export function ShaderScene({
 
           return () => {
             overlays.delete(key);
+            rebuildOutputNode();
+          };
+        };
+
+        const registerBaseUvTransform = (transform: UvTransform): (() => void) => {
+          const key = Symbol('uv-transform');
+
+          uvTransforms.set(key, transform);
+          rebuildOutputNode();
+
+          return () => {
+            uvTransforms.delete(key);
             rebuildOutputNode();
           };
         };
@@ -227,7 +266,14 @@ export function ShaderScene({
 
         // Publishing the context is what lets children mount their meshes —
         // until this state lands, every child hook sees null and no-ops.
-        setShaderContext({ renderer, scene, camera, scheduler, registerOverlay });
+        setShaderContext({
+          renderer,
+          scene,
+          camera,
+          scheduler,
+          registerOverlay,
+          registerBaseUvTransform,
+        });
       } catch (caughtError) {
         if (cancelled) return;
         const message = caughtError instanceof Error ? caughtError.message : String(caughtError);

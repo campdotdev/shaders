@@ -4,49 +4,45 @@ import { cleanup, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  type PostProcessTransform,
   ShaderContext,
   type ShaderContextValue,
+  type UvTransform,
 } from '../../context/shader-context.js';
-import { usePostProcessPass } from './use-overlay-pass.js';
+import { useBasePassUv } from './use-base-pass-uv.js';
 
 function makeCtx(): {
   ctx: ShaderContextValue;
-  registered: PostProcessTransform[];
-  cleanups: number;
+  registered: UvTransform[];
 } {
-  const registered: PostProcessTransform[] = [];
-  let cleanups = 0;
+  const registered: UvTransform[] = [];
   const ctx = {
     renderer: {} as ShaderContextValue['renderer'],
     scene: {} as ShaderContextValue['scene'],
     camera: {} as ShaderContextValue['camera'],
     scheduler: {} as ShaderContextValue['scheduler'],
-    registerOverlay: (transform: PostProcessTransform) => {
+    registerOverlay: () => () => undefined,
+    registerBaseUvTransform: (transform: UvTransform) => {
       registered.push(transform);
 
-      return () => {
-        cleanups++;
-      };
+      return () => undefined;
     },
-    registerBaseUvTransform: () => () => undefined,
   };
 
-  return { ctx, registered, cleanups };
+  return { ctx, registered };
 }
 
 function Wrapper({ ctx, children }: { ctx: ShaderContextValue | null; children: ReactNode }) {
   return <ShaderContext.Provider value={ctx}>{children}</ShaderContext.Provider>;
 }
 
-const identityTransform: PostProcessTransform = (input) => input;
+const identityTransform: UvTransform = (uvInput) => uvInput;
 
-describe('usePostProcessPass', () => {
+describe('useBasePassUv', () => {
   it('registers the transform on mount', () => {
     const { ctx, registered } = makeCtx();
 
     function Probe() {
-      usePostProcessPass(identityTransform, []);
+      useBasePassUv(identityTransform, []);
 
       return null;
     }
@@ -60,18 +56,19 @@ describe('usePostProcessPass', () => {
     cleanup();
   });
 
-  it('calls the cleanup returned by registerOverlay on unmount', () => {
+  it('calls the cleanup returned by registerBaseUvTransform on unmount', () => {
     const cleanupFn = vi.fn();
     const ctx = {
       renderer: {} as ShaderContextValue['renderer'],
       scene: {} as ShaderContextValue['scene'],
       camera: {} as ShaderContextValue['camera'],
       scheduler: {} as ShaderContextValue['scheduler'],
-      registerOverlay: () => cleanupFn,
+      registerOverlay: () => () => undefined,
+      registerBaseUvTransform: () => cleanupFn,
     } as unknown as ShaderContextValue;
 
     function Probe() {
-      usePostProcessPass(identityTransform, []);
+      useBasePassUv(identityTransform, []);
 
       return null;
     }
@@ -90,7 +87,7 @@ describe('usePostProcessPass', () => {
     const { ctx, registered } = makeCtx();
 
     function Probe({ mode }: { mode: 'a' | 'b' }) {
-      usePostProcessPass(identityTransform, [mode]);
+      useBasePassUv(identityTransform, [mode]);
 
       return null;
     }
@@ -113,7 +110,7 @@ describe('usePostProcessPass', () => {
 
   it('is a no-op when called outside a ShaderScene provider', () => {
     function Probe() {
-      usePostProcessPass(identityTransform, []);
+      useBasePassUv(identityTransform, []);
 
       return null;
     }
