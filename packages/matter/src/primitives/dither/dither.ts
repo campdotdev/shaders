@@ -1,30 +1,9 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { floor, fract, screenCoordinate, vec2, vec3, vec4 } from 'three/tsl';
+import { screenCoordinate, vec2, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
-
-/**
- * Ordered Bayer dithering, built recursively from the 2x2 base pattern.
- *
- * `bayer2` is the canonical 2x2 ordered-dither cell in closed form
- * (`fract(x/2 + y·y·0.75)`); `bayer4`/`bayer8` refine it by adding a quarter of
- * the next-finer cell sampled at half the frequency. `bayer8` yields a value in
- * `[0, 1)` that tiles an 8x8 threshold map across the pixel grid.
- */
-function bayer2(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
-  const cell = floor(coord);
-
-  return fract(cell.x.mul(0.5).add(cell.y.mul(cell.y).mul(0.75)));
-}
-
-function bayer4(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
-  return bayer2(coord.mul(0.5)).mul(0.25).add(bayer2(coord));
-}
-
-function bayer8(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
-  return bayer4(coord.mul(0.5)).mul(0.25).add(bayer2(coord));
-}
+import { ditherThreshold } from '../dither-pattern/dither-pattern.js';
 
 /**
  * Add a sub-LSB ordered dither — noise smaller than one display brightness
@@ -47,7 +26,7 @@ function bayer8(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
  */
 export function dither(color: TSLNode, amount = 1 / 255): ShaderNodeObject<Node> {
   // Bayer cell in [0, 1); center to [-0.5, 0.5) so the dither is unbiased.
-  const threshold = bayer8(vec2(screenCoordinate.xy)).sub(0.5);
+  const threshold = ditherThreshold('bayer-8x8', vec2(screenCoordinate.xy)).sub(0.5);
 
   // Dither only the color channels and pass the source alpha through unchanged.
   // Collapsing to a vec3 here would let the consuming material default alpha to
