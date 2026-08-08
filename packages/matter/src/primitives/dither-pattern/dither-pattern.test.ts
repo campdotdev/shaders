@@ -13,4 +13,9 @@ describe('ditherThreshold', () => {
   it('accepts fractional cell coordinates (maps floor internally)', () => {
     expect(ditherThreshold('bayer-8x8', vec2(3.7, 5.2))).toBeDefined();
   });
+
+  it('builds halftone screen nodes', () => {
+    expect(ditherThreshold('dots', vec2(3, 5))).toBeDefined();
+    expect(ditherThreshold('lines', vec2(3, 5))).toBeDefined();
+  });
 });
