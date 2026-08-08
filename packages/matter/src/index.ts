@@ -56,6 +56,8 @@ export { resetRendererClock } from './runtime/clock/reset-clock.js';
 export { grain } from './primitives/grain/grain.js';
 
 export { dither } from './primitives/dither/dither.js';
+export { ditherThreshold } from './primitives/dither-pattern/dither-pattern.js';
+export type { DitherPattern } from './primitives/dither-pattern/dither-pattern.js';
 
 export {
   setReducedMotionPolicy,
