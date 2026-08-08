@@ -51,6 +51,8 @@ On `<ShaderScene>`, not on components, because it's a property of the framebuffe
 
 Pinning `'p3'` on a display that can't show P3 doesn't give you more color — the hardware clamps at the end regardless. Pinning `'srgb'` on a display that can is the one that costs you something.
 
+Whatever the gamut, every scene quietly dithers its final output: noise smaller than one 8-bit brightness step that breaks up gradient banding, most useful on P3 where the same 256 levels stretch across a wider range. That output dither is automatic and invisible — separate from the `<Dither>` component, which is a deliberate, visible posterize effect you stack yourself.
+
 ## Wide-gamut input
 
 This is the part that needs no props at all. Write a color in `oklch()` or `oklab()` and Matter decodes it to unclamped linear-sRGB, so a color outside the sRGB cube stays outside it, all the way to the framebuffer:

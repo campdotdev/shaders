@@ -37,14 +37,14 @@ export interface DitherShaderProps {
 }
 
 // ---------------------------------------------
-// Quantization spacing (resolved at the first visual gate)
+// Quantization spacing
 // ---------------------------------------------
 // The overlay chain composes in LINEAR light, where evenly spaced levels
-// cluster perceptually in the brights. With this flag on, the shader
-// quantizes in a gamma-encoded approximation of display space instead
-// (encode -> quantize -> decode), spreading the levels perceptually. Judged
-// by eye at Gate 1; the loser gets deleted at the defaults gate.
-const QUANTIZE_IN_GAMMA = true;
+// cluster perceptually in the brights — three of four steps would sit in
+// what the eye reads as the bright half. So the shader quantizes in a
+// gamma-encoded approximation of display space instead (encode -> quantize
+// -> decode), spreading the levels perceptually. Chosen by eye against
+// linear-space quantization during the build.
 const GAMMA = 2.2;
 
 export function DitherShader({ pixelSize, levels, pattern }: DitherShaderProps) {
@@ -128,15 +128,14 @@ export function DitherShader({ pixelSize, levels, pattern }: DitherShaderProps) 
 
       // max(0) first: wide-gamut inputs can carry negative channels, and
       // pow() of a negative breaks WGSL const-eval.
-      const linearRgb = vec3(input.rgb).max(0);
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- gate A/B toggle, removed at the defaults gate
-      const source = QUANTIZE_IN_GAMMA ? linearRgb.pow(1 / GAMMA) : linearRgb;
+      const source = vec3(input.rgb)
+        .max(0)
+        .pow(1 / GAMMA);
 
       // Component-wise posterize with the cell's threshold as the rounding
       // point — the definition of ordered dithering.
       const quantized = quantize(source, levelsUniform, threshold);
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition -- gate A/B toggle, removed at the defaults gate
-      const outputRgb = QUANTIZE_IN_GAMMA ? quantized.pow(GAMMA) : quantized;
+      const outputRgb = quantized.pow(GAMMA);
 
       // Alpha passes through untouched (same rationale as the engine's
       // anti-banding dither: collapsing it would flash opaque black over

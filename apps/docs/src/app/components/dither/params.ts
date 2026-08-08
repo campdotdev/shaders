@@ -7,7 +7,7 @@ export interface DitherParams {
 }
 
 export const INITIAL: DitherParams = {
-  pixelSize: 4,
+  pixelSize: 2,
   levels: 4,
   pattern: 'bayer-8x8',
 };
