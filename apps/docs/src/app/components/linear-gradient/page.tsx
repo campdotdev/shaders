@@ -22,6 +22,7 @@ import {
   useSnapshot,
 } from '@/components/controls';
 import { DemoPoster } from '@/components/DemoPoster';
+import { createStop, newStopIndex } from '@/lib/stops';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { INITIAL, MAX_STOPS, MIN_STOPS } from './params';
@@ -30,19 +31,6 @@ import type { Params, Stop } from './params';
 const LinearGradientScene = dynamic(() => import('./scene'), { ssr: false });
 
 const COPY_CONFIG = { componentName: 'LinearGradient' } as const;
-
-/**
- * A new stop duplicates the last stop's color so it's visible immediately, and
- * slots in halfway between the last position and 1.0.
- */
-const createStop = (stops: readonly Stop[]): Stop => {
-  const last = stops[stops.length - 1];
-
-  return {
-    color: last?.color ?? 'oklch(0.6 0 0)',
-    position: last !== undefined ? (last.position + 1) / 2 : 1,
-  };
-};
 
 function LinearGradientDemo() {
   const params = useSnapshot<Params>();
@@ -75,6 +63,7 @@ function LinearGradientControls() {
       </Section>
       <ListInput<Stop>
         createItem={createStop}
+        insertIndex={newStopIndex}
         itemLabel="stop"
         label="Color stops"
         max={MAX_STOPS}
