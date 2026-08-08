@@ -1,9 +1,8 @@
 // Guards the panels' "Add stop" flow. Positioned stop lists end with a stop at
 // position 1, and colorRamp drops any segment whose span isn't positive — so a
-// stop appended after the last one would never render, no matter where its
-// position slider goes. These tests pin the fix: new stops slot in before the
-// last stop and the list stays in ascending position order, including after a
-// position edit.
+// stop appended after the last one would never render. These tests pin the fix:
+// new stops slot in before the last stop and the list stays in ascending
+// position order, including after a position edit.
 import { describe, expect, it } from 'vitest';
 
 import { createStop, newStopIndex, type PositionedStop } from './stops';
