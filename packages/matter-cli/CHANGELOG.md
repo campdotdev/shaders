@@ -1,5 +1,13 @@
 # @lovo/matter-cli
 
+## 3.4.0
+
+### Minor Changes
+
+- 6c711d6: Add ConicGradient: a color sweep around a center point, following CSS `conic-gradient` conventions. The sweep runs clockwise from 12 o'clock and `angle` rotates it clockwise, the opposite direction from LinearGradient and RadialGradient's counterclockwise `angle`. Stop positions auto-space when omitted, and the default palette repeats its first color as its last stop so the wheel closes without a seam; palettes that don't will show a hard edge where the sweep wraps. `repeat` above 1 turns the sweep into a pinwheel of sectors, and `speed` spins the whole thing, one full rotation per second at 1 with `repeat` at 1. Interpolation goes through the shared `colorSpace`/`hueInterpolation` props, defaulting to oklab.
+- 6c711d6: Add GodRays: soft rays of light streaming from an origin point, drawn as the product of two flowing noise fields so the beams flicker and drift instead of sweeping past like a rigid fan. Each color in `colors` (2 to 5) gets its own decorrelated ray layer, later colors finer-textured so they read as deeper planes, and the layers add their light over a transparent background, so stack the component above a dark layer in the scene. `center`, `angle`, `spread`, and `radius` aim and size the fan; the default parks the source just above the top edge with the cone wide open, so the frame does the cropping. `density` sets how many rays fit around a revolution, `diffusion` runs them from distinct beams to a soft wash, `patchiness` chops them into drifting dashes, and `glowRadius`/`glowIntensity` put a bright disc at the source. Every dial accepts an animation signal.
+- 6c711d6: Add `repeat` to LinearGradient: how many times the stops run across the gradient's span. The default of 1 keeps the existing single pass; above 1 the pattern tiles past both ends, so stripes run edge to edge at any angle. Each pass snaps back to the first stop, so match your first and last stops unless you want a visible edge at every stripe boundary. `speed` changes character with it: a single pass keeps the existing back-and-forth drift, while repeated stripes march steadily in the angle's direction. Values at or below 1 render as a single pass. Accepts a static value or an animation signal.
+
 ## 3.3.0
 
 ### Patch Changes
