@@ -11,11 +11,12 @@ import { type DitherPattern, ditherThreshold, quantize } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableUniform,
+  useBasePassUv,
   usePostProcessPass,
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { screenCoordinate, uniform, vec3, vec4 } from 'three/tsl';
+import { floor, screenCoordinate, screenSize, uniform, vec3, vec4 } from 'three/tsl';
 
 export type { DitherPattern } from '@lovo/matter';
 
@@ -83,6 +84,27 @@ export function DitherShader({ pixelSize, levels, pattern }: DitherShaderProps) 
 
     return resize.on('change', apply);
   }, [resize, dprUniform, shaderContext]);
+
+  // ---------------------------------------------
+  // True pixelation: snap the scene sample to the cell grid
+  // ---------------------------------------------
+  // The color pass below can only restyle each pixel; making a cell a truly
+  // UNIFORM block means resampling the rendered scene at one shared point
+  // per cell. This warp runs where the scene texture is sampled: quantize
+  // the 0..1 coordinate to the cell grid and land on the cell's center
+  // (+0.5), so every native pixel in a cell reads the same scene color. The
+  // grid is anchored top-left like screenCoordinate, keeping these cells
+  // aligned with the threshold cells in the color pass.
+  useBasePassUv(
+    (coordinate) => {
+      const devicePixel = pixelSizeUniform.mul(dprUniform).max(1);
+      const pixel = coordinate.mul(screenSize);
+      const snapped = floor(pixel.div(devicePixel)).add(0.5).mul(devicePixel);
+
+      return snapped.div(screenSize);
+    },
+    [pixelSizeUniform, dprUniform],
+  );
 
   // ---------------------------------------------
   // The pass: cell -> threshold -> posterize
