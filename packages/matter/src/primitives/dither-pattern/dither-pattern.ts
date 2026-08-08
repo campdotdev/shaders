@@ -1,5 +1,5 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { cos, floor, fract } from 'three/tsl';
+import { cos, floor, fract, hash } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 // Threshold maps for ordered dithering. Every pattern turns a dither-cell
@@ -9,7 +9,14 @@ import type { Node } from 'three/webgpu';
 // device pixel) and the <Dither> registry component (loud, chunky cells).
 
 /** The threshold maps available to ordered dithering. */
-export type DitherPattern = 'bayer-2x2' | 'bayer-4x4' | 'bayer-8x8' | 'dots' | 'lines';
+export type DitherPattern =
+  | 'bayer-2x2'
+  | 'bayer-4x4'
+  | 'bayer-8x8'
+  | 'dots'
+  | 'lines'
+  | 'white-noise'
+  | 'gradient-noise';
 
 // ---------------------------------------------
 // Bayer matrices, built recursively from the 2x2 base
@@ -69,6 +76,31 @@ function lineScreen(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 }
 
 // ---------------------------------------------
+// Noise thresholds
+// ---------------------------------------------
+
+function whiteNoise(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
+  const cell = floor(coord);
+  // Deterministic per-cell random in [0, 1) — the same nested-uint-hash
+  // recipe as the grain primitive (a single linear seed would leave a
+  // visible gradient axis). No time input: the pattern is frozen, so static
+  // scenes stay static.
+  const column = cell.x.toUint();
+  const rowHash = hash(cell.y.toUint()).mul(0xffffff).toUint();
+
+  return hash(column.add(rowHash));
+}
+
+function gradientNoise(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
+  const cell = floor(coord);
+
+  // Interleaved gradient noise (Jimenez, SIGGRAPH 2014): a closed-form
+  // pattern that looks noisier than Bayer but distributes more evenly than
+  // white noise. The magic constants are the published ones.
+  return fract(fract(cell.x.mul(0.06711056).add(cell.y.mul(0.00583715))).mul(52.9829189));
+}
+
+// ---------------------------------------------
 // Pattern dispatch
 // ---------------------------------------------
 
@@ -94,6 +126,10 @@ export function ditherThreshold(
       return dotScreen(cellCoord);
     case 'lines':
       return lineScreen(cellCoord);
+    case 'white-noise':
+      return whiteNoise(cellCoord);
+    case 'gradient-noise':
+      return gradientNoise(cellCoord);
     default:
       throw new Error(`Unknown dither pattern: ${String(pattern)}`);
   }

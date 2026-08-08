@@ -32,6 +32,8 @@ const PATTERN_OPTIONS = [
   { label: 'Bayer 8x8', value: 'bayer-8x8' },
   { label: 'Dots', value: 'dots' },
   { label: 'Lines', value: 'lines' },
+  { label: 'White noise', value: 'white-noise' },
+  { label: 'Gradient noise', value: 'gradient-noise' },
 ] as const;
 
 /**
