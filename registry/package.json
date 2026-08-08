@@ -15,7 +15,8 @@
     "./god-rays": "./god-rays/god-rays.tsx",
     "./vignette": "./vignette/vignette.tsx",
     "./radial-gradient": "./radial-gradient/radial-gradient.tsx",
-    "./conic-gradient": "./conic-gradient/conic-gradient.tsx"
+    "./conic-gradient": "./conic-gradient/conic-gradient.tsx",
+    "./dither": "./dither/dither.tsx"
   },
   "scripts": {
     "lint": "eslint .",

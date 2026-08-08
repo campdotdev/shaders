@@ -177,6 +177,21 @@
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": ["colorRamp", "atan2", "fract", "uv", "vec2", "uniform"],
       "tier": 1
+    },
+    "dither": {
+      "file": "dither/dither.tsx",
+      "files": ["dither/shader.tsx"],
+      "description": "Retro ordered dithering: pixelates the scene into chunky cells and posterizes its colors. Stacks on top of any base component inside <ShaderScene>.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": [
+        "ditherThreshold",
+        "quantize",
+        "screenCoordinate",
+        "uniform",
+        "vec3",
+        "vec4"
+      ],
+      "tier": 1
     }
   }
 }
