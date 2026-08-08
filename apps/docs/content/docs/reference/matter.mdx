@@ -17,7 +17,8 @@ TSL building blocks for writing shader expressions. Each primitive is documented
 - `simplexNoise(uv, opts?)` — single-octave 2D value noise.
 - `fractalNoise(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `scale`, `octaves`, `lacunarity`, `gain`, `speed`.
 - `voronoi(uv, opts?)` — distance-to-nearest-feature noise.
-- `quantize(value, bins)` — posterize a float to discrete steps.
+- `quantize(value, steps, threshold?)` — posterize a value to discrete steps, component-wise for vecs. `steps` can be a uniform node (animatable), and `threshold` replaces the built-in 0.5 rounding point — pass an ordered-dither threshold to dither.
+- `ditherThreshold(pattern, cellCoord)` — threshold maps for ordered dithering: `'bayer-2x2'`/`'bayer-4x4'`/`'bayer-8x8'`, halftone `'dots'`/`'lines'`, and `'white-noise'`/`'blue-noise'`/`'gradient-noise'`. Powers the `<Dither>` component. Not the same job as the scene's automatic output dither, which is invisible anti-banding noise — this one is the loud, artistic kind.
 - `signedDistanceFieldCircle(uv, radius, center)` — signed-distance field for a circle. Negative inside, positive outside.
 - `displace(uv, offset)` — UV displacement helper.
 - `cursorRipple(uv, cursor, opts?)` — cursor-following ripple displacement (used by `<DotField>`).

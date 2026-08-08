@@ -13,7 +13,7 @@ export type { DitherPattern } from './shader';
 export interface DitherProps {
   /**
    * Edge length of one dither cell in CSS pixels — bigger cells, chunkier
-   * image. Defaults to 4. Accepts a static value or an animation signal.
+   * image. Defaults to 2. Accepts a static value or an animation signal.
    */
   pixelSize?: AnimatableProp<number>;
   /**
@@ -30,6 +30,6 @@ export interface DitherProps {
   pattern?: DitherPattern;
 }
 
-export function Dither({ pixelSize = 4, levels = 4, pattern = 'bayer-8x8' }: DitherProps) {
+export function Dither({ pixelSize = 2, levels = 4, pattern = 'bayer-8x8' }: DitherProps) {
   return <DitherShader levels={levels} pattern={pattern} pixelSize={pixelSize} />;
 }
