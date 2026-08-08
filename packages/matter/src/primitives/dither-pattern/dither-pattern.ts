@@ -1,5 +1,5 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { floor, fract } from 'three/tsl';
+import { cos, floor, fract } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 // Threshold maps for ordered dithering. Every pattern turns a dither-cell
@@ -9,7 +9,7 @@ import type { Node } from 'three/webgpu';
 // device pixel) and the <Dither> registry component (loud, chunky cells).
 
 /** The threshold maps available to ordered dithering. */
-export type DitherPattern = 'bayer-2x2' | 'bayer-4x4' | 'bayer-8x8';
+export type DitherPattern = 'bayer-2x2' | 'bayer-4x4' | 'bayer-8x8' | 'dots' | 'lines';
 
 // ---------------------------------------------
 // Bayer matrices, built recursively from the 2x2 base
@@ -30,6 +30,42 @@ function bayer4(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 
 function bayer8(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
   return bayer4(coord.mul(0.5)).mul(0.25).add(bayer2(coord));
+}
+
+// ---------------------------------------------
+// Halftone screens
+// ---------------------------------------------
+// Print-style screens: instead of scattering the threshold (Bayer), arrange
+// it in smooth waves so dark areas render as isolated shapes that grow and
+// merge with brightness. Feel constants, units in dither cells — turning
+// HALFTONE_PERIOD up makes bigger dots / wider lines. Screens run at the
+// classic 45-degree print angle so the grid reads less mechanical.
+const HALFTONE_PERIOD = 6;
+const HALFTONE_COS = Math.cos(Math.PI / 4);
+const HALFTONE_SIN = Math.sin(Math.PI / 4);
+const HALFTONE_FREQUENCY = (Math.PI * 2) / HALFTONE_PERIOD;
+
+function dotScreen(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
+  const cell = floor(coord);
+  // Rotate the cell grid 45 degrees (standard 2D rotation, constants baked
+  // on the CPU), then sum a cosine along each rotated axis. cos+cos lands in
+  // -2..2 and makes an egg-crate surface: one rounded peak per period.
+  const rotatedX = cell.x.mul(HALFTONE_COS).sub(cell.y.mul(HALFTONE_SIN));
+  const rotatedY = cell.x.mul(HALFTONE_SIN).add(cell.y.mul(HALFTONE_COS));
+  const wave = cos(rotatedX.mul(HALFTONE_FREQUENCY)).add(cos(rotatedY.mul(HALFTONE_FREQUENCY)));
+
+  // Scale -2..2 into 0..1. Clamp shy of 1: a threshold of exactly 1 would
+  // push quantize() a full level up instead of deciding a rounding.
+  return wave.mul(0.25).add(0.5).clamp(0, 0.999);
+}
+
+function lineScreen(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
+  const cell = floor(coord);
+  // Distance along the normal of 45-degree lines; a single cosine across it
+  // makes parallel ridges — lines thicken with brightness.
+  const across = cell.x.mul(HALFTONE_SIN).add(cell.y.mul(HALFTONE_COS));
+
+  return cos(across.mul(HALFTONE_FREQUENCY)).mul(0.5).add(0.5).clamp(0, 0.999);
 }
 
 // ---------------------------------------------
@@ -54,6 +90,10 @@ export function ditherThreshold(
       return bayer4(cellCoord);
     case 'bayer-8x8':
       return bayer8(cellCoord);
+    case 'dots':
+      return dotScreen(cellCoord);
+    case 'lines':
+      return lineScreen(cellCoord);
     default:
       throw new Error(`Unknown dither pattern: ${String(pattern)}`);
   }

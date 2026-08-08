@@ -30,6 +30,8 @@ const PATTERN_OPTIONS = [
   { label: 'Bayer 2x2', value: 'bayer-2x2' },
   { label: 'Bayer 4x4', value: 'bayer-4x4' },
   { label: 'Bayer 8x8', value: 'bayer-8x8' },
+  { label: 'Dots', value: 'dots' },
+  { label: 'Lines', value: 'lines' },
 ] as const;
 
 /**
