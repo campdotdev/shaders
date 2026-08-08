@@ -1,9 +1,8 @@
 // Shared "Add stop" logic for the demo panels whose stop lists carry explicit
 // positions (linear, radial, conic, aurora). Those lists end with a stop at
-// position 1, and colorRamp drops any segment whose span isn't positive — so a
-// stop appended after the last one could never render, no matter where its
-// position slider goes. New stops slot in just before the last stop instead,
-// keeping it terminal and the list in ascending position order.
+// position 1, and colorRamp drops segments whose span isn't positive, so a stop
+// appended after the last one could never render. New stops slot in just before
+// the last stop instead, keeping it terminal and the list ascending by position.
 
 /** The stop shape every positioned list shares; pages keep their own aliases. */
 export interface PositionedStop {
