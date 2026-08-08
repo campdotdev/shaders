@@ -33,6 +33,7 @@ const PATTERN_OPTIONS = [
   { label: 'Dots', value: 'dots' },
   { label: 'Lines', value: 'lines' },
   { label: 'White noise', value: 'white-noise' },
+  { label: 'Blue noise', value: 'blue-noise' },
   { label: 'Gradient noise', value: 'gradient-noise' },
 ] as const;
 
