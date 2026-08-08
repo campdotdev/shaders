@@ -35,6 +35,12 @@ export interface ListInputProps<TItem> {
   max: number;
   /** Builds the next item, given the current list. Usually clones the last one. */
   createItem: (items: readonly TItem[]) => TItem;
+  /**
+   * Where the new item lands, given the current list. Defaults to appending —
+   * lists whose items must stay ordered (e.g. gradient stops with a closing
+   * end stop) use this to insert mid-list instead.
+   */
+  insertIndex?: (items: readonly TItem[]) => number;
   /** Singular noun for row headings and button labels. Defaults to "item". */
   itemLabel?: string;
   children: (index: number) => ReactNode;
@@ -46,6 +52,7 @@ export function ListInput<TItem>({
   min,
   max,
   createItem,
+  insertIndex,
   itemLabel = 'item',
   children,
 }: ListInputProps<TItem>) {
@@ -79,8 +86,10 @@ export function ListInput<TItem>({
 
   const add = () => {
     const items = readItems();
+    const next = [...items];
 
-    setProp(path, [...items, createItem(items)]);
+    next.splice(insertIndex?.(items) ?? items.length, 0, createItem(items));
+    setProp(path, next);
   };
 
   // What this list's own add/remove buttons name themselves after. A nested

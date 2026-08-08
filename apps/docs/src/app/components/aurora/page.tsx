@@ -22,6 +22,7 @@ import {
   useSnapshot,
 } from '@/components/controls';
 import { DemoPoster } from '@/components/DemoPoster';
+import { createStop, newStopIndex } from '@/lib/stops';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { type AuroraParams, INITIAL, MAX_STOPS, MIN_STOPS, type PlainColorStop } from './params';
@@ -29,13 +30,6 @@ import { type AuroraParams, INITIAL, MAX_STOPS, MIN_STOPS, type PlainColorStop }
 const AuroraScene = dynamic(() => import('./scene'), { ssr: false });
 
 const COPY_CONFIG = { componentName: 'Aurora' } as const;
-
-/** A new stop clones the last stop's color so the addition is visible. */
-const createStop = (stops: readonly PlainColorStop[]): PlainColorStop => {
-  const last = stops[stops.length - 1];
-
-  return { color: last?.color ?? 'oklch(0.6 0 0)', position: 1 };
-};
 
 function AuroraDemo() {
   const params = useSnapshot<AuroraParams>();
@@ -69,6 +63,7 @@ function AuroraControls() {
       </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
+        insertIndex={newStopIndex}
         itemLabel="stop"
         label="Stops (low to high altitude)"
         max={MAX_STOPS}
