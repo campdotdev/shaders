@@ -18,4 +18,9 @@ describe('ditherThreshold', () => {
     expect(ditherThreshold('dots', vec2(3, 5))).toBeDefined();
     expect(ditherThreshold('lines', vec2(3, 5))).toBeDefined();
   });
+
+  it('builds noise threshold nodes', () => {
+    expect(ditherThreshold('white-noise', vec2(3, 5))).toBeDefined();
+    expect(ditherThreshold('gradient-noise', vec2(3, 5))).toBeDefined();
+  });
 });
