@@ -14,6 +14,8 @@ export { useShaderContext } from './use-shader-context/use-shader-context.js';
 
 export { usePostProcessPass } from './use-overlay-pass/use-overlay-pass.js';
 
+export { useBasePassUv } from './use-base-pass-uv/use-base-pass-uv.js';
+
 export { useResize } from './use-resize/use-resize.js';
 export type { ResizeSignal, ResizeValue } from './use-resize/use-resize.js';
 
