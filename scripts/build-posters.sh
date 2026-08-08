@@ -39,7 +39,8 @@ for pair in \
   "dot-field:png" \
   "radial-gradient:jpg" \
   "god-rays:jpg:#0b0f1a" \
-  "conic-gradient:jpg"; do
+  "conic-gradient:jpg" \
+  "dither:jpg"; do
   name="${pair%%:*}"
   rest="${pair#*:}"
   format="${rest%%:*}"
