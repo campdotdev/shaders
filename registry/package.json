@@ -16,7 +16,8 @@
     "./vignette": "./vignette/vignette.tsx",
     "./radial-gradient": "./radial-gradient/radial-gradient.tsx",
     "./conic-gradient": "./conic-gradient/conic-gradient.tsx",
-    "./dither": "./dither/dither.tsx"
+    "./dither": "./dither/dither.tsx",
+    "./voronoi": "./voronoi/voronoi.tsx"
   },
   "scripts": {
     "lint": "eslint .",
