@@ -29,12 +29,15 @@ export function quantize(
   }
   // Functional-form ops for the node case: `steps` is TSLNode (the union),
   // which has no chain-method receiver (see colorRamp's localT for the same
-  // trick).
-  const denominator = typeof steps === 'number' ? steps - 1 : max(sub(steps, 1), 1);
+  // trick). The floor only keeps the divide finite at steps <= 1, where the
+  // select below discards this branch anyway — it must stay tiny so
+  // fractional counts like 1.5 keep the numeric path's continuous spacing.
+  const denominator = typeof steps === 'number' ? steps - 1 : max(sub(steps, 1), 1e-4);
 
   // floor(t * (steps-1) + threshold) / (steps-1)
   // Using floor(x + threshold) instead of round() for TSL portability.
   const quantized = t.mul(denominator).add(threshold).floor().div(denominator);
+
   if (typeof steps === 'number') {
     return quantized;
   }

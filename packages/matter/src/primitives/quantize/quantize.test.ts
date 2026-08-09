@@ -28,6 +28,10 @@ describe('quantize', () => {
     expect(() => quantize(uv().x, uniform(1))).not.toThrow();
   });
 
+  it('accepts a fractional node step count', () => {
+    expect(quantize(uv().x, uniform(1.5))).toBeDefined();
+  });
+
   it('accepts a threshold node in place of the 0.5 round', () => {
     expect(quantize(uv().x, 4, uv().y)).toBeDefined();
   });
