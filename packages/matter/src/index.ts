@@ -40,6 +40,12 @@ export type { FractalNoiseOptions } from './primitives/fbm/fbm.js';
 
 export { voronoi } from './primitives/voronoi/voronoi.js';
 
+export { voronoiCells } from './primitives/voronoi/voronoi-cells.js';
+export type {
+  VoronoiCellsOptions,
+  VoronoiCellsResult,
+} from './primitives/voronoi/voronoi-cells.js';
+
 export { quantize } from './primitives/quantize/quantize.js';
 
 export { signedDistanceFieldCircle } from './primitives/sdf-circle/sdf-circle.js';
