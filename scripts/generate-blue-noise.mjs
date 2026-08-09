@@ -77,7 +77,10 @@ function extreme(pattern, wantSet, pick) {
 // tightest cluster and the largest void are the same cell (stable).
 const random = mulberry32(0x4d415438);
 const pattern = new Uint8Array(COUNT);
-const seedCount = COUNT / 10;
+// Integer, or the fractional bound ripples through every phase: one seed
+// escapes phase 1 unranked (rank -1 -> threshold 255) and phase 2 runs one
+// extra iteration against an already-full tile.
+const seedCount = Math.floor(COUNT / 10);
 let placed = 0;
 
 while (placed < seedCount) {
