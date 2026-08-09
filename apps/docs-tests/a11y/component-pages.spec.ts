@@ -12,6 +12,7 @@ const routes = [
   '/components/grain',
   '/components/simplex-noise',
   '/components/vignette',
+  '/components/voronoi',
   '/components/wave-lines',
   '/recipes',
 ];

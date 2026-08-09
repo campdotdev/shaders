@@ -192,6 +192,14 @@
         "vec4"
       ],
       "tier": 1
+    },
+    "voronoi": {
+      "file": "voronoi/voronoi.tsx",
+      "files": ["voronoi/shader.tsx", "utils/color.ts"],
+      "description": "Cellular mosaic — flat color patches around drifting seed points, with crisp constant-width borders.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": ["voronoiCells", "colorRamp", "uv", "vec2", "uniform"],
+      "tier": 1
     }
   }
 }
