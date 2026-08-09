@@ -27,7 +27,7 @@ export interface DitherProps {
    * How strongly the pattern pushes colors across quantization steps.
    * 0 = clean posterize bands with no dither texture, 1 = classic ordered
    * dithering, above 1 the texture bleeds into flat areas for a grittier
-   * look. Defaults to 1. Accepts a static value or an animation signal.
+   * look. Defaults to 0.5. Accepts a static value or an animation signal.
    */
   spread?: AnimatableProp<number>;
   /**
@@ -47,7 +47,7 @@ export interface DitherProps {
 export function Dither({
   pixelSize = 2,
   levels = 4,
-  spread = 1,
+  spread = 0.5,
   threshold = 1,
   pattern = 'bayer-8x8',
 }: DitherProps) {

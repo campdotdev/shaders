@@ -11,7 +11,7 @@ export interface DitherParams {
 export const INITIAL: DitherParams = {
   pixelSize: 2,
   levels: 4,
-  spread: 1,
+  spread: 0.5,
   threshold: 1,
   pattern: 'bayer-8x8',
 };
