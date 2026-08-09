@@ -7,9 +7,10 @@
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
-import { VoronoiShader } from './shader';
+import { VoronoiShader, type VoronoiTuning } from './shader';
 
 export type { ColorStop } from '../utils/color';
+export type { VoronoiTuning } from './shader';
 
 export interface VoronoiProps {
   /**
@@ -29,6 +30,28 @@ export interface VoronoiProps {
    * of the same character. Defaults to 0.
    */
   seed?: number;
+  /**
+   * Color of the border lines between cells. Defaults to a near-black
+   * neutral.
+   */
+  borderColor?: string;
+  /**
+   * Width of the border between cells. 0 removes borders entirely (cells
+   * touch seamlessly); 1 is chunky mortar. Defaults to 0.05. Accepts a
+   * static value or an animation signal.
+   */
+  borderWidth?: AnimatableProp<number>;
+  /**
+   * How soft the border edge is. 0 is a crisp anti-aliased line; 1 fades
+   * the border into the cells as a wide mist. Defaults to 0. Accepts a
+   * static value or an animation signal.
+   */
+  borderSoftness?: AnimatableProp<number>;
+  /**
+   * TEMPORARY dev-tuning overrides for feel constants. Stripped before
+   * release — do not use.
+   */
+  tuning?: VoronoiTuning;
 }
 
 // Deep-water palette: stops walk the shared lightness ladder (each ≥0.10 L
@@ -40,6 +63,24 @@ const DEFAULT_STOPS: ColorStop[] = [
   { color: 'oklch(0.720 0.250 320)' }, // paletteOklch.purple[9]
 ];
 
-export function Voronoi({ stops = DEFAULT_STOPS, scale = 5, seed = 0 }: VoronoiProps) {
-  return <VoronoiShader scale={scale} seed={seed} stops={stops} />;
+export function Voronoi({
+  stops = DEFAULT_STOPS,
+  scale = 5,
+  seed = 0,
+  borderColor = 'oklch(0.145 0.02 265)',
+  borderWidth = 0.05,
+  borderSoftness = 0,
+  tuning,
+}: VoronoiProps) {
+  return (
+    <VoronoiShader
+      borderColor={borderColor}
+      borderSoftness={borderSoftness}
+      borderWidth={borderWidth}
+      scale={scale}
+      seed={seed}
+      stops={stops}
+      tuning={tuning}
+    />
+  );
 }

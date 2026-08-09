@@ -14,10 +14,17 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { uniform, uv, vec2 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
+import { float, fwidth, mix, smoothstep, uniform, uv, vec2 } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
 
-import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
+import { type ColorStop, colorStopsKey, parseColor, toColorRampStops } from '../utils/color';
+
+export interface VoronoiTuning {
+  /** Border gap at borderWidth 1, in pattern units. Up = chunkier mortar. */
+  maxBorderGap?: number;
+  /** Feather width at borderSoftness 1, in pattern units. Up = mistier. */
+  maxBorderSoftness?: number;
+}
 
 export interface VoronoiShaderProps {
   /**
@@ -37,9 +44,36 @@ export interface VoronoiShaderProps {
    * of the same character.
    */
   seed: number;
+  /** Color of the border lines between cells. */
+  borderColor: string;
+  /**
+   * Width of the border between cells. 0 removes borders entirely (cells
+   * touch seamlessly); 1 is chunky mortar. Accepts a static value or an
+   * animation signal.
+   */
+  borderWidth: AnimatableProp<number>;
+  /**
+   * How soft the border edge is. 0 is a crisp anti-aliased line; 1 fades
+   * the border into the cells as a wide mist. Accepts a static value or an
+   * animation signal.
+   */
+  borderSoftness: AnimatableProp<number>;
+  /**
+   * TEMPORARY dev-tuning overrides for feel constants. Stripped before
+   * release — do not use.
+   */
+  tuning?: VoronoiTuning;
 }
 
-export function VoronoiShader({ stops, scale, seed }: VoronoiShaderProps) {
+export function VoronoiShader({
+  stops,
+  scale,
+  seed,
+  borderColor,
+  borderWidth,
+  borderSoftness,
+  tuning,
+}: VoronoiShaderProps) {
   const shaderContext = useShaderContext();
 
   // No animation until the motion phase lands — let the frame scheduler
@@ -63,6 +97,36 @@ export function VoronoiShader({ stops, scale, seed }: VoronoiShaderProps) {
     seedVec.set(seed * 12.9898, seed * 78.233);
     shaderContext?.scheduler.requestRender();
   }, [shaderContext, seedVec, seed]);
+
+  // The border color rides a Vector3 uniform (vignette's pattern): the
+  // Vector3 and its uniform are created once, the effect writes decoded rgb
+  // into them, so a color change never rebuilds the material.
+  const borderColorVec = useMemo(() => new Vector3(0, 0, 0), []);
+  const borderColorUniform = useMemo(() => uniform(borderColorVec), [borderColorVec]);
+
+  useEffect(() => {
+    const [red, green, blue] = parseColor(borderColor);
+
+    borderColorVec.set(red, green, blue);
+    shaderContext?.scheduler.requestRender();
+  }, [shaderContext, borderColorVec, borderColor]);
+
+  const borderWidthUniform = useAnimatableUniform<number>(borderWidth);
+  const borderSoftnessUniform = useAnimatableUniform<number>(borderSoftness);
+
+  // ---------------------------------------------
+  // Tuning (dev) — stripped at the defaults gate
+  // ---------------------------------------------
+  // Feel constants ride uniforms so the panel's tuning sliders glide
+  // without rebuilding the material.
+  const maxBorderGapUniform = useMemo(() => uniform(0.1), []);
+  const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
+
+  useEffect(() => {
+    maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
+    maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
+    shaderContext?.scheduler.requestRender();
+  }, [shaderContext, maxBorderGapUniform, maxBorderSoftnessUniform, tuning]);
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -115,7 +179,31 @@ export function VoronoiShader({ stops, scale, seed }: VoronoiShaderProps) {
 
       // Each cell's stable hash picks a point on the ramp: a flat color per
       // cell, because the hash is constant across the cell.
-      material.colorNode = colorRamp(cells.hash, toColorRampStops(stops), 'oklab', 'shorter');
+      const cellColor = colorRamp(cells.hash, toColorRampStops(stops), 'oklab', 'shorter');
+
+      // ---------------------------------------------
+      // Borders: constant-width lines along cell edges
+      // ---------------------------------------------
+      // edgeDistance is 0 exactly on a border and grows toward each cell's
+      // interior, so thresholding it at `gap` draws lines of equal width
+      // everywhere. The threshold is softened by two bands: an anti-aliasing
+      // floor from fwidth() (a screen-space derivative — how much
+      // edgeDistance changes across one screen pixel), which keeps the line
+      // crisp but unjagged at any zoom, plus the softness dial's wider
+      // feather on top.
+      const gap = borderWidthUniform.mul(maxBorderGapUniform);
+      const band = fwidth(cells.edgeDistance).add(
+        borderSoftnessUniform.mul(maxBorderSoftnessUniform),
+      );
+      const cellMask = smoothstep(gap.sub(band), gap.add(band), cells.edgeDistance);
+
+      // At width 0 the smoothstep would still tint the half-pixel sitting
+      // exactly on each edge (edgeDistance 0 lands mid-band), reading as a
+      // faint seam. Fade the border out entirely as width approaches 0.
+      const borderStrength = smoothstep(0.0, 0.002, borderWidthUniform);
+      const borderMask = mix(float(1), cellMask, borderStrength);
+
+      material.colorNode = mix(borderColorUniform, cellColor, borderMask);
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -138,7 +226,18 @@ export function VoronoiShader({ stops, scale, seed }: VoronoiShaderProps) {
     // stopsKey is a stable string proxy for the stops array (identity-only
     // changes must not rebuild); uniforms are mutated in place.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [shaderContext, scaleUniform, seedUniform, aspectNode, stopsKey],
+    [
+      shaderContext,
+      scaleUniform,
+      seedUniform,
+      aspectNode,
+      stopsKey,
+      borderColorUniform,
+      borderWidthUniform,
+      borderSoftnessUniform,
+      maxBorderGapUniform,
+      maxBorderSoftnessUniform,
+    ],
   );
 
   return null;

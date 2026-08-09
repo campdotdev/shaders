@@ -57,6 +57,21 @@ function VoronoiControls() {
         <SliderInput label="Scale" max={20} min={1} path="scale" step={0.1} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
       </Section>
+      <Section title="Border">
+        <ColorInput label="Color" path="borderColor" />
+        <SliderInput label="Width" max={1} min={0} path="borderWidth" step={0.01} />
+        <SliderInput label="Softness" max={1} min={0} path="borderSoftness" step={0.01} />
+      </Section>
+      <Section title="Tuning (dev)">
+        <SliderInput label="Max gap" max={0.3} min={0.01} path="tuning.maxBorderGap" step={0.005} />
+        <SliderInput
+          label="Max softness"
+          max={0.5}
+          min={0.01}
+          path="tuning.maxBorderSoftness"
+          step={0.005}
+        />
+      </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
         itemLabel="color"
