@@ -24,6 +24,10 @@ describe('quantize', () => {
     expect(quantize(uv().x, uniform(4))).toBeDefined();
   });
 
+  it('handles a node step count of 1 without throwing', () => {
+    expect(() => quantize(uv().x, uniform(1))).not.toThrow();
+  });
+
   it('accepts a threshold node in place of the 0.5 round', () => {
     expect(quantize(uv().x, 4, uv().y)).toBeDefined();
   });

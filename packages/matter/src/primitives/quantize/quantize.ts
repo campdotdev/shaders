@@ -1,5 +1,5 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { max, sub } from 'three/tsl';
+import { greaterThan, max, select, sub } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
@@ -11,8 +11,8 @@ import type { TSLNode } from '../color-ramp/color-ramp.js';
  *
  * `steps` is either a JS number (baked into the shader at build time) or a
  * float node (e.g. a uniform — animatable level counts; fractional values
- * are well-defined, the spacing just animates continuously). Node steps are
- * clamped so the divisor never reaches zero.
+ * are well-defined, the spacing just animates continuously). Either way,
+ * steps <= 1 leaves a single level: constant 0.
  *
  * `threshold` replaces the 0.5 rounding constant, which is exactly what
  * ordered dithering is: a per-cell threshold in [0, 1) decides whether a
@@ -34,5 +34,14 @@ export function quantize(
 
   // floor(t * (steps-1) + threshold) / (steps-1)
   // Using floor(x + threshold) instead of round() for TSL portability.
-  return t.mul(denominator).add(threshold).floor().div(denominator);
+  const quantized = t.mul(denominator).add(threshold).floor().div(denominator);
+  if (typeof steps === 'number') {
+    return quantized;
+  }
+
+  // Node steps can't take the early return above — the value only exists on
+  // the GPU — so the same edge case gates at runtime: at steps <= 1 the
+  // max() clamp would otherwise turn the formula into a binary threshold
+  // instead of the single level 0 the numeric path produces.
+  return select(greaterThan(steps, 1), quantized, t.mul(0));
 }
