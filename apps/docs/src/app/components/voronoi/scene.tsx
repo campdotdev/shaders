@@ -19,7 +19,15 @@ export default function VoronoiScene({
 
   return (
     <ShaderScene>
-      <Voronoi scale={params.scale} seed={params.seed} stops={stops} />
+      <Voronoi
+        borderColor={params.borderColor}
+        borderSoftness={params.borderSoftness}
+        borderWidth={params.borderWidth}
+        scale={params.scale}
+        seed={params.seed}
+        stops={stops}
+        tuning={params.tuning}
+      />
       {children}
     </ShaderScene>
   );
