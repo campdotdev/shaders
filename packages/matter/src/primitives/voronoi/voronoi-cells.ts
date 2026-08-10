@@ -99,29 +99,43 @@ export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): Vor
 
   // Per-cell random streams, derived by NESTING hashes (grain's pattern) so
   // no linear seed axis leaks through as diagonal correlation across the
-  // field. One stream colors the cell, two place its seed, two phase its
-  // wobble.
+  // field. One stream colors the cell, two place its seed, four phase its
+  // wobble (two per sine pair), one sets its tempo.
   const cellRandom = (cell: ShaderNodeObject<Node>) => {
     const shifted = add(cell, HASH_DOMAIN_OFFSET);
     const rowHash = hash(shifted.y).mul(0xffffff).toUint();
     const cellHash = hash(shifted.x.toUint().add(rowHash));
     const streamSeed = cellHash.mul(0xffffff).toUint();
     const homeOffset = vec2(hash(streamSeed), hash(streamSeed.add(1)));
-    const wobblePhase = vec2(hash(streamSeed.add(2)), hash(streamSeed.add(3)));
+    const wobblePhaseA = vec2(hash(streamSeed.add(2)), hash(streamSeed.add(3)));
+    const wobblePhaseB = vec2(hash(streamSeed.add(4)), hash(streamSeed.add(5)));
+    // 0.7..1.3: every cell drifts at its own rate, so the field never
+    // breathes in unison.
+    const tempo = hash(streamSeed.add(6)).mul(0.6).add(0.7);
 
-    return { cellHash, homeOffset, wobblePhase };
+    return { cellHash, homeOffset, wobblePhaseA, wobblePhaseB, tempo };
   };
 
   // Where a cell's seed sits right now, in that cell's 0..1 local space.
   // Home: the center pushed toward a hash-picked spot — jitter 0 collapses
-  // to 0.5 (grid), jitter 1 spans the whole cell. Wobble: a sinusoidal orbit
-  // around home, phase offset per axis by the cell hash so cells never move
-  // in lockstep. Drift is deliberately NOT scaled by jitter — irregularity
-  // and motion are decoupled dials.
+  // to 0.5 (grid), jitter 1 spans the whole cell.
+  //
+  // Wobble: a sum of two sines per axis at incommensurate frequencies
+  // (ratio 1 : 1.618 — the golden ratio is the number rationals approximate
+  // worst, so the pair never falls back into step and the orbit never
+  // closes). One sine alone traces a fixed ellipse the eye reads as
+  // ping-ponging; the detuned pair traces an open wandering loop, and the
+  // per-cell tempo keeps neighbors from sharing a beat. Amplitudes sum to 1
+  // so `drift` still means "maximum displacement in cell units". Drift is
+  // deliberately NOT scaled by jitter — irregularity and motion are
+  // decoupled dials.
   const seedInCell = (cell: ShaderNodeObject<Node>) => {
-    const { cellHash, homeOffset, wobblePhase } = cellRandom(cell);
+    const { cellHash, homeOffset, wobblePhaseA, wobblePhaseB, tempo } = cellRandom(cell);
     const home = add(vec2(0.5, 0.5), mul(sub(homeOffset, 0.5), jitter));
-    const wobble = mul(sin(add(float(time), mul(wobblePhase, TWO_PI))), drift);
+    const cellTime = mul(float(time), tempo);
+    const swayA = sin(add(cellTime, mul(wobblePhaseA, TWO_PI)));
+    const swayB = sin(add(mul(cellTime, 1.618), mul(wobblePhaseB, TWO_PI)));
+    const wobble = mul(add(mul(swayA, 0.7), mul(swayB, 0.3)), drift);
 
     return { cellHash, seedPos: add(home, wobble) };
   };
