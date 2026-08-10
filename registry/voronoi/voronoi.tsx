@@ -4,6 +4,7 @@
 // defaults, then delegates to VoronoiShader (./shader.tsx), which carves the
 // canvas into cells around scattered seed points and colors each cell from
 // the ramp. Render it inside a <ShaderScene>.
+import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
@@ -19,6 +20,19 @@ export interface VoronoiProps {
    * `oklab()`; positions auto-space when omitted.
    */
   stops?: ColorStop[];
+  /**
+   * Snap cell colors to a fixed number of distinct ramp colors. 0 (the
+   * default) is continuous — every cell a unique shade; low values give a
+   * bold mosaic where colors visibly repeat. Defaults to 0. Accepts a
+   * static value or an animation signal.
+   */
+  steps?: AnimatableProp<number>;
+  /**
+   * Blends each cell's fill from a flat patch toward a radial pool of the
+   * ramp around its seed point. 0 = flat cells, 1 = fully shaded pools.
+   * Defaults to 0. Accepts a static value or an animation signal.
+   */
+  shading?: AnimatableProp<number>;
   /**
    * Cell density — roughly how many cells span the canvas height. Higher
    * values give a finer mosaic. Defaults to 5. Accepts a static value or an
@@ -66,6 +80,13 @@ export interface VoronoiProps {
    * static value or an animation signal.
    */
   borderSoftness?: AnimatableProp<number>;
+  /** Color space the ramp and border/glow mixes interpolate in. Defaults to `'oklab'`. */
+  colorSpace?: ColorSpace;
+  /**
+   * Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert
+   * otherwise. Defaults to `'shorter'`.
+   */
+  hueInterpolation?: HueInterpolation;
   /**
    * TEMPORARY dev-tuning overrides for feel constants. Stripped before
    * release — do not use.
@@ -84,6 +105,8 @@ const DEFAULT_STOPS: ColorStop[] = [
 
 export function Voronoi({
   stops = DEFAULT_STOPS,
+  steps = 0,
+  shading = 0,
   scale = 5,
   seed = 0,
   speed = 0.2,
@@ -92,6 +115,8 @@ export function Voronoi({
   borderColor = 'oklch(0.145 0.02 265)',
   borderWidth = 0.05,
   borderSoftness = 0,
+  colorSpace = 'oklab',
+  hueInterpolation = 'shorter',
   tuning,
 }: VoronoiProps) {
   return (
@@ -99,11 +124,15 @@ export function Voronoi({
       borderColor={borderColor}
       borderSoftness={borderSoftness}
       borderWidth={borderWidth}
+      colorSpace={colorSpace}
       drift={drift}
+      hueInterpolation={hueInterpolation}
       irregularity={irregularity}
       scale={scale}
       seed={seed}
+      shading={shading}
       speed={speed}
+      steps={steps}
       stops={stops}
       tuning={tuning}
     />
