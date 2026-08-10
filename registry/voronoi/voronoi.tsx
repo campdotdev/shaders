@@ -31,6 +31,24 @@ export interface VoronoiProps {
    */
   seed?: number;
   /**
+   * How fast cells drift over time. 0 freezes the pattern. Defaults to 0.2.
+   * Accepts a static value or an animation signal.
+   */
+  speed?: AnimatableProp<number>;
+  /**
+   * How far seeds scatter off a perfect grid. 0 arranges cells in an exact
+   * square grid; 1 is fully organic. Static — motion is governed by `drift`
+   * and `speed`. Defaults to 1. Accepts a static value or an animation
+   * signal.
+   */
+  irregularity?: AnimatableProp<number>;
+  /**
+   * How far cells wobble around their home positions while animating. 0
+   * pins them in place even at high speed. Defaults to 0.5. Accepts a
+   * static value or an animation signal.
+   */
+  drift?: AnimatableProp<number>;
+  /**
    * Color of the border lines between cells. Defaults to a near-black
    * neutral.
    */
@@ -67,6 +85,9 @@ export function Voronoi({
   stops = DEFAULT_STOPS,
   scale = 5,
   seed = 0,
+  speed = 0.2,
+  irregularity = 1,
+  drift = 0.5,
   borderColor = 'oklch(0.145 0.02 265)',
   borderWidth = 0.05,
   borderSoftness = 0,
@@ -77,8 +98,11 @@ export function Voronoi({
       borderColor={borderColor}
       borderSoftness={borderSoftness}
       borderWidth={borderWidth}
+      drift={drift}
+      irregularity={irregularity}
       scale={scale}
       seed={seed}
+      speed={speed}
       stops={stops}
       tuning={tuning}
     />

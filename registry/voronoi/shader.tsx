@@ -9,6 +9,7 @@ import { useEffect, useMemo } from 'react';
 import { colorRamp, voronoiCells } from '@lovo/matter';
 import {
   type AnimatableProp,
+  useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
@@ -24,6 +25,8 @@ export interface VoronoiTuning {
   maxBorderGap?: number;
   /** Feather width at borderSoftness 1, in pattern units. Up = mistier. */
   maxBorderSoftness?: number;
+  /** Wobble amplitude at drift 1, in cell units. Up = bigger orbits. */
+  driftMax?: number;
 }
 
 export interface VoronoiShaderProps {
@@ -44,6 +47,23 @@ export interface VoronoiShaderProps {
    * of the same character.
    */
   seed: number;
+  /**
+   * How fast cells drift over time. 0 freezes the pattern. Accepts a
+   * static value or an animation signal.
+   */
+  speed: AnimatableProp<number>;
+  /**
+   * How far seeds scatter off a perfect grid. 0 arranges cells in an exact
+   * square grid; 1 is fully organic. Static — motion is governed by `drift`
+   * and `speed`. Accepts a static value or an animation signal.
+   */
+  irregularity: AnimatableProp<number>;
+  /**
+   * How far cells wobble around their home positions while animating. 0
+   * pins them in place even at high speed. Accepts a static value or an
+   * animation signal.
+   */
+  drift: AnimatableProp<number>;
   /** Color of the border lines between cells. */
   borderColor: string;
   /**
@@ -69,6 +89,9 @@ export function VoronoiShader({
   stops,
   scale,
   seed,
+  speed,
+  irregularity,
+  drift,
   borderColor,
   borderWidth,
   borderSoftness,
@@ -76,11 +99,23 @@ export function VoronoiShader({
 }: VoronoiShaderProps) {
   const shaderContext = useShaderContext();
 
-  // No animation until the motion phase lands — let the frame scheduler
-  // idle instead of re-rendering a still image.
-  useStaticSceneHint(true);
+  // A literal speed of 0 freezes the pattern, so nothing ever changes on
+  // screen (an animation signal might move later and doesn't count). Telling
+  // the scene lets its frame scheduler go idle instead of re-rendering.
+  const isStatic = typeof speed === 'number' && speed === 0;
+
+  useStaticSceneHint(isStatic);
 
   const scaleUniform = useAnimatableUniform<number>(scale);
+
+  // The animated dials live in uniforms (values the CPU can update each
+  // frame without rebuilding the shader). Speed is the exception:
+  // useAnimatableSpeed integrates it into a phase uniform (speed × delta
+  // summed each frame), so a speed change shifts the drift tempo without
+  // snapping every cell to a new position.
+  const phaseUniform = useAnimatableSpeed(speed);
+  const irregularityUniform = useAnimatableUniform<number>(irregularity);
+  const driftUniform = useAnimatableUniform<number>(drift);
 
   // Content fingerprint of the stops array (colors + positions). The build
   // effect keys on this string, so a re-render that passes a new array with
@@ -121,12 +156,14 @@ export function VoronoiShader({
   // without rebuilding the material.
   const maxBorderGapUniform = useMemo(() => uniform(0.1), []);
   const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
+  const driftMaxUniform = useMemo(() => uniform(0.1), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
     maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
+    driftMaxUniform.value = tuning?.driftMax ?? 0.1;
     shaderContext?.scheduler.requestRender();
-  }, [shaderContext, maxBorderGapUniform, maxBorderSoftnessUniform, tuning]);
+  }, [shaderContext, maxBorderGapUniform, maxBorderSoftnessUniform, driftMaxUniform, tuning]);
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -173,7 +210,15 @@ export function VoronoiShader({
       const corrected = vec2(centered.x.mul(aspectNode), centered.y);
       const samplePoint = corrected.mul(scaleUniform).add(seedUniform);
 
-      const cells = voronoiCells(samplePoint, { jitter: 1 });
+      // The accumulated phase drives the wobble clock; irregularity feeds
+      // the primitive's jitter (static scatter) directly. The 0..1 drift
+      // dial maps to cell units through the tuning ceiling: at driftMax
+      // 0.1, full drift swings each seed ±10% of a cell around its home.
+      const cells = voronoiCells(samplePoint, {
+        time: phaseUniform,
+        jitter: irregularityUniform,
+        drift: driftUniform.mul(driftMaxUniform),
+      });
 
       const material = new MeshBasicNodeMaterial();
 
@@ -232,6 +277,10 @@ export function VoronoiShader({
       seedUniform,
       aspectNode,
       stopsKey,
+      phaseUniform,
+      irregularityUniform,
+      driftUniform,
+      driftMaxUniform,
       borderColorUniform,
       borderWidthUniform,
       borderSoftnessUniform,

@@ -8,11 +8,15 @@ export interface PlainColorStop {
 export interface TuningParams {
   maxBorderGap: number;
   maxBorderSoftness: number;
+  driftMax: number;
 }
 
 export interface Params {
   scale: number;
   seed: number;
+  speed: number;
+  irregularity: number;
+  drift: number;
   borderColor: string;
   borderWidth: number;
   borderSoftness: number;
@@ -26,6 +30,9 @@ export const MAX_STOPS = 5;
 export const INITIAL: Params = {
   scale: 5,
   seed: 0,
+  speed: 0.2,
+  irregularity: 1,
+  drift: 0.5,
   borderColor: 'oklch(0.145 0.02 265)',
   borderWidth: 0.05,
   borderSoftness: 0,
@@ -38,5 +45,6 @@ export const INITIAL: Params = {
   tuning: {
     maxBorderGap: 0.1,
     maxBorderSoftness: 0.1,
+    driftMax: 0.1,
   },
 };
