@@ -89,7 +89,7 @@ function VoronoiControls() {
         <SliderInput label="Flow range" max={6} min={0} path="tuning.flowRange" step={0.1} />
         <SliderInput
           label="Shading range"
-          max={3}
+          max={6}
           min={0.5}
           path="tuning.shadingRange"
           step={0.05}

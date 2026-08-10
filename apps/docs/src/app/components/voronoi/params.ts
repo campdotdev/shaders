@@ -59,6 +59,6 @@ export const INITIAL: Params = {
     maxBorderSoftness: 0.1,
     flowRate: 0.3,
     flowRange: 0,
-    shadingRange: 1.4,
+    shadingRange: 2.5,
   },
 };
