@@ -5,6 +5,7 @@
 // mosaic needs for per-cell color, glow, and constant-width border lines.
 import type { ShaderNodeObject } from 'three/tsl';
 import {
+  abs,
   add,
   float,
   floor,
@@ -44,8 +45,10 @@ export interface VoronoiCellsOptions {
    */
   jitter?: TSLScalar;
   /**
-   * Oscillation amplitude around each seed's home position, in cell units.
-   * Default 0 (no motion).
+   * 0..1 fraction of each seed's in-cell headroom the wobble may use: 0 is
+   * no motion, 1 sweeps every seed through all the room its cell offers
+   * (seeds provably never leave their cell, so the 3x3 neighbor search
+   * stays valid at any drift). Default 0.
    */
   drift?: TSLScalar;
 }
@@ -125,17 +128,26 @@ export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): Vor
   // worst, so the pair never falls back into step and the orbit never
   // closes). One sine alone traces a fixed ellipse the eye reads as
   // ping-ponging; the detuned pair traces an open wandering loop, and the
-  // per-cell tempo keeps neighbors from sharing a beat. Amplitudes sum to 1
-  // so `drift` still means "maximum displacement in cell units". Drift is
-  // deliberately NOT scaled by jitter — irregularity and motion are
-  // decoupled dials.
+  // per-cell tempo keeps neighbors from sharing a beat.
+  //
+  // The amplitude is the key to organic motion, learned from the Paper
+  // Shaders reference: big seed travel makes cell WALLS slide and cells
+  // reshape (even swap neighbors), which is what the eye reads as alive —
+  // small orbits just jiggle a frozen structure. Scaling by headroom (the
+  // per-axis room between home and the cell wall; sway amplitudes sum to 1)
+  // lets drift 1 use all of it while provably never letting a seed leave
+  // its cell, which is what keeps the 3x3 neighbor search valid at any
+  // drift. Drift is deliberately NOT scaled by jitter — irregularity and
+  // motion are decoupled dials.
   const seedInCell = (cell: ShaderNodeObject<Node>) => {
     const { cellHash, homeOffset, wobblePhaseA, wobblePhaseB, tempo } = cellRandom(cell);
     const home = add(vec2(0.5, 0.5), mul(sub(homeOffset, 0.5), jitter));
+    const headroom = sub(0.5, abs(sub(home, 0.5)));
     const cellTime = mul(float(time), tempo);
     const swayA = sin(add(cellTime, mul(wobblePhaseA, TWO_PI)));
     const swayB = sin(add(mul(cellTime, 1.618), mul(wobblePhaseB, TWO_PI)));
-    const wobble = mul(add(mul(swayA, 0.7), mul(swayB, 0.3)), drift);
+    const sway = add(mul(swayA, 0.7), mul(swayB, 0.3));
+    const wobble = mul(mul(sway, headroom), drift);
 
     return { cellHash, seedPos: add(home, wobble) };
   };

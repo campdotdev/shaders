@@ -25,8 +25,6 @@ export interface VoronoiTuning {
   maxBorderGap?: number;
   /** Feather width at borderSoftness 1, in pattern units. Up = mistier. */
   maxBorderSoftness?: number;
-  /** Wobble amplitude at drift 1, in cell units. Up = bigger orbits. */
-  driftMax?: number;
 }
 
 export interface VoronoiShaderProps {
@@ -60,8 +58,9 @@ export interface VoronoiShaderProps {
   irregularity: AnimatableProp<number>;
   /**
    * How far cells wobble around their home positions while animating. 0
-   * pins them in place even at high speed. Accepts a static value or an
-   * animation signal.
+   * pins them in place even at high speed; 1 lets each seed roam all the
+   * room its cell offers, so walls slide and cells reshape. Accepts a
+   * static value or an animation signal.
    */
   drift: AnimatableProp<number>;
   /** Color of the border lines between cells. */
@@ -156,14 +155,12 @@ export function VoronoiShader({
   // without rebuilding the material.
   const maxBorderGapUniform = useMemo(() => uniform(0.1), []);
   const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
-  const driftMaxUniform = useMemo(() => uniform(0.1), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
     maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
-    driftMaxUniform.value = tuning?.driftMax ?? 0.1;
     shaderContext?.scheduler.requestRender();
-  }, [shaderContext, maxBorderGapUniform, maxBorderSoftnessUniform, driftMaxUniform, tuning]);
+  }, [shaderContext, maxBorderGapUniform, maxBorderSoftnessUniform, tuning]);
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -211,13 +208,14 @@ export function VoronoiShader({
       const samplePoint = corrected.mul(scaleUniform).add(seedUniform);
 
       // The accumulated phase drives the wobble clock; irregularity feeds
-      // the primitive's jitter (static scatter) directly. The 0..1 drift
-      // dial maps to cell units through the tuning ceiling: at driftMax
-      // 0.1, full drift swings each seed ±10% of a cell around its home.
+      // the primitive's jitter (static scatter) and drift its headroom
+      // fraction — at 1, each seed roams all the room its cell offers (the
+      // primitive keeps seeds in-cell by construction, so there is no
+      // amplitude ceiling to tune).
       const cells = voronoiCells(samplePoint, {
         time: phaseUniform,
         jitter: irregularityUniform,
-        drift: driftUniform.mul(driftMaxUniform),
+        drift: driftUniform,
       });
 
       const material = new MeshBasicNodeMaterial();
@@ -280,7 +278,6 @@ export function VoronoiShader({
       phaseUniform,
       irregularityUniform,
       driftUniform,
-      driftMaxUniform,
       borderColorUniform,
       borderWidthUniform,
       borderSoftnessUniform,

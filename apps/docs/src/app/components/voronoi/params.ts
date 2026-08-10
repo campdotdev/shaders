@@ -8,7 +8,6 @@ export interface PlainColorStop {
 export interface TuningParams {
   maxBorderGap: number;
   maxBorderSoftness: number;
-  driftMax: number;
 }
 
 export interface Params {
@@ -45,6 +44,5 @@ export const INITIAL: Params = {
   tuning: {
     maxBorderGap: 0.1,
     maxBorderSoftness: 0.1,
-    driftMax: 0.1,
   },
 };

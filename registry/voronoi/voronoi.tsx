@@ -44,8 +44,9 @@ export interface VoronoiProps {
   irregularity?: AnimatableProp<number>;
   /**
    * How far cells wobble around their home positions while animating. 0
-   * pins them in place even at high speed. Defaults to 0.5. Accepts a
-   * static value or an animation signal.
+   * pins them in place even at high speed; 1 lets each seed roam all the
+   * room its cell offers, so walls slide and cells reshape. Defaults to
+   * 0.5. Accepts a static value or an animation signal.
    */
   drift?: AnimatableProp<number>;
   /**

@@ -76,7 +76,6 @@ function VoronoiControls() {
           path="tuning.maxBorderSoftness"
           step={0.005}
         />
-        <SliderInput label="Drift max" max={0.4} min={0.02} path="tuning.driftMax" step={0.01} />
       </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
