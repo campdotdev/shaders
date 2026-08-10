@@ -29,9 +29,10 @@ export interface VoronoiProps {
    */
   steps?: AnimatableProp<number>;
   /**
-   * Blends each cell's fill from a flat patch toward a radial pool of the
-   * ramp around its seed point. 0 = flat cells, 1 = fully shaded pools.
-   * Defaults to 0. Accepts a static value or an animation signal.
+   * Radial depth inside each cell: slides colors along the ramp around the
+   * cell's own color, darker toward the seed point and lighter toward the
+   * rim. 0 is flat; 1 sweeps half the ramp each way. Defaults to 0.
+   * Accepts a static value or an animation signal.
    */
   shading?: AnimatableProp<number>;
   /**
