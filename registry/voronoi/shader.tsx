@@ -61,10 +61,10 @@ export interface VoronoiShaderProps {
    */
   stops: ColorStop[];
   /**
-   * Snap cell colors to a fixed number of distinct ramp colors. 0 is
-   * continuous — every cell a unique shade; low values give a bold mosaic
-   * where colors visibly repeat. Accepts a static value or an animation
-   * signal.
+   * Posterize the palette. 0 is continuous — every cell a unique shade; 1
+   * snaps every cell to exactly the stop colors; higher values add that
+   * many minus one evenly spaced blends between each neighboring pair of
+   * stops. Accepts a static value or an animation signal.
    */
   steps: AnimatableProp<number>;
   /**
@@ -306,13 +306,19 @@ export function VoronoiShader({
       // ---------------------------------------------
       // Cell color: hash → (snap) → (shade) → ramp
       // ---------------------------------------------
-      // steps > 1 snaps the hash to N discrete ramp positions (the
-      // repeated-color mosaic). quantize() collapses steps <= 1 to constant
-      // 0 by design, so the select gates it: at or below 1 the raw hash
-      // passes through untouched — the continuous "every cell unique" look
-      // the 0 default promises.
-      const snapped = quantize(cells.hash, stepsUniform);
-      const cellValue = select(stepsUniform.greaterThan(1), snapped, cells.hash);
+      // steps posterizes PER PALETTE SEGMENT (Paper Shaders' stepsPerColor
+      // semantics): the quantize level count is steps × segments + 1, so
+      // with auto-spaced stops the palette colors themselves are always
+      // among the levels — steps 1 is exactly the stop colors, 2 adds one
+      // blend between each neighboring pair, and so on. Counting raw ramp
+      // levels instead made the dial lie: most counts landed between stops
+      // and produced off-palette blends. The select gates steps 0 (and the
+      // fractional approach to it) back to the raw hash — the continuous
+      // "every cell unique" look the 0 default promises.
+      const segmentCount = Math.max(stops.length - 1, 1);
+      const levelCount = stepsUniform.mul(segmentCount).add(1);
+      const snapped = quantize(cells.hash, levelCount);
+      const cellValue = select(stepsUniform.greaterThan(0.5), snapped, cells.hash);
 
       // Shading re-aims the ramp lookup from "this cell's hash" toward "how
       // far is this pixel from its seed": at 1, each cell becomes a radial

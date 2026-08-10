@@ -21,10 +21,11 @@ export interface VoronoiProps {
    */
   stops?: ColorStop[];
   /**
-   * Snap cell colors to a fixed number of distinct ramp colors. 0 (the
-   * default) is continuous — every cell a unique shade; low values give a
-   * bold mosaic where colors visibly repeat. Defaults to 0. Accepts a
-   * static value or an animation signal.
+   * Posterize the palette. 0 (the default) is continuous — every cell a
+   * unique shade; 1 snaps every cell to exactly the stop colors; higher
+   * values add that many minus one evenly spaced blends between each
+   * neighboring pair of stops. Defaults to 0. Accepts a static value or an
+   * animation signal.
    */
   steps?: AnimatableProp<number>;
   /**

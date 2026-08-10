@@ -59,7 +59,7 @@ function VoronoiControls() {
       <Section title="Cells">
         <SliderInput label="Scale" max={20} min={1} path="scale" step={0.1} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
-        <SliderInput label="Steps" max={8} min={0} path="steps" step={1} />
+        <SliderInput label="Steps" max={4} min={0} path="steps" step={1} />
         <SliderInput label="Shading" max={1} min={0} path="shading" step={0.01} />
       </Section>
       <Section title="Mixing">
