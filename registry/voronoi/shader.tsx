@@ -25,6 +25,8 @@ export interface VoronoiTuning {
   maxBorderGap?: number;
   /** Feather width at borderSoftness 1, in pattern units. Up = mistier. */
   maxBorderSoftness?: number;
+  /** Cells the field migrates per phase unit. 0 pins the field in place. */
+  flowSpeed?: number;
 }
 
 export interface VoronoiShaderProps {
@@ -155,12 +157,14 @@ export function VoronoiShader({
   // without rebuilding the material.
   const maxBorderGapUniform = useMemo(() => uniform(0.1), []);
   const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
+  const flowSpeedUniform = useMemo(() => uniform(0.5), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
     maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
+    flowSpeedUniform.value = tuning?.flowSpeed ?? 0.5;
     shaderContext?.scheduler.requestRender();
-  }, [shaderContext, maxBorderGapUniform, maxBorderSoftnessUniform, tuning]);
+  }, [shaderContext, maxBorderGapUniform, maxBorderSoftnessUniform, flowSpeedUniform, tuning]);
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -205,7 +209,16 @@ export function VoronoiShader({
       // neighborhood of the infinite pattern.
       const centered = uv().sub(0.5);
       const corrected = vec2(centered.x.mul(aspectNode), centered.y);
-      const samplePoint = corrected.mul(scaleUniform).add(seedUniform);
+
+      // Domain flow: the sampling window slides through the infinite cell
+      // field over time, so cells genuinely migrate across the canvas (new
+      // ones enter at one edge as others leave). The (0.8, 0.6) direction
+      // is a unit vector chosen off-axis so the travel never reads as a
+      // horizontal or vertical scroll; the same integrated phase that
+      // clocks the wander drives it, so one speed dial governs both.
+      const flowPhase = phaseUniform.mul(flowSpeedUniform);
+      const flow = vec2(flowPhase.mul(0.8), flowPhase.mul(0.6));
+      const samplePoint = corrected.mul(scaleUniform).add(seedUniform).add(flow);
 
       // The accumulated phase drives the wobble clock; irregularity feeds
       // the primitive's jitter (static scatter) and drift its headroom
@@ -283,6 +296,7 @@ export function VoronoiShader({
       borderSoftnessUniform,
       maxBorderGapUniform,
       maxBorderSoftnessUniform,
+      flowSpeedUniform,
     ],
   );
 
