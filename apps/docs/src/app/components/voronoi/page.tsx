@@ -57,6 +57,11 @@ function VoronoiControls() {
         <SliderInput label="Scale" max={20} min={1} path="scale" step={0.1} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
       </Section>
+      <Section title="Motion">
+        <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
+        <SliderInput label="Irregularity" max={1} min={0} path="irregularity" step={0.01} />
+        <SliderInput label="Drift" max={1} min={0} path="drift" step={0.01} />
+      </Section>
       <Section title="Border">
         <ColorInput label="Color" path="borderColor" />
         <SliderInput label="Width" max={1} min={0} path="borderWidth" step={0.01} />
@@ -71,6 +76,7 @@ function VoronoiControls() {
           path="tuning.maxBorderSoftness"
           step={0.005}
         />
+        <SliderInput label="Drift max" max={0.4} min={0.02} path="tuning.driftMax" step={0.01} />
       </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
