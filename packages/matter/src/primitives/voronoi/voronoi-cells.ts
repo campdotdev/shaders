@@ -5,7 +5,6 @@
 // mosaic needs for per-cell color, glow, and constant-width border lines.
 import type { ShaderNodeObject } from 'three/tsl';
 import {
-  abs,
   add,
   float,
   floor,
@@ -19,9 +18,9 @@ import {
   mix,
   mul,
   normalize,
+  sin,
   sub,
   vec2,
-  vec3,
   vec4,
 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
@@ -46,10 +45,11 @@ export interface VoronoiCellsOptions {
    */
   jitter?: TSLScalar;
   /**
-   * 0..1 fraction of each seed's in-cell headroom the wobble may use: 0 is
-   * no motion, 1 sweeps every seed through all the room its cell offers
-   * (seeds provably never leave their cell, so the 3x3 neighbor search
-   * stays valid at any drift). Default 0.
+   * 0..1 orbit radius, as a fraction of a half-cell: 0 is no motion, 1
+   * swings every seed through the full room its cell offers. Anchors
+   * scatter only within the room the orbit leaves free, so seeds provably
+   * never leave their cell and the 3x3 neighbor search stays valid at any
+   * drift. Default 0.
    */
   drift?: TSLScalar;
 }
@@ -71,9 +71,7 @@ export interface VoronoiCellsResult {
 // scales up to ~500 cells plus the seed offset window.
 const HASH_DOMAIN_OFFSET = 512;
 
-// Shifts the wander timeline positive before its uint conversion (phase can
-// dip below zero briefly under signal-driven speeds).
-const TIME_DOMAIN_OFFSET = 1024;
+const TWO_PI = Math.PI * 2;
 
 // Spreads consecutive timeline steps across the hash space (Knuth's
 // multiplicative constant) so step k and k+1 land on unrelated randoms.
@@ -147,54 +145,44 @@ export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): Vor
 
   // Per-cell random streams, derived by NESTING hashes (grain's pattern) so
   // no linear seed axis leaks through as diagonal correlation across the
-  // field. One stream colors the cell, two place its seed, one sets its
-  // wander tempo; the wander itself draws fresh streams per timeline step.
+  // field. One stream colors the cell, two anchor its seed, two phase its
+  // orbit.
   const cellRandom = (cell: ShaderNodeObject<Node>) => {
     const shifted = add(cell, HASH_DOMAIN_OFFSET);
     const rowHash = hash(shifted.y).mul(0xffffff).toUint();
     const cellHash = hash(shifted.x.toUint().add(rowHash));
     const streamSeed = cellHash.mul(0xffffff).toUint();
     const homeOffset = vec2(hash(streamSeed), hash(streamSeed.add(1)));
-    // 0.7..1.3: every cell wanders at its own rate, so the field never
-    // moves in unison.
-    const tempo = hash(streamSeed.add(2)).mul(0.6).add(0.7);
+    const orbitPhase = vec2(hash(streamSeed.add(2)), hash(streamSeed.add(3)));
 
-    return { cellHash, streamSeed, homeOffset, tempo };
+    return { cellHash, homeOffset, orbitPhase };
   };
 
-  // Where a cell's seed sits right now, in that cell's 0..1 local space.
-  // Home: the center pushed toward a hash-picked spot — jitter 0 collapses
-  // to 0.5 (grid), jitter 1 spans the whole cell.
+  // Where a cell's seed sits right now, in that cell's 0..1 local space —
+  // the sine-orbit ensemble from Hayashi's stained-glass voronoi
+  // (shadertoy XdSyzK, itself on iq's ldl3W8): every seed glides through an
+  // ellipse around its anchor at ONE shared frequency, desynchronized only
+  // by per-cell random phases. A sine orbit's velocity is continuous, so
+  // nothing ever stalls (value-noise retargeting was tried here and read
+  // as hesitant); the shared frequency makes the whole field churn
+  // coherently, and the churn is what hides the formula's periodicity —
+  // the eye gets no fixed landmark to notice the ~2π repeat.
   //
-  // Wobble: each axis runs two detuned octaves of the time-domain value
-  // noise above (rates 1 : 2.7, amplitudes 0.7 + 0.3 = 1) on its own hash
-  // streams. Two octaves at unrelated rates erase the per-step easing
-  // cadence a single octave would show, and per-cell tempo keeps neighbors
-  // from sharing a beat. Nothing here ever revisits a previous pose.
-  //
-  // The amplitude is the key to organic motion, learned from the Paper
-  // Shaders reference: big seed travel makes cell WALLS slide and cells
-  // reshape (even swap neighbors), which is what the eye reads as alive —
-  // small orbits just jiggle a frozen structure. Scaling by headroom (the
-  // per-axis room between home and the cell wall) lets drift 1 use all of
-  // it while provably never letting a seed leave its cell, which is what
-  // keeps the 3x3 neighbor search valid at any drift. Drift is
-  // deliberately NOT scaled by jitter — irregularity and motion are
-  // decoupled dials.
+  // The orbit radius is uniform (drift × half-cell) and anchors scatter by
+  // jitter only within the room the orbit leaves free: anchor ± amplitude
+  // stays inside [0, 1] by construction, so seeds never leave their cell
+  // and the 3x3 neighbor search stays valid at any drift. At full drift
+  // anchors converge to the cell center — exactly the reference's shape —
+  // and at drift 0 jitter spans the whole cell as pure static scatter.
   const seedInCell = (cell: ShaderNodeObject<Node>) => {
-    const { cellHash, streamSeed, homeOffset, tempo } = cellRandom(cell);
-    const home = add(vec2(0.5, 0.5), mul(sub(homeOffset, 0.5), jitter));
-    const headroom = sub(0.5, abs(sub(home, 0.5)));
-    const timeline = add(mul(float(time), tempo), TIME_DOMAIN_OFFSET).toVar();
-    const timelineFast = mul(timeline, 2.7).toVar();
-    const axisWander = (axisOffset: number) =>
-      timelineWander(streamSeed, axisOffset, timeline)
-        .mul(0.7)
-        .add(timelineWander(streamSeed, axisOffset + 7919, timelineFast).mul(0.3));
-    const wander = vec2(axisWander(101), axisWander(211)).toVar();
-    const wobble = mul(mul(wander, headroom), drift).toVar();
+    const { cellHash, homeOffset, orbitPhase } = cellRandom(cell);
+    const amplitude = mul(float(drift), 0.5);
+    const anchorRoom = sub(0.5, amplitude);
+    const anchor = add(0.5, mul(sub(homeOffset, 0.5).mul(2), mul(anchorRoom, jitter)));
+    const orbit = sin(add(float(time), mul(orbitPhase, TWO_PI)));
+    const seedPos = add(anchor, mul(orbit, amplitude)).toVar();
 
-    return { cellHash, seedPos: add(home, wobble) };
+    return { cellHash, seedPos };
   };
 
   // Fn provides the statement context (a "stack") that Loop/If/assign
