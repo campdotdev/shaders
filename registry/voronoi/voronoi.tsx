@@ -29,10 +29,11 @@ export interface VoronoiProps {
    */
   steps?: AnimatableProp<number>;
   /**
-   * Radial depth inside each cell: slides colors along the ramp around the
-   * cell's own color, darker toward the seed point and lighter toward the
-   * rim. 0 is flat; 1 sweeps half the ramp each way. Defaults to 0.
-   * Accepts a static value or an animation signal.
+   * Depth inside each cell, following its shape: slides colors along the
+   * ramp around the cell's own color, toward the ramp's start at the
+   * borders and its end in the interior. 0 is flat; 1 sweeps half the ramp
+   * each way. Defaults to 0. Accepts a static value or an animation
+   * signal.
    */
   shading?: AnimatableProp<number>;
   /**

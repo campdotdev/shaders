@@ -23,19 +23,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import {
-  clamp,
-  float,
-  fwidth,
-  length,
-  mix,
-  select,
-  smoothstep,
-  uint,
-  uniform,
-  uv,
-  vec2,
-} from 'three/tsl';
+import { clamp, float, fwidth, mix, select, smoothstep, uint, uniform, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, parseColor, toColorRampStops } from '../utils/color';
@@ -45,7 +33,7 @@ export interface VoronoiTuning {
   maxBorderGap?: number;
   /** Feather width at borderSoftness 1, in pattern units. Up = mistier. */
   maxBorderSoftness?: number;
-  /** Seed-distance that maps to the ramp's end under shading. Up = pools reach further. */
+  /** Scales how quickly shading deepens away from borders. Up = full depth nearer the edge. */
   shadingRange?: number;
   /** How often the field picks a new heading, in retargets per phase unit. */
   flowRate?: number;
@@ -68,10 +56,10 @@ export interface VoronoiShaderProps {
    */
   steps: AnimatableProp<number>;
   /**
-   * Radial depth inside each cell: slides colors along the ramp around the
-   * cell's own color, darker toward the seed point and lighter toward the
-   * rim. 0 is flat; 1 sweeps half the ramp each way. Accepts a static
-   * value or an animation signal.
+   * Depth inside each cell, following its shape: slides colors along the
+   * ramp around the cell's own color, toward the ramp's start at the
+   * borders and its end in the interior. 0 is flat; 1 sweeps half the ramp
+   * each way. Accepts a static value or an animation signal.
    */
   shading: AnimatableProp<number>;
   /**
@@ -210,14 +198,14 @@ export function VoronoiShader({
   const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
   const flowRateUniform = useMemo(() => uniform(0.3), []);
   const flowRangeUniform = useMemo(() => uniform(0), []);
-  const shadingRangeUniform = useMemo(() => uniform(1.4), []);
+  const shadingRangeUniform = useMemo(() => uniform(2.5), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
     maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
     flowRateUniform.value = tuning?.flowRate ?? 0.3;
     flowRangeUniform.value = tuning?.flowRange ?? 0;
-    shadingRangeUniform.value = tuning?.shadingRange ?? 1.4;
+    shadingRangeUniform.value = tuning?.shadingRange ?? 2.5;
     shaderContext?.scheduler.requestRender();
   }, [
     shaderContext,
@@ -322,17 +310,19 @@ export function VoronoiShader({
       const cellValue = select(stepsUniform.greaterThan(0.5), snapped, cells.hash);
 
       // Shading slides each pixel ALONG the ramp around its own cell's
-      // color, by distance from the seed: centered (−0.5 shift) so the
-      // cell's base color holds at mid-distance, darker side toward the
-      // seed and lighter side toward the rim for a dark→light palette.
-      // Offsetting the ramp INPUT (never crossfading toward a shared
-      // distance value) is what keeps every cell's identity at full
-      // shading — and keeps every in-between color on the ramp itself.
-      // shadingRange calibrates what counts as "far": the seed offset can
-      // reach ~0.7 cells diagonally, so ~1.4 maps a typical rim to the
-      // sweep's end.
-      const centerDistance = clamp(length(cells.seedOffset).mul(shadingRangeUniform), 0, 1);
-      const radialShift = centerDistance.sub(0.5).mul(shadingUniform);
+      // color, by distance to the nearest BORDER — depth that hugs each
+      // cell's polygonal shape (an inset, like glass thickening toward the
+      // middle) rather than the circular rings that seed-distance shading
+      // produces. Centering (−0.5 shift) holds the cell's base color at
+      // mid-depth: border side slides toward the ramp's start, interior
+      // toward its end, for a dark→light palette. Offsetting the ramp
+      // INPUT (never crossfading toward a shared value) keeps every cell's
+      // identity at full shading — and every in-between color on the ramp
+      // itself. shadingRange calibrates the reach: interiors top out around
+      // 0.4 pattern units from a border, so ~2.5 maps a deep interior to
+      // the sweep's end.
+      const borderDepth = clamp(cells.edgeDistance.mul(shadingRangeUniform), 0, 1);
+      const radialShift = borderDepth.sub(0.5).mul(shadingUniform);
       const rampInput = clamp(cellValue.add(radialShift), 0, 1);
 
       const cellColor = colorRamp(rampInput, toColorRampStops(stops), colorSpace, hueInterpolation);
