@@ -47,6 +47,6 @@ export const INITIAL: Params = {
     maxBorderGap: 0.1,
     maxBorderSoftness: 0.1,
     flowRate: 0.3,
-    flowRange: 2,
+    flowRange: 0,
   },
 };

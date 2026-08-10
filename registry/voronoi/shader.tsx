@@ -27,7 +27,7 @@ export interface VoronoiTuning {
   maxBorderSoftness?: number;
   /** How often the field picks a new heading, in retargets per phase unit. */
   flowRate?: number;
-  /** How far the field sloshes from center, in cells. 0 pins it in place. */
+  /** How far the field sloshes from center, in cells. 0 (default) pins it. */
   flowRange?: number;
 }
 
@@ -160,13 +160,13 @@ export function VoronoiShader({
   const maxBorderGapUniform = useMemo(() => uniform(0.1), []);
   const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
   const flowRateUniform = useMemo(() => uniform(0.3), []);
-  const flowRangeUniform = useMemo(() => uniform(2), []);
+  const flowRangeUniform = useMemo(() => uniform(0), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
     maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
     flowRateUniform.value = tuning?.flowRate ?? 0.3;
-    flowRangeUniform.value = tuning?.flowRange ?? 2;
+    flowRangeUniform.value = tuning?.flowRange ?? 0;
     shaderContext?.scheduler.requestRender();
   }, [
     shaderContext,
