@@ -83,6 +83,17 @@ export interface VoronoiProps {
    * static value or an animation signal.
    */
   borderSoftness?: AnimatableProp<number>;
+  /**
+   * Strength of the tint that bleeds inward from each cell's borders — a
+   * soft halo hugging the cell shape, like light leaking through the
+   * seams. 0 disables it. Defaults to 0. Accepts a static value or an
+   * animation signal.
+   */
+  glow?: AnimatableProp<number>;
+  /**
+   * Color of the border-bleed tint. Defaults to a near-black neutral.
+   */
+  glowColor?: string;
   /** Color space the ramp and border/glow mixes interpolate in. Defaults to `'oklab'`. */
   colorSpace?: ColorSpace;
   /**
@@ -118,6 +129,8 @@ export function Voronoi({
   borderColor = 'oklch(0.145 0.02 265)',
   borderWidth = 0.05,
   borderSoftness = 0,
+  glow = 0,
+  glowColor = 'oklch(0.145 0.02 265)',
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
   tuning,
@@ -129,6 +142,8 @@ export function Voronoi({
       borderWidth={borderWidth}
       colorSpace={colorSpace}
       drift={drift}
+      glow={glow}
+      glowColor={glowColor}
       hueInterpolation={hueInterpolation}
       irregularity={irregularity}
       scale={scale}

@@ -13,6 +13,8 @@ export interface TuningParams {
   flowRate: number;
   flowRange: number;
   shadingRange: number;
+  glowRange: number;
+  glowExponent: number;
 }
 
 export interface Params {
@@ -26,6 +28,8 @@ export interface Params {
   borderColor: string;
   borderWidth: number;
   borderSoftness: number;
+  glow: number;
+  glowColor: string;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   stops: PlainColorStop[];
@@ -46,6 +50,8 @@ export const INITIAL: Params = {
   borderColor: 'oklch(0.145 0.02 265)',
   borderWidth: 0.05,
   borderSoftness: 0,
+  glow: 0,
+  glowColor: 'oklch(0.145 0.02 265)',
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
@@ -60,5 +66,7 @@ export const INITIAL: Params = {
     flowRate: 0.3,
     flowRange: 0,
     shadingRange: 2.5,
+    glowRange: 2.5,
+    glowExponent: 1.5,
   },
 };

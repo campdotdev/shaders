@@ -23,7 +23,19 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { clamp, float, fwidth, mix, select, smoothstep, uint, uniform, uv, vec2 } from 'three/tsl';
+import {
+  clamp,
+  float,
+  fwidth,
+  mix,
+  pow,
+  select,
+  smoothstep,
+  uint,
+  uniform,
+  uv,
+  vec2,
+} from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, parseColor, toColorRampStops } from '../utils/color';
@@ -35,6 +47,10 @@ export interface VoronoiTuning {
   maxBorderSoftness?: number;
   /** Scales how quickly shading deepens away from borders. Up = full depth nearer the edge. */
   shadingRange?: number;
+  /** Scales how far the glow tint reaches in from borders. Up = tighter halo. */
+  glowRange?: number;
+  /** Falloff shape of the glow. Up = tint gathers against the borders. */
+  glowExponent?: number;
   /** How often the field picks a new heading, in retargets per phase unit. */
   flowRate?: number;
   /** How far the field sloshes from center, in cells. 0 (default) pins it. */
@@ -105,6 +121,14 @@ export interface VoronoiShaderProps {
    * animation signal.
    */
   borderSoftness: AnimatableProp<number>;
+  /**
+   * Strength of the tint that bleeds inward from each cell's borders — a
+   * soft halo hugging the cell shape, like light leaking through the
+   * seams. 0 disables it. Accepts a static value or an animation signal.
+   */
+  glow: AnimatableProp<number>;
+  /** Color of the border-bleed tint. */
+  glowColor: string;
   /** Color space the ramp and border/glow mixes interpolate in. */
   colorSpace: ColorSpace;
   /**
@@ -131,6 +155,8 @@ export function VoronoiShader({
   borderColor,
   borderWidth,
   borderSoftness,
+  glow,
+  glowColor,
   colorSpace,
   hueInterpolation,
   tuning,
@@ -188,6 +214,19 @@ export function VoronoiShader({
 
   const borderWidthUniform = useAnimatableUniform<number>(borderWidth);
   const borderSoftnessUniform = useAnimatableUniform<number>(borderSoftness);
+  const glowUniform = useAnimatableUniform<number>(glow);
+
+  // Same Vector3-uniform pattern as the border color: recoloring the glow
+  // never rebuilds the material.
+  const glowColorVec = useMemo(() => new Vector3(0, 0, 0), []);
+  const glowColorUniform = useMemo(() => uniform(glowColorVec), [glowColorVec]);
+
+  useEffect(() => {
+    const [red, green, blue] = parseColor(glowColor);
+
+    glowColorVec.set(red, green, blue);
+    shaderContext?.scheduler.requestRender();
+  }, [shaderContext, glowColorVec, glowColor]);
 
   // ---------------------------------------------
   // Tuning (dev) — stripped at the defaults gate
@@ -199,6 +238,8 @@ export function VoronoiShader({
   const flowRateUniform = useMemo(() => uniform(0.3), []);
   const flowRangeUniform = useMemo(() => uniform(0), []);
   const shadingRangeUniform = useMemo(() => uniform(2.5), []);
+  const glowRangeUniform = useMemo(() => uniform(2.5), []);
+  const glowExponentUniform = useMemo(() => uniform(1.5), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
@@ -206,6 +247,8 @@ export function VoronoiShader({
     flowRateUniform.value = tuning?.flowRate ?? 0.3;
     flowRangeUniform.value = tuning?.flowRange ?? 0;
     shadingRangeUniform.value = tuning?.shadingRange ?? 2.5;
+    glowRangeUniform.value = tuning?.glowRange ?? 2.5;
+    glowExponentUniform.value = tuning?.glowExponent ?? 1.5;
     shaderContext?.scheduler.requestRender();
   }, [
     shaderContext,
@@ -214,6 +257,8 @@ export function VoronoiShader({
     flowRateUniform,
     flowRangeUniform,
     shadingRangeUniform,
+    glowRangeUniform,
+    glowExponentUniform,
     tuning,
   ]);
 
@@ -328,6 +373,27 @@ export function VoronoiShader({
       const cellColor = colorRamp(rampInput, toColorRampStops(stops), colorSpace, hueInterpolation);
 
       // ---------------------------------------------
+      // Glow: tint bleeding inward from the borders
+      // ---------------------------------------------
+      // The mask is 1 at a border and fades inward over 1/glowRange pattern
+      // units; pow() shapes the falloff — higher exponents gather the tint
+      // against the borders, keeping cell middles clean. Mix strength is
+      // the dial × mask, so glow 0 is exactly the untinted color. Runs on
+      // edgeDistance like shading (a halo hugging the cell shape), but
+      // tints toward ONE fixed color instead of sliding along the palette.
+      const glowMask = pow(
+        clamp(cells.edgeDistance.mul(glowRangeUniform), 0, 1).oneMinus(),
+        glowExponentUniform,
+      );
+      const litColor = mixColor(
+        cellColor,
+        glowColorUniform,
+        glowUniform.mul(glowMask),
+        colorSpace,
+        hueInterpolation,
+      );
+
+      // ---------------------------------------------
       // Borders: constant-width lines along cell edges
       // ---------------------------------------------
       // edgeDistance is 0 exactly on a border and grows toward each cell's
@@ -354,7 +420,7 @@ export function VoronoiShader({
       // perceptually sensible path.
       material.colorNode = mixColor(
         borderColorUniform,
-        cellColor,
+        litColor,
         borderMask,
         colorSpace,
         hueInterpolation,
@@ -396,6 +462,10 @@ export function VoronoiShader({
       borderColorUniform,
       borderWidthUniform,
       borderSoftnessUniform,
+      glowUniform,
+      glowColorUniform,
+      glowRangeUniform,
+      glowExponentUniform,
       maxBorderGapUniform,
       maxBorderSoftnessUniform,
       flowRateUniform,
