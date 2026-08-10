@@ -76,7 +76,8 @@ function VoronoiControls() {
           path="tuning.maxBorderSoftness"
           step={0.005}
         />
-        <SliderInput label="Flow speed" max={2} min={0} path="tuning.flowSpeed" step={0.05} />
+        <SliderInput label="Flow rate" max={1.5} min={0} path="tuning.flowRate" step={0.05} />
+        <SliderInput label="Flow range" max={6} min={0} path="tuning.flowRange" step={0.1} />
       </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}

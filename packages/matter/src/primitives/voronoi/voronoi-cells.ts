@@ -102,6 +102,44 @@ const TIME_STEP_STRIDE = 2654435761;
  *
  * @param p — Vec2 TSL node in pattern space, typically `uv() * scale`.
  */
+/**
+ * Smooth aperiodic scalar in [-1, 1]: 1D value noise over a timeline. The
+ * timeline is cut into unit steps; each step hashes to a random target and
+ * the fractional position eases between neighbors (f*f*(3-2f), the
+ * smoothstep kernel — C1-continuous, so velocity never jumps). Every step
+ * draws a fresh hash stream, so the trajectory never cycles back — unlike a
+ * sine, there is no path to retrace. voronoiCells drives every seed's
+ * wobble with it; the <Voronoi> component reuses it for the field's
+ * meandering flow.
+ *
+ * Deliberately NOT gradient/perlin noise: an earlier build sampled mx_noise
+ * 68 times inside voronoiCells' loops and the WebGL backend's shader
+ * compile took two minutes under software GL (CI's stack) — headless
+ * Chromium reads as hung. Integer-hash value noise compiles in
+ * milliseconds and feels the same at these amplitudes.
+ *
+ * @param streamSeed — uint TSL node namespacing this trajectory's randoms.
+ * @param salt — JS number mixed in so multiple axes/octaves sharing a
+ *   streamSeed stay uncorrelated.
+ * @param timeline — float TSL node, expected positive (offset before the
+ *   uint conversion); one unit ≈ one new random target.
+ */
+export function timelineWander(
+  streamSeed: ShaderNodeObject<Node>,
+  salt: number,
+  timeline: ShaderNodeObject<Node>,
+): ShaderNodeObject<Node> {
+  const step = floor(timeline);
+  const eased = fract(timeline)
+    .mul(fract(timeline))
+    .mul(sub(3, fract(timeline).mul(2)));
+  const stepSeed = step.toUint().mul(TIME_STEP_STRIDE);
+  const target0 = hash(streamSeed.add(salt).add(stepSeed));
+  const target1 = hash(streamSeed.add(salt).add(stepSeed.add(TIME_STEP_STRIDE)));
+
+  return mix(target0, target1, eased).mul(2).sub(1);
+}
+
 export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): VoronoiCellsResult {
   const time = options.time ?? 0;
   const jitter = options.jitter ?? 1;
@@ -122,34 +160,6 @@ export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): Vor
     const tempo = hash(streamSeed.add(2)).mul(0.6).add(0.7);
 
     return { cellHash, streamSeed, homeOffset, tempo };
-  };
-
-  // Smooth aperiodic wander in [-1, 1]: 1D value noise over time. The
-  // timeline is cut into unit steps; each step hashes to a random target
-  // and the fractional position eases between neighbors (f*f*(3-2f), the
-  // smoothstep kernel — C1-continuous, so velocity never jumps). Every
-  // step draws a fresh hash stream, so the trajectory never cycles back —
-  // this is what replaces sine orbits, which always retrace their path.
-  //
-  // Deliberately NOT gradient/perlin noise: an earlier build sampled
-  // mx_noise 68 times inside these loops and the WebGL backend's shader
-  // compile took two minutes under software GL (CI's stack) — headless
-  // Chromium reads as hung. Integer-hash value noise compiles in
-  // milliseconds and feels the same at this amplitude.
-  const wander1D = (
-    streamSeed: ShaderNodeObject<Node>,
-    axisOffset: number,
-    timeline: ShaderNodeObject<Node>,
-  ) => {
-    const step = floor(timeline);
-    const eased = fract(timeline)
-      .mul(fract(timeline))
-      .mul(sub(3, fract(timeline).mul(2)));
-    const stepSeed = step.toUint().mul(TIME_STEP_STRIDE);
-    const target0 = hash(streamSeed.add(axisOffset).add(stepSeed));
-    const target1 = hash(streamSeed.add(axisOffset).add(stepSeed.add(TIME_STEP_STRIDE)));
-
-    return mix(target0, target1, eased).mul(2).sub(1);
   };
 
   // Where a cell's seed sits right now, in that cell's 0..1 local space.
@@ -178,9 +188,9 @@ export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): Vor
     const timeline = add(mul(float(time), tempo), TIME_DOMAIN_OFFSET).toVar();
     const timelineFast = mul(timeline, 2.7).toVar();
     const axisWander = (axisOffset: number) =>
-      wander1D(streamSeed, axisOffset, timeline)
+      timelineWander(streamSeed, axisOffset, timeline)
         .mul(0.7)
-        .add(wander1D(streamSeed, axisOffset + 7919, timelineFast).mul(0.3));
+        .add(timelineWander(streamSeed, axisOffset + 7919, timelineFast).mul(0.3));
     const wander = vec2(axisWander(101), axisWander(211)).toVar();
     const wobble = mul(mul(wander, headroom), drift).toVar();
 

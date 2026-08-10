@@ -1,7 +1,7 @@
-import { uniform, uv } from 'three/tsl';
+import { uint, uniform, uv } from 'three/tsl';
 import { describe, expect, it } from 'vitest';
 
-import { voronoiCells } from './voronoi-cells.js';
+import { timelineWander, voronoiCells } from './voronoi-cells.js';
 
 describe('voronoiCells', () => {
   it('returns edgeDistance, seedOffset, and hash nodes when sampled at uv()', () => {
@@ -24,5 +24,11 @@ describe('voronoiCells', () => {
     });
 
     expect(cells.hash).toBeDefined();
+  });
+});
+
+describe('timelineWander', () => {
+  it('returns a scalar node from a seed, salt, and timeline', () => {
+    expect(timelineWander(uint(7), 101, uniform(0).add(1024))).toBeDefined();
   });
 });

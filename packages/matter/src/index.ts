@@ -40,7 +40,7 @@ export type { FractalNoiseOptions } from './primitives/fbm/fbm.js';
 
 export { voronoi } from './primitives/voronoi/voronoi.js';
 
-export { voronoiCells } from './primitives/voronoi/voronoi-cells.js';
+export { voronoiCells, timelineWander } from './primitives/voronoi/voronoi-cells.js';
 export type {
   VoronoiCellsOptions,
   VoronoiCellsResult,
