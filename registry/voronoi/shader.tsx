@@ -68,9 +68,10 @@ export interface VoronoiShaderProps {
    */
   steps: AnimatableProp<number>;
   /**
-   * Blends each cell's fill from a flat patch toward a radial pool of the
-   * ramp around its seed point. 0 = flat cells, 1 = fully shaded pools.
-   * Accepts a static value or an animation signal.
+   * Radial depth inside each cell: slides colors along the ramp around the
+   * cell's own color, darker toward the seed point and lighter toward the
+   * rim. 0 is flat; 1 sweeps half the ramp each way. Accepts a static
+   * value or an animation signal.
    */
   shading: AnimatableProp<number>;
   /**
@@ -320,15 +321,19 @@ export function VoronoiShader({
       const snapped = quantize(cells.hash, levelCount);
       const cellValue = select(stepsUniform.greaterThan(0.5), snapped, cells.hash);
 
-      // Shading re-aims the ramp lookup from "this cell's hash" toward "how
-      // far is this pixel from its seed": at 1, each cell becomes a radial
-      // sweep through the ramp (near seed = first stops, cell rim = last).
-      // Blending the ramp INPUT (not two ramp outputs) keeps every
-      // in-between color on the ramp itself. shadingRange calibrates what
-      // counts as "far": the seed offset can reach ~0.7 cells diagonally,
-      // so ~1.4 maps a typical rim to the ramp's end.
+      // Shading slides each pixel ALONG the ramp around its own cell's
+      // color, by distance from the seed: centered (−0.5 shift) so the
+      // cell's base color holds at mid-distance, darker side toward the
+      // seed and lighter side toward the rim for a dark→light palette.
+      // Offsetting the ramp INPUT (never crossfading toward a shared
+      // distance value) is what keeps every cell's identity at full
+      // shading — and keeps every in-between color on the ramp itself.
+      // shadingRange calibrates what counts as "far": the seed offset can
+      // reach ~0.7 cells diagonally, so ~1.4 maps a typical rim to the
+      // sweep's end.
       const centerDistance = clamp(length(cells.seedOffset).mul(shadingRangeUniform), 0, 1);
-      const rampInput = mix(cellValue, centerDistance, shadingUniform);
+      const radialShift = centerDistance.sub(0.5).mul(shadingUniform);
+      const rampInput = clamp(cellValue.add(radialShift), 0, 1);
 
       const cellColor = colorRamp(rampInput, toColorRampStops(stops), colorSpace, hueInterpolation);
 
