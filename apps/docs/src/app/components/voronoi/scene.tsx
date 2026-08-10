@@ -23,11 +23,15 @@ export default function VoronoiScene({
         borderColor={params.borderColor}
         borderSoftness={params.borderSoftness}
         borderWidth={params.borderWidth}
+        colorSpace={params.colorSpace}
         drift={params.drift}
+        hueInterpolation={params.hueInterpolation}
         irregularity={params.irregularity}
         scale={params.scale}
         seed={params.seed}
+        shading={params.shading}
         speed={params.speed}
+        steps={params.steps}
         stops={stops}
         tuning={params.tuning}
       />

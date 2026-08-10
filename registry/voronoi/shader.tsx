@@ -6,7 +6,15 @@
 // cells render as flat patches. The wrapper (./voronoi.tsx) supplies props.
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, timelineWander, voronoiCells } from '@lovo/matter';
+import {
+  colorRamp,
+  type ColorSpace,
+  type HueInterpolation,
+  mixColor,
+  quantize,
+  timelineWander,
+  voronoiCells,
+} from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
@@ -15,7 +23,19 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { float, fwidth, mix, smoothstep, uint, uniform, uv, vec2 } from 'three/tsl';
+import {
+  clamp,
+  float,
+  fwidth,
+  length,
+  mix,
+  select,
+  smoothstep,
+  uint,
+  uniform,
+  uv,
+  vec2,
+} from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, parseColor, toColorRampStops } from '../utils/color';
@@ -25,6 +45,8 @@ export interface VoronoiTuning {
   maxBorderGap?: number;
   /** Feather width at borderSoftness 1, in pattern units. Up = mistier. */
   maxBorderSoftness?: number;
+  /** Seed-distance that maps to the ramp's end under shading. Up = pools reach further. */
+  shadingRange?: number;
   /** How often the field picks a new heading, in retargets per phase unit. */
   flowRate?: number;
   /** How far the field sloshes from center, in cells. 0 (default) pins it. */
@@ -38,6 +60,19 @@ export interface VoronoiShaderProps {
    * `oklab()`; positions auto-space when omitted.
    */
   stops: ColorStop[];
+  /**
+   * Snap cell colors to a fixed number of distinct ramp colors. 0 is
+   * continuous — every cell a unique shade; low values give a bold mosaic
+   * where colors visibly repeat. Accepts a static value or an animation
+   * signal.
+   */
+  steps: AnimatableProp<number>;
+  /**
+   * Blends each cell's fill from a flat patch toward a radial pool of the
+   * ramp around its seed point. 0 = flat cells, 1 = fully shaded pools.
+   * Accepts a static value or an animation signal.
+   */
+  shading: AnimatableProp<number>;
   /**
    * Cell density — roughly how many cells span the canvas height. Higher
    * values give a finer mosaic. Accepts a static value or an animation
@@ -81,6 +116,13 @@ export interface VoronoiShaderProps {
    * animation signal.
    */
   borderSoftness: AnimatableProp<number>;
+  /** Color space the ramp and border/glow mixes interpolate in. */
+  colorSpace: ColorSpace;
+  /**
+   * Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert
+   * otherwise.
+   */
+  hueInterpolation: HueInterpolation;
   /**
    * TEMPORARY dev-tuning overrides for feel constants. Stripped before
    * release — do not use.
@@ -90,6 +132,8 @@ export interface VoronoiShaderProps {
 
 export function VoronoiShader({
   stops,
+  steps,
+  shading,
   scale,
   seed,
   speed,
@@ -98,6 +142,8 @@ export function VoronoiShader({
   borderColor,
   borderWidth,
   borderSoftness,
+  colorSpace,
+  hueInterpolation,
   tuning,
 }: VoronoiShaderProps) {
   const shaderContext = useShaderContext();
@@ -119,6 +165,8 @@ export function VoronoiShader({
   const phaseUniform = useAnimatableSpeed(speed);
   const irregularityUniform = useAnimatableUniform<number>(irregularity);
   const driftUniform = useAnimatableUniform<number>(drift);
+  const stepsUniform = useAnimatableUniform<number>(steps);
+  const shadingUniform = useAnimatableUniform<number>(shading);
 
   // Content fingerprint of the stops array (colors + positions). The build
   // effect keys on this string, so a re-render that passes a new array with
@@ -161,12 +209,14 @@ export function VoronoiShader({
   const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
   const flowRateUniform = useMemo(() => uniform(0.3), []);
   const flowRangeUniform = useMemo(() => uniform(0), []);
+  const shadingRangeUniform = useMemo(() => uniform(1.4), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
     maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
     flowRateUniform.value = tuning?.flowRate ?? 0.3;
     flowRangeUniform.value = tuning?.flowRange ?? 0;
+    shadingRangeUniform.value = tuning?.shadingRange ?? 1.4;
     shaderContext?.scheduler.requestRender();
   }, [
     shaderContext,
@@ -174,6 +224,7 @@ export function VoronoiShader({
     maxBorderSoftnessUniform,
     flowRateUniform,
     flowRangeUniform,
+    shadingRangeUniform,
     tuning,
   ]);
 
@@ -252,9 +303,28 @@ export function VoronoiShader({
 
       const material = new MeshBasicNodeMaterial();
 
-      // Each cell's stable hash picks a point on the ramp: a flat color per
-      // cell, because the hash is constant across the cell.
-      const cellColor = colorRamp(cells.hash, toColorRampStops(stops), 'oklab', 'shorter');
+      // ---------------------------------------------
+      // Cell color: hash → (snap) → (shade) → ramp
+      // ---------------------------------------------
+      // steps > 1 snaps the hash to N discrete ramp positions (the
+      // repeated-color mosaic). quantize() collapses steps <= 1 to constant
+      // 0 by design, so the select gates it: at or below 1 the raw hash
+      // passes through untouched — the continuous "every cell unique" look
+      // the 0 default promises.
+      const snapped = quantize(cells.hash, stepsUniform);
+      const cellValue = select(stepsUniform.greaterThan(1), snapped, cells.hash);
+
+      // Shading re-aims the ramp lookup from "this cell's hash" toward "how
+      // far is this pixel from its seed": at 1, each cell becomes a radial
+      // sweep through the ramp (near seed = first stops, cell rim = last).
+      // Blending the ramp INPUT (not two ramp outputs) keeps every
+      // in-between color on the ramp itself. shadingRange calibrates what
+      // counts as "far": the seed offset can reach ~0.7 cells diagonally,
+      // so ~1.4 maps a typical rim to the ramp's end.
+      const centerDistance = clamp(length(cells.seedOffset).mul(shadingRangeUniform), 0, 1);
+      const rampInput = mix(cellValue, centerDistance, shadingUniform);
+
+      const cellColor = colorRamp(rampInput, toColorRampStops(stops), colorSpace, hueInterpolation);
 
       // ---------------------------------------------
       // Borders: constant-width lines along cell edges
@@ -278,7 +348,16 @@ export function VoronoiShader({
       const borderStrength = smoothstep(0.0, 0.002, borderWidthUniform);
       const borderMask = mix(float(1), cellMask, borderStrength);
 
-      material.colorNode = mix(borderColorUniform, cellColor, borderMask);
+      // The border blend interpolates in the user's chosen space (mixColor)
+      // rather than raw linear RGB, so mid-blend colors stay on a
+      // perceptually sensible path.
+      material.colorNode = mixColor(
+        borderColorUniform,
+        cellColor,
+        borderMask,
+        colorSpace,
+        hueInterpolation,
+      );
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -310,6 +389,9 @@ export function VoronoiShader({
       phaseUniform,
       irregularityUniform,
       driftUniform,
+      stepsUniform,
+      shadingUniform,
+      shadingRangeUniform,
       borderColorUniform,
       borderWidthUniform,
       borderSoftnessUniform,
@@ -317,6 +399,8 @@ export function VoronoiShader({
       maxBorderSoftnessUniform,
       flowRateUniform,
       flowRangeUniform,
+      colorSpace,
+      hueInterpolation,
     ],
   );
 

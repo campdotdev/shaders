@@ -9,13 +9,16 @@ import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 
 import {
+  COLOR_SPACE_OPTIONS,
   ColorInput,
   ControlPanel,
   ControlsProvider,
   createControlStore,
   DemoLayout,
+  HUE_ARC_OPTIONS,
   ListInput,
   Section,
+  SelectInput,
   SliderInput,
   useSnapshot,
 } from '@/components/controls';
@@ -56,6 +59,12 @@ function VoronoiControls() {
       <Section title="Cells">
         <SliderInput label="Scale" max={20} min={1} path="scale" step={0.1} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
+        <SliderInput label="Steps" max={8} min={0} path="steps" step={1} />
+        <SliderInput label="Shading" max={1} min={0} path="shading" step={0.01} />
+      </Section>
+      <Section title="Mixing">
+        <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
+        <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
       </Section>
       <Section title="Motion">
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
@@ -78,6 +87,13 @@ function VoronoiControls() {
         />
         <SliderInput label="Flow rate" max={1.5} min={0} path="tuning.flowRate" step={0.05} />
         <SliderInput label="Flow range" max={6} min={0} path="tuning.flowRange" step={0.1} />
+        <SliderInput
+          label="Shading range"
+          max={3}
+          min={0.5}
+          path="tuning.shadingRange"
+          step={0.05}
+        />
       </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
