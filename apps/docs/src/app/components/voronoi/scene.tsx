@@ -25,6 +25,8 @@ export default function VoronoiScene({
         borderWidth={params.borderWidth}
         colorSpace={params.colorSpace}
         drift={params.drift}
+        glow={params.glow}
+        glowColor={params.glowColor}
         hueInterpolation={params.hueInterpolation}
         irregularity={params.irregularity}
         scale={params.scale}

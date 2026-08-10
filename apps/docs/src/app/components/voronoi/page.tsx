@@ -76,6 +76,10 @@ function VoronoiControls() {
         <SliderInput label="Width" max={1} min={0} path="borderWidth" step={0.01} />
         <SliderInput label="Softness" max={1} min={0} path="borderSoftness" step={0.01} />
       </Section>
+      <Section title="Glow">
+        <ColorInput label="Color" path="glowColor" />
+        <SliderInput label="Glow" max={1} min={0} path="glow" step={0.01} />
+      </Section>
       <Section title="Tuning (dev)">
         <SliderInput label="Max gap" max={0.3} min={0.01} path="tuning.maxBorderGap" step={0.005} />
         <SliderInput
@@ -92,6 +96,14 @@ function VoronoiControls() {
           max={6}
           min={0.5}
           path="tuning.shadingRange"
+          step={0.05}
+        />
+        <SliderInput label="Glow range" max={6} min={0.5} path="tuning.glowRange" step={0.05} />
+        <SliderInput
+          label="Glow exponent"
+          max={4}
+          min={0.5}
+          path="tuning.glowExponent"
           step={0.05}
         />
       </Section>
