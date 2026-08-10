@@ -16,11 +16,12 @@ import {
   int,
   Loop,
   min,
+  mix,
   mul,
   normalize,
-  sin,
   sub,
   vec2,
+  vec3,
   vec4,
 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
@@ -70,7 +71,13 @@ export interface VoronoiCellsResult {
 // scales up to ~500 cells plus the seed offset window.
 const HASH_DOMAIN_OFFSET = 512;
 
-const TWO_PI = Math.PI * 2;
+// Shifts the wander timeline positive before its uint conversion (phase can
+// dip below zero briefly under signal-driven speeds).
+const TIME_DOMAIN_OFFSET = 1024;
+
+// Spreads consecutive timeline steps across the hash space (Knuth's
+// multiplicative constant) so step k and k+1 land on unrelated randoms.
+const TIME_STEP_STRIDE = 2654435761;
 
 /**
  * Two-pass cell Voronoi (Inigo Quilez, Shadertoy ldl3W8). The plane is cut
@@ -102,52 +109,80 @@ export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): Vor
 
   // Per-cell random streams, derived by NESTING hashes (grain's pattern) so
   // no linear seed axis leaks through as diagonal correlation across the
-  // field. One stream colors the cell, two place its seed, four phase its
-  // wobble (two per sine pair), one sets its tempo.
+  // field. One stream colors the cell, two place its seed, one sets its
+  // wander tempo; the wander itself draws fresh streams per timeline step.
   const cellRandom = (cell: ShaderNodeObject<Node>) => {
     const shifted = add(cell, HASH_DOMAIN_OFFSET);
     const rowHash = hash(shifted.y).mul(0xffffff).toUint();
     const cellHash = hash(shifted.x.toUint().add(rowHash));
     const streamSeed = cellHash.mul(0xffffff).toUint();
     const homeOffset = vec2(hash(streamSeed), hash(streamSeed.add(1)));
-    const wobblePhaseA = vec2(hash(streamSeed.add(2)), hash(streamSeed.add(3)));
-    const wobblePhaseB = vec2(hash(streamSeed.add(4)), hash(streamSeed.add(5)));
-    // 0.7..1.3: every cell drifts at its own rate, so the field never
-    // breathes in unison.
-    const tempo = hash(streamSeed.add(6)).mul(0.6).add(0.7);
+    // 0.7..1.3: every cell wanders at its own rate, so the field never
+    // moves in unison.
+    const tempo = hash(streamSeed.add(2)).mul(0.6).add(0.7);
 
-    return { cellHash, homeOffset, wobblePhaseA, wobblePhaseB, tempo };
+    return { cellHash, streamSeed, homeOffset, tempo };
+  };
+
+  // Smooth aperiodic wander in [-1, 1]: 1D value noise over time. The
+  // timeline is cut into unit steps; each step hashes to a random target
+  // and the fractional position eases between neighbors (f*f*(3-2f), the
+  // smoothstep kernel — C1-continuous, so velocity never jumps). Every
+  // step draws a fresh hash stream, so the trajectory never cycles back —
+  // this is what replaces sine orbits, which always retrace their path.
+  //
+  // Deliberately NOT gradient/perlin noise: an earlier build sampled
+  // mx_noise 68 times inside these loops and the WebGL backend's shader
+  // compile took two minutes under software GL (CI's stack) — headless
+  // Chromium reads as hung. Integer-hash value noise compiles in
+  // milliseconds and feels the same at this amplitude.
+  const wander1D = (
+    streamSeed: ShaderNodeObject<Node>,
+    axisOffset: number,
+    timeline: ShaderNodeObject<Node>,
+  ) => {
+    const step = floor(timeline);
+    const eased = fract(timeline)
+      .mul(fract(timeline))
+      .mul(sub(3, fract(timeline).mul(2)));
+    const stepSeed = step.toUint().mul(TIME_STEP_STRIDE);
+    const target0 = hash(streamSeed.add(axisOffset).add(stepSeed));
+    const target1 = hash(streamSeed.add(axisOffset).add(stepSeed.add(TIME_STEP_STRIDE)));
+
+    return mix(target0, target1, eased).mul(2).sub(1);
   };
 
   // Where a cell's seed sits right now, in that cell's 0..1 local space.
   // Home: the center pushed toward a hash-picked spot — jitter 0 collapses
   // to 0.5 (grid), jitter 1 spans the whole cell.
   //
-  // Wobble: a sum of two sines per axis at incommensurate frequencies
-  // (ratio 1 : 1.618 — the golden ratio is the number rationals approximate
-  // worst, so the pair never falls back into step and the orbit never
-  // closes). One sine alone traces a fixed ellipse the eye reads as
-  // ping-ponging; the detuned pair traces an open wandering loop, and the
-  // per-cell tempo keeps neighbors from sharing a beat.
+  // Wobble: each axis runs two detuned octaves of the time-domain value
+  // noise above (rates 1 : 2.7, amplitudes 0.7 + 0.3 = 1) on its own hash
+  // streams. Two octaves at unrelated rates erase the per-step easing
+  // cadence a single octave would show, and per-cell tempo keeps neighbors
+  // from sharing a beat. Nothing here ever revisits a previous pose.
   //
   // The amplitude is the key to organic motion, learned from the Paper
   // Shaders reference: big seed travel makes cell WALLS slide and cells
   // reshape (even swap neighbors), which is what the eye reads as alive —
   // small orbits just jiggle a frozen structure. Scaling by headroom (the
-  // per-axis room between home and the cell wall; sway amplitudes sum to 1)
-  // lets drift 1 use all of it while provably never letting a seed leave
-  // its cell, which is what keeps the 3x3 neighbor search valid at any
-  // drift. Drift is deliberately NOT scaled by jitter — irregularity and
-  // motion are decoupled dials.
+  // per-axis room between home and the cell wall) lets drift 1 use all of
+  // it while provably never letting a seed leave its cell, which is what
+  // keeps the 3x3 neighbor search valid at any drift. Drift is
+  // deliberately NOT scaled by jitter — irregularity and motion are
+  // decoupled dials.
   const seedInCell = (cell: ShaderNodeObject<Node>) => {
-    const { cellHash, homeOffset, wobblePhaseA, wobblePhaseB, tempo } = cellRandom(cell);
+    const { cellHash, streamSeed, homeOffset, tempo } = cellRandom(cell);
     const home = add(vec2(0.5, 0.5), mul(sub(homeOffset, 0.5), jitter));
     const headroom = sub(0.5, abs(sub(home, 0.5)));
-    const cellTime = mul(float(time), tempo);
-    const swayA = sin(add(cellTime, mul(wobblePhaseA, TWO_PI)));
-    const swayB = sin(add(mul(cellTime, 1.618), mul(wobblePhaseB, TWO_PI)));
-    const sway = add(mul(swayA, 0.7), mul(swayB, 0.3));
-    const wobble = mul(mul(sway, headroom), drift);
+    const timeline = add(mul(float(time), tempo), TIME_DOMAIN_OFFSET).toVar();
+    const timelineFast = mul(timeline, 2.7).toVar();
+    const axisWander = (axisOffset: number) =>
+      wander1D(streamSeed, axisOffset, timeline)
+        .mul(0.7)
+        .add(wander1D(streamSeed, axisOffset + 7919, timelineFast).mul(0.3));
+    const wander = vec2(axisWander(101), axisWander(211)).toVar();
+    const wobble = mul(mul(wander, headroom), drift).toVar();
 
     return { cellHash, seedPos: add(home, wobble) };
   };
