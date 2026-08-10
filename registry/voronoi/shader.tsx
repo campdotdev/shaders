@@ -6,7 +6,7 @@
 // cells render as flat patches. The wrapper (./voronoi.tsx) supplies props.
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, voronoiCells } from '@lovo/matter';
+import { colorRamp, timelineWander, voronoiCells } from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
@@ -15,7 +15,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { float, fwidth, mix, smoothstep, uniform, uv, vec2 } from 'three/tsl';
+import { float, fwidth, mix, smoothstep, uint, uniform, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, parseColor, toColorRampStops } from '../utils/color';
@@ -25,8 +25,10 @@ export interface VoronoiTuning {
   maxBorderGap?: number;
   /** Feather width at borderSoftness 1, in pattern units. Up = mistier. */
   maxBorderSoftness?: number;
-  /** Cells the field migrates per phase unit. 0 pins the field in place. */
-  flowSpeed?: number;
+  /** How often the field picks a new heading, in retargets per phase unit. */
+  flowRate?: number;
+  /** How far the field sloshes from center, in cells. 0 pins it in place. */
+  flowRange?: number;
 }
 
 export interface VoronoiShaderProps {
@@ -157,14 +159,23 @@ export function VoronoiShader({
   // without rebuilding the material.
   const maxBorderGapUniform = useMemo(() => uniform(0.1), []);
   const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
-  const flowSpeedUniform = useMemo(() => uniform(0.5), []);
+  const flowRateUniform = useMemo(() => uniform(0.3), []);
+  const flowRangeUniform = useMemo(() => uniform(2), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
     maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
-    flowSpeedUniform.value = tuning?.flowSpeed ?? 0.5;
+    flowRateUniform.value = tuning?.flowRate ?? 0.3;
+    flowRangeUniform.value = tuning?.flowRange ?? 2;
     shaderContext?.scheduler.requestRender();
-  }, [shaderContext, maxBorderGapUniform, maxBorderSoftnessUniform, flowSpeedUniform, tuning]);
+  }, [
+    shaderContext,
+    maxBorderGapUniform,
+    maxBorderSoftnessUniform,
+    flowRateUniform,
+    flowRangeUniform,
+    tuning,
+  ]);
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -210,14 +221,22 @@ export function VoronoiShader({
       const centered = uv().sub(0.5);
       const corrected = vec2(centered.x.mul(aspectNode), centered.y);
 
-      // Domain flow: the sampling window slides through the infinite cell
-      // field over time, so cells genuinely migrate across the canvas (new
-      // ones enter at one edge as others leave). The (0.8, 0.6) direction
-      // is a unit vector chosen off-axis so the travel never reads as a
-      // horizontal or vertical scroll; the same integrated phase that
-      // clocks the wander drives it, so one speed dial governs both.
-      const flowPhase = phaseUniform.mul(flowSpeedUniform);
-      const flow = vec2(flowPhase.mul(0.8), flowPhase.mul(0.6));
+      // Meandering flow: the sampling window's offset follows two slow
+      // timelineWander trajectories (one per axis) instead of a straight
+      // line, so the whole field sloshes a few cells in ever-changing
+      // directions — travel with no destination and no fixed heading (a
+      // linear conveyor read as mechanical). Each axis layers two detuned
+      // octaves (rates 1 : 2.7) to erase the retargeting cadence. The same
+      // integrated phase that clocks the cell wander drives it, so one
+      // speed dial governs both; flowRange is the slosh radius in cells.
+      const flowTimeline = phaseUniform.mul(flowRateUniform).add(1024);
+      const flowTimelineFast = flowTimeline.mul(2.7);
+      const flowSeed = uint(0x9e3779b9);
+      const flowAxis = (salt: number) =>
+        timelineWander(flowSeed, salt, flowTimeline)
+          .mul(0.7)
+          .add(timelineWander(flowSeed, salt + 7919, flowTimelineFast).mul(0.3));
+      const flow = vec2(flowAxis(101), flowAxis(211)).mul(flowRangeUniform);
       const samplePoint = corrected.mul(scaleUniform).add(seedUniform).add(flow);
 
       // The accumulated phase drives the wobble clock; irregularity feeds
@@ -296,7 +315,8 @@ export function VoronoiShader({
       borderSoftnessUniform,
       maxBorderGapUniform,
       maxBorderSoftnessUniform,
-      flowSpeedUniform,
+      flowRateUniform,
+      flowRangeUniform,
     ],
   );
 
