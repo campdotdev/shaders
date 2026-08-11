@@ -1,5 +1,11 @@
 # @lovo/matter-cli
 
+## 3.6.0
+
+### Minor Changes
+
+- 0a26708: Add Voronoi: a cellular mosaic of colored panes around drifting seed points, cut by constant-width borders, like backlit stained glass. Each cell picks its color from `stops` by a stable per-cell random; `steps` posterizes per palette segment, so 1 snaps every cell to exactly your stop colors and higher values add blends between neighboring stops. `shading` deepens each pane toward its borders along the ramp, following the cell's polygon rather than circling its seed point, and `glow` adds the cell's own color back as light hugging the borders. The glow is additive, so bright panes read as lit rather than painted. Seeds glide on sine orbits at one shared frequency with per-cell random phases: `irregularity` scatters their anchors (0 is a perfect grid), `drift` sets the orbit radius, and anchors only scatter within the room the orbit leaves free, so seeds never leave their cells and the borders stay glitch-free at any drift. `colorSpace`/`hueInterpolation` govern the ramp and the border blend, and every numeric dial accepts an animation signal.
+
 ## 3.5.0
 
 ## 3.4.0
