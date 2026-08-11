@@ -14,6 +14,7 @@ CHANGELOG.md
 apps/docs/out/
 
 # Generated files
+.claude/hooks/
 **/next-env.d.ts
 **/.tsbuildinfo
 pnpm-lock.yaml
