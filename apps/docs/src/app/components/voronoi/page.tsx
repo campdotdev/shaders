@@ -77,7 +77,6 @@ function VoronoiControls() {
         <SliderInput label="Softness" max={1} min={0} path="borderSoftness" step={0.01} />
       </Section>
       <Section title="Glow">
-        <ColorInput label="Color" path="glowColor" />
         <SliderInput label="Glow" max={1} min={0} path="glow" step={0.01} />
       </Section>
       <Section title="Tuning (dev)">

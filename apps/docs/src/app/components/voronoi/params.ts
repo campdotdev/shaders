@@ -29,7 +29,6 @@ export interface Params {
   borderWidth: number;
   borderSoftness: number;
   glow: number;
-  glowColor: string;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   stops: PlainColorStop[];
@@ -51,7 +50,6 @@ export const INITIAL: Params = {
   borderWidth: 0.05,
   borderSoftness: 0,
   glow: 0,
-  glowColor: 'oklch(0.93 0.03 300)',
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
