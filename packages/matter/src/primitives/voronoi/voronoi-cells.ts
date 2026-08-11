@@ -6,6 +6,7 @@
 import type { ShaderNodeObject } from 'three/tsl';
 import {
   add,
+  clamp,
   float,
   floor,
   Fn,
@@ -40,7 +41,8 @@ export interface VoronoiCellsOptions {
   time?: TSLScalar;
   /**
    * 0..1 seed scatter: 0 pins every seed to its cell center (a perfect
-   * square grid), 1 lets seeds sit anywhere in their cell. Default 1.
+   * square grid), 1 lets seeds sit anywhere in their cell. Out-of-range
+   * values clamp. Default 1.
    */
   jitter?: TSLScalar;
   /**
@@ -48,7 +50,7 @@ export interface VoronoiCellsOptions {
    * swings every seed through the full room its cell offers. Anchors
    * scatter only within the room the orbit leaves free, so seeds provably
    * never leave their cell and the 3x3 neighbor search stays valid at any
-   * drift. Default 0.
+   * drift. Out-of-range values clamp. Default 0.
    */
   drift?: TSLScalar;
 }
@@ -66,8 +68,12 @@ export interface VoronoiCellsResult {
 }
 
 // Shifts cell coordinates positive before hashing: three's hash() converts
-// its input to u32, and u32(negative float) is backend-defined. 512 covers
-// scales up to ~500 cells plus the seed offset window.
+// its input to u32, and u32(negative float) is backend-defined. The shift
+// absorbs coordinates down to -512 — scales up to ~1000 cells at
+// non-negative sample-window offsets. Inputs below that (e.g. a large
+// negative seed offset upstream) land in backend-defined territory; a
+// wrap-safe fold is deferred to the backend-stable hash work (MAT-92),
+// since any change to hash inputs re-rolls every cell layout.
 const HASH_DOMAIN_OFFSET = 512;
 
 const TWO_PI = Math.PI * 2;
@@ -98,8 +104,12 @@ const TWO_PI = Math.PI * 2;
 
 export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): VoronoiCellsResult {
   const time = options.time ?? 0;
-  const jitter = options.jitter ?? 1;
-  const drift = options.drift ?? 0;
+  // The containment proof below (anchor ± amplitude stays inside the cell)
+  // only holds for dials inside their documented 0..1 range, so fold
+  // out-of-range caller values back in rather than letting seeds escape
+  // their cells and break the 3x3 neighbor search.
+  const jitter = clamp(float(options.jitter ?? 1), 0, 1);
+  const drift = clamp(float(options.drift ?? 0), 0, 1);
 
   // Per-cell random streams, derived by NESTING hashes (grain's pattern) so
   // no linear seed axis leaks through as diagonal correlation across the
@@ -134,7 +144,7 @@ export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): Vor
   // and at drift 0 jitter spans the whole cell as pure static scatter.
   const seedInCell = (cell: ShaderNodeObject<Node>) => {
     const { cellHash, homeOffset, orbitPhase } = cellRandom(cell);
-    const amplitude = mul(float(drift), 0.5);
+    const amplitude = mul(drift, 0.5);
     const anchorRoom = sub(0.5, amplitude);
     const anchor = add(0.5, mul(sub(homeOffset, 0.5).mul(2), mul(anchorRoom, jitter)));
     const orbit = sin(add(float(time), mul(orbitPhase, TWO_PI)));
