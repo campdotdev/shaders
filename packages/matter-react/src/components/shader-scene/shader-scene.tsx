@@ -255,7 +255,11 @@ export function ShaderScene({
         // (with no window resize firing), which would otherwise leave the
         // renderer stuck at the default 300x150 and render the scene into an
         // undersized target — compressing every shader's output. ResizeObserver
-        // fires once on observe() and on every subsequent box change.
+        // fires once on observe() and on every subsequent box change. Its
+        // disconnect lives in the deferred `cleanup` closure below, not in a
+        // direct effect return, because renderer init is async — which is
+        // beyond the static analyzer's reach, hence the suppression.
+        // react-doctor-disable-next-line react-doctor/effect-observer-needs-disconnect
         const resizeObserver = new ResizeObserver(() => renderer.resize());
 
         resizeObserver.observe(canvas);

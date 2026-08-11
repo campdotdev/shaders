@@ -1,0 +1,14 @@
+{
+  "$schema": "https://react.doctor/schema/config.json",
+  "rules": {
+    // Disabled 2026-08-11 after a full triage: all 22 hits were false
+    // positives. The detector matches method NAMES (`on`, `sub`, `subscribe`)
+    // and cannot see that (a) the signal protocol's `on()` returns an
+    // unsubscribe which every flagged effect returns, (b) ShaderScene and
+    // useResize register disposal in a deferred cleanup closure because
+    // renderer init is async (the repo's Strict-Mode pattern), and (c) TSL's
+    // `.sub()` is vector subtraction, not a subscription. Re-enable and
+    // re-verify if the detector moves beyond name matching.
+    "react-doctor/effect-needs-cleanup": "off",
+  },
+}
