@@ -122,13 +122,11 @@ export interface VoronoiShaderProps {
    */
   borderSoftness: AnimatableProp<number>;
   /**
-   * Strength of the tint that bleeds inward from each cell's borders — a
-   * soft halo hugging the cell shape, like light leaking through the
-   * seams. 0 disables it. Accepts a static value or an animation signal.
+   * Light each cell casts inward from its borders, in the cell's own
+   * color — an additive halo hugging the cell shape, like backlit glass.
+   * 0 disables it. Accepts a static value or an animation signal.
    */
   glow: AnimatableProp<number>;
-  /** Color of the border-bleed tint. */
-  glowColor: string;
   /** Color space the ramp and border/glow mixes interpolate in. */
   colorSpace: ColorSpace;
   /**
@@ -156,7 +154,6 @@ export function VoronoiShader({
   borderWidth,
   borderSoftness,
   glow,
-  glowColor,
   colorSpace,
   hueInterpolation,
   tuning,
@@ -215,18 +212,6 @@ export function VoronoiShader({
   const borderWidthUniform = useAnimatableUniform<number>(borderWidth);
   const borderSoftnessUniform = useAnimatableUniform<number>(borderSoftness);
   const glowUniform = useAnimatableUniform<number>(glow);
-
-  // Same Vector3-uniform pattern as the border color: recoloring the glow
-  // never rebuilds the material.
-  const glowColorVec = useMemo(() => new Vector3(0, 0, 0), []);
-  const glowColorUniform = useMemo(() => uniform(glowColorVec), [glowColorVec]);
-
-  useEffect(() => {
-    const [red, green, blue] = parseColor(glowColor);
-
-    glowColorVec.set(red, green, blue);
-    shaderContext?.scheduler.requestRender();
-  }, [shaderContext, glowColorVec, glowColor]);
 
   // ---------------------------------------------
   // Tuning (dev) — stripped at the defaults gate
@@ -373,25 +358,29 @@ export function VoronoiShader({
       const cellColor = colorRamp(rampInput, toColorRampStops(stops), colorSpace, hueInterpolation);
 
       // ---------------------------------------------
-      // Glow: tint bleeding inward from the borders
+      // Glow: each cell casts its own light from the borders
       // ---------------------------------------------
-      // The mask is 1 at a border and fades inward over 1/glowRange pattern
-      // units; pow() shapes the falloff — higher exponents gather the tint
-      // against the borders, keeping cell middles clean. Mix strength is
-      // the dial × mask, so glow 0 is exactly the untinted color. Runs on
-      // edgeDistance like shading (a halo hugging the cell shape), but
-      // tints toward ONE fixed color instead of sliding along the palette.
+      // A real glow is ADDITIVE — light lands on top of the surface in
+      // linear space rather than mixing toward a color (a mix can only
+      // stay inside the two endpoints; addition can push past 1 and clip
+      // bright, which is what reads as luminous). The light source is the
+      // cell's BASE color (the pre-shading ramp lookup): near borders the
+      // shaded surface is dark, and dark × anything stays dark, so the
+      // glow must bring the cell's identity color with it. The mask is 1
+      // at a border and fades inward over 1/glowRange pattern units;
+      // pow() shapes the falloff — higher exponents gather the light
+      // against the borders, keeping cell middles clean.
+      const baseCellColor = colorRamp(
+        cellValue,
+        toColorRampStops(stops),
+        colorSpace,
+        hueInterpolation,
+      );
       const glowMask = pow(
         clamp(cells.edgeDistance.mul(glowRangeUniform), 0, 1).oneMinus(),
         glowExponentUniform,
       );
-      const litColor = mixColor(
-        cellColor,
-        glowColorUniform,
-        glowUniform.mul(glowMask),
-        colorSpace,
-        hueInterpolation,
-      );
+      const litColor = cellColor.add(baseCellColor.mul(glowUniform.mul(glowMask)));
 
       // ---------------------------------------------
       // Borders: constant-width lines along cell edges
@@ -463,7 +452,6 @@ export function VoronoiShader({
       borderWidthUniform,
       borderSoftnessUniform,
       glowUniform,
-      glowColorUniform,
       glowRangeUniform,
       glowExponentUniform,
       maxBorderGapUniform,
