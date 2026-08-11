@@ -172,6 +172,15 @@ function useSearchBackend(open: boolean, query: string) {
   return { backendState, results };
 }
 
+// Shared look for the three status-region messages (loading / unavailable /
+// no results) rendered above the results listbox.
+const statusMessageStyle: React.CSSProperties = {
+  margin: 0,
+  padding: '1rem',
+  color: 'var(--fg-muted)',
+  fontSize: '0.875rem',
+};
+
 export function SearchBar() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -385,6 +394,24 @@ export function SearchBar() {
             Esc
           </kbd>
         </div>
+        {/* Loading/unavailable/empty messages live outside the listbox: a
+            listbox may only contain options, and role="status" makes a
+            screen reader announce these updates as they change. The messages
+            never coexist with results (results stay empty until the backend
+            is ready), so the listbox below is empty whenever one shows. */}
+        <div role="status">
+          {backendState === 'loading' && <p style={statusMessageStyle}>Loading search…</p>}
+          {backendState === 'unavailable' && (
+            <p style={statusMessageStyle}>
+              Search index unavailable. Build the docs to generate the Pagefind index.
+            </p>
+          )}
+          {backendState === 'ready' && results.length === 0 && (
+            <p style={statusMessageStyle}>
+              {query.trim() !== '' ? `No results for "${query}"` : 'Type to search.'}
+            </p>
+          )}
+        </div>
         <ul
           id="search-results"
           ref={listRef}
@@ -397,39 +424,6 @@ export function SearchBar() {
             overflowY: 'auto',
           }}
         >
-          {backendState === 'loading' && (
-            <li
-              style={{
-                padding: '1rem',
-                color: 'var(--fg-muted)',
-                fontSize: '0.875rem',
-              }}
-            >
-              Loading search…
-            </li>
-          )}
-          {backendState === 'unavailable' && (
-            <li
-              style={{
-                padding: '1rem',
-                color: 'var(--fg-muted)',
-                fontSize: '0.875rem',
-              }}
-            >
-              Search index unavailable. Build the docs to generate the Pagefind index.
-            </li>
-          )}
-          {backendState === 'ready' && results.length === 0 && (
-            <li
-              style={{
-                padding: '1rem',
-                color: 'var(--fg-muted)',
-                fontSize: '0.875rem',
-              }}
-            >
-              {query.trim() !== '' ? `No results for "${query}"` : 'Type to search.'}
-            </li>
-          )}
           {results.map((result, resultIndex) => (
             <li
               aria-selected={resultIndex === selectedIndex}
