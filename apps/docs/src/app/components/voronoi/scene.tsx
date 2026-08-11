@@ -34,7 +34,6 @@ export default function VoronoiScene({
         speed={params.speed}
         steps={params.steps}
         stops={stops}
-        tuning={params.tuning}
       />
       {children}
     </ShaderScene>

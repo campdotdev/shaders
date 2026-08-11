@@ -1,9 +1,11 @@
 'use client';
 
-// The Voronoi mosaic's GPU half. Each pixel finds its nearest scattered seed
-// point (voronoiCells), takes that cell's stable random value, and picks a
-// color from the ramp — every pixel in a cell lands on the same value, so
-// cells render as flat patches. The wrapper (./voronoi.tsx) supplies props.
+// The Voronoi mosaic's GPU half. Each pixel finds its nearest drifting seed
+// point (voronoiCells), picks a color from the ramp by that cell's stable
+// random value, deepens it toward the borders (shading), draws the
+// constant-width border stroke, and finally adds each cell's own color back
+// as light along the borders (glow). The wrapper (./voronoi.tsx) supplies
+// the props.
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -12,7 +14,6 @@ import {
   type HueInterpolation,
   mixColor,
   quantize,
-  timelineWander,
   voronoiCells,
 } from '@lovo/matter';
 import {
@@ -23,43 +24,30 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import {
-  clamp,
-  float,
-  fwidth,
-  mix,
-  pow,
-  select,
-  smoothstep,
-  uint,
-  uniform,
-  uv,
-  vec2,
-} from 'three/tsl';
+import { clamp, float, fwidth, mix, pow, select, smoothstep, uniform, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, parseColor, toColorRampStops } from '../utils/color';
 
-export interface VoronoiTuning {
-  /** Border gap at borderWidth 1, in pattern units. Up = chunkier mortar. */
-  maxBorderGap?: number;
-  /** Feather width at borderSoftness 1, in pattern units. Up = mistier. */
-  maxBorderSoftness?: number;
-  /** Scales how quickly shading deepens away from borders. Up = full depth nearer the edge. */
-  shadingRange?: number;
-  /** Scales how far the glow tint reaches in from borders. Up = tighter halo. */
-  glowRange?: number;
-  /** Falloff shape of the glow. Up = light gathers against the borders. */
-  glowExponent?: number;
-  /** Brightness multiplier on the glow light. Dark palettes need > 1 to read. */
-  glowGain?: number;
-  /** Fraction of the glow that crosses the border stroke. 0 = contained, 1 = full wash. */
-  glowOverspill?: number;
-  /** How often the field picks a new heading, in retargets per phase unit. */
-  flowRate?: number;
-  /** How far the field sloshes from center, in cells. 0 (default) pins it. */
-  flowRange?: number;
-}
+// ---------------------------------------------
+// Feel constants (tuned by eye at the build's visual gates)
+// ---------------------------------------------
+// Border gap at borderWidth 1, in pattern units. Up = chunkier mortar.
+const MAX_BORDER_GAP = 0.1;
+// Feather width at borderSoftness 1, in pattern units. Up = mistier borders.
+const MAX_BORDER_SOFTNESS = 0.1;
+// Scales how quickly shading deepens away from borders (deep interiors sit
+// ~0.4 pattern units from the nearest wall). Up = full depth nearer the edge.
+const SHADING_RANGE = 2.5;
+// Scales how far the glow light reaches in from borders. Up = tighter halo.
+const GLOW_RANGE = 2.5;
+// Falloff shape of the glow. Up = light gathers against the borders.
+const GLOW_EXPONENT = 1.5;
+// Brightness multiplier on the glow light. Dark palettes need > 1 to read.
+const GLOW_GAIN = 2.5;
+// Fraction of the glow that crosses the border stroke. 0 = fully contained
+// (stroke always solid), 1 = full wash (stroke submerges under bright cells).
+const GLOW_OVERSPILL = 0.35;
 
 export interface VoronoiShaderProps {
   /**
@@ -131,18 +119,13 @@ export interface VoronoiShaderProps {
    * 0 disables it. Accepts a static value or an animation signal.
    */
   glow: AnimatableProp<number>;
-  /** Color space the ramp and border/glow mixes interpolate in. */
+  /** Color space the ramp and border mix interpolate in. */
   colorSpace: ColorSpace;
   /**
    * Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert
    * otherwise.
    */
   hueInterpolation: HueInterpolation;
-  /**
-   * TEMPORARY dev-tuning overrides for feel constants. Stripped before
-   * release — do not use.
-   */
-  tuning?: VoronoiTuning;
 }
 
 export function VoronoiShader({
@@ -160,7 +143,6 @@ export function VoronoiShader({
   glow,
   colorSpace,
   hueInterpolation,
-  tuning,
 }: VoronoiShaderProps) {
   const shaderContext = useShaderContext();
 
@@ -218,46 +200,6 @@ export function VoronoiShader({
   const glowUniform = useAnimatableUniform<number>(glow);
 
   // ---------------------------------------------
-  // Tuning (dev) — stripped at the defaults gate
-  // ---------------------------------------------
-  // Feel constants ride uniforms so the panel's tuning sliders glide
-  // without rebuilding the material.
-  const maxBorderGapUniform = useMemo(() => uniform(0.1), []);
-  const maxBorderSoftnessUniform = useMemo(() => uniform(0.1), []);
-  const flowRateUniform = useMemo(() => uniform(0.3), []);
-  const flowRangeUniform = useMemo(() => uniform(0), []);
-  const shadingRangeUniform = useMemo(() => uniform(2.5), []);
-  const glowRangeUniform = useMemo(() => uniform(2.5), []);
-  const glowExponentUniform = useMemo(() => uniform(1.5), []);
-  const glowGainUniform = useMemo(() => uniform(2.5), []);
-  const glowOverspillUniform = useMemo(() => uniform(0.35), []);
-
-  useEffect(() => {
-    maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
-    maxBorderSoftnessUniform.value = tuning?.maxBorderSoftness ?? 0.1;
-    flowRateUniform.value = tuning?.flowRate ?? 0.3;
-    flowRangeUniform.value = tuning?.flowRange ?? 0;
-    shadingRangeUniform.value = tuning?.shadingRange ?? 2.5;
-    glowRangeUniform.value = tuning?.glowRange ?? 2.5;
-    glowExponentUniform.value = tuning?.glowExponent ?? 1.5;
-    glowGainUniform.value = tuning?.glowGain ?? 2.5;
-    glowOverspillUniform.value = tuning?.glowOverspill ?? 0.35;
-    shaderContext?.scheduler.requestRender();
-  }, [
-    shaderContext,
-    maxBorderGapUniform,
-    maxBorderSoftnessUniform,
-    flowRateUniform,
-    flowRangeUniform,
-    shadingRangeUniform,
-    glowRangeUniform,
-    glowExponentUniform,
-    glowGainUniform,
-    glowOverspillUniform,
-    tuning,
-  ]);
-
-  // ---------------------------------------------
   // Track the canvas aspect ratio
   // ---------------------------------------------
   // Cells must stay roughly square on any canvas shape. The uniform starts
@@ -285,9 +227,9 @@ export function VoronoiShader({
   // ---------------------------------------------
   // Build the material and mount the mesh
   // ---------------------------------------------
-  // Runs once per mount — again only when the stops change, because
-  // colorRamp bakes the stop colors into the compiled shader as constants.
-  // Every dial rides uniforms without touching this effect.
+  // Runs once per mount — again only when the stops or color space change,
+  // because colorRamp bakes the stop colors into the compiled shader as
+  // constants. Every dial rides uniforms without touching this effect.
   useEffect(
     () => {
       if (!shaderContext) return;
@@ -300,29 +242,11 @@ export function VoronoiShader({
       // neighborhood of the infinite pattern.
       const centered = uv().sub(0.5);
       const corrected = vec2(centered.x.mul(aspectNode), centered.y);
+      const samplePoint = corrected.mul(scaleUniform).add(seedUniform);
 
-      // Meandering flow: the sampling window's offset follows two slow
-      // timelineWander trajectories (one per axis) instead of a straight
-      // line, so the whole field sloshes a few cells in ever-changing
-      // directions — travel with no destination and no fixed heading (a
-      // linear conveyor read as mechanical). Each axis layers two detuned
-      // octaves (rates 1 : 2.7) to erase the retargeting cadence. The same
-      // integrated phase that clocks the cell wander drives it, so one
-      // speed dial governs both; flowRange is the slosh radius in cells.
-      const flowTimeline = phaseUniform.mul(flowRateUniform).add(1024);
-      const flowTimelineFast = flowTimeline.mul(2.7);
-      const flowSeed = uint(0x9e3779b9);
-      const flowAxis = (salt: number) =>
-        timelineWander(flowSeed, salt, flowTimeline)
-          .mul(0.7)
-          .add(timelineWander(flowSeed, salt + 7919, flowTimelineFast).mul(0.3));
-      const flow = vec2(flowAxis(101), flowAxis(211)).mul(flowRangeUniform);
-      const samplePoint = corrected.mul(scaleUniform).add(seedUniform).add(flow);
-
-      // The accumulated phase drives the wobble clock; irregularity feeds
-      // the primitive's jitter (static scatter) and drift its headroom
-      // fraction — at 1, each seed roams all the room its cell offers (the
-      // primitive keeps seeds in-cell by construction, so there is no
+      // The accumulated phase drives the orbit clock; irregularity feeds
+      // the primitive's jitter (static scatter) and drift its orbit radius
+      // (the primitive keeps seeds in-cell by construction, so there is no
       // amplitude ceiling to tune).
       const cells = voronoiCells(samplePoint, {
         time: phaseUniform,
@@ -358,10 +282,8 @@ export function VoronoiShader({
       // toward its end, for a dark→light palette. Offsetting the ramp
       // INPUT (never crossfading toward a shared value) keeps every cell's
       // identity at full shading — and every in-between color on the ramp
-      // itself. shadingRange calibrates the reach: interiors top out around
-      // 0.4 pattern units from a border, so ~2.5 maps a deep interior to
-      // the sweep's end.
-      const borderDepth = clamp(cells.edgeDistance.mul(shadingRangeUniform), 0, 1);
+      // itself.
+      const borderDepth = clamp(cells.edgeDistance.mul(SHADING_RANGE), 0, 1);
       const radialShift = borderDepth.sub(0.5).mul(shadingUniform);
       const rampInput = clamp(cellValue.add(radialShift), 0, 1);
 
@@ -377,10 +299,8 @@ export function VoronoiShader({
       // edgeDistance changes across one screen pixel), which keeps the line
       // crisp but unjagged at any zoom, plus the softness dial's wider
       // feather on top.
-      const gap = borderWidthUniform.mul(maxBorderGapUniform);
-      const band = fwidth(cells.edgeDistance).add(
-        borderSoftnessUniform.mul(maxBorderSoftnessUniform),
-      );
+      const gap = borderWidthUniform.mul(MAX_BORDER_GAP);
+      const band = fwidth(cells.edgeDistance).add(borderSoftnessUniform.mul(MAX_BORDER_SOFTNESS));
       const cellMask = smoothstep(gap.sub(band), gap.add(band), cells.edgeDistance);
 
       // At width 0 the smoothstep would still tint the half-pixel sitting
@@ -413,12 +333,10 @@ export function VoronoiShader({
       // color (the pre-shading ramp lookup): near borders the shaded
       // surface is dark, and dark × anything stays dark, so the glow must
       // bring the cell's identity color with it. The mask is 1 at a
-      // border and fades inward over 1/glowRange pattern units; pow()
-      // shapes the falloff — higher exponents gather the light against
-      // the borders (and keep the leading crisper under the wash).
-      // glowGain scales the light in linear space — hue-preserving
-      // brightening; dark palette stops are tiny in linear terms (~0.05),
-      // so 1x of their own color barely registers as light.
+      // border and fades inward over 1/GLOW_RANGE pattern units; pow()
+      // shapes the falloff. GLOW_GAIN scales the light in linear space —
+      // hue-preserving brightening; dark palette stops are tiny in linear
+      // terms (~0.05), so 1x of their own color barely registers as light.
       const baseCellColor = colorRamp(
         cellValue,
         toColorRampStops(stops),
@@ -426,18 +344,18 @@ export function VoronoiShader({
         hueInterpolation,
       );
       const glowMask = pow(
-        clamp(cells.edgeDistance.mul(glowRangeUniform), 0, 1).oneMinus(),
-        glowExponentUniform,
+        clamp(cells.edgeDistance.mul(GLOW_RANGE), 0, 1).oneMinus(),
+        GLOW_EXPONENT,
       );
 
       // Only a fraction of the light crosses the leading: borderMask is 0
       // on the stroke and 1 inside cells, so this scales the wash down to
-      // glowOverspill exactly where the stroke lives — the border keeps
+      // GLOW_OVERSPILL exactly where the stroke lives — the border keeps
       // its body at any glow level while the spill cue survives.
-      const spill = mix(glowOverspillUniform, float(1), borderMask);
+      const spill = mix(float(GLOW_OVERSPILL), float(1), borderMask);
 
       material.colorNode = strokedColor.add(
-        baseCellColor.mul(glowUniform.mul(glowMask).mul(glowGainUniform).mul(spill)),
+        baseCellColor.mul(glowUniform.mul(glowMask).mul(GLOW_GAIN).mul(spill)),
       );
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
@@ -472,19 +390,10 @@ export function VoronoiShader({
       driftUniform,
       stepsUniform,
       shadingUniform,
-      shadingRangeUniform,
       borderColorUniform,
       borderWidthUniform,
       borderSoftnessUniform,
       glowUniform,
-      glowRangeUniform,
-      glowExponentUniform,
-      glowGainUniform,
-      glowOverspillUniform,
-      maxBorderGapUniform,
-      maxBorderSoftnessUniform,
-      flowRateUniform,
-      flowRangeUniform,
       colorSpace,
       hueInterpolation,
     ],
