@@ -45,9 +45,6 @@ const GLOW_RANGE = 2.5;
 const GLOW_EXPONENT = 1.5;
 // Brightness multiplier on the glow light. Dark palettes need > 1 to read.
 const GLOW_GAIN = 2.5;
-// Fraction of the glow that crosses the border stroke. 0 = fully contained
-// (stroke always solid), 1 = full wash (stroke submerges under bright cells).
-const GLOW_OVERSPILL = 0.35;
 
 export interface VoronoiShaderProps {
   /**
@@ -321,22 +318,25 @@ export function VoronoiShader({
       );
 
       // ---------------------------------------------
-      // Glow: each cell casts its own light — over the leading
+      // Glow: each cell casts its own light inside the leading
       // ---------------------------------------------
       // A real glow is ADDITIVE — light lands on top of the surface in
       // linear space rather than mixing toward a color (a mix can only
       // stay inside the two endpoints; addition can push past 1 and clip
-      // bright, which is what reads as luminous). It applies LAST, after
-      // the border stroke, so the light washes over the leading where the
-      // mask peaks — light spilling across the seams, the bloom cue
-      // backlit glass actually has. The light source is the cell's BASE
-      // color (the pre-shading ramp lookup): near borders the shaded
-      // surface is dark, and dark × anything stays dark, so the glow must
-      // bring the cell's identity color with it. The mask is 1 at a
-      // border and fades inward over 1/GLOW_RANGE pattern units; pow()
-      // shapes the falloff. GLOW_GAIN scales the light in linear space —
-      // hue-preserving brightening; dark palette stops are tiny in linear
-      // terms (~0.05), so 1x of their own color barely registers as light.
+      // bright, which is what reads as luminous). The light source is the
+      // cell's BASE color (the pre-shading ramp lookup): near borders the
+      // shaded surface is dark, and dark × anything stays dark, so the
+      // glow must bring the cell's identity color with it. The mask is 1
+      // at a border and fades inward over 1/GLOW_RANGE pattern units;
+      // pow() shapes the falloff. GLOW_GAIN scales the light in linear
+      // space — hue-preserving brightening; dark palette stops are tiny
+      // in linear terms (~0.05), so 1x of their own color barely
+      // registers as light.
+      //
+      // Multiplying by borderMask CONTAINS the light: it fades to zero
+      // exactly where the stroke lives, so the leading stays solid at any
+      // glow level. (A wash spilling over the stroke was tried and read
+      // as a transparent border.)
       const baseCellColor = colorRamp(
         cellValue,
         toColorRampStops(stops),
@@ -348,14 +348,8 @@ export function VoronoiShader({
         GLOW_EXPONENT,
       );
 
-      // Only a fraction of the light crosses the leading: borderMask is 0
-      // on the stroke and 1 inside cells, so this scales the wash down to
-      // GLOW_OVERSPILL exactly where the stroke lives — the border keeps
-      // its body at any glow level while the spill cue survives.
-      const spill = mix(float(GLOW_OVERSPILL), float(1), borderMask);
-
       material.colorNode = strokedColor.add(
-        baseCellColor.mul(glowUniform.mul(glowMask).mul(GLOW_GAIN).mul(spill)),
+        baseCellColor.mul(glowUniform.mul(glowMask).mul(GLOW_GAIN).mul(borderMask)),
       );
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
