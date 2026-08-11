@@ -75,7 +75,7 @@ Fetch canonical guidance once per unique rule into the fresh run directory. Buil
 RULE_URL="https://www.react.doctor/prompts/rules/$PLUGIN/$RULE.md"
 RULE_TMP="$RUN_DIR/$PLUGIN-$RULE.tmp"
 RULE_FILE="$RUN_DIR/$PLUGIN-$RULE.md"
-HTTP_STATUS="$(curl --silent --show-error --location --header "Cache-Control: no-cache" --output "$RULE_TMP" --write-out "%{http_code}" "$RULE_URL")"
+HTTP_STATUS="$(curl --silent --show-error --location --connect-timeout 5 --max-time 60 --header "Cache-Control: no-cache" --output "$RULE_TMP" --write-out "%{http_code}" "$RULE_URL")"
 ```
 
 Require HTTP 200, verify the requested key and required headings, then atomically rename the temporary file. A 200 proves route availability, not detector-version parity. Compare published rule-set metadata with the scanner/plugin release. If they cannot be correlated, treat exact applicability as inconclusive and use matched local `rules explain` output. Treat outcomes separately:
