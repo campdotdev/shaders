@@ -49,8 +49,10 @@ export interface VoronoiTuning {
   shadingRange?: number;
   /** Scales how far the glow tint reaches in from borders. Up = tighter halo. */
   glowRange?: number;
-  /** Falloff shape of the glow. Up = tint gathers against the borders. */
+  /** Falloff shape of the glow. Up = light gathers against the borders. */
   glowExponent?: number;
+  /** Brightness multiplier on the glow light. Dark palettes need > 1 to read. */
+  glowGain?: number;
   /** How often the field picks a new heading, in retargets per phase unit. */
   flowRate?: number;
   /** How far the field sloshes from center, in cells. 0 (default) pins it. */
@@ -225,6 +227,7 @@ export function VoronoiShader({
   const shadingRangeUniform = useMemo(() => uniform(2.5), []);
   const glowRangeUniform = useMemo(() => uniform(2.5), []);
   const glowExponentUniform = useMemo(() => uniform(1.5), []);
+  const glowGainUniform = useMemo(() => uniform(2.5), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
@@ -234,6 +237,7 @@ export function VoronoiShader({
     shadingRangeUniform.value = tuning?.shadingRange ?? 2.5;
     glowRangeUniform.value = tuning?.glowRange ?? 2.5;
     glowExponentUniform.value = tuning?.glowExponent ?? 1.5;
+    glowGainUniform.value = tuning?.glowGain ?? 2.5;
     shaderContext?.scheduler.requestRender();
   }, [
     shaderContext,
@@ -244,6 +248,7 @@ export function VoronoiShader({
     shadingRangeUniform,
     glowRangeUniform,
     glowExponentUniform,
+    glowGainUniform,
     tuning,
   ]);
 
@@ -380,7 +385,13 @@ export function VoronoiShader({
         clamp(cells.edgeDistance.mul(glowRangeUniform), 0, 1).oneMinus(),
         glowExponentUniform,
       );
-      const litColor = cellColor.add(baseCellColor.mul(glowUniform.mul(glowMask)));
+      // glowGain scales the light in linear space — hue-preserving
+      // brightening. Dark palette stops are tiny in linear terms (~0.05),
+      // so 1x of their own color barely registers as light; the gain is
+      // what turns "a little navy paint" into "navy-colored light".
+      const litColor = cellColor.add(
+        baseCellColor.mul(glowUniform.mul(glowMask).mul(glowGainUniform)),
+      );
 
       // ---------------------------------------------
       // Borders: constant-width lines along cell edges
@@ -454,6 +465,7 @@ export function VoronoiShader({
       glowUniform,
       glowRangeUniform,
       glowExponentUniform,
+      glowGainUniform,
       maxBorderGapUniform,
       maxBorderSoftnessUniform,
       flowRateUniform,
