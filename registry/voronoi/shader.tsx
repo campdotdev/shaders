@@ -363,37 +363,6 @@ export function VoronoiShader({
       const cellColor = colorRamp(rampInput, toColorRampStops(stops), colorSpace, hueInterpolation);
 
       // ---------------------------------------------
-      // Glow: each cell casts its own light from the borders
-      // ---------------------------------------------
-      // A real glow is ADDITIVE — light lands on top of the surface in
-      // linear space rather than mixing toward a color (a mix can only
-      // stay inside the two endpoints; addition can push past 1 and clip
-      // bright, which is what reads as luminous). The light source is the
-      // cell's BASE color (the pre-shading ramp lookup): near borders the
-      // shaded surface is dark, and dark × anything stays dark, so the
-      // glow must bring the cell's identity color with it. The mask is 1
-      // at a border and fades inward over 1/glowRange pattern units;
-      // pow() shapes the falloff — higher exponents gather the light
-      // against the borders, keeping cell middles clean.
-      const baseCellColor = colorRamp(
-        cellValue,
-        toColorRampStops(stops),
-        colorSpace,
-        hueInterpolation,
-      );
-      const glowMask = pow(
-        clamp(cells.edgeDistance.mul(glowRangeUniform), 0, 1).oneMinus(),
-        glowExponentUniform,
-      );
-      // glowGain scales the light in linear space — hue-preserving
-      // brightening. Dark palette stops are tiny in linear terms (~0.05),
-      // so 1x of their own color barely registers as light; the gain is
-      // what turns "a little navy paint" into "navy-colored light".
-      const litColor = cellColor.add(
-        baseCellColor.mul(glowUniform.mul(glowMask).mul(glowGainUniform)),
-      );
-
-      // ---------------------------------------------
       // Borders: constant-width lines along cell edges
       // ---------------------------------------------
       // edgeDistance is 0 exactly on a border and grows toward each cell's
@@ -418,12 +387,46 @@ export function VoronoiShader({
       // The border blend interpolates in the user's chosen space (mixColor)
       // rather than raw linear RGB, so mid-blend colors stay on a
       // perceptually sensible path.
-      material.colorNode = mixColor(
+      const strokedColor = mixColor(
         borderColorUniform,
-        litColor,
+        cellColor,
         borderMask,
         colorSpace,
         hueInterpolation,
+      );
+
+      // ---------------------------------------------
+      // Glow: each cell casts its own light — over the leading
+      // ---------------------------------------------
+      // A real glow is ADDITIVE — light lands on top of the surface in
+      // linear space rather than mixing toward a color (a mix can only
+      // stay inside the two endpoints; addition can push past 1 and clip
+      // bright, which is what reads as luminous). It applies LAST, after
+      // the border stroke, so the light washes over the leading where the
+      // mask peaks — light spilling across the seams, the bloom cue
+      // backlit glass actually has. The light source is the cell's BASE
+      // color (the pre-shading ramp lookup): near borders the shaded
+      // surface is dark, and dark × anything stays dark, so the glow must
+      // bring the cell's identity color with it. The mask is 1 at a
+      // border and fades inward over 1/glowRange pattern units; pow()
+      // shapes the falloff — higher exponents gather the light against
+      // the borders (and keep the leading crisper under the wash).
+      // glowGain scales the light in linear space — hue-preserving
+      // brightening; dark palette stops are tiny in linear terms (~0.05),
+      // so 1x of their own color barely registers as light.
+      const baseCellColor = colorRamp(
+        cellValue,
+        toColorRampStops(stops),
+        colorSpace,
+        hueInterpolation,
+      );
+      const glowMask = pow(
+        clamp(cells.edgeDistance.mul(glowRangeUniform), 0, 1).oneMinus(),
+        glowExponentUniform,
+      );
+
+      material.colorNode = strokedColor.add(
+        baseCellColor.mul(glowUniform.mul(glowMask).mul(glowGainUniform)),
       );
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
