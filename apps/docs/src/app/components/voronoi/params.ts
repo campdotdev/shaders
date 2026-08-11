@@ -16,6 +16,7 @@ export interface TuningParams {
   glowRange: number;
   glowExponent: number;
   glowGain: number;
+  glowOverspill: number;
 }
 
 export interface Params {
@@ -68,5 +69,6 @@ export const INITIAL: Params = {
     glowRange: 2.5,
     glowExponent: 1.5,
     glowGain: 2.5,
+    glowOverspill: 0.35,
   },
 };

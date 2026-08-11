@@ -53,6 +53,8 @@ export interface VoronoiTuning {
   glowExponent?: number;
   /** Brightness multiplier on the glow light. Dark palettes need > 1 to read. */
   glowGain?: number;
+  /** Fraction of the glow that crosses the border stroke. 0 = contained, 1 = full wash. */
+  glowOverspill?: number;
   /** How often the field picks a new heading, in retargets per phase unit. */
   flowRate?: number;
   /** How far the field sloshes from center, in cells. 0 (default) pins it. */
@@ -228,6 +230,7 @@ export function VoronoiShader({
   const glowRangeUniform = useMemo(() => uniform(2.5), []);
   const glowExponentUniform = useMemo(() => uniform(1.5), []);
   const glowGainUniform = useMemo(() => uniform(2.5), []);
+  const glowOverspillUniform = useMemo(() => uniform(0.35), []);
 
   useEffect(() => {
     maxBorderGapUniform.value = tuning?.maxBorderGap ?? 0.1;
@@ -238,6 +241,7 @@ export function VoronoiShader({
     glowRangeUniform.value = tuning?.glowRange ?? 2.5;
     glowExponentUniform.value = tuning?.glowExponent ?? 1.5;
     glowGainUniform.value = tuning?.glowGain ?? 2.5;
+    glowOverspillUniform.value = tuning?.glowOverspill ?? 0.35;
     shaderContext?.scheduler.requestRender();
   }, [
     shaderContext,
@@ -249,6 +253,7 @@ export function VoronoiShader({
     glowRangeUniform,
     glowExponentUniform,
     glowGainUniform,
+    glowOverspillUniform,
     tuning,
   ]);
 
@@ -425,8 +430,14 @@ export function VoronoiShader({
         glowExponentUniform,
       );
 
+      // Only a fraction of the light crosses the leading: borderMask is 0
+      // on the stroke and 1 inside cells, so this scales the wash down to
+      // glowOverspill exactly where the stroke lives — the border keeps
+      // its body at any glow level while the spill cue survives.
+      const spill = mix(glowOverspillUniform, float(1), borderMask);
+
       material.colorNode = strokedColor.add(
-        baseCellColor.mul(glowUniform.mul(glowMask).mul(glowGainUniform)),
+        baseCellColor.mul(glowUniform.mul(glowMask).mul(glowGainUniform).mul(spill)),
       );
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
@@ -469,6 +480,7 @@ export function VoronoiShader({
       glowRangeUniform,
       glowExponentUniform,
       glowGainUniform,
+      glowOverspillUniform,
       maxBorderGapUniform,
       maxBorderSoftnessUniform,
       flowRateUniform,
