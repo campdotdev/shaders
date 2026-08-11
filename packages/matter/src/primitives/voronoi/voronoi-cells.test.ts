@@ -16,6 +16,10 @@ describe('voronoiCells', () => {
     expect(voronoiCells(uv(), { time: 1.5, jitter: 0.5, drift: 0.1 }).edgeDistance).toBeDefined();
   });
 
+  it('accepts out-of-range dials (clamped to 0..1 internally)', () => {
+    expect(voronoiCells(uv(), { jitter: 2, drift: -1 }).edgeDistance).toBeDefined();
+  });
+
   it('accepts node options (uniform-driven dials)', () => {
     const cells = voronoiCells(uv(), {
       time: uniform(0),
