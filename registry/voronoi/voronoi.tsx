@@ -8,10 +8,9 @@ import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
-import { VoronoiShader, type VoronoiTuning } from './shader';
+import { VoronoiShader } from './shader';
 
 export type { ColorStop } from '../utils/color';
-export type { VoronoiTuning } from './shader';
 
 export interface VoronoiProps {
   /**
@@ -73,7 +72,7 @@ export interface VoronoiProps {
   borderColor?: string;
   /**
    * Width of the border between cells. 0 removes borders entirely (cells
-   * touch seamlessly); 1 is chunky mortar. Defaults to 0.05. Accepts a
+   * touch seamlessly); 1 is chunky mortar. Defaults to 0.4. Accepts a
    * static value or an animation signal.
    */
   borderWidth?: AnimatableProp<number>;
@@ -86,22 +85,17 @@ export interface VoronoiProps {
   /**
    * Light each cell casts inward from its borders, in the cell's own
    * color — an additive halo hugging the cell shape, like backlit glass.
-   * 0 disables it. Defaults to 0. Accepts a static value or an animation
-   * signal.
+   * 0 disables it. Defaults to 0.66. Accepts a static value or an
+   * animation signal.
    */
   glow?: AnimatableProp<number>;
-  /** Color space the ramp and border/glow mixes interpolate in. Defaults to `'oklab'`. */
+  /** Color space the ramp and border mix interpolate in. Defaults to `'oklab'`. */
   colorSpace?: ColorSpace;
   /**
    * Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert
    * otherwise. Defaults to `'shorter'`.
    */
   hueInterpolation?: HueInterpolation;
-  /**
-   * TEMPORARY dev-tuning overrides for feel constants. Stripped before
-   * release — do not use.
-   */
-  tuning?: VoronoiTuning;
 }
 
 // Deep-water palette: stops walk the shared lightness ladder (each ≥0.10 L
@@ -123,12 +117,11 @@ export function Voronoi({
   irregularity = 1,
   drift = 0.5,
   borderColor = 'oklch(0.145 0.02 265)',
-  borderWidth = 0.05,
+  borderWidth = 0.4,
   borderSoftness = 0,
-  glow = 0,
+  glow = 0.66,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
-  tuning,
 }: VoronoiProps) {
   return (
     <VoronoiShader
@@ -146,7 +139,6 @@ export function Voronoi({
       speed={speed}
       steps={steps}
       stops={stops}
-      tuning={tuning}
     />
   );
 }

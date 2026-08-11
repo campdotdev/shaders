@@ -15,7 +15,6 @@ import {
   int,
   Loop,
   min,
-  mix,
   mul,
   normalize,
   sin,
@@ -73,10 +72,6 @@ const HASH_DOMAIN_OFFSET = 512;
 
 const TWO_PI = Math.PI * 2;
 
-// Spreads consecutive timeline steps across the hash space (Knuth's
-// multiplicative constant) so step k and k+1 land on unrelated randoms.
-const TIME_STEP_STRIDE = 2654435761;
-
 /**
  * Two-pass cell Voronoi (Inigo Quilez, Shadertoy ldl3W8). The plane is cut
  * into cells around jittered seed points — every pixel belongs to the seed
@@ -100,43 +95,6 @@ const TIME_STEP_STRIDE = 2654435761;
  *
  * @param p — Vec2 TSL node in pattern space, typically `uv() * scale`.
  */
-/**
- * Smooth aperiodic scalar in [-1, 1]: 1D value noise over a timeline. The
- * timeline is cut into unit steps; each step hashes to a random target and
- * the fractional position eases between neighbors (f*f*(3-2f), the
- * smoothstep kernel — C1-continuous, so velocity never jumps). Every step
- * draws a fresh hash stream, so the trajectory never cycles back — unlike a
- * sine, there is no path to retrace. voronoiCells drives every seed's
- * wobble with it; the <Voronoi> component reuses it for the field's
- * meandering flow.
- *
- * Deliberately NOT gradient/perlin noise: an earlier build sampled mx_noise
- * 68 times inside voronoiCells' loops and the WebGL backend's shader
- * compile took two minutes under software GL (CI's stack) — headless
- * Chromium reads as hung. Integer-hash value noise compiles in
- * milliseconds and feels the same at these amplitudes.
- *
- * @param streamSeed — uint TSL node namespacing this trajectory's randoms.
- * @param salt — JS number mixed in so multiple axes/octaves sharing a
- *   streamSeed stay uncorrelated.
- * @param timeline — float TSL node, expected positive (offset before the
- *   uint conversion); one unit ≈ one new random target.
- */
-export function timelineWander(
-  streamSeed: ShaderNodeObject<Node>,
-  salt: number,
-  timeline: ShaderNodeObject<Node>,
-): ShaderNodeObject<Node> {
-  const step = floor(timeline);
-  const eased = fract(timeline)
-    .mul(fract(timeline))
-    .mul(sub(3, fract(timeline).mul(2)));
-  const stepSeed = step.toUint().mul(TIME_STEP_STRIDE);
-  const target0 = hash(streamSeed.add(salt).add(stepSeed));
-  const target1 = hash(streamSeed.add(salt).add(stepSeed.add(TIME_STEP_STRIDE)));
-
-  return mix(target0, target1, eased).mul(2).sub(1);
-}
 
 export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): VoronoiCellsResult {
   const time = options.time ?? 0;

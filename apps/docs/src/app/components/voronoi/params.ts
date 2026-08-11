@@ -6,19 +6,6 @@ export interface PlainColorStop {
   color: string;
 }
 
-/** TEMPORARY dev-tuning values; mirrors VoronoiTuning. Stripped at the defaults gate. */
-export interface TuningParams {
-  maxBorderGap: number;
-  maxBorderSoftness: number;
-  flowRate: number;
-  flowRange: number;
-  shadingRange: number;
-  glowRange: number;
-  glowExponent: number;
-  glowGain: number;
-  glowOverspill: number;
-}
-
 export interface Params {
   scale: number;
   seed: number;
@@ -34,7 +21,6 @@ export interface Params {
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   stops: PlainColorStop[];
-  tuning: TuningParams;
 }
 
 export const MIN_STOPS = 2;
@@ -49,9 +35,9 @@ export const INITIAL: Params = {
   irregularity: 1,
   drift: 0.5,
   borderColor: 'oklch(0.145 0.02 265)',
-  borderWidth: 0.05,
+  borderWidth: 0.4,
   borderSoftness: 0,
-  glow: 0,
+  glow: 0.66,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
@@ -60,15 +46,4 @@ export const INITIAL: Params = {
     { color: paletteOklch.violet[6] },
     { color: paletteOklch.purple[9] },
   ],
-  tuning: {
-    maxBorderGap: 0.1,
-    maxBorderSoftness: 0.1,
-    flowRate: 0.3,
-    flowRange: 0,
-    shadingRange: 2.5,
-    glowRange: 2.5,
-    glowExponent: 1.5,
-    glowGain: 2.5,
-    glowOverspill: 0.35,
-  },
 };

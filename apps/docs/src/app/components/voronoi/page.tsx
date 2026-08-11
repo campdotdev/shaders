@@ -79,41 +79,6 @@ function VoronoiControls() {
       <Section title="Glow">
         <SliderInput label="Glow" max={1} min={0} path="glow" step={0.01} />
       </Section>
-      <Section title="Tuning (dev)">
-        <SliderInput label="Max gap" max={0.3} min={0.01} path="tuning.maxBorderGap" step={0.005} />
-        <SliderInput
-          label="Max softness"
-          max={0.5}
-          min={0.01}
-          path="tuning.maxBorderSoftness"
-          step={0.005}
-        />
-        <SliderInput label="Flow rate" max={1.5} min={0} path="tuning.flowRate" step={0.05} />
-        <SliderInput label="Flow range" max={6} min={0} path="tuning.flowRange" step={0.1} />
-        <SliderInput
-          label="Shading range"
-          max={6}
-          min={0.5}
-          path="tuning.shadingRange"
-          step={0.05}
-        />
-        <SliderInput label="Glow range" max={6} min={0.5} path="tuning.glowRange" step={0.05} />
-        <SliderInput
-          label="Glow exponent"
-          max={4}
-          min={0.5}
-          path="tuning.glowExponent"
-          step={0.05}
-        />
-        <SliderInput label="Glow gain" max={8} min={0.5} path="tuning.glowGain" step={0.1} />
-        <SliderInput
-          label="Glow overspill"
-          max={1}
-          min={0}
-          path="tuning.glowOverspill"
-          step={0.01}
-        />
-      </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
         itemLabel="color"
