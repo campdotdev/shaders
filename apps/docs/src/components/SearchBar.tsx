@@ -197,13 +197,20 @@ export function SearchBar() {
     return () => window.removeEventListener('keydown', onKey);
   }, []);
 
-  // The dialog mounts only while open, so this effect just switches the fresh
-  // element into modal mode — showModal() is what grants focus trapping (Tab
-  // cycles inside the dialog instead of escaping behind the overlay) and
-  // native Escape handling, neither of which a styled div with role="dialog"
-  // ever gets.
+  // The dialog stays mounted and this effect drives it between modal and
+  // closed. showModal() is what grants focus trapping (Tab cycles inside the
+  // dialog instead of escaping behind the overlay) and native Escape
+  // handling, neither of which a styled div with role="dialog" ever gets.
+  // close() matters just as much: it runs the native teardown — leaving the
+  // top layer and restoring focus to the search button — which unmounting an
+  // open dialog would skip. Closing an already-closed dialog is a no-op, so
+  // the initial render and the onClose → setOpen(false) echo are both safe.
   useEffect(() => {
-    if (open) dialogRef.current?.showModal();
+    if (open) {
+      dialogRef.current?.showModal();
+    } else {
+      dialogRef.current?.close();
+    }
   }, [open]);
 
   useEffect(() => {
@@ -293,158 +300,169 @@ export function SearchBar() {
           ⌘K
         </kbd>
       </button>
-      {open && (
-        // The click handler is backdrop light-dismiss, a pointer-only
-        // nicety — keyboard and screen reader users close the modal through
-        // the dialog's native Escape/cancel path, so no interactive role is
-        // missing here.
-        // react-doctor-disable-next-line react-doctor/no-noninteractive-element-interactions
-        <dialog
-          aria-label="Search"
-          className="search-dialog"
-          onCancel={() => setOpen(false)}
-          onClick={(event) => {
-            // A click on the dimmed ::backdrop reports the <dialog> element
-            // itself as the target; clicks inside the panel target children.
-            if (event.target === event.currentTarget) setOpen(false);
-          }}
-          onClose={() => setOpen(false)}
-          ref={dialogRef}
+      {/* The click handler is backdrop light-dismiss, a pointer-only
+          nicety — keyboard and screen reader users close the modal through
+          the dialog's native Escape/cancel path, so no interactive role is
+          missing here. */}
+      {/* react-doctor-disable-next-line react-doctor/no-noninteractive-element-interactions */}
+      <dialog
+        aria-label="Search"
+        className="search-dialog"
+        onCancel={() => setOpen(false)}
+        onClick={(event) => {
+          // A click on the dimmed ::backdrop reports the <dialog> element
+          // itself as the target; clicks inside the panel target children.
+          if (event.target === event.currentTarget) setOpen(false);
+        }}
+        onClose={() => setOpen(false)}
+        ref={dialogRef}
+        style={{
+          width: 'min(640px, calc(100vw - 2rem))',
+          margin: '12vh auto auto',
+          padding: 0,
+          background: 'var(--bg)',
+          border: '1px solid var(--border)',
+          borderRadius: '0.75rem',
+          overflow: 'hidden',
+          boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+        }}
+      >
+        <div
           style={{
-            width: 'min(640px, calc(100vw - 2rem))',
-            margin: '12vh auto auto',
-            padding: 0,
-            background: 'var(--bg)',
-            border: '1px solid var(--border)',
-            borderRadius: '0.75rem',
-            overflow: 'hidden',
-            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            padding: '0.875rem 1rem',
+            borderBottom: '1px solid var(--border)',
           }}
         >
-          <div
+          <SearchIcon />
+          <input
+            // Focus stays on the input while arrow keys move the highlight,
+            // so aria-activedescendant is what tells a screen reader which
+            // option is selected — without it the ArrowDown/ArrowUp
+            // selection is silent.
+            aria-activedescendant={
+              results[selectedIndex] ? `search-result-${selectedIndex}` : undefined
+            }
+            aria-autocomplete="list"
+            aria-controls="search-results"
+            aria-expanded={open}
+            aria-label="Search query"
+            onChange={(event) => {
+              // Reset the selection here, at event time, rather than
+              // clamping it in a follow-up effect once shorter results
+              // land — a new query means a new list, and the old
+              // highlight position has no meaning on it.
+              setQuery(event.target.value);
+              setSelectedIndex(0);
+            }}
+            onKeyDown={onInputKey}
+            placeholder="Search docs…"
+            ref={inputRef}
+            role="combobox"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.75rem',
-              padding: '0.875rem 1rem',
-              borderBottom: '1px solid var(--border)',
+              flex: 1,
+              border: 'none',
+              outline: 'none',
+              background: 'transparent',
+              color: 'var(--fg)',
+              fontSize: '0.9375rem',
+              fontFamily: 'inherit',
+            }}
+            type="text"
+            value={query}
+          />
+          <kbd
+            style={{
+              fontSize: '0.7rem',
+              padding: '0.125rem 0.375rem',
+              border: '1px solid var(--border)',
+              borderRadius: '0.25rem',
+              color: 'var(--fg-muted)',
             }}
           >
-            <SearchIcon />
-            <input
-              aria-label="Search query"
-              onChange={(event) => {
-                // Reset the selection here, at event time, rather than
-                // clamping it in a follow-up effect once shorter results
-                // land — a new query means a new list, and the old
-                // highlight position has no meaning on it.
-                setQuery(event.target.value);
-                setSelectedIndex(0);
-              }}
-              onKeyDown={onInputKey}
-              placeholder="Search docs…"
-              ref={inputRef}
+            Esc
+          </kbd>
+        </div>
+        <ul
+          id="search-results"
+          ref={listRef}
+          role="listbox"
+          style={{
+            listStyle: 'none',
+            margin: 0,
+            padding: 0,
+            maxHeight: '50vh',
+            overflowY: 'auto',
+          }}
+        >
+          {backendState === 'loading' && (
+            <li
               style={{
-                flex: 1,
-                border: 'none',
-                outline: 'none',
-                background: 'transparent',
-                color: 'var(--fg)',
-                fontSize: '0.9375rem',
-                fontFamily: 'inherit',
-              }}
-              type="text"
-              value={query}
-            />
-            <kbd
-              style={{
-                fontSize: '0.7rem',
-                padding: '0.125rem 0.375rem',
-                border: '1px solid var(--border)',
-                borderRadius: '0.25rem',
+                padding: '1rem',
                 color: 'var(--fg-muted)',
+                fontSize: '0.875rem',
               }}
             >
-              Esc
-            </kbd>
-          </div>
-          <ul
-            ref={listRef}
-            role="listbox"
-            style={{
-              listStyle: 'none',
-              margin: 0,
-              padding: 0,
-              maxHeight: '50vh',
-              overflowY: 'auto',
-            }}
-          >
-            {backendState === 'loading' && (
-              <li
+              Loading search…
+            </li>
+          )}
+          {backendState === 'unavailable' && (
+            <li
+              style={{
+                padding: '1rem',
+                color: 'var(--fg-muted)',
+                fontSize: '0.875rem',
+              }}
+            >
+              Search index unavailable. Build the docs to generate the Pagefind index.
+            </li>
+          )}
+          {backendState === 'ready' && results.length === 0 && (
+            <li
+              style={{
+                padding: '1rem',
+                color: 'var(--fg-muted)',
+                fontSize: '0.875rem',
+              }}
+            >
+              {query.trim() !== '' ? `No results for "${query}"` : 'Type to search.'}
+            </li>
+          )}
+          {results.map((result, resultIndex) => (
+            <li
+              aria-selected={resultIndex === selectedIndex}
+              id={`search-result-${resultIndex}`}
+              key={result.url}
+              onClick={() => navigate(result.url)}
+              onMouseEnter={() => setSelectedIndex(resultIndex)}
+              role="option"
+              style={{
+                padding: '0.625rem 1rem',
+                cursor: 'pointer',
+                background: resultIndex === selectedIndex ? 'var(--bg-muted)' : 'transparent',
+                borderBottom: '1px solid var(--border)',
+              }}
+            >
+              <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{result.title}</div>
+              <div
+                // Pagefind escapes indexed text and adds <mark>; fallback
+                // excerpts are this repo's own frontmatter descriptions.
+                // First-party static content — accepted, not re-sanitized.
+                // react-doctor-disable-next-line react-doctor/dangerous-html-sink
+                dangerouslySetInnerHTML={{ __html: result.excerpt }}
                 style={{
-                  padding: '1rem',
+                  fontSize: '0.8125rem',
                   color: 'var(--fg-muted)',
-                  fontSize: '0.875rem',
+                  marginTop: '0.25rem',
+                  lineHeight: 1.4,
                 }}
-              >
-                Loading search…
-              </li>
-            )}
-            {backendState === 'unavailable' && (
-              <li
-                style={{
-                  padding: '1rem',
-                  color: 'var(--fg-muted)',
-                  fontSize: '0.875rem',
-                }}
-              >
-                Search index unavailable. Build the docs to generate the Pagefind index.
-              </li>
-            )}
-            {backendState === 'ready' && results.length === 0 && (
-              <li
-                style={{
-                  padding: '1rem',
-                  color: 'var(--fg-muted)',
-                  fontSize: '0.875rem',
-                }}
-              >
-                {query.trim() !== '' ? `No results for "${query}"` : 'Type to search.'}
-              </li>
-            )}
-            {results.map((result, resultIndex) => (
-              <li
-                aria-selected={resultIndex === selectedIndex}
-                key={result.url}
-                onClick={() => navigate(result.url)}
-                onMouseEnter={() => setSelectedIndex(resultIndex)}
-                role="option"
-                style={{
-                  padding: '0.625rem 1rem',
-                  cursor: 'pointer',
-                  background: resultIndex === selectedIndex ? 'var(--bg-muted)' : 'transparent',
-                  borderBottom: '1px solid var(--border)',
-                }}
-              >
-                <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{result.title}</div>
-                <div
-                  // Pagefind escapes indexed text and adds <mark>; fallback
-                  // excerpts are this repo's own frontmatter descriptions.
-                  // First-party static content — accepted, not re-sanitized.
-                  // react-doctor-disable-next-line react-doctor/dangerous-html-sink
-                  dangerouslySetInnerHTML={{ __html: result.excerpt }}
-                  style={{
-                    fontSize: '0.8125rem',
-                    color: 'var(--fg-muted)',
-                    marginTop: '0.25rem',
-                    lineHeight: 1.4,
-                  }}
-                />
-              </li>
-            ))}
-          </ul>
-        </dialog>
-      )}
+              />
+            </li>
+          ))}
+        </ul>
+      </dialog>
     </>
   );
 }

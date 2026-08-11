@@ -189,7 +189,10 @@ function PropRow({
             id={id}
             max={live.entry.max}
             min={live.entry.min}
-            onChange={(event) => onChange(live.entry.name, event.target.value)}
+            // valueAsNumber, not value: a range input reports strings, and a
+            // string stored here would fail toLiveEntry's number check on the
+            // next render.
+            onChange={(event) => onChange(live.entry.name, event.target.valueAsNumber)}
             step={step}
             style={{ flex: 1 }}
             type="range"
