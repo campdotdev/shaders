@@ -21,7 +21,7 @@ pnpm exec react-doctor rules explain react-doctor/no-array-index-as-key
 5. Validate the change did what they wanted:
 
 ```bash
-pnpm exec react-doctor --verbose --diff
+pnpm exec react-doctor --yes --verbose --scope changed
 ```
 
 ## Commands
