@@ -53,9 +53,9 @@ export interface VoronoiProps {
   speed?: AnimatableProp<number>;
   /**
    * How far seeds scatter off a perfect grid. 0 arranges cells in an exact
-   * square grid; 1 is fully organic. Static — motion is governed by `drift`
-   * and `speed`. Defaults to 1. Accepts a static value or an animation
-   * signal.
+   * square grid; 1 is fully organic. Sets the arrangement, not the motion —
+   * `drift` and `speed` govern movement. Defaults to 1. Accepts a static
+   * value or an animation signal.
    */
   irregularity?: AnimatableProp<number>;
   /**

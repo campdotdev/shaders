@@ -85,8 +85,9 @@ export interface VoronoiShaderProps {
   speed: AnimatableProp<number>;
   /**
    * How far seeds scatter off a perfect grid. 0 arranges cells in an exact
-   * square grid; 1 is fully organic. Static — motion is governed by `drift`
-   * and `speed`. Accepts a static value or an animation signal.
+   * square grid; 1 is fully organic. Sets the arrangement, not the motion —
+   * `drift` and `speed` govern movement. Accepts a static value or an
+   * animation signal.
    */
   irregularity: AnimatableProp<number>;
   /**
@@ -217,9 +218,14 @@ export function VoronoiShader({
     if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
 
     return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) aspectNode.value = updatedWidth / updatedHeight;
+      if (updatedWidth > 0 && updatedHeight > 0) {
+        aspectNode.value = updatedWidth / updatedHeight;
+        // At speed 0 the scene is hinted static, so without this poke a
+        // resize would update the uniform and never repaint.
+        shaderContext?.scheduler.requestRender();
+      }
     });
-  }, [resize, aspectNode]);
+  }, [shaderContext, resize, aspectNode]);
 
   // ---------------------------------------------
   // Build the material and mount the mesh
