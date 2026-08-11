@@ -35,14 +35,19 @@ jobs:
           fetch-depth: 0
 
       - uses: millionco/react-doctor@v2
+        with:
+          # Must match the repo's devEngines pin exactly. The action's npm steps
+          # run with the checkout as cwd, so npm enforces devEngines against the
+          # action's own Node — and npm has no onFail:download fallback, so any
+          # other version dies with EBADDEVENGINES before the scan starts.
+          node-version: '22.22.2'
         # Advisory by default: React Doctor reports findings on every PR — a
         # sticky summary comment, inline review comments, and a commit status
         # with the health score — but never fails the check, so it won't red-X
         # a teammate's PR on day one. When your team trusts the signal, graduate
-        # the gate: uncomment the block below and set blocking to "error" (fail
-        # on new error-severity findings) or "warning" (fail on any finding).
-        # Full reference: https://www.react.doctor/ci
-        # with:
+        # the gate: uncomment the options below into `with:` and set blocking to
+        # "error" (fail on new error-severity findings) or "warning" (fail on
+        # any finding). Full reference: https://www.react.doctor/ci
         #   blocking: error          # Gate level: "none" (advisory, the default) | "warning" | "error"
         #   scope: full              # On PRs, scan the whole project instead of just changed files
         #   comment: false           # Disable the sticky PR summary comment
