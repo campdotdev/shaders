@@ -204,13 +204,19 @@ export function ShaderScene({
         const renderFrame = () => {
           const hasContent = scene.children.length > 0 || overlays.size > 0;
 
-          // On the frame that first has something to draw, zero the clock BEFORE
-          // rendering so the frame the user first sees (once the poster drops)
-          // is t=0 — matching the deterministic poster. Resetting after the
-          // poster is already gone would pop the animation backwards from
-          // warmup-time to 0, a new visible glitch.
+          // On the frame that first has something to draw, rewind BOTH time
+          // sources BEFORE rendering so the frame the user first sees (once
+          // the poster drops) is t=0 — matching the deterministic poster:
+          // the renderer clock (elapsedTime) and the CPU-side phase
+          // accumulators (useAnimatableSpeed), which integrate wall-clock
+          // deltas from mount and would otherwise carry the renderer's init
+          // latency into the first visible pose (sharp-geometry shaders like
+          // Voronoi make that drift read as a poster that "doesn't line
+          // up"). Resetting after the poster is already gone would pop the
+          // animation backwards from warmup-time to 0, a new visible glitch.
           if (!firstPaintSignaled && hasContent) {
             resetRendererClock(renderer.three);
+            scheduler.resetPhases();
           }
           postProcessing.render();
 
