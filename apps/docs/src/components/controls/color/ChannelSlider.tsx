@@ -149,9 +149,16 @@ export function ChannelSlider({
   // untouched and repaints nothing, while a move on either other slider does.
   const held: OklchColor = { ...color, [channel]: 0 };
   const { lightness, chroma, hue } = held;
+
+  // The resize repaint below reads this ref instead of closing over `held`, so
+  // it always paints the latest colors without re-arming the observer. Written
+  // in an effect, not during render: a render React discards must not leave
+  // its value in the ref.
   const heldRef = useRef(held);
 
-  heldRef.current = held;
+  useEffect(() => {
+    heldRef.current = held;
+  });
 
   useEffect(() => {
     const canvas = canvasRef.current;
