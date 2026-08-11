@@ -143,6 +143,12 @@ export function ListInput<TItem>({
                 )}
               </div>
               <PathPrefixProvider segments={[...segments, index]}>
+                {/* Inline value on purpose: the demo control panel is
+                    deliberately unmemoized (see the control-store gotcha in
+                    AGENTS.md) — every row already re-renders on any panel
+                    write, so a memoized breadcrumb array would change
+                    nothing, and hooks can't be called inside this map. */}
+                {/* react-doctor-disable-next-line react-doctor/jsx-no-constructed-context-values */}
                 <ListBreadcrumbContext.Provider value={[...ancestorBreadcrumb, ownLabel]}>
                   {children(index)}
                 </ListBreadcrumbContext.Provider>

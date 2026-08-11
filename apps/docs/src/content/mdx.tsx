@@ -49,6 +49,11 @@ function Pre(props: HTMLAttributes<HTMLPreElement>) {
   );
 }
 
+// A single components map is the shape next-mdx-remote's MDXRemote consumes —
+// splitting it into per-component exports would just move the object literal
+// to every call site. Fast Refresh falling back to a full reload on edits to
+// this file is the accepted cost.
+// react-doctor-disable-next-line react-doctor/only-export-components
 export const mdxComponents = {
   Callout,
   Steps,

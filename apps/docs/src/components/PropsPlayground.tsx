@@ -1,6 +1,6 @@
 'use client';
 
-import { type CSSProperties, type ReactNode, useEffect, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 
 export type PropSchemaEntry =
   | { name: string; label?: string; type: 'color'; default: string }
@@ -101,39 +101,34 @@ function toLiveEntry(entry: PropSchemaEntry, value: PropValue | undefined): Live
   }
 }
 
-export function initialStateFromSchema(schema: PropSchema): PropsState {
-  const initialState: PropsState = {};
-
-  for (const entry of schema) {
-    initialState[entry.name] = entry.type === 'colors' ? [...entry.default] : entry.default;
-  }
-
-  return initialState;
-}
-
 interface PropsPlaygroundProps {
   schema: PropSchema;
+  state: PropsState;
   onChange: (state: PropsState) => void;
   className?: string;
   style?: CSSProperties;
 }
 
-export function PropsPlayground({ schema, onChange, className, style }: PropsPlaygroundProps) {
-  const [state, setState] = useState<PropsState>(() => initialStateFromSchema(schema));
-
-  useEffect(() => {
-    onChange(state);
-  }, [state, onChange]);
-
+// Controlled on purpose: the parent owns the state and this panel only
+// reports edits. Holding a mirror copy here and syncing it up through an
+// effect would render every change twice (once for the local set, once for
+// the parent's).
+export function PropsPlayground({
+  schema,
+  state,
+  onChange,
+  className,
+  style,
+}: PropsPlaygroundProps) {
   const update = (name: string, value: PropValue) => {
-    setState((prev) => ({ ...prev, [name]: value }));
+    onChange({ ...state, [name]: value });
   };
 
   return (
-    <form
+    <div
       aria-label="Live property controls"
       className={className}
-      onSubmit={(event) => event.preventDefault()}
+      role="group"
       style={{
         display: 'flex',
         flexDirection: 'column',
@@ -148,7 +143,7 @@ export function PropsPlayground({ schema, onChange, className, style }: PropsPla
       {schema.map((entry) => (
         <PropRow key={entry.name} live={toLiveEntry(entry, state[entry.name])} onChange={update} />
       ))}
-    </form>
+    </div>
   );
 }
 

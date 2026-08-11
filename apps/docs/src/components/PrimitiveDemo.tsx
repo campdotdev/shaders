@@ -5,13 +5,8 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { PrimitiveControl } from '@/data/primitives';
 
-import { buildPrimitiveParams } from './PrimitiveScene';
-import {
-  initialStateFromSchema,
-  type PropSchema,
-  PropsPlayground,
-  type PropsState,
-} from './PropsPlayground';
+import { buildPrimitiveParams, initialStateFromSchema } from './primitive-params';
+import { type PropSchema, PropsPlayground, type PropsState } from './PropsPlayground';
 
 interface PrimitiveDemoProps {
   slug: string;
@@ -58,7 +53,7 @@ export function PrimitiveDemo({ slug, controls }: PrimitiveDemoProps) {
       </div>
       {schema.length > 0 && (
         <div style={{ marginTop: '1rem' }}>
-          <PropsPlayground onChange={handleChange} schema={schema} />
+          <PropsPlayground onChange={handleChange} schema={schema} state={params} />
         </div>
       )}
     </div>

@@ -58,6 +58,10 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
         animationFrameId = requestAnimationFrame(loop);
       };
 
+      // The loop IS cancelled: cleanup calls detach(), which cancels the most
+      // recently scheduled frame. The detector can't follow the cancellation
+      // through the closure variable.
+      // react-doctor-disable-next-line react-doctor/effect-raf-loop-needs-cancel
       animationFrameId = requestAnimationFrame(loop);
       detach = () => {
         if (animationFrameId !== null) cancelAnimationFrame(animationFrameId);

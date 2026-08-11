@@ -23,83 +23,13 @@ import type { Node } from 'three/webgpu';
 
 import { addPlaneMesh } from '@/lib/meshUtils';
 
-import type { PropsState } from './PropsPlayground';
-
-export type PrimitiveParams =
-  | { slug: 'color-ramp'; position: number }
-  | { slug: 'mix-color'; t: number }
-  | { slug: 'noise'; scale: number; speed: number }
-  | {
-      slug: 'fbm';
-      scale: number;
-      speed: number;
-      octaves: number;
-      lacunarity: number;
-      gain: number;
-    }
-  | { slug: 'voronoi'; scale: number; speed: number }
-  | { slug: 'quantize'; bins: number }
-  | { slug: 'sdf-circle'; radius: number; cx: number; cy: number }
-  | { slug: 'displace'; x: number; y: number }
-  | { slug: 'cursor-ripple'; amplitude: number; falloff: number; speed: number }
-  | { slug: 'time' };
+import type { PrimitiveParams } from './primitive-params';
 
 // Per-variant alias so builder signatures stay short.
 type ParamsFor<S extends PrimitiveParams['slug']> = Extract<PrimitiveParams, { slug: S }>;
 
 interface PrimitiveSceneProps {
   primitive: PrimitiveParams;
-}
-
-export function buildPrimitiveParams(slug: string, raw: PropsState): PrimitiveParams {
-  const num = (key: string): number => {
-    const paramValue = raw[key];
-
-    if (typeof paramValue !== 'number') {
-      throw new Error(
-        `primitive '${slug}': missing or non-number param '${key}' (got ${typeof paramValue}). Check @/data/primitives.ts.`,
-      );
-    }
-
-    return paramValue;
-  };
-
-  switch (slug) {
-    case 'color-ramp':
-      return { slug, position: num('position') };
-    case 'mix-color':
-      return { slug, t: num('t') };
-    case 'noise':
-      return { slug, scale: num('scale'), speed: num('speed') };
-    case 'fbm':
-      return {
-        slug,
-        scale: num('scale'),
-        speed: num('speed'),
-        octaves: num('octaves'),
-        lacunarity: num('lacunarity'),
-        gain: num('gain'),
-      };
-    case 'voronoi':
-      return { slug, scale: num('scale'), speed: num('speed') };
-    case 'quantize':
-      return { slug, bins: num('bins') };
-    case 'sdf-circle':
-      return { slug, radius: num('radius'), cx: num('cx'), cy: num('cy') };
-    case 'displace':
-      return { slug, x: num('x'), y: num('y') };
-    case 'cursor-ripple':
-      return {
-        slug,
-        amplitude: num('amplitude'),
-        falloff: num('falloff'),
-        speed: num('speed'),
-      };
-    case 'time':
-      return { slug: 'time' };
-    default:
-      throw new Error(`Unknown primitive slug: '${slug}'`);
-  }
 }
 
 const buildStructuralKey = (primitive: PrimitiveParams): string =>

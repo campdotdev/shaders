@@ -61,9 +61,11 @@ export async function runUpdate(
       throw new Error(`No components in ${componentsDir} match any registry entry.`);
     }
   } else {
+    const localSlugSet = new Set(localSlugs);
+
     for (const slug of components) {
       const file = registry.components[slug]?.file;
-      const present = file !== undefined && localSlugs.includes(slug);
+      const present = file !== undefined && localSlugSet.has(slug);
 
       if (!present) {
         throw new Error(

@@ -22,16 +22,14 @@ async function resolveItem(
   pages: DocsPage[],
 ): Promise<ResolvedNavGroup | ResolvedNavItem[]> {
   if (isNavGroup(item)) {
-    const resolvedItems: Array<ResolvedNavGroup | ResolvedNavItem> = [];
+    // Children resolve independently, so run them together; Promise.all
+    // preserves item order, and flat() splices expanded sections (which
+    // resolve to arrays) into the group the same way sequential pushes did.
+    const resolvedChildren = await Promise.all(
+      item.items.map((child) => resolveItem(child, pages)),
+    );
 
-    for (const child of item.items) {
-      const resolvedChild = await resolveItem(child, pages);
-
-      if (Array.isArray(resolvedChild)) resolvedItems.push(...resolvedChild);
-      else resolvedItems.push(resolvedChild);
-    }
-
-    return { label: item.label, items: resolvedItems };
+    return { label: item.label, items: resolvedChildren.flat() };
   }
 
   switch (item.kind) {
@@ -62,15 +60,11 @@ async function resolveItem(
 
 export const getDocsNavTree = cache(async (): Promise<ResolvedNavGroup[]> => {
   const pages = await getMdxDocsPages();
-  const groups: ResolvedNavGroup[] = [];
+  // Top-level entries are all groups; resolveItem only returns an array for
+  // bare items, so the filter keeps the same shape the sequential loop built.
+  const resolved = await Promise.all(NAV.map((group) => resolveItem(group, pages)));
 
-  for (const group of NAV) {
-    const resolved = await resolveItem(group, pages);
-
-    if (!Array.isArray(resolved)) groups.push(resolved);
-  }
-
-  return groups;
+  return resolved.filter((group): group is ResolvedNavGroup => !Array.isArray(group));
 });
 
 interface FlatEntry {
