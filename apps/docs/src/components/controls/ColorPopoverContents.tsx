@@ -26,16 +26,20 @@ export function ColorPopoverContents({ path, label }: { path: PathInput; label: 
   const [typed, setTyped] = useState<string | null>(null);
   const [typedIsInvalid, setTypedIsInvalid] = useState(false);
 
-  // Mirrors of the three fields above, kept current on every render, so the
-  // unmount effect further down can read their latest values instead of the
-  // stale ones its closure would otherwise have captured at mount time.
+  // Mirrors of the three fields above, refreshed after every committed render,
+  // so the unmount effect further down can read their latest values instead of
+  // the stale ones its closure would otherwise have captured at mount time.
+  // Written in an effect, not during render: a render React discards (Strict
+  // Mode, concurrent interruptions) must not leave its values in the refs.
   const draftRef = useRef(draft);
   const typedRef = useRef(typed);
   const typedIsInvalidRef = useRef(typedIsInvalid);
 
-  draftRef.current = draft;
-  typedRef.current = typed;
-  typedIsInvalidRef.current = typedIsInvalid;
+  useEffect(() => {
+    draftRef.current = draft;
+    typedRef.current = typed;
+    typedIsInvalidRef.current = typedIsInvalid;
+  });
 
   const color = draft ?? parseToOklch(stored);
   const cssColor = formatOklch(color);
