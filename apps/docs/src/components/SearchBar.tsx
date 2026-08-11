@@ -394,9 +394,10 @@ export function SearchBar() {
                 >
                   <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{result.title}</div>
                   <div
-                    // Pagefind excerpts contain sanitized HTML with <mark>.
-                    // Fallback excerpts are plain text (no HTML in our
-                    // descriptions). Both render safely via innerHTML.
+                    // Pagefind escapes indexed text and adds <mark>; fallback
+                    // excerpts are this repo's own frontmatter descriptions.
+                    // First-party static content — accepted, not re-sanitized.
+                    // react-doctor-disable-next-line react-doctor/dangerous-html-sink
                     dangerouslySetInnerHTML={{ __html: result.excerpt }}
                     style={{
                       fontSize: '0.8125rem',
