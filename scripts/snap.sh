@@ -31,6 +31,11 @@ echo "==> Linux baseline (Docker)"
 PLAYWRIGHT_VERSION=$(node -p \
   "require('./apps/docs-tests/node_modules/@playwright/test/package.json').version")
 
+# Read the pnpm spec ("pnpm@x.y.z") from the root packageManager field so the
+# container always runs the same pnpm the repo pins — a hardcoded copy here
+# drifted behind a packageManager bump once already.
+PNPM_SPEC=$(node -p "require('./package.json').packageManager")
+
 IMAGE="mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy"
 
 # Force amd64 so locally-generated "linux" baselines match CI (ubuntu-latest =
@@ -65,7 +70,7 @@ docker run --rm \
   "$IMAGE" \
   bash -lc "
     corepack enable &&
-    corepack prepare pnpm@9.12.0 --activate &&
+    corepack prepare ${PNPM_SPEC} --activate &&
     pnpm install --frozen-lockfile &&
     pnpm --filter @matter/docs-tests exec playwright test${PW_ARGS_INNER}
   "
