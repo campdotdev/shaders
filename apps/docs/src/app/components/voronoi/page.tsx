@@ -105,6 +105,7 @@ function VoronoiControls() {
           path="tuning.glowExponent"
           step={0.05}
         />
+        <SliderInput label="Glow gain" max={8} min={0.5} path="tuning.glowGain" step={0.1} />
       </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
