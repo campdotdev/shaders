@@ -24,7 +24,8 @@
     "posters": "bash scripts/build-posters.sh",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm smoke && pnpm publish -r --access public --no-git-checks"
+    "release": "pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm smoke && pnpm publish -r --access public --no-git-checks",
+    "doctor": "react-doctor"
   },
   "devDependencies": {
     "@changesets/cli": "^2.31.0",
@@ -46,6 +47,7 @@
     "playwright": "1.59.1",
     "prettier": "^3",
     "react": "^19.0.0",
+    "react-doctor": "^0.9.11",
     "turbo": "^2.2.0",
     "typescript": "^5.6.0",
     "typescript-eslint": "^8.60.0",
