@@ -73,7 +73,7 @@ docker run --rm \
   "mcr.microsoft.com/playwright:v${PLAYWRIGHT_VERSION}-jammy" \
   bash -lc '
     corepack enable &&
-    corepack prepare pnpm@9.12.0 --activate &&
+    corepack prepare "$(node -p "require(\"./package.json\").packageManager")" --activate &&
     pnpm install --frozen-lockfile &&
     pnpm --filter @matter/docs-tests exec playwright test \
       --update-snapshots --grep "Aurora"
@@ -85,8 +85,9 @@ What each part does:
 - `-v "$PWD":/work -w /work` — mounts the repo into the container and
   works from inside it, so any file Playwright writes (the regenerated
   PNG) lands on the host filesystem.
-- `corepack prepare pnpm@9.12.0 --activate` — pins pnpm to the version in
-  `packageManager`. The Playwright image ships Node but no pnpm.
+- `corepack prepare … --activate` — reads the `packageManager` field from
+  the mounted `package.json` so the container runs the exact pnpm the repo
+  pins. The Playwright image ships Node but no pnpm.
 - `pnpm install --frozen-lockfile` — cold install inside the container.
   ~2–3 min the first time per fresh container.
 - `playwright test --update-snapshots --grep "<name>"` — runs only the
