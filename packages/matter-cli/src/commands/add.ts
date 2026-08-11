@@ -90,6 +90,9 @@ export async function runAdd(
     // there, and writing follows it wherever it points. A dangling one is the
     // sharper case: the existence check below reads through it, finds nothing,
     // and would create the file at the far end without even asking for --force.
+    // Sequential on purpose (a component is a handful of files): checks run in
+    // target order so the first conflict reported is deterministic.
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop
     if (await isSymbolicLink(file.targetPath)) {
       throw new Error(
         `${file.targetPath} is a symbolic link. Refusing to write through it — remove it first.`,
@@ -125,6 +128,8 @@ export async function runAdd(
     const realRoot = await realpath(componentsRoot);
 
     for (const { targetPath } of toWrite) {
+      // Sequential on purpose: deterministic first-refusal, and N is tiny.
+      // react-doctor-disable-next-line react-doctor/async-await-in-loop
       const realParent = await realpath(dirname(targetPath));
 
       if (realParent !== realRoot && !realParent.startsWith(realRoot + sep)) {
@@ -139,6 +144,9 @@ export async function runAdd(
   // two separate operations, and the guarantee has to hold at the moment of
   // writing, not a moment before it.
   for (const { targetPath, contents } of toWrite) {
+    // Sequential on purpose: each `Wrote` line lands right after its write,
+    // so an interrupted run's output says exactly how far it got.
+    // react-doctor-disable-next-line react-doctor/async-await-in-loop
     await writeFileNoFollow(targetPath, contents);
     io.log(`Wrote ${targetPath}`);
   }

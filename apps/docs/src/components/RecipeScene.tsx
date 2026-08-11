@@ -40,6 +40,11 @@ function RecipeMesh({ slug, variant }: { slug: string; variant: string }) {
 
     if (!build) return;
 
+    // `build` is a shader-builder looked up from a static map, not a parent
+    // callback — nothing here re-renders anything. The detector reads
+    // "call a passed-in function with local data inside an effect" as
+    // state-mirroring; this is the repo's standard imperative mesh lifecycle.
+    // react-doctor-disable-next-line react-doctor/no-pass-data-to-parent
     const colorNode = build({ cursorUniform });
 
     return addPlaneMesh(shaderContext, colorNode);

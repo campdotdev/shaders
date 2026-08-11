@@ -10,5 +10,21 @@
     // `.sub()` is vector subtraction, not a subscription. Re-enable and
     // re-verify if the detector moves beyond name matching.
     "react-doctor/effect-needs-cleanup": "off",
+    // Disabled 2026-08-11 during the warnings triage: all 3 hits were
+    // filter().map() over the docs content pipeline's page list — build-time
+    // transforms over tens of items, where fusing the passes trades the
+    // repo's clarity-first idiom for nothing measurable. Re-evaluate if a
+    // genuinely large JS data path ever appears (GPU-side loops don't count;
+    // they're TSL, not array methods).
+    "react-doctor/js-combine-iterations": "off",
+    // Disabled 2026-08-11 during the warnings triage: all 10 hits were false
+    // positives. Every flagged material IS disposed in its own effect's
+    // cleanup, but the dispose call sits inside a try/catch (three/webgpu can
+    // throw during dispose under Strict Mode double-invoke — see any registry
+    // shader's cleanup) and the detector cannot prove cleanup through the
+    // try block. That try/catch is the repo-wide mandated pattern, so every
+    // future shader would re-trigger the same false positive. Re-enable and
+    // re-verify if the detector learns to look inside try statements.
+    "react-doctor/three-require-owned-material-cleanup": "off",
   },
 }

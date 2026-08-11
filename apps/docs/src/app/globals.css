@@ -509,3 +509,10 @@ a:hover {
   opacity: 0.4;
   cursor: not-allowed;
 }
+
+/* The search modal is a native <dialog>: the element itself is the panel
+   (styled inline in SearchBar), and the dimmed overlay is its ::backdrop
+   pseudo-element, which inline styles cannot reach — so it lives here. */
+.search-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+}

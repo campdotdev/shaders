@@ -11,21 +11,25 @@ import type { DocsPage } from './types';
 const CONTENT_ROOT = path.join(process.cwd(), 'content', 'docs');
 
 async function walkMdx(dir: string): Promise<string[]> {
-  const out: string[] = [];
   const entries = await fs.readdir(dir, { withFileTypes: true });
 
-  for (const entry of entries) {
-    if (entry.name.startsWith('_')) continue;
-    const full = path.join(dir, entry.name);
+  // Subdirectories walk independently, so descend into all of them together
+  // instead of one at a time. Each entry maps to its list of .mdx paths
+  // (empty for skips), and flat() stitches them back in readdir order —
+  // though callers sort by frontmatter anyway, so order carries no meaning.
+  const nested = await Promise.all(
+    entries.map(async (entry) => {
+      if (entry.name.startsWith('_')) return [];
+      const full = path.join(dir, entry.name);
 
-    if (entry.isDirectory()) {
-      out.push(...(await walkMdx(full)));
-    } else if (entry.isFile() && entry.name.endsWith('.mdx')) {
-      out.push(full);
-    }
-  }
+      if (entry.isDirectory()) return walkMdx(full);
+      if (entry.isFile() && entry.name.endsWith('.mdx')) return [full];
 
-  return out;
+      return [];
+    }),
+  );
+
+  return nested.flat();
 }
 
 function fileToUrl(absolute: string): { url: string; slugs: string[] } {
@@ -47,24 +51,26 @@ export const getMdxDocsPages = cache(async (): Promise<DocsPage[]> => {
     throw caughtError;
   }
 
-  const pages: DocsPage[] = [];
+  // Every page parses independently, so read them all concurrently; the
+  // sort below is what establishes page order, not the read order.
+  const pages: DocsPage[] = await Promise.all(
+    files.map(async (filePath) => {
+      const raw = await fs.readFile(filePath, 'utf8');
+      const { data, content } = matter(raw);
+      const frontmatter = parseFrontmatter(data, filePath);
+      const { url, slugs } = fileToUrl(filePath);
+      const headings = extractHeadings(content);
 
-  for (const filePath of files) {
-    const raw = await fs.readFile(filePath, 'utf8');
-    const { data, content } = matter(raw);
-    const frontmatter = parseFrontmatter(data, filePath);
-    const { url, slugs } = fileToUrl(filePath);
-    const headings = extractHeadings(content);
-
-    pages.push({
-      url,
-      slugs,
-      sourcePath: filePath,
-      body: content,
-      frontmatter,
-      headings,
-    });
-  }
+      return {
+        url,
+        slugs,
+        sourcePath: filePath,
+        body: content,
+        frontmatter,
+        headings,
+      };
+    }),
+  );
 
   pages.sort((a, b) => {
     const sectionComparison = a.frontmatter.section.localeCompare(b.frontmatter.section);
