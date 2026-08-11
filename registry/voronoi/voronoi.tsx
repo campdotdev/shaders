@@ -91,7 +91,8 @@ export interface VoronoiProps {
    */
   glow?: AnimatableProp<number>;
   /**
-   * Color of the border-bleed tint. Defaults to a near-black neutral.
+   * Color of the border-bleed tint. Defaults to a pale violet-white, so
+   * raising `glow` reads as light leaking through the seams.
    */
   glowColor?: string;
   /** Color space the ramp and border/glow mixes interpolate in. Defaults to `'oklab'`. */
@@ -130,7 +131,7 @@ export function Voronoi({
   borderWidth = 0.05,
   borderSoftness = 0,
   glow = 0,
-  glowColor = 'oklch(0.145 0.02 265)',
+  glowColor = 'oklch(0.93 0.03 300)',
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
   tuning,
