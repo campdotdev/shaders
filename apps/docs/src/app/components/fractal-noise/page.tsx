@@ -40,7 +40,7 @@ const COPY_CONFIG = { componentName: 'FractalNoise' } as const;
 const STYLE_DIAL_DEFAULTS: Record<FractalNoiseStyle, { contrast: number; balance: number }> = {
   clouds: { contrast: 1.75, balance: 0.52 },
   smoke: { contrast: 1.75, balance: 0.52 },
-  marble: { contrast: 1, balance: 0.8 },
+  veins: { contrast: 1, balance: 0.8 },
 };
 
 /**
@@ -99,7 +99,7 @@ function FractalNoiseControls() {
           options={[
             { label: 'Clouds', value: 'clouds' },
             { label: 'Smoke', value: 'smoke' },
-            { label: 'Marble', value: 'marble' },
+            { label: 'Veins', value: 'veins' },
           ]}
           path="style"
         />

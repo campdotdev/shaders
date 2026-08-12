@@ -30,10 +30,10 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgp
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
 
 /**
- * Texture character: plain layered clouds, soft folded billows, or crisp
- * veined marble.
+ * Texture character: plain layered clouds, soft folded billows, or a crisp
+ * vein network.
  */
-export type FractalNoiseStyle = 'clouds' | 'smoke' | 'marble';
+export type FractalNoiseStyle = 'clouds' | 'smoke' | 'veins';
 
 // ---------------------------------------------
 // Feel constants (tuned by eye at the build's visual gates)
@@ -53,25 +53,25 @@ const GAIN_MAX = 0.85;
 const STYLE_FOLD: Record<FractalNoiseStyle, FractalFold> = {
   clouds: 'none',
   smoke: 'smooth',
-  marble: 'sharp',
+  veins: 'sharp',
 };
 
 // Per-style remap of the raw fBm sum onto the 0..1 range the ramp expects:
 // value = clamp(raw * stretch + lift, 0, 1).
 // clouds: raw is ~-1..1, so 0.5/0.5 is exactly (raw + 1) / 2.
 // smoke:  abs² folding pools values low — a stretch above 1 spreads them.
-// marble: sqrt folding pools values high — a negative lift pulls them back.
+// veins:  sqrt folding pools values high — a negative lift pulls them back.
 const STYLE_REMAP: Record<FractalNoiseStyle, { stretch: number; lift: number }> = {
   clouds: { stretch: 0.5, lift: 0.5 },
   smoke: { stretch: 1.6, lift: 0.18 },
-  marble: { stretch: 1.4, lift: -0.28 },
+  veins: { stretch: 1.4, lift: -0.28 },
 };
 
 export interface FractalNoiseShaderProps {
   /**
    * Texture character. 'clouds' is plain layered fBm; 'smoke' folds each
-   * layer into soft rounded billows; 'marble' folds sharper, leaving crisp
-   * bright veins.
+   * layer into soft rounded billows; 'veins' folds sharper, leaving a
+   * network of crisp bright creases.
    */
   style: FractalNoiseStyle;
   /**
@@ -216,7 +216,7 @@ export function FractalNoiseShader({
       // frequency and pow(gain, i) times the amplitude of layer i-1, so
       // broad shapes carry fine grain on top — the layered look
       // single-octave noise can't produce. The style picks the per-octave
-      // fold: unfolded clouds come back roughly -1..1, folded smoke/marble
+      // fold: unfolded clouds come back roughly -1..1, folded smoke/veins
       // roughly 0..1 (abs() leaves nothing negative).
       const rawNoise = fractalNoise(samplePoint, {
         octaves,
@@ -227,7 +227,7 @@ export function FractalNoiseShader({
       // Remap the raw sum onto the 0..1 range the ramp expects. One formula
       // covers every style — clouds' 0.5/0.5 is exactly (raw + 1) / 2, and
       // the folded styles' stretch/lift recenters their clustered values
-      // (smoke pools low, marble pools high). The clamp catches overshoot.
+      // (smoke pools low, veins pools high). The clamp catches overshoot.
       // Plain numbers, not uniforms: the remap pair is welded to the style,
       // and a style change rebuilds the material anyway.
       const { stretch, lift } = STYLE_REMAP[style];
