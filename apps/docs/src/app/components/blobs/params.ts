@@ -23,6 +23,8 @@ export interface Params {
   size: number;
   sizeVariation: number;
   spread: number;
+  softness: number;
+  shading: number;
   center: [number, number];
   speed: number;
   seed: number;
@@ -39,9 +41,11 @@ export const MAX_STOPS = 5;
 // the two in sync.
 export const INITIAL: Params = {
   count: 6,
-  size: 0.5,
-  sizeVariation: 0.3,
-  spread: 0.5,
+  size: 0.6,
+  sizeVariation: 0.5,
+  spread: 0.8,
+  softness: 0,
+  shading: 0.3,
   center: [0.5, 0.5],
   speed: 0.2,
   seed: 0,
@@ -55,10 +59,10 @@ export const INITIAL: Params = {
   ],
   tuning: {
     threshold: 0.4,
-    fieldReach: 2,
+    fieldReach: 2.65,
     exponentMax: 45,
-    exponentSpan: 30,
-    roamExtent: 0.35,
+    exponentSpan: 40,
+    roamExtent: 0.8,
     minRoam: 0.4,
     fastWeight: 0.35,
   },
