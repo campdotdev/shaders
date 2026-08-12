@@ -72,9 +72,10 @@ interface ColorRampStop {
 ): TSLNode
 
 interface FractalNoiseOptions {
-  octaves?: number     // default 4
-  lacunarity?: number  // default 2
-  gain?: number        // default 0.5
+  octaves?: number             // default 4
+  lacunarity?: number          // default 2
+  gain?: number | TSLNode      // default 0.5; node = live uniform
+  fold?: 'none' | 'smooth' | 'sharp'  // turbulence fold, default 'none'
 }`,
     usedBy: ['aurora'],
     controls: [

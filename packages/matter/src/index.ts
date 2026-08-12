@@ -36,7 +36,7 @@ export type { OutputGamut } from './color.js';
 export { simplexNoise } from './primitives/noise/noise.js';
 
 export { fractalNoise } from './primitives/fbm/fbm.js';
-export type { FractalNoiseOptions } from './primitives/fbm/fbm.js';
+export type { FractalFold, FractalNoiseOptions } from './primitives/fbm/fbm.js';
 
 export { voronoi } from './primitives/voronoi/voronoi.js';
 
