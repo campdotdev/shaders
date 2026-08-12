@@ -17,7 +17,8 @@
     "./radial-gradient": "./radial-gradient/radial-gradient.tsx",
     "./conic-gradient": "./conic-gradient/conic-gradient.tsx",
     "./dither": "./dither/dither.tsx",
-    "./voronoi": "./voronoi/voronoi.tsx"
+    "./voronoi": "./voronoi/voronoi.tsx",
+    "./fractal-noise": "./fractal-noise/fractal-noise.tsx"
   },
   "scripts": {
     "lint": "eslint .",
