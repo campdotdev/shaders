@@ -249,9 +249,10 @@ export function FractalNoiseShader({
       const contrastedValue = clamp(balanced.sub(0.5).mul(contrastUniform).add(0.5), 0, 1);
 
       // Softness: blend between quantized contour bands (0) and smooth ramp (1).
-      // quantize() rounds the 0..1 value to one of `stepCount` flat levels —
-      // one band per color stop, which is what makes the posterized look line
-      // up with the palette.
+      // quantize() rounds the 0..1 value to one of `stepCount` evenly spaced
+      // flat levels — one band per color stop. With auto-spaced stops (the
+      // default) the levels land exactly on the stop colors; explicit uneven
+      // positions keep the band count but sample the ramp between stops.
       const stepCount = Math.max(stops.length, 1);
       const quantized = quantize(contrastedValue, stepCount);
       const bandedValue = mix(quantized, contrastedValue, softnessUniform);
@@ -266,6 +267,12 @@ export function FractalNoiseShader({
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
       shaderContext.scene.add(mesh);
+
+      // A rebuild swaps the mesh without touching any uniform, and the scene
+      // renders on demand — at speed 0 the scheduler is parked, so without
+      // this poke a style/octaves/stops/colorSpace change would compile the
+      // new material and never draw it.
+      shaderContext.scheduler.requestRender();
 
       return () => {
         shaderContext.scene.remove(mesh);

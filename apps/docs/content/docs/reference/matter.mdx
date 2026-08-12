@@ -15,7 +15,7 @@ TSL building blocks for writing shader expressions. Each primitive is documented
 
 - `colorRamp(stops, t)` — multi-stop color gradient sampled at `t` ∈ [0, 1].
 - `simplexNoise(uv, opts?)` — single-octave 2D value noise.
-- `fractalNoise(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `scale`, `octaves`, `lacunarity`, `gain` (a number, or a uniform node for a live dial), `fold` (`'none' | 'smooth' | 'sharp'` turbulence folding), `speed`.
+- `fractalNoise(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `octaves`, `lacunarity`, `gain` (a number, or a uniform node for a live dial), and `fold` (`'none' | 'smooth' | 'sharp'` turbulence folding).
 - `voronoi(uv, opts?)` — distance-to-nearest-feature noise.
 - `quantize(value, steps, threshold?)` — posterize a value to discrete steps, component-wise for vecs. `steps` can be a uniform node (animatable), and `threshold` replaces the built-in 0.5 rounding point — pass an ordered-dither threshold to dither.
 - `ditherThreshold(pattern, cellCoord)` — threshold maps for ordered dithering: `'bayer-2x2'`/`'bayer-4x4'`/`'bayer-8x8'`, halftone `'dots'`/`'lines'`, and `'white-noise'`/`'blue-noise'`/`'gradient-noise'`. Powers the `<Dither>` component. Not the same job as the scene's automatic output dither, which is invisible anti-banding noise — this one is the loud, artistic kind.

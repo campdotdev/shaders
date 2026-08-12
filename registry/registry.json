@@ -218,7 +218,11 @@
     },
     "fractal-noise": {
       "file": "fractal-noise/fractal-noise.tsx",
-      "files": ["fractal-noise/shader.tsx", "utils/color.ts"],
+      "files": [
+        "fractal-noise/shader.tsx",
+        "fractal-noise/style-dial-defaults.ts",
+        "utils/color.ts"
+      ],
       "description": "Layered fractal noise — multi-octave texture with a style dial from soft clouds to crisp vein networks.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [

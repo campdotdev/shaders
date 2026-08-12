@@ -9,6 +9,7 @@ import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
 import { FractalNoiseShader, type FractalNoiseStyle } from './shader';
+import { STYLE_DIAL_DEFAULTS } from './style-dial-defaults';
 
 export type { ColorStop } from '../utils/color';
 export type { FractalNoiseStyle } from './shader';
@@ -82,18 +83,6 @@ export interface FractalNoiseProps {
   hueInterpolation?: HueInterpolation;
 }
 
-// Contrast and balance default per style — the only two dials whose best
-// values follow the texture character. Clouds and smoke read best anchored
-// near the ramp midpoint with contrast pushing toward the extremes; veins
-// reads best as a pale field with soft veining, which means low contrast and
-// a high balance that parks the field in the ramp's bright end. Explicit
-// props always win.
-const STYLE_DIAL_DEFAULTS: Record<FractalNoiseStyle, { contrast: number; balance: number }> = {
-  clouds: { contrast: 1.75, balance: 0.52 },
-  smoke: { contrast: 1.75, balance: 0.52 },
-  veins: { contrast: 1, balance: 0.8 },
-};
-
 // Twilight palette: stops walk the shared lightness ladder so each is at least
 // 0.10 lighter than the one before, creating depth that makes the ramp readable.
 const DEFAULT_STOPS: ColorStop[] = [
@@ -119,7 +108,7 @@ export function FractalNoise({
   hueInterpolation = 'shorter',
 }: FractalNoiseProps) {
   // These two can't default inline like the rest: their defaults follow the
-  // style prop (see STYLE_DIAL_DEFAULTS above).
+  // style prop (see ./style-dial-defaults.ts).
   const styleDials = STYLE_DIAL_DEFAULTS[style];
   const resolvedContrast = contrast ?? styleDials.contrast;
   const resolvedBalance = balance ?? styleDials.balance;

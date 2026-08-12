@@ -49,4 +49,10 @@ describe('fbm', () => {
 
     expect(noiseValue).toBeDefined();
   });
+
+  // The octave loop unrolls in JavaScript at build time, so a bad count must
+  // throw instead of silently mis-building — or, for Infinity, hanging the tab.
+  it.each([0, -1, 2.5, Number.NaN, Number.POSITIVE_INFINITY])('rejects octaves=%s', (octaves) => {
+    expect(() => fractalNoise(uv(), { octaves })).toThrow(/octaves/);
+  });
 });

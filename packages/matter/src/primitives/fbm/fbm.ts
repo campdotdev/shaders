@@ -14,7 +14,7 @@ import { simplexNoise } from '../noise/noise.js';
 export type FractalFold = 'none' | 'smooth' | 'sharp';
 
 export interface FractalNoiseOptions {
-  /** Number of octaves to sum. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */
+  /** Number of octaves to sum, an integer >= 1. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */
   octaves?: number;
   /** Per-octave frequency multiplier. JS-side number. Default: 2. */
   lacunarity?: number;
@@ -84,6 +84,14 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
   const lacunarity = opts.lacunarity ?? 2;
   const gain = opts.gain ?? 0.5;
   const fold = opts.fold ?? 'none';
+
+  // The octave loops below unroll in JavaScript at shader-build time, so a
+  // bad count fails in ways TypeScript can't catch: Infinity spins the loop
+  // forever (tab hang), NaN and fractions mis-build silently. Fail loudly
+  // instead. Number.isInteger rejects all three in one check.
+  if (!Number.isInteger(octaves) || octaves < 1) {
+    throw new Error(`fractalNoise: octaves must be an integer >= 1, got ${String(octaves)}.`);
+  }
 
   if (typeof gain !== 'number') {
     // Node gain: the amplitude of octave i is gain^i, computed in TSL so a
