@@ -20,12 +20,15 @@ export default function FractalNoiseScene({
   return (
     <ShaderScene>
       <FractalNoise
+        balance={params.balance}
         colorSpace={params.colorSpace}
+        contrast={params.contrast}
         detail={params.detail}
         hueInterpolation={params.hueInterpolation}
         octaves={params.octaves}
         scale={params.scale}
         seed={params.seed}
+        softness={params.softness}
         speed={params.speed}
         stops={stops}
         style={params.style}

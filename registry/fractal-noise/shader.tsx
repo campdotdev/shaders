@@ -4,8 +4,9 @@
 // simplex noise — every octave at double the frequency and a fraction of the
 // amplitude of the one before, so broad shapes carry progressively finer
 // grain on top (x/y from screen position, z from time, so the pattern morphs
-// in place rather than scrolling). The layered sum then picks a color from
-// the ramp. The wrapper (./fractal-noise.tsx) supplies the props.
+// in place rather than scrolling). The layered sum then runs through a chain
+// of 0..1 shaping steps — balance, contrast, banding — before picking a color
+// from the ramp. The wrapper (./fractal-noise.tsx) supplies the props.
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -14,6 +15,7 @@ import {
   type FractalFold,
   fractalNoise,
   type HueInterpolation,
+  quantize,
 } from '@lovo/matter';
 import {
   type AnimatableProp,
@@ -110,6 +112,25 @@ export interface FractalNoiseShaderProps {
    */
   detail: AnimatableProp<number>;
   /**
+   * Pushes noise values toward the ramp extremes. 1 is neutral; above 1
+   * leans into the first and last colors, below 1 pulls everything toward
+   * the middle stops. Accepts a static value or an animation signal.
+   */
+  contrast: AnimatableProp<number>;
+  /**
+   * Shifts the whole pattern through the color ramp. 0.5 is neutral; below
+   * leans toward the first colors, above leans toward the last. In 2-color
+   * mode this reads as a dark/light balance. Accepts a static value or an
+   * animation signal.
+   */
+  balance: AnimatableProp<number>;
+  /**
+   * Blends between posterized contour bands and a smooth gradient. 0 = hard
+   * bands (one per color stop); 1 = fully smooth. Accepts a static value or
+   * an animation signal.
+   */
+  softness: AnimatableProp<number>;
+  /**
    * Colors of the ramp the noise field maps onto. Accepts hex, `oklch()`,
    * or `oklab()`; positions auto-space when omitted.
    */
@@ -136,6 +157,9 @@ export function FractalNoiseShader({
   speed,
   octaves,
   detail,
+  contrast,
+  balance,
+  softness,
   stops,
   seed,
   colorSpace,
@@ -159,6 +183,9 @@ export function FractalNoiseShader({
   const scaleUniform = useAnimatableUniform<number>(scale);
   const phaseUniform = useAnimatableSpeed(speed);
   const detailUniform = useAnimatableUniform<number>(detail);
+  const contrastUniform = useAnimatableUniform<number>(contrast);
+  const balanceUniform = useAnimatableUniform<number>(balance);
+  const softnessUniform = useAnimatableUniform<number>(softness);
 
   // Content fingerprint of the stops array (colors + positions). The build
   // effect keys on this string, so a re-render that passes a new array with
@@ -247,12 +274,35 @@ export function FractalNoiseShader({
       // (smoke pools low, marble pools high). The clamp catches overshoot.
       const normalized = clamp(rawNoise.mul(stretchUniform).add(liftUniform), 0, 1);
 
+      // Balance: shift the noise scalar earlier (<0.5) or later (>0.5) into the
+      // color ramp. 0.5 is identity. In 2-color mode this reads as dark/light;
+      // in multi-color mode it leans toward the first or last colors in the array.
+      // The (balance - 0.5) * 2 mapping turns the 0..1 dial into a -1..+1
+      // shift, so either end of the dial can push every value past a ramp
+      // extreme; the clamp catches what overshoots.
+      const balanceShift = balanceUniform.sub(0.5).mul(2);
+      const balanced = clamp(normalized.add(balanceShift), 0, 1);
+
+      // Contrast: linear scale around 0.5. 1 is identity, >1 pushes values toward
+      // the ramp extremes (first/last colors), <1 pulls them toward the middle.
+      // The subtract/scale/add-back sandwich stretches distances from the
+      // midpoint while leaving the midpoint itself fixed.
+      const contrastedValue = clamp(balanced.sub(0.5).mul(contrastUniform).add(0.5), 0, 1);
+
+      // Softness: blend between quantized contour bands (0) and smooth ramp (1).
+      // quantize() rounds the 0..1 value to one of `stepCount` flat levels —
+      // one band per color stop, which is what makes the posterized look line
+      // up with the palette.
+      const stepCount = Math.max(stops.length, 1);
+      const quantized = quantize(contrastedValue, stepCount);
+      const bandedValue = mix(quantized, contrastedValue, softnessUniform);
+
       // Build the colorRamp stops from the ColorStop[] (auto-even positions when omitted).
       const rampStops = toColorRampStops(stops);
 
       const material = new MeshBasicNodeMaterial();
 
-      material.colorNode = colorRamp(normalized, rampStops, colorSpace, hueInterpolation);
+      material.colorNode = colorRamp(bandedValue, rampStops, colorSpace, hueInterpolation);
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
@@ -281,6 +331,9 @@ export function FractalNoiseShader({
       scaleUniform,
       phaseUniform,
       detailUniform,
+      contrastUniform,
+      balanceUniform,
+      softnessUniform,
       seedUniform,
       gainMinUniform,
       gainMaxUniform,
