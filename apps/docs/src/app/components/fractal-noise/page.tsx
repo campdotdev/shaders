@@ -57,6 +57,15 @@ function FractalNoiseControls() {
   return (
     <ControlPanel copyConfig={COPY_CONFIG} title="<FractalNoise>">
       <Section title="Texture">
+        <SelectInput
+          label="Style"
+          options={[
+            { label: 'Clouds', value: 'clouds' },
+            { label: 'Smoke', value: 'smoke' },
+            { label: 'Marble', value: 'marble' },
+          ]}
+          path="style"
+        />
         <SliderInput label="Scale" max={10} min={0.5} path="scale" step={0.1} />
         <SliderInput label="Octaves" max={8} min={1} path="octaves" step={1} />
         <SliderInput label="Detail" max={1} min={0} path="detail" step={0.01} />
@@ -66,6 +75,12 @@ function FractalNoiseControls() {
       <Section title="Mixing">
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
         <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
+      </Section>
+      <Section title="Tuning (dev)">
+        <SliderInput label="Gain min" max={0.6} min={0} path="tuning.gainMin" step={0.01} />
+        <SliderInput label="Gain max" max={1} min={0.4} path="tuning.gainMax" step={0.01} />
+        <SliderInput label="Stretch" max={3} min={0.2} path="tuning.stretch" step={0.01} />
+        <SliderInput label="Lift" max={0.6} min={-0.6} path="tuning.lift" step={0.01} />
       </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}

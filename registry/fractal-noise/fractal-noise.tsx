@@ -8,11 +8,18 @@ import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
-import { FractalNoiseShader } from './shader';
+import { FractalNoiseShader, type FractalNoiseStyle, type FractalNoiseTuning } from './shader';
 
 export type { ColorStop } from '../utils/color';
+export type { FractalNoiseStyle, FractalNoiseTuning } from './shader';
 
 export interface FractalNoiseProps {
+  /**
+   * Texture character. 'clouds' is plain layered fBm; 'smoke' folds each
+   * layer into soft rounded billows; 'marble' folds sharper, leaving crisp
+   * bright veins. Defaults to 'smoke'.
+   */
+  style?: FractalNoiseStyle;
   /**
    * Colors of the ramp the noise field maps onto. Accepts hex, `oklch()`,
    * or `oklab()`; positions auto-space when omitted.
@@ -52,6 +59,11 @@ export interface FractalNoiseProps {
    * otherwise. Defaults to `'shorter'`.
    */
   hueInterpolation?: HueInterpolation;
+  /**
+   * TEMPORARY dev-tuning overrides for feel constants. Stripped before
+   * release — do not use.
+   */
+  tuning?: FractalNoiseTuning;
 }
 
 // Twilight palette: stops walk the shared lightness ladder so each is at least
@@ -66,6 +78,7 @@ const DEFAULT_STOPS: ColorStop[] = [
 ];
 
 export function FractalNoise({
+  style = 'smoke',
   stops = DEFAULT_STOPS,
   scale = 3,
   speed = 0.2,
@@ -74,6 +87,7 @@ export function FractalNoise({
   seed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
+  tuning,
 }: FractalNoiseProps) {
   return (
     <FractalNoiseShader
@@ -85,6 +99,8 @@ export function FractalNoise({
       seed={seed}
       speed={speed}
       stops={stops}
+      style={style}
+      tuning={tuning}
     />
   );
 }

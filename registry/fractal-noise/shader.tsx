@@ -8,7 +8,13 @@
 // the ramp. The wrapper (./fractal-noise.tsx) supplies the props.
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, fractalNoise, type HueInterpolation } from '@lovo/matter';
+import {
+  colorRamp,
+  type ColorSpace,
+  type FractalFold,
+  fractalNoise,
+  type HueInterpolation,
+} from '@lovo/matter';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
@@ -16,10 +22,16 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { float, mix, uniform, uv, vec3 } from 'three/tsl';
+import { clamp, mix, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
+
+/**
+ * Texture character: plain layered clouds, soft folded billows, or crisp
+ * veined marble.
+ */
+export type FractalNoiseStyle = 'clouds' | 'smoke' | 'marble';
 
 // ---------------------------------------------
 // Feel constants (provisional — tuned by eye at the build gates)
@@ -32,7 +44,49 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color'
 const GAIN_MIN = 0.15;
 const GAIN_MAX = 0.85;
 
+// Which turbulence fold each style asks the fBm primitive for. Folding runs
+// every octave through abs() before it joins the sum: the sign flips at
+// every zero crossing become creases, and the creases are what read as
+// billow edges (smooth) or veins (sharp).
+const STYLE_FOLD: Record<FractalNoiseStyle, FractalFold> = {
+  clouds: 'none',
+  smoke: 'smooth',
+  marble: 'sharp',
+};
+
+// Per-style remap of the raw fBm sum onto the 0..1 range the ramp expects:
+// value = clamp(raw * stretch + lift, 0, 1).
+// clouds: raw is ~-1..1, so 0.5/0.5 is exactly (raw + 1) / 2.
+// smoke:  abs² folding pools values low — a stretch above 1 spreads them.
+// marble: sqrt folding pools values high — a negative lift pulls them back.
+const STYLE_REMAP: Record<FractalNoiseStyle, { stretch: number; lift: number }> = {
+  clouds: { stretch: 0.5, lift: 0.5 },
+  smoke: { stretch: 1.6, lift: 0 },
+  marble: { stretch: 1.4, lift: -0.35 },
+};
+
+/**
+ * TEMPORARY (build-phase tuning only): dev overrides for the feel constants.
+ * Stripped — with landed values baked back in — at the defaults-tuning gate.
+ */
+export interface FractalNoiseTuning {
+  /** Lower end of the detail→gain range. Up = detail 0 stays layered. */
+  gainMin?: number;
+  /** Upper end of the detail→gain range. Up = detail 1 gets rougher. */
+  gainMax?: number;
+  /** Multiplier on the raw fBm sum for the active style. */
+  stretch?: number;
+  /** Offset added after the stretch. */
+  lift?: number;
+}
+
 export interface FractalNoiseShaderProps {
+  /**
+   * Texture character. 'clouds' is plain layered fBm; 'smoke' folds each
+   * layer into soft rounded billows; 'marble' folds sharper, leaving crisp
+   * bright veins.
+   */
+  style: FractalNoiseStyle;
   /**
    * Zoom of the noise field — roughly how many broad noise features span
    * the canvas; finer octaves layer detail on top. Accepts a static value
@@ -69,9 +123,15 @@ export interface FractalNoiseShaderProps {
   colorSpace: ColorSpace;
   /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
   hueInterpolation: HueInterpolation;
+  /**
+   * TEMPORARY dev-tuning overrides for feel constants. Stripped before
+   * release — do not use.
+   */
+  tuning?: FractalNoiseTuning;
 }
 
 export function FractalNoiseShader({
+  style,
   scale,
   speed,
   octaves,
@@ -80,6 +140,7 @@ export function FractalNoiseShader({
   seed,
   colorSpace,
   hueInterpolation,
+  tuning,
 }: FractalNoiseShaderProps) {
   const shaderContext = useShaderContext();
 
@@ -110,6 +171,29 @@ export function FractalNoiseShader({
   const seedVec = useMemo(() => new Vector2(0, 0), []);
   const seedUniform = useMemo(() => uniform(seedVec), [seedVec]);
 
+  // ---------------------------------------------
+  // Tuning (dev) — stripped at the defaults gate
+  // ---------------------------------------------
+  // Feel constants ride uniforms so the panel's tuning sliders glide without
+  // rebuilding the material.
+  const gainMinUniform = useMemo(() => uniform(GAIN_MIN), []);
+  const gainMaxUniform = useMemo(() => uniform(GAIN_MAX), []);
+  const stretchUniform = useMemo(() => uniform(STYLE_REMAP.smoke.stretch), []);
+  const liftUniform = useMemo(() => uniform(STYLE_REMAP.smoke.lift), []);
+
+  useEffect(() => {
+    const remap = STYLE_REMAP[style];
+    // Clouds' remap is exact math (the -1..1 → 0..1 rescale), not a feel
+    // constant — only the folded styles take stretch/lift overrides.
+    const isFolded = style !== 'clouds';
+
+    gainMinUniform.value = tuning?.gainMin ?? GAIN_MIN;
+    gainMaxUniform.value = tuning?.gainMax ?? GAIN_MAX;
+    stretchUniform.value = (isFolded ? tuning?.stretch : undefined) ?? remap.stretch;
+    liftUniform.value = (isFolded ? tuning?.lift : undefined) ?? remap.lift;
+    shaderContext?.scheduler.requestRender();
+  }, [shaderContext, gainMinUniform, gainMaxUniform, stretchUniform, liftUniform, style, tuning]);
+
   useEffect(() => {
     // Multiplying the seed by two unrelated constants (12.9898/78.233, a
     // classic shader-hashing pair) spreads consecutive seeds far apart in
@@ -124,9 +208,10 @@ export function FractalNoiseShader({
   // Build the material and mount the mesh
   // ---------------------------------------------
   // Runs once per mount — and again only when a structural input changes:
-  // octaves (the octave loop is unrolled into the compiled shader), or the
-  // stops / color space (colorRamp bakes the stop colors in as constants).
-  // Every dial above flows through uniforms without touching this effect.
+  // octaves (the octave loop is unrolled into the compiled shader), style
+  // (the fold choice is baked into each unrolled octave), or the stops /
+  // color space (colorRamp bakes the stop colors in as constants). Every
+  // dial above flows through uniforms without touching this effect.
   useEffect(
     () => {
       if (!shaderContext) return;
@@ -142,15 +227,25 @@ export function FractalNoiseShader({
 
       // detail rides a uniform; remap 0..1 onto the useful gain range in
       // TSL so the slider glides without rebuilding the material.
-      const gainNode = mix(float(GAIN_MIN), float(GAIN_MAX), detailUniform);
+      const gainNode = mix(gainMinUniform, gainMaxUniform, detailUniform);
 
       // Sum `octaves` layers of simplex noise. Layer i samples at twice the
       // frequency and pow(gain, i) times the amplitude of layer i-1, so
       // broad shapes carry fine grain on top — the layered look
-      // single-octave noise can't produce. Unfolded fBm returns roughly
-      // -1..1; (x + 1) / 2 rescales it to the 0..1 range the ramp expects.
-      const rawNoise = fractalNoise(samplePoint, { octaves, gain: gainNode, fold: 'none' });
-      const normalized = rawNoise.add(1).mul(0.5);
+      // single-octave noise can't produce. The style picks the per-octave
+      // fold: unfolded clouds come back roughly -1..1, folded smoke/marble
+      // roughly 0..1 (abs() leaves nothing negative).
+      const rawNoise = fractalNoise(samplePoint, {
+        octaves,
+        gain: gainNode,
+        fold: STYLE_FOLD[style],
+      });
+
+      // Remap the raw sum onto the 0..1 range the ramp expects. One formula
+      // covers every style — clouds' 0.5/0.5 is exactly (raw + 1) / 2, and
+      // the folded styles' stretch/lift recenters their clustered values
+      // (smoke pools low, marble pools high). The clamp catches overshoot.
+      const normalized = clamp(rawNoise.mul(stretchUniform).add(liftUniform), 0, 1);
 
       // Build the colorRamp stops from the ColorStop[] (auto-even positions when omitted).
       const rampStops = toColorRampStops(stops);
@@ -187,6 +282,11 @@ export function FractalNoiseShader({
       phaseUniform,
       detailUniform,
       seedUniform,
+      gainMinUniform,
+      gainMaxUniform,
+      stretchUniform,
+      liftUniform,
+      style,
       octaves,
       stopsKey,
       colorSpace,
