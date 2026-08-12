@@ -36,6 +36,7 @@ export default function BlobsScene({
         speed={params.speed}
         spread={params.spread}
         stops={stops}
+        tuning={params.tuning}
       />
       {children}
     </ShaderScene>

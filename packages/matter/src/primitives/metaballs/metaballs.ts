@@ -72,6 +72,26 @@ export interface MetaballsOptions {
   time?: TSLScalar;
   /** Re-rolls every per-blob random stream (paths, sizes, blend values). Default 0. */
   seed?: TSLScalar;
+  /** TEMPORARY (build-phase tuning only) — see MetaballsTuning. */
+  tuning?: MetaballsTuning;
+}
+
+/** TEMPORARY (build-phase tuning only): dev overrides for the feel
+ *  constants. Stripped — with landed values baked back into the named
+ *  constants — at the defaults-tuning gate. */
+export interface MetaballsTuning {
+  /** Distance at which a blob's influence reaches zero. */
+  fieldReach?: TSLScalar;
+  /** Falloff exponent at size 0. */
+  exponentMax?: TSLScalar;
+  /** How much of the exponent size 1 removes. */
+  exponentSpan?: TSLScalar;
+  /** Max roam distance from the origin at spread 1. */
+  roamExtent?: TSLScalar;
+  /** Floor of the per-blob roam-radius variation. */
+  minRoam?: TSLScalar;
+  /** Amplitude share of the double-frequency swing (slow gets 1 − this). */
+  fastWeight?: TSLScalar;
 }
 
 export interface MetaballsResult {
@@ -117,9 +137,8 @@ const ROAM_EXTENT = 0.35;
 // Floor of the per-blob roam-radius variation: every blob roams at least
 // this fraction of the full radius. Up = more uniform coverage.
 const MIN_ROAM = 0.4;
-// Amplitude split between the base-frequency swing and the double-frequency
-// swing riding on it. More FAST = jitterier, less orbital paths.
-const SLOW_WEIGHT = 0.65;
+// Amplitude share of the double-frequency swing riding on the base swing
+// (the base gets 1 − this). Up = jitterier, less orbital paths.
 const FAST_WEIGHT = 0.35;
 
 /**
@@ -145,6 +164,16 @@ export function metaballs(p: TSLNode, options: MetaballsOptions = {}): Metaballs
   const spread = clamp(float(options.spread ?? 0.5), 0, 1);
   const time = float(options.time ?? 0);
   const seed = float(options.seed ?? 0);
+
+  // TEMPORARY (build-phase tuning only): each feel constant resolves to a
+  // node so a dev rig can override it with a live uniform. Stripped at the
+  // defaults-tuning gate.
+  const fieldReach = float(options.tuning?.fieldReach ?? FIELD_REACH);
+  const exponentMax = float(options.tuning?.exponentMax ?? EXPONENT_MAX);
+  const exponentSpan = float(options.tuning?.exponentSpan ?? EXPONENT_SPAN);
+  const roamExtent = float(options.tuning?.roamExtent ?? ROAM_EXTENT);
+  const minRoam = float(options.tuning?.minRoam ?? MIN_ROAM);
+  const fastWeight = float(options.tuning?.fastWeight ?? FAST_WEIGHT);
 
   // Root of every per-blob stream: hashing the seed first (rather than
   // adding it to the blob index) means consecutive seeds re-roll every
@@ -182,22 +211,19 @@ export function metaballs(p: TSLNode, options: MetaballsOptions = {}): Metaballs
       // coherently. sin() has continuous velocity, so nothing ever stalls.
       const slowSwing = sin(add(time, slowPhase));
       const fastSwing = sin(add(time.mul(2), fastPhase));
-      const wander = add(slowSwing.mul(SLOW_WEIGHT), fastSwing.mul(FAST_WEIGHT));
+      const wander = add(slowSwing.mul(sub(1, fastWeight)), fastSwing.mul(fastWeight));
 
-      // Each blob roams its own fraction of the full radius (MIN_ROAM
+      // Each blob roams its own fraction of the full radius (minRoam
       // floors it so no blob just sits at the origin). roamHash stretches
       // per-axis, so paths are ellipses, not circles.
-      const roamRadius = roamHash
-        .mul(1 - MIN_ROAM)
-        .add(MIN_ROAM)
-        .mul(mul(spread, ROAM_EXTENT));
+      const roamRadius = roamHash.mul(sub(1, minRoam)).add(minRoam).mul(mul(spread, roamExtent));
       const blobPos = wander.mul(roamRadius).toVar();
 
       // The falloff bump: 1 at the blob's center, 0 once the pixel is
-      // FIELD_REACH away, shaped by a pow() whose exponent the size dial
+      // fieldReach away, shaped by a pow() whose exponent the size dial
       // controls — high exponent hugs the center (tiny blob), low exponent
       // spreads wide (big blob that merges eagerly).
-      const nearness = clamp(sub(1, length(sub(p, blobPos)).div(FIELD_REACH)), 0, 1);
+      const nearness = clamp(sub(1, length(sub(p, blobPos)).div(fieldReach)), 0, 1);
 
       // The last blob (only when count is fractional) contributes only
       // fract(count) of its bump, so an animated count fades it through
@@ -205,7 +231,7 @@ export function metaballs(p: TSLNode, options: MetaballsOptions = {}): Metaballs
       const partialFade = select(float(i).greaterThan(count.sub(1)), fract(count), float(1));
 
       const blobSize = size.mul(mix(float(1), sizeHash, sizeVariation));
-      const exponent = sub(EXPONENT_MAX, blobSize.mul(EXPONENT_SPAN));
+      const exponent = sub(exponentMax, blobSize.mul(exponentSpan));
       const shape = pow(nearness, exponent).mul(partialFade).toVar();
 
       fieldSum.addAssign(shape);
