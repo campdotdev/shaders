@@ -55,4 +55,17 @@ describe('fbm', () => {
   it.each([0, -1, 2.5, Number.NaN, Number.POSITIVE_INFINITY])('rejects octaves=%s', (octaves) => {
     expect(() => fractalNoise(uv(), { octaves })).toThrow(/octaves/);
   });
+
+  // A negative gain can cancel the normalizing amplitude sum to zero
+  // (gain -1 over 2 octaves: 1 + (-1) = 0), turning the final divide into
+  // NaN — so numeric gain must be a finite non-negative number.
+  it.each([-1, -0.5, Number.NaN, Number.POSITIVE_INFINITY])('rejects gain=%s', (gain) => {
+    expect(() => fractalNoise(uv(), { gain })).toThrow(/gain/);
+  });
+
+  it('accepts gain=0 (base octave only)', () => {
+    const noiseValue = fractalNoise(uv(), { gain: 0 });
+
+    expect(noiseValue).toBeDefined();
+  });
 });

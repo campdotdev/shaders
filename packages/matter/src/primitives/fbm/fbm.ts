@@ -1,4 +1,4 @@
-import { abs, add, float, mul, pow, sqrt } from 'three/tsl';
+import { abs, add, float, max, mul, pow, sqrt } from 'three/tsl';
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
@@ -19,9 +19,10 @@ export interface FractalNoiseOptions {
   /** Per-octave frequency multiplier. JS-side number. Default: 2. */
   lacunarity?: number;
   /**
-   * Per-octave amplitude multiplier. A plain number bakes into the shader;
-   * a TSL node (e.g. a uniform) keeps it live on the GPU so it can glide
-   * without a rebuild — amplitude becomes pow(gain, octaveIndex).
+   * Per-octave amplitude multiplier, non-negative. A plain number bakes into
+   * the shader; a TSL node (e.g. a uniform) keeps it live on the GPU so it
+   * can glide without a rebuild — amplitude becomes pow(gain, octaveIndex).
+   * Numbers below 0 throw; node values are clamped at 0 on the GPU.
    * Default: 0.5.
    */
   gain?: number | TSLNode;
@@ -93,6 +94,13 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
     throw new Error(`fractalNoise: octaves must be an integer >= 1, got ${String(octaves)}.`);
   }
 
+  // Gain must be non-negative: amplitudes are gain^i, and a negative gain
+  // alternates their signs, letting the normalizing sum cancel to zero
+  // (gain -1 over 2 octaves: 1 + (-1) = 0) and the final divide go NaN.
+  if (typeof gain === 'number' && (!Number.isFinite(gain) || gain < 0)) {
+    throw new Error(`fractalNoise: gain must be a finite number >= 0, got ${String(gain)}.`);
+  }
+
   if (typeof gain !== 'number') {
     // Node gain: the amplitude of octave i is gain^i, computed in TSL so a
     // uniform gain can change per frame without recompiling the shader.
@@ -105,11 +113,16 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
     let total: ShaderNodeObject<Node> = float(1);
     let frequency = 1;
 
+    // A node gain can't be validated at build time, so clamp it on the GPU:
+    // pow() of a negative base is NaN in WGSL/GLSL, and clamping keeps every
+    // amplitude >= 0 so the normalizing total stays >= 1 (never a zero divide).
+    const safeGain = max(gain, 0);
+
     for (let i = 1; i < octaves; i += 1) {
       frequency *= lacunarity;
       // pow(gain, i): gain rides in as an argument, not a chained receiver —
       // safe for any node (and scalar uniforms are safe either way).
-      const amplitude = pow(gain, i);
+      const amplitude = pow(safeGain, i);
 
       total = total.add(amplitude);
 
@@ -147,6 +160,9 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
     sum = sum.add(layer);
   }
 
-  // Normalize to approximate [-1..1] regardless of octave count / gain.
+  // Dividing by the summed amplitudes keeps the output range independent of
+  // octave count and gain. The range itself depends on the fold: roughly
+  // [-1..1] for 'none', roughly [0..1] for the folded modes (abs() leaves
+  // nothing negative to sum).
   return sum.div(total);
 }
