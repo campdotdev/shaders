@@ -245,6 +245,7 @@
       "uses_primitives": [
         "metaballs",
         "colorRamp",
+        "clamp",
         "fwidth",
         "smoothstep",
         "uniform",

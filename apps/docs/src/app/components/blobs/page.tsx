@@ -63,6 +63,10 @@ function BlobsControls() {
         <SliderInput label="Spread" max={1} min={0} path="spread" step={0.01} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
       </Section>
+      <Section title="Surface">
+        <SliderInput label="Softness" max={1} min={0} path="softness" step={0.01} />
+        <SliderInput label="Shading" max={1} min={0} path="shading" step={0.01} />
+      </Section>
       <Section title="Placement">
         <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />
         <SliderInput label="Center y" max={1} min={0} path="center.1" step={0.01} />

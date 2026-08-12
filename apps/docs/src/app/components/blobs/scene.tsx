@@ -31,8 +31,10 @@ export default function BlobsScene({
         count={params.count}
         hueInterpolation={params.hueInterpolation}
         seed={params.seed}
+        shading={params.shading}
         size={params.size}
         sizeVariation={params.sizeVariation}
+        softness={params.softness}
         speed={params.speed}
         spread={params.spread}
         stops={stops}

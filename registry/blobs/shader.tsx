@@ -18,7 +18,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { fwidth, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
+import { clamp, fwidth, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
@@ -30,6 +30,12 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color'
 // between two approaching blobs — that crossing IS the merge. Down =
 // fatter blobs that fuse sooner.
 const THRESHOLD = 0.4;
+// Extra edge feather at softness 1, in field units on top of the fwidth
+// anti-aliasing floor. Up = mistier blobs at full softness.
+const MAX_SOFTNESS = 0.35;
+// Scales how much field above the threshold counts as full depth for
+// shading. Up = cores hit the ramp's end nearer the edge.
+const DEPTH_RANGE = 1.5;
 
 /** TEMPORARY (build-phase tuning only): dev overrides for the feel
  *  constants, riding uniforms so the panel sliders glide. Stripped at the
@@ -82,6 +88,18 @@ export interface BlobsShaderProps {
    */
   spread: AnimatableProp<number>;
   /**
+   * Width of the goo edge. 0 is a crisp anti-aliased silhouette; 1 fades
+   * blobs out as soft mist. Accepts a static value or an animation signal.
+   */
+  softness: AnimatableProp<number>;
+  /**
+   * Depth inside the goo: slides colors along the ramp by field strength
+   * around each blob's own pick — toward the ramp's start at the edges and
+   * its end in the cores. 0 is flat. Accepts a static value or an
+   * animation signal.
+   */
+  shading: AnimatableProp<number>;
+  /**
    * Center of the roam region, 0..1 across the canvas; `[0.5, 0.5]` is the
    * canvas middle. Accepts a static value or an animation signal.
    */
@@ -110,6 +128,8 @@ export function BlobsShader({
   size,
   sizeVariation,
   spread,
+  softness,
+  shading,
   center,
   speed,
   seed,
@@ -135,6 +155,8 @@ export function BlobsShader({
   const sizeUniform = useAnimatableUniform<number>(size);
   const sizeVariationUniform = useAnimatableUniform<number>(sizeVariation);
   const spreadUniform = useAnimatableUniform<number>(spread);
+  const softnessUniform = useAnimatableUniform<number>(softness);
+  const shadingUniform = useAnimatableUniform<number>(shading);
   const phaseUniform = useAnimatableSpeed(speed);
 
   // The center tuple rides a Vector2 uniform (vignette's pattern), so a new
@@ -260,11 +282,13 @@ export function BlobsShader({
       // ---------------------------------------------
       // Silhouette: threshold the summed field
       // ---------------------------------------------
-      // The goo edge is where the field crosses THRESHOLD. fwidth() (a
+      // The goo edge is where the field crosses the threshold. fwidth() (a
       // screen-space derivative — how much the field changes across one
       // screen pixel) widens the step by exactly one pixel's worth, so the
-      // edge is crisp but never stair-stepped, at any zoom.
-      const band = fwidth(balls.field);
+      // edge is crisp but never stair-stepped, at any zoom. Softness adds a
+      // wider feather in FIELD units on top of that floor, fading each
+      // blob out along its own falloff — mist instead of gel.
+      const band = fwidth(balls.field).add(softnessUniform.mul(MAX_SOFTNESS));
       const mask = smoothstep(thresholdUniform.sub(band), thresholdUniform.add(band), balls.field);
 
       // ---------------------------------------------
@@ -273,12 +297,18 @@ export function BlobsShader({
       // blend is a weighted average of per-blob randoms, so inside one blob
       // it's that blob's constant pick, and across a merge seam it slides
       // between the two picks — the seam takes the ramp's in-between color.
-      const gooColor = colorRamp(
-        balls.blend,
-        toColorRampStops(stops),
-        colorSpace,
-        hueInterpolation,
-      );
+      //
+      // Shading slides each pixel ALONG the ramp around its own blob's
+      // pick, by how far the field sits above the threshold — depth that
+      // follows the goo's own shape. Centering (−0.5) holds the blob's
+      // base color at mid-depth: edges slide toward the ramp's start,
+      // cores toward its end. Offsetting the ramp INPUT (never
+      // crossfading toward a shared value) keeps every blob's identity at
+      // full shading — and every in-between color on the ramp itself.
+      const depth = clamp(balls.field.sub(thresholdUniform).mul(DEPTH_RANGE), 0, 1);
+      const rampInput = clamp(balls.blend.add(depth.sub(0.5).mul(shadingUniform)), 0, 1);
+
+      const gooColor = colorRamp(rampInput, toColorRampStops(stops), colorSpace, hueInterpolation);
 
       // Alpha carries the goo mask, so the space between blobs is
       // transparent and whatever rendered beneath this layer shows through.
@@ -315,6 +345,8 @@ export function BlobsShader({
       sizeUniform,
       sizeVariationUniform,
       spreadUniform,
+      softnessUniform,
+      shadingUniform,
       centerUniform,
       phaseUniform,
       seedUniform,

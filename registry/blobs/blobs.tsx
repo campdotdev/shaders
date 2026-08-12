@@ -29,22 +29,35 @@ export interface BlobsProps {
   count?: AnimatableProp<number>;
   /**
    * Base blob size. 0 is tight beads; 1 is fat blobs that merge from far
-   * apart. Defaults to 0.5. Accepts a static value or an animation signal.
+   * apart. Defaults to 0.6. Accepts a static value or an animation signal.
    */
   size?: AnimatableProp<number>;
   /**
    * How much blob sizes differ from each other. 0 renders every blob at
-   * `size`; 1 scatters them from near-zero to full size. Defaults to 0.3.
+   * `size`; 1 scatters them from near-zero to full size. Defaults to 0.5.
    * Accepts a static value or an animation signal.
    */
   sizeVariation?: AnimatableProp<number>;
   /**
    * How far blobs roam from `center`. 0 huddles them into one gooey mass;
    * 1 ranges them across the canvas so merges become occasional
-   * encounters. Defaults to 0.5. Accepts a static value or an animation
+   * encounters. Defaults to 0.8. Accepts a static value or an animation
    * signal.
    */
   spread?: AnimatableProp<number>;
+  /**
+   * Width of the goo edge. 0 is a crisp anti-aliased silhouette; 1 fades
+   * blobs out as soft mist. Defaults to 0. Accepts a static value or an
+   * animation signal.
+   */
+  softness?: AnimatableProp<number>;
+  /**
+   * Depth inside the goo: slides colors along the ramp by field strength
+   * around each blob's own pick — toward the ramp's start at the edges and
+   * its end in the cores. 0 is flat. Defaults to 0.3. Accepts a static
+   * value or an animation signal.
+   */
+  shading?: AnimatableProp<number>;
   /**
    * Center of the roam region, 0..1 across the canvas; `[0.5, 0.5]` is the
    * canvas middle. Defaults to `[0.5, 0.5]`. Accepts a static value or an
@@ -92,9 +105,11 @@ const DEFAULT_CENTER: readonly [number, number] = [0.5, 0.5];
 export function Blobs({
   stops = DEFAULT_STOPS,
   count = 6,
-  size = 0.5,
-  sizeVariation = 0.3,
-  spread = 0.5,
+  size = 0.6,
+  sizeVariation = 0.5,
+  spread = 0.8,
+  softness = 0,
+  shading = 0.3,
   center = DEFAULT_CENTER,
   speed = 0.2,
   seed = 0,
@@ -109,8 +124,10 @@ export function Blobs({
       count={count}
       hueInterpolation={hueInterpolation}
       seed={seed}
+      shading={shading}
       size={size}
       sizeVariation={sizeVariation}
+      softness={softness}
       speed={speed}
       spread={spread}
       stops={stops}
