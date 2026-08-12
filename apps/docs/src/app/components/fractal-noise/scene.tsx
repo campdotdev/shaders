@@ -28,6 +28,8 @@ export default function FractalNoiseScene({
         seed={params.seed}
         speed={params.speed}
         stops={stops}
+        style={params.style}
+        tuning={params.tuning}
       />
       {children}
     </ShaderScene>
