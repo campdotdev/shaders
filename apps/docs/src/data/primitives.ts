@@ -77,7 +77,7 @@ interface FractalNoiseOptions {
   gain?: number | TSLNode      // default 0.5; node = live uniform
   fold?: 'none' | 'smooth' | 'sharp'  // turbulence fold, default 'none'
 }`,
-    usedBy: ['aurora'],
+    usedBy: ['aurora', 'fractal-noise'],
     controls: [
       { name: 'scale', min: 0.5, max: 10, step: 0.1, default: 3 },
       { name: 'octaves', min: 1, max: 8, step: 1, default: 4 },
