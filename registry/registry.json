@@ -221,7 +221,16 @@
       "files": ["fractal-noise/shader.tsx", "utils/color.ts"],
       "description": "Layered fractal noise — multi-octave texture with a style dial from soft clouds to veined marble.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
-      "uses_primitives": ["fractalNoise", "colorRamp", "float", "mix", "uniform", "uv", "vec3"],
+      "uses_primitives": [
+        "fractalNoise",
+        "colorRamp",
+        "quantize",
+        "clamp",
+        "mix",
+        "uniform",
+        "uv",
+        "vec3"
+      ],
       "tier": 1
     }
   }

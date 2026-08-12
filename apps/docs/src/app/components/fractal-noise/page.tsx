@@ -72,6 +72,11 @@ function FractalNoiseControls() {
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
       </Section>
+      <Section title="Shape">
+        <SliderInput label="Contrast" max={5} min={0.2} path="contrast" step={0.05} />
+        <SliderInput label="Balance" max={1} min={0} path="balance" step={0.01} />
+        <SliderInput label="Softness" max={1} min={0} path="softness" step={0.01} />
+      </Section>
       <Section title="Mixing">
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
         <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />

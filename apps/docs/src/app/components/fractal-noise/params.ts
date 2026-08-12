@@ -21,6 +21,9 @@ export interface Params {
   speed: number;
   octaves: number;
   detail: number;
+  contrast: number;
+  balance: number;
+  softness: number;
   seed: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
@@ -39,6 +42,9 @@ export const INITIAL: Params = {
   speed: 0.2,
   octaves: 4,
   detail: 0.5,
+  contrast: 1,
+  balance: 0.5,
+  softness: 1,
   seed: 0,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',

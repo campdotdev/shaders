@@ -48,6 +48,26 @@ export interface FractalNoiseProps {
    */
   detail?: AnimatableProp<number>;
   /**
+   * Pushes noise values toward the ramp extremes. 1 is neutral; above 1
+   * leans into the first and last colors, below 1 pulls everything toward
+   * the middle stops. Defaults to 1. Accepts a static value or an
+   * animation signal.
+   */
+  contrast?: AnimatableProp<number>;
+  /**
+   * Shifts the whole pattern through the color ramp. 0.5 is neutral; below
+   * leans toward the first colors, above leans toward the last. In 2-color
+   * mode this reads as a dark/light balance. Defaults to 0.5. Accepts a
+   * static value or an animation signal.
+   */
+  balance?: AnimatableProp<number>;
+  /**
+   * Blends between posterized contour bands and a smooth gradient. 0 = hard
+   * bands (one per color stop); 1 = fully smooth. Defaults to 1. Accepts a
+   * static value or an animation signal.
+   */
+  softness?: AnimatableProp<number>;
+  /**
    * Static offset of the noise pattern. Change it for a different layout of
    * the same character. Defaults to 0.
    */
@@ -84,6 +104,9 @@ export function FractalNoise({
   speed = 0.2,
   octaves = 4,
   detail = 0.5,
+  contrast = 1,
+  balance = 0.5,
+  softness = 1,
   seed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
@@ -91,12 +114,15 @@ export function FractalNoise({
 }: FractalNoiseProps) {
   return (
     <FractalNoiseShader
+      balance={balance}
       colorSpace={colorSpace}
+      contrast={contrast}
       detail={detail}
       hueInterpolation={hueInterpolation}
       octaves={octaves}
       scale={scale}
       seed={seed}
+      softness={softness}
       speed={speed}
       stops={stops}
       style={style}
