@@ -46,4 +46,12 @@ describe('metaballs', () => {
   it('exposes the blob cap', () => {
     expect(MAX_BLOBS).toBe(20);
   });
+
+  it('accepts TEMPORARY tuning overrides as nodes', () => {
+    const balls = metaballs(uv(), {
+      tuning: { fieldReach: uniform(2), exponentMax: 45, fastWeight: uniform(0.35) },
+    });
+
+    expect(balls.field).toBeDefined();
+  });
 });

@@ -9,9 +9,10 @@ import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
-import { BlobsShader } from './shader';
+import { BlobsShader, type BlobsTuning } from './shader';
 
 export type { ColorStop } from '../utils/color';
+export type { BlobsTuning } from './shader';
 
 export interface BlobsProps {
   /**
@@ -67,6 +68,11 @@ export interface BlobsProps {
    * otherwise. Defaults to `'shorter'`.
    */
   hueInterpolation?: HueInterpolation;
+  /**
+   * TEMPORARY (build-phase tuning only): dev overrides for the feel
+   * constants. Stripped at the defaults-tuning gate — do not use.
+   */
+  tuning?: BlobsTuning;
 }
 
 // Deep-water palette (provisional until the defaults-tuning gate): stops
@@ -94,6 +100,7 @@ export function Blobs({
   seed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
+  tuning,
 }: BlobsProps) {
   return (
     <BlobsShader
@@ -107,6 +114,7 @@ export function Blobs({
       speed={speed}
       spread={spread}
       stops={stops}
+      tuning={tuning}
     />
   );
 }
