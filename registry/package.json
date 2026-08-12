@@ -18,7 +18,8 @@
     "./conic-gradient": "./conic-gradient/conic-gradient.tsx",
     "./dither": "./dither/dither.tsx",
     "./voronoi": "./voronoi/voronoi.tsx",
-    "./fractal-noise": "./fractal-noise/fractal-noise.tsx"
+    "./fractal-noise": "./fractal-noise/fractal-noise.tsx",
+    "./fractal-noise/style-dial-defaults": "./fractal-noise/style-dial-defaults.ts"
   },
   "scripts": {
     "lint": "eslint .",

@@ -1,5 +1,6 @@
 import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { FractalNoiseStyle } from '@matter/registry/fractal-noise';
+import { STYLE_DIAL_DEFAULTS } from '@matter/registry/fractal-noise/style-dial-defaults';
 
 import { paletteOklch } from '../../../lib/palette';
 
@@ -27,15 +28,16 @@ export const MAX_STOPS = 5;
 
 // Values mirror the component defaults in registry/fractal-noise/fractal-noise.tsx
 // for the initial style (clouds) — keep the two in sync. Contrast and balance
-// default per style there; the panel's StyleDialSync mirrors that on switch.
+// come straight from the component's per-style table; the panel's StyleDialSync
+// mirrors that on switch.
 export const INITIAL: Params = {
   style: 'clouds',
   scale: 3,
   speed: 0.2,
   octaves: 4,
   detail: 0.5,
-  contrast: 1.75,
-  balance: 0.52,
+  contrast: STYLE_DIAL_DEFAULTS.clouds.contrast,
+  balance: STYLE_DIAL_DEFAULTS.clouds.balance,
   softness: 1,
   seed: 0,
   colorSpace: 'oklab',

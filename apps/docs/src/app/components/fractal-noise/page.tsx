@@ -9,6 +9,7 @@ import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef } from 'react';
 
 import type { FractalNoiseStyle } from '@matter/registry/fractal-noise';
+import { STYLE_DIAL_DEFAULTS } from '@matter/registry/fractal-noise/style-dial-defaults';
 
 import {
   COLOR_SPACE_OPTIONS,
@@ -34,14 +35,6 @@ import { INITIAL, MAX_STOPS, MIN_STOPS, type Params, type PlainColorStop } from 
 const FractalNoiseScene = dynamic(() => import('./scene'), { ssr: false });
 
 const COPY_CONFIG = { componentName: 'FractalNoise' } as const;
-
-// Mirrors STYLE_DIAL_DEFAULTS in registry/fractal-noise/fractal-noise.tsx —
-// keep the two in sync.
-const STYLE_DIAL_DEFAULTS: Record<FractalNoiseStyle, { contrast: number; balance: number }> = {
-  clouds: { contrast: 1.75, balance: 0.52 },
-  smoke: { contrast: 1.75, balance: 0.52 },
-  veins: { contrast: 1, balance: 0.8 },
-};
 
 /**
  * Keeps the Contrast/Balance sliders in step with the component's per-style
