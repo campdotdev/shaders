@@ -6,7 +6,9 @@
  * (style folds, ramp shaping).
  */
 import dynamic from 'next/dynamic';
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
+
+import type { FractalNoiseStyle } from '@matter/registry/fractal-noise';
 
 import {
   COLOR_SPACE_OPTIONS,
@@ -20,6 +22,8 @@ import {
   Section,
   SelectInput,
   SliderInput,
+  usePropValue,
+  useSetProp,
   useSnapshot,
 } from '@/components/controls';
 import { DemoPoster } from '@/components/DemoPoster';
@@ -30,6 +34,39 @@ import { INITIAL, MAX_STOPS, MIN_STOPS, type Params, type PlainColorStop } from 
 const FractalNoiseScene = dynamic(() => import('./scene'), { ssr: false });
 
 const COPY_CONFIG = { componentName: 'FractalNoise' } as const;
+
+// Mirrors STYLE_DIAL_DEFAULTS in registry/fractal-noise/fractal-noise.tsx —
+// keep the two in sync.
+const STYLE_DIAL_DEFAULTS: Record<FractalNoiseStyle, { contrast: number; balance: number }> = {
+  clouds: { contrast: 1.75, balance: 0.52 },
+  smoke: { contrast: 1.75, balance: 0.52 },
+  marble: { contrast: 1, balance: 0.8 },
+};
+
+/**
+ * Keeps the Contrast/Balance sliders in step with the component's per-style
+ * defaults: switching Style writes that style's dial defaults into the store,
+ * so the panel shows what an uncontrolled <FractalNoise style="..."> renders.
+ * Subscribes to the style leaf only (writing a container path re-renders
+ * everything under it — see the demo-store gotcha in AGENTS.md).
+ */
+function StyleDialSync() {
+  const style = usePropValue<FractalNoiseStyle>('style');
+  const setProp = useSetProp();
+  const previousStyle = useRef(style);
+
+  useEffect(() => {
+    if (previousStyle.current === style) return;
+    previousStyle.current = style;
+
+    const dials = STYLE_DIAL_DEFAULTS[style];
+
+    setProp('contrast', dials.contrast);
+    setProp('balance', dials.balance);
+  }, [style, setProp]);
+
+  return null;
+}
 
 /** A new palette color clones the last one so the addition is visible. */
 const createStop = (stops: readonly PlainColorStop[]): PlainColorStop => {
@@ -100,6 +137,7 @@ export default function FractalNoisePage() {
 
   return (
     <ControlsProvider store={store}>
+      <StyleDialSync />
       <main style={{ minHeight: '100vh' }}>
         <DemoLayout controls={<FractalNoiseControls />}>
           <div data-shader-demo style={{ position: 'relative' }}>

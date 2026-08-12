@@ -50,15 +50,16 @@ export interface FractalNoiseProps {
   /**
    * Pushes noise values toward the ramp extremes. 1 is neutral; above 1
    * leans into the first and last colors, below 1 pulls everything toward
-   * the middle stops. Defaults to 1.75. Accepts a static value or an
-   * animation signal.
+   * the middle stops. Defaults to 1.75 for clouds and smoke, and to 1 for
+   * marble. Accepts a static value or an animation signal.
    */
   contrast?: AnimatableProp<number>;
   /**
    * Shifts the whole pattern through the color ramp. 0.5 is neutral; below
    * leans toward the first colors, above leans toward the last. In 2-color
-   * mode this reads as a dark/light balance. Defaults to 0.52. Accepts a
-   * static value or an animation signal.
+   * mode this reads as a dark/light balance. Defaults to 0.52 for clouds and
+   * smoke, and to 0.8 for marble. Accepts a static value or an animation
+   * signal.
    */
   balance?: AnimatableProp<number>;
   /**
@@ -81,6 +82,18 @@ export interface FractalNoiseProps {
   hueInterpolation?: HueInterpolation;
 }
 
+// Contrast and balance default per style — the only two dials whose best
+// values follow the texture character. Clouds and smoke read best anchored
+// near the ramp midpoint with contrast pushing toward the extremes; marble
+// reads best as a pale field with soft veins, which means low contrast and a
+// high balance that parks the field in the ramp's bright end. Explicit props
+// always win.
+const STYLE_DIAL_DEFAULTS: Record<FractalNoiseStyle, { contrast: number; balance: number }> = {
+  clouds: { contrast: 1.75, balance: 0.52 },
+  smoke: { contrast: 1.75, balance: 0.52 },
+  marble: { contrast: 1, balance: 0.8 },
+};
+
 // Twilight palette: stops walk the shared lightness ladder so each is at least
 // 0.10 lighter than the one before, creating depth that makes the ramp readable.
 const DEFAULT_STOPS: ColorStop[] = [
@@ -98,18 +111,24 @@ export function FractalNoise({
   speed = 0.2,
   octaves = 4,
   detail = 0.5,
-  contrast = 1.75,
-  balance = 0.52,
+  contrast,
+  balance,
   softness = 1,
   seed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
 }: FractalNoiseProps) {
+  // These two can't default inline like the rest: their defaults follow the
+  // style prop (see STYLE_DIAL_DEFAULTS above).
+  const styleDials = STYLE_DIAL_DEFAULTS[style];
+  const resolvedContrast = contrast ?? styleDials.contrast;
+  const resolvedBalance = balance ?? styleDials.balance;
+
   return (
     <FractalNoiseShader
-      balance={balance}
+      balance={resolvedBalance}
       colorSpace={colorSpace}
-      contrast={contrast}
+      contrast={resolvedContrast}
       detail={detail}
       hueInterpolation={hueInterpolation}
       octaves={octaves}
