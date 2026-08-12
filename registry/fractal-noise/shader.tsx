@@ -24,7 +24,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { clamp, mix, uniform, uv, vec3 } from 'three/tsl';
+import { clamp, float, mix, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
@@ -36,7 +36,7 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color'
 export type FractalNoiseStyle = 'clouds' | 'smoke' | 'marble';
 
 // ---------------------------------------------
-// Feel constants (provisional — tuned by eye at the build gates)
+// Feel constants (tuned by eye at the build's visual gates)
 // ---------------------------------------------
 // The detail prop (0..1) maps onto fBm gain — the per-octave amplitude
 // falloff — inside this range. Gain is what decides how loudly the finer
@@ -66,21 +66,6 @@ const STYLE_REMAP: Record<FractalNoiseStyle, { stretch: number; lift: number }> 
   smoke: { stretch: 1.6, lift: 0 },
   marble: { stretch: 1.4, lift: -0.35 },
 };
-
-/**
- * TEMPORARY (build-phase tuning only): dev overrides for the feel constants.
- * Stripped — with landed values baked back in — at the defaults-tuning gate.
- */
-export interface FractalNoiseTuning {
-  /** Lower end of the detail→gain range. Up = detail 0 stays layered. */
-  gainMin?: number;
-  /** Upper end of the detail→gain range. Up = detail 1 gets rougher. */
-  gainMax?: number;
-  /** Multiplier on the raw fBm sum for the active style. */
-  stretch?: number;
-  /** Offset added after the stretch. */
-  lift?: number;
-}
 
 export interface FractalNoiseShaderProps {
   /**
@@ -144,11 +129,6 @@ export interface FractalNoiseShaderProps {
   colorSpace: ColorSpace;
   /** Hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
   hueInterpolation: HueInterpolation;
-  /**
-   * TEMPORARY dev-tuning overrides for feel constants. Stripped before
-   * release — do not use.
-   */
-  tuning?: FractalNoiseTuning;
 }
 
 export function FractalNoiseShader({
@@ -164,7 +144,6 @@ export function FractalNoiseShader({
   seed,
   colorSpace,
   hueInterpolation,
-  tuning,
 }: FractalNoiseShaderProps) {
   const shaderContext = useShaderContext();
 
@@ -197,29 +176,6 @@ export function FractalNoiseShader({
   // the seed re-positions the pattern without recompiling the material.
   const seedVec = useMemo(() => new Vector2(0, 0), []);
   const seedUniform = useMemo(() => uniform(seedVec), [seedVec]);
-
-  // ---------------------------------------------
-  // Tuning (dev) — stripped at the defaults gate
-  // ---------------------------------------------
-  // Feel constants ride uniforms so the panel's tuning sliders glide without
-  // rebuilding the material.
-  const gainMinUniform = useMemo(() => uniform(GAIN_MIN), []);
-  const gainMaxUniform = useMemo(() => uniform(GAIN_MAX), []);
-  const stretchUniform = useMemo(() => uniform(STYLE_REMAP.smoke.stretch), []);
-  const liftUniform = useMemo(() => uniform(STYLE_REMAP.smoke.lift), []);
-
-  useEffect(() => {
-    const remap = STYLE_REMAP[style];
-    // Clouds' remap is exact math (the -1..1 → 0..1 rescale), not a feel
-    // constant — only the folded styles take stretch/lift overrides.
-    const isFolded = style !== 'clouds';
-
-    gainMinUniform.value = tuning?.gainMin ?? GAIN_MIN;
-    gainMaxUniform.value = tuning?.gainMax ?? GAIN_MAX;
-    stretchUniform.value = (isFolded ? tuning?.stretch : undefined) ?? remap.stretch;
-    liftUniform.value = (isFolded ? tuning?.lift : undefined) ?? remap.lift;
-    shaderContext?.scheduler.requestRender();
-  }, [shaderContext, gainMinUniform, gainMaxUniform, stretchUniform, liftUniform, style, tuning]);
 
   useEffect(() => {
     // Multiplying the seed by two unrelated constants (12.9898/78.233, a
@@ -254,7 +210,7 @@ export function FractalNoiseShader({
 
       // detail rides a uniform; remap 0..1 onto the useful gain range in
       // TSL so the slider glides without rebuilding the material.
-      const gainNode = mix(gainMinUniform, gainMaxUniform, detailUniform);
+      const gainNode = mix(float(GAIN_MIN), float(GAIN_MAX), detailUniform);
 
       // Sum `octaves` layers of simplex noise. Layer i samples at twice the
       // frequency and pow(gain, i) times the amplitude of layer i-1, so
@@ -272,7 +228,10 @@ export function FractalNoiseShader({
       // covers every style — clouds' 0.5/0.5 is exactly (raw + 1) / 2, and
       // the folded styles' stretch/lift recenters their clustered values
       // (smoke pools low, marble pools high). The clamp catches overshoot.
-      const normalized = clamp(rawNoise.mul(stretchUniform).add(liftUniform), 0, 1);
+      // Plain numbers, not uniforms: the remap pair is welded to the style,
+      // and a style change rebuilds the material anyway.
+      const { stretch, lift } = STYLE_REMAP[style];
+      const normalized = clamp(rawNoise.mul(stretch).add(lift), 0, 1);
 
       // Balance: shift the noise scalar earlier (<0.5) or later (>0.5) into the
       // color ramp. 0.5 is identity. In 2-color mode this reads as dark/light;
@@ -335,10 +294,6 @@ export function FractalNoiseShader({
       balanceUniform,
       softnessUniform,
       seedUniform,
-      gainMinUniform,
-      gainMaxUniform,
-      stretchUniform,
-      liftUniform,
       style,
       octaves,
       stopsKey,
