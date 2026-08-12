@@ -46,6 +46,9 @@ export type {
   VoronoiCellsResult,
 } from './primitives/voronoi/voronoi-cells.js';
 
+export { MAX_BLOBS, metaballs } from './primitives/metaballs/metaballs.js';
+export type { MetaballsOptions, MetaballsResult } from './primitives/metaballs/metaballs.js';
+
 export { quantize } from './primitives/quantize/quantize.js';
 
 export { signedDistanceFieldCircle } from './primitives/sdf-circle/sdf-circle.js';
