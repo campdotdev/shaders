@@ -215,6 +215,10 @@ export function BlobsShader({
 
       // Alpha carries the goo mask, so the space between blobs is
       // transparent and whatever rendered beneath this layer shows through.
+      // `transparent` opts the material into GPU alpha blending — without
+      // it three ignores fragment alpha and this quad would overwrite any
+      // layer stacked beneath it in the scene.
+      material.transparent = true;
       material.colorNode = vec4(gooColor, mask);
 
       const mesh = new Mesh(new PlaneGeometry(2, 2), material);
