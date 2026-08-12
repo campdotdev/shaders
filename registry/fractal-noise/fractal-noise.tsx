@@ -8,16 +8,16 @@ import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
-import { FractalNoiseShader, type FractalNoiseStyle, type FractalNoiseTuning } from './shader';
+import { FractalNoiseShader, type FractalNoiseStyle } from './shader';
 
 export type { ColorStop } from '../utils/color';
-export type { FractalNoiseStyle, FractalNoiseTuning } from './shader';
+export type { FractalNoiseStyle } from './shader';
 
 export interface FractalNoiseProps {
   /**
    * Texture character. 'clouds' is plain layered fBm; 'smoke' folds each
    * layer into soft rounded billows; 'marble' folds sharper, leaving crisp
-   * bright veins. Defaults to 'smoke'.
+   * bright veins. Defaults to 'clouds'.
    */
   style?: FractalNoiseStyle;
   /**
@@ -50,14 +50,14 @@ export interface FractalNoiseProps {
   /**
    * Pushes noise values toward the ramp extremes. 1 is neutral; above 1
    * leans into the first and last colors, below 1 pulls everything toward
-   * the middle stops. Defaults to 1. Accepts a static value or an
+   * the middle stops. Defaults to 1.75. Accepts a static value or an
    * animation signal.
    */
   contrast?: AnimatableProp<number>;
   /**
    * Shifts the whole pattern through the color ramp. 0.5 is neutral; below
    * leans toward the first colors, above leans toward the last. In 2-color
-   * mode this reads as a dark/light balance. Defaults to 0.5. Accepts a
+   * mode this reads as a dark/light balance. Defaults to 0.52. Accepts a
    * static value or an animation signal.
    */
   balance?: AnimatableProp<number>;
@@ -79,16 +79,10 @@ export interface FractalNoiseProps {
    * otherwise. Defaults to `'shorter'`.
    */
   hueInterpolation?: HueInterpolation;
-  /**
-   * TEMPORARY dev-tuning overrides for feel constants. Stripped before
-   * release — do not use.
-   */
-  tuning?: FractalNoiseTuning;
 }
 
 // Twilight palette: stops walk the shared lightness ladder so each is at least
 // 0.10 lighter than the one before, creating depth that makes the ramp readable.
-// Placeholder until the defaults-tuning gate — FractalNoise gets its own there.
 const DEFAULT_STOPS: ColorStop[] = [
   { color: 'oklch(0.196 0.025 235)' }, // paletteOklch.sky[1]
   { color: 'oklch(0.346 0.198 265.847)' }, // paletteOklch.blue[4]
@@ -98,19 +92,18 @@ const DEFAULT_STOPS: ColorStop[] = [
 ];
 
 export function FractalNoise({
-  style = 'smoke',
+  style = 'clouds',
   stops = DEFAULT_STOPS,
   scale = 3,
   speed = 0.2,
   octaves = 4,
   detail = 0.5,
-  contrast = 1,
-  balance = 0.5,
+  contrast = 1.75,
+  balance = 0.52,
   softness = 1,
   seed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
-  tuning,
 }: FractalNoiseProps) {
   return (
     <FractalNoiseShader
@@ -126,7 +119,6 @@ export function FractalNoise({
       speed={speed}
       stops={stops}
       style={style}
-      tuning={tuning}
     />
   );
 }

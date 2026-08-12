@@ -81,12 +81,6 @@ function FractalNoiseControls() {
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
         <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
       </Section>
-      <Section title="Tuning (dev)">
-        <SliderInput label="Gain min" max={0.6} min={0} path="tuning.gainMin" step={0.01} />
-        <SliderInput label="Gain max" max={1} min={0.4} path="tuning.gainMax" step={0.01} />
-        <SliderInput label="Stretch" max={3} min={0.2} path="tuning.stretch" step={0.01} />
-        <SliderInput label="Lift" max={0.6} min={-0.6} path="tuning.lift" step={0.01} />
-      </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
         itemLabel="color"
