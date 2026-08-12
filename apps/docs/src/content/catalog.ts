@@ -29,14 +29,18 @@ export const getComponentsCatalog = cache(async (): Promise<CatalogRecord[]> => 
   const raw = await readFile(REGISTRY_JSON, 'utf8');
   const data = parseRegistry(JSON.parse(raw), REGISTRY_JSON);
 
-  return Object.entries(data.components).map(([slug, info], index) => ({
-    url: `/components/${slug}`,
-    label: prettifySlug(slug),
-    description: info.description,
-    source: 'components' as const,
-    order: index * 10,
-    tags: [],
-  }));
+  // registry.json lists components in ship order; the catalog (sidebar,
+  // components index, search) presents them alphabetically.
+  return Object.entries(data.components)
+    .sort(([slugA], [slugB]) => slugA.localeCompare(slugB))
+    .map(([slug, info], index) => ({
+      url: `/components/${slug}`,
+      label: prettifySlug(slug),
+      description: info.description,
+      source: 'components' as const,
+      order: index * 10,
+      tags: [],
+    }));
 });
 
 // eslint-disable-next-line @typescript-eslint/require-await -- kept async for parity with getComponentsCatalog and to allow future async additions
