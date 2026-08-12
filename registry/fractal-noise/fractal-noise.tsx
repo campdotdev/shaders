@@ -16,8 +16,8 @@ export type { FractalNoiseStyle } from './shader';
 export interface FractalNoiseProps {
   /**
    * Texture character. 'clouds' is plain layered fBm; 'smoke' folds each
-   * layer into soft rounded billows; 'marble' folds sharper, leaving crisp
-   * bright veins. Defaults to 'clouds'.
+   * layer into soft rounded billows; 'veins' folds sharper, leaving a
+   * network of crisp bright creases. Defaults to 'clouds'.
    */
   style?: FractalNoiseStyle;
   /**
@@ -51,14 +51,14 @@ export interface FractalNoiseProps {
    * Pushes noise values toward the ramp extremes. 1 is neutral; above 1
    * leans into the first and last colors, below 1 pulls everything toward
    * the middle stops. Defaults to 1.75 for clouds and smoke, and to 1 for
-   * marble. Accepts a static value or an animation signal.
+   * veins. Accepts a static value or an animation signal.
    */
   contrast?: AnimatableProp<number>;
   /**
    * Shifts the whole pattern through the color ramp. 0.5 is neutral; below
    * leans toward the first colors, above leans toward the last. In 2-color
    * mode this reads as a dark/light balance. Defaults to 0.52 for clouds and
-   * smoke, and to 0.8 for marble. Accepts a static value or an animation
+   * smoke, and to 0.8 for veins. Accepts a static value or an animation
    * signal.
    */
   balance?: AnimatableProp<number>;
@@ -84,14 +84,14 @@ export interface FractalNoiseProps {
 
 // Contrast and balance default per style — the only two dials whose best
 // values follow the texture character. Clouds and smoke read best anchored
-// near the ramp midpoint with contrast pushing toward the extremes; marble
-// reads best as a pale field with soft veins, which means low contrast and a
-// high balance that parks the field in the ramp's bright end. Explicit props
-// always win.
+// near the ramp midpoint with contrast pushing toward the extremes; veins
+// reads best as a pale field with soft veining, which means low contrast and
+// a high balance that parks the field in the ramp's bright end. Explicit
+// props always win.
 const STYLE_DIAL_DEFAULTS: Record<FractalNoiseStyle, { contrast: number; balance: number }> = {
   clouds: { contrast: 1.75, balance: 0.52 },
   smoke: { contrast: 1.75, balance: 0.52 },
-  marble: { contrast: 1, balance: 0.8 },
+  veins: { contrast: 1, balance: 0.8 },
 };
 
 // Twilight palette: stops walk the shared lightness ladder so each is at least
