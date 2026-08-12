@@ -13,8 +13,14 @@ import { simplexNoise } from '../noise/noise.js';
  */
 export type FractalFold = 'none' | 'smooth' | 'sharp';
 
+// Upper bound on the octave count. Each octave unrolls another simplex
+// sample into the compiled shader, so cost grows with the count while the
+// added detail shrinks — past ~10 octaves it's sub-pixel at any realistic
+// scale. 12 leaves headroom over the FractalNoise component's 1-8 dial.
+const MAX_OCTAVES = 12;
+
 export interface FractalNoiseOptions {
-  /** Number of octaves to sum, an integer >= 1. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */
+  /** Number of octaves to sum, an integer from 1 to 12. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */
   octaves?: number;
   /** Per-octave frequency multiplier. JS-side number. Default: 2. */
   lacunarity?: number;
@@ -22,7 +28,8 @@ export interface FractalNoiseOptions {
    * Per-octave amplitude multiplier, non-negative. A plain number bakes into
    * the shader; a TSL node (e.g. a uniform) keeps it live on the GPU so it
    * can glide without a rebuild — amplitude becomes pow(gain, octaveIndex).
-   * Numbers below 0 throw; node values are clamped at 0 on the GPU.
+   * Numbers must be finite and non-negative (anything else throws); node
+   * values are clamped at 0 on the GPU.
    * Default: 0.5.
    */
   gain?: number | TSLNode;
@@ -88,15 +95,20 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
 
   // The octave loops below unroll in JavaScript at shader-build time, so a
   // bad count fails in ways TypeScript can't catch: Infinity spins the loop
-  // forever (tab hang), NaN and fractions mis-build silently. Fail loudly
-  // instead. Number.isInteger rejects all three in one check.
-  if (!Number.isInteger(octaves) || octaves < 1) {
-    throw new Error(`fractalNoise: octaves must be an integer >= 1, got ${String(octaves)}.`);
+  // forever (tab hang), NaN and fractions mis-build silently, and a huge
+  // finite count unrolls a pathologically large shader graph. Fail loudly
+  // instead: Number.isInteger rejects the first three in one check, and the
+  // MAX_OCTAVES cap catches the last.
+  if (!Number.isInteger(octaves) || octaves < 1 || octaves > MAX_OCTAVES) {
+    throw new Error(
+      `fractalNoise: octaves must be an integer between 1 and ${MAX_OCTAVES}, got ${String(octaves)}.`,
+    );
   }
 
   // Gain must be non-negative: amplitudes are gain^i, and a negative gain
   // alternates their signs, letting the normalizing sum cancel to zero
-  // (gain -1 over 2 octaves: 1 + (-1) = 0) and the final divide go NaN.
+  // (gain -1 over 2 octaves: 1 + (-1) = 0), which leaves the final divide
+  // non-finite or undefined depending on the backend.
   if (typeof gain === 'number' && (!Number.isFinite(gain) || gain < 0)) {
     throw new Error(`fractalNoise: gain must be a finite number >= 0, got ${String(gain)}.`);
   }

@@ -51,14 +51,25 @@ describe('fbm', () => {
   });
 
   // The octave loop unrolls in JavaScript at build time, so a bad count must
-  // throw instead of silently mis-building — or, for Infinity, hanging the tab.
-  it.each([0, -1, 2.5, Number.NaN, Number.POSITIVE_INFINITY])('rejects octaves=%s', (octaves) => {
-    expect(() => fractalNoise(uv(), { octaves })).toThrow(/octaves/);
+  // throw instead of silently mis-building — or, for Infinity and huge finite
+  // counts (which unroll an enormous shader graph), hanging the tab.
+  it.each([0, -1, 2.5, Number.NaN, Number.POSITIVE_INFINITY, 13, 1000])(
+    'rejects octaves=%s',
+    (octaves) => {
+      expect(() => fractalNoise(uv(), { octaves })).toThrow(/octaves/);
+    },
+  );
+
+  it('accepts octaves at the documented maximum of 12', () => {
+    const noiseValue = fractalNoise(uv(), { octaves: 12 });
+
+    expect(noiseValue).toBeDefined();
   });
 
   // A negative gain can cancel the normalizing amplitude sum to zero
-  // (gain -1 over 2 octaves: 1 + (-1) = 0), turning the final divide into
-  // NaN — so numeric gain must be a finite non-negative number.
+  // (gain -1 over 2 octaves: 1 + (-1) = 0), leaving the final divide
+  // non-finite or undefined — so numeric gain must be a finite
+  // non-negative number.
   it.each([-1, -0.5, Number.NaN, Number.POSITIVE_INFINITY])('rejects gain=%s', (gain) => {
     expect(() => fractalNoise(uv(), { gain })).toThrow(/gain/);
   });
