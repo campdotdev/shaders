@@ -63,8 +63,8 @@ const STYLE_FOLD: Record<FractalNoiseStyle, FractalFold> = {
 // marble: sqrt folding pools values high — a negative lift pulls them back.
 const STYLE_REMAP: Record<FractalNoiseStyle, { stretch: number; lift: number }> = {
   clouds: { stretch: 0.5, lift: 0.5 },
-  smoke: { stretch: 1.6, lift: 0 },
-  marble: { stretch: 1.4, lift: -0.35 },
+  smoke: { stretch: 1.6, lift: 0.18 },
+  marble: { stretch: 1.4, lift: -0.28 },
 };
 
 export interface FractalNoiseShaderProps {

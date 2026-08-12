@@ -25,8 +25,9 @@ export interface Params {
 export const MIN_STOPS = 2;
 export const MAX_STOPS = 5;
 
-// Values mirror the component defaults in registry/fractal-noise/fractal-noise.tsx —
-// keep the two in sync.
+// Values mirror the component defaults in registry/fractal-noise/fractal-noise.tsx
+// for the initial style (clouds) — keep the two in sync. Contrast and balance
+// default per style there; the panel's StyleDialSync mirrors that on switch.
 export const INITIAL: Params = {
   style: 'clouds',
   scale: 3,
