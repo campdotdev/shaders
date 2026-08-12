@@ -21,4 +21,18 @@ describe('fbm', () => {
 
     expect(noiseValue).toBeDefined();
   });
+
+  it.each(['none', 'smooth', 'sharp'] as const)('builds with fold=%s', (fold) => {
+    const noiseValue = fractalNoise(uv(), { fold });
+
+    expect(noiseValue).toBeDefined();
+    // Chainable — consumers immediately .add()/.mul() the result.
+    expect(typeof noiseValue.mul).toBe('function');
+  });
+
+  it('builds with fold and a single octave', () => {
+    const noiseValue = fractalNoise(uv(), { octaves: 1, fold: 'sharp' });
+
+    expect(noiseValue).toBeDefined();
+  });
 });

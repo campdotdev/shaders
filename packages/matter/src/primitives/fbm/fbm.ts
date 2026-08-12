@@ -1,9 +1,17 @@
-import { add, mul } from 'three/tsl';
+import { abs, add, mul, sqrt } from 'three/tsl';
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
 import { simplexNoise } from '../noise/noise.js';
+
+/**
+ * Per-octave turbulence fold, applied before summing.
+ * - `'none'`   — raw signed simplex, range ≈ -1..1.
+ * - `'smooth'` — abs(n)², soft rounded billows, range ≈ 0..1.
+ * - `'sharp'`  — sqrt(abs(n)), crisp bright creases, range ≈ 0..1.
+ */
+export type FractalFold = 'none' | 'smooth' | 'sharp';
 
 export interface FractalNoiseOptions {
   /** Number of octaves to sum. JS-side number — fixed at TSL build time, not a uniform. Default: 4. */
@@ -12,6 +20,29 @@ export interface FractalNoiseOptions {
   lacunarity?: number;
   /** Per-octave amplitude multiplier. JS-side number. Default: 0.5. */
   gain?: number;
+  /**
+   * Turbulence fold applied to each octave before summing. Changes the
+   * output range — see {@link FractalFold}. Default: 'none'.
+   */
+  fold?: FractalFold;
+}
+
+/**
+ * Applies the turbulence fold to one octave of signed noise. `abs()`
+ * reflects the negative half of the noise upward, creating a crease along
+ * every zero crossing; squaring rounds those creases into soft billows,
+ * while `sqrt()` steepens values near zero so the creases read as thin
+ * bright veins — the classic "turbulence" look.
+ */
+function foldOctave(n: ShaderNodeObject<Node>, fold: FractalFold): ShaderNodeObject<Node> {
+  if (fold === 'smooth') {
+    const magnitude = abs(n);
+    return magnitude.mul(magnitude);
+  }
+  if (fold === 'sharp') {
+    return sqrt(abs(n));
+  }
+  return n;
 }
 
 /**
@@ -34,15 +65,18 @@ export interface FractalNoiseOptions {
  * Returns `ShaderNodeObject<Node>` (chainable) for cast-free call sites.
  *
  * @param p — Vec2 or Vec3 TSL node (UV-space position).
- * @returns scalar TSL node, normalized to roughly [-1..1] regardless of
- *          octave count thanks to the amplitude-sum division at the end.
+ * @returns scalar TSL node, normalized by the amplitude sum regardless of
+ *          octave count: roughly [-1..1] with `fold: 'none'`, roughly
+ *          [0..1] with the folded modes (folding runs each octave through
+ *          `abs()`, so nothing negative survives).
  */
 export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): ShaderNodeObject<Node> {
   const octaves = opts.octaves ?? 4;
   const lacunarity = opts.lacunarity ?? 2;
   const gain = opts.gain ?? 0.5;
+  const fold = opts.fold ?? 'none';
 
-  let sum: ShaderNodeObject<Node> = simplexNoise(p);
+  let sum: ShaderNodeObject<Node> = foldOctave(simplexNoise(p), fold);
   let amplitude = 1;
   let frequency = 1;
   let total = amplitude;
@@ -62,7 +96,7 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
     // gotcha doesn't apply because `p` is uv-rooted, but the TSLNode union
     // still requires functional form on this hop.
     const pAtFreq = add(mul(p, frequency), i * 100);
-    const layer = simplexNoise(pAtFreq).mul(amplitude);
+    const layer = foldOctave(simplexNoise(pAtFreq), fold).mul(amplitude);
 
     sum = sum.add(layer);
   }
