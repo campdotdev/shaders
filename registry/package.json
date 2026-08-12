@@ -19,7 +19,8 @@
     "./dither": "./dither/dither.tsx",
     "./voronoi": "./voronoi/voronoi.tsx",
     "./fractal-noise": "./fractal-noise/fractal-noise.tsx",
-    "./fractal-noise/style-dial-defaults": "./fractal-noise/style-dial-defaults.ts"
+    "./fractal-noise/style-dial-defaults": "./fractal-noise/style-dial-defaults.ts",
+    "./blobs": "./blobs/blobs.tsx"
   },
   "scripts": {
     "lint": "eslint .",

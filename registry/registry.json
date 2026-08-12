@@ -196,7 +196,7 @@
     "voronoi": {
       "file": "voronoi/voronoi.tsx",
       "files": ["voronoi/shader.tsx", "utils/color.ts"],
-      "description": "Cellular mosaic — flat color patches around drifting seed points, with crisp constant-width borders.",
+      "description": "Cellular mosaic \u2014 flat color patches around drifting seed points, with crisp constant-width borders.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "voronoiCells",
@@ -223,7 +223,7 @@
         "fractal-noise/style-dial-defaults.ts",
         "utils/color.ts"
       ],
-      "description": "Layered fractal noise — multi-octave texture with a style dial from soft clouds to crisp vein networks.",
+      "description": "Layered fractal noise \u2014 multi-octave texture with a style dial from soft clouds to crisp vein networks.",
       "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
       "uses_primitives": [
         "fractalNoise",
@@ -234,6 +234,25 @@
         "uniform",
         "uv",
         "vec3"
+      ],
+      "tier": 1
+    },
+    "blobs": {
+      "file": "blobs/blobs.tsx",
+      "files": ["blobs/shader.tsx", "utils/color.ts"],
+      "description": "Soft gooey blobs \u2014 colored metaballs drifting around the center, merging and splitting over a transparent background.",
+      "dependencies": ["@lovo/matter", "@lovo/matter-react", "react", "three"],
+      "uses_primitives": [
+        "metaballs",
+        "colorRamp",
+        "add",
+        "fwidth",
+        "smoothstep",
+        "sub",
+        "uniform",
+        "uv",
+        "vec2",
+        "vec4"
       ],
       "tier": 1
     }
