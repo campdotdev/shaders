@@ -103,7 +103,19 @@ export interface ScreenshotOpts {
 
 export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes: number }> {
   const playwright = await resolvePlaywright(opts.projectRoot);
-  const browser = await playwright.chromium.launch({ headless: true });
+
+  // Real browsers render Matter on WebGPU, but headless Chromium silently
+  // falls back to WebGL2 unless WebGPU is requested explicitly — and
+  // hash-driven shaders (voronoi, blobs) lay out DIFFERENTLY per backend,
+  // so a fallback capture produces a poster that never matches what the
+  // live shader shows. On macOS the GPU path additionally needs ANGLE's
+  // Metal backend. Where WebGPU still can't initialize, Chromium falls
+  // back to WebGL2 exactly as before, so these flags are safe everywhere.
+  const webgpuArgs = ['--enable-unsafe-webgpu', '--enable-features=WebGPU'];
+
+  if (process.platform === 'darwin') webgpuArgs.push('--use-angle=metal');
+
+  const browser = await playwright.chromium.launch({ headless: true, args: webgpuArgs });
 
   try {
     const browserContext = await browser.newContext({
