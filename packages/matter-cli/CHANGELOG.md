@@ -1,5 +1,15 @@
 # @lovo/matter-cli
 
+## 3.8.0
+
+### Minor Changes
+
+- 5086b6c: Add Blobs: soft gooey metaballs that drift around the center, merging and splitting as they meet. Up to 20 blobs with per-blob size variation, a fractional animatable count, softness from crisp gel to mist, depth shading along the color ramp, and a transparent background so the goo stacks over any other layer. Install with `matter add blobs`.
+
+### Patch Changes
+
+- 680baef: Capture posters on the WebGPU backend. Headless Chromium silently fell back to WebGL2, and hash-driven shaders lay out differently per backend, so posters for components like Voronoi and Blobs never matched what the live shader shows. The poster command now launches Chromium with WebGPU enabled (ANGLE Metal on macOS), falling back to WebGL2 only where WebGPU genuinely can't initialize.
+
 ## 3.7.0
 
 ### Minor Changes
