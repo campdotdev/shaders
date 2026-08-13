@@ -245,9 +245,11 @@
       "uses_primitives": [
         "metaballs",
         "colorRamp",
+        "add",
         "clamp",
         "fwidth",
         "smoothstep",
+        "sub",
         "uniform",
         "uv",
         "vec2",
