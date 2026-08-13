@@ -1,6 +1,6 @@
 {
   "name": "@lovo/matter-cli",
-  "version": "3.7.0",
+  "version": "3.8.0",
   "description": "CLI for Matter — copy-paste components from the registry into your project.",
   "keywords": [
     "cli",
