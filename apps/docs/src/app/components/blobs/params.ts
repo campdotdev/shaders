@@ -27,7 +27,7 @@ export const MAX_STOPS = 5;
 // Values mirror the component defaults in registry/blobs/blobs.tsx — keep
 // the two in sync.
 export const INITIAL: Params = {
-  count: 6,
+  count: 8,
   size: 0.6,
   sizeVariation: 0.5,
   spread: 0.8,
