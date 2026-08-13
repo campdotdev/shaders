@@ -89,10 +89,12 @@ export interface BlobsProps {
 }
 
 // Deep-water palette (provisional until the defaults-tuning gate): stops
-// walk the shared lightness ladder (each ≥0.10 L above the one before) so
-// neighboring blobs read as depth, not hue soup.
+// walk a lightness ladder (dark navy up to bright purple) so neighboring
+// blobs read as depth, not hue soup. The darkest stop sits at blue's
+// near-max chroma for its lightness — dark hues can't hold much more and
+// stay inside P3.
 const DEFAULT_STOPS: ColorStop[] = [
-  { color: 'oklch(0.196 0.025 235)' }, // paletteOklch.sky[1]
+  { color: 'oklch(0.255 0.108 265.847)' }, // paletteOklch.blue[2]
   { color: 'oklch(0.346 0.198 265.847)' }, // paletteOklch.blue[4]
   { color: 'oklch(0.460 0.248 293.328)' }, // paletteOklch.violet[6]
   { color: 'oklch(0.720 0.250 320)' }, // paletteOklch.purple[9]
