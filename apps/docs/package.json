@@ -17,6 +17,7 @@
     "@lovo/matter": "workspace:*",
     "@lovo/matter-react": "workspace:*",
     "@matter/registry": "workspace:*",
+    "@xyflow/react": "^12.11.2",
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
     "mdast-util-to-string": "^4.0.0",
