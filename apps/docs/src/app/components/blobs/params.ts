@@ -52,7 +52,7 @@ export const INITIAL: Params = {
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   stops: [
-    { color: paletteOklch.sky[1] },
+    { color: paletteOklch.blue[2] },
     { color: paletteOklch.blue[4] },
     { color: paletteOklch.violet[6] },
     { color: paletteOklch.purple[9] },
