@@ -17,11 +17,11 @@ When a component fades red into blue, something has to decide what sits in the m
 - **`linear`** blends raw light, which is what two overlapping beams physically do. Its midpoints land brighter than the eye expects: perceived lightness runs roughly as the cube root of luminance, so a black-to-white linear ramp is already past mid-grey about a fifth of the way along and spends the rest washed out. Blended black to white, `linear` puts sRGB 0.74 in the middle where `oklab` puts 0.39.
 - **`oklch`**, **`lch`**, **`hsl`**, **`hsv`** are cylindrical: they store hue as an angle, so blending travels *around* a wheel rather than straight across. Red to blue through oklch passes through magenta; through oklab it passes through grey-purple.
 
-Eight components take it, all defaulting to `oklab`:
+Nine components take it, all defaulting to `oklab`:
 
 | Takes `colorSpace` | Doesn't |
 | --- | --- |
-| `<Aurora>`, `<FractalNoise>`, `<LinearGradient>`, `<MeshGradient>`, `<SimplexNoise>`, `<Vignette>`, `<Voronoi>`, `<WaveLines>` | `<DotField>`, `<Grain>` |
+| `<Aurora>`, `<Blobs>`, `<FractalNoise>`, `<LinearGradient>`, `<MeshGradient>`, `<SimplexNoise>`, `<Vignette>`, `<Voronoi>`, `<WaveLines>` | `<DotField>`, `<Grain>` |
 
 The two without it never blend two colors — there is no midpoint to compute, so the prop would be inert. Adding it for symmetry would be a prop that does nothing.
 
@@ -29,7 +29,7 @@ The two without it never blend two colors — there is no midpoint to compute, s
 
 Cylindrical spaces have a second question: which way around the wheel? `hueInterpolation` takes the CSS Color 4 keywords — `shorter` (default), `longer`, `increasing`, `decreasing`. The first two pick an arc by length; the last two pick by direction, which is what keeps a multi-stop ramp marching one way instead of doubling back.
 
-It's on `<Aurora>`, `<FractalNoise>`, `<LinearGradient>`, `<MeshGradient>`, `<SimplexNoise>`, `<Vignette>`, and `<Voronoi>`. `<WaveLines>` takes `colorSpace` but not this one, so its gradients use the default arc.
+It's on `<Aurora>`, `<Blobs>`, `<FractalNoise>`, `<LinearGradient>`, `<MeshGradient>`, `<SimplexNoise>`, `<Vignette>`, and `<Voronoi>`. `<WaveLines>` takes `colorSpace` but not this one, so its gradients use the default arc.
 
 Rectangular spaces (`linear`, `oklab`) ignore it entirely.
 
