@@ -42,6 +42,15 @@ export interface GraphEdge {
  */
 const DRIVER_DECORRELATE = [5.2, 1.3] as const;
 
+/**
+ * Warp emits its driver subtree TWICE (once per decorrelated tap), so warps
+ * chained through the `by` port double the emitted expression tree at every
+ * level — 2^n growth. Past this nesting depth a warp ignores its driver and
+ * passes its source through, so a playful wire-up degrades gracefully instead
+ * of freezing the tab on shader compile.
+ */
+const MAX_WARP_DRIVER_DEPTH = 4;
+
 /** Demo palette: deep indigo through violet to pink, mixed in oklab. */
 const RAMP_HEX = ['#1B2A6B', '#7C3AED', '#F472B6'];
 
@@ -88,6 +97,11 @@ export function compileOutputColor(
   // forever.
   const visiting = new Set<string>();
 
+  // How many warp drivers the walk is currently inside — the depth that
+  // MAX_WARP_DRIVER_DEPTH caps. Source chains stay uncounted: they emit once
+  // per level, so they're linear and safe at any depth.
+  let warpDriverDepth = 0;
+
   function compileField(node: GraphNode | null): FieldFn {
     if (node === null || visiting.has(node.id)) return () => float(0.5);
     visiting.add(node.id);
@@ -125,9 +139,12 @@ export function compileOutputColor(
           const source = compileField(upstreamOf(node.id, 'source'));
           const driverNode = upstreamOf(node.id, 'by');
 
-          if (driverNode === null) return source;
+          if (driverNode === null || warpDriverDepth >= MAX_WARP_DRIVER_DEPTH) return source;
 
+          warpDriverDepth += 1;
           const driver = compileField(driverNode);
+
+          warpDriverDepth -= 1;
           const amount = dial(node, 'amount');
 
           return (samplePoint) => {

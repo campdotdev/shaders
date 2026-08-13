@@ -4,6 +4,8 @@
 // them). The Output card is the exception: its face is a live ShaderScene
 // showing the compiled result, because seeing the result is Output's entire
 // job.
+import type { CSSProperties } from 'react';
+
 import { Handle, Position, useConnection, useReactFlow } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 
@@ -107,7 +109,7 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
     handleKind: 'target' | 'source',
     portType: PortType,
     handleId: string,
-  ): React.CSSProperties => {
+  ): CSSProperties => {
     if (liveDrag === null) return {};
 
     // The handle the drag started from keeps its normal look.

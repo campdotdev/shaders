@@ -58,8 +58,15 @@ const initialNodes: CardNodeType[] = [
   makeNode('output-1', 'output', 720, 120),
 ];
 
-/** Styles an edge with its port type's tint so wires read as typed at a glance. */
-function typedEdge(edge: Omit<Edge, 'style'>, type: PortType): Edge {
+/**
+ * Styles an edge with its port type's tint so wires read as typed at a glance.
+ * Generic so it takes both full edges (the demo set) and id-less connections
+ * (live connects — addEdge generates the id).
+ */
+function typedEdge<EdgeLike extends Omit<Edge, 'id' | 'style'>>(
+  edge: EdgeLike,
+  type: PortType,
+): EdgeLike & Pick<Edge, 'style'> {
   return { ...edge, style: { stroke: PORT_COLORS[type], strokeWidth: 1.7 } };
 }
 
@@ -131,10 +138,7 @@ export default function Editor() {
       // compiler would ignore. Combining fields is Blend's job, never implicit.
       setEdges((current) =>
         addEdge(
-          {
-            ...connection,
-            style: { stroke: PORT_COLORS[sourceType ?? 'field'], strokeWidth: 1.7 },
-          },
+          typedEdge(connection, sourceType ?? 'field'),
           current.filter(
             (edge) =>
               !(edge.target === connection.target && edge.targetHandle === connection.targetHandle),
