@@ -5,7 +5,7 @@
 // add-node toolbar, and the shared ParamStore that lets sliders write to the
 // GPU without recompiling. Ships prewired with the demo graph — gradient
 // warped by noise, colorized, into Output — so there's something to edit.
-import { useCallback, useMemo, useRef } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
   addEdge,
@@ -23,6 +23,8 @@ import '@xyflow/react/dist/style.css';
 
 import { CardNode } from './CardNode';
 import type { CardNodeType } from './CardNode';
+import { DEMO_EDGES, DEMO_NODES } from './demo-graph';
+import { emitComponentSource } from './emit';
 import { EditorGraphContext, structuralKeyOf } from './graph-context';
 import { ParamStore } from './param-store';
 import { defaultParamsOf, NODE_SPECS, PORT_COLORS } from './registry';
@@ -50,13 +52,9 @@ function makeNode(id: string, spec: SpecId, x: number, y: number): CardNodeType 
   return { id, type: 'card', position: { x, y }, data: { spec, params: defaultParamsOf(spec) } };
 }
 
-const initialNodes: CardNodeType[] = [
-  makeNode('gradient-1', 'gradient', 30, 60),
-  makeNode('noise-1', 'noise', 30, 300),
-  makeNode('warp-1', 'warp', 270, 170),
-  makeNode('ramp-1', 'colorRamp', 500, 165),
-  makeNode('output-1', 'output', 720, 120),
-];
+const initialNodes: CardNodeType[] = DEMO_NODES.map(({ id, spec, x, y }) =>
+  makeNode(id, spec, x, y),
+);
 
 /**
  * Styles an edge with its port type's tint so wires read as typed at a glance.
@@ -70,21 +68,13 @@ function typedEdge<EdgeLike extends Omit<Edge, 'id' | 'style'>>(
   return { ...edge, style: { stroke: PORT_COLORS[type], strokeWidth: 1.7 } };
 }
 
-const initialEdges: Edge[] = [
-  typedEdge(
-    { id: 'e-gradient-warp', source: 'gradient-1', target: 'warp-1', targetHandle: 'source' },
-    'field',
-  ),
-  typedEdge(
-    { id: 'e-noise-warp', source: 'noise-1', target: 'warp-1', targetHandle: 'by' },
-    'field',
-  ),
-  typedEdge({ id: 'e-warp-ramp', source: 'warp-1', target: 'ramp-1', targetHandle: 'in' }, 'field'),
-  typedEdge(
-    { id: 'e-ramp-output', source: 'ramp-1', target: 'output-1', targetHandle: 'in' },
-    'color',
-  ),
-];
+// Wire tints derive from the source node's output type, same as live connects.
+const initialEdges: Edge[] = DEMO_EDGES.map((edge, index) => {
+  const sourceNode = DEMO_NODES.find((candidate) => candidate.id === edge.source);
+  const tint = sourceNode ? (NODE_SPECS[sourceNode.spec].output ?? 'field') : 'field';
+
+  return typedEdge({ id: `demo-${index}`, ...edge }, tint);
+});
 
 // ---------------------------------------------------------------------------
 // Port typing helpers — look a handle's type up from the node's spec so wires
@@ -113,6 +103,7 @@ function inputTypeOf(
 export default function Editor() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [showCode, setShowCode] = useState(false);
 
   // One store for the whole canvas, surviving every material rebuild — the
   // uniforms inside it are what make slider drags free.
@@ -246,6 +237,18 @@ export default function Editor() {
     [graphNodes, graphEdges, paramStore],
   );
 
+  // The eject-to-code panel: same walk as the runtime compiler, but emitting
+  // source text. Regenerated on any graph or param change while open, so the
+  // code always mirrors what the Output card is rendering.
+  const generatedSource = useMemo(() => {
+    if (!showCode) return '';
+    const outputNode = graphNodes.find((candidate) => candidate.spec === 'output');
+
+    return outputNode
+      ? emitComponentSource(graphNodes, graphEdges, outputNode.id)
+      : '// Add an Output node to generate code.';
+  }, [showCode, graphNodes, graphEdges]);
+
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#16151d' }}>
       {/* Wire state styling: hover thickens a wire so it reads as grabbable;
@@ -280,6 +283,85 @@ export default function Editor() {
         >
           <Background color="#2c2a38" gap={22} size={1.5} variant={BackgroundVariant.Dots} />
           <Controls />
+          <Panel position="top-right">
+            <div
+              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}
+            >
+              <button
+                onClick={() => setShowCode((current) => !current)}
+                style={{
+                  padding: '6px 12px',
+                  background: '#1e1d27',
+                  border: '1px solid #2c2a38',
+                  borderRadius: 7,
+                  color: '#e8e6f2',
+                  font: '500 11.5px/1 ui-monospace, SF Mono, Menlo, monospace',
+                  cursor: 'pointer',
+                }}
+                type="button"
+              >
+                {showCode ? 'hide code' : 'view code'}
+              </button>
+              {showCode && (
+                <div
+                  style={{
+                    width: 460,
+                    maxHeight: '72vh',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    background: '#16151df2',
+                    border: '1px solid #2c2a38',
+                    borderRadius: 9,
+                    overflow: 'hidden',
+                  }}
+                >
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      padding: '8px 12px',
+                      borderBottom: '1px solid #2c2a38',
+                      font: '600 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
+                      letterSpacing: '0.08em',
+                      textTransform: 'uppercase',
+                      color: '#8b88a0',
+                    }}
+                  >
+                    generated component
+                    <button
+                      onClick={() => {
+                        void navigator.clipboard.writeText(generatedSource);
+                      }}
+                      style={{
+                        marginLeft: 'auto',
+                        padding: '4px 10px',
+                        background: '#2c2a38',
+                        border: 0,
+                        borderRadius: 5,
+                        color: '#e8e6f2',
+                        font: '500 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
+                        cursor: 'pointer',
+                      }}
+                      type="button"
+                    >
+                      copy
+                    </button>
+                  </div>
+                  <pre
+                    style={{
+                      margin: 0,
+                      padding: 12,
+                      overflow: 'auto',
+                      font: '400 10.5px/1.55 ui-monospace, SF Mono, Menlo, monospace',
+                      color: '#d6d4e4',
+                    }}
+                  >
+                    {generatedSource}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </Panel>
           <Panel position="bottom-center">
             <div
               style={{
