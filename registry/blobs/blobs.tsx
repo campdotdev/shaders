@@ -46,14 +46,14 @@ export interface BlobsProps {
   spread?: AnimatableProp<number>;
   /**
    * Width of the goo edge. 0 is a crisp anti-aliased silhouette; 1 fades
-   * blobs out as soft mist. Defaults to 0. Accepts a static value or an
+   * blobs out as soft mist. Defaults to 0.4. Accepts a static value or an
    * animation signal.
    */
   softness?: AnimatableProp<number>;
   /**
    * Depth inside the goo: slides colors along the ramp by field strength
    * around each blob's own pick — toward the ramp's start at the edges and
-   * its end in the cores. 0 is flat. Defaults to 0.3. Accepts a static
+   * its end in the cores. 0 is flat. Defaults to 0.5. Accepts a static
    * value or an animation signal.
    */
   shading?: AnimatableProp<number>;
@@ -103,8 +103,8 @@ export function Blobs({
   size = 0.6,
   sizeVariation = 0.5,
   spread = 0.8,
-  softness = 0,
-  shading = 0.3,
+  softness = 0.4,
+  shading = 0.5,
   center = DEFAULT_CENTER,
   speed = 0.2,
   seed = 0,
