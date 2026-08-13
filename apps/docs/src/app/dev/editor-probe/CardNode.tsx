@@ -126,11 +126,7 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
   if (isOutput) width = OUTPUT_WIDTH;
 
   return (
-    // Not a button: React Flow owns this element's keyboard/focus semantics,
-    // and the click is a convenience on top of selection, not the only path.
-
     <div
-      onClick={handleClick}
       style={{
         width,
         background: '#1e1d27',
@@ -152,17 +148,29 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
           <OutputPreview nodeId={id} />
         </div>
       )}
-      <div
+      {/* The name row is the params toggle — a real button, so keyboard users
+          can tab to it and hit Enter/Space. It stays OUTSIDE the params
+          section so sliders/selects never sit inside an interactive ancestor.
+          Cards without params render it inert. */}
+      <button
+        disabled={spec.params.length === 0}
+        onClick={handleClick}
         style={{
           display: 'flex',
           alignItems: 'baseline',
           gap: 7,
+          width: '100%',
           // The Output card's "in" port + label live on this row (left edge),
           // so its name indents past them; chips keep ports below the row.
           padding: isOutput ? '7px 10px 7px 34px' : '7px 10px',
           font: '600 12px/1 ui-monospace, SF Mono, Menlo, monospace',
           color: '#e8e6f2',
+          background: 'none',
+          border: 0,
+          textAlign: 'left',
+          cursor: spec.params.length === 0 ? 'default' : 'pointer',
         }}
+        type="button"
       >
         {spec.name}
         <span
@@ -176,7 +184,7 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
         >
           {spec.kind}
         </span>
-      </div>
+      </button>
       {spec.inputs.map((input, index) => (
         <Handle
           id={input.id}
