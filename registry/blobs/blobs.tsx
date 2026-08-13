@@ -22,7 +22,7 @@ export interface BlobsProps {
   stops?: ColorStop[];
   /**
    * Number of blobs, 1-20. Fractional values grow the last blob in
-   * smoothly, so an animated count never pops. Defaults to 6. Accepts a
+   * smoothly, so an animated count never pops. Defaults to 8. Accepts a
    * static value or an animation signal.
    */
   count?: AnimatableProp<number>;
@@ -99,7 +99,7 @@ const DEFAULT_CENTER: readonly [number, number] = [0.5, 0.5];
 
 export function Blobs({
   stops = DEFAULT_STOPS,
-  count = 6,
+  count = 8,
   size = 0.6,
   sizeVariation = 0.5,
   spread = 0.8,

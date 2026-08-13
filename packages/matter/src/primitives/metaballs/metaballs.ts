@@ -44,7 +44,7 @@ export interface MetaballsOptions {
    * Number of blobs, 1 to MAX_BLOBS. Fractional values scale the last
    * blob's contribution by the fraction, so an animated count grows a blob
    * in smoothly instead of popping it. Out-of-range values clamp.
-   * Default 6.
+   * Default 8.
    */
   count?: TSLScalar;
   /**
@@ -138,7 +138,7 @@ const FAST_WEIGHT = 0.35;
 export function metaballs(p: TSLNode, options: MetaballsOptions = {}): MetaballsResult {
   // Out-of-range dials fold back into their documented ranges rather than
   // producing out-of-cap loop trips or negative falloff exponents.
-  const count = clamp(float(options.count ?? 6), 1, MAX_BLOBS);
+  const count = clamp(float(options.count ?? 8), 1, MAX_BLOBS);
   const size = clamp(float(options.size ?? 0.5), 0, 1);
   const sizeVariation = clamp(float(options.sizeVariation ?? 0), 0, 1);
   const spread = clamp(float(options.spread ?? 0.5), 0, 1);
