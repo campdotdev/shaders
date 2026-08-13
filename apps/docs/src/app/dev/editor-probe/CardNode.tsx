@@ -4,8 +4,6 @@
 // them). The Output card is the exception: its face is a live ShaderScene
 // showing the compiled result, because seeing the result is Output's entire
 // job.
-import { useEffect, useState } from 'react';
-
 import { Handle, Position, useConnection, useReactFlow } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 
@@ -14,7 +12,16 @@ import { OutputPreview } from './OutputPreview';
 import { NODE_SPECS, PORT_COLORS } from './registry';
 import type { PortType, SpecId } from './registry';
 
-export type CardNodeType = Node<{ spec: SpecId; params: Record<string, number | string> }, 'card'>;
+export type CardNodeType = Node<
+  {
+    spec: SpecId;
+    params: Record<string, number | string>;
+    /** Whether the params panel is expanded. Lives in node data (not local
+        state) so the editor's drag and selection handlers can close it. */
+    open?: boolean;
+  },
+  'card'
+>;
 
 const CARD_WIDTH = 150;
 const OUTPUT_WIDTH = 190;
@@ -57,20 +64,14 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
   // touch so sliders have room to travel.
   // Params toggle on CLICK: click opens, click again closes. Drags never
   // toggle — React Flow's drag machinery (d3-drag) suppresses the browser's
-  // post-drag click, so any click that reaches this handler is a genuine one;
-  // mid-drag the panel also collapses via the `dragging` effect below.
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    if (dragging) setOpen(false);
-  }, [dragging]);
-
-  useEffect(() => {
-    if (!selected) setOpen(false);
-  }, [selected]);
+  // post-drag click, so any click that reaches this handler is a genuine one.
+  // Closing is event-driven and lives in the editor: drag starts and
+  // selection changes clear `open` in node data there, so this component
+  // never syncs state to props after the fact.
+  const open = data.open ?? false;
 
   const handleClick = () => {
-    setOpen((current) => !current);
+    updateNodeData(id, { open: !open });
   };
 
   const expanded = selected && !dragging && open && spec.params.length > 0;

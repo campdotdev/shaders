@@ -18,7 +18,7 @@ import {
   useEdgesState,
   useNodesState,
 } from '@xyflow/react';
-import type { Connection, Edge, IsValidConnection } from '@xyflow/react';
+import type { Connection, Edge, IsValidConnection, OnSelectionChangeParams } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import { CardNode } from './CardNode';
@@ -189,6 +189,37 @@ export default function Editor() {
     [setNodes],
   );
 
+  // Params panels close here, in the events that end an "open" episode —
+  // never in an effect watching props. A drag start collapses the dragged
+  // card's panel for good; a selection change closes panels on cards no
+  // longer selected, so a re-selected card starts with its panel shut.
+  // The untouched-array early return matters: selection changes fire often,
+  // and recreating node objects would churn the graph context for nothing.
+  const closeParamPanels = useCallback(
+    (keepIds?: ReadonlySet<string>) => {
+      setNodes((current) => {
+        const shouldClose = (node: CardNodeType) =>
+          node.data.open === true && !(keepIds?.has(node.id) ?? false);
+
+        if (!current.some(shouldClose)) return current;
+
+        return current.map((node) =>
+          shouldClose(node) ? { ...node, data: { ...node.data, open: false } } : node,
+        );
+      });
+    },
+    [setNodes],
+  );
+
+  const onNodeDragStart = useCallback(() => closeParamPanels(), [closeParamPanels]);
+
+  const onSelectionChange = useCallback(
+    ({ nodes: selectedNodes }: OnSelectionChangeParams<CardNodeType>) => {
+      closeParamPanels(new Set(selectedNodes.map((node) => node.id)));
+    },
+    [closeParamPanels],
+  );
+
   // Compiler-shaped mirrors of the React Flow state, plus the structural
   // fingerprint the Output card's material effect keys on. Positions and
   // slider values are excluded — only wiring, specs, and select params
@@ -236,10 +267,12 @@ export default function Editor() {
           nodes={nodes}
           onConnect={onConnect}
           onEdgesChange={onEdgesChange}
+          onNodeDragStart={onNodeDragStart}
           onNodesChange={onNodesChange}
           onReconnect={onReconnect}
           onReconnectEnd={onReconnectEnd}
           onReconnectStart={onReconnectStart}
+          onSelectionChange={onSelectionChange}
         >
           <Background color="#2c2a38" gap={22} size={1.5} variant={BackgroundVariant.Dots} />
           <Controls />
