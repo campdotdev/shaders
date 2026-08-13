@@ -12,6 +12,7 @@ import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { ParamStore } from './param-store';
+import { DRIVER_DECORRELATE, RAMP_HEX } from './registry';
 import type { SpecId } from './registry';
 
 type TSLNode = ShaderNodeObject<Node>;
@@ -31,16 +32,8 @@ export interface GraphEdge {
   targetHandle?: string | null;
 }
 
-// ---------------------------------------------------------------------------
-// Fixed character constants (not user dials)
-// ---------------------------------------------------------------------------
-
-/**
- * Offset between the two driver taps that build the warp vector. Sampling the
- * same scalar field at two far-apart spots yields two uncorrelated values, so
- * the push direction varies across the canvas instead of sliding diagonally.
- */
-const DRIVER_DECORRELATE = [5.2, 1.3] as const;
+// Fixed character constants (DRIVER_DECORRELATE, RAMP_HEX) live in
+// registry.ts so the code emitter shares them without importing three.
 
 /**
  * Warp emits its driver subtree TWICE (once per decorrelated tap), so warps
@@ -50,9 +43,6 @@ const DRIVER_DECORRELATE = [5.2, 1.3] as const;
  * of freezing the tab on shader compile.
  */
 const MAX_WARP_DRIVER_DEPTH = 4;
-
-/** Demo palette: deep indigo through violet to pink, mixed in oklab. */
-const RAMP_HEX = ['#1B2A6B', '#7C3AED', '#F472B6'];
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 

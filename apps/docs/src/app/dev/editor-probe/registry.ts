@@ -50,6 +50,20 @@ export const PORT_COLORS: Record<PortType, string> = {
   color: '#a78bfa',
 };
 
+// Shared shader constants live here (not in compile.ts) so the code EMITTER
+// and its node-run test can import them without dragging three/webgpu — which
+// references `self` at module load — into a Node process.
+
+/**
+ * Offset between the two driver taps that build the warp vector. Sampling the
+ * same scalar field at two far-apart spots yields two uncorrelated values, so
+ * the push direction varies across the canvas instead of sliding diagonally.
+ */
+export const DRIVER_DECORRELATE = [5.2, 1.3] as const;
+
+/** Demo palette: deep indigo through violet to pink, mixed in oklab. */
+export const RAMP_HEX = ['#1B2A6B', '#7C3AED', '#F472B6'];
+
 export const NODE_SPECS = {
   gradient: {
     name: 'Gradient',
