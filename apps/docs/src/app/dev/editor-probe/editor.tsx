@@ -77,6 +77,99 @@ const initialEdges: Edge[] = DEMO_EDGES.map((edge, index) => {
 });
 
 // ---------------------------------------------------------------------------
+// Generated-code panel — the eject-to-code UI, presentation only. Source
+// generation stays in Editor, which owns the graph the emitter walks.
+// ---------------------------------------------------------------------------
+
+function GeneratedCodePanel({
+  open,
+  onToggle,
+  source,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  source: string;
+}) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
+      <button
+        onClick={onToggle}
+        style={{
+          padding: '6px 12px',
+          background: '#1e1d27',
+          border: '1px solid #2c2a38',
+          borderRadius: 7,
+          color: '#e8e6f2',
+          font: '500 11.5px/1 ui-monospace, SF Mono, Menlo, monospace',
+          cursor: 'pointer',
+        }}
+        type="button"
+      >
+        {open ? 'hide code' : 'view code'}
+      </button>
+      {open && (
+        <div
+          style={{
+            width: 460,
+            maxHeight: '72vh',
+            display: 'flex',
+            flexDirection: 'column',
+            background: '#16151df2',
+            border: '1px solid #2c2a38',
+            borderRadius: 9,
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              padding: '8px 12px',
+              borderBottom: '1px solid #2c2a38',
+              font: '600 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
+              letterSpacing: '0.08em',
+              textTransform: 'uppercase',
+              color: '#8b88a0',
+            }}
+          >
+            generated component
+            <button
+              onClick={() => {
+                void navigator.clipboard.writeText(source);
+              }}
+              style={{
+                marginLeft: 'auto',
+                padding: '4px 10px',
+                background: '#2c2a38',
+                border: 0,
+                borderRadius: 5,
+                color: '#e8e6f2',
+                font: '500 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
+                cursor: 'pointer',
+              }}
+              type="button"
+            >
+              copy
+            </button>
+          </div>
+          <pre
+            style={{
+              margin: 0,
+              padding: 12,
+              overflow: 'auto',
+              font: '400 10.5px/1.55 ui-monospace, SF Mono, Menlo, monospace',
+              color: '#d6d4e4',
+            }}
+          >
+            {source}
+          </pre>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Port typing helpers — look a handle's type up from the node's spec so wires
 // can be validated and tinted from graph data alone.
 // ---------------------------------------------------------------------------
@@ -284,83 +377,11 @@ export default function Editor() {
           <Background color="#2c2a38" gap={22} size={1.5} variant={BackgroundVariant.Dots} />
           <Controls />
           <Panel position="top-right">
-            <div
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}
-            >
-              <button
-                onClick={() => setShowCode((current) => !current)}
-                style={{
-                  padding: '6px 12px',
-                  background: '#1e1d27',
-                  border: '1px solid #2c2a38',
-                  borderRadius: 7,
-                  color: '#e8e6f2',
-                  font: '500 11.5px/1 ui-monospace, SF Mono, Menlo, monospace',
-                  cursor: 'pointer',
-                }}
-                type="button"
-              >
-                {showCode ? 'hide code' : 'view code'}
-              </button>
-              {showCode && (
-                <div
-                  style={{
-                    width: 460,
-                    maxHeight: '72vh',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    background: '#16151df2',
-                    border: '1px solid #2c2a38',
-                    borderRadius: 9,
-                    overflow: 'hidden',
-                  }}
-                >
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      padding: '8px 12px',
-                      borderBottom: '1px solid #2c2a38',
-                      font: '600 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
-                      letterSpacing: '0.08em',
-                      textTransform: 'uppercase',
-                      color: '#8b88a0',
-                    }}
-                  >
-                    generated component
-                    <button
-                      onClick={() => {
-                        void navigator.clipboard.writeText(generatedSource);
-                      }}
-                      style={{
-                        marginLeft: 'auto',
-                        padding: '4px 10px',
-                        background: '#2c2a38',
-                        border: 0,
-                        borderRadius: 5,
-                        color: '#e8e6f2',
-                        font: '500 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
-                        cursor: 'pointer',
-                      }}
-                      type="button"
-                    >
-                      copy
-                    </button>
-                  </div>
-                  <pre
-                    style={{
-                      margin: 0,
-                      padding: 12,
-                      overflow: 'auto',
-                      font: '400 10.5px/1.55 ui-monospace, SF Mono, Menlo, monospace',
-                      color: '#d6d4e4',
-                    }}
-                  >
-                    {generatedSource}
-                  </pre>
-                </div>
-              )}
-            </div>
+            <GeneratedCodePanel
+              onToggle={() => setShowCode((current) => !current)}
+              open={showCode}
+              source={generatedSource}
+            />
           </Panel>
           <Panel position="bottom-center">
             <div
