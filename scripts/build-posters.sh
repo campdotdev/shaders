@@ -42,7 +42,8 @@ for pair in \
   "conic-gradient:jpg" \
   "dither:jpg" \
   "voronoi:jpg" \
-  "fractal-noise:jpg"; do
+  "fractal-noise:jpg" \
+  "blobs:jpg"; do
   name="${pair%%:*}"
   rest="${pair#*:}"
   format="${rest%%:*}"
