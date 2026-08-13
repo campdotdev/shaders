@@ -10,6 +10,7 @@ import { createContext, useContext } from 'react';
 
 import type { GraphEdge, GraphNode } from './compile';
 import type { ParamStore } from './param-store';
+import { NODE_SPECS } from './registry';
 
 export interface EditorGraph {
   nodes: GraphNode[];
@@ -36,10 +37,13 @@ export function structuralKeyOf(nodes: GraphNode[], edges: GraphEdge[]): string 
   const nodePart = nodes
     .map((node) => {
       // Select params compile to different math, so they belong in the key;
-      // slider params ride uniforms and deliberately stay out of it.
-      const baked = Object.entries(node.params)
-        .filter(([, value]) => typeof value === 'string')
-        .sort(([a], [b]) => a.localeCompare(b));
+      // slider params ride uniforms and deliberately stay out of it. The
+      // registry's declared kind decides which is which — not the value's
+      // runtime type, which only coincidentally separates them today. Spec
+      // order is fixed, so the entries are deterministic without sorting.
+      const baked = NODE_SPECS[node.spec].params
+        .filter((param) => param.kind === 'select')
+        .map((param) => [param.id, node.params[param.id] ?? param.defaultValue]);
 
       return `${node.id}:${node.spec}:${JSON.stringify(baked)}`;
     })
