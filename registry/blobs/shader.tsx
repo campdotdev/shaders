@@ -18,7 +18,7 @@ import {
   useShaderContext,
   useStaticSceneHint,
 } from '@lovo/matter-react';
-import { clamp, fwidth, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
+import { add, clamp, fwidth, smoothstep, sub, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../utils/color';
@@ -36,26 +36,6 @@ const MAX_SOFTNESS = 0.35;
 // Scales how much field above the threshold counts as full depth for
 // shading. Up = cores hit the ramp's end nearer the edge.
 const DEPTH_RANGE = 1.5;
-
-/** TEMPORARY (build-phase tuning only): dev overrides for the feel
- *  constants, riding uniforms so the panel sliders glide. Stripped at the
- *  defaults-tuning gate. */
-export interface BlobsTuning {
-  /** Field level where goo begins. */
-  threshold?: number;
-  /** Distance at which a blob's influence reaches zero, in pattern units. */
-  fieldReach?: number;
-  /** Falloff exponent at size 0. */
-  exponentMax?: number;
-  /** How much of the exponent size 1 removes. */
-  exponentSpan?: number;
-  /** Max roam distance from center at spread 1, in pattern units. */
-  roamExtent?: number;
-  /** Floor of the per-blob roam-radius variation. */
-  minRoam?: number;
-  /** Amplitude share of the double-frequency swing (base gets 1 − this). */
-  fastWeight?: number;
-}
 
 export interface BlobsShaderProps {
   /**
@@ -118,8 +98,6 @@ export interface BlobsShaderProps {
    * otherwise.
    */
   hueInterpolation: HueInterpolation;
-  /** TEMPORARY (build-phase tuning only). Stripped at the defaults gate. */
-  tuning?: BlobsTuning;
 }
 
 export function BlobsShader({
@@ -135,7 +113,6 @@ export function BlobsShader({
   seed,
   colorSpace,
   hueInterpolation,
-  tuning,
 }: BlobsShaderProps) {
   const shaderContext = useShaderContext();
 
@@ -171,41 +148,6 @@ export function BlobsShader({
     seedUniform.value = seed;
     shaderContext?.scheduler.requestRender();
   }, [shaderContext, seedUniform, seed]);
-
-  // ---------------------------------------------
-  // Tuning (dev) — stripped at the defaults gate
-  // ---------------------------------------------
-  // Feel constants ride uniforms so the panel's tuning sliders glide
-  // without rebuilding the material. Defaults mirror the primitive's own
-  // constants.
-  const thresholdUniform = useMemo(() => uniform(THRESHOLD), []);
-  const fieldReachUniform = useMemo(() => uniform(2), []);
-  const exponentMaxUniform = useMemo(() => uniform(45), []);
-  const exponentSpanUniform = useMemo(() => uniform(30), []);
-  const roamExtentUniform = useMemo(() => uniform(0.35), []);
-  const minRoamUniform = useMemo(() => uniform(0.4), []);
-  const fastWeightUniform = useMemo(() => uniform(0.35), []);
-
-  useEffect(() => {
-    thresholdUniform.value = tuning?.threshold ?? THRESHOLD;
-    fieldReachUniform.value = tuning?.fieldReach ?? 2;
-    exponentMaxUniform.value = tuning?.exponentMax ?? 45;
-    exponentSpanUniform.value = tuning?.exponentSpan ?? 30;
-    roamExtentUniform.value = tuning?.roamExtent ?? 0.35;
-    minRoamUniform.value = tuning?.minRoam ?? 0.4;
-    fastWeightUniform.value = tuning?.fastWeight ?? 0.35;
-    shaderContext?.scheduler.requestRender();
-  }, [
-    shaderContext,
-    thresholdUniform,
-    fieldReachUniform,
-    exponentMaxUniform,
-    exponentSpanUniform,
-    roamExtentUniform,
-    minRoamUniform,
-    fastWeightUniform,
-    tuning,
-  ]);
 
   // Content fingerprint of the stops array (colors + positions). The build
   // effect keys on this string, so a re-render that passes a new array with
@@ -266,15 +208,6 @@ export function BlobsShader({
         spread: spreadUniform,
         time: phaseUniform,
         seed: seedUniform,
-        // TEMPORARY (build-phase tuning only) — stripped at the defaults gate.
-        tuning: {
-          fieldReach: fieldReachUniform,
-          exponentMax: exponentMaxUniform,
-          exponentSpan: exponentSpanUniform,
-          roamExtent: roamExtentUniform,
-          minRoam: minRoamUniform,
-          fastWeight: fastWeightUniform,
-        },
       });
 
       const material = new MeshBasicNodeMaterial();
@@ -289,7 +222,7 @@ export function BlobsShader({
       // wider feather in FIELD units on top of that floor, fading each
       // blob out along its own falloff — mist instead of gel.
       const band = fwidth(balls.field).add(softnessUniform.mul(MAX_SOFTNESS));
-      const mask = smoothstep(thresholdUniform.sub(band), thresholdUniform.add(band), balls.field);
+      const mask = smoothstep(sub(THRESHOLD, band), add(THRESHOLD, band), balls.field);
 
       // ---------------------------------------------
       // Color: each blob's stable random picks from the ramp
@@ -305,7 +238,7 @@ export function BlobsShader({
       // cores toward its end. Offsetting the ramp INPUT (never
       // crossfading toward a shared value) keeps every blob's identity at
       // full shading — and every in-between color on the ramp itself.
-      const depth = clamp(balls.field.sub(thresholdUniform).mul(DEPTH_RANGE), 0, 1);
+      const depth = clamp(balls.field.sub(THRESHOLD).mul(DEPTH_RANGE), 0, 1);
       const rampInput = clamp(balls.blend.add(depth.sub(0.5).mul(shadingUniform)), 0, 1);
 
       const gooColor = colorRamp(rampInput, toColorRampStops(stops), colorSpace, hueInterpolation);
@@ -351,13 +284,6 @@ export function BlobsShader({
       phaseUniform,
       seedUniform,
       aspectNode,
-      thresholdUniform,
-      fieldReachUniform,
-      exponentMaxUniform,
-      exponentSpanUniform,
-      roamExtentUniform,
-      minRoamUniform,
-      fastWeightUniform,
       stopsKey,
       colorSpace,
       hueInterpolation,

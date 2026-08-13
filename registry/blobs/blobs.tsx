@@ -9,10 +9,9 @@ import type { ColorSpace, HueInterpolation } from '@lovo/matter';
 import type { AnimatableProp } from '@lovo/matter-react';
 
 import type { ColorStop } from '../utils/color';
-import { BlobsShader, type BlobsTuning } from './shader';
+import { BlobsShader } from './shader';
 
 export type { ColorStop } from '../utils/color';
-export type { BlobsTuning } from './shader';
 
 export interface BlobsProps {
   /**
@@ -81,18 +80,12 @@ export interface BlobsProps {
    * otherwise. Defaults to `'shorter'`.
    */
   hueInterpolation?: HueInterpolation;
-  /**
-   * TEMPORARY (build-phase tuning only): dev overrides for the feel
-   * constants. Stripped at the defaults-tuning gate — do not use.
-   */
-  tuning?: BlobsTuning;
 }
 
-// Deep-water palette (provisional until the defaults-tuning gate): stops
-// walk a lightness ladder (dark navy up to bright purple) so neighboring
-// blobs read as depth, not hue soup. The darkest stop sits at blue's
-// near-max chroma for its lightness — dark hues can't hold much more and
-// stay inside P3.
+// Deep-water palette: stops walk a lightness ladder (dark navy up to
+// bright purple) so neighboring blobs read as depth, not hue soup. The
+// darkest stop sits at blue's near-max chroma for its lightness — dark
+// hues can't hold much more and stay inside P3.
 const DEFAULT_STOPS: ColorStop[] = [
   { color: 'oklch(0.255 0.108 265.847)' }, // paletteOklch.blue[2]
   { color: 'oklch(0.346 0.198 265.847)' }, // paletteOklch.blue[4]
@@ -117,7 +110,6 @@ export function Blobs({
   seed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
-  tuning,
 }: BlobsProps) {
   return (
     <BlobsShader
@@ -133,7 +125,6 @@ export function Blobs({
       speed={speed}
       spread={spread}
       stops={stops}
-      tuning={tuning}
     />
   );
 }

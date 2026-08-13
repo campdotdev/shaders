@@ -2,8 +2,7 @@
 
 /**
  * Blobs demo page: shader preview plus an owned control panel for the goo
- * field and palette. Sections grow as later phases land (surface dials,
- * tuning rig).
+ * field, surface dials, placement, and palette.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -77,15 +76,6 @@ function BlobsControls() {
       <Section title="Mixing">
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
         <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
-      </Section>
-      <Section title="Tuning (dev)">
-        <SliderInput label="Threshold" max={0.9} min={0.05} path="tuning.threshold" step={0.01} />
-        <SliderInput label="Field reach" max={4} min={0.5} path="tuning.fieldReach" step={0.05} />
-        <SliderInput label="Exponent max" max={80} min={10} path="tuning.exponentMax" step={1} />
-        <SliderInput label="Exponent span" max={60} min={5} path="tuning.exponentSpan" step={1} />
-        <SliderInput label="Roam extent" max={0.8} min={0.1} path="tuning.roamExtent" step={0.01} />
-        <SliderInput label="Min roam" max={1} min={0} path="tuning.minRoam" step={0.01} />
-        <SliderInput label="Fast weight" max={1} min={0} path="tuning.fastWeight" step={0.01} />
       </Section>
       <ListInput<PlainColorStop>
         createItem={createStop}
