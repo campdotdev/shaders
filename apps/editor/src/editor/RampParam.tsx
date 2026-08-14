@@ -104,6 +104,7 @@ export function RampParam({
             value={stop.color}
           />
           <input
+            aria-label={`stop ${index + 1} position`}
             className="nodrag"
             max={1}
             min={0}
