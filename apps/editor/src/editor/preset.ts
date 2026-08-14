@@ -66,12 +66,20 @@ const MIGRATIONS: Record<number, (preset: PresetLike) => PresetLike> = {};
  * "the version walk actually runs a migration" test doesn't need its own
  * copy of MIGRATIONS. Production migrations are added as literal entries in
  * the map above when PRESET_VERSION bumps, not through this function.
+ *
+ * Returns an unregister callback so a test can clean up after itself instead
+ * of leaving a migration permanently mutating module state for every test
+ * that runs afterward in the same process.
  */
 export function __registerMigrationForTests(
   fromVersion: number,
   migrate: (preset: PresetLike) => PresetLike,
-): void {
+): () => void {
   MIGRATIONS[fromVersion] = migrate;
+
+  return () => {
+    Reflect.deleteProperty(MIGRATIONS, fromVersion);
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -144,10 +152,32 @@ export function parsePreset(json: string): Preset {
   }
 
   const nodes = working.nodes.map((node, index) => validateNode(node, index));
-  const nodesById = new Map(nodes.map((node) => [node.id, node]));
+  const nodesById = buildNodesById(nodes);
   const edges = validateEdges(working.edges, nodesById);
 
   return { version: PRESET_VERSION, nodes, edges };
+}
+
+/**
+ * Indexes validated nodes by id, rejecting duplicates instead of letting a
+ * later node silently overwrite an earlier one in the map. A duplicate id
+ * wouldn't just lose a node -- edges targeting that id would validate
+ * against whichever node happened to win the overwrite, accepting edges
+ * that don't actually match the intended node's spec and rejecting ones
+ * that do, with no error to explain why.
+ */
+function buildNodesById(nodes: PresetNode[]): Map<string, PresetNode> {
+  const nodesById = new Map<string, PresetNode>();
+
+  for (const node of nodes) {
+    if (nodesById.has(node.id)) {
+      throw new PresetError(`Duplicate node id "${node.id}" — node ids must be unique.`);
+    }
+
+    nodesById.set(node.id, node);
+  }
+
+  return nodesById;
 }
 
 /** Narrows `unknown` to a plain object without lying about its contents -- the
@@ -169,7 +199,13 @@ function parseJson(json: string): unknown {
  * Confirms `version` is an integer this editor can load. Versions above
  * `PRESET_VERSION` come from a newer editor and can't be understood, so they
  * fail loudly rather than falling through to node validation and producing
- * a confusing downstream error.
+ * a confusing downstream error. Versions below zero aren't just invalid,
+ * they're dangerous: the migration walk in `parsePreset` counts up from the
+ * saved version to `PRESET_VERSION` one step at a time, so a very negative
+ * version would spin through billions of no-op loop iterations before ever
+ * reaching the array-shape check that would otherwise catch it. Zero stays
+ * valid -- it's the version below this format's first shape, which is what
+ * the migration-walk test exercises.
  */
 function assertValidVersion(version: unknown): asserts version is number {
   if (typeof version !== 'number' || !Number.isInteger(version)) {
@@ -180,6 +216,10 @@ function assertValidVersion(version: unknown): asserts version is number {
     throw new PresetError(
       `This preset needs a newer editor (preset version ${version}, editor supports ${PRESET_VERSION}).`,
     );
+  }
+
+  if (version < 0) {
+    throw new PresetError(`Preset version must not be negative (got ${version}).`);
   }
 }
 
