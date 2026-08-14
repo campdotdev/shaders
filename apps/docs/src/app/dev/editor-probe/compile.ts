@@ -12,7 +12,7 @@ import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { ParamStore } from './param-store';
-import { DRIVER_DECORRELATE, RAMP_HEX } from './registry';
+import { DRIVER_DECORRELATE, MAX_WARP_DRIVER_DEPTH, RAMP_HEX } from './registry';
 import type { SpecId } from './registry';
 
 type TSLNode = ShaderNodeObject<Node>;
@@ -32,17 +32,9 @@ export interface GraphEdge {
   targetHandle?: string | null;
 }
 
-// Fixed character constants (DRIVER_DECORRELATE, RAMP_HEX) live in
-// registry.ts so the code emitter shares them without importing three.
-
-/**
- * Warp emits its driver subtree TWICE (once per decorrelated tap), so warps
- * chained through the `by` port double the emitted expression tree at every
- * level — 2^n growth. Past this nesting depth a warp ignores its driver and
- * passes its source through, so a playful wire-up degrades gracefully instead
- * of freezing the tab on shader compile.
- */
-const MAX_WARP_DRIVER_DEPTH = 4;
+// Fixed character constants (DRIVER_DECORRELATE, RAMP_HEX) and the warp
+// depth cap live in registry.ts so the code emitter shares them without
+// importing three.
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 

@@ -81,6 +81,8 @@ const initialEdges: Edge[] = DEMO_EDGES.map((edge, index) => {
 // generation stays in Editor, which owns the graph the emitter walks.
 // ---------------------------------------------------------------------------
 
+const COPY_LABELS = { idle: 'copy', copied: 'copied', failed: 'copy failed' } as const;
+
 function GeneratedCodePanel({
   open,
   onToggle,
@@ -90,6 +92,18 @@ function GeneratedCodePanel({
   onToggle: () => void;
   source: string;
 }) {
+  // The copy button reports what actually happened — clipboard writes can
+  // fail (permissions, non-secure context) and silence would read as success.
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  // Reset during render when the code changes: a lingering "copied" would
+  // claim code the clipboard doesn't hold.
+  const [copiedSource, setCopiedSource] = useState(source);
+
+  if (source !== copiedSource) {
+    setCopiedSource(source);
+    setCopyState('idle');
+  }
+
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
       <button
@@ -135,7 +149,10 @@ function GeneratedCodePanel({
             generated component
             <button
               onClick={() => {
-                void navigator.clipboard.writeText(source);
+                navigator.clipboard
+                  .writeText(source)
+                  .then(() => setCopyState('copied'))
+                  .catch(() => setCopyState('failed'));
               }}
               style={{
                 marginLeft: 'auto',
@@ -149,7 +166,7 @@ function GeneratedCodePanel({
               }}
               type="button"
             >
-              copy
+              {COPY_LABELS[copyState]}
             </button>
           </div>
           <pre
