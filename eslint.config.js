@@ -23,6 +23,9 @@ export default defineConfig([
     'apps/docs/out/**',
     'apps/docs/.next/**',
     'apps/docs/next-env.d.ts',
+    'apps/editor/out/**',
+    'apps/editor/.next/**',
+    'apps/editor/next-env.d.ts',
     'packages/matter-cli/src/test-fixtures/**',
   ]),
   {
@@ -57,6 +60,7 @@ export default defineConfig([
             'packages/matter/*.config.{ts,mts,cts}',
             'packages/matter-react/*.config.{ts,mts,cts}',
             'apps/docs/vitest.config.ts',
+            'apps/editor/vitest.config.ts',
             'packages/*/posters/*.{ts,tsx}',
           ],
           defaultProject: 'tsconfig.eslint.json',

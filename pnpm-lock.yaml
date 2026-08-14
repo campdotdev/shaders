@@ -220,6 +220,55 @@ importers:
         specifier: ^5
         version: 5.9.3
 
+  apps/editor:
+    dependencies:
+      '@lovo/matter':
+        specifier: workspace:*
+        version: link:../../packages/matter
+      '@lovo/matter-react':
+        specifier: workspace:*
+        version: link:../../packages/matter-react
+      '@xyflow/react':
+        specifier: ^12.11.2
+        version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      next:
+        specifier: ^15.5.18
+        version: 15.5.22(@babel/core@7.29.7)(@opentelemetry/api@1.9.1)(@playwright/test@1.59.1)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.5(react@19.2.5)
+      three:
+        specifier: ^0.170.0
+        version: 0.170.0
+    devDependencies:
+      '@matter/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
+      '@types/node':
+        specifier: ^22.7.0
+        version: 22.19.17
+      '@types/react':
+        specifier: ^19.0.0
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      '@types/three':
+        specifier: ^0.170.0
+        version: 0.170.0
+      serve:
+        specifier: ^14.2.6
+        version: 14.2.6
+      typescript:
+        specifier: ^5.6.0
+        version: 5.9.3
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
+
   packages/matter:
     devDependencies:
       '@matter/tsconfig':
