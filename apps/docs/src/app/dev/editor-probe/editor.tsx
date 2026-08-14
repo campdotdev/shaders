@@ -149,7 +149,18 @@ function GeneratedCodePanel({
             generated component
             <button
               onClick={() => {
-                navigator.clipboard
+                // The DOM types say clipboard always exists, but outside a
+                // secure context it's undefined and writeText would throw
+                // synchronously — past the .catch. The widening assertion
+                // lets the guard route that case into the "copy failed" label.
+                const clipboard = navigator.clipboard as Clipboard | undefined;
+
+                if (clipboard === undefined) {
+                  setCopyState('failed');
+
+                  return;
+                }
+                clipboard
                   .writeText(source)
                   .then(() => setCopyState('copied'))
                   .catch(() => setCopyState('failed'));
