@@ -10,9 +10,9 @@
  *
  * `past` holds older snapshots (oldest first), `future` holds snapshots
  * undone away from `present` (nearest-to-present last, so both stacks pop
- * from their tail). The total retained snapshot count -- past + present +
- * future -- never exceeds `limit`; a `record()` that would push past that
- * cap evicts from the oldest end of `past` first.
+ * from their tail). `present` isn't itself part of the cap -- `limit` counts
+ * UNDOABLE states, so `past.length` never exceeds `limit`; a `record()` that
+ * would push past that cap evicts from the oldest end of `past` first.
  */
 export class History {
   private readonly limit: number;
@@ -21,7 +21,9 @@ export class History {
   private currentSnapshot: string;
 
   constructor(initial: string, limit = 100) {
-    this.limit = limit;
+    // Clamp to at least 1 so the eviction loop in record() always has room
+    // to push before it trims, instead of spinning on an ever-empty past.
+    this.limit = Math.max(1, limit);
     this.currentSnapshot = initial;
   }
 
@@ -33,9 +35,11 @@ export class History {
   /**
    * Adds a new snapshot as present, pushing the old present onto `past`.
    * A no-op when `next` is identical to `present` -- callers that fire on
-   * every keystroke or drag frame don't need to pre-filter. Always clears
-   * `future`: once history branches from a point in the past, the old
-   * "ahead" path is gone.
+   * every keystroke or drag frame don't need to pre-filter. Deliberately
+   * leaves `future` untouched on that no-op path: an unchanged present
+   * hasn't branched history, so anything still ahead should stay redoable.
+   * A real record always clears `future`: once history branches from a
+   * point in the past, the old "ahead" path is gone.
    */
   record(next: string): void {
     if (next === this.currentSnapshot) {
@@ -45,10 +49,9 @@ export class History {
     this.future.length = 0;
     this.currentSnapshot = next;
 
-    // Evict the oldest snapshot(s) once past + present would exceed the
-    // cap. Only ever one over per call, since record() adds exactly one
-    // entry to `past`, but the loop stays correct if `limit` shrinks.
-    while (this.past.length > this.limit - 1) {
+    // Evict the oldest snapshot once past would exceed the cap. Only ever
+    // one over per call, since record() adds exactly one entry to `past`.
+    while (this.past.length > this.limit) {
       this.past.shift();
     }
   }

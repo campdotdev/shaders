@@ -70,10 +70,11 @@ describe('History', () => {
     while (history.undo() !== null) {
       undoCount += 1;
     }
-    // 100 undoable states means 99 undo steps below the final present value
-    // (the cap counts total retained snapshots, present included).
-    expect(undoCount).toBe(99);
-    expect(history.present).toBe('entry-21');
+    // `limit` counts undoable states, not present -- 100 records survive
+    // in `past`, so exactly 100 undo steps land below the final present
+    // value before the 101st returns null.
+    expect(undoCount).toBe(100);
+    expect(history.present).toBe('entry-20');
   });
 
   it('returns null and leaves present unchanged when undoing at the bottom', () => {
@@ -104,8 +105,18 @@ describe('History', () => {
     while (history.undo() !== null) {
       undoCount += 1;
     }
-    // limit of 3 retains only the newest 3 states: 2 undo steps below present.
-    expect(undoCount).toBe(2);
-    expect(history.present).toBe('a');
+    // limit of 3 undoable states: exactly 3 records fit without eviction,
+    // so all 3 undo steps succeed, bottoming out at the initial snapshot.
+    expect(undoCount).toBe(3);
+    expect(history.present).toBe('seed');
+  });
+
+  it('clamps a non-positive limit to at least 1 instead of hanging', () => {
+    const history = new History('a', 0);
+
+    history.record('b');
+    expect(history.present).toBe('b');
+    expect(history.undo()).toBe('a');
+    expect(history.undo()).toBeNull();
   });
 });
