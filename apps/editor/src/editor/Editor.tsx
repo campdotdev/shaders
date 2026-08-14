@@ -8,6 +8,7 @@
 // into Output — so there's something to edit and a live example of fan-out
 // (one field feeding two different downstream cards).
 import { useCallback, useMemo, useRef, useState } from 'react';
+import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import {
   addEdge,
@@ -19,6 +20,7 @@ import {
   reconnectEdge,
   useEdgesState,
   useNodesState,
+  useReactFlow,
 } from '@xyflow/react';
 import type { Connection, Edge, IsValidConnection, OnSelectionChangeParams } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
@@ -155,6 +157,153 @@ function specIdOf(nodes: CardNodeType[], nodeId: string | null): SpecId | null {
   return node ? node.data.spec : null;
 }
 
+/**
+ * The "+ generate / effects / color / adjust" toolbar. Split out as its own
+ * component (rather than living inline in Editor) so it can sit as a child
+ * of <ReactFlow> and call useReactFlow() directly — react-flow's node/canvas
+ * context is only wired up for components inside the <ReactFlow> tree, and
+ * Editor itself renders that tree rather than being inside it.
+ */
+function AddNodeToolbar({
+  canvasWrapperRef,
+  openStage,
+  setNodes,
+  setOpenStage,
+}: {
+  canvasWrapperRef: RefObject<HTMLDivElement | null>;
+  openStage: Exclude<Stage, 'output'> | null;
+  setNodes: Dispatch<SetStateAction<CardNodeType[]>>;
+  setOpenStage: Dispatch<SetStateAction<Exclude<Stage, 'output'> | null>>;
+}) {
+  const { screenToFlowPosition } = useReactFlow();
+
+  // New cards drop at the center of whatever the user is currently looking
+  // at (gate decision: cards should land where the user is looking, not a
+  // fixed corner they'd have to pan to find), with a small stagger so
+  // consecutive adds don't stack exactly on top of each other.
+  const addedCount = useRef(0);
+  const addNode = useCallback(
+    (spec: SpecId) => {
+      const count = addedCount.current;
+
+      addedCount.current += 1;
+
+      // Measure the canvas element's own on-screen bounds rather than
+      // assuming it fills the window — a future layout (side panel, split
+      // view) could shrink it, and this still has to center on what's visible.
+      const wrapperBounds = canvasWrapperRef.current?.getBoundingClientRect();
+      const screenCenter = wrapperBounds
+        ? {
+            x: wrapperBounds.left + wrapperBounds.width / 2,
+            y: wrapperBounds.top + wrapperBounds.height / 2,
+          }
+        : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
+      const flowCenter = screenToFlowPosition(screenCenter);
+
+      setNodes((current) => [
+        ...current,
+        makeNode(
+          `${spec}-added-${count}`,
+          spec,
+          // Subtract roughly half a card so the CARD lands centered, not its
+          // top-left corner, then apply the repeat-add stagger around that.
+          flowCenter.x - 75 + ((count % 5) - 2) * 28,
+          flowCenter.y - 40 + ((count % 3) - 1) * 28,
+        ),
+      ]);
+    },
+    [canvasWrapperRef, screenToFlowPosition, setNodes],
+  );
+
+  return (
+    <Panel position="top-left">
+      <div style={{ display: 'flex', gap: 6 }}>
+        {STAGE_MENU.map(({ stage, label, subtitle, specs }) => {
+          const hue = STAGE_COLORS[stage];
+          const isOpen = openStage === stage;
+
+          return (
+            <div key={stage} style={{ position: 'relative' }}>
+              <button
+                aria-expanded={isOpen}
+                onClick={() => setOpenStage((current) => (current === stage ? null : stage))}
+                style={{
+                  padding: '6px 10px',
+                  background: '#1e1d27',
+                  border: `1px solid ${hue}55`,
+                  borderRadius: 7,
+                  color: hue,
+                  font: '500 11px/1 ui-monospace, SF Mono, Menlo, monospace',
+                  cursor: 'pointer',
+                }}
+                type="button"
+              >
+                + {label}
+              </button>
+              {isOpen && (
+                <div
+                  role="menu"
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    left: 0,
+                    marginTop: 4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                    padding: 4,
+                    background: '#1e1d27',
+                    border: '1px solid #2c2a38',
+                    borderRadius: 7,
+                    boxShadow: '0 6px 20px #00000040',
+                    zIndex: 10,
+                  }}
+                >
+                  {/* Plain text, not a menu item: describes the stage
+                      without being a focusable/selectable option. */}
+                  <div
+                    style={{
+                      padding: '2px 10px 6px',
+                      whiteSpace: 'nowrap',
+                      font: '500 10px/1.3 ui-monospace, SF Mono, Menlo, monospace',
+                      color: '#8b88a0',
+                    }}
+                  >
+                    {subtitle}
+                  </div>
+                  {specs.map((spec) => (
+                    <button
+                      key={spec}
+                      onClick={() => {
+                        addNode(spec);
+                        setOpenStage(null);
+                      }}
+                      style={{
+                        padding: '6px 10px',
+                        whiteSpace: 'nowrap',
+                        background: 'none',
+                        border: 0,
+                        borderRadius: 5,
+                        color: '#e8e6f2',
+                        font: '500 11px/1 ui-monospace, SF Mono, Menlo, monospace',
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                      }}
+                      type="button"
+                    >
+                      {NODE_SPECS[spec].name}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </Panel>
+  );
+}
+
 export default function Editor() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -166,6 +315,10 @@ export default function Editor() {
   // One store for the whole canvas, surviving every material rebuild — the
   // uniforms inside it are what make slider drags free.
   const paramStore = useMemo(() => new ParamStore(), []);
+
+  // The canvas's own on-screen bounds, measured for AddNodeToolbar so it can
+  // center new cards on what's visible instead of assuming a full window.
+  const canvasWrapperRef = useRef<HTMLDivElement>(null);
 
   // Same-type ports connect; portsCompatible carries the one exception
   // (Output's `in` also accepts a field) so this stays the only place
@@ -234,22 +387,6 @@ export default function Editor() {
     [setEdges],
   );
 
-  // New cards drop near the top-left in a slight stagger so they don't stack.
-  const addedCount = useRef(0);
-  const addNode = useCallback(
-    (spec: SpecId) => {
-      const count = addedCount.current;
-
-      addedCount.current += 1;
-
-      setNodes((current) => [
-        ...current,
-        makeNode(`${spec}-added-${count}`, spec, 60 + (count % 4) * 44, 40 + (count % 6) * 36),
-      ]);
-    },
-    [setNodes],
-  );
-
   // Params panels close here, in the events that end an "open" episode —
   // never in an effect watching props. A drag start collapses the dragged
   // card's panel for good; a selection change closes panels on cards no
@@ -308,7 +445,7 @@ export default function Editor() {
   );
 
   return (
-    <div style={{ width: '100vw', height: '100vh', background: '#16151d' }}>
+    <div ref={canvasWrapperRef} style={{ width: '100vw', height: '100vh', background: '#16151d' }}>
       {/* Wire state styling: hover thickens a wire so it reads as grabbable;
           selection thickens it more and adds a white glow. The edges' stroke
           COLOR stays inline (it encodes port type), so these rules only touch
@@ -378,91 +515,12 @@ export default function Editor() {
               <span>same colors connect</span>
             </div>
           </Panel>
-          <Panel position="top-left">
-            <div style={{ display: 'flex', gap: 6 }}>
-              {STAGE_MENU.map(({ stage, label, subtitle, specs }) => {
-                const hue = STAGE_COLORS[stage];
-                const isOpen = openStage === stage;
-
-                return (
-                  <div key={stage} style={{ position: 'relative' }}>
-                    <button
-                      aria-expanded={isOpen}
-                      onClick={() => setOpenStage((current) => (current === stage ? null : stage))}
-                      style={{
-                        padding: '6px 10px',
-                        background: '#1e1d27',
-                        border: `1px solid ${hue}55`,
-                        borderRadius: 7,
-                        color: hue,
-                        font: '500 11px/1 ui-monospace, SF Mono, Menlo, monospace',
-                        cursor: 'pointer',
-                      }}
-                      type="button"
-                    >
-                      + {label}
-                    </button>
-                    {isOpen && (
-                      <div
-                        role="menu"
-                        style={{
-                          position: 'absolute',
-                          top: '100%',
-                          left: 0,
-                          marginTop: 4,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: 2,
-                          padding: 4,
-                          background: '#1e1d27',
-                          border: '1px solid #2c2a38',
-                          borderRadius: 7,
-                          boxShadow: '0 6px 20px #00000040',
-                          zIndex: 10,
-                        }}
-                      >
-                        {/* Plain text, not a menu item: describes the stage
-                            without being a focusable/selectable option. */}
-                        <div
-                          style={{
-                            padding: '2px 10px 6px',
-                            whiteSpace: 'nowrap',
-                            font: '500 10px/1.3 ui-monospace, SF Mono, Menlo, monospace',
-                            color: '#8b88a0',
-                          }}
-                        >
-                          {subtitle}
-                        </div>
-                        {specs.map((spec) => (
-                          <button
-                            key={spec}
-                            onClick={() => {
-                              addNode(spec);
-                              setOpenStage(null);
-                            }}
-                            style={{
-                              padding: '6px 10px',
-                              whiteSpace: 'nowrap',
-                              background: 'none',
-                              border: 0,
-                              borderRadius: 5,
-                              color: '#e8e6f2',
-                              font: '500 11px/1 ui-monospace, SF Mono, Menlo, monospace',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                            }}
-                            type="button"
-                          >
-                            {NODE_SPECS[spec].name}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </Panel>
+          <AddNodeToolbar
+            canvasWrapperRef={canvasWrapperRef}
+            openStage={openStage}
+            setNodes={setNodes}
+            setOpenStage={setOpenStage}
+          />
         </ReactFlow>
       </EditorGraphContext.Provider>
     </div>
