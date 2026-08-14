@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 
 import {
   __registerMigrationForTests,
@@ -87,6 +87,27 @@ describe('parsePreset validation failures', () => {
     const json = JSON.stringify({ version: 1.5, nodes: [], edges: [] });
 
     expect(() => parsePreset(json)).toThrow(PresetError);
+  });
+
+  it('throws on a negative version instead of spinning through the migration walk', () => {
+    const json = JSON.stringify({ version: -1, nodes: [], edges: [] });
+
+    expect(() => parsePreset(json)).toThrow(PresetError);
+    expect(() => parsePreset(json)).toThrow('Preset version must not be negative (got -1).');
+  });
+
+  it('throws on duplicate node ids instead of letting the later node win silently', () => {
+    const json = JSON.stringify({
+      version: PRESET_VERSION,
+      nodes: [
+        { id: 'x', spec: 'gradient', position: { x: 0, y: 0 }, params: {} },
+        { id: 'x', spec: 'output', position: { x: 0, y: 0 }, params: {} },
+      ],
+      edges: [],
+    });
+
+    expect(() => parsePreset(json)).toThrow(PresetError);
+    expect(() => parsePreset(json)).toThrow('Duplicate node id "x"');
   });
 
   it('throws when an edge targets a handle the target spec does not have', () => {
@@ -228,8 +249,15 @@ describe('parsePreset coercions', () => {
 });
 
 describe('migrations', () => {
+  let unregister: (() => void) | undefined;
+
+  afterEach(() => {
+    unregister?.();
+    unregister = undefined;
+  });
+
   it('walks a registered no-op migration and parses a version 0 preset', () => {
-    __registerMigrationForTests(0, (preset) => preset);
+    unregister = __registerMigrationForTests(0, (preset) => preset);
 
     const json = JSON.stringify({ version: 0, nodes: [], edges: [] });
     const preset = parsePreset(json);
