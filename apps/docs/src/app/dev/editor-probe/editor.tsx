@@ -5,7 +5,7 @@
 // add-node toolbar, and the shared ParamStore that lets sliders write to the
 // GPU without recompiling. Ships prewired with the demo graph — gradient
 // warped by noise, colorized, into Output — so there's something to edit.
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   addEdge,
@@ -94,15 +94,24 @@ function GeneratedCodePanel({
 }) {
   // The copy button reports what actually happened — clipboard writes can
   // fail (permissions, non-secure context) and silence would read as success.
-  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
-  // Reset during render when the code changes: a lingering "copied" would
-  // claim code the clipboard doesn't hold.
-  const [copiedSource, setCopiedSource] = useState(source);
+  // Each result remembers the source it wrote, and the label only claims
+  // "copied"/"copy failed" while that source is still the one on screen — so
+  // a graph edit resets the button, and a slow writeText resolving after the
+  // edit can't claim code the clipboard doesn't hold.
+  const [copyResult, setCopyResult] = useState<{
+    source: string;
+    state: 'copied' | 'failed';
+  } | null>(null);
+  const copyState = copyResult !== null && copyResult.source === source ? copyResult.state : 'idle';
 
-  if (source !== copiedSource) {
-    setCopiedSource(source);
-    setCopyState('idle');
-  }
+  // Latest source, readable from the async clipboard callbacks: a result for
+  // a source that's already been replaced is dropped instead of stored, so it
+  // can't clobber a fresher result from a later click.
+  const latestSource = useRef(source);
+
+  useEffect(() => {
+    latestSource.current = source;
+  }, [source]);
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 8 }}>
@@ -156,14 +165,18 @@ function GeneratedCodePanel({
                 const clipboard = navigator.clipboard as Clipboard | undefined;
 
                 if (clipboard === undefined) {
-                  setCopyState('failed');
+                  setCopyResult({ source, state: 'failed' });
 
                   return;
                 }
                 clipboard
                   .writeText(source)
-                  .then(() => setCopyState('copied'))
-                  .catch(() => setCopyState('failed'));
+                  .then(() => {
+                    if (latestSource.current === source) setCopyResult({ source, state: 'copied' });
+                  })
+                  .catch(() => {
+                    if (latestSource.current === source) setCopyResult({ source, state: 'failed' });
+                  });
               }}
               style={{
                 marginLeft: 'auto',

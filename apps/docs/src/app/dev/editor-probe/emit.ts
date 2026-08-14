@@ -75,7 +75,17 @@ export function emitComponentSource(
 
   // A slider param becomes a prop (default = the editor's current value) plus
   // a uniform riding it. Returns the uniform's variable name for expressions.
+  // Deduped per node dial: a depth-forked helper (see fieldKeyOf below)
+  // re-emits its node, and every variant must ride the same prop and uniform —
+  // one editor dial, one prop.
+  const dialNames = new Map<string, string>();
+
   function emitDial(node: GraphNode, baseName: string, paramId: string): string {
+    const dialKey = `${node.id}/${paramId}`;
+    const emitted = dialNames.get(dialKey);
+
+    if (emitted !== undefined) return emitted;
+
     const spec = NODE_SPECS[node.spec];
     const param = spec.params.find((candidate) => candidate.id === paramId);
     const value = Number(node.params[paramId] ?? 0);
@@ -92,6 +102,7 @@ export function emitComponentSource(
     });
     emission.tslImports.add('uniform');
     emission.uniformLines.push(`const ${propName}Uniform = uniform(${propName});`);
+    dialNames.set(dialKey, `${propName}Uniform`);
 
     return `${propName}Uniform`;
   }
@@ -115,6 +126,8 @@ export function emitComponentSource(
 
   const EMPTY_COLOR = 'vec3(0.09, 0.09, 0.12)';
 
+  // Emitted field helpers, keyed by fieldKeyOf — node id alone for
+  // depth-insensitive subtrees, id plus entry depth when the warp cap can bite.
   const fieldNames = new Map<string, string>();
   const colorNames = new Map<string, string>();
   const visiting = new Set<string>();
@@ -125,12 +138,51 @@ export function emitComponentSource(
   // and safe at any depth.
   let warpDriverDepth = 0;
 
+  // Whether a field subtree's emission depends on warpDriverDepth: true when
+  // a warp with a wired driver sits anywhere inside it, because the depth cap
+  // is read where the REFERENCE sits, not where the node is defined. Purely
+  // structural, and probe graphs are tiny, so no memoization.
+  function dependsOnDriverDepth(node: GraphNode | null, seen = new Set<string>()): boolean {
+    if (node === null || seen.has(node.id)) return false;
+    seen.add(node.id);
+
+    switch (node.spec) {
+      case 'warp':
+        return (
+          upstreamOf(node.id, 'by') !== null ||
+          dependsOnDriverDepth(upstreamOf(node.id, 'source'), seen)
+        );
+      case 'curve':
+        return dependsOnDriverDepth(upstreamOf(node.id, 'in'), seen);
+      case 'blend':
+        return (
+          dependsOnDriverDepth(upstreamOf(node.id, 'in'), seen) ||
+          dependsOnDriverDepth(upstreamOf(node.id, 'with'), seen)
+        );
+      default:
+        return false;
+    }
+  }
+
+  // Cache key for a field helper. Depth-insensitive subtrees share one helper
+  // across every reference (the common fan-out); depth-sensitive ones fork per
+  // entry depth, so a real warp cached below the cap is never reused where the
+  // cap applies, and a capped pass-through never shadows a shallow reference
+  // that must emit the real warp. Depths at or past the cap all emit
+  // identically — every driver inside caps — so they collapse onto one key.
+  function fieldKeyOf(node: GraphNode): string {
+    if (!dependsOnDriverDepth(node)) return node.id;
+
+    return `${node.id}@${Math.min(warpDriverDepth, MAX_WARP_DRIVER_DEPTH)}`;
+  }
+
   /** Emits `node` as a field helper and returns the helper's name. */
   function emitField(node: GraphNode | null): string {
     if (node === null) return flatField();
     if (visiting.has(node.id)) return flatField();
 
-    const existing = fieldNames.get(node.id);
+    const fieldKey = fieldKeyOf(node);
+    const existing = fieldNames.get(fieldKey);
 
     if (existing !== undefined) return existing;
     visiting.add(node.id);
@@ -150,7 +202,7 @@ export function emitComponentSource(
             `const ${name} = (p: TSLNode) => clamp(dot(p.sub(0.5), ${base}Direction).add(0.5), 0, 1);`,
             '',
           );
-          fieldNames.set(node.id, name);
+          fieldNames.set(fieldKey, name);
 
           return name;
         }
@@ -173,7 +225,7 @@ export function emitComponentSource(
             `    .mul(0.5);`,
             '',
           );
-          fieldNames.set(node.id, name);
+          fieldNames.set(fieldKey, name);
 
           return name;
         }
@@ -185,15 +237,17 @@ export function emitComponentSource(
 
           if (driverNode === null) {
             // No driver: the warp is a pass-through, same as the editor.
-            fieldNames.set(node.id, source);
+            fieldNames.set(fieldKey, source);
 
             return source;
           }
 
           if (warpDriverDepth >= MAX_WARP_DRIVER_DEPTH) {
-            // Driver cap hit: pass through, same as the editor. Uncached —
-            // whether the cap applies depends on where the reference sits,
-            // so a shallower reference must still emit the real warp.
+            // Driver cap hit: pass through, same as the editor. The
+            // depth-forked fieldKey keeps this pass-through away from
+            // shallower references, which must still emit the real warp.
+            fieldNames.set(fieldKey, source);
+
             return source;
           }
 
@@ -218,7 +272,7 @@ export function emitComponentSource(
             `};`,
             '',
           );
-          fieldNames.set(node.id, name);
+          fieldNames.set(fieldKey, name);
 
           return name;
         }
@@ -238,7 +292,7 @@ export function emitComponentSource(
             `  pow(clamp(${input}(p), 0, 1), exp2(${bend}.mul(-2)));`,
             '',
           );
-          fieldNames.set(node.id, name);
+          fieldNames.set(fieldKey, name);
 
           return name;
         }
@@ -249,7 +303,7 @@ export function emitComponentSource(
           const baseField = emitField(baseNode);
 
           if (overlayNode === null) {
-            fieldNames.set(node.id, baseField);
+            fieldNames.set(fieldKey, baseField);
 
             return baseField;
           }
@@ -279,7 +333,7 @@ export function emitComponentSource(
             `};`,
             '',
           );
-          fieldNames.set(node.id, name);
+          fieldNames.set(fieldKey, name);
 
           return name;
         }
