@@ -12,8 +12,8 @@ describe('stage signatures', () => {
       expect(spec.output).toBe('field');
     }
   });
-  it('shape cards map field to field', () => {
-    for (const [, spec] of specs.filter(([, s]) => s.stage === 'shape')) {
+  it('effect cards map field to field', () => {
+    for (const [, spec] of specs.filter(([, s]) => s.stage === 'effect')) {
       expect(spec.inputs.every((input) => input.type === 'field')).toBe(true);
       expect(spec.output).toBe('field');
     }

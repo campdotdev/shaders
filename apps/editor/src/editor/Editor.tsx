@@ -37,15 +37,43 @@ const nodeTypes = { card: CardNode };
 const edgeTypes = { typed: TypedEdge };
 
 /** The toolbar's four flyouts, grouped by stage in pipeline order (left to
-    right on the canvas: generate -> shape -> color -> adjust). Output is a
+    right on the canvas: generate -> effect -> color -> adjust). Output is a
     singleton seeded by the starter graph, never toolbar-addable. A flat row
     of all 13 specs was tried and rejected — stage grouping is what makes the
-    pipeline legible before a single card is placed. */
-const STAGE_MENU: Array<{ stage: Exclude<Stage, 'output'>; specs: SpecId[] }> = [
-  { stage: 'generate', specs: ['gradient', 'noise', 'fractalNoise', 'voronoi', 'blobs'] },
-  { stage: 'shape', specs: ['warp', 'curve', 'blend'] },
-  { stage: 'color', specs: ['colorRamp'] },
-  { stage: 'adjust', specs: ['tone', 'levels', 'vignette', 'grain'] },
+    pipeline legible before a single card is placed. `label` is the button
+    text shown to the user; it differs from `stage` only for `effect`, whose
+    button reads the plural "effects". A one-line subtitle under each open
+    flyout spells out what the stage is for. */
+const STAGE_MENU: Array<{
+  stage: Exclude<Stage, 'output'>;
+  label: string;
+  subtitle: string;
+  specs: SpecId[];
+}> = [
+  {
+    stage: 'generate',
+    label: 'generate',
+    subtitle: 'make a pattern',
+    specs: ['gradient', 'noise', 'fractalNoise', 'voronoi', 'blobs'],
+  },
+  {
+    stage: 'effect',
+    label: 'effects',
+    subtitle: 'rework the pattern before it gets color',
+    specs: ['warp', 'curve', 'blend'],
+  },
+  {
+    stage: 'color',
+    label: 'color',
+    subtitle: 'turn the pattern into color',
+    specs: ['colorRamp'],
+  },
+  {
+    stage: 'adjust',
+    label: 'adjust',
+    subtitle: 'polish the finished image',
+    specs: ['tone', 'levels', 'vignette', 'grain'],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -332,7 +360,7 @@ export default function Editor() {
           </Panel>
           <Panel position="top-left">
             <div style={{ display: 'flex', gap: 6 }}>
-              {STAGE_MENU.map(({ stage, specs }) => {
+              {STAGE_MENU.map(({ stage, label, subtitle, specs }) => {
                 const hue = STAGE_COLORS[stage];
                 const isOpen = openStage === stage;
 
@@ -352,7 +380,7 @@ export default function Editor() {
                       }}
                       type="button"
                     >
-                      + {stage}
+                      + {label}
                     </button>
                     {isOpen && (
                       <div
@@ -373,6 +401,18 @@ export default function Editor() {
                           zIndex: 10,
                         }}
                       >
+                        {/* Plain text, not a menu item: describes the stage
+                            without being a focusable/selectable option. */}
+                        <div
+                          style={{
+                            padding: '2px 10px 6px',
+                            whiteSpace: 'nowrap',
+                            font: '500 10px/1.3 ui-monospace, SF Mono, Menlo, monospace',
+                            color: '#8b88a0',
+                          }}
+                        >
+                          {subtitle}
+                        </div>
                         {specs.map((spec) => (
                           <button
                             key={spec}
