@@ -16,6 +16,8 @@ export type { ColorRampStop, TSLNode } from './primitives/color-ramp/color-ramp.
 export { mixColor } from './primitives/color-space/index.js';
 export type { ColorSpace, HueInterpolation } from './primitives/color-space/index.js';
 
+export { colorSpaces } from './primitives/color-space/registry.js';
+
 // Re-exported from the ./color subpath, which is where these actually live.
 // Keeping them here means no existing import breaks; new call sites in the docs
 // site are pushed to the subpath by a lint rule in the root eslint config,
