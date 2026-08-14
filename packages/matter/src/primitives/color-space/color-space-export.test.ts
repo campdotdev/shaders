@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import { colorSpaces } from '../../index.js';
 
 describe('colorSpaces export', () => {
-  it('exposes oklab round-trip converters', () => {
+  it('exposes oklab fromLinear/toLinear converters', () => {
     const coords = colorSpaces.oklab.fromLinear(vec3(0.5, 0.2, 0.8));
 
     expect(coords).toBeDefined();

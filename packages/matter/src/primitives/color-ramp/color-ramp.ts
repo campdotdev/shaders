@@ -1,5 +1,5 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { clamp, div, max, sub, vec3 } from 'three/tsl';
+import { clamp, div, greaterThan, max, select, step, sub, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import { hueArcInterpolators } from '../color-space/hue.js';
@@ -88,14 +88,16 @@ export function colorRamp(
       localT = clamp(div(sub(t, previousPosition), positionSpan), 0, 1);
     } else {
       // A node-driven position: the span is only known on the GPU, so it
-      // can't be inspected (or skipped) at build time. The epsilon floor
-      // keeps the divide finite; stops that coincide collapse to a hard
-      // step at that position instead of being dropped.
-      localT = clamp(
-        div(sub(t, previousPosition), max(sub(nextPosition, previousPosition), 1e-4)),
-        0,
-        1,
-      );
+      // can't be inspected (or skipped) at build time. Positive spans get
+      // ordinary localize-and-clamp; the floor only keeps that divide
+      // finite when stops coincide or cross, where the select discards it
+      // for a true hard step at the previous position — t below it holds
+      // the earlier stop, t at or above it takes the next (step() is 1
+      // when its second argument reaches the edge).
+      const span = sub(nextPosition, previousPosition);
+      const blended = clamp(div(sub(t, previousPosition), max(span, 1e-4)), 0, 1);
+
+      localT = select(greaterThan(span, 0), blended, step(previousPosition, t));
     }
 
     const nextCoords = space.fromLinear(vec3(next.color));
