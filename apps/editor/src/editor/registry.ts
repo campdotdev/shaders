@@ -392,6 +392,26 @@ export const NODE_SPECS = {
 export type SpecId = keyof typeof NODE_SPECS;
 
 /**
+ * Whether a wire from a port of `sourceType` may land on `targetSpec`'s input
+ * `targetType`. The rule is "same colors connect", with ONE exception: the
+ * Output card's `in` also accepts a field — a bare pattern renders as its
+ * grayscale image, so any teal wire can be inspected without routing it
+ * through a ramp first. Output is display-only, which is why the exception is
+ * safe: no downstream math ever sees the promoted value. The reverse
+ * (color into a field input) stays forbidden — collapsing three channels to
+ * one requires choosing math, and hidden choices don't belong on wires.
+ */
+export function portsCompatible(
+  sourceType: PortType,
+  targetSpecId: SpecId,
+  targetType: PortType,
+): boolean {
+  if (sourceType === targetType) return true;
+
+  return targetSpecId === 'output' && targetType === 'color' && sourceType === 'field';
+}
+
+/**
  * Fresh param values for a new node instance: every spec default, by id.
  * Ramp defaults are deep-copied (`structuredClone`) — without it every
  * Color Ramp card on the canvas would share and mutate the same stops array.

@@ -50,6 +50,7 @@ import {
   FRACTAL_STYLE_FOLD,
   FRACTAL_STYLE_REMAP,
   MAX_WARP_DRIVER_DEPTH,
+  NODE_SPECS,
   VORONOI_DRIFT,
   VORONOI_EDGE_GAIN,
 } from './registry';
@@ -388,5 +389,17 @@ export function compileOutputColor(
 
   if (!outputNode) return vec3(0.09, 0.09, 0.12);
 
-  return compileColor(upstreamOf(outputNode.id, 'in'));
+  const upstreamNode = upstreamOf(outputNode.id, 'in');
+
+  // Output-only exception (see portsCompatible in registry.ts): a bare field
+  // wired straight into Output is allowed, and renders as its grayscale
+  // image rather than being rejected at connect time. Promoting it is just
+  // `vec3(scalar)` — TSL broadcasts a scalar across all three channels — and
+  // that promotion happens ONLY here, at the Output seam; compileColor's own
+  // field-typed fallback arms below never run for a validly-typed graph.
+  if (upstreamNode !== null && NODE_SPECS[upstreamNode.spec].output === 'field') {
+    return vec3(compileField(upstreamNode)(uv()));
+  }
+
+  return compileColor(upstreamNode);
 }
