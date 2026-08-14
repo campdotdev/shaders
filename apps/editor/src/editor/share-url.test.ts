@@ -23,8 +23,7 @@ function buildFullPreset(): Preset {
   const edges: PresetEdge[] = [
     { source: 'gradient', target: 'warp', targetHandle: 'source' },
     { source: 'noise', target: 'warp', targetHandle: 'by' },
-    { source: 'warp', target: 'curve', targetHandle: 'in' },
-    { source: 'curve', target: 'blend', targetHandle: 'in' },
+    { source: 'warp', target: 'blend', targetHandle: 'in' },
     { source: 'fractalNoise', target: 'blend', targetHandle: 'with' },
     { source: 'blend', target: 'colorRamp', targetHandle: 'in' },
     { source: 'colorRamp', target: 'tone', targetHandle: 'in' },

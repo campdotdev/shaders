@@ -255,15 +255,6 @@ export const NODE_SPECS = {
       },
     ],
   },
-  curve: {
-    name: 'Curve',
-    stage: 'effect',
-    inputs: [{ id: 'in', label: 'in', type: 'field' }],
-    output: 'field',
-    params: [
-      { id: 'bend', label: 'bend', kind: 'slider', min: -1, max: 1, step: 0.01, defaultValue: 0 },
-    ],
-  },
   blend: {
     name: 'Blend',
     stage: 'effect',
@@ -299,10 +290,9 @@ export const NODE_SPECS = {
     params: [{ id: 'stops', label: 'stops', kind: 'ramp', defaultValue: DEFAULT_RAMP_STOPS }],
   },
   // The first ADJUST-stage card: color in, color out, sits between Color Ramp
-  // and Output. Same one-dial curve as Curve, but bending the finished
-  // image's tones instead of a grayscale pattern — the Photoshop "adjustment
-  // layer" mental model. Named Tone (as in "tone curve") so the toolbar never
-  // shows two nodes both called Curve.
+  // and Output. A one-dial pow() bend, but on the finished image's tones
+  // instead of a grayscale pattern — the Photoshop "adjustment layer" mental
+  // model. Named Tone (as in "tone curve").
   tone: {
     name: 'Tone',
     stage: 'adjust',

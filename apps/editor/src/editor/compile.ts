@@ -250,17 +250,6 @@ export function compileOutputColor(
           };
         }
 
-        case 'curve': {
-          // Photoshop-curves in one dial: raise the field to a power. bend 0
-          // is identity (2^0 = 1); positive bend brightens midtones (exponent
-          // shrinks toward 0.25), negative darkens (toward 4). Exponents stay
-          // positive, so pow never sees the negative-base trap.
-          const input = compileField(upstreamOf(node.id, 'in'));
-          const exponent = exp2(dial(node, 'bend').mul(-2));
-
-          return (samplePoint) => pow(clamp(input(samplePoint), 0, 1), exponent);
-        }
-
         case 'blend': {
           const base = compileField(upstreamOf(node.id, 'in'));
           const overlayNode = upstreamOf(node.id, 'with');
@@ -386,7 +375,6 @@ export function compileOutputColor(
         case 'voronoi':
         case 'blobs':
         case 'warp':
-        case 'curve':
         case 'blend':
         case 'output':
           return vec3(0.09, 0.09, 0.12);
