@@ -28,7 +28,13 @@ import type { CardNodeType } from './CardNode';
 import { structuralKeyOf } from './graph';
 import { EditorGraphContext } from './graph-context';
 import { ParamStore } from './param-store';
-import { defaultParamsOf, NODE_SPECS, PORT_COLORS, STAGE_COLORS } from './registry';
+import {
+  defaultParamsOf,
+  NODE_SPECS,
+  PORT_COLORS,
+  portsCompatible,
+  STAGE_COLORS,
+} from './registry';
 import type { PortType, SpecId, Stage } from './registry';
 import { STARTER_EDGES, STARTER_NODES } from './starter-graph';
 import { TypedEdge } from './TypedEdge';
@@ -143,6 +149,12 @@ function inputTypeOf(
   return input ? input.type : null;
 }
 
+function specIdOf(nodes: CardNodeType[], nodeId: string | null): SpecId | null {
+  const node = nodes.find((candidate) => candidate.id === nodeId);
+
+  return node ? node.data.spec : null;
+}
+
 export default function Editor() {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
@@ -155,13 +167,21 @@ export default function Editor() {
   // uniforms inside it are what make slider drags free.
   const paramStore = useMemo(() => new ParamStore(), []);
 
-  // Only same-type ports connect; the wire simply refuses to snap otherwise.
+  // Same-type ports connect; portsCompatible carries the one exception
+  // (Output's `in` also accepts a field) so this stays the only place
+  // connection legality is decided.
   const isValidConnection: IsValidConnection = useCallback(
     (connection) => {
       const sourceType = outputTypeOf(nodes, connection.source);
+      const targetSpecId = specIdOf(nodes, connection.target);
       const targetType = inputTypeOf(nodes, connection.target, connection.targetHandle);
 
-      return sourceType !== null && sourceType === targetType;
+      return (
+        sourceType !== null &&
+        targetSpecId !== null &&
+        targetType !== null &&
+        portsCompatible(sourceType, targetSpecId, targetType)
+      );
     },
     [nodes],
   );

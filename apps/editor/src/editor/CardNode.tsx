@@ -13,7 +13,7 @@ import type { Node, NodeProps } from '@xyflow/react';
 
 import { useEditorGraph } from './graph-context';
 import { OutputPreview } from './OutputPreview';
-import { NODE_SPECS, PORT_COLORS, STAGE_COLORS } from './registry';
+import { NODE_SPECS, PORT_COLORS, portsCompatible, STAGE_COLORS } from './registry';
 import type { ParamValue, PortType, SpecId, Stage } from './registry';
 
 export type CardNodeType = Node<
@@ -91,8 +91,13 @@ function selectValueOf(value: ParamValue | undefined, fallback: string): string 
 }
 
 interface LiveDrag {
-  portType: PortType;
   dropKind: 'target' | 'source';
+  /** The type of the port the drag started FROM. */
+  originType: PortType;
+  /** The spec the drag started from. Only load-bearing for a backward drag
+      (dropKind 'source'), where portsCompatible needs to know which card's
+      input the candidate out ports would end up feeding. */
+  originSpecId: SpecId;
 }
 
 /** What a live wire-drag will accept, derived from the connection in
@@ -106,12 +111,16 @@ function liveDragOf(connection: ReturnType<typeof useConnection<CardNodeType>>):
   const fromSpec = NODE_SPECS[fromNode.data.spec];
 
   if (fromHandle.type === 'source') {
-    return fromSpec.output !== null ? { portType: fromSpec.output, dropKind: 'target' } : null;
+    return fromSpec.output !== null
+      ? { dropKind: 'target', originType: fromSpec.output, originSpecId: fromNode.data.spec }
+      : null;
   }
 
   const originInput = fromSpec.inputs.find((input) => input.id === fromHandle.id);
 
-  return originInput ? { portType: originInput.type, dropKind: 'source' } : null;
+  return originInput
+    ? { dropKind: 'source', originType: originInput.type, originSpecId: fromNode.data.spec }
+    : null;
 }
 
 export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeType>) {
@@ -164,7 +173,10 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
   const connection = useConnection<CardNodeType>();
   const liveDrag = liveDragOf(connection);
 
-  /** Extra style for a handle during a live wire drag; empty when idle. */
+  /** Extra style for a handle during a live wire drag; empty when idle.
+      Validity routes through portsCompatible so the Output exception (a
+      field wire may land on Output's color `in`) glows there too, not just
+      same-type matches. */
   const dragStyle = (
     handleKind: 'target' | 'source',
     portType: PortType,
@@ -175,13 +187,27 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
     // The handle the drag started from keeps its normal look.
     if (connection.fromNode?.id === id && connection.fromHandle?.id === handleId) return {};
 
-    const isValidDrop = handleKind === liveDrag.dropKind && portType === liveDrag.portType;
+    const isValidDrop =
+      handleKind === liveDrag.dropKind &&
+      (liveDrag.dropKind === 'target'
+        ? // Forward drag: `handleId`'s card (this one) is the wire's target.
+          portsCompatible(liveDrag.originType, data.spec, portType)
+        : // Backward drag: the drag's origin card is the wire's target, and
+          // this handle's own type is the candidate source.
+          portsCompatible(portType, liveDrag.originSpecId, liveDrag.originType));
 
-    return isValidDrop
-      ? {
-          boxShadow: `0 0 0 3px ${PORT_COLORS[portType]}55, 0 0 10px ${PORT_COLORS[portType]}`,
-        }
-      : { opacity: 0.25 };
+    if (!isValidDrop) return { opacity: 0.25 };
+
+    // Forward drags glow in the WIRE's actual color (the drag's origin
+    // type), so the one exception — a field landing on Output's violet `in`
+    // — glows honest teal instead of claiming to be color. Backward drags
+    // glow each candidate's own type, since every valid drop there already
+    // is a genuine port of that type.
+    const glowColor = liveDrag.dropKind === 'target' ? liveDrag.originType : portType;
+
+    return {
+      boxShadow: `0 0 0 3px ${PORT_COLORS[glowColor]}55, 0 0 10px ${PORT_COLORS[glowColor]}`,
+    };
   };
 
   const width = cardWidthOf(isOutput, expanded);

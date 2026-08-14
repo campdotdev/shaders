@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { defaultParamsOf, NODE_SPECS, STAGE_COLORS } from './registry';
+import { defaultParamsOf, NODE_SPECS, portsCompatible, STAGE_COLORS } from './registry';
 import type { NodeSpec, SpecId } from './registry';
 
 const specs = Object.entries(NODE_SPECS) as Array<[SpecId, NodeSpec]>;
@@ -55,5 +55,23 @@ describe('param specs', () => {
       if (stage === 'output') continue;
       expect(STAGE_COLORS[stage]).toMatch(/^#[0-9a-f]{6}$/i);
     }
+  });
+});
+
+describe('portsCompatible', () => {
+  it('allows a field wire into Output.in (the one exception)', () => {
+    expect(portsCompatible('field', 'output', 'color')).toBe(true);
+  });
+  it('allows a color wire into Output.in (same-type, still fine)', () => {
+    expect(portsCompatible('color', 'output', 'color')).toBe(true);
+  });
+  it('rejects a field wire into a color input on a non-output card', () => {
+    expect(portsCompatible('field', 'tone', 'color')).toBe(false);
+  });
+  it('rejects a color wire into a field input (collapsing channels needs math)', () => {
+    expect(portsCompatible('color', 'warp', 'field')).toBe(false);
+  });
+  it('allows a field wire into a field input (same-type sanity)', () => {
+    expect(portsCompatible('field', 'warp', 'field')).toBe(true);
   });
 });
