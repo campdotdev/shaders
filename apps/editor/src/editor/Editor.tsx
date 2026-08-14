@@ -60,7 +60,7 @@ const STAGE_MENU: Array<{
     stage: 'effect',
     label: 'effects',
     subtitle: 'rework the pattern before it gets color',
-    specs: ['warp', 'curve', 'blend'],
+    specs: ['warp', 'blend'],
   },
   {
     stage: 'color',
