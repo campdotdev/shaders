@@ -62,7 +62,19 @@ export const PORT_COLORS: Record<PortType, string> = {
 export const DRIVER_DECORRELATE = [5.2, 1.3] as const;
 
 /** Demo palette: deep indigo through violet to pink, mixed in oklab. */
-export const RAMP_HEX = ['#1B2A6B', '#7C3AED', '#F472B6'];
+export const RAMP_HEX = ['#1B2A6B', '#7C3AED', '#F472B6'] as const;
+
+/**
+ * Warp reads its driver field twice (once per decorrelated tap), so warps
+ * chained through the `by` port double the evaluated tree at every level —
+ * 2^n growth. Past this nesting depth a warp ignores its driver and passes
+ * its source through, so a playful wire-up degrades gracefully instead of
+ * freezing the tab on shader compile. Both backends honor it: the runtime
+ * compiler builds the doubling tree directly, and while the code emitter's
+ * TEXT stays linear (helpers are shared by name), the generated component
+ * builds the same doubling tree when it runs.
+ */
+export const MAX_WARP_DRIVER_DEPTH = 4;
 
 export const NODE_SPECS = {
   gradient: {
