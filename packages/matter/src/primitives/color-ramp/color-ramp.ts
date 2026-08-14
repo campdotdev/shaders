@@ -1,5 +1,5 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { clamp, div, sub, vec3 } from 'three/tsl';
+import { clamp, div, max, sub, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import { hueArcInterpolators } from '../color-space/hue.js';
@@ -20,10 +20,13 @@ import type { ColorSpace, HueInterpolation } from '../color-space/types.js';
 export type TSLNode = Node | ShaderNodeObject<Node>;
 
 export interface ColorRampStop {
-  /** Color expressed as a TSL node (typically `vec3(r,g,b)`), in linear-sRGB. */
+  /** Color expressed as a TSL node (typically `vec3(r,g,b)`), in linear-sRGB.
+      May be node-driven (e.g. `uniform(new Color(...))`) — the ramp then
+      re-mixes on the GPU without a rebuild when the value changes. */
   color: TSLNode;
-  /** Position 0..1 along the ramp. */
-  position: number;
+  /** Position 0..1 along the ramp — a literal number (baked into the shader)
+      or a float node (e.g. `uniform(0.5)`) for live-driven ramps. */
+  position: number | TSLNode;
 }
 
 /**
@@ -40,11 +43,9 @@ export interface ColorRampStop {
  *
  * Falls back to the first/last stop's color outside the bracketing positions.
  *
- * Stop colors and positions are read at build time — callers pass literal
- * vec3s, which compile into the shader as constants. That's why every
- * component that uses colorRamp rebuilds its material when its colors
- * change. Widening stops to accept uniform nodes is deliberately deferred
- * until something needs to drive ramp colors at interactive frequency.
+ * Stops may be literal (numbers / literal vec3s — baked into the shader, the
+ * default for every registry component) or node-driven (uniforms), in which
+ * case the GPU re-mixes live and only the stop COUNT remains structural.
  */
 export function colorRamp(
   t: TSLNode,
@@ -73,12 +74,29 @@ export function colorRamp(
     const next = stops[i];
 
     if (previousStop === undefined || next === undefined) continue;
-    const positionSpan = next.position - previousStop.position;
 
-    if (positionSpan <= 0) continue;
-    // Localize t into the [prev..next] range. `t` is TSLNode (the union),
-    // so we use functional-form ops to avoid needing a chain-method receiver.
-    const localT = clamp(div(sub(t, previousStop.position), positionSpan), 0, 1);
+    const previousPosition = previousStop.position;
+    const nextPosition = next.position;
+    let localT: TSLNode;
+
+    if (typeof previousPosition === 'number' && typeof nextPosition === 'number') {
+      // Both positions are build-time literals: keep the original math, so
+      // every existing baked-ramp caller compiles the identical shader.
+      const positionSpan = nextPosition - previousPosition;
+
+      if (positionSpan <= 0) continue;
+      localT = clamp(div(sub(t, previousPosition), positionSpan), 0, 1);
+    } else {
+      // A node-driven position: the span is only known on the GPU, so it
+      // can't be inspected (or skipped) at build time. The epsilon floor
+      // keeps the divide finite; stops that coincide collapse to a hard
+      // step at that position instead of being dropped.
+      localT = clamp(
+        div(sub(t, previousPosition), max(sub(nextPosition, previousPosition), 1e-4)),
+        0,
+        1,
+      );
+    }
 
     const nextCoords = space.fromLinear(vec3(next.color));
 
