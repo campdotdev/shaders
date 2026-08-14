@@ -6,13 +6,13 @@
 // nouns ("source") or jargon ("driver").
 //
 // Cards are grouped into four stages that read left to right across the
-// canvas: generate (make a field) -> shape (reshape a field) -> color (turn a
-// field into color) -> adjust (grade the finished color). Output sits after
+// canvas: generate (make a field) -> effect (reshape a field) -> color (turn
+// a field into color) -> adjust (grade the finished color). Output sits after
 // adjust and stays untinted, since it isn't a stage of transformation itself.
 
 export type PortType = 'field' | 'color';
 
-export type Stage = 'generate' | 'shape' | 'color' | 'adjust' | 'output';
+export type Stage = 'generate' | 'effect' | 'color' | 'adjust' | 'output';
 
 export interface InputSpec {
   /** stable handle id, used by React Flow edges and by the compiler */
@@ -73,7 +73,7 @@ export const PORT_COLORS: Record<PortType, string> = {
     color PORT violet on purpose — the stage where color enters the graph. */
 export const STAGE_COLORS: Record<Exclude<Stage, 'output'>, string> = {
   generate: '#60a5fa',
-  shape: '#f59e0b',
+  effect: '#f59e0b',
   color: '#a78bfa',
   adjust: '#fb7185',
 };
@@ -235,7 +235,7 @@ export const NODE_SPECS = {
   },
   warp: {
     name: 'Warp',
-    stage: 'shape',
+    stage: 'effect',
     // The "by" field is the displacement driver: bright areas push the
     // sampling coordinates further, dark areas leave them alone.
     inputs: [
@@ -257,7 +257,7 @@ export const NODE_SPECS = {
   },
   curve: {
     name: 'Curve',
-    stage: 'shape',
+    stage: 'effect',
     inputs: [{ id: 'in', label: 'in', type: 'field' }],
     output: 'field',
     params: [
@@ -266,7 +266,7 @@ export const NODE_SPECS = {
   },
   blend: {
     name: 'Blend',
-    stage: 'shape',
+    stage: 'effect',
     inputs: [
       { id: 'in', label: 'in', type: 'field' },
       { id: 'with', label: 'with', type: 'field' },

@@ -4,7 +4,7 @@
 // them). The Output card is the exception: its face is a live ShaderScene
 // showing the compiled result, because seeing the result is Output's entire
 // job. Every non-Output card also wears a subtle wash of its stage's color
-// (generate/shape/color/adjust) so the canvas reads left-to-right as a
+// (generate/effect/color/adjust) so the canvas reads left-to-right as a
 // pipeline at a glance, the way the concept mock does.
 import type { CSSProperties } from 'react';
 
