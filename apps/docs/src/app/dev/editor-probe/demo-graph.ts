@@ -11,15 +11,25 @@ export interface DemoNode {
   y: number;
 }
 
-export const DEMO_NODES: DemoNode[] = [
+export const DEMO_NODES = [
   { id: 'gradient-1', spec: 'gradient', x: 30, y: 60 },
   { id: 'noise-1', spec: 'noise', x: 30, y: 300 },
   { id: 'warp-1', spec: 'warp', x: 270, y: 170 },
   { id: 'ramp-1', spec: 'colorRamp', x: 500, y: 165 },
   { id: 'output-1', spec: 'output', x: 720, y: 120 },
-];
+] as const satisfies readonly DemoNode[];
 
-export const DEMO_EDGES = [
+/** Only declared node ids can be wired — a typo'd edge fails to compile. */
+type DemoNodeId = (typeof DEMO_NODES)[number]['id'];
+
+interface DemoEdge {
+  source: DemoNodeId;
+  target: DemoNodeId;
+  /** Input handle ids the demo wiring uses (see NODE_SPECS inputs). */
+  targetHandle: 'source' | 'by' | 'in';
+}
+
+export const DEMO_EDGES: DemoEdge[] = [
   { source: 'gradient-1', target: 'warp-1', targetHandle: 'source' },
   { source: 'noise-1', target: 'warp-1', targetHandle: 'by' },
   { source: 'warp-1', target: 'ramp-1', targetHandle: 'in' },

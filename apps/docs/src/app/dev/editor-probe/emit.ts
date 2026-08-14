@@ -7,7 +7,7 @@
 // as defaults. Deliberately three-free: a Node test imports this to write the
 // generated file to disk.
 import type { GraphEdge, GraphNode } from './compile';
-import { DRIVER_DECORRELATE, NODE_SPECS, RAMP_HEX } from './registry';
+import { DRIVER_DECORRELATE, MAX_WARP_DRIVER_DEPTH, NODE_SPECS, RAMP_HEX } from './registry';
 
 // ---------------------------------------------------------------------------
 // Emitter state — one Emission per generated file
@@ -119,6 +119,12 @@ export function emitComponentSource(
   const colorNames = new Map<string, string>();
   const visiting = new Set<string>();
 
+  // How many warp drivers the walk is currently inside — the depth that
+  // MAX_WARP_DRIVER_DEPTH caps, mirroring the runtime compiler. Source
+  // chains stay uncounted: they evaluate once per level, so they're linear
+  // and safe at any depth.
+  let warpDriverDepth = 0;
+
   /** Emits `node` as a field helper and returns the helper's name. */
   function emitField(node: GraphNode | null): string {
     if (node === null) return flatField();
@@ -184,7 +190,17 @@ export function emitComponentSource(
             return source;
           }
 
+          if (warpDriverDepth >= MAX_WARP_DRIVER_DEPTH) {
+            // Driver cap hit: pass through, same as the editor. Uncached —
+            // whether the cap applies depends on where the reference sits,
+            // so a shallower reference must still emit the real warp.
+            return source;
+          }
+
+          warpDriverDepth += 1;
           const driver = emitField(driverNode);
+
+          warpDriverDepth -= 1;
           const base = emission.claim('warp');
           const name = `${base}Field`;
           const amount = emitDial(node, base, 'amount');
@@ -300,8 +316,7 @@ export function emitComponentSource(
           emission.tslImports.add('uv');
 
           const stops = RAMP_HEX.map((hex, index) => {
-            const position =
-              RAMP_HEX.length === 1 ? 0 : Number((index / (RAMP_HEX.length - 1)).toFixed(4));
+            const position = Number((index / (RAMP_HEX.length - 1)).toFixed(4));
 
             return `  { position: ${position}, color: vec3(...parseColorString('${hex}')) },`;
           });
@@ -374,6 +389,18 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
     .map((prop) => `${prop.name} = ${prop.defaultValue}`)
     .join(',\n  ');
 
+  // A dial-free graph (say, ramp straight into Output) has no props at all;
+  // emitting the interface and destructuring anyway would produce an empty
+  // object type and a bare `{ , }` — a syntax error. Drop both instead.
+  const propsBlock =
+    emission.props.length > 0
+      ? `export interface GeneratedShaderProps {\n${propsInterface}\n}\n\n`
+      : '';
+  const signature =
+    emission.props.length > 0
+      ? `export function GeneratedShader({\n  ${destructured},\n}: GeneratedShaderProps) {`
+      : `export function GeneratedShader() {`;
+
   const effectDeps = ['shaderContext', ...emission.props.map((prop) => prop.name)].join(', ');
 
   const indent = (line: string) => (line === '' ? '' : `    ${line}`);
@@ -403,13 +430,7 @@ import type { Node } from 'three/webgpu';
 
 type TSLNode = ShaderNodeObject<Node>;
 
-export interface GeneratedShaderProps {
-${propsInterface}
-}
-
-export function GeneratedShader({
-  ${destructured},
-}: GeneratedShaderProps) {
+${propsBlock}${signature}
   const shaderContext = useShaderContext();
 
   useEffect(() => {
