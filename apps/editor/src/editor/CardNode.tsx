@@ -11,8 +11,10 @@ import type { CSSProperties } from 'react';
 import { Handle, Position, useConnection, useReactFlow } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 
+import { rampStopsOf } from './graph';
 import { useEditorGraph } from './graph-context';
 import { OutputPreview } from './OutputPreview';
+import { RampParam } from './RampParam';
 import { NODE_SPECS, PORT_COLORS, portsCompatible, STAGE_COLORS } from './registry';
 import type { ParamValue, PortType, SpecId, Stage } from './registry';
 
@@ -30,6 +32,8 @@ export type CardNodeType = Node<
 const CARD_WIDTH = 150;
 const OUTPUT_WIDTH = 190;
 const OUTPUT_PREVIEW_HEIGHT = 200;
+const EXPANDED_WIDTH = 200;
+const RAMP_WIDTH = 240;
 
 // Ports live in a reserved band BELOW the name row (chips) or below the live
 // preview, on the Output card's own name row — never overlaying the name text
@@ -75,11 +79,14 @@ function stageTagStyle(hue: string | null): Pick<CSSProperties, 'color' | 'opaci
 }
 
 /** The card's width: Output is fixed (it hosts the live preview); chips
-    widen a touch while their params panel is open so sliders have room. */
-function cardWidthOf(isOutput: boolean, expanded: boolean): number {
+    widen a touch while their params panel is open so sliders have room, and
+    widen further still when that panel holds a ramp editor — a stop row
+    (swatch + slider + remove button) needs more than a plain slider row. */
+function cardWidthOf(isOutput: boolean, expanded: boolean, hasRampParam: boolean): number {
   if (isOutput) return OUTPUT_WIDTH;
+  if (!expanded) return CARD_WIDTH;
 
-  return expanded ? 200 : CARD_WIDTH;
+  return hasRampParam ? RAMP_WIDTH : EXPANDED_WIDTH;
 }
 
 /** Narrows a param's stored value to a string for the <select> it backs,
@@ -210,7 +217,8 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
     };
   };
 
-  const width = cardWidthOf(isOutput, expanded);
+  const hasRampParam = spec.params.some((param) => param.kind === 'ramp');
+  const width = cardWidthOf(isOutput, expanded, hasRampParam);
   const showDelete = isSelected && !isOutput;
 
   return (
@@ -379,10 +387,19 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
           }}
         >
           {spec.params.map((param) => {
-            // Ramp params (Color Ramp's stops) get their own editor in a
-            // later pass — this panel renders nothing for them yet, rather
-            // than a slider/select control that wouldn't make sense.
-            if (param.kind === 'ramp') return null;
+            // Ramp params (Color Ramp's stops) get their own row-per-stop
+            // editor instead of the label/slider/value grid below — a ramp
+            // doesn't fit that three-column shape.
+            if (param.kind === 'ramp') {
+              return (
+                <RampParam
+                  key={param.id}
+                  nodeId={id}
+                  onCommit={(stops) => setParam(param.id, stops)}
+                  stops={rampStopsOf({ id, params: data.params, spec: data.spec }, param.id)}
+                />
+              );
+            }
 
             return (
               <label

@@ -222,6 +222,9 @@ importers:
 
   apps/editor:
     dependencies:
+      '@base-ui/react':
+        specifier: ^1.6.0
+        version: 1.6.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@lovo/matter':
         specifier: workspace:*
         version: link:../../packages/matter
