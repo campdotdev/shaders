@@ -741,6 +741,15 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
       ? `\n  // Speed dials integrate on the CPU: each hook advances a phase uniform\n  // (phase += speed x delta), so speed changes retime the pattern without\n  // snapping or rebuilding — which is also why speed props stay out of the\n  // effect deps below.\n${emission.hookLines.map((line) => `  ${line}`).join('\n')}\n`
       : '';
 
+  // The phase uniforms are stable (the hook memoizes them once) and their
+  // exclusion from deps is the point, so the generated file carries the same
+  // targeted disable the editor's own CompiledMesh uses for its stable-proxy
+  // deps.
+  const depsClose =
+    emission.hookLines.length > 0
+      ? `    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [${effectDeps}]);`
+      : `  }, [${effectDeps}]);`;
+
   const indent = (line: string) => (line === '' ? '' : `    ${line}`);
   const uniformBlock = emission.uniformLines.map(indent).join('\n');
   const helperBlock = emission.helperLines.map(indent).join('\n');
@@ -801,7 +810,7 @@ ${helperBlock}
         // same
       }
     };
-  }, [${effectDeps}]);
+${depsClose}
 
   return null;
 }
