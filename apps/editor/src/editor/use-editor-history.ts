@@ -203,8 +203,8 @@ export function useEditorHistory({
   }, [applyPreset, history]);
 
   // applyPreset is exposed for the loads that arrive from OUTSIDE the
-  // history — a share-link hash, a file import. Those callers follow it with
-  // commitEdit(), which records the load as one undoable step even when the
-  // structural key happens not to move (same wiring, different values).
+  // history — a file import. Those callers follow it with commitEdit(),
+  // which records the load as one undoable step even when the structural
+  // key happens not to move (same wiring, different values).
   return { commitEdit, applyPreset };
 }

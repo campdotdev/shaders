@@ -129,8 +129,8 @@ export default function Editor() {
   // the history hook above records each paste without any coupling here.
   useEditorClipboard({ edges, nodes, paramStore, setEdges, setNodes });
 
-  // Export/import/share hand whole presets in and out. The commitEdit after
-  // a load records it as one undo step even when the structural key doesn't
+  // Export/import hand whole presets in and out. The commitEdit after a
+  // load records it as one undo step even when the structural key doesn't
   // move (importing the same wiring with different dial values).
   const buildPreset = useCallback(() => presetFromFlow(nodes, edges), [nodes, edges]);
   const onLoadPreset = useCallback(
