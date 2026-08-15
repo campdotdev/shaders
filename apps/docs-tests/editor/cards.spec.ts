@@ -4,23 +4,8 @@
 // the first click on a card looked dead. Disclosure is now one bit driven by
 // the settings row, and these tests pin that apart.
 import { expect, test } from '@playwright/test';
-import type { Locator, Page } from '@playwright/test';
 
-const STARTER_CARDS = 6;
-
-async function openEditor(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('.react-flow__node')).toHaveCount(STARTER_CARDS);
-}
-
-function card(page: Page, name: string): Locator {
-  return page.locator('.react-flow__node').filter({ hasText: name }).first();
-}
-
-/** The always-visible disclosure row on a card that has params. */
-function settingsRow(target: Locator): Locator {
-  return target.getByRole('button', { name: 'settings' });
-}
+import { card, openEditor, settingsRow } from './helpers';
 
 test('clicking a card selects it', async ({ page }) => {
   await openEditor(page);
