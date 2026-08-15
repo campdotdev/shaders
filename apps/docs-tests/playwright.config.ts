@@ -16,25 +16,48 @@ export default defineConfig({
     baseURL: process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:3000',
     trace: 'on-first-retry',
   },
-  webServer: {
-    // INCLUDE_DEV_ROUTES makes next.config.ts treat `page.dev.tsx` as a page,
-    // which is how the four probes under app/dev reach the router. Four visual
-    // specs render against them, and this builds the production bundle rather
-    // than running the dev server, so without the flag those specs 404. The
-    // deploy build omits it, which is the point — see next.config.ts.
-    command:
-      'INCLUDE_DEV_ROUTES=1 pnpm turbo run build --filter=@matter/docs --force && pnpm --filter @matter/docs preview',
-    url: 'http://localhost:3000',
-    reuseExistingServer: !process.env.CI,
-    timeout: 180_000,
-  },
+  webServer: [
+    {
+      // INCLUDE_DEV_ROUTES makes next.config.ts treat `page.dev.tsx` as a page,
+      // which is how the four probes under app/dev reach the router. Four visual
+      // specs render against them, and this builds the production bundle rather
+      // than running the dev server, so without the flag those specs 404. The
+      // deploy build omits it, which is the point — see next.config.ts.
+      command:
+        'INCLUDE_DEV_ROUTES=1 pnpm turbo run build --filter=@matter/docs --force && pnpm --filter @matter/docs preview',
+      url: 'http://localhost:3000',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+    {
+      // The node editor is its own app on its own port. Same production-bundle
+      // build as the docs entry above, and the same dev-routes flag, which is
+      // what puts the parity routes in the bundle these specs load.
+      command:
+        'INCLUDE_DEV_ROUTES=1 pnpm turbo run build --filter=@matter/editor --force && pnpm --filter @matter/editor preview',
+      url: 'http://localhost:3010',
+      reuseExistingServer: !process.env.CI,
+      timeout: 180_000,
+    },
+  ],
   projects: [
     {
       name: 'chromium',
+      testIgnore: ['editor/**', 'visual/editor*.spec.ts'],
       use: {
         ...devices['Desktop Chrome'],
         viewport: { width: 1280, height: 720 },
         deviceScaleFactor: 1,
+      },
+    },
+    {
+      name: 'editor',
+      testMatch: ['editor/**/*.spec.ts', 'visual/editor*.spec.ts'],
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1280, height: 720 },
+        deviceScaleFactor: 1,
+        baseURL: 'http://localhost:3010',
       },
     },
   ],
