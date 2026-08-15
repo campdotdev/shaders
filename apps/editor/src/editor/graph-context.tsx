@@ -18,6 +18,13 @@ export interface EditorGraph {
   /** Fingerprint of what's COMPILED IN: specs, wiring, select params. */
   structuralKey: string;
   paramStore: ParamStore;
+  /**
+   * Records one undo step for the edit that just landed. Only the edits that
+   * DON'T move the structural key need it — a slider or ramp drag, which
+   * rides uniforms and is meant to collapse into a single entry on release.
+   * Structural edits record themselves (see use-editor-history.ts).
+   */
+  commitEdit: () => void;
 }
 
 export const EditorGraphContext = createContext<EditorGraph | null>(null);

@@ -30,7 +30,7 @@ export function RampParam({
   /** Mirrors the new stops array into node data — CardNode wires this to `setParam('stops', stops)`. */
   onCommit: (stops: ColorStop[]) => void;
 }) {
-  const { paramStore } = useEditorGraph();
+  const { paramStore, commitEdit } = useEditorGraph();
 
   // Holds a stop's position while its slider is mid-drag, so the row shows
   // the live value without waiting for `stops` (only updated on commit) to
@@ -56,6 +56,11 @@ export function RampParam({
     });
     setDraftPositions({});
     onCommit(nextStops);
+    // One undo step per released gesture, not per frame of the drag. Adding
+    // or removing a stop moves the structural key and so records itself too;
+    // that lands as one entry, not two, because the second snapshot through
+    // is identical (see use-editor-history.ts).
+    commitEdit();
   };
 
   const handlePositionPreview = (index: number, value: number) => {
