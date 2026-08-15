@@ -6,6 +6,7 @@
 // CardNode.tsx (MAT-94 Task 11.5) so the card shell stays under the
 // 300-line bar.
 import { rampStopsOf } from './graph';
+import { useEditorGraph } from './graph-context';
 import { RampParam } from './RampParam';
 import type { ParamSpec, ParamValue, SpecId } from './registry';
 
@@ -30,6 +31,8 @@ export function CardParams({
   setParam: (paramId: string, value: ParamValue) => void;
   specId: SpecId;
 }) {
+  const { commitEdit } = useEditorGraph();
+
   return (
     // Clicks inside the panel are adjustments, not toggles — stop them
     // from bubbling to the card's open/close handler.
@@ -73,11 +76,18 @@ export function CardParams({
             {param.kind === 'slider' ? (
               // "nodrag" tells React Flow a drag here moves the slider,
               // not the card.
+              // Every tick of the drag writes the uniform (free on the GPU);
+              // only the release records an undo step, so a drag collapses to
+              // one entry. Blur and keyup cover the keyboard path, matching
+              // the ramp's position slider.
               <input
                 className="nodrag"
                 max={param.max}
                 min={param.min}
+                onBlur={commitEdit}
                 onChange={(event) => setParam(param.id, Number(event.target.value))}
+                onKeyUp={commitEdit}
+                onPointerUp={commitEdit}
                 step={param.step}
                 style={{ width: '100%', accentColor: '#a78bfa' }}
                 type="range"

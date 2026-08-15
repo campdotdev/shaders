@@ -6,7 +6,9 @@
 // write to the GPU without recompiling. Ships prewired with the starter
 // graph — gradient warped by noise, blended with that same noise, colorized,
 // into Output — so there's something to edit and a live example of fan-out
-// (one field feeding two different downstream cards).
+// (one field feeding two different downstream cards). Undo/redo lives in
+// use-editor-history.ts; the canvas state and the structural key it watches
+// are owned here, so the two record triggers are wired from this file.
 import { useCallback, useMemo, useRef, useState } from 'react';
 
 import {
@@ -25,60 +27,18 @@ import '@xyflow/react/dist/style.css';
 import { AddNodeToolbar } from './AddNodeToolbar';
 import { CardNode } from './CardNode';
 import type { CardNodeType } from './CardNode';
+import { makeNode, STARTER_FLOW_EDGES, STARTER_FLOW_NODES, typedEdge } from './flow-preset';
 import { structuralKeyOf } from './graph';
 import { EditorGraphContext } from './graph-context';
 import { Legend } from './Legend';
 import { ParamStore } from './param-store';
-import { defaultParamsOf, NODE_SPECS, PORT_COLORS, portsCompatible } from './registry';
+import { NODE_SPECS, portsCompatible } from './registry';
 import type { PortType, SpecId, Stage } from './registry';
-import { STARTER_EDGES, STARTER_NODES } from './starter-graph';
 import { TypedEdge } from './TypedEdge';
+import { useEditorHistory } from './use-editor-history';
 
 const nodeTypes = { card: CardNode };
 const edgeTypes = { typed: TypedEdge };
-
-// ---------------------------------------------------------------------------
-// Starter graph — mirrors the concept mock: Gradient --in--> Warp <--by--
-// Noise, Warp and Noise both feed Blend, then Blend -> Color Ramp -> Output.
-// ---------------------------------------------------------------------------
-
-function makeNode(id: string, spec: SpecId, x: number, y: number): CardNodeType {
-  return {
-    id,
-    type: 'card',
-    position: { x, y },
-    data: { spec, params: defaultParamsOf(spec) },
-    // The Output card is a singleton the graph always needs a home for — it
-    // can't be deleted, so Backspace and the card's own delete control (which
-    // never renders for Output in the first place) both respect that for free.
-    deletable: spec !== 'output',
-  };
-}
-
-const initialNodes: CardNodeType[] = STARTER_NODES.map(({ id, spec, x, y }) =>
-  makeNode(id, spec, x, y),
-);
-
-/**
- * Styles an edge with its port type's tint so wires read as typed at a
- * glance, and tags it with the `typed` edge type so selecting it reveals the
- * delete control. Generic so it takes both full edges (the starter set) and
- * id-less connections (live connects — addEdge generates the id).
- */
-function typedEdge<EdgeLike extends Omit<Edge, 'id' | 'style' | 'type'>>(
-  edge: EdgeLike,
-  portType: PortType,
-): EdgeLike & Pick<Edge, 'style' | 'type'> {
-  return { ...edge, type: 'typed', style: { stroke: PORT_COLORS[portType], strokeWidth: 1.7 } };
-}
-
-// Wire tints derive from the source node's output type, same as live connects.
-const initialEdges: Edge[] = STARTER_EDGES.map((edge, index) => {
-  const sourceNode = STARTER_NODES.find((candidate) => candidate.id === edge.source);
-  const tint = sourceNode ? (NODE_SPECS[sourceNode.spec].output ?? 'field') : 'field';
-
-  return typedEdge({ id: `starter-${index}`, ...edge }, tint);
-});
 
 // ---------------------------------------------------------------------------
 // Port typing helpers — look a handle's type up from the node's spec so wires
@@ -111,8 +71,8 @@ function specIdOf(nodes: CardNodeType[], nodeId: string | null): SpecId | null {
 }
 
 export default function Editor() {
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
+  const [nodes, setNodes, onNodesChange] = useNodesState(STARTER_FLOW_NODES);
+  const [edges, setEdges, onEdgesChange] = useEdgesState(STARTER_FLOW_EDGES);
 
   // Which stage's flyout is open, if any — one at a time. Closed by picking a
   // node, picking the same stage again, or clicking the canvas.
@@ -125,6 +85,35 @@ export default function Editor() {
   // The canvas's own on-screen bounds, measured for AddNodeToolbar so it can
   // center new cards on what's visible instead of assuming a full window.
   const canvasWrapperRef = useRef<HTMLDivElement>(null);
+
+  // Compiler-shaped mirrors of the React Flow state, plus the structural
+  // fingerprint the Output card's material effect keys on. Positions and
+  // slider values are excluded — only wiring, specs, and select/ramp params
+  // rebuild the shader.
+  const graphNodes = useMemo(
+    () => nodes.map((node) => ({ id: node.id, spec: node.data.spec, params: node.data.params })),
+    [nodes],
+  );
+  const graphEdges = useMemo(
+    () => edges.map(({ source, target, targetHandle }) => ({ source, target, targetHandle })),
+    [edges],
+  );
+  const structuralKey = useMemo(
+    () => structuralKeyOf(graphNodes, graphEdges),
+    [graphNodes, graphEdges],
+  );
+
+  // Undo/redo. The same structural fingerprint that decides when to rebuild a
+  // material decides when an edit is worth a history entry; `commitEdit` is
+  // the release-triggered half, for drags that never change it.
+  const { commitEdit } = useEditorHistory({
+    edges,
+    nodes,
+    paramStore,
+    setEdges,
+    setNodes,
+    structuralKey,
+  });
 
   // Same-type ports connect; portsCompatible carries the one exception
   // (Output's `in` also accepts a field) so this stays the only place
@@ -228,26 +217,15 @@ export default function Editor() {
   // "click away dismisses" gesture as the params panel.
   const onPaneClick = useCallback(() => setOpenStage(null), []);
 
-  // Compiler-shaped mirrors of the React Flow state, plus the structural
-  // fingerprint the Output card's material effect keys on. Positions and
-  // slider values are excluded — only wiring, specs, and select/ramp params
-  // rebuild the shader.
-  const graphNodes = useMemo(
-    () => nodes.map((node) => ({ id: node.id, spec: node.data.spec, params: node.data.params })),
-    [nodes],
-  );
-  const graphEdges = useMemo(
-    () => edges.map(({ source, target, targetHandle }) => ({ source, target, targetHandle })),
-    [edges],
-  );
   const graph = useMemo(
     () => ({
       nodes: graphNodes,
       edges: graphEdges,
-      structuralKey: structuralKeyOf(graphNodes, graphEdges),
+      structuralKey,
       paramStore,
+      commitEdit,
     }),
-    [graphNodes, graphEdges, paramStore],
+    [graphNodes, graphEdges, structuralKey, paramStore, commitEdit],
   );
 
   return (
@@ -277,6 +255,10 @@ export default function Editor() {
           onConnect={onConnect}
           onEdgesChange={onEdgesChange}
           onNodeDragStart={onNodeDragStart}
+          // Card positions ride React Flow's own state during a drag and never
+          // touch the structural key, so a move records one undo step here,
+          // when the card lands.
+          onNodeDragStop={commitEdit}
           onNodesChange={onNodesChange}
           onPaneClick={onPaneClick}
           onReconnect={onReconnect}
