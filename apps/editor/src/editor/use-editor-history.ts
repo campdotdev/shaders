@@ -35,15 +35,25 @@ import type { Preset } from './preset';
 
 /** Input types where the browser's own undo stack should win — typing in a
     hex field and hitting Cmd+Z means "undo my typing", not "undo my graph".
-    Range inputs and selects are deliberately absent: they have no native undo,
-    and one of them usually holds focus right after the drag you want to undo. */
+    Selects are deliberately absent: they have no native undo, and one often
+    holds focus right after the edit you want to undo. */
 const TEXT_ENTRY_TYPES = new Set(['text', 'search', 'url', 'tel', 'email', 'password', 'number']);
 
+/**
+ * Whether a keystroke landed somewhere the browser's own undo should handle.
+ *
+ * `readOnly` is the load-bearing check: NumberField is a `type="text"` input
+ * that is read-only except while actually being typed into, and it keeps
+ * focus after you commit a value with Enter. Without the readOnly test, every
+ * Cmd+Z immediately after typing a dial value would be swallowed here — there
+ * is no native undo stack on a field you can't type into.
+ */
 function isTextEntry(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable || target instanceof HTMLTextAreaElement) return true;
+  if (!(target instanceof HTMLInputElement)) return false;
 
-  return target instanceof HTMLInputElement && TEXT_ENTRY_TYPES.has(target.type);
+  return !target.readOnly && TEXT_ENTRY_TYPES.has(target.type);
 }
 
 export function useEditorHistory({
@@ -86,24 +96,50 @@ export function useEditorHistory({
   // Recording
   // ---------------------------------------------------------------------------
 
-  const [commitTick, setCommitTick] = useState(0);
+  // A commit is pending until its change is actually visible in the graph —
+  // see the effect below for why that isn't the same render it was requested on.
+  const pendingCommit = useRef(false);
+  // Only ever written: bumping it guarantees at least one render after a
+  // commit, so the effect below gets a chance to run even when the committing
+  // gesture changed nothing else.
+  const [, setCommitTick] = useState(0);
 
   /** Records one undo step for the edit that just landed. Safe to call when
       nothing actually changed — an identical snapshot is dropped. */
-  const commitEdit = useCallback(() => setCommitTick((tick) => tick + 1), []);
+  const commitEdit = useCallback(() => {
+    pendingCommit.current = true;
+    setCommitTick((tick) => tick + 1);
+  }, []);
 
-  // Both effects funnel into the same record. They fire together whenever an
-  // edit is structural AND committed (adding a ramp stop, say); the second
-  // one through is dropped as an identical snapshot, so that lands one entry,
-  // not two. The mount run is dropped the same way — the snapshot still
-  // equals the one History was seeded with.
+  // Structural edits record as soon as they land: by the time this effect
+  // runs, the change that moved the key is on `nodes` by definition. The
+  // mount run is dropped because the snapshot still equals the one History
+  // was seeded with.
   useEffect(() => {
     history.record(snapshot());
   }, [structuralKey, history, snapshot]);
 
+  // Committed gestures. NO dep array on purpose: `commitEdit` can fire in the
+  // same event as the write it belongs to — typing a dial value changes the
+  // param and commits in one keystroke — and the new node data is not
+  // guaranteed to be readable on the render that keystroke triggers. Snapshot
+  // equal to `present` therefore means "not visible yet, try again", not
+  // "nothing changed", so the pending flag survives to the next render. A
+  // scrub happens to be immune (its value writes land in earlier pointermove
+  // events) which is exactly why this was invisible until typing existed.
+  //
+  // The early return keeps this cheap: no pending commit, no serialization,
+  // even though the effect itself runs after every render.
   useEffect(() => {
-    history.record(snapshot());
-  }, [commitTick, history, snapshot]);
+    if (!pendingCommit.current) return;
+
+    const committed = snapshot();
+
+    if (committed === history.present) return;
+
+    pendingCommit.current = false;
+    history.record(committed);
+  });
 
   // ---------------------------------------------------------------------------
   // Restoring
