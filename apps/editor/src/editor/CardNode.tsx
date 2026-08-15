@@ -29,10 +29,15 @@ export type CardNodeType = Node<
   'card'
 >;
 
-const CARD_WIDTH = 150;
+// Card widths, in px. A card's width depends only on WHAT IT IS, never on
+// whether it's open: a card that resized on expand appeared to jump on the
+// canvas. Number fields are what make one width workable — a slider needed
+// travel room that a self-reading field doesn't.
+const CARD_WIDTH = 160;
 const OUTPUT_WIDTH = 190;
-const EXPANDED_WIDTH = 200;
-const RAMP_WIDTH = 240;
+// Color Ramp is inherently wider: a stop row carries a swatch, a position
+// field, and a remove button where other cards carry a label and one field.
+const RAMP_WIDTH = 210;
 
 // ---------------------------------------------------------------------------
 // Style helpers — pulled out of the component so its own branch count (the
@@ -67,21 +72,19 @@ function stageTagStyle(hue: string | null): Pick<CSSProperties, 'color' | 'opaci
   return hue !== null ? { color: hue, opacity: 0.85 } : { color: '#8b88a0', opacity: 1 };
 }
 
-/** The card's width: Output is fixed (it hosts the live preview); chips
-    widen a touch while their params panel is open so sliders have room, and
-    widen further still when that panel holds a ramp editor — a stop row
-    (swatch + slider + remove button) needs more than a plain slider row. */
-function cardWidthOf(isOutput: boolean, expanded: boolean, hasRampParam: boolean): number {
+/** The card's width. A pure function of the card's spec — Output hosts the
+    live preview, ramp cards need room for a stop row — so opening a card
+    never resizes or appears to move it. */
+function cardWidthOf(isOutput: boolean, hasRampParam: boolean): number {
   if (isOutput) return OUTPUT_WIDTH;
-  if (!expanded) return CARD_WIDTH;
 
-  return hasRampParam ? RAMP_WIDTH : EXPANDED_WIDTH;
+  return hasRampParam ? RAMP_WIDTH : CARD_WIDTH;
 }
 
-export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeType>) {
+export function CardNode({ id, data, selected }: NodeProps<CardNodeType>) {
   const spec = NODE_SPECS[data.spec];
   const { paramStore } = useEditorGraph();
-  const { deleteElements, updateNodeData } = useReactFlow();
+  const { deleteElements, setNodes, updateNodeData } = useReactFlow();
   const isOutput = data.spec === 'output';
   const isSelected = selected;
   const hue = stageHueOf(spec.stage);
@@ -99,26 +102,40 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
     updateNodeData(id, { params: { ...data.params, [paramId]: value } });
   };
 
-  // The chip expands in place when selected: params render inside the card
-  // body (not a floating toolbar — React Flow portals toolbars outside the
-  // node's DOM, where drags read as canvas panning). Selected chips widen a
-  // touch so sliders have room to travel.
-  // Params toggle on CLICK: click opens, click again closes. Drags never
-  // toggle — React Flow's drag machinery (d3-drag) suppresses the browser's
-  // post-drag click, so any click that reaches this handler is a genuine one.
-  // Closing is event-driven and lives in the editor: drag starts and
-  // selection changes clear `open` in node data there, so this component
-  // never syncs state to props after the fact.
+  // The chip expands in place: params render inside the card body, not a
+  // floating toolbar — React Flow portals toolbars outside the node's DOM,
+  // where drags read as canvas panning. Expanded chips widen a touch so
+  // sliders have room to travel.
+  //
+  // Disclosure is ONE bit, `open`, driven by ONE control (the settings row).
+  // It deliberately does not depend on selection: gating on both meant the
+  // first click on a card set `open` while the card was still unselected, so
+  // nothing appeared and the click read as dead.
   const open = data.open ?? false;
+  const hasParams = spec.params.length > 0;
 
-  const handleClick = () => {
-    updateNodeData(id, { open: !open });
+  // Toggling settings also selects the card, and both writes go out in ONE
+  // setNodes call. That matters: React Flow's own click-select rewrites the
+  // node array during this same click, and whichever write lands second wins
+  // — the old name-row button lost that race, which is why clicking the top
+  // of a card never selected it. Writing `selected` ourselves makes both
+  // paths agree on the outcome no matter which one lands last.
+  const toggleSettings = () => {
+    setNodes((current) =>
+      current.map((node) => {
+        if (node.id !== id) {
+          return node.selected === true ? { ...node, selected: false } : node;
+        }
+
+        return { ...node, selected: true, data: { ...node.data, open: !open } };
+      }),
+    );
   };
 
-  const expanded = isSelected && !dragging && open && spec.params.length > 0;
+  const expanded = open && hasParams;
 
   const hasRampParam = spec.params.some((param) => param.kind === 'ramp');
-  const width = cardWidthOf(isOutput, expanded, hasRampParam);
+  const width = cardWidthOf(isOutput, hasRampParam);
   const showDelete = isSelected && !isOutput;
 
   return (
@@ -173,29 +190,28 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
           <OutputPreview nodeId={id} />
         </div>
       )}
-      {/* The name row is the params toggle — a real button, so keyboard users
-          can tab to it and hit Enter/Space. It stays OUTSIDE the params
-          section so sliders/selects never sit inside an interactive ancestor.
-          Cards without params render it inert. */}
-      <button
-        disabled={spec.params.length === 0}
-        onClick={handleClick}
+      {/* The name row is plain text, deliberately not a button. It used to be
+          the params toggle, which made it an interactive element sitting on
+          top of the card's drag surface — clicks there toggled `open` but
+          never selected the card. Disclosure lives in the settings row below
+          instead, leaving this row as drag surface like the rest of the card. */}
+      <div
         style={{
           display: 'flex',
           alignItems: 'baseline',
           gap: 7,
-          width: '100%',
+          // No `width: 100%` here on purpose. A block-level flex box already
+          // fills its parent, and stating the width would make this row 100%
+          // PLUS its padding — divs are content-box, unlike the button this
+          // row used to be — which pushed the name past the card's edge.
+          minWidth: 0,
           // The Output card's "in" port + label live on this row (left edge),
           // so its name indents past them; chips keep ports below the row.
           padding: isOutput ? '7px 10px 7px 34px' : '7px 10px',
           font: '600 12px/1 ui-monospace, SF Mono, Menlo, monospace',
           color: '#e8e6f2',
-          background: 'none',
-          border: 0,
           textAlign: 'left',
-          cursor: spec.params.length === 0 ? 'default' : 'pointer',
         }}
-        type="button"
       >
         {spec.name}
         <span
@@ -209,7 +225,7 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
         >
           {spec.stage}
         </span>
-      </button>
+      </div>
       <CardPorts
         id={id}
         inputs={spec.inputs}
@@ -220,6 +236,40 @@ export function CardNode({ id, data, selected, dragging }: NodeProps<CardNodeTyp
       {/* Port band spacer: the handles are absolutely positioned, so this
           reserves the vertical room they occupy in normal flow. */}
       {!isOutput && <div style={{ height: portRows * CHIP_PORT_GAP + 4 }} />}
+      {/* The disclosure control: always visible on a card that has params, so
+          a collapsed chip says "there is more here" instead of hiding it
+          behind a click on the name. `nodrag` keeps the press from starting a
+          card drag; `aria-expanded` carries the state for screen readers. */}
+      {hasParams && (
+        <button
+          aria-expanded={open}
+          className="nodrag"
+          onClick={toggleSettings}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: 7,
+            width: '100%',
+            padding: '6px 10px',
+            borderTop: '1px solid #2c2a38',
+            borderLeft: 0,
+            borderRight: 0,
+            borderBottom: 0,
+            background: 'none',
+            color: '#8b88a0',
+            font: '500 10px/1 ui-monospace, SF Mono, Menlo, monospace',
+            letterSpacing: '0.06em',
+            textAlign: 'left',
+            cursor: 'pointer',
+          }}
+          type="button"
+        >
+          settings
+          <span aria-hidden style={{ marginLeft: 'auto', fontSize: 9 }}>
+            {open ? '▲' : '▼'}
+          </span>
+        </button>
+      )}
       {expanded && (
         <CardParams
           nodeId={id}

@@ -1,24 +1,27 @@
 'use client';
 
 // The Color Ramp card's params-panel editor: one row per stop (a color
-// swatch, a position slider, a remove button), plus an "+ stop" button.
+// swatch, a position field, a remove button), plus an "+ stop" button.
 // MAT-86 gave colorRamp node-driven stops, so a stop's position and color
 // ride uniforms (ParamStore.setStopPosition/setStopColor) — dragging either
 // glides on the GPU with zero recompiles. Stop COUNT still bakes into the
 // compiled mix chain's arity (structuralKeyOf, graph.ts), so adding or
 // removing a stop is expected to rebuild; that only happens on the add/remove
 // buttons, never mid-drag.
-import { useState } from 'react';
-
 import { parseColorString } from '@lovo/matter/color';
 
 import { ColorInput } from '@/controls/ColorInput';
 
 import { useEditorGraph } from './graph-context';
+import type { NumericRange } from './number-field';
+import { NumberField } from './NumberField';
 import type { ColorStop } from './registry';
 
 const MIN_STOPS = 2;
 const MAX_STOPS = 8;
+
+/** A stop's position is a normalized 0-1 dial, two decimals of resolution. */
+const POSITION_RANGE: NumericRange = { min: 0, max: 1, step: 0.01 };
 
 export function RampParam({
   nodeId,
@@ -32,14 +35,10 @@ export function RampParam({
 }) {
   const { paramStore, commitEdit } = useEditorGraph();
 
-  // Holds a stop's position while its slider is mid-drag, so the row shows
-  // the live value without waiting for `stops` (only updated on commit) to
-  // catch up. Without this, a re-render triggered by something unrelated —
-  // CardNode also re-renders on every live wire-drag elsewhere on the canvas,
-  // via useConnection — would snap the slider back to its last committed
-  // position mid-gesture.
-  const [draftPositions, setDraftPositions] = useState<Record<number, number>>({});
-
+  // This component only ever sees COMMITTED values: NumberField holds its own
+  // value mid-scrub, which is what used to require a draft position per stop
+  // here (an unrelated re-render would otherwise snap a slider back mid-drag).
+  //
   // Every commit — position release, color release, add, or remove — writes
   // ALL current stops' values through the store before touching node data,
   // not just the one that changed. Ramp-stop uniforms are keyed
@@ -54,7 +53,6 @@ export function RampParam({
       paramStore.setStopPosition(nodeId, index, stop.position);
       paramStore.setStopColor(nodeId, index, parseColorString(stop.color));
     });
-    setDraftPositions({});
     onCommit(nextStops);
     // One undo step per released gesture, not per frame of the drag. Adding
     // or removing a stop moves the structural key and so records itself too;
@@ -64,16 +62,11 @@ export function RampParam({
   };
 
   const handlePositionPreview = (index: number, value: number) => {
-    setDraftPositions((current) => ({ ...current, [index]: value }));
     paramStore.setStopPosition(nodeId, index, value);
   };
 
-  const handlePositionRelease = (index: number) => {
-    const draftValue = draftPositions[index];
-
-    if (draftValue === undefined) return;
-
-    commit(stops.map((stop, i) => (i === index ? { ...stop, position: draftValue } : stop)));
+  const handlePositionCommit = (index: number, value: number) => {
+    commit(stops.map((stop, i) => (i === index ? { ...stop, position: value } : stop)));
   };
 
   const handleColorChange = (index: number, colorString: string) => {
@@ -108,20 +101,15 @@ export function RampParam({
             onCommit={(value) => handleColorCommit(index, value)}
             value={stop.color}
           />
-          <input
-            aria-label={`stop ${index + 1} position`}
-            className="nodrag"
-            max={1}
-            min={0}
-            onBlur={() => handlePositionRelease(index)}
-            onChange={(event) => handlePositionPreview(index, Number(event.target.value))}
-            onKeyUp={() => handlePositionRelease(index)}
-            onPointerUp={() => handlePositionRelease(index)}
-            step={0.01}
-            style={{ flex: 1, accentColor: '#a78bfa' }}
-            type="range"
-            value={draftPositions[index] ?? stop.position}
-          />
+          <div style={{ flex: 1 }}>
+            <NumberField
+              label={`stop ${index + 1} position`}
+              onChange={(next) => handlePositionPreview(index, next)}
+              onCommit={(next) => handlePositionCommit(index, next)}
+              range={POSITION_RANGE}
+              value={stop.position}
+            />
+          </div>
           <button
             aria-label={`remove stop ${index + 1}`}
             className="nodrag"

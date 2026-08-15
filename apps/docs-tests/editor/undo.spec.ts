@@ -19,38 +19,24 @@ async function openEditor(page: Page) {
   await expect(page.locator('.react-flow__node')).toHaveCount(STARTER_CARDS);
 }
 
-/**
- * Selects a card the way React Flow actually allows it to be selected.
- *
- * A plain click does NOT select: with React Flow 12's default
- * `selectNodesOnDrag`, the node wrapper's click handler defers selection to
- * the drag gesture, so selection only lands once XYDrag starts. A real mouse
- * jitters a pixel between press and release and always starts one, which is
- * why clicking a card feels like it selects; a synthetic click is
- * pixel-perfect and never does. Focus + Enter goes through React Flow's own
- * keyboard selection path instead, and — unlike a nudge-drag — it doesn't
- * move the card, so it adds no undo step of its own.
- */
+/** Selects a card by clicking its name row (the top of the card). Plain
+    clicks select again now that the name row is text rather than a button —
+    an interactive element there used to swallow the selection. See
+    cards.spec.ts. */
 async function selectCard(card: Locator) {
-  await card.focus();
-  await card.press('Enter');
+  await card.click({ position: { x: 40, y: 10 } });
   await expect(card).toHaveClass(/selected/);
 }
 
-/** A card's name row, which toggles its params panel. Matched exactly: the
-    accessible name carries the stage tag ("Noise generate"), and a substring
-    match on the card name would also hit the "delete Noise" control that
-    appears once the card is selected. */
-function nameRow(card: Locator, accessibleName: string) {
-  return card.getByRole('button', { name: accessibleName, exact: true });
+/** A card's always-visible params disclosure row. */
+function settingsRow(card: Locator) {
+  return card.getByRole('button', { name: 'settings' });
 }
 
 test('undo removes an added card, redo restores it', async ({ page }) => {
   await openEditor(page);
   const cards = page.locator('.react-flow__node');
 
-  // Exact, because every generate-stage card's name button also ends in
-  // "generate" — the stage tag sits inside the button.
   await page.getByRole('button', { name: '+ generate', exact: true }).click();
   await page.getByRole('menu').getByRole('button', { name: 'Voronoi' }).click();
   await expect(cards).toHaveCount(STARTER_CARDS + 1);
@@ -79,40 +65,55 @@ test('undo brings back a deleted card and its wires', async ({ page }) => {
   await expect(wires).toHaveCount(initialWires);
 });
 
-test('a whole slider drag undoes as one step', async ({ page }) => {
+test('a whole scrub undoes as one step', async ({ page }) => {
   await openEditor(page);
   const noise = page.locator('.react-flow__node').filter({ hasText: 'Noise' }).first();
 
-  await selectCard(noise);
-  await nameRow(noise, 'Noise generate').click();
+  await settingsRow(noise).click();
 
-  const scaleRow = noise.locator('label').filter({ hasText: 'scale' });
-  const readout = scaleRow.locator('span');
-  const slider = scaleRow.locator('input[type=range]');
+  const scale = noise.getByRole('textbox', { name: 'scale' });
 
-  await expect(readout).toBeVisible();
-  const before = await readout.innerText();
+  await expect(scale).toBeVisible();
+  const before = await scale.inputValue();
 
   // A real pointer drag, not fill(): the value has to change many times under
   // one held pointer for the coalescing to mean anything.
-  const track = await slider.boundingBox();
+  const field = await scale.boundingBox();
 
-  if (track === null) throw new Error('scale slider has no bounding box');
+  if (field === null) throw new Error('scale field has no bounding box');
 
-  const midline = track.y + track.height / 2;
+  const midline = field.y + field.height / 2;
 
-  await page.mouse.move(track.x + track.width * 0.15, midline);
+  await page.mouse.move(field.x + field.width / 2, midline);
   await page.mouse.down();
 
   for (let step = 1; step <= 12; step += 1) {
-    await page.mouse.move(track.x + track.width * (0.15 + step * 0.05), midline);
+    await page.mouse.move(field.x + field.width / 2 + step * 5, midline);
   }
 
   await page.mouse.up();
-  await expect(readout).not.toHaveText(before);
+  await expect(scale).not.toHaveValue(before);
 
-  // One undo, not twelve. The panel stays open across the restore, which is
-  // what lets this read the value back off the card at all.
+  // One undo, not twelve.
   await page.keyboard.press('ControlOrMeta+z');
-  await expect(readout).toHaveText(before);
+  await expect(scale).toHaveValue(before);
+});
+
+test('a typed value undoes as one step', async ({ page }) => {
+  await openEditor(page);
+  const noise = page.locator('.react-flow__node').filter({ hasText: 'Noise' }).first();
+
+  await settingsRow(noise).click();
+
+  const scale = noise.getByRole('textbox', { name: 'scale' });
+  const before = await scale.inputValue();
+
+  // A click without travel opens the field for typing rather than scrubbing.
+  await scale.click();
+  await scale.fill('7.5');
+  await scale.press('Enter');
+  await expect(scale).toHaveValue('7.50');
+
+  await page.keyboard.press('ControlOrMeta+z');
+  await expect(scale).toHaveValue(before);
 });

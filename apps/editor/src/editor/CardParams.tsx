@@ -7,6 +7,7 @@
 // 300-line bar.
 import { rampStopsOf } from './graph';
 import { useEditorGraph } from './graph-context';
+import { NumberField } from './NumberField';
 import { RampParam } from './RampParam';
 import type { ParamSpec, ParamValue, SpecId } from './registry';
 
@@ -65,7 +66,9 @@ export function CardParams({
             key={param.id}
             style={{
               display: 'grid',
-              gridTemplateColumns: '46px 1fr 32px',
+              // Two columns, not three: NumberField shows its own value, so
+              // the separate readout the slider needed is gone.
+              gridTemplateColumns: '46px 1fr',
               gap: 8,
               alignItems: 'center',
               font: '500 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
@@ -74,23 +77,14 @@ export function CardParams({
           >
             {param.label}
             {param.kind === 'slider' ? (
-              // "nodrag" tells React Flow a drag here moves the slider,
-              // not the card.
-              // Every tick of the drag writes the uniform (free on the GPU);
-              // only the release records an undo step, so a drag collapses to
-              // one entry. Blur and keyup cover the keyboard path, matching
-              // the ramp's position slider.
-              <input
-                className="nodrag"
-                max={param.max}
-                min={param.min}
-                onBlur={commitEdit}
-                onChange={(event) => setParam(param.id, Number(event.target.value))}
-                onKeyUp={commitEdit}
-                onPointerUp={commitEdit}
-                step={param.step}
-                style={{ width: '100%', accentColor: '#a78bfa' }}
-                type="range"
+              // Every scrub tick writes the uniform (free on the GPU); only
+              // the finished gesture records an undo step, so a whole drag
+              // collapses to one entry.
+              <NumberField
+                label={param.label}
+                onChange={(next) => setParam(param.id, next)}
+                onCommit={commitEdit}
+                range={param}
                 value={Number(params[param.id] ?? param.defaultValue)}
               />
             ) : (
@@ -114,11 +108,6 @@ export function CardParams({
                 ))}
               </select>
             )}
-            <span style={{ textAlign: 'right', color: '#e8e6f2' }}>
-              {param.kind === 'slider'
-                ? Number(params[param.id] ?? param.defaultValue).toFixed(param.step < 1 ? 2 : 0)
-                : ''}
-            </span>
           </label>
         );
       })}
