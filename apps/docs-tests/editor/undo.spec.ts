@@ -3,35 +3,8 @@
 // and so is a whole slider drag, even though the drag fires a state write on
 // every tick. See use-editor-history.ts.
 import { expect, test } from '@playwright/test';
-import type { Locator, Page } from '@playwright/test';
 
-/** Cards in the starter graph (starter-graph.ts): gradient, noise, warp,
-    blend, ramp, output. */
-const STARTER_CARDS = 6;
-
-/**
- * Opens the editor and waits for the canvas to exist. The page is
- * `ssr: false`, so `goto` resolves on an empty shell — a click sent before
- * React mounts lands on nothing, and a one-shot `count()` reads 0.
- */
-async function openEditor(page: Page) {
-  await page.goto('/');
-  await expect(page.locator('.react-flow__node')).toHaveCount(STARTER_CARDS);
-}
-
-/** Selects a card by clicking its name row (the top of the card). Plain
-    clicks select again now that the name row is text rather than a button —
-    an interactive element there used to swallow the selection. See
-    cards.spec.ts. */
-async function selectCard(card: Locator) {
-  await card.click({ position: { x: 40, y: 10 } });
-  await expect(card).toHaveClass(/selected/);
-}
-
-/** A card's always-visible params disclosure row. */
-function settingsRow(card: Locator) {
-  return card.getByRole('button', { name: 'settings' });
-}
+import { openEditor, selectCard, settingsRow, STARTER_CARDS } from './helpers';
 
 test('undo removes an added card, redo restores it', async ({ page }) => {
   await openEditor(page);
