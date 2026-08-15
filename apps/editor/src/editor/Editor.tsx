@@ -18,6 +18,7 @@ import {
   Controls,
   ReactFlow,
   reconnectEdge,
+  SelectionMode,
   useEdgesState,
   useNodesState,
 } from '@xyflow/react';
@@ -225,6 +226,10 @@ export default function Editor() {
       <EditorGraphContext.Provider value={graph}>
         <ReactFlow
           colorMode="dark"
+          // Backspace/Delete are React Flow's defaults; `x` is the Blender
+          // convention. All three respect `deletable: false` (Output) and are
+          // ignored while focus is in an input.
+          deleteKeyCode={['Backspace', 'Delete', 'x']}
           edgeTypes={edgeTypes}
           edges={edges}
           fitView
@@ -248,6 +253,10 @@ export default function Editor() {
           onReconnect={onReconnect}
           onReconnectEnd={onReconnectEnd}
           onReconnectStart={onReconnectStart}
+          // Rubber-band selection catches anything the box TOUCHES. The
+          // default (Full) only takes cards the box wholly contains, which
+          // reads as the drag not working when a corner is left out.
+          selectionMode={SelectionMode.Partial}
         >
           <Background color="#2c2a38" gap={22} size={1.5} variant={BackgroundVariant.Dots} />
           <Controls />

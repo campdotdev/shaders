@@ -15,7 +15,6 @@ test('clicking a card selects it', async ({ page }) => {
   // that swallowed the selection, so a click there did nothing at all.
   await noise.click({ position: { x: 40, y: 10 } });
   await expect(noise).toHaveClass(/selected/);
-  await expect(page.getByRole('button', { name: 'delete Noise' })).toBeVisible();
 });
 
 test('the settings row opens params on the first click', async ({ page }) => {

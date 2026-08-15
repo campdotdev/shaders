@@ -1,9 +1,12 @@
 'use client';
 
-// Typed wire with a delete affordance: the stroke color encodes the port type
-// (set by the editor when the edge is created); selecting the wire reveals a
-// small x button at its midpoint for mouse-only removal — Backspace works too.
-import { BaseEdge, EdgeLabelRenderer, getBezierPath, useReactFlow } from '@xyflow/react';
+// Typed wire: the stroke color encodes the port type (set by the editor when
+// the edge is created — see typedEdge in flow-preset.ts), and the `typed`
+// type name is what selecting a wire keys its glow styling on (Editor.tsx).
+// Removal is keyboard-only by design: select and hit Backspace/Delete/x. A
+// midpoint x button was tried and cut — the keyboard already covers it, and
+// the button read as clutter on every selected wire.
+import { BaseEdge, getBezierPath } from '@xyflow/react';
 import type { EdgeProps } from '@xyflow/react';
 
 export function TypedEdge({
@@ -15,10 +18,8 @@ export function TypedEdge({
   sourcePosition,
   targetPosition,
   style,
-  selected,
 }: EdgeProps) {
-  const { deleteElements } = useReactFlow();
-  const [path, labelX, labelY] = getBezierPath({
+  const [path] = getBezierPath({
     sourceX,
     sourceY,
     targetX,
@@ -27,34 +28,5 @@ export function TypedEdge({
     targetPosition,
   });
 
-  return (
-    <>
-      <BaseEdge id={id} path={path} style={style} />
-      {selected === true && (
-        <EdgeLabelRenderer>
-          <button
-            aria-label="delete wire"
-            className="nodrag nopan"
-            onClick={() => deleteElements({ edges: [{ id }] })}
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px, ${labelY}px)`,
-              pointerEvents: 'all',
-              width: 16,
-              height: 16,
-              borderRadius: '50%',
-              border: '1px solid #2c2a38',
-              background: '#1e1d27',
-              color: '#e8e6f2',
-              font: '600 10px/1 ui-monospace, SF Mono, Menlo, monospace',
-              cursor: 'pointer',
-            }}
-            type="button"
-          >
-            x
-          </button>
-        </EdgeLabelRenderer>
-      )}
-    </>
-  );
+  return <BaseEdge id={id} path={path} style={style} />;
 }
