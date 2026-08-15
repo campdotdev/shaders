@@ -1,15 +1,14 @@
-// Delete affordances and multi-select. Cards die by Backspace or their own
-// x control; wires die by Backspace, their midpoint x, or being torn off a
-// port (that last one is covered manually — headless drag-to-empty-canvas is
-// too flaky to pin CI on). Output is the one immortal card: the graph always
-// needs a home for its result, so every delete path must refuse it.
+// Delete and multi-select. Deletion is keyboard-only — Backspace, Delete, or
+// x on the selection; the per-card and per-wire x buttons were tried and cut
+// as clutter. Wire tear-off (dragging an end to empty canvas) is covered
+// manually — headless drag-to-nowhere is too flaky to pin CI on. Output is
+// the one immortal card: the graph always needs a home for its result, so
+// every delete path must refuse it.
 import { expect, test } from '@playwright/test';
 
 import { card, openEditor, selectCard, STARTER_CARDS } from './helpers';
 
-test('backspace and the card delete control both remove cards; output is exempt', async ({
-  page,
-}) => {
+test('backspace and x both remove a selected card; output is exempt', async ({ page }) => {
   await openEditor(page);
   const cards = page.locator('.react-flow__node');
 
@@ -17,27 +16,27 @@ test('backspace and the card delete control both remove cards; output is exempt'
   await page.keyboard.press('Backspace');
   await expect(cards).toHaveCount(STARTER_CARDS - 1);
 
-  // The x control appears on selection — the mouse-only path to the same end.
+  // x is the Blender-style alternative (deleteKeyCode in Editor.tsx).
   await selectCard(card(page, 'Noise'));
-  await page.getByRole('button', { name: 'delete Noise' }).click();
+  await page.keyboard.press('x');
   await expect(cards).toHaveCount(STARTER_CARDS - 2);
 
-  // Output: no x control even while selected, and Backspace bounces off
-  // (`deletable: false` on the node — see makeNode in flow-preset.ts).
+  // Output bounces every delete key (`deletable: false` on the node — see
+  // makeNode in flow-preset.ts).
   await selectCard(card(page, 'Output'));
-  await expect(page.getByRole('button', { name: 'delete Output' })).toHaveCount(0);
   await page.keyboard.press('Backspace');
+  await page.keyboard.press('x');
   await expect(card(page, 'Output')).toBeVisible();
   await expect(cards).toHaveCount(STARTER_CARDS - 2);
 });
 
-test('a selected wire exposes a delete control', async ({ page }) => {
+test('a selected wire deletes from the keyboard', async ({ page }) => {
   await openEditor(page);
   const wires = page.locator('.react-flow__edge');
   const initial = await wires.count();
 
   await wires.first().click();
-  await page.getByRole('button', { name: 'delete wire' }).click();
+  await page.keyboard.press('Backspace');
   await expect(wires).toHaveCount(initial - 1);
 });
 
@@ -71,4 +70,27 @@ test('a group delete undoes as one step', async ({ page }) => {
   await page.keyboard.press('ControlOrMeta+z');
   await expect(cards).toHaveCount(STARTER_CARDS);
   await expect(wires).toHaveCount(initialWires);
+});
+
+test('a rubber-band drag selects every card it touches', async ({ page }) => {
+  await openEditor(page);
+
+  // Shift+drag from empty canvas, sweeping a box that only CLIPS the two
+  // left-column cards (Gradient, Noise) rather than containing them —
+  // SelectionMode.Partial is what makes a grazed card count as caught.
+  const gradientBox = await card(page, 'Gradient').boundingBox();
+  const noiseBox = await card(page, 'Noise').boundingBox();
+
+  if (gradientBox === null || noiseBox === null) throw new Error('cards have no bounding box');
+
+  await page.keyboard.down('Shift');
+  await page.mouse.move(gradientBox.x - 40, gradientBox.y - 40);
+  await page.mouse.down();
+  // End INSIDE both cards' left halves: the box overlaps them without
+  // enclosing either.
+  await page.mouse.move(noiseBox.x + 30, noiseBox.y + noiseBox.height / 2, { steps: 8 });
+  await page.mouse.up();
+  await page.keyboard.up('Shift');
+
+  await expect(page.locator('.react-flow__node.selected')).toHaveCount(2);
 });

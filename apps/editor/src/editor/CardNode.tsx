@@ -84,7 +84,7 @@ function cardWidthOf(isOutput: boolean, hasRampParam: boolean): number {
 export function CardNode({ id, data, selected }: NodeProps<CardNodeType>) {
   const spec = NODE_SPECS[data.spec];
   const { paramStore } = useEditorGraph();
-  const { deleteElements, setNodes, updateNodeData } = useReactFlow();
+  const { setNodes, updateNodeData } = useReactFlow();
   const isOutput = data.spec === 'output';
   const isSelected = selected;
   const hue = stageHueOf(spec.stage);
@@ -136,8 +136,10 @@ export function CardNode({ id, data, selected }: NodeProps<CardNodeType>) {
 
   const hasRampParam = spec.params.some((param) => param.kind === 'ramp');
   const width = cardWidthOf(isOutput, hasRampParam);
-  const showDelete = isSelected && !isOutput;
 
+  // Deletion is keyboard-only: Backspace/Delete/x on the selection (see
+  // deleteKeyCode in Editor.tsx). A per-card x button was tried and cut as
+  // clutter — the selection ring already says what a delete would hit.
   return (
     <div
       style={{
@@ -150,33 +152,6 @@ export function CardNode({ id, data, selected }: NodeProps<CardNodeType>) {
           : '0 6px 20px #00000040',
       }}
     >
-      {showDelete && (
-        <button
-          aria-label={`delete ${spec.name}`}
-          className="nodrag"
-          onClick={() => deleteElements({ nodes: [{ id }] })}
-          style={{
-            position: 'absolute',
-            top: -8,
-            right: -8,
-            width: 16,
-            height: 16,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 0,
-            borderRadius: '50%',
-            border: '1px solid #2c2a38',
-            background: '#1e1d27',
-            color: '#e8e6f2',
-            font: '600 10px/1 ui-monospace, SF Mono, Menlo, monospace',
-            cursor: 'pointer',
-          }}
-          type="button"
-        >
-          ×
-        </button>
-      )}
       {isOutput && (
         <div
           style={{
