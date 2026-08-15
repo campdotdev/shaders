@@ -1,32 +1,24 @@
 'use client';
 
-// The top-right actions cluster: export the graph as a JSON file, import one
-// back, and share it as a URL. All three move the same serialized Preset the
-// clipboard and undo history use — one format, four doors.
+// The top-right actions cluster: export the graph as a JSON file, and import
+// one back. Both move the same serialized Preset the clipboard and undo
+// history use — one format, every door.
 //
-// This component also owns the mount-time half of sharing: a non-empty
-// `location.hash` is decoded and loaded here, and every failure path — a
-// clipped share link, a hand-edited file, a preset from a newer editor —
-// surfaces its PresetError message in the inline toast below the buttons.
-// Errors are never silently dropped (the person holding a broken link needs
-// to know it's broken), and never thrown (a bad hash still leaves a working
-// editor on the starter graph).
-import { useEffect, useRef, useState } from 'react';
+// A hash-based share button lived here briefly and was pulled back out:
+// URL sharing is deferred until a backend can hand out short stable links
+// (tracked in Linear). The import error path stays — a hand-edited file or a
+// preset from a newer editor surfaces its PresetError message in the inline
+// toast below the buttons, never a silent drop and never a crash.
+import { useRef, useState } from 'react';
 import type { ChangeEvent } from 'react';
 
 import { Panel } from '@xyflow/react';
 
 import { parsePreset, PresetError, serializePreset } from './preset';
 import type { Preset } from './preset';
-import { presetFromHash, presetToHash } from './share-url';
 
-/** How long the toast and the share button's copied/failed flash linger. */
+/** How long the toast lingers. */
 const FEEDBACK_MS = 4000;
-
-/** What the share button currently reads — flips to "copied"/"failed" for a
-    beat after a click (the probe's button-state pattern) so the copy has
-    visible feedback without a toast. */
-type ShareLabel = 'share' | 'copied' | 'failed';
 
 const buttonStyle = {
   padding: '6px 10px',
@@ -49,63 +41,16 @@ export function EditorActions({
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<string | null>(null);
-  const [shareLabel, setShareLabel] = useState<ShareLabel>('share');
 
-  // One timer per feedback kind; a new message replaces the old timer so the
-  // newest feedback always gets its full linger.
+  // A new message replaces the old timer so the newest toast gets its full
+  // linger.
   const toastTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-  const shareTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const showToast = (message: string) => {
     clearTimeout(toastTimer.current);
     setToast(message);
     toastTimer.current = setTimeout(() => setToast(null), FEEDBACK_MS);
   };
-
-  const flashShare = (label: Exclude<ShareLabel, 'share'>) => {
-    clearTimeout(shareTimer.current);
-    setShareLabel(label);
-    shareTimer.current = setTimeout(() => setShareLabel('share'), FEEDBACK_MS);
-  };
-
-  useEffect(() => {
-    return () => {
-      clearTimeout(toastTimer.current);
-      clearTimeout(shareTimer.current);
-    };
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // Hash load — the receiving end of a share link, run once on mount.
-  // ---------------------------------------------------------------------------
-
-  // The empty dep array on the load effect is deliberate: a share link is an
-  // entry point, not a subscription. Later in-page hash writes (the share
-  // button's own, say) must not re-load the graph out from under the user.
-  // The ref keeps the callback fresh without re-running the load; it's
-  // written in an effect, never during render (not concurrent-safe there).
-  const loadPresetRef = useRef(onLoadPreset);
-
-  useEffect(() => {
-    loadPresetRef.current = onLoadPreset;
-  });
-
-  useEffect(() => {
-    const hash = window.location.hash;
-
-    if (hash.length <= 1) return;
-
-    presetFromHash(hash)
-      .then((preset) => loadPresetRef.current(preset))
-      .catch((error: unknown) => {
-        if (!(error instanceof PresetError)) throw error;
-        showToast(error.message);
-      });
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // The three verbs
-  // ---------------------------------------------------------------------------
 
   const exportFile = () => {
     // A Blob anchor is the no-permission download path (the anchor's
@@ -138,19 +83,6 @@ export function EditorActions({
       });
   };
 
-  const share = () => {
-    presetToHash(buildPreset())
-      .then(async (hash) => {
-        window.location.hash = hash;
-        // Writing the clipboard IS gated on a user gesture, but needs no
-        // permission prompt the way reading does — and this runs directly
-        // from the click.
-        await navigator.clipboard.writeText(window.location.href);
-        flashShare('copied');
-      })
-      .catch(() => flashShare('failed'));
-  };
-
   return (
     <Panel position="top-right">
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-end' }}>
@@ -160,9 +92,6 @@ export function EditorActions({
           </button>
           <button onClick={() => fileInputRef.current?.click()} style={buttonStyle} type="button">
             import
-          </button>
-          <button onClick={share} style={buttonStyle} type="button">
-            {shareLabel}
           </button>
           <input
             accept="application/json"
