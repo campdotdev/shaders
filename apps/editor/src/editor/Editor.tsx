@@ -224,6 +224,12 @@ export default function Editor() {
           edges={edges}
           fitView
           isValidConnection={isValidConnection}
+          // Shift-click adds a card to the selection, the Figma/design-tool
+          // convention. React Flow's default is Meta/Ctrl, kept here too so
+          // the platform-native gesture still works. (Shift also stays the
+          // rubber-band key for pane drags — same convention, no conflict:
+          // one applies to node clicks, the other to canvas drags.)
+          multiSelectionKeyCode={['Shift', 'Meta', 'Control']}
           nodeTypes={nodeTypes}
           nodes={nodes}
           onConnect={onConnect}
