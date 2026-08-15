@@ -48,7 +48,7 @@ const TEXT_ENTRY_TYPES = new Set(['text', 'search', 'url', 'tel', 'email', 'pass
  * Cmd+Z immediately after typing a dial value would be swallowed here — there
  * is no native undo stack on a field you can't type into.
  */
-function isTextEntry(target: EventTarget | null): boolean {
+export function isTextEntry(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable || target instanceof HTMLTextAreaElement) return true;
   if (!(target instanceof HTMLInputElement)) return false;

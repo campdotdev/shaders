@@ -35,6 +35,7 @@ import { ParamStore } from './param-store';
 import { NODE_SPECS, portsCompatible } from './registry';
 import type { PortType, SpecId, Stage } from './registry';
 import { TypedEdge } from './TypedEdge';
+import { useEditorClipboard } from './use-editor-clipboard';
 import { useEditorHistory } from './use-editor-history';
 
 const nodeTypes = { card: CardNode };
@@ -114,6 +115,10 @@ export default function Editor() {
     setNodes,
     structuralKey,
   });
+
+  // Cmd/Ctrl+C, V, D. Appending pasted cards moves the structural key, so
+  // the history hook above records each paste without any coupling here.
+  useEditorClipboard({ edges, nodes, paramStore, setEdges, setNodes });
 
   // Same-type ports connect; portsCompatible carries the one exception
   // (Output's `in` also accepts a field) so this stays the only place
