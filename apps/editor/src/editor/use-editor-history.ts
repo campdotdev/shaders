@@ -71,7 +71,7 @@ export function useEditorHistory({
   paramStore: ParamStore;
   /** Fingerprint of what's compiled in (graph.ts) — the structural trigger. */
   structuralKey: string;
-}): { commitEdit: () => void } {
+}): { commitEdit: () => void; applyPreset: (preset: Preset) => void } {
   // The record effects fire on a structural or commit signal, never on every
   // render, so they can't close over `nodes`/`edges` directly without going
   // stale. This ref is the current graph, refreshed after each render by the
@@ -202,5 +202,9 @@ export function useEditorHistory({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [applyPreset, history]);
 
-  return { commitEdit };
+  // applyPreset is exposed for the loads that arrive from OUTSIDE the
+  // history — a share-link hash, a file import. Those callers follow it with
+  // commitEdit(), which records the load as one undoable step even when the
+  // structural key happens not to move (same wiring, different values).
+  return { commitEdit, applyPreset };
 }

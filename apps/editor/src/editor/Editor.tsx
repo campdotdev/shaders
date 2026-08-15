@@ -28,11 +28,19 @@ import '@xyflow/react/dist/style.css';
 import { AddNodeToolbar } from './AddNodeToolbar';
 import { CardNode } from './CardNode';
 import type { CardNodeType } from './CardNode';
-import { makeNode, STARTER_FLOW_EDGES, STARTER_FLOW_NODES, typedEdge } from './flow-preset';
+import { EditorActions } from './EditorActions';
+import {
+  makeNode,
+  presetFromFlow,
+  STARTER_FLOW_EDGES,
+  STARTER_FLOW_NODES,
+  typedEdge,
+} from './flow-preset';
 import { structuralKeyOf } from './graph';
 import { EditorGraphContext } from './graph-context';
 import { Legend } from './Legend';
 import { ParamStore } from './param-store';
+import type { Preset } from './preset';
 import { NODE_SPECS, portsCompatible } from './registry';
 import type { PortType, SpecId, Stage } from './registry';
 import { TypedEdge } from './TypedEdge';
@@ -108,7 +116,7 @@ export default function Editor() {
   // Undo/redo. The same structural fingerprint that decides when to rebuild a
   // material decides when an edit is worth a history entry; `commitEdit` is
   // the release-triggered half, for drags that never change it.
-  const { commitEdit } = useEditorHistory({
+  const { commitEdit, applyPreset } = useEditorHistory({
     edges,
     nodes,
     paramStore,
@@ -120,6 +128,18 @@ export default function Editor() {
   // Cmd/Ctrl+C, V, D. Appending pasted cards moves the structural key, so
   // the history hook above records each paste without any coupling here.
   useEditorClipboard({ edges, nodes, paramStore, setEdges, setNodes });
+
+  // Export/import/share hand whole presets in and out. The commitEdit after
+  // a load records it as one undo step even when the structural key doesn't
+  // move (importing the same wiring with different dial values).
+  const buildPreset = useCallback(() => presetFromFlow(nodes, edges), [nodes, edges]);
+  const onLoadPreset = useCallback(
+    (preset: Preset) => {
+      applyPreset(preset);
+      commitEdit();
+    },
+    [applyPreset, commitEdit],
+  );
 
   // Same-type ports connect; portsCompatible carries the one exception
   // (Output's `in` also accepts a field) so this stays the only place
@@ -260,6 +280,7 @@ export default function Editor() {
         >
           <Background color="#2c2a38" gap={22} size={1.5} variant={BackgroundVariant.Dots} />
           <Controls />
+          <EditorActions buildPreset={buildPreset} onLoadPreset={onLoadPreset} />
           <Legend />
           <AddNodeToolbar
             canvasWrapperRef={canvasWrapperRef}

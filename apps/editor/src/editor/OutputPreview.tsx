@@ -14,7 +14,10 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 import { compileOutputColor } from './compile';
 import { useEditorGraph } from './graph-context';
 
-function CompiledMesh({ nodeId }: { nodeId: string }) {
+// Exported for the /parity/runtime dev route, which renders the same mesh
+// full-viewport under its own EditorGraphContext — same compile path, no
+// editor chrome.
+export function CompiledMesh({ nodeId }: { nodeId: string }) {
   const shaderContext = useShaderContext();
   const { nodes, edges, structuralKey, paramStore } = useEditorGraph();
 
