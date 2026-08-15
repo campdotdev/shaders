@@ -213,7 +213,12 @@ export function NumberField({
         border: '1px solid #2c2a38',
         borderRadius: 5,
         color: '#e8e6f2',
-        font: 'inherit',
+        // Stated, not inherited. A param row's <label> sets this font so
+        // `inherit` looked right there, but a ramp stop row has no font of
+        // its own — the field fell back to the browser default and read as a
+        // different control. Carrying it here makes every field identical
+        // wherever it's used.
+        font: '500 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
         textAlign: 'right',
         cursor: isTyping ? 'text' : 'ew-resize',
         userSelect: isTyping ? 'auto' : 'none',

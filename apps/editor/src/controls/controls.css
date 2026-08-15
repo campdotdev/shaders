@@ -51,9 +51,14 @@
 
 /* ---- Color swatch trigger ---- */
 
+/* The trigger takes its height from its row rather than setting one, so the
+   swatch always matches the NumberField beside it in a ramp stop row. It used
+   to be a fixed 1.25rem, which stood taller than the field and made the row
+   look misaligned. Only the width is stated; `stretch` supplies the rest. */
 .color-swatch-trigger {
   display: flex;
-  align-items: center;
+  align-items: stretch;
+  align-self: stretch;
   padding: 0;
   background: none;
   border: 1px solid #2c2a38;
@@ -62,8 +67,7 @@
 }
 
 .color-swatch {
-  width: 1.25rem;
-  height: 1.25rem;
+  width: 1rem;
   border-radius: 0.2rem;
 }
 
