@@ -1,19 +1,28 @@
 'use client';
 
-// Copy, paste, and duplicate for the canvas: Cmd/Ctrl+C, V, and D. The pure
-// halves live in clipboard.ts (narrow a selection to a preset, give a payload
-// a fresh identity); this hook owns the keyboard, the system clipboard, and
-// putting the pasted subgraph on screen and in the uniform store.
+// Copy, paste, and duplicate for the canvas. The pure halves live in
+// clipboard.ts (narrow a selection to a preset, give a payload a fresh
+// identity); this hook owns the events, and putting the pasted subgraph on
+// screen and in the uniform store.
 //
-// The clipboard carries plain serialized-preset text, not an app-internal
-// format — which is what makes paste work across browser tabs for free, and
-// means a paste can't trust its input any more than a file import could.
-// Anything unparseable is swallowed silently: pasting prose onto the canvas
-// should do nothing, not toast an error about JSON.
+// Copy and paste ride the browser's native ClipboardEvents — the `copy` and
+// `paste` events Cmd/Ctrl+C and V fire — NOT the async navigator.clipboard
+// API. The distinction is load-bearing: the async API sits behind a
+// permission prompt in real Chrome (and stricter still in Safari), so a
+// first paste would silently no-op unless the user noticed and approved a
+// popup. The event path needs no permission at all, because the browser
+// knows it's user-initiated. Headless tests granted the async API its
+// permission automatically, which is exactly how the broken version passed
+// CI while failing on a desk.
 //
-// Duplicate composes the same two pure functions WITHOUT the round trip
-// through the system clipboard, so it never clobbers whatever the user
-// actually has copied.
+// The payload is plain serialized-preset text, so paste works across browser
+// tabs (and via a text file, chat message, ...) for free — and means a paste
+// can't trust its input any more than a file import could. Anything
+// unparseable is swallowed silently: pasting prose onto the canvas should do
+// nothing, not toast an error about JSON.
+//
+// Duplicate (Cmd/Ctrl+D) composes the same two pure functions WITHOUT the
+// clipboard, so it never clobbers what the user actually has copied.
 //
 // History needs no wiring here: appending cards moves the structural key,
 // and the record effect in use-editor-history fires on that — a paste is one
@@ -43,8 +52,8 @@ export function useEditorClipboard({
   setEdges: (edges: Edge[]) => void;
   paramStore: ParamStore;
 }): void {
-  // Same pattern as use-editor-history: the keydown listener is registered
-  // once, so it reads the current graph through a ref refreshed each render
+  // Same pattern as use-editor-history: the listeners are registered once,
+  // so they read the current graph through a ref refreshed each render
   // instead of closing over state that would go stale.
   const latestGraph = useRef({ nodes, edges });
 
@@ -93,16 +102,28 @@ export function useEditorClipboard({
       setEdges([...liveEdges, ...added.edges]);
     };
 
-    const paste = async () => {
-      // Both the read (permission denied, nothing there) and the parse (any
-      // non-preset text) fail to a silent no-op.
-      let text: string;
+    const onCopy = (event: ClipboardEvent) => {
+      // In a text field, Cmd+C means "copy my text" — the browser's default.
+      if (isTextEntry(event.target)) return;
 
-      try {
-        text = await navigator.clipboard.readText();
-      } catch {
-        return;
-      }
+      const payload = selectionPayload();
+
+      if (payload === null || event.clipboardData === null) return;
+
+      // preventDefault is what makes setData stick: without it the browser
+      // follows through with its own (empty) copy and clobbers the payload.
+      event.preventDefault();
+      event.clipboardData.setData('text/plain', serializePreset(payload));
+    };
+
+    const onPaste = (event: ClipboardEvent) => {
+      if (isTextEntry(event.target)) return;
+
+      const text = event.clipboardData?.getData('text/plain');
+
+      if (text === undefined || text === '') return;
+
+      event.preventDefault();
 
       try {
         appendPayload(parsePreset(text));
@@ -111,35 +132,14 @@ export function useEditorClipboard({
       }
     };
 
+    // Duplicate has no native event, so it stays on keydown.
     const onKeyDown = (event: KeyboardEvent) => {
       if (!(event.metaKey || event.ctrlKey) || event.altKey) return;
-
-      const key = event.key.toLowerCase();
-
-      if (key !== 'c' && key !== 'v' && key !== 'd') return;
+      if (event.key.toLowerCase() !== 'd') return;
       if (isTextEntry(event.target)) return;
 
-      if (key === 'c') {
-        const payload = selectionPayload();
-
-        if (payload === null) return;
-
-        event.preventDefault();
-        // Fire-and-forget: a denied clipboard write shouldn't surface here.
-        navigator.clipboard.writeText(serializePreset(payload)).catch(() => undefined);
-
-        return;
-      }
-
-      if (key === 'v') {
-        event.preventDefault();
-        void paste();
-
-        return;
-      }
-
-      // Cmd/Ctrl+D. Claimed unconditionally (its browser default is
-      // "bookmark this page") even when the selection duplicates to nothing.
+      // Claimed unconditionally (the browser default is "bookmark this
+      // page") even when the selection duplicates to nothing.
       event.preventDefault();
 
       const payload = selectionPayload();
@@ -147,8 +147,14 @@ export function useEditorClipboard({
       if (payload !== null) appendPayload(payload);
     };
 
+    document.addEventListener('copy', onCopy);
+    document.addEventListener('paste', onPaste);
     document.addEventListener('keydown', onKeyDown);
 
-    return () => document.removeEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('copy', onCopy);
+      document.removeEventListener('paste', onPaste);
+      document.removeEventListener('keydown', onKeyDown);
+    };
   }, [paramStore, setNodes, setEdges]);
 }
