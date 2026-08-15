@@ -60,6 +60,26 @@ test('the exported file is valid preset JSON', async ({ page }) => {
   expect(parsed.edges).toHaveLength(6);
 });
 
+test('view code reveals the generated component and tracks edits', async ({ page }) => {
+  await openEditor(page);
+
+  // The panel lives in the same top-right actions stack as export/import.
+  await page.getByRole('button', { name: 'view code' }).click();
+  await expect(page.getByText('export function GeneratedShader')).toBeVisible();
+  // Starter-graph fan-out: the noise helper appears once, by name.
+  await expect(page.getByText('const noiseField =')).toBeVisible();
+
+  // The source tracks the live graph — but only the subgraph feeding Output:
+  // deleting the wired Noise card drops its helper from the emitted code.
+  // (An UNWIRED card never appears at all; the walk starts at Output.)
+  await card(page, 'Noise').click({ position: { x: 40, y: 10 } });
+  await page.keyboard.press('Backspace');
+  await expect(page.getByText('const noiseField =')).toHaveCount(0);
+
+  await page.getByRole('button', { name: 'hide code' }).click();
+  await expect(page.getByText('export function GeneratedShader')).toHaveCount(0);
+});
+
 test('importing a non-preset file toasts and leaves the graph alone', async ({ page }) => {
   await openEditor(page);
   const cards = page.locator('.react-flow__node');

@@ -10,7 +10,7 @@
 // preset from a newer editor surfaces its PresetError message in the inline
 // toast below the buttons, never a silent drop and never a crash.
 import { useRef, useState } from 'react';
-import type { ChangeEvent } from 'react';
+import type { ChangeEvent, ReactNode } from 'react';
 
 import { Panel } from '@xyflow/react';
 
@@ -33,11 +33,15 @@ const buttonStyle = {
 export function EditorActions({
   buildPreset,
   onLoadPreset,
+  children,
 }: {
   /** Snapshots the live canvas as a preset — called at click time. */
   buildPreset: () => Preset;
   /** Puts a loaded preset on the canvas (and into the undo history). */
   onLoadPreset: (preset: Preset) => void;
+  /** Extra rows for the top-right stack (the generated-code panel) — a slot
+      rather than a second Panel, since two Panels in one corner overlap. */
+  children?: ReactNode;
 }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -117,6 +121,7 @@ export function EditorActions({
             {toast}
           </output>
         )}
+        {children}
       </div>
     </Panel>
   );

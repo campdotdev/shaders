@@ -29,6 +29,7 @@ import { AddNodeToolbar } from './AddNodeToolbar';
 import { CardNode } from './CardNode';
 import type { CardNodeType } from './CardNode';
 import { EditorActions } from './EditorActions';
+import { emitComponentSource } from './emit';
 import {
   makeNode,
   presetFromFlow,
@@ -36,6 +37,7 @@ import {
   STARTER_FLOW_NODES,
   typedEdge,
 } from './flow-preset';
+import { GeneratedCodePanel } from './GeneratedCodePanel';
 import { structuralKeyOf } from './graph';
 import { EditorGraphContext } from './graph-context';
 import { Legend } from './Legend';
@@ -140,6 +142,19 @@ export default function Editor() {
     },
     [applyPreset, commitEdit],
   );
+
+  // The eject-to-code panel: same walk as the runtime compiler, but emitting
+  // source text. Regenerated on any graph or param change while open, so the
+  // code always mirrors what the Output card is rendering.
+  const [showCode, setShowCode] = useState(false);
+  const generatedSource = useMemo(() => {
+    if (!showCode) return '';
+    const outputNode = graphNodes.find((candidate) => candidate.spec === 'output');
+
+    return outputNode
+      ? emitComponentSource(graphNodes, graphEdges, outputNode.id)
+      : '// Add an Output node to generate code.';
+  }, [showCode, graphNodes, graphEdges]);
 
   // Same-type ports connect; portsCompatible carries the one exception
   // (Output's `in` also accepts a field) so this stays the only place
@@ -280,7 +295,13 @@ export default function Editor() {
         >
           <Background color="#2c2a38" gap={22} size={1.5} variant={BackgroundVariant.Dots} />
           <Controls />
-          <EditorActions buildPreset={buildPreset} onLoadPreset={onLoadPreset} />
+          <EditorActions buildPreset={buildPreset} onLoadPreset={onLoadPreset}>
+            <GeneratedCodePanel
+              onToggle={() => setShowCode((current) => !current)}
+              open={showCode}
+              source={generatedSource}
+            />
+          </EditorActions>
           <Legend />
           <AddNodeToolbar
             canvasWrapperRef={canvasWrapperRef}
