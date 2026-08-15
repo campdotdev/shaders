@@ -18,6 +18,7 @@ import { CompiledMesh } from '@/editor/OutputPreview';
 import { ParamStore } from '@/editor/param-store';
 import { defaultParamsOf } from '@/editor/registry';
 import { STARTER_EDGES, STARTER_NODES } from '@/editor/starter-graph';
+import VisualTestPause from '@/lib/VisualTestPause';
 
 export default function ParityRuntimeScene() {
   // The starter graph in compiler shape, with every card on its defaults —
@@ -46,6 +47,7 @@ export default function ParityRuntimeScene() {
       <EditorGraphContext.Provider value={graph}>
         <ShaderScene>
           <CompiledMesh nodeId="output-1" />
+          <VisualTestPause />
         </ShaderScene>
       </EditorGraphContext.Provider>
     </div>
