@@ -17,7 +17,7 @@ import {
   useResize,
   useShaderContext,
 } from '@lovo/matter-react';
-import { exp, length, mix, round, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { exp, length, round, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { parseColor } from '../utils/color';
@@ -144,13 +144,18 @@ function buildDotFieldMaterial(
   // anti-aliasing that keeps dot edges from stair-stepping.
   const antialiasWidth = 0.01;
   const dotMask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
-  const dotColor = mix(vec3(0, 0, 0), vec3(redChannel, greenChannel, blueChannel), dotMask);
 
   const material = new MeshBasicNodeMaterial();
 
   // Alpha carries the dot mask, so the space between dots is transparent and
-  // whatever rendered beneath this layer shows through.
-  material.colorNode = vec4(dotColor, dotMask);
+  // whatever rendered beneath this layer shows through. `transparent` opts
+  // the material into GPU alpha blending — without it three ignores fragment
+  // alpha and this quad would overwrite any layer stacked beneath it in the
+  // scene. The blend already multiplies the color by alpha, so the color
+  // rides at full strength here; premultiplying it by the mask as well would
+  // darken the anti-aliased rim twice.
+  material.transparent = true;
+  material.colorNode = vec4(vec3(redChannel, greenChannel, blueChannel), dotMask);
 
   return material;
 }
