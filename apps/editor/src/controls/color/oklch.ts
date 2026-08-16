@@ -51,7 +51,16 @@ export function parseToOklch(input: string): OklchColor {
   const value = input.trim();
 
   if (value.startsWith('oklch(')) {
-    const inner = value.slice('oklch('.length, value.lastIndexOf(')'));
+    const closeIndex = value.lastIndexOf(')');
+
+    // Without this check, lastIndexOf's -1 would feed slice as "drop the last
+    // character" — "oklch(0.5 0.1 200" would silently parse with hue 20. An
+    // unterminated string is invalid, same as a non-numeric token below.
+    if (closeIndex === -1) {
+      throw new Error(`Invalid oklch() color: "${input}"`);
+    }
+
+    const inner = value.slice('oklch('.length, closeIndex);
     const [lightnessToken, chromaToken, hueToken] = (inner.split('/')[0] ?? '')
       .trim()
       .split(/[\s,]+/)

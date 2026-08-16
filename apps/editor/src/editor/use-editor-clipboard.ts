@@ -87,7 +87,18 @@ export function useEditorClipboard({
     const appendPayload = (payload: Preset) => {
       const { nodes: liveNodes, edges: liveEdges } = latestGraph.current;
       const takenIds = new Set(liveNodes.map((node) => node.id));
-      const remapped = remapForPaste(payload, takenIds);
+
+      // A payload our own copy built never holds an Output card, but a paste
+      // accepts ANY parseable preset — including a whole exported file, whose
+      // Output would land as a second, undeletable singleton. Running the
+      // payload through selectionToPreset with everything "selected" applies
+      // exactly the copy path's drop: Output goes, and edges into it follow.
+      const sanitized = selectionToPreset(
+        payload.nodes,
+        payload.edges,
+        new Set(payload.nodes.map((node) => node.id)),
+      );
+      const remapped = remapForPaste(sanitized, takenIds);
 
       if (remapped.nodes.length === 0) return;
 

@@ -186,6 +186,7 @@ export function ChannelSlider({
 
   return (
     <Slider.Root
+      className="slider-root"
       max={max}
       min={0}
       onValueChange={(next) => onPreview({ ...color, [channel]: next })}

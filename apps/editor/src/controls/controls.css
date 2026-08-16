@@ -83,7 +83,7 @@
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.45);
   font:
     500 10.5px/1.3 ui-monospace,
-    SF Mono,
+    'SF Mono',
     Menlo,
     monospace;
 }

@@ -41,6 +41,19 @@ describe('History', () => {
     expect(history.undo()).toBeNull();
   });
 
+  it('preserves redoable future when recording a snapshot identical to present', () => {
+    const history = new History('a');
+
+    history.record('b');
+    history.undo();
+    expect(history.present).toBe('a');
+
+    // The no-op record path must leave `future` alone: an unchanged present
+    // hasn't branched history, so 'b' should stay reachable through redo.
+    history.record('a');
+    expect(history.redo()).toBe('b');
+  });
+
   it('clears redo when a new record follows an undo', () => {
     const history = new History('a');
 

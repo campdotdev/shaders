@@ -82,7 +82,7 @@ function cardWidthOf(isOutput: boolean): number {
 export function CardNode({ id, data, selected }: NodeProps<CardNodeType>) {
   const spec = NODE_SPECS[data.spec];
   const { paramStore } = useEditorGraph();
-  const { setNodes, updateNodeData } = useReactFlow();
+  const { setNodes, updateNodeData } = useReactFlow<CardNodeType>();
   const isOutput = data.spec === 'output';
   const isSelected = selected;
   const hue = stageHueOf(spec.stage);
@@ -97,7 +97,10 @@ export function CardNode({ id, data, selected }: NodeProps<CardNodeType>) {
   // with new math (selects) or arity (ramps).
   const setParam = (paramId: string, value: ParamValue) => {
     if (typeof value === 'number') paramStore.set(id, paramId, value);
-    updateNodeData(id, { params: { ...data.params, [paramId]: value } });
+    // Functional form on purpose: two writes landing before a re-render (a
+    // gesture's commit alongside another param's) would each spread this
+    // render's `data.params` and the second would erase the first.
+    updateNodeData(id, (node) => ({ params: { ...node.data.params, [paramId]: value } }));
   };
 
   // The chip expands in place: params render inside the card body, not a

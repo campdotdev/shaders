@@ -14,6 +14,8 @@ import type { ChangeEvent, ReactNode } from 'react';
 
 import { Panel } from '@xyflow/react';
 
+import { downloadTextFile } from '@/lib/download';
+
 import { parsePreset, PresetError, serializePreset } from './preset';
 import type { Preset } from './preset';
 
@@ -57,17 +59,7 @@ export function EditorActions({
   };
 
   const exportFile = () => {
-    // A Blob anchor is the no-permission download path (the anchor's
-    // `download` attribute), mirroring how copy/paste avoids the async
-    // clipboard API's permission prompt.
-    const blob = new Blob([serializePreset(buildPreset())], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-
-    anchor.href = url;
-    anchor.download = 'matter-graph.json';
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile('matter-graph.json', serializePreset(buildPreset()), 'application/json');
   };
 
   const importFile = (event: ChangeEvent<HTMLInputElement>) => {
@@ -82,8 +74,10 @@ export function EditorActions({
       .text()
       .then((text) => onLoadPreset(parsePreset(text)))
       .catch((error: unknown) => {
-        if (!(error instanceof PresetError)) throw error;
-        showToast(error.message);
+        // Rethrowing here would only make an unhandled rejection — a failed
+        // file read (revoked permission, drive gone) deserves a toast too,
+        // just a generic one, since its message wasn't written for humans.
+        showToast(error instanceof PresetError ? error.message : 'Could not read that file.');
       });
   };
 

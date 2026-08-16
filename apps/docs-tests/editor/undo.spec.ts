@@ -11,7 +11,10 @@ test('undo removes an added card, redo restores it', async ({ page }) => {
   const cards = page.locator('.react-flow__node');
 
   await page.getByRole('button', { name: '+ generate', exact: true }).click();
-  await page.getByRole('menu').getByRole('button', { name: 'Voronoi' }).click();
+  // The flyout is a plain disclosure group (no menu role — it doesn't
+  // implement menu keyboard semantics); the spec button's accessible name is
+  // unique on the page, since card names on the canvas aren't buttons.
+  await page.getByRole('button', { name: 'Voronoi' }).click();
   await expect(cards).toHaveCount(STARTER_CARDS + 1);
 
   await page.keyboard.press('ControlOrMeta+z');

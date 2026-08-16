@@ -80,9 +80,19 @@ export function RampParam({
   const addStop = () => {
     if (stops.length >= MAX_STOPS) return;
 
-    const lastColor = stops[stops.length - 1]?.color ?? '#ffffff';
+    const last = stops[stops.length - 1];
+    const secondLast = stops[stops.length - 2];
 
-    commit([...stops, { color: lastColor, position: 1 }]);
+    // MIN_STOPS is 2, so both exist; the guard is for the type system.
+    if (last === undefined || secondLast === undefined) return;
+
+    // Inserted between the final two stops at their midpoint. Appending at
+    // position 1 put the new stop exactly under the last one (default ramps
+    // end at 1), so clicking "+ stop" appeared to do nothing until the user
+    // found the new row and dragged it out.
+    const inserted = { color: last.color, position: (secondLast.position + last.position) / 2 };
+
+    commit([...stops.slice(0, -1), inserted, last]);
   };
 
   const removeStop = (index: number) => {

@@ -104,17 +104,32 @@ export function AddNodeToolbar({
         : { x: window.innerWidth / 2, y: window.innerHeight / 2 };
       const flowCenter = screenToFlowPosition(screenCenter);
 
-      setNodes((current) => [
-        ...current,
-        makeNode(
-          `${spec}-added-${count}`,
-          spec,
-          // Subtract roughly half a card so the CARD lands centered, not its
-          // top-left corner, then apply the repeat-add stagger around that.
-          flowCenter.x - 75 + ((count % 5) - 2) * 28,
-          flowCenter.y - 40 + ((count % 3) - 1) * 28,
-        ),
-      ]);
+      setNodes((current) => {
+        // The counter alone can't guarantee uniqueness: it restarts at 0 per
+        // mount, while an import, a paste, or an undo can already have
+        // `${spec}-added-N` ids on the canvas. Scan past whatever's taken —
+        // inside the updater, against the freshest node list.
+        const takenIds = new Set(current.map((node) => node.id));
+        let suffix = count;
+        let id = `${spec}-added-${suffix}`;
+
+        while (takenIds.has(id)) {
+          suffix += 1;
+          id = `${spec}-added-${suffix}`;
+        }
+
+        return [
+          ...current,
+          makeNode(
+            id,
+            spec,
+            // Subtract roughly half a card so the CARD lands centered, not its
+            // top-left corner, then apply the repeat-add stagger around that.
+            flowCenter.x - 75 + ((count % 5) - 2) * 28,
+            flowCenter.y - 40 + ((count % 3) - 1) * 28,
+          ),
+        ];
+      });
     },
     [canvasWrapperRef, makeNode, screenToFlowPosition, setNodes],
   );
@@ -144,9 +159,12 @@ export function AddNodeToolbar({
               >
                 + {label}
               </button>
+              {/* A plain disclosure group, deliberately not role="menu": menu
+                  semantics demand menuitem children and arrow-key navigation
+                  these buttons don't implement, so the role would promise
+                  screen readers behavior that isn't there. */}
               {isOpen && (
                 <div
-                  role="menu"
                   style={{
                     position: 'absolute',
                     top: '100%',

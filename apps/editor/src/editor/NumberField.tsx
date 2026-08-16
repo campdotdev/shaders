@@ -141,14 +141,20 @@ export function NumberField({
     if (active?.pointerId !== event.pointerId) return;
 
     scrub.current = null;
-    event.currentTarget.releasePointerCapture(event.pointerId);
     setDragValue(null);
 
-    if (active.moved) {
-      onCommit(active.latest);
+    // Commit BEFORE touching capture: this handler also runs for
+    // pointercancel, where the browser has already dropped both the pointer
+    // and its capture — releasePointerCapture can throw there, and the
+    // scrubbed value must not be lost to that throw. The hasPointerCapture
+    // guard keeps the release itself from throwing.
+    if (active.moved) onCommit(active.latest);
 
-      return;
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
     }
+
+    if (active.moved) return;
 
     // The pointer never travelled, so this was a click: open for typing.
     setDraft(formatValue(value, range));
@@ -171,6 +177,17 @@ export function NumberField({
         event.preventDefault();
         setDraft(null);
       }
+
+      return;
+    }
+
+    // Enter opens typing mode, mirroring what a stationary click does —
+    // without it a keyboard-only user could nudge with arrows but never type
+    // a value into the read-only field.
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      setDraft(formatValue(value, range));
+      inputRef.current?.select();
 
       return;
     }
