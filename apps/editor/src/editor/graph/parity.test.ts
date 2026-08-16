@@ -29,7 +29,7 @@ const starterEdges: GraphEdge[] = STARTER_EDGES.map((edge) => ({ ...edge }));
 const source = emitComponentSource(starterNodes, starterEdges, 'output-1');
 
 const here = dirname(fileURLToPath(import.meta.url));
-const target = join(here, '..', 'app', 'parity', 'generated.gen.tsx');
+const target = join(here, '..', '..', 'app', 'parity', 'generated.gen.tsx');
 
 describe('eject parity (source half)', () => {
   it('matches the checked-in generated component byte-for-byte', () => {

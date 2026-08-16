@@ -3,7 +3,7 @@
 // render the starter graph to the SAME snapshot name — the shared baseline
 // IS the assertion, within the suite's toHaveScreenshot tolerance. The
 // source half (generated.gen.tsx can't drift from the emitter) lives in
-// apps/editor/src/editor/parity.test.ts.
+// apps/editor/src/editor/graph/parity.test.ts.
 //
 // Runs under the `editor` Playwright project (visual/editor*.spec.ts), so
 // baselines capture whatever backend that browser run negotiates — both

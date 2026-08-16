@@ -12,9 +12,9 @@ import type { Dispatch, RefObject, SetStateAction } from 'react';
 
 import { Panel, useReactFlow } from '@xyflow/react';
 
-import type { CardNodeType } from './CardNode';
-import { NODE_SPECS, STAGE_COLORS } from './registry';
-import type { SpecId, Stage } from './registry';
+import type { CardNodeType } from '@/editor/canvas/CardNode';
+import { NODE_SPECS, STAGE_COLORS } from '@/editor/graph/registry';
+import type { SpecId, Stage } from '@/editor/graph/registry';
 
 /** The toolbar's four flyouts, grouped by stage in pipeline order (left to
     right on the canvas: generate -> effect -> color -> adjust). Output is a

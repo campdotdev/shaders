@@ -8,9 +8,10 @@ import type { CSSProperties } from 'react';
 
 import { Handle, Position, useConnection } from '@xyflow/react';
 
+import { NODE_SPECS, PORT_COLORS, portsCompatible } from '@/editor/graph/registry';
+import type { InputSpec, PortType, SpecId } from '@/editor/graph/registry';
+
 import type { CardNodeType } from './CardNode';
-import { NODE_SPECS, PORT_COLORS, portsCompatible } from './registry';
-import type { InputSpec, PortType, SpecId } from './registry';
 
 // Ports live in a reserved band BELOW the name row (chips) or below the live
 // preview, on the Output card's own name row — never overlaying the name text

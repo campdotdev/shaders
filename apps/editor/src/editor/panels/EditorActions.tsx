@@ -14,10 +14,9 @@ import type { ChangeEvent, ReactNode } from 'react';
 
 import { Panel } from '@xyflow/react';
 
+import { parsePreset, PresetError, serializePreset } from '@/editor/preset/preset';
+import type { Preset } from '@/editor/preset/preset';
 import { downloadTextFile } from '@/lib/download';
-
-import { parsePreset, PresetError, serializePreset } from './preset';
-import type { Preset } from './preset';
 
 /** How long the toast lingers. */
 const FEEDBACK_MS = 4000;

@@ -9,8 +9,8 @@
 // the compiler and code emitter), not here.
 import { createContext, useContext } from 'react';
 
-import type { GraphEdge, GraphNode } from './graph';
-import type { ParamStore } from './param-store';
+import type { GraphEdge, GraphNode } from '@/editor/graph/graph';
+import type { ParamStore } from '@/editor/graph/param-store';
 
 export interface EditorGraph {
   nodes: GraphNode[];

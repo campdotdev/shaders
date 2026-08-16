@@ -6,7 +6,7 @@
 // under the 300-line bar; it's static and needs no props.
 import { Panel } from '@xyflow/react';
 
-import { PORT_COLORS } from './registry';
+import { PORT_COLORS } from '@/editor/graph/registry';
 
 export function Legend() {
   return (

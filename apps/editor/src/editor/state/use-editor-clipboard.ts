@@ -31,12 +31,13 @@ import { useEffect, useRef } from 'react';
 
 import type { Edge } from '@xyflow/react';
 
-import type { CardNodeType } from './CardNode';
-import { remapForPaste, selectionToPreset } from './clipboard';
-import { flowFromPreset, presetFromFlow, pushPresetToStore } from './flow-preset';
-import type { ParamStore } from './param-store';
-import { parsePreset, PresetError, presetFrom, serializePreset } from './preset';
-import type { Preset } from './preset';
+import type { CardNodeType } from '@/editor/canvas/CardNode';
+import type { ParamStore } from '@/editor/graph/param-store';
+import { remapForPaste, selectionToPreset } from '@/editor/preset/clipboard';
+import { flowFromPreset, presetFromFlow, pushPresetToStore } from '@/editor/preset/flow-preset';
+import { parsePreset, PresetError, presetFrom, serializePreset } from '@/editor/preset/preset';
+import type { Preset } from '@/editor/preset/preset';
+
 import { isTextEntry } from './use-editor-history';
 
 export function useEditorClipboard({
