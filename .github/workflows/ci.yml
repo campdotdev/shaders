@@ -44,23 +44,37 @@ jobs:
   # baselines in. A bare ubuntu runner ships a different font set, so fontconfig
   # resolves the `monospace` fallback to a different font (the image lands on
   # WenQuanYi Zen Hei Mono) and every DOM baseline that contains text drifts —
-  # the editor card shots caught this. Resolve the image tag from the lockfile
-  # so a @playwright/test bump can never drift from the container version.
+  # the editor card shots caught this. Resolve the image tag from the
+  # apps/docs-tests entry in the lockfile so a @playwright/test bump can never
+  # drift from the container version.
   playwright-version:
     name: Resolve Playwright container
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     outputs:
       version: ${{ steps.resolve.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - id: resolve
         run: |
-          version=$(sed -n "s/^  '@playwright\/test@\([0-9][^']*\)':\$/\1/p" pnpm-lock.yaml | head -1)
-          if [ -z "$version" ]; then
-            echo "could not resolve @playwright/test from pnpm-lock.yaml" >&2
+          versions=$(awk '
+            /^  apps\/docs-tests:$/ { in_importer=1; next }
+            in_importer && /^  [^ ]/ { in_importer=0 }
+            in_importer && /^      .@playwright\/test.:$/ { in_dep=1; next }
+            in_dep && /version:/ { v=$2; sub(/\(.*/, "", v); print v; in_dep=0 }
+          ' pnpm-lock.yaml | sort -u)
+          if [ -z "$versions" ]; then
+            echo "no @playwright/test entry under the apps/docs-tests importer in pnpm-lock.yaml" >&2
             exit 1
           fi
-          echo "version=$version" >> "$GITHUB_OUTPUT"
+          if [ "$(printf '%s\n' "$versions" | wc -l)" -ne 1 ]; then
+            echo "multiple @playwright/test versions under the apps/docs-tests importer: $versions" >&2
+            exit 1
+          fi
+          echo "version=$versions" >> "$GITHUB_OUTPUT"
 
   visual-regression:
     name: Visual regression
