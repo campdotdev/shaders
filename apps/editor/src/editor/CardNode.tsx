@@ -32,12 +32,12 @@ export type CardNodeType = Node<
 // Card widths, in px. A card's width depends only on WHAT IT IS, never on
 // whether it's open: a card that resized on expand appeared to jump on the
 // canvas. Number fields are what make one width workable — a slider needed
-// travel room that a self-reading field doesn't.
+// travel room that a self-reading field doesn't. Color Ramp shares
+// CARD_WIDTH too: once the swatch stopped setting its own height and the
+// position slider became a field, a stop row (swatch + field + remove) fits
+// with the position field still wider than a plain param row's.
 const CARD_WIDTH = 160;
 const OUTPUT_WIDTH = 190;
-// Color Ramp is inherently wider: a stop row carries a swatch, a position
-// field, and a remove button where other cards carry a label and one field.
-const RAMP_WIDTH = 210;
 
 // ---------------------------------------------------------------------------
 // Style helpers — pulled out of the component so its own branch count (the
@@ -72,13 +72,11 @@ function stageTagStyle(hue: string | null): Pick<CSSProperties, 'color' | 'opaci
   return hue !== null ? { color: hue, opacity: 0.85 } : { color: '#8b88a0', opacity: 1 };
 }
 
-/** The card's width. A pure function of the card's spec — Output hosts the
-    live preview, ramp cards need room for a stop row — so opening a card
-    never resizes or appears to move it. */
-function cardWidthOf(isOutput: boolean, hasRampParam: boolean): number {
-  if (isOutput) return OUTPUT_WIDTH;
-
-  return hasRampParam ? RAMP_WIDTH : CARD_WIDTH;
+/** The card's width. A pure function of the card's spec — only Output
+    differs (it hosts the live preview) — so opening a card never resizes or
+    appears to move it. */
+function cardWidthOf(isOutput: boolean): number {
+  return isOutput ? OUTPUT_WIDTH : CARD_WIDTH;
 }
 
 export function CardNode({ id, data, selected }: NodeProps<CardNodeType>) {
@@ -134,8 +132,7 @@ export function CardNode({ id, data, selected }: NodeProps<CardNodeType>) {
 
   const expanded = open && hasParams;
 
-  const hasRampParam = spec.params.some((param) => param.kind === 'ramp');
-  const width = cardWidthOf(isOutput, hasRampParam);
+  const width = cardWidthOf(isOutput);
 
   // Deletion is keyboard-only: Backspace/Delete/x on the selection (see
   // deleteKeyCode in Editor.tsx). A per-card x button was tried and cut as
