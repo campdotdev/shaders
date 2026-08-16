@@ -7,6 +7,8 @@
 // mirrors what the Output card is rendering.
 import { useEffect, useRef, useState } from 'react';
 
+import { downloadTextFile } from '@/lib/download';
+
 const COPY_LABELS = { idle: 'copy', copied: 'copied', failed: 'copy failed' } as const;
 
 export function GeneratedCodePanel({
@@ -62,15 +64,7 @@ export function GeneratedCodePanel({
   };
 
   const download = () => {
-    // Same no-permission Blob-anchor path as the preset export.
-    const blob = new Blob([source], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-
-    anchor.href = url;
-    anchor.download = 'generated-shader.tsx';
-    anchor.click();
-    URL.revokeObjectURL(url);
+    downloadTextFile('generated-shader.tsx', source, 'text/plain');
   };
 
   return (

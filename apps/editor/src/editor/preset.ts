@@ -8,6 +8,8 @@
 // spec's default instead of failing the whole load. Kept dependency-free
 // (hand-rolled validation, no schema library) so every consumer -- including
 // the code emitter, which stays three-free -- can pull it in cheaply.
+import { parseColorString } from '@lovo/matter/color';
+
 import type { ColorStop, ParamSpec, ParamValue, SpecId } from './registry';
 import { NODE_SPECS } from './registry';
 
@@ -335,6 +337,15 @@ function validateRamp(value: unknown, fallback: ColorStop[]): ColorStop[] {
       typeof entry.position !== 'number' ||
       !Number.isFinite(entry.position)
     ) {
+      return structuredClone(fallback);
+    }
+
+    // The color has to survive the engine's own decoder: anything it rejects
+    // here would otherwise throw much later — in pushPresetToStore or the
+    // compiler — past the point where a PresetError toast could catch it.
+    try {
+      parseColorString(entry.color);
+    } catch {
       return structuredClone(fallback);
     }
 

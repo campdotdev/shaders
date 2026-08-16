@@ -46,19 +46,26 @@ export function ColorPopoverContents({
   const [typed, setTyped] = useState<string | null>(null);
   const [typedIsInvalid, setTypedIsInvalid] = useState(false);
 
-  // Mirrors of the three fields above, refreshed after every committed render,
-  // so the unmount effect further down can read their latest values instead of
-  // the stale ones its closure would otherwise have captured at mount time.
+  // Mirrors of the three fields above — and of the two callbacks, which the
+  // caller recreates per render closing over its CURRENT stops array —
+  // refreshed after every committed render, so the unmount effect further down
+  // can read their latest values instead of the stale ones its closure would
+  // otherwise have captured at mount time (a mount-time onCommit would replay
+  // the stops as they were when the popover opened, reverting edits since).
   // Written in an effect, not during render: a render React discards (Strict
   // Mode, concurrent interruptions) must not leave its values in the refs.
   const draftRef = useRef(draft);
   const typedRef = useRef(typed);
   const typedIsInvalidRef = useRef(typedIsInvalid);
+  const onChangeRef = useRef(onChange);
+  const onCommitRef = useRef(onCommit);
 
   useEffect(() => {
     draftRef.current = draft;
     typedRef.current = typed;
     typedIsInvalidRef.current = typedIsInvalid;
+    onChangeRef.current = onChange;
+    onCommitRef.current = onCommit;
   });
 
   const color = draft ?? parseToOklch(value);
@@ -121,21 +128,23 @@ export function ColorPopoverContents({
       if (draftRef.current !== null) {
         const formatted = formatOklch(draftRef.current);
 
-        onChange(formatted);
-        onCommit(formatted);
+        onChangeRef.current(formatted);
+        onCommitRef.current(formatted);
       } else if (typedRef.current !== null && !typedIsInvalidRef.current) {
         try {
           const formatted = formatOklch(parseToOklch(typedRef.current));
 
-          onChange(formatted);
-          onCommit(formatted);
+          onChangeRef.current(formatted);
+          onCommitRef.current(formatted);
         } catch {
           // typedIsInvalidRef guards this in practice; kept defensive rather
           // than assuming parseToOklch can't still throw here.
         }
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately empty: must run exactly once, on unmount, reading the refs above rather than depending on the state they mirror (which would re-run this on every keystroke instead of at close)
+    // Deliberately empty deps: must run exactly once, on unmount, reading the
+    // refs above rather than depending on the state and callbacks they mirror
+    // (which would re-run this on every keystroke instead of at close).
   }, []);
 
   return (

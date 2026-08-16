@@ -114,6 +114,27 @@ describe('remapForPaste', () => {
     });
   });
 
+  it('deep-copies params so a pasted node shares no references with its source', () => {
+    const sourceParams = {
+      stops: [
+        { color: '#000000', position: 0 },
+        { color: '#ffffff', position: 1 },
+      ],
+    };
+    const preset = presetFrom(
+      [{ id: 'colorRamp-1', spec: 'colorRamp', position: { x: 0, y: 0 }, params: sourceParams }],
+      [],
+    );
+
+    const { nodes } = remapForPaste(preset, new Set());
+    const pastedParams = nodes[0]!.params;
+
+    expect(pastedParams).toEqual(sourceParams);
+    expect(pastedParams).not.toBe(sourceParams);
+    expect(pastedParams.stops).not.toBe(sourceParams.stops);
+    expect((pastedParams.stops as object[])[0]).not.toBe(sourceParams.stops[0]);
+  });
+
   it('offsets every position by PASTE_OFFSET on both axes', () => {
     const preset = presetFrom(
       [

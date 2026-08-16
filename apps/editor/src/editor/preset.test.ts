@@ -117,6 +117,7 @@ describe('parsePreset validation failures', () => {
     });
 
     expect(() => parsePreset(json)).toThrow(PresetError);
+    expect(() => parsePreset(json)).toThrow('references handle "nope"');
   });
 
   it('throws when an edge references a node id that does not exist', () => {
@@ -211,6 +212,32 @@ describe('parsePreset coercions', () => {
           spec: 'colorRamp',
           position: { x: 0, y: 0 },
           params: { stops: [{ color: '#fff' }, { position: 1 }] },
+        },
+      ],
+      edges: [],
+    });
+    const preset = parsePreset(json);
+
+    expect(preset.nodes[0]!.params.stops).toEqual(DEFAULT_RAMP_STOPS);
+  });
+
+  it('resets a ramp whose stop color the engine decoder rejects', () => {
+    const json = JSON.stringify({
+      version: PRESET_VERSION,
+      nodes: [
+        {
+          id: 'r1',
+          spec: 'colorRamp',
+          position: { x: 0, y: 0 },
+          params: {
+            // A string, so it passes the shape check — but parseColorString
+            // rejects it, and unvalidated it would throw far past parsePreset
+            // (pushPresetToStore), where no PresetError toast can catch it.
+            stops: [
+              { color: 'rgb(255, 0, 0)', position: 0 },
+              { color: '#ffffff', position: 1 },
+            ],
+          },
         },
       ],
       edges: [],

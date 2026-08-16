@@ -57,6 +57,10 @@ export function remapForPaste(
       ...node,
       id: freshId,
       position: { x: node.position.x + PASTE_OFFSET, y: node.position.y + PASTE_OFFSET },
+      // Deep-copied: duplicate composes remap without a serialization round
+      // trip, so a shallow spread would leave the pasted card's params (and
+      // nested ramp stops) aliasing the live source node's objects.
+      params: structuredClone(node.params),
     };
   });
 

@@ -14,7 +14,9 @@ test('export, reload, import round-trips the graph', async ({ page }) => {
   // Make the graph distinctive so the reimport assertion can't pass on the
   // starter graph alone.
   await page.getByRole('button', { name: '+ generate', exact: true }).click();
-  await page.getByRole('menu').getByRole('button', { name: 'Voronoi' }).click();
+  // No menu-role scoping: the flyout is a plain disclosure group, and the
+  // button's accessible name is unique on the page.
+  await page.getByRole('button', { name: 'Voronoi' }).click();
   await expect(cards).toHaveCount(STARTER_CARDS + 1);
 
   const downloadPromise = page.waitForEvent('download');
