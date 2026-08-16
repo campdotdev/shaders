@@ -36,7 +36,7 @@ for pair in \
   "mesh-gradient:jpg" \
   "wave-lines:jpg" \
   "vignette:jpg" \
-  "dot-field:png" \
+  "dot-field:png:#0a0a14" \
   "radial-gradient:jpg" \
   "god-rays:jpg:#0b0f1a" \
   "conic-gradient:jpg" \
