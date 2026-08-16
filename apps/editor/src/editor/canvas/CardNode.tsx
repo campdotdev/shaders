@@ -11,12 +11,13 @@ import type { CSSProperties } from 'react';
 import { useReactFlow } from '@xyflow/react';
 import type { Node, NodeProps } from '@xyflow/react';
 
+import { NODE_SPECS, PORT_COLORS, STAGE_COLORS } from '@/editor/graph/registry';
+import type { ParamValue, SpecId, Stage } from '@/editor/graph/registry';
+import { useEditorGraph } from '@/editor/state/graph-context';
+
 import { CardParams } from './CardParams';
 import { CardPorts, CHIP_PORT_GAP, OUTPUT_PREVIEW_HEIGHT } from './CardPorts';
-import { useEditorGraph } from './graph-context';
 import { OutputPreview } from './OutputPreview';
-import { NODE_SPECS, PORT_COLORS, STAGE_COLORS } from './registry';
-import type { ParamValue, SpecId, Stage } from './registry';
 
 export type CardNodeType = Node<
   {

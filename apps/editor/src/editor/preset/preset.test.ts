@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { DEFAULT_RAMP_STOPS, defaultParamsOf, NODE_SPECS } from '@/editor/graph/registry';
+import type { SpecId } from '@/editor/graph/registry';
+
 import {
   __registerMigrationForTests,
   parsePreset,
@@ -9,8 +12,6 @@ import {
   serializePreset,
 } from './preset';
 import type { Preset, PresetEdge, PresetNode } from './preset';
-import { DEFAULT_RAMP_STOPS, defaultParamsOf, NODE_SPECS } from './registry';
-import type { SpecId } from './registry';
 
 /**
  * One node per registry spec, wired into a single linear chain wherever the

@@ -5,11 +5,11 @@
 // one place that writes node data) and passes it down here. Split out of
 // CardNode.tsx (MAT-94 Task 11.5) so the card shell stays under the
 // 300-line bar.
-import { rampStopsOf } from './graph';
-import { useEditorGraph } from './graph-context';
-import { NumberField } from './NumberField';
-import { RampParam } from './RampParam';
-import type { ParamSpec, ParamValue, SpecId } from './registry';
+import { rampStopsOf } from '@/editor/graph/graph';
+import type { ParamSpec, ParamValue, SpecId } from '@/editor/graph/registry';
+import { NumberField } from '@/editor/params/NumberField';
+import { RampParam } from '@/editor/params/RampParam';
+import { useEditorGraph } from '@/editor/state/graph-context';
 
 /** Narrows a param's stored value to a string for the <select> it backs,
     falling back to the spec default. The stored value's declared type is the

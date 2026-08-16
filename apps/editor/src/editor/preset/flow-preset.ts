@@ -15,14 +15,15 @@
 import { parseColorString } from '@lovo/matter/color';
 import type { Edge } from '@xyflow/react';
 
-import type { CardNodeType } from './CardNode';
-import { rampStopsOf } from './graph';
-import type { ParamStore } from './param-store';
+import type { CardNodeType } from '@/editor/canvas/CardNode';
+import { rampStopsOf } from '@/editor/graph/graph';
+import type { ParamStore } from '@/editor/graph/param-store';
+import { defaultParamsOf, NODE_SPECS, PORT_COLORS } from '@/editor/graph/registry';
+import type { PortType, SpecId } from '@/editor/graph/registry';
+import { STARTER_EDGES, STARTER_NODES } from '@/editor/graph/starter-graph';
+
 import { presetFrom } from './preset';
 import type { Preset, PresetEdge, PresetNode } from './preset';
-import { defaultParamsOf, NODE_SPECS, PORT_COLORS } from './registry';
-import type { PortType, SpecId } from './registry';
-import { STARTER_EDGES, STARTER_NODES } from './starter-graph';
 
 // ---------------------------------------------------------------------------
 // Constructors — the one place a card node or a typed wire is built, shared by

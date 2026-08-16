@@ -11,11 +11,11 @@
 import { parseColorString } from '@lovo/matter/color';
 
 import { ColorInput } from '@/controls/ColorInput';
+import type { ColorStop } from '@/editor/graph/registry';
+import { useEditorGraph } from '@/editor/state/graph-context';
 
-import { useEditorGraph } from './graph-context';
 import type { NumericRange } from './number-field';
 import { NumberField } from './NumberField';
-import type { ColorStop } from './registry';
 
 const MIN_STOPS = 2;
 const MAX_STOPS = 8;

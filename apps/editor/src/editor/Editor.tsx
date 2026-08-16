@@ -25,29 +25,29 @@ import {
 import type { Connection, Edge, IsValidConnection } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import { AddNodeToolbar } from './AddNodeToolbar';
-import { CardNode } from './CardNode';
-import type { CardNodeType } from './CardNode';
-import { EditorActions } from './EditorActions';
-import { emitComponentSource } from './emit';
+import { CardNode } from '@/editor/canvas/CardNode';
+import type { CardNodeType } from '@/editor/canvas/CardNode';
+import { TypedEdge } from '@/editor/canvas/TypedEdge';
+import { emitComponentSource } from '@/editor/graph/emit';
+import { structuralKeyOf } from '@/editor/graph/graph';
+import { ParamStore } from '@/editor/graph/param-store';
+import { NODE_SPECS, portsCompatible } from '@/editor/graph/registry';
+import type { PortType, SpecId, Stage } from '@/editor/graph/registry';
+import { AddNodeToolbar } from '@/editor/panels/AddNodeToolbar';
+import { EditorActions } from '@/editor/panels/EditorActions';
+import { GeneratedCodePanel } from '@/editor/panels/GeneratedCodePanel';
+import { Legend } from '@/editor/panels/Legend';
 import {
   makeNode,
   presetFromFlow,
   STARTER_FLOW_EDGES,
   STARTER_FLOW_NODES,
   typedEdge,
-} from './flow-preset';
-import { GeneratedCodePanel } from './GeneratedCodePanel';
-import { structuralKeyOf } from './graph';
-import { EditorGraphContext } from './graph-context';
-import { Legend } from './Legend';
-import { ParamStore } from './param-store';
-import type { Preset } from './preset';
-import { NODE_SPECS, portsCompatible } from './registry';
-import type { PortType, SpecId, Stage } from './registry';
-import { TypedEdge } from './TypedEdge';
-import { useEditorClipboard } from './use-editor-clipboard';
-import { useEditorHistory } from './use-editor-history';
+} from '@/editor/preset/flow-preset';
+import type { Preset } from '@/editor/preset/preset';
+import { EditorGraphContext } from '@/editor/state/graph-context';
+import { useEditorClipboard } from '@/editor/state/use-editor-clipboard';
+import { useEditorHistory } from '@/editor/state/use-editor-history';
 
 const nodeTypes = { card: CardNode };
 const edgeTypes = { typed: TypedEdge };

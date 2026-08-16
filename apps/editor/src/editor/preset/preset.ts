@@ -10,8 +10,8 @@
 // the code emitter, which stays three-free -- can pull it in cheaply.
 import { parseColorString } from '@lovo/matter/color';
 
-import type { ColorStop, ParamSpec, ParamValue, SpecId } from './registry';
-import { NODE_SPECS } from './registry';
+import type { ColorStop, ParamSpec, ParamValue, SpecId } from '@/editor/graph/registry';
+import { NODE_SPECS } from '@/editor/graph/registry';
 
 /** Current preset format version. Bump alongside a MIGRATIONS entry whenever the shape changes. */
 export const PRESET_VERSION = 1;

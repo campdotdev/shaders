@@ -10,14 +10,14 @@ import { useMemo } from 'react';
 
 import { ShaderScene } from '@lovo/matter-react';
 
-import { structuralKeyOf } from '@/editor/graph';
-import type { GraphEdge, GraphNode } from '@/editor/graph';
-import { EditorGraphContext } from '@/editor/graph-context';
-import type { EditorGraph } from '@/editor/graph-context';
-import { CompiledMesh } from '@/editor/OutputPreview';
-import { ParamStore } from '@/editor/param-store';
-import { defaultParamsOf } from '@/editor/registry';
-import { STARTER_EDGES, STARTER_NODES } from '@/editor/starter-graph';
+import { CompiledMesh } from '@/editor/canvas/OutputPreview';
+import { structuralKeyOf } from '@/editor/graph/graph';
+import type { GraphEdge, GraphNode } from '@/editor/graph/graph';
+import { ParamStore } from '@/editor/graph/param-store';
+import { defaultParamsOf } from '@/editor/graph/registry';
+import { STARTER_EDGES, STARTER_NODES } from '@/editor/graph/starter-graph';
+import { EditorGraphContext } from '@/editor/state/graph-context';
+import type { EditorGraph } from '@/editor/state/graph-context';
 import VisualTestPause from '@/lib/VisualTestPause';
 
 export default function ParityRuntimeScene() {

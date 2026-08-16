@@ -26,12 +26,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { Edge } from '@xyflow/react';
 
-import type { CardNodeType } from './CardNode';
-import { flowFromPreset, presetFromFlow, pushPresetToStore } from './flow-preset';
-import { History } from './history';
-import type { ParamStore } from './param-store';
-import { parsePreset, serializePreset } from './preset';
-import type { Preset } from './preset';
+import type { CardNodeType } from '@/editor/canvas/CardNode';
+import type { ParamStore } from '@/editor/graph/param-store';
+import { flowFromPreset, presetFromFlow, pushPresetToStore } from '@/editor/preset/flow-preset';
+import { History } from '@/editor/preset/history';
+import { parsePreset, serializePreset } from '@/editor/preset/preset';
+import type { Preset } from '@/editor/preset/preset';
 
 /** Input types where the browser's own undo stack should win — typing in a
     hex field and hitting Cmd+Z means "undo my typing", not "undo my graph".

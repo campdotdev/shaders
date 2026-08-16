@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import type { CardNodeType } from './CardNode';
+import type { CardNodeType } from '@/editor/canvas/CardNode';
+import type { ParamStore } from '@/editor/graph/param-store';
+
 import {
   flowFromPreset,
   presetFromFlow,
@@ -8,7 +10,6 @@ import {
   STARTER_FLOW_EDGES,
   STARTER_FLOW_NODES,
 } from './flow-preset';
-import type { ParamStore } from './param-store';
 import { parsePreset, serializePreset } from './preset';
 import type { Preset } from './preset';
 

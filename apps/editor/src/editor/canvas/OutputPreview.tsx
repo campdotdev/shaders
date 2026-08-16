@@ -11,10 +11,9 @@ import type { SchedulerTick } from '@lovo/matter';
 import { ShaderScene, useShaderContext } from '@lovo/matter-react';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
+import { compileOutputColor } from '@/editor/graph/compile';
+import { useEditorGraph } from '@/editor/state/graph-context';
 import VisualTestPause from '@/lib/VisualTestPause';
-
-import { compileOutputColor } from './compile';
-import { useEditorGraph } from './graph-context';
 
 // Exported for the /parity/runtime dev route, which renders the same mesh
 // full-viewport under its own EditorGraphContext — same compile path, no
