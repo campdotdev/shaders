@@ -11,6 +11,8 @@ import type { SchedulerTick } from '@lovo/matter';
 import { ShaderScene, useShaderContext } from '@lovo/matter-react';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
+import VisualTestPause from '@/lib/VisualTestPause';
+
 import { compileOutputColor } from './compile';
 import { useEditorGraph } from './graph-context';
 
@@ -83,6 +85,9 @@ export function OutputPreview({ nodeId }: { nodeId: string }) {
     <div style={{ position: 'absolute', inset: 0 }}>
       <ShaderScene>
         <CompiledMesh nodeId={nodeId} />
+        {/* Inert without ?visualTest=1: the visual specs freeze the preview
+            through it so canvas pixels are reproducible. */}
+        <VisualTestPause />
       </ShaderScene>
     </div>
   );
