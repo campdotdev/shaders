@@ -14,7 +14,7 @@ interface WebpackConfig {
   };
 }
 
-// The four probes under src/app/dev are named `page.dev.tsx` rather than
+// The probes under src/app/dev are named `page.dev.tsx` rather than
 // `page.tsx`, which makes them invisible to the router unless `dev.tsx` is a
 // recognised page extension. That is the whole mechanism: this is a static
 // export with no route filtering, so anything the router can see gets written
