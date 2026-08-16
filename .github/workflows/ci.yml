@@ -40,10 +40,37 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
+  # The visual job must render in the exact container snap.sh bakes the Linux
+  # baselines in. A bare ubuntu runner ships a different font set, so fontconfig
+  # resolves the `monospace` fallback to a different font (the image lands on
+  # WenQuanYi Zen Hei Mono) and every DOM baseline that contains text drifts —
+  # the editor card shots caught this. Resolve the image tag from the lockfile
+  # so a @playwright/test bump can never drift from the container version.
+  playwright-version:
+    name: Resolve Playwright container
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.resolve.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: resolve
+        run: |
+          version=$(sed -n "s/^  '@playwright\/test@\([0-9][^']*\)':\$/\1/p" pnpm-lock.yaml | head -1)
+          if [ -z "$version" ]; then
+            echo "could not resolve @playwright/test from pnpm-lock.yaml" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
   visual-regression:
     name: Visual regression
     runs-on: ubuntu-latest
-    needs: build-typecheck-lint
+    needs: [build-typecheck-lint, playwright-version]
+    # Same image and platform as scripts/snap.sh (amd64 either way). Browsers
+    # and their system deps are baked into the image at the matching version,
+    # so there is no `playwright install` step here.
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -52,7 +79,6 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm --filter @matter/docs-tests exec playwright install --with-deps chromium
       - run: pnpm build
       - run: pnpm --filter @matter/docs-tests test:visual
       - name: Upload visual diffs on failure
