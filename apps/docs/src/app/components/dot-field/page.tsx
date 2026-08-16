@@ -32,6 +32,7 @@ function DotFieldDemo() {
   return (
     <DemoPoster
       alt="Dot field shader preview: a sparse grid of small gray dots on a dark background"
+      pixelSize={[2048, 1280]}
       src="/posters/dot-field.png"
     >
       <DotFieldScene params={params}>
