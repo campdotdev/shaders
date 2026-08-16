@@ -93,7 +93,12 @@ export function RampParam({
 
   return (
     <div style={{ display: 'grid', gap: 6 }}>
+      {/* Index is the key on purpose: a stop's identity IS its slot — uniforms
+          are keyed `${nodeId}/stops/${index}`, rows never reorder, and every
+          commit rewrites every slot (see `commit` above). Stops carry no id and
+          two stops can be exact duplicates, so no content-derived key exists. */}
       {stops.map((stop, index) => (
+        // react-doctor-disable-next-line no-array-index-as-key
         <div key={index} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <ColorInput
             label={`stop ${index + 1}`}
