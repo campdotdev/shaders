@@ -14,6 +14,7 @@ import {
   fractalNoise,
   grain,
   metaballs,
+  mixColor,
   simplexNoise,
   voronoiCells,
 } from '@lovo/matter';
@@ -25,6 +26,9 @@ import {
   dot,
   exp2,
   float,
+  floor,
+  fract,
+  fwidth,
   length,
   max,
   mix,
@@ -40,18 +44,18 @@ import {
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
-import { rampStopsOf } from './graph';
+import { colorParamOf, rampStopsOf } from './graph';
 import type { GraphEdge, GraphNode } from './graph';
 import type { ParamStore } from './param-store';
 import {
-  BLOBS_THRESHOLD,
+  BLOBS_EDGE,
   DRIVER_DECORRELATE,
+  FRACTAL_GAIN_RANGE,
   FRACTAL_OCTAVES,
   FRACTAL_STYLE_FOLD,
   FRACTAL_STYLE_REMAP,
   MAX_WARP_DRIVER_DEPTH,
   NODE_SPECS,
-  VORONOI_DRIFT,
   VORONOI_EDGE_GAIN,
 } from './registry';
 
@@ -82,6 +86,35 @@ function blendModeOf(node: GraphNode): string {
   const value = node.params.mode;
 
   return typeof value === 'string' ? value : 'mix';
+}
+
+/** Grain's blend select, narrowed the same way — falls back to 'additive'. */
+function grainBlendOf(node: GraphNode): string {
+  const value = node.params.blend;
+
+  return value === 'subtractive' ? value : 'additive';
+}
+
+/**
+ * What `dial()` actually returns: the uniform-node wrapper. Named because
+ * it is NOT assignable to the plain-Node ShaderNodeObject (the variance
+ * quirk noted on `dial` itself), so helpers taking dials must ask for this
+ * type rather than TSLNode.
+ */
+type DialNode = ReturnType<ParamStore['uniformFor']>;
+
+/**
+ * The docs noise components' shared shaping pair, applied to a 0..1 field.
+ * Balance first: (balance - 0.5) * 2 turns the 0..1 dial into a -1..+1 shift,
+ * so either end can push every value past a field extreme; the clamp catches
+ * overshoot. Then contrast: a subtract/scale/add-back sandwich stretches
+ * distances from the midpoint while the midpoint stays fixed — 1 is identity,
+ * above 1 pushes toward the extremes, below 1 pulls toward the middle.
+ */
+function shapeField(value: TSLNode, balance: DialNode, contrast: DialNode): TSLNode {
+  const balanced = clamp(value.add(balance.sub(0.5).mul(2)), 0, 1);
+
+  return clamp(balanced.sub(0.5).mul(contrast).add(0.5), 0, 1);
 }
 
 // ---------------------------------------------------------------------------
@@ -150,81 +183,152 @@ export function compileOutputColor(
           // a little and the clamp trims them.
           const angle = dial(node, 'angle').mul(DEGREES_TO_RADIANS);
           const direction = vec2(cos(angle), sin(angle));
+          const repeat = dial(node, 'repeat');
+          const speed = dial(node, 'speed');
+          const phase = dialPhase(node);
 
-          return (samplePoint) => clamp(dot(samplePoint.sub(0.5), direction).add(0.5), 0, 1);
+          return (samplePoint) => {
+            const coord = dot(samplePoint.sub(0.5), direction).add(0.5);
+
+            // Animated single-pass form: (1 - cos(π·x)) / 2 ping-pongs the
+            // ramp with period 2, C∞ smooth so the turnaround never bands.
+            // The smoothstep(0, 0.01, speed) mix is a GPU gate: at speed 0 it
+            // returns the static clamped coordinate bit for bit, so the
+            // default stays identical to the pre-MAT-99 card.
+            const cosineAnimated = sub(1, cos(coord.add(phase).mul(Math.PI))).mul(0.5);
+            const animated = mix(clamp(coord, 0, 1), cosineAnimated, smoothstep(0, 0.01, speed));
+
+            // Tiled form (the conveyor): repeat squeezes that many ramp
+            // passes into one, fract() saws the coordinate 0 -> 1, and
+            // subtracting the phase marches the stripes along the angle.
+            // Same gate trick at repeat 1 — mirrors the docs LinearGradient.
+            const tiled = fract(coord.mul(repeat).sub(phase));
+
+            return mix(animated, tiled, smoothstep(1, 1.01, repeat));
+          };
         }
 
         case 'noise': {
           // 3D simplex sampled on an x/y window with phase on z, so the
           // pattern morphs in place rather than scrolling. Raw noise spans
-          // roughly -1..1; the add/mul rescales to the 0..1 fields speak.
+          // roughly -1..1; the add/mul rescales to the 0..1 fields speak,
+          // then the shared balance/contrast pair shapes the result.
           const scale = dial(node, 'scale');
+          const contrast = dial(node, 'contrast');
+          const balance = dial(node, 'balance');
           const phase = dialPhase(node);
 
           return (samplePoint) =>
-            simplexNoise(vec3(samplePoint.mul(scale), phase))
-              .add(1)
-              .mul(0.5);
+            shapeField(
+              simplexNoise(vec3(samplePoint.mul(scale), phase))
+                .add(1)
+                .mul(0.5),
+              balance,
+              contrast,
+            );
         }
 
         case 'fractalNoise': {
           const scale = dial(node, 'scale');
+          const detail = dial(node, 'detail');
+          const contrast = dial(node, 'contrast');
+          const balance = dial(node, 'balance');
           const phase = dialPhase(node);
           const style = fractalStyleOf(node);
           const { stretch, lift } = FRACTAL_STYLE_REMAP[style];
 
+          // The detail dial rides a uniform remapped onto the useful gain
+          // range on the GPU, so it glides: gain is the per-octave amplitude
+          // falloff, deciding how loudly the finer octaves speak over the
+          // broad base layer.
+          const gain = mix(float(FRACTAL_GAIN_RANGE.min), float(FRACTAL_GAIN_RANGE.max), detail);
+
           // fBm sums FRACTAL_OCTAVES layers of simplex, each double the
-          // frequency and (by default) half the amplitude of the last. The
+          // frequency and pow(gain, i) times the amplitude of the last. The
           // style select picks the turbulence fold (abs-based creasing) and
           // its 0..1 remap — folded sums pool off-center, so each style
           // stretches/lifts back onto the range the ramp expects. Selects
-          // bake: changing style rebuilds the material.
+          // bake: changing style rebuilds the material. Balance/contrast
+          // shape the remapped value, same chain as the Noise card.
           return (samplePoint) =>
-            clamp(
-              fractalNoise(vec3(samplePoint.mul(scale), phase), {
-                octaves: FRACTAL_OCTAVES,
-                fold: FRACTAL_STYLE_FOLD[style],
-              })
-                .mul(stretch)
-                .add(lift),
-              0,
-              1,
+            shapeField(
+              clamp(
+                fractalNoise(vec3(samplePoint.mul(scale), phase), {
+                  octaves: FRACTAL_OCTAVES,
+                  gain,
+                  fold: FRACTAL_STYLE_FOLD[style],
+                })
+                  .mul(stretch)
+                  .add(lift),
+                0,
+                1,
+              ),
+              balance,
+              contrast,
             );
         }
 
         case 'voronoi': {
           const scale = dial(node, 'scale');
+          const shading = dial(node, 'shading');
+          const irregularity = dial(node, 'irregularity');
+          const drift = dial(node, 'drift');
           const phase = dialPhase(node);
 
-          // Edge-distance field: 0 exactly on a cell border, rising toward
-          // cell interiors. VORONOI_DRIFT gives the seeds an orbit for the
-          // speed dial to animate (drift 0 would freeze the pattern
-          // regardless of speed).
-          return (samplePoint) =>
-            clamp(
-              voronoiCells(samplePoint.mul(scale), {
-                time: phase,
-                drift: VORONOI_DRIFT,
-              }).edgeDistance.mul(VORONOI_EDGE_GAIN),
-              0,
-              1,
-            );
+          // The cells hand back two fields and the shading dial blends
+          // between them: edgeDistance (0 exactly on a cell border, rising
+          // toward interiors — scaled onto 0..1 by the gain) at shading 1,
+          // and the per-cell random hash (a flat mosaic, every pixel in a
+          // cell sharing one value) at shading 0. irregularity is the
+          // primitive's seed jitter — 0 snaps seeds to a square grid — and
+          // drift is the seed orbit radius the speed dial animates (0
+          // freezes the pattern regardless of speed; it was a fixed 0.6
+          // before MAT-99 exposed it).
+          return (samplePoint) => {
+            const cells = voronoiCells(samplePoint.mul(scale), {
+              time: phase,
+              jitter: irregularity,
+              drift,
+            });
+            const borderDepth = clamp(cells.edgeDistance.mul(VORONOI_EDGE_GAIN), 0, 1);
+
+            return mix(cells.hash, borderDepth, shading);
+          };
         }
 
         case 'blobs': {
           const count = dial(node, 'count');
           const size = dial(node, 'size');
+          const sizeVariation = dial(node, 'sizeVariation');
+          const spread = dial(node, 'spread');
+          const softness = dial(node, 'softness');
+          const center = vec2(dial(node, 'center.x'), dial(node, 'center.y'));
           const phase = dialPhase(node);
 
-          // metaballs wants centered pattern space (blobs roam around the
-          // origin). The summed field rises past 1 inside overlaps; the
-          // smoothstep window turns it into a soft goo silhouette.
-          return (samplePoint) =>
-            smoothstep(
-              float(BLOBS_THRESHOLD[0]),
-              float(BLOBS_THRESHOLD[1]),
-              metaballs(samplePoint.sub(0.5), { count, size, time: phase }).field,
+          // metaballs wants centered pattern space — subtracting `center`
+          // puts the roam origin wherever the dial points (0.5/0.5 is the
+          // canvas center). The summed field rises past 1 inside overlaps;
+          // the goo edge is where it crosses the threshold, feathered by
+          // softness (mirroring the docs Blobs): fwidth() — how much the
+          // field changes across one screen pixel — keeps the edge
+          // anti-aliased even at softness 0, and the dial widens the band
+          // from there up to MAX_SOFTNESS field units.
+          return (samplePoint) => {
+            const field = metaballs(samplePoint.sub(center), {
+              count,
+              size,
+              sizeVariation,
+              spread,
+              time: phase,
+            }).field;
+            const band = fwidth(field).add(softness.mul(BLOBS_EDGE.maxSoftness));
+
+            return smoothstep(
+              float(BLOBS_EDGE.threshold).sub(band),
+              float(BLOBS_EDGE.threshold).add(band),
+              field,
             );
+          };
         }
 
         case 'warp': {
@@ -345,29 +449,52 @@ export function compileOutputColor(
         }
 
         case 'vignette': {
-          // Darken toward the edges: distance from center (aspect-corrected
-          // via screenSize so the falloff stays circular), a smoothstep ramp
-          // from the clear coverage radius outward over the softness width,
-          // multiplied in.
+          // Blend toward `color` as pixels get further from `center`
+          // (aspect-corrected via screenSize so the falloff stays circular):
+          // a smoothstep ramp from the clear coverage radius outward over the
+          // softness width, scaled by strength, mixed in oklab like the docs
+          // Vignette. At the defaults (strength 1, black, centered) the mask
+          // is the pre-MAT-99 darkening — only the mixing space moved from
+          // linear to oklab.
           const input = compileColor(upstreamOf(node.id, 'in'));
+          const strength = dial(node, 'strength');
           const coverage = dial(node, 'coverage');
           const softness = dial(node, 'softness');
-          const centered = uv().sub(0.5);
+          // The center rides two scalar uniforms (an xy param's storage
+          // form); vec2() assembles them fresh per expression, which is also
+          // the safe TSL shape — vec uniforms misbehave as chained receivers.
+          const center = vec2(dial(node, 'center.x'), dial(node, 'center.y'));
+          const tint = params.colorFor(
+            node.id,
+            'color',
+            parseColorString(colorParamOf(node, 'color')),
+          );
+          const centered = uv().sub(center);
           const aspect = screenSize.x.div(screenSize.y);
           const distance = length(vec2(centered.x.mul(aspect), centered.y));
-          const darkening = smoothstep(coverage, coverage.add(max(softness, 1e-3)), distance);
+          const mask = smoothstep(coverage, coverage.add(max(softness, 1e-3)), distance);
 
-          return vec3(input).mul(darkening.oneMinus());
+          return mixColor(vec3(input), tint, mask.mul(strength), 'oklab');
         }
 
         case 'grain': {
           // Monochrome film grain over the finished image: a per-pixel hash
-          // centered on zero, added to all three channels. Static
-          // (timeOffset 0) in v1.
+          // centered on zero on all three channels. floor(phase * 60)
+          // quantizes the animation into whole ticks, so the pattern
+          // re-rolls discretely — at speed 0 the phase never advances and
+          // the grain freezes (the v1 behavior). The blend select bakes:
+          // additive nudges pixels both ways (sparkle), subtractive folds
+          // the noise positive and only darkens (dark specks).
           const input = compileColor(upstreamOf(node.id, 'in'));
           const amount = dial(node, 'amount');
+          const phase = dialPhase(node);
+          const grainValue = grain(amount, floor(phase.mul(60)));
 
-          return add(vec3(input), vec3(grain(amount)));
+          if (grainBlendOf(node) === 'subtractive') {
+            return sub(vec3(input), vec3(grainValue.abs()));
+          }
+
+          return add(vec3(input), vec3(grainValue));
         }
 
         case 'gradient':

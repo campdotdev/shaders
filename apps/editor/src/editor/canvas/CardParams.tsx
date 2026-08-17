@@ -5,8 +5,12 @@
 // one place that writes node data) and passes it down here. Split out of
 // CardNode.tsx (MAT-94 Task 11.5) so the card shell stays under the
 // 300-line bar.
-import { rampStopsOf } from '@/editor/graph/graph';
+import { parseColorString } from '@lovo/matter/color';
+
+import { ColorInput } from '@/controls/ColorInput';
+import { colorParamOf, rampStopsOf } from '@/editor/graph/graph';
 import type { ParamSpec, ParamValue, SpecId } from '@/editor/graph/registry';
+import { xyKeysOf } from '@/editor/graph/registry';
 import { NumberField } from '@/editor/params/NumberField';
 import { RampParam } from '@/editor/params/RampParam';
 import { useEditorGraph } from '@/editor/state/graph-context';
@@ -32,7 +36,7 @@ export function CardParams({
   setParam: (paramId: string, value: ParamValue) => void;
   specId: SpecId;
 }) {
-  const { commitEdit } = useEditorGraph();
+  const { commitEdit, paramStore } = useEditorGraph();
 
   return (
     // Clicks inside the panel are adjustments, not toggles — stop them
@@ -58,6 +62,70 @@ export function CardParams({
               onCommit={(stops) => setParam(param.id, stops)}
               stops={rampStopsOf({ id: nodeId, params, spec: specId }, param.id)}
             />
+          );
+        }
+
+        // A color param follows RampParam's preview/commit split: every pick
+        // mid-drag writes the vec3 uniform (free on the GPU, no rebuild —
+        // color params stay out of the structural key), and only the released
+        // gesture mirrors the string into node data and records an undo step.
+        if (param.kind === 'color') {
+          return (
+            <label
+              key={param.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '46px 1fr',
+                gap: 8,
+                alignItems: 'center',
+                font: '500 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
+                color: '#8b88a0',
+              }}
+            >
+              {param.label}
+              <ColorInput
+                label={param.label}
+                onChange={(value) => paramStore.setColor(nodeId, param.id, parseColorString(value))}
+                onCommit={(value) => {
+                  paramStore.setColor(nodeId, param.id, parseColorString(value));
+                  setParam(param.id, value);
+                  commitEdit();
+                }}
+                value={colorParamOf({ id: nodeId, params, spec: specId }, param.id)}
+              />
+            </label>
+          );
+        }
+
+        // An xy param renders as one labeled row with an x and a y field.
+        // Each axis is an ordinary number param under its storage key
+        // (`center.x`), so setParam's number fast path writes the scalar
+        // uniform exactly like a slider's.
+        if (param.kind === 'xy') {
+          return (
+            <label
+              key={param.id}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '46px 1fr 1fr',
+                gap: 8,
+                alignItems: 'center',
+                font: '500 10.5px/1 ui-monospace, SF Mono, Menlo, monospace',
+                color: '#8b88a0',
+              }}
+            >
+              {param.label}
+              {xyKeysOf(param.id).map((key, axis) => (
+                <NumberField
+                  key={key}
+                  label={`${param.label} ${axis === 0 ? 'x' : 'y'}`}
+                  onChange={(next) => setParam(key, next)}
+                  onCommit={commitEdit}
+                  range={param}
+                  value={Number(params[key] ?? param.defaultValue[axis])}
+                />
+              ))}
+            </label>
           );
         }
 

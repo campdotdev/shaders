@@ -183,7 +183,41 @@ describe('parsePreset coercions', () => {
     });
     const preset = parsePreset(json);
 
-    expect(preset.nodes[0]!.params).toEqual({ angle: 90 });
+    // `mystery` is gone; the spec's other params fill from their defaults.
+    expect(preset.nodes[0]!.params).toEqual({ angle: 90, repeat: 1, speed: 0 });
+  });
+
+  it('clamps xy axis values independently and defaults a malformed axis', () => {
+    const json = JSON.stringify({
+      version: PRESET_VERSION,
+      nodes: [
+        {
+          id: 'v1',
+          spec: 'vignette',
+          position: { x: 0, y: 0 },
+          params: { 'center.x': 5, 'center.y': 'sideways' },
+        },
+      ],
+      edges: [],
+    });
+    const preset = parsePreset(json);
+
+    // center is 0..1 per axis: 5 clamps to 1, the junk y resets to 0.5.
+    expect(preset.nodes[0]!.params['center.x']).toBe(1);
+    expect(preset.nodes[0]!.params['center.y']).toBe(0.5);
+  });
+
+  it('keeps a valid color param and resets one the engine decoder rejects', () => {
+    const build = (color: unknown) =>
+      JSON.stringify({
+        version: PRESET_VERSION,
+        nodes: [{ id: 'v1', spec: 'vignette', position: { x: 0, y: 0 }, params: { color } }],
+        edges: [],
+      });
+
+    expect(parsePreset(build('#ff0044')).nodes[0]!.params.color).toBe('#ff0044');
+    expect(parsePreset(build('rgb(255, 0, 0)')).nodes[0]!.params.color).toBe('oklch(0 0 0)');
+    expect(parsePreset(build(12)).nodes[0]!.params.color).toBe('oklch(0 0 0)');
   });
 
   it('resets a malformed ramp param to the default, non-array case', () => {

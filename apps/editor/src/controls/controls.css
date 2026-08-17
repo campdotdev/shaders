@@ -51,14 +51,19 @@
 
 /* ---- Color swatch trigger ---- */
 
-/* The trigger takes its height from its row rather than setting one, so the
-   swatch always matches the NumberField beside it in a ramp stop row. It used
-   to be a fixed 1.25rem, which stood taller than the field and made the row
-   look misaligned. Only the width is stated; `stretch` supplies the rest. */
+/* A fixed 1.25rem square, the same explicit height NumberField pins itself
+   to. It briefly took its height from its row via `stretch` instead, but that
+   only works with a NumberField sibling to stretch against — a color param
+   row (Vignette's tint, MAT-99) has no such sibling, so the trigger collapsed
+   there. The old fixed-height mismatch this replaced is gone because BOTH
+   controls now state 1.25rem rather than one guessing the other's height. */
 .color-swatch-trigger {
   display: flex;
-  align-items: stretch;
-  align-self: stretch;
+  box-sizing: border-box;
+  width: 1.25rem;
+  height: 1.25rem;
+  align-self: center;
+  justify-self: start;
   padding: 0;
   background: none;
   border: 1px solid #2c2a38;
@@ -67,7 +72,7 @@
 }
 
 .color-swatch {
-  width: 1rem;
+  flex: 1;
   border-radius: 0.2rem;
 }
 

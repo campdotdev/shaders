@@ -16,9 +16,9 @@ import { parseColorString } from '@lovo/matter/color';
 import type { Edge } from '@xyflow/react';
 
 import type { CardNodeType } from '@/editor/canvas/CardNode';
-import { rampStopsOf } from '@/editor/graph/graph';
+import { colorParamOf, rampStopsOf } from '@/editor/graph/graph';
 import type { ParamStore } from '@/editor/graph/param-store';
-import { defaultParamsOf, NODE_SPECS, PORT_COLORS } from '@/editor/graph/registry';
+import { defaultParamsOf, NODE_SPECS, PORT_COLORS, xyKeysOf } from '@/editor/graph/registry';
 import type { PortType, SpecId } from '@/editor/graph/registry';
 import { STARTER_EDGES, STARTER_NODES } from '@/editor/graph/starter-graph';
 
@@ -160,9 +160,9 @@ export function flowFromPreset(preset: Preset): { nodes: CardNodeType[]; edges: 
  * pass an undo would restore React state while the GPU kept rendering the
  * values it was already holding.
  *
- * Only slider and ramp params need it — select params are baked into the
- * compiled material, so they come back with the rebuild the structural key
- * triggers.
+ * Every uniform-riding kind needs it — sliders, ramps, xy pairs, and color
+ * swatches; select params are baked into the compiled material, so they come
+ * back with the rebuild the structural key triggers.
  */
 export function pushPresetToStore(preset: Preset, paramStore: ParamStore): void {
   for (const node of preset.nodes) {
@@ -173,6 +173,22 @@ export function pushPresetToStore(preset: Preset, paramStore: ParamStore): void 
         if (typeof value === 'number') {
           paramStore.set(node.id, param.id, value);
         }
+      }
+
+      // An xy param is stored as two plain numbers (`${id}.x` / `${id}.y`),
+      // each riding its own scalar uniform under that same key.
+      if (param.kind === 'xy') {
+        for (const key of xyKeysOf(param.id)) {
+          const value = node.params[key];
+
+          if (typeof value === 'number') {
+            paramStore.set(node.id, key, value);
+          }
+        }
+      }
+
+      if (param.kind === 'color') {
+        paramStore.setColor(node.id, param.id, parseColorString(colorParamOf(node, param.id)));
       }
 
       if (param.kind === 'ramp') {

@@ -200,22 +200,28 @@ describe('generate cards', () => {
     expect(smoke).not.toContain("fold: 'none'");
   });
 
-  it('voronoi emits the edge-distance field with the tuned constants', () => {
+  it('voronoi emits the hash/edge blend with every dial as a prop', () => {
     const { nodes, edges } = generatorGraph('voronoi');
     const emitted = emitComponentSource(nodes, edges, 'output-1');
 
     expect(emitted).toContain('voronoiCells(');
-    expect(emitted).toContain('drift: 0.6');
+    expect(emitted).toContain('jitter: voronoiIrregularityUniform');
+    expect(emitted).toContain('drift: voronoiDriftUniform');
+    expect(emitted).toContain('voronoiDrift = 0.6');
     expect(emitted).toContain('.edgeDistance.mul(2.5)');
+    expect(emitted).toContain('mix(cells.hash, borderDepth, voronoiShadingUniform)');
     expectParses(emitted);
   });
 
-  it('blobs emits the metaballs smoothstep window', () => {
+  it('blobs emits the feathered goo edge around the centered field', () => {
     const { nodes, edges } = generatorGraph('blobs');
     const emitted = emitComponentSource(nodes, edges, 'output-1');
 
-    expect(emitted).toContain('metaballs(');
-    expect(emitted).toContain('smoothstep(float(0.3), float(0.6)');
+    expect(emitted).toContain('metaballs(p.sub(vec2(blobsCenterXUniform, blobsCenterYUniform))');
+    expect(emitted).toContain('sizeVariation: blobsSizeVariationUniform');
+    expect(emitted).toContain('spread: blobsSpreadUniform');
+    expect(emitted).toContain('fwidth(field).add(blobsSoftnessUniform.mul(0.35))');
+    expect(emitted).toContain('smoothstep(float(0.4).sub(band), float(0.4).add(band), field)');
     expectParses(emitted);
   });
 });
@@ -243,21 +249,46 @@ describe('adjust cards', () => {
     expectParses(emitted);
   });
 
-  it('vignette emits the aspect-corrected distance ramp', () => {
+  it('vignette emits the aspect-corrected distance ramp mixed toward the tint', () => {
     const { nodes, edges } = adjustGraph('vignette');
     const emitted = emitComponentSource(nodes, edges, 'output-1');
 
     expect(emitted).toContain('screenSize.x.div(screenSize.y)');
     expect(emitted).toContain('smoothstep(');
-    expect(emitted).toContain('.oneMinus()');
+    // The center pair rides two number props; the tint is a string prop
+    // decoded through parseColorString; the blend is oklab mixColor scaled
+    // by strength.
+    expect(emitted).toContain(
+      'vignetteCenter = vec2(vignetteCenterXUniform, vignetteCenterYUniform)',
+    );
+    expect(emitted).toContain('vignetteColor?: string;');
+    expect(emitted).toContain("vignetteColor = 'oklch(0 0 0)'");
+    expect(emitted).toContain('vec3(...parseColorString(vignetteColor))');
+    expect(emitted).toContain('mixColor(vec3(');
+    expect(emitted).toContain("vignetteMask.mul(vignetteStrengthUniform), 'oklab')");
     expectParses(emitted);
   });
 
-  it('grain adds the per-pixel hash to all channels', () => {
+  it('grain re-rolls through the quantized phase and bakes the blend', () => {
     const { nodes, edges } = adjustGraph('grain');
     const emitted = emitComponentSource(nodes, edges, 'output-1');
 
-    expect(emitted).toContain('grain(grainAmountUniform)');
+    expect(emitted).toContain('grain(grainAmountUniform, floor(grainSpeedPhase.mul(60)))');
+    expect(emitted).toContain('add(vec3(');
+    expectParses(emitted);
+  });
+
+  it('grain bakes the subtractive branch when the select says so', () => {
+    const { nodes, edges } = adjustGraph('grain');
+    const subtractiveNodes = nodes.map((candidate) =>
+      candidate.spec === 'grain'
+        ? { ...candidate, params: { ...candidate.params, blend: 'subtractive' } }
+        : candidate,
+    );
+    const emitted = emitComponentSource(subtractiveNodes, edges, 'output-1');
+
+    expect(emitted).toContain('.abs()');
+    expect(emitted).toContain('sub(vec3(');
     expectParses(emitted);
   });
 });

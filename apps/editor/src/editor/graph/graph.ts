@@ -80,3 +80,22 @@ export function rampStopsOf(node: GraphNode, paramId = 'stops'): ColorStop[] {
 
   return [];
 }
+
+/**
+ * The color-param counterpart of rampStopsOf: a node's stored color string,
+ * trusted only when it's actually a string, otherwise the spec default. The
+ * compiler, the emitter, and the swatch UI all read colors through here so a
+ * malformed value degrades the same way everywhere. Parseability is the
+ * preset loader's job (validateParams), not this read's.
+ */
+export function colorParamOf(node: GraphNode, paramId: string): string {
+  const value = node.params[paramId];
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  const param = NODE_SPECS[node.spec].params.find((candidate) => candidate.id === paramId);
+
+  return param?.kind === 'color' ? param.defaultValue : 'oklch(0 0 0)';
+}

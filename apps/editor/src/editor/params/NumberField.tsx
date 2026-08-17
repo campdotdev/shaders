@@ -225,6 +225,10 @@ export function NumberField({
       style={{
         width: '100%',
         boxSizing: 'border-box',
+        // Explicit, not derived from font metrics: the color swatch trigger
+        // (controls.css) pins itself to this same 1.25rem so the two controls
+        // match in any row, with or without the other present.
+        height: '1.25rem',
         padding: '3px 6px',
         background: '#14131b',
         border: '1px solid #2c2a38',

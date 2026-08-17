@@ -11,20 +11,20 @@
 //
 // Deliberately three-free: a Node test imports this to write the generated
 // file to disk. Every constant interpolated into emitted text
-// (FRACTAL_STYLE_*, VORONOI_*, BLOBS_THRESHOLD, DRIVER_DECORRELATE) comes
+// (FRACTAL_STYLE_*, VORONOI_*, BLOBS_EDGE, DRIVER_DECORRELATE) comes
 // from registry.ts, the same source compile.ts reads, so the two backends
 // can't drift apart on tuning.
-import { rampStopsOf } from './graph';
+import { colorParamOf, rampStopsOf } from './graph';
 import type { GraphEdge, GraphNode } from './graph';
 import {
-  BLOBS_THRESHOLD,
+  BLOBS_EDGE,
   DRIVER_DECORRELATE,
+  FRACTAL_GAIN_RANGE,
   FRACTAL_OCTAVES,
   FRACTAL_STYLE_FOLD,
   FRACTAL_STYLE_REMAP,
   MAX_WARP_DRIVER_DEPTH,
   NODE_SPECS,
-  VORONOI_DRIFT,
   VORONOI_EDGE_GAIN,
 } from './registry';
 
@@ -35,10 +35,13 @@ import {
 interface PropLine {
   name: string;
   jsdoc: string;
-  defaultValue: number;
+  defaultValue: number | string;
   /** Speed props stay OUT of the effect deps: their phase uniform absorbs
       changes, same reasoning as LinearGradient's speedUniform gate. */
   isSpeed: boolean;
+  /** 'string' props (color params) render quoted defaults and a string
+      interface entry; everything else is a number dial. */
+  tsType: 'number' | 'string';
 }
 
 class Emission {
@@ -89,6 +92,13 @@ function blendModeOf(node: GraphNode): string {
   return typeof value === 'string' ? value : 'mix';
 }
 
+/** Grain's blend select, narrowed the same way — falls back to 'additive'. */
+function grainBlendOf(node: GraphNode): string {
+  const value = node.params.blend;
+
+  return value === 'subtractive' ? value : 'additive';
+}
+
 // ---------------------------------------------------------------------------
 // The walk — mirrors compile.ts case for case
 // ---------------------------------------------------------------------------
@@ -124,19 +134,29 @@ export function emitComponentSource(
 
   function claimDialProp(node: GraphNode, baseName: string, paramId: string): string {
     const spec = NODE_SPECS[node.spec];
-    const param = spec.params.find((candidate) => candidate.id === paramId);
-    const value = Number(node.params[paramId] ?? 0);
+    // An xy param's dials arrive as its two storage keys (`center.x`); the
+    // spec entry lives under the bare id, and the prop name camel-cases the
+    // parts (vignetteCenterX). Single-segment ids pass through unchanged.
+    const [bareId = paramId, axis] = paramId.split('.');
+    const param = spec.params.find((candidate) => candidate.id === bareId);
+    const axisDefault = param?.kind === 'xy' ? param.defaultValue[axis === 'y' ? 1 : 0] : 0;
+    const value = Number(node.params[paramId] ?? axisDefault);
     const propName = emission.claim(
-      `${baseName}${paramId.charAt(0).toUpperCase()}${paramId.slice(1)}`,
+      [bareId, axis]
+        .filter((part): part is string => part !== undefined)
+        .reduce((name, part) => `${name}${part.charAt(0).toUpperCase()}${part.slice(1)}`, baseName),
     );
 
-    const range = param?.kind === 'slider' ? `, ${param.min} to ${param.max}` : '';
+    const range =
+      param?.kind === 'slider' || param?.kind === 'xy' ? `, ${param.min} to ${param.max}` : '';
+    const dialLabel = axis === undefined ? paramId : `${bareId} ${axis}`;
 
     emission.props.push({
       name: propName,
-      jsdoc: `${spec.name} ${paramId}${range}. Defaults to ${value}.`,
+      jsdoc: `${spec.name} ${dialLabel}${range}. Defaults to ${value}.`,
       defaultValue: value,
       isSpeed: paramId === 'speed',
+      tsType: 'number',
     });
 
     return propName;
@@ -157,6 +177,41 @@ export function emitComponentSource(
     return `${propName}Uniform`;
   }
 
+  // A color param becomes a STRING prop (default = the editor's current
+  // swatch) plus a decoded vec3 line. Prop changes rerun the effect like any
+  // non-speed dial — generated-code shorthand; the editor runtime rides a
+  // vec3 uniform instead (ParamStore.colorFor).
+  function emitColorDial(node: GraphNode, baseName: string, paramId: string): string {
+    const dialKey = `${node.id}/${paramId}`;
+    const emitted = dialNames.get(dialKey);
+
+    if (emitted !== undefined) return emitted;
+
+    const spec = NODE_SPECS[node.spec];
+    const value = colorParamOf(node, paramId);
+    const propName = emission.claim(
+      `${baseName}${paramId.charAt(0).toUpperCase()}${paramId.slice(1)}`,
+    );
+
+    emission.props.push({
+      name: propName,
+      jsdoc: `${spec.name} ${paramId} (hex, oklch(), or oklab()). Defaults to '${value}'.`,
+      defaultValue: value,
+      isSpeed: false,
+      tsType: 'string',
+    });
+
+    emission.usesParseColor = true;
+    emission.tslImports.add('vec3');
+
+    const varName = `${propName}Vec`;
+
+    emission.uniformLines.push(`const ${varName} = vec3(...parseColorString(${propName}));`);
+    dialNames.set(dialKey, varName);
+
+    return varName;
+  }
+
   // A speed dial's expression sites read the PHASE, not the speed: the
   // useAnimatableSpeed hook integrates speed into a phase uniform on the CPU
   // (mirroring what the editor's ParamStore does per node), so dragging speed
@@ -172,8 +227,35 @@ export function emitComponentSource(
     emission.matterReactImports.add('useAnimatableSpeed');
     emission.hookLines.push(`const ${propName}Phase = useAnimatableSpeed(${propName});`);
     dialNames.set(dialKey, `${propName}Phase`);
+    speedPropNames.set(node.id, propName);
 
     return `${propName}Phase`;
+  }
+
+  // A node whose expression needs the live speed VALUE (not just its phase)
+  // rides it as a useAnimatableUniform — the docs LinearGradient's
+  // speedUniform pattern: speed props stay out of the effect deps, so a plain
+  // uniform(speed) line would go stale on the first speed change. Keyed off
+  // emitSpeedDial's registration; call it after emitting the speed dial.
+  const speedPropNames = new Map<string, string>();
+  const speedGateNames = new Map<string, string>();
+
+  function emitSpeedGate(node: GraphNode): string {
+    const emitted = speedGateNames.get(node.id);
+
+    if (emitted !== undefined) return emitted;
+
+    const propName = speedPropNames.get(node.id);
+
+    if (propName === undefined) throw new Error('emitSpeedGate called before emitSpeedDial');
+
+    const gateName = emission.claim(`${propName}Uniform`);
+
+    emission.matterReactImports.add('useAnimatableUniform');
+    emission.hookLines.push(`const ${gateName} = useAnimatableUniform(${propName});`);
+    speedGateNames.set(node.id, gateName);
+
+    return gateName;
   }
 
   // Shared fallback helper, declared at most once.
@@ -254,13 +336,44 @@ export function emitComponentSource(
         const base = emission.claim('gradient');
         const name = `${base}Field`;
         const angle = emitDial(node, base, 'angle');
+        const repeat = emitDial(node, base, 'repeat');
+        const phase = emitSpeedDial(node, base);
+        const speedGate = emitSpeedGate(node);
 
-        for (const used of ['clamp', 'dot', 'vec2', 'cos', 'sin']) emission.tslImports.add(used);
+        for (const used of [
+          'clamp',
+          'cos',
+          'dot',
+          'fract',
+          'mix',
+          'sin',
+          'smoothstep',
+          'sub',
+          'vec2',
+        ])
+          emission.tslImports.add(used);
         emission.helperLines.push(
           `// Directional ramp: project the centered point onto the angle's direction.`,
           `const ${base}Radians = ${angle}.mul(Math.PI / 180);`,
           `const ${base}Direction = vec2(cos(${base}Radians), sin(${base}Radians));`,
-          `const ${name} = (p: TSLNode) => clamp(dot(p.sub(0.5), ${base}Direction).add(0.5), 0, 1);`,
+          `// Two animated forms behind GPU gates (the docs LinearGradient's trick):`,
+          `// a cosine ping-pong that fades in above speed 0, and a fract() sawtooth`,
+          `// conveyor that takes over above repeat 1 — both identities at their`,
+          `// resting values, so the static single-pass ramp is bit-for-bit intact.`,
+          `const ${name} = (p: TSLNode) => {`,
+          `  const coord = dot(p.sub(0.5), ${base}Direction).add(0.5);`,
+          `  const cosineAnimated = sub(1, cos(coord.add(${phase}).mul(Math.PI))).mul(0.5);`,
+          // Pre-wrapped the way Prettier would break it: the shortest name
+          // this call can carry already overflows the print width.
+          `  const animated = mix(`,
+          `    clamp(coord, 0, 1),`,
+          `    cosineAnimated,`,
+          `    smoothstep(0, 0.01, ${speedGate}),`,
+          `  );`,
+          `  const tiled = fract(coord.mul(${repeat}).sub(${phase}));`,
+          ``,
+          `  return mix(animated, tiled, smoothstep(1, 1.01, ${repeat}));`,
+          `};`,
           '',
         );
 
@@ -270,18 +383,28 @@ export function emitComponentSource(
       case 'noise': {
         const base = emission.claim('noise');
         const name = `${base}Field`;
+        const rawName = emission.claim(`${base}Raw`);
         const scale = emitDial(node, base, 'scale');
+        const contrast = emitDial(node, base, 'contrast');
+        const balance = emitDial(node, base, 'balance');
         const phase = emitSpeedDial(node, base);
 
         emission.matterImports.add('simplexNoise');
-        emission.tslImports.add('vec3');
+        for (const used of ['clamp', 'vec3']) emission.tslImports.add(used);
         emission.helperLines.push(
           `// 3D simplex with the animation phase on z: the pattern morphs in`,
           `// place. Raw noise spans roughly -1..1; add/mul rescales to 0..1.`,
-          `const ${name} = (p: TSLNode) =>`,
+          `const ${rawName} = (p: TSLNode) =>`,
           `  simplexNoise(vec3(p.mul(${scale}), ${phase}))`,
           `    .add(1)`,
           `    .mul(0.5);`,
+          `// Balance shifts the whole field darker or lighter (0.5 is identity);`,
+          `// contrast stretches it around the midpoint (1 is identity).`,
+          `const ${name} = (p: TSLNode) => {`,
+          `  const balanced = clamp(${rawName}(p).add(${balance}.sub(0.5).mul(2)), 0, 1);`,
+          ``,
+          `  return clamp(balanced.sub(0.5).mul(${contrast}).add(0.5), 0, 1);`,
+          `};`,
           '',
         );
 
@@ -291,21 +414,30 @@ export function emitComponentSource(
       case 'fractalNoise': {
         const base = emission.claim('fractal');
         const name = `${base}Field`;
+        const rawName = emission.claim(`${base}Raw`);
+        const gainName = emission.claim(`${base}Gain`);
         const scale = emitDial(node, base, 'scale');
+        const detail = emitDial(node, base, 'detail');
+        const contrast = emitDial(node, base, 'contrast');
+        const balance = emitDial(node, base, 'balance');
         const phase = emitSpeedDial(node, base);
         const style = fractalStyleOf(node);
         const { stretch, lift } = FRACTAL_STYLE_REMAP[style];
 
         emission.matterImports.add('fractalNoise');
-        for (const used of ['clamp', 'vec3']) emission.tslImports.add(used);
+        for (const used of ['clamp', 'float', 'mix', 'vec3']) emission.tslImports.add(used);
         emission.helperLines.push(
+          `// The detail dial maps onto fBm gain — the per-octave amplitude`,
+          `// falloff deciding how loudly finer octaves speak over the base layer.`,
+          `const ${gainName} = mix(float(${FRACTAL_GAIN_RANGE.min}), float(${FRACTAL_GAIN_RANGE.max}), ${detail});`,
           `// fBm: ${FRACTAL_OCTAVES} octaves of simplex, each double the frequency of the`,
           `// last. Style "${style}" baked in: fold '${FRACTAL_STYLE_FOLD[style]}', with the folded sum`,
           `// stretched/lifted back onto the 0..1 range the ramp expects.`,
-          `const ${name} = (p: TSLNode) =>`,
+          `const ${rawName} = (p: TSLNode) =>`,
           `  clamp(`,
           `    fractalNoise(vec3(p.mul(${scale}), ${phase}), {`,
           `      octaves: ${FRACTAL_OCTAVES},`,
+          `      gain: ${gainName},`,
           `      fold: '${FRACTAL_STYLE_FOLD[style]}',`,
           `    })`,
           `      .mul(${stretch})`,
@@ -313,6 +445,13 @@ export function emitComponentSource(
           `    0,`,
           `    1,`,
           `  );`,
+          `// Balance shifts the whole field darker or lighter (0.5 is identity);`,
+          `// contrast stretches it around the midpoint (1 is identity).`,
+          `const ${name} = (p: TSLNode) => {`,
+          `  const balanced = clamp(${rawName}(p).add(${balance}.sub(0.5).mul(2)), 0, 1);`,
+          ``,
+          `  return clamp(balanced.sub(0.5).mul(${contrast}).add(0.5), 0, 1);`,
+          `};`,
           '',
         );
 
@@ -323,22 +462,28 @@ export function emitComponentSource(
         const base = emission.claim('voronoi');
         const name = `${base}Field`;
         const scale = emitDial(node, base, 'scale');
+        const shading = emitDial(node, base, 'shading');
+        const irregularity = emitDial(node, base, 'irregularity');
+        const drift = emitDial(node, base, 'drift');
         const phase = emitSpeedDial(node, base);
 
         emission.matterImports.add('voronoiCells');
-        emission.tslImports.add('clamp');
+        for (const used of ['clamp', 'mix']) emission.tslImports.add(used);
         emission.helperLines.push(
-          `// Edge-distance field: 0 exactly on a cell border, rising toward`,
-          `// cell interiors. Drift gives the seeds an orbit for speed to animate.`,
-          `const ${name} = (p: TSLNode) =>`,
-          `  clamp(`,
-          `    voronoiCells(p.mul(${scale}), {`,
-          `      time: ${phase},`,
-          `      drift: ${VORONOI_DRIFT},`,
-          `    }).edgeDistance.mul(${VORONOI_EDGE_GAIN}),`,
-          `    0,`,
-          `    1,`,
-          `  );`,
+          `// Two fields from one cell walk, blended by shading: edgeDistance`,
+          `// (0 on a cell border, rising toward interiors) at 1, the per-cell`,
+          `// random hash (a flat mosaic) at 0. irregularity is seed jitter —`,
+          `// 0 snaps to a square grid — and drift is the orbit speed animates.`,
+          `const ${name} = (p: TSLNode) => {`,
+          `  const cells = voronoiCells(p.mul(${scale}), {`,
+          `    time: ${phase},`,
+          `    jitter: ${irregularity},`,
+          `    drift: ${drift},`,
+          `  });`,
+          `  const borderDepth = clamp(cells.edgeDistance.mul(${VORONOI_EDGE_GAIN}), 0, 1);`,
+          ``,
+          `  return mix(cells.hash, borderDepth, ${shading});`,
+          `};`,
           '',
         );
 
@@ -350,16 +495,33 @@ export function emitComponentSource(
         const name = `${base}Field`;
         const count = emitDial(node, base, 'count');
         const size = emitDial(node, base, 'size');
+        const sizeVariation = emitDial(node, base, 'sizeVariation');
+        const spread = emitDial(node, base, 'spread');
+        const softness = emitDial(node, base, 'softness');
+        const centerX = emitDial(node, base, 'center.x');
+        const centerY = emitDial(node, base, 'center.y');
         const phase = emitSpeedDial(node, base);
 
         emission.matterImports.add('metaballs');
-        for (const used of ['smoothstep', 'float']) emission.tslImports.add(used);
+        for (const used of ['float', 'fwidth', 'smoothstep', 'vec2']) emission.tslImports.add(used);
         emission.helperLines.push(
-          `// metaballs wants centered pattern space (blobs roam the origin). The`,
-          `// summed field rises past 1 inside overlaps; the smoothstep window`,
-          `// turns it into a soft goo silhouette.`,
-          `const ${name} = (p: TSLNode) =>`,
-          `  smoothstep(float(${BLOBS_THRESHOLD[0]}), float(${BLOBS_THRESHOLD[1]}), metaballs(p.sub(0.5), { count: ${count}, size: ${size}, time: ${phase} }).field);`,
+          `// metaballs wants centered pattern space — subtracting center puts`,
+          `// the roam origin wherever the dial points. The goo edge is where the`,
+          `// summed field crosses the threshold, feathered by softness on top of`,
+          `// fwidth()'s anti-aliasing floor (how much the field changes across`,
+          `// one screen pixel).`,
+          `const ${name} = (p: TSLNode) => {`,
+          `  const field = metaballs(p.sub(vec2(${centerX}, ${centerY})), {`,
+          `    count: ${count},`,
+          `    size: ${size},`,
+          `    sizeVariation: ${sizeVariation},`,
+          `    spread: ${spread},`,
+          `    time: ${phase},`,
+          `  }).field;`,
+          `  const band = fwidth(field).add(${softness}.mul(${BLOBS_EDGE.maxSoftness}));`,
+          ``,
+          `  return smoothstep(float(${BLOBS_EDGE.threshold}).sub(band), float(${BLOBS_EDGE.threshold}).add(band), field);`,
+          `};`,
           '',
         );
 
@@ -559,20 +721,27 @@ export function emitComponentSource(
       case 'vignette': {
         const base = emission.claim('vignette');
         const name = `${base}Color`;
+        const strength = emitDial(node, base, 'strength');
         const coverage = emitDial(node, base, 'coverage');
         const softness = emitDial(node, base, 'softness');
+        const centerX = emitDial(node, base, 'center.x');
+        const centerY = emitDial(node, base, 'center.y');
+        const tint = emitColorDial(node, base, 'color');
 
+        emission.matterImports.add('mixColor');
         for (const used of ['vec2', 'vec3', 'uv', 'length', 'smoothstep', 'max', 'screenSize'])
           emission.tslImports.add(used);
         emission.helperLines.push(
-          `// Darken toward the edges: distance from center (aspect-corrected via`,
-          `// screenSize so the falloff stays circular), a smoothstep ramp from`,
-          `// the clear coverage radius outward over the softness width.`,
-          `const ${base}Centered = uv().sub(0.5);`,
+          `// Blend toward the tint as pixels get further from center (aspect-`,
+          `// corrected via screenSize so the falloff stays circular): a smoothstep`,
+          `// ramp from the clear coverage radius outward over the softness width,`,
+          `// scaled by strength, mixed in oklab like the docs Vignette.`,
+          `const ${base}Center = vec2(${centerX}, ${centerY});`,
+          `const ${base}Centered = uv().sub(${base}Center);`,
           `const ${base}Aspect = screenSize.x.div(screenSize.y);`,
           `const ${base}Distance = length(vec2(${base}Centered.x.mul(${base}Aspect), ${base}Centered.y));`,
-          `const ${base}Darkening = smoothstep(${coverage}, ${coverage}.add(max(${softness}, 1e-3)), ${base}Distance);`,
-          `const ${name} = vec3(${inputName ?? EMPTY_COLOR}).mul(${base}Darkening.oneMinus());`,
+          `const ${base}Mask = smoothstep(${coverage}, ${coverage}.add(max(${softness}, 1e-3)), ${base}Distance);`,
+          `const ${name} = mixColor(vec3(${inputName ?? EMPTY_COLOR}), ${tint}, ${base}Mask.mul(${strength}), 'oklab');`,
           '',
         );
 
@@ -583,13 +752,20 @@ export function emitComponentSource(
         const base = emission.claim('grain');
         const name = `${base}Color`;
         const amount = emitDial(node, base, 'amount');
+        const phase = emitSpeedDial(node, base);
+        const subtractive = grainBlendOf(node) === 'subtractive';
 
         emission.matterImports.add('grain');
-        for (const used of ['add', 'vec3']) emission.tslImports.add(used);
+        for (const used of [subtractive ? 'sub' : 'add', 'floor', 'vec3'])
+          emission.tslImports.add(used);
         emission.helperLines.push(
           `// Monochrome film grain over the finished image: a per-pixel hash`,
-          `// centered on zero, added to all three channels.`,
-          `const ${name} = add(vec3(${inputName ?? EMPTY_COLOR}), vec3(grain(${amount})));`,
+          `// centered on zero. floor(phase * 60) re-rolls the pattern in whole`,
+          `// ticks — at speed 0 it freezes. Blend '${subtractive ? 'subtractive' : 'additive'}' baked in.`,
+          `const ${base}Value = grain(${amount}, floor(${phase}.mul(60)));`,
+          subtractive
+            ? `const ${name} = sub(vec3(${inputName ?? EMPTY_COLOR}), vec3(${base}Value.abs()));`
+            : `const ${name} = add(vec3(${inputName ?? EMPTY_COLOR}), vec3(${base}Value));`,
           '',
         );
 
@@ -709,11 +885,15 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
   const sortedMatterReact = [...emission.matterReactImports].sort();
 
   const propsInterface = emission.props
-    .map((prop) => `  /** ${prop.jsdoc} */\n  ${prop.name}?: number;`)
+    .map((prop) => `  /** ${prop.jsdoc} */\n  ${prop.name}?: ${prop.tsType};`)
     .join('\n');
 
   const destructured = emission.props
-    .map((prop) => `${prop.name} = ${prop.defaultValue}`)
+    .map((prop) => {
+      const rendered = prop.tsType === 'string' ? `'${prop.defaultValue}'` : prop.defaultValue;
+
+      return `${prop.name} = ${rendered}`;
+    })
     .join(',\n  ');
 
   // A dial-free graph (say, ramp straight into Output) has no props at all;
@@ -731,10 +911,22 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
   // Speed props are excluded: their useAnimatableSpeed phase uniform absorbs
   // speed changes without a rebuild — the same reasoning as LinearGradient's
   // speedUniform gate exception. Every other slider prop rebuilds.
-  const effectDeps = [
+  const effectDepNames = [
     'shaderContext',
     ...emission.props.filter((prop) => !prop.isSpeed).map((prop) => prop.name),
-  ].join(', ');
+  ];
+
+  // The generated file must be Prettier-clean as emitted (the parity gate
+  // pins it byte-for-byte, and CI runs format:check over it), so the two
+  // joins that grow with dial count wrap exactly the way Prettier would once
+  // they'd overflow its 100-column print width.
+  const PRINT_WIDTH = 100;
+
+  const depsInline = `  }, [${effectDepNames.join(', ')}]);`;
+  const depsList =
+    depsInline.length <= PRINT_WIDTH
+      ? depsInline
+      : `  }, [\n${effectDepNames.map((name) => `    ${name},`).join('\n')}\n  ]);`;
 
   const hookBlock =
     emission.hookLines.length > 0
@@ -747,15 +939,24 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
   // deps.
   const depsClose =
     emission.hookLines.length > 0
-      ? `    // eslint-disable-next-line react-hooks/exhaustive-deps\n  }, [${effectDeps}]);`
-      : `  }, [${effectDeps}]);`;
+      ? `    // eslint-disable-next-line react-hooks/exhaustive-deps\n${depsList}`
+      : depsList;
 
   const indent = (line: string) => (line === '' ? '' : `    ${line}`);
   const uniformBlock = emission.uniformLines.map(indent).join('\n');
   const helperBlock = emission.helperLines.map(indent).join('\n');
 
+  /** One import declaration, wrapped Prettier-style past the print width. */
+  const importLineOf = (names: string[], moduleName: string): string => {
+    const inline = `import { ${names.join(', ')} } from '${moduleName}';`;
+
+    if (inline.length <= PRINT_WIDTH) return inline;
+
+    return `import {\n${names.map((name) => `  ${name},`).join('\n')}\n} from '${moduleName}';`;
+  };
+
   const matterImportLine =
-    sortedMatter.length > 0 ? `import { ${sortedMatter.join(', ')} } from '@lovo/matter';\n` : '';
+    sortedMatter.length > 0 ? `${importLineOf(sortedMatter, '@lovo/matter')}\n` : '';
   const parseColorLine = emission.usesParseColor
     ? `import { parseColorString } from '@lovo/matter/color';\n`
     : '';
@@ -768,8 +969,8 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
 // as a prop with the editor's value as its default.
 import { useEffect } from 'react';
 
-${matterImportLine}import { ${sortedMatterReact.join(', ')} } from '@lovo/matter-react';
-${parseColorLine}import { ${sortedTsl.join(', ')} } from 'three/tsl';
+${matterImportLine}${importLineOf(sortedMatterReact, '@lovo/matter-react')}
+${parseColorLine}${importLineOf(sortedTsl, 'three/tsl')}
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 import type { Node } from 'three/webgpu';
