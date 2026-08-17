@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { rampStopsOf, structuralKeyOf } from './graph';
+import { colorParamOf, rampStopsOf, structuralKeyOf } from './graph';
 import type { GraphEdge, GraphNode } from './graph';
 import { DEFAULT_RAMP_STOPS, defaultParamsOf } from './registry';
 
@@ -46,6 +46,25 @@ describe('structuralKeyOf', () => {
       structuralKeyOf([ramp('r1', 4)], edges),
     );
   });
+  it('ignores color and xy values — they ride uniforms, never rebuild', () => {
+    const a: GraphNode = {
+      id: 'n1',
+      spec: 'vignette',
+      params: { ...defaultParamsOf('vignette') },
+    };
+    const b: GraphNode = {
+      id: 'n1',
+      spec: 'vignette',
+      params: {
+        ...defaultParamsOf('vignette'),
+        'center.x': 0.1,
+        'center.y': 0.9,
+        color: 'oklch(0.7 0.2 30)',
+      },
+    };
+
+    expect(structuralKeyOf([a], edges)).toBe(structuralKeyOf([b], edges));
+  });
   it('changes when wiring changes', () => {
     const nodes = [ramp('r1', 3), { id: 'o1', spec: 'output', params: {} } as GraphNode];
 
@@ -72,5 +91,20 @@ describe('rampStopsOf', () => {
     const node: GraphNode = { id: 'r1', spec: 'colorRamp', params: { stops: 'not-an-array' } };
 
     expect(rampStopsOf(node)).toEqual(DEFAULT_RAMP_STOPS);
+  });
+});
+
+describe('colorParamOf', () => {
+  it('passes through a stored string', () => {
+    const node: GraphNode = { id: 'v1', spec: 'vignette', params: { color: '#ff0044' } };
+
+    expect(colorParamOf(node, 'color')).toBe('#ff0044');
+  });
+  it('falls back to the spec default when the value is missing or not a string', () => {
+    const missing: GraphNode = { id: 'v1', spec: 'vignette', params: {} };
+    const wrong: GraphNode = { id: 'v1', spec: 'vignette', params: { color: 7 } };
+
+    expect(colorParamOf(missing, 'color')).toBe('oklch(0 0 0)');
+    expect(colorParamOf(wrong, 'color')).toBe('oklch(0 0 0)');
   });
 });

@@ -11,7 +11,7 @@
 import { parseColorString } from '@lovo/matter/color';
 
 import type { ColorStop, ParamSpec, ParamValue, SpecId } from '@/editor/graph/registry';
-import { NODE_SPECS } from '@/editor/graph/registry';
+import { NODE_SPECS, xyKeysOf } from '@/editor/graph/registry';
 
 /** Current preset format version. Bump alongside a MIGRATIONS entry whenever the shape changes. */
 export const PRESET_VERSION = 1;
@@ -288,14 +288,39 @@ function validateParams(spec: SpecId, raw: unknown): Record<string, ParamValue> 
   const savedParams: Record<string, unknown> = isRecord(raw) ? raw : {};
 
   return Object.fromEntries(
-    NODE_SPECS[spec].params.map((paramSpec) => [
-      paramSpec.id,
-      validateParamValue(paramSpec, savedParams[paramSpec.id]),
-    ]),
+    NODE_SPECS[spec].params.flatMap((paramSpec): Array<[string, ParamValue]> => {
+      // An xy param owns TWO storage keys (`${id}.x` / `${id}.y`), each a
+      // plain clamped number — mirroring defaultParamsOf's expansion.
+      if (paramSpec.kind === 'xy') {
+        return xyKeysOf(paramSpec.id).map((key, axis) => [
+          key,
+          validateAxis(paramSpec, savedParams[key], axis),
+        ]);
+      }
+
+      return [[paramSpec.id, validateParamValue(paramSpec, savedParams[paramSpec.id])]];
+    }),
   );
 }
 
-function validateParamValue(paramSpec: ParamSpec, value: unknown): ParamValue {
+/** One axis of an xy param: a finite number clamped into the range, or that
+    axis's default. */
+function validateAxis(
+  paramSpec: Extract<ParamSpec, { kind: 'xy' }>,
+  value: unknown,
+  axis: number,
+): number {
+  if (typeof value !== 'number' || !Number.isFinite(value)) {
+    return paramSpec.defaultValue[axis] ?? paramSpec.min;
+  }
+
+  return Math.min(paramSpec.max, Math.max(paramSpec.min, value));
+}
+
+function validateParamValue(
+  paramSpec: Exclude<ParamSpec, { kind: 'xy' }>,
+  value: unknown,
+): ParamValue {
   if (paramSpec.kind === 'slider') {
     if (typeof value !== 'number' || !Number.isFinite(value)) {
       return paramSpec.defaultValue;
@@ -310,6 +335,23 @@ function validateParamValue(paramSpec: ParamSpec, value: unknown): ParamValue {
     }
 
     return paramSpec.defaultValue;
+  }
+
+  // A color param must survive the engine's decoder for the same reason ramp
+  // stops must (see validateRamp) — reject-to-default here beats a throw in
+  // pushPresetToStore later.
+  if (paramSpec.kind === 'color') {
+    if (typeof value !== 'string') {
+      return paramSpec.defaultValue;
+    }
+
+    try {
+      parseColorString(value);
+    } catch {
+      return paramSpec.defaultValue;
+    }
+
+    return value;
   }
 
   return validateRamp(value, paramSpec.defaultValue);

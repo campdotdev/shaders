@@ -7,9 +7,22 @@
 import { useEffect } from 'react';
 
 import { colorRamp, displace, simplexNoise } from '@lovo/matter';
-import { useAnimatableSpeed, useShaderContext } from '@lovo/matter-react';
+import { useAnimatableSpeed, useAnimatableUniform, useShaderContext } from '@lovo/matter-react';
 import { parseColorString } from '@lovo/matter/color';
-import { clamp, cos, dot, mix, sin, uniform, uv, vec2, vec3 } from 'three/tsl';
+import {
+  clamp,
+  cos,
+  dot,
+  fract,
+  mix,
+  sin,
+  smoothstep,
+  sub,
+  uniform,
+  uv,
+  vec2,
+  vec3,
+} from 'three/tsl';
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 import type { Node } from 'three/webgpu';
@@ -19,8 +32,16 @@ type TSLNode = ShaderNodeObject<Node>;
 export interface GeneratedShaderProps {
   /** Gradient angle, 0 to 360. Defaults to 45. */
   gradientAngle?: number;
+  /** Gradient repeat, 1 to 10. Defaults to 1. */
+  gradientRepeat?: number;
+  /** Gradient speed, 0 to 1. Defaults to 0. */
+  gradientSpeed?: number;
   /** Noise scale, 0.5 to 10. Defaults to 3. */
   noiseScale?: number;
+  /** Noise contrast, 0 to 4. Defaults to 1. */
+  noiseContrast?: number;
+  /** Noise balance, 0 to 1. Defaults to 0.5. */
+  noiseBalance?: number;
   /** Noise speed, 0 to 1. Defaults to 0.15. */
   noiseSpeed?: number;
   /** Warp amount, 0 to 1. Defaults to 0.35. */
@@ -31,7 +52,11 @@ export interface GeneratedShaderProps {
 
 export function GeneratedShader({
   gradientAngle = 45,
+  gradientRepeat = 1,
+  gradientSpeed = 0,
   noiseScale = 3,
+  noiseContrast = 1,
+  noiseBalance = 0.5,
   noiseSpeed = 0.15,
   warpAmount = 0.35,
   blendAmount = 0.5,
@@ -42,6 +67,8 @@ export function GeneratedShader({
   // (phase += speed x delta), so speed changes retime the pattern without
   // snapping or rebuilding — which is also why speed props stay out of the
   // effect deps below.
+  const gradientSpeedPhase = useAnimatableSpeed(gradientSpeed);
+  const gradientSpeedUniform = useAnimatableUniform(gradientSpeed);
   const noiseSpeedPhase = useAnimatableSpeed(noiseSpeed);
 
   useEffect(() => {
@@ -51,21 +78,46 @@ export function GeneratedShader({
     // prop change (the deps below), which is generated-code shorthand — the
     // registry pattern pushes new values through stable uniforms instead.
     const gradientAngleUniform = uniform(gradientAngle);
+    const gradientRepeatUniform = uniform(gradientRepeat);
     const noiseScaleUniform = uniform(noiseScale);
+    const noiseContrastUniform = uniform(noiseContrast);
+    const noiseBalanceUniform = uniform(noiseBalance);
     const warpAmountUniform = uniform(warpAmount);
     const blendAmountUniform = uniform(blendAmount);
 
     // Directional ramp: project the centered point onto the angle's direction.
     const gradientRadians = gradientAngleUniform.mul(Math.PI / 180);
     const gradientDirection = vec2(cos(gradientRadians), sin(gradientRadians));
-    const gradientField = (p: TSLNode) => clamp(dot(p.sub(0.5), gradientDirection).add(0.5), 0, 1);
+    // Two animated forms behind GPU gates (the docs LinearGradient's trick):
+    // a cosine ping-pong that fades in above speed 0, and a fract() sawtooth
+    // conveyor that takes over above repeat 1 — both identities at their
+    // resting values, so the static single-pass ramp is bit-for-bit intact.
+    const gradientField = (p: TSLNode) => {
+      const coord = dot(p.sub(0.5), gradientDirection).add(0.5);
+      const cosineAnimated = sub(1, cos(coord.add(gradientSpeedPhase).mul(Math.PI))).mul(0.5);
+      const animated = mix(
+        clamp(coord, 0, 1),
+        cosineAnimated,
+        smoothstep(0, 0.01, gradientSpeedUniform),
+      );
+      const tiled = fract(coord.mul(gradientRepeatUniform).sub(gradientSpeedPhase));
+
+      return mix(animated, tiled, smoothstep(1, 1.01, gradientRepeatUniform));
+    };
 
     // 3D simplex with the animation phase on z: the pattern morphs in
     // place. Raw noise spans roughly -1..1; add/mul rescales to 0..1.
-    const noiseField = (p: TSLNode) =>
+    const noiseRaw = (p: TSLNode) =>
       simplexNoise(vec3(p.mul(noiseScaleUniform), noiseSpeedPhase))
         .add(1)
         .mul(0.5);
+    // Balance shifts the whole field darker or lighter (0.5 is identity);
+    // contrast stretches it around the midpoint (1 is identity).
+    const noiseField = (p: TSLNode) => {
+      const balanced = clamp(noiseRaw(p).add(noiseBalanceUniform.sub(0.5).mul(2)), 0, 1);
+
+      return clamp(balanced.sub(0.5).mul(noiseContrastUniform).add(0.5), 0, 1);
+    };
 
     // Domain warp: two far-apart taps of the driver become the x/y of a
     // push vector; the source is then read at the pushed position.
@@ -117,7 +169,16 @@ export function GeneratedShader({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shaderContext, gradientAngle, noiseScale, warpAmount, blendAmount]);
+  }, [
+    shaderContext,
+    gradientAngle,
+    gradientRepeat,
+    noiseScale,
+    noiseContrast,
+    noiseBalance,
+    warpAmount,
+    blendAmount,
+  ]);
 
   return null;
 }

@@ -39,6 +39,7 @@ export class ParamStore {
   private phases = new Map<string, PhaseEntry>();
   private stopPositions = new Map<string, NumberUniform>();
   private stopColors = new Map<string, Vector3Uniform>();
+  private colors = new Map<string, Vector3Uniform>();
 
   // ---------------------------------------------------------------------------
   // Slider params — plain numeric dials (waviness, speed, radius, ...): one
@@ -149,6 +150,42 @@ export class ParamStore {
   /** Ramp-stop position fast path: write the value the GPU reads next frame. */
   setStopPosition(nodeId: string, index: number, value: number): void {
     this.stopPositionFor(nodeId, index, value).value = value;
+  }
+
+  // ---------------------------------------------------------------------------
+  // Color params — MAT-99: a card's single color swatch (Vignette's tint)
+  // rides a vec3 uniform exactly like a ramp stop's color does, so repicking
+  // glides with zero recompiles. Keyed `${nodeId}/${paramId}` in its own map;
+  // the slider map can't collide (slider values are scalar uniforms) but
+  // sharing a map would make a same-id slider/color mixup fail silently
+  // instead of loudly.
+  // ---------------------------------------------------------------------------
+
+  /** The stable uniform for a node's color param (linear-rgb triple), created
+      at `initial` on first use. Wraps a Vector3 so later writes go through
+      its `.set()` mutator instead of replacing the uniform. */
+  colorFor(
+    nodeId: string,
+    paramId: string,
+    initial: readonly [number, number, number],
+  ): Vector3Uniform {
+    const key = `${nodeId}/${paramId}`;
+    let existing = this.colors.get(key);
+
+    if (!existing) {
+      existing = uniform(new Vector3(...initial));
+      this.colors.set(key, existing);
+    }
+
+    return existing;
+  }
+
+  /** Color-param fast path: mutate the Vector3 in place (linear-rgb triple)
+      so the material keeps reading the same object it compiled against. */
+  setColor(nodeId: string, paramId: string, rgb: readonly [number, number, number]): void {
+    const [red, green, blue] = rgb;
+
+    this.colorFor(nodeId, paramId, rgb).value.set(red, green, blue);
   }
 
   /** Ramp-stop color fast path: mutate the Vector3 in place (linear-rgb

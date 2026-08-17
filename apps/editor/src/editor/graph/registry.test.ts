@@ -41,6 +41,25 @@ describe('param specs', () => {
       }
     }
   });
+  it('every xy param has min < max and both axis defaults inside the range', () => {
+    for (const [, spec] of specs) {
+      for (const param of spec.params) {
+        if (param.kind !== 'xy') continue;
+        expect(param.min).toBeLessThan(param.max);
+        for (const axisDefault of param.defaultValue) {
+          expect(axisDefault).toBeGreaterThanOrEqual(param.min);
+          expect(axisDefault).toBeLessThanOrEqual(param.max);
+        }
+      }
+    }
+  });
+  it('expands an xy param into its two number storage keys', () => {
+    const params = defaultParamsOf('vignette');
+
+    expect(params['center.x']).toBe(0.5);
+    expect(params['center.y']).toBe(0.5);
+    expect(params.center).toBeUndefined();
+  });
   it('ramp defaults are copied per instance, not shared', () => {
     const first = defaultParamsOf('colorRamp').stops;
     const second = defaultParamsOf('colorRamp').stops;
