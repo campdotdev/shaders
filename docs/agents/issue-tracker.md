@@ -39,7 +39,19 @@ Used by `/wayfinder`. The **map** is one issue, and its tickets are child issues
 - **Blocking**: Linear's native issue relations, which render as a visible blocked banner in the UI. Wire an edge with `save_issue` on the blocked ticket, passing `blockedBy: ["MAT-123"]`, or from the other side with `blocks`. Create the issues first and wire the edges in a second pass, because both ends need identifiers before they can reference each other. A ticket is unblocked when every issue blocking it sits in a closed state.
 - **Frontier query**: `list_issues` with `parentId` set to the map, then keep the ones whose state is open, whose `assignee` is empty, and which `get_issue` with `includeRelations: true` shows has no open blocker. First in map order wins.
 - **Claim**: `save_issue` with `assignee: "me"`. This is the session's first write, before any other work, so a concurrent session skips the ticket.
-- **Resolve**: three writes, in this order. First, post the answer with `save_comment`. Second, append a context pointer to the map's `## Decisions so far` with a `patch` operation. Third, set the ticket to `state: "Done"`. Closing last is what makes a partial failure recoverable. A ticket closed before the map records it leaves the frontier with no trace of its answer, while a ticket left open after a failed patch returns on the next frontier query. If the patch fails, its anchor did not match the current body exactly once: re-read the map with `get_issue`, fix the anchor, and retry. The ticket is not resolved until the map pointer lands, so leave it open and say which write failed.
+- **Resolve**: three writes, in this order.
+
+  1. Post the answer with `save_comment`.
+  2. Append a context pointer to the map's `## Decisions so far` with a `patch` operation.
+  3. Set the ticket to `state: "Done"`.
+
+  Closing last is what makes a partial failure recoverable. A ticket closed before the map records it leaves the frontier with no trace of its answer, while a ticket left open returns on the next frontier query.
+
+  None of the three writes is idempotent, so never retry one without first checking whether it already landed. Re-read the current state: `get_issue` for the workflow state and the map body, and `list_comments` for the answer. Then run only the writes still missing, in the same order. A repeated `save_comment` posts the answer twice, and a repeated `patch` appends the pointer twice.
+
+  Diagnose a failed `patch` from the error it returns. An anchor that matched zero times or more than once needs a corrected anchor, checked against the map body you just re-read. A transport error, a permission error, or a rejected payload is a different failure, and re-anchoring hides it. The map body survives either one, as the patch section below explains.
+
+  The ticket is resolved only once all three writes have landed. Leave it open while any one is missing, and say which one.
 
 ### Appending to the map without rewriting it
 
