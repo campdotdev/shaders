@@ -53,7 +53,7 @@ Used by `/wayfinder`. The **map** is one issue, and its tickets are child issues
   2. Append a context pointer to the map's `## Decisions so far` with a `patch` operation.
   3. Set the ticket to `state: "Done"`.
 
-  Closing last is what makes a partial failure recoverable. A ticket closed before the map records it leaves the frontier with no trace of its answer, while a ticket left open returns on the next frontier query.
+  Closing last is what makes a partial failure recoverable. A ticket closed before the map records it leaves the frontier with no trace of its answer. A ticket left open keeps its claim, so the frontier query still skips it, and nothing returns it to the frontier on its own. Recover it through the stale-claim routes under Claim: finish the writes that are missing, and clear the assignee only after you establish that no live session holds the ticket.
 
   None of the three writes is idempotent, so never retry one without first checking whether it already landed. Re-read the current state: `get_issue` for the workflow state and the map body, and `list_comments` for the answer. Then run only the writes still missing, in the same order. A repeated `save_comment` posts the answer twice, and a repeated `patch` appends the pointer twice.
 
