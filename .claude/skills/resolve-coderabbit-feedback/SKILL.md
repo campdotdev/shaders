@@ -49,7 +49,6 @@ Record where you started and give both cleanup flags a default, so every later p
 
 ```bash
 START_REF=$(git symbolic-ref --quiet --short HEAD || git rev-parse HEAD)
-START_COMMIT=$(git rev-parse HEAD)
 BRANCH_SWITCHED=false
 STASH_CREATED=false
 ```
@@ -82,6 +81,14 @@ git pull
 ```
 
 Set `BRANCH_SWITCHED=true` once the checkout succeeds. Steps 6, 9, and 10 read `BRANCH_SWITCHED` and `STASH_CREATED` to decide whether to restore the starting ref and pop the stash. The two flags are independent, because the same-branch path can stash without switching.
+
+Once you are on the PR branch, and before Step 7 edits anything, record the commit the work starts from:
+
+```bash
+WORK_BASE=$(git rev-parse HEAD)
+```
+
+Take this reading after the checkout, never before. A baseline captured on the original branch would make every commit on the PR branch look like a change this run made.
 
 **Restore the starting state on every exit, not only the successful one.** If the user cancels at Step 6, or any command in Steps 7 through 10 fails, run the restore block at the end of Step 10 before you report back.
 
@@ -135,6 +142,8 @@ Keep the threads whose first comment has an author login of `coderabbitai`, and 
 **The login differs by API.** GraphQL returns `coderabbitai` with no suffix. REST returns `coderabbitai[bot]`. Match both, or a filter that looks correct silently returns zero findings.
 
 A finding often spans several lines, so read the range as `startLine` to `line`, falling back to `originalStartLine` and `originalLine`. The dedupe rule below keys on that whole range, and a key built from the end alone collides between two findings that end on the same line.
+
+**Normalize the range before you use it as a key.** GitHub leaves `startLine` null on a single-line comment, which is a real shape here and not a corner case: CodeRabbit posted two of them across PRs #126, #127, and #129. Take `startLine ?? line` with `line` when `line` is set, and `originalStartLine ?? originalLine` with `originalLine` otherwise. That turns a single-line finding into `144:144` rather than `null:144`, so it matches the same finding restated in a review body.
 
 An outdated thread has `isOutdated: true` and a null `line`. Read its `originalStartLine` and `originalLine`, and check whether later commits already fixed it. If they did, classify it as already addressed in Step 6, and resolve it in Step 10 the same way as a thread you fixed yourself.
 
@@ -297,7 +306,7 @@ Every thread gets a reply. Whether it also gets resolved depends on which of thr
 - **A later commit already fixed it**, which is the already-addressed class from Step 3. Reply saying which commit fixed it, then resolve. Leaving these open is what makes the same stale findings come back on every future run.
 - **You rejected it**, because the finding misreads the code or an `AGENTS.md` rule forbids the change. Reply with the reason and leave it unresolved. The user decides whether to close it, and an open thread is a prompt to revisit rather than a loose end.
 
-**Check for your own earlier reply before you post.** Step 3 filters on `isResolved` alone, so a rejected thread stays unresolved and comes back on every later run. Replying again each time buries the finding under repeats, and the same happens when a reply lands but the resolve call then fails. The thread's `comments` list from Step 3 already holds those earlier replies, so read it. If a reply from the PR author already states this outcome, skip the reply and go straight to the resolve step.
+**Check for your own earlier reply before you post.** Step 3 filters on `isResolved` alone, so a rejected thread stays unresolved and comes back on every later run. Replying again each time buries the finding under repeats, and the same happens when a reply lands but the resolve call then fails. The thread's `comments` list from Step 3 already holds those earlier replies, so read it. If a reply from the PR author already states this outcome, skip posting a second one. What happens next still depends on the outcome: a fixed or already-fixed thread goes on to the resolve step, and a rejected thread stays open, exactly as it would on a first run. The shortcut saves a duplicate reply, never a resolve decision.
 
 Use the thread IDs from Step 3, and carry each thread's outcome with its ID. The reply text and the decision to resolve both follow that outcome, so write the body first:
 
@@ -337,14 +346,15 @@ git checkout "$START_REF"
 [ "$STASH_CREATED" = "true" ] && git stash pop
 ```
 
-**On a failure before Step 9's commit, the run's own edits are still in the tree.** Checking out the same ref does not remove them, and the same-branch path checks nothing out at all. Never discard them on the user's behalf. Report what is uncommitted and hand over the command that reverses it:
+**On a failure before Step 9's commit, the run's own edits are still in the tree.** Checking out the same ref does not remove them, and the same-branch path checks nothing out at all. Never discard them on the user's behalf, and never hand over a command that rewrites the worktree wholesale. Report the three kinds of leftover separately, because each needs a different answer:
 
 ```bash
-git status --porcelain
-git diff --stat "$START_COMMIT"
+git diff --stat "$WORK_BASE"        # tracked edits since work began
+git diff --cached --stat            # anything already staged
+git ls-files --others --exclude-standard   # files the run created
 ```
 
-Say which of those changes the run made, and give the user `git restore --source="$START_COMMIT" -- <files>` to undo them. The decision is theirs.
+Name which of those the run made. A tracked edit reverses with `git restore -- <file>`, a staged one with `git restore --staged -- <file>` first, and a new file only by deleting it. Give the user the specific commands for the specific paths, and let them decide. `git restore --source=<some earlier commit>` is the wrong tool here: sourcing content from a commit the branch never had would overwrite the PR's own files.
 
 **Once the commit exists, leave it alone.** A failure in the push or anywhere in Step 10 is not a reason to unwind work that is already committed. Say what failed and what state the branch is in.
 
