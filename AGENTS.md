@@ -114,7 +114,7 @@ These rules exist because Matter doubles as a shader-learning project for its au
   - The Playwright `webServer` command sets it. Four visual specs render against `/dev/*-probe`, and Playwright builds the PRODUCTION bundle rather than running the dev server, so `NODE_ENV` gating does not work here.
   - `turbo.json`'s `build` task declares `INCLUDE_DEV_ROUTES` under `env`, because turbo 2 runs strict env mode and would otherwise drop the variable before `next build` ever sees it.
 
-  Verify a change by building both ways and checking whether `apps/docs/out/dev/` exists.
+  Verify a change by building both ways and checking whether `apps/docs/out/dev/` exists. This is also the convention a throwaway prototype route must follow. The `prototype` skill's default advice is to hide a variant switcher behind `process.env.NODE_ENV !== 'production'`, and that check does not work here for the same reason: Playwright builds the production bundle.
 - **`apps/docs/tsconfig.json` uses a relative `extends` on purpose.** It points at `../../tooling/tsconfig/base.json` rather than the `@matter/tsconfig` package form every other workspace uses. Fallow's resolver drops `paths` when `extends` goes through a workspace package. Don't "normalize" it.
 
 ## Technical gotchas (read before touching TSL or the build)
@@ -164,3 +164,4 @@ The docs site deploys to a platform the author chooses at deployment time. Don't
 
 - **Claude Code.** `CLAUDE.md` imports this file. Machine-local session memory lives outside the repo and is NOT synced across machines, so this file is the portable source of truth. Keep it current when durable preferences or gotchas emerge.
 - **Skill-capable agents** are Claude Code, Codex, and OpenCode. This project leans on the superpowers skill set, including brainstorming, systematic-debugging, TDD, and writing-plans, so install it per your harness. For agents without skill support, the shader process and workflow rules above are the load-bearing subset, so follow them directly.
+- **Skills from the mattpocock set** run alongside superpowers, not instead of it: `grilling`, `research`, `prototype`, `codebase-design`, `improve-codebase-architecture`, and `wayfinder`. `wayfinder` and `improve-codebase-architecture` both call `domain-modeling`, which is deliberately NOT installed, because its `CONTEXT.md` and `docs/adr/` layout would duplicate the decision history that already lives in each spec's Appendix A. Both skills degrade to generic vocabulary without it, which is the intended trade. `wayfinder` reads `docs/agents/issue-tracker.md` for its Linear operations, and that file is hand-written here because the upstream set ships tracker templates only for GitHub, GitLab, and local markdown.
