@@ -49,6 +49,7 @@ Record where you started and give both cleanup flags a default, so every later p
 
 ```bash
 START_REF=$(git symbolic-ref --quiet --short HEAD || git rev-parse HEAD)
+START_COMMIT=$(git rev-parse HEAD)
 BRANCH_SWITCHED=false
 STASH_CREATED=false
 ```
@@ -113,7 +114,9 @@ gh api graphql --paginate -f query='
                 body
                 author { login }
                 path
+                startLine
                 line
+                originalStartLine
                 originalLine
               }
             }
@@ -131,7 +134,9 @@ Keep the threads whose first comment has an author login of `coderabbitai`, and 
 
 **The login differs by API.** GraphQL returns `coderabbitai` with no suffix. REST returns `coderabbitai[bot]`. Match both, or a filter that looks correct silently returns zero findings.
 
-An outdated thread has `isOutdated: true` and a null `line`. Read its `originalLine` and check whether later commits already fixed it. If they did, classify it as already addressed in Step 6, and resolve it in Step 10 the same way as a thread you fixed yourself.
+A finding often spans several lines, so read the range as `startLine` to `line`, falling back to `originalStartLine` and `originalLine`. The dedupe rule below keys on that whole range, and a key built from the end alone collides between two findings that end on the same line.
+
+An outdated thread has `isOutdated: true` and a null `line`. Read its `originalStartLine` and `originalLine`, and check whether later commits already fixed it. If they did, classify it as already addressed in Step 6, and resolve it in Step 10 the same way as a thread you fixed yourself.
 
 **Source 2: nitpicks and outside-diff findings.** CodeRabbit buries these in the body of the review itself, not in inline comments. PR #126 had 12 nitpicks that no inline query would have returned.
 
@@ -271,18 +276,18 @@ git commit -m "<type>: address CodeRabbit review feedback on PR #$PR_NUMBER"
 git push origin HEAD
 ```
 
-If `git diff --cached --name-only` lists anything the user did not approve, stop and unstage it before committing.
+Compare that list against the approved files in both directions before committing. An extra file means something drifted into the index. A missing file means a fix you promised never landed, which is the worse case, because Step 10 would then resolve its thread and report a fix that does not exist. Read `git diff --cached` as well, so an unrelated hunk inside an approved file does not ride along. Stop on any mismatch.
 
 Pick `<type>` from the file class the approved fixes touched, and add no AI attribution trailer and no `Co-Authored-By` line:
 
 | What the fixes touched                                  | Type            |
 | ------------------------------------------------------- | --------------- |
 | Package source under `packages/` or `registry/`          | `fix(<scope>)`  |
-| Docs, specs, `AGENTS.md`, or a skill                     | `docs:`         |
-| A workflow under `.github/`                              | `ci:`           |
-| Tests, tooling config, or a lockfile on its own          | `chore:`        |
+| Docs, specs, `AGENTS.md`, or a skill                     | `docs`          |
+| A workflow under `.github/`                              | `ci`            |
+| Tests, tooling config, or a lockfile on its own          | `chore`         |
 
-Scope is the package name without the `@lovo/` prefix. When a run spans classes, name the class that carries the substantive fix, so a code fix that drags a lockfile with it stays `fix(<scope>)`. The user already saw the commit line in the Step 6 preview, so change it there rather than asking again here.
+The command above supplies the colon, so these values carry none. Scope is the package name without the `@lovo/` prefix. When a run spans classes, name the class that carries the substantive fix, so a code fix that drags a lockfile with it stays `fix(<scope>)`. The user already saw the commit line in the Step 6 preview, so change it there rather than asking again here.
 
 ## Step 10: Reply and resolve the threads
 
@@ -291,6 +296,8 @@ Every thread gets a reply. Whether it also gets resolved depends on which of thr
 - **You fixed it in this run.** Reply with the commit SHA and what changed, then resolve.
 - **A later commit already fixed it**, which is the already-addressed class from Step 3. Reply saying which commit fixed it, then resolve. Leaving these open is what makes the same stale findings come back on every future run.
 - **You rejected it**, because the finding misreads the code or an `AGENTS.md` rule forbids the change. Reply with the reason and leave it unresolved. The user decides whether to close it, and an open thread is a prompt to revisit rather than a loose end.
+
+**Check for your own earlier reply before you post.** Step 3 filters on `isResolved` alone, so a rejected thread stays unresolved and comes back on every later run. Replying again each time buries the finding under repeats, and the same happens when a reply lands but the resolve call then fails. The thread's `comments` list from Step 3 already holds those earlier replies, so read it. If a reply from the PR author already states this outcome, skip the reply and go straight to the resolve step.
 
 Use the thread IDs from Step 3, and carry each thread's outcome with its ID. The reply text and the decision to resolve both follow that outcome, so write the body first:
 
@@ -329,5 +336,16 @@ Restore the starting state if Step 2 changed it:
 git checkout "$START_REF"
 [ "$STASH_CREATED" = "true" ] && git stash pop
 ```
+
+**On a failure before Step 9's commit, the run's own edits are still in the tree.** Checking out the same ref does not remove them, and the same-branch path checks nothing out at all. Never discard them on the user's behalf. Report what is uncommitted and hand over the command that reverses it:
+
+```bash
+git status --porcelain
+git diff --stat "$START_COMMIT"
+```
+
+Say which of those changes the run made, and give the user `git restore --source="$START_COMMIT" -- <files>` to undo them. The decision is theirs.
+
+**Once the commit exists, leave it alone.** A failure in the push or anywhere in Step 10 is not a reason to unwind work that is already committed. Say what failed and what state the branch is in.
 
 Finish by telling the user what was fixed, what was skipped and why, which threads were resolved, and the PR URL.
