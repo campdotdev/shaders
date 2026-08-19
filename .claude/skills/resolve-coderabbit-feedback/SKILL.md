@@ -45,26 +45,33 @@ Record `PR_NUMBER` and `HEAD_BRANCH`.
 
 If `HEAD_BRANCH` is `main`, stop. This repo never takes direct pushes to `main`, so a PR from `main` is a mistake to raise with the user rather than a branch to commit on.
 
-Record the starting branch, then get onto the PR branch:
+Record the starting branch and give both cleanup flags a default, so every later path reads a value that was set:
 
 ```bash
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+BRANCH_SWITCHED=false
+STASH_CREATED=false
 ```
 
-If `CURRENT_BRANCH` already equals `HEAD_BRANCH`, run `git fetch origin` and compare the local branch against its remote. If the remote is ahead, ask whether to pull before proceeding, and set `BRANCH_SWITCHED=false`.
+If `CURRENT_BRANCH` already equals `HEAD_BRANCH`, run `git fetch origin` and compare the local branch against its remote. If the remote is ahead, ask whether to pull before proceeding. Both flags keep their defaults on this path.
 
-If the branches differ, stash any uncommitted work and check out the PR:
+If the branches differ, stash any uncommitted work and check out the PR. Let a failed stash stop the run instead of swallowing the error, because work left in the tree can reach the user's PR through Step 9:
 
 ```bash
 STASH_BEFORE=$(git stash list | head -1)
-git stash push -m "resolve-coderabbit-feedback: stash before checkout" --include-untracked || true
+git stash push -m "resolve-coderabbit-feedback: stash before checkout" --include-untracked
 STASH_AFTER=$(git stash list | head -1)
 [ "$STASH_BEFORE" != "$STASH_AFTER" ] && STASH_CREATED=true || STASH_CREATED=false
+git status --porcelain
 gh pr checkout "$PR_NUMBER"
 git pull
 ```
 
-Set `BRANCH_SWITCHED=true`. Steps 6, 9, and 10 read `BRANCH_SWITCHED` and `STASH_CREATED` to decide whether to restore the starting branch and pop the stash.
+If `git stash push` exits non-zero, or `git status --porcelain` prints anything, stop and tell the user. Never check out over a dirty tree.
+
+Set `BRANCH_SWITCHED=true` once the checkout succeeds. Steps 6, 9, and 10 read `BRANCH_SWITCHED` and `STASH_CREATED` to decide whether to restore the starting branch and pop the stash.
+
+**Restore the starting state on every exit, not only the successful one.** If the user cancels at Step 6, or any command in Steps 7 through 10 fails, run the restore block at the end of Step 10 before you report back.
 
 ## Step 3: Collect the findings
 
@@ -79,11 +86,12 @@ NAME=${REPO##*/}
 **Source 1: inline review threads.** These carry the severity badges and the thread IDs that Step 10 needs. Use GraphQL, because REST does not report whether a thread is resolved.
 
 ```bash
-gh api graphql -f query='
-  query($owner: String!, $name: String!, $pr: Int!) {
+gh api graphql --paginate -f query='
+  query($owner: String!, $name: String!, $pr: Int!, $endCursor: String) {
     repository(owner: $owner, name: $name) {
       pullRequest(number: $pr) {
-        reviewThreads(first: 100) {
+        reviewThreads(first: 100, after: $endCursor) {
+          pageInfo { hasNextPage endCursor }
           nodes {
             id
             isResolved
@@ -106,11 +114,13 @@ gh api graphql -f query='
 ' -f owner="$OWNER" -f name="$NAME" -F pr="$PR_NUMBER"
 ```
 
+**Paginate this query.** `first: 100` counts resolved threads too, so on a PR that has been through several review rounds the unresolved findings can sit outside the first page. `--paginate` needs all three pieces above: the `$endCursor` variable, the `after:` argument, and the `pageInfo` fields. It walks one connection only, which is why `comments(first: 20)` stays unpaginated. That is fine here, because only the first comment in a thread is CodeRabbit's finding.
+
 Keep the threads whose first comment has an author login of `coderabbitai`, and drop every thread where `isResolved` is true.
 
 **The login differs by API.** GraphQL returns `coderabbitai` with no suffix. REST returns `coderabbitai[bot]`. Match both, or a filter that looks correct silently returns zero findings.
 
-An outdated thread has `isOutdated: true` and a null `line`. Read its `originalLine` and check whether later commits already fixed it. If they did, classify it as already addressed in Step 6.
+An outdated thread has `isOutdated: true` and a null `line`. Read its `originalLine` and check whether later commits already fixed it. If they did, classify it as already addressed in Step 6, and resolve it in Step 10 the same way as a thread you fixed yourself.
 
 **Source 2: nitpicks and outside-diff findings.** CodeRabbit buries these in the body of the review itself, not in inline comments. PR #126 had 12 nitpicks that no inline query would have returned.
 
@@ -120,6 +130,8 @@ gh api "repos/$REPO/pulls/$PR_NUMBER/reviews" --paginate \
 ```
 
 Parse the collapsed `<details>` sections by their summary lines: `🧹 Nitpick comments (N)`, `⚠️ Outside diff range comments (N)`, and `♻️ Duplicate comments (N)`. Each entry inside names a file and a line range and then states the finding. The `Actionable comments posted: N` line at the top of a review body tells you how many inline comments that review produced, which is a useful cross-check against Source 1.
+
+**Deduplicate across the sources before you plan anything.** The `♻️ Duplicate comments` section re-states findings that CodeRabbit already posted as inline threads in an earlier round, so counting both gives one defect two entries in the plan. Key each finding on its file, its line range, and its title. Where two sources carry the same key, keep the Source 1 copy, because that one has the thread ID that Step 10 needs, and note the duplicate rather than listing it again. A review-body entry has no `cr-comment:v1:ID` marker, so that ID identifies a thread across runs but cannot join a finding to its duplicate.
 
 **Source 3: issue-level comments.** This is the walkthrough summary plus any command replies.
 
@@ -136,7 +148,7 @@ If no unresolved findings turn up, restore the starting state and stop. Check ou
 
 An inline comment body opens with a metadata line in this shape:
 
-```
+```text
 _🎯 Functional Correctness_ | _🟠 Major_ | _⚡ Quick win_
 ```
 
@@ -172,7 +184,7 @@ Determine the fix for each actionable finding, and change nothing yet.
 
 Sort Critical and Major into a fix-by-default group. Sort Minor findings and nitpicks into a second group, listed with a recommendation for each, so the user can wave them through or drop them. Present it:
 
-```
+```text
 ## CodeRabbit feedback: proposed fixes
 
 PR #<number>: <title>
@@ -243,13 +255,21 @@ Write a Conventional Commit whose type matches the change, so a docs-only run ge
 
 ```bash
 git add <files>
-git commit -m "fix(<scope>): address CodeRabbit review feedback on PR #$PR_NUMBER"
+git commit -m "<type>: address CodeRabbit review feedback on PR #$PR_NUMBER"
 git push origin HEAD
 ```
 
+Pick `<type>` from what the approved fixes actually touched. A docs-only run commits as `docs:`, and a run that changed package source commits as `fix(<scope>)`.
+
 ## Step 10: Reply and resolve the threads
 
-Reply to each inline thread you addressed, then resolve it. Use the thread IDs from Step 3. A resolved thread keeps the next run's unresolved filter honest.
+Every thread gets a reply. Whether it also gets resolved depends on which of three outcomes it reached:
+
+- **You fixed it in this run.** Reply with the commit SHA and what changed, then resolve.
+- **A later commit already fixed it**, which is the already-addressed class from Step 3. Reply saying which commit fixed it, then resolve. Leaving these open is what makes the same stale findings come back on every future run.
+- **You rejected it**, because the finding misreads the code or an `AGENTS.md` rule forbids the change. Reply with the reason and leave it unresolved. The user decides whether to close it, and an open thread is a prompt to revisit rather than a loose end.
+
+Use the thread IDs from Step 3.
 
 ```bash
 gh api graphql -f query='
@@ -266,8 +286,6 @@ gh api graphql -f query='
   }
 ' -f threadId="$THREAD_ID"
 ```
-
-For a thread you skipped, reply with the reason and leave it unresolved. The user decides whether to close it, and a skipped finding that stays open is a prompt to revisit rather than a loose end.
 
 Findings from Source 2 have no thread to resolve, so cover them in the summary instead.
 
