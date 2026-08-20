@@ -1,8 +1,9 @@
 import { DataTexture, NearestFilter, RedFormat, RepeatWrapping, UnsignedByteType } from 'three';
 import type { ShaderNodeObject } from 'three/tsl';
-import { cos, floor, fract, hash, texture } from 'three/tsl';
+import { cos, floor, fract, texture } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
+import { stableHash, stableHashUint } from '../stable-hash/stable-hash.js';
 import { BLUE_NOISE_SIZE, BLUE_NOISE_TILE } from './blue-noise-tile.js';
 
 // Threshold maps for ordered dithering. Every pattern turns a dither-cell
@@ -90,9 +91,9 @@ function whiteNoise(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
   // visible gradient axis). No time input: the pattern is frozen, so static
   // scenes stay static.
   const column = cell.x.toUint();
-  const rowHash = hash(cell.y.toUint()).mul(0xffffff).toUint();
+  const rowHash = stableHashUint(cell.y.toUint());
 
-  return hash(column.add(rowHash));
+  return stableHash(column.add(rowHash));
 }
 
 function gradientNoise(coord: ShaderNodeObject<Node>): ShaderNodeObject<Node> {

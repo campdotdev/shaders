@@ -11,7 +11,6 @@ import {
   floor,
   Fn,
   fract,
-  hash,
   If,
   int,
   Loop,
@@ -26,6 +25,7 @@ import {
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
+import { stableHash, stableHashUint } from '../stable-hash/stable-hash.js';
 
 type TSLScalar = TSLNode | number;
 
@@ -67,13 +67,13 @@ export interface VoronoiCellsResult {
   hash: ShaderNodeObject<Node>;
 }
 
-// Shifts cell coordinates positive before hashing: three's hash() converts
+// Shifts cell coordinates positive before hashing: stableHash() converts
 // its input to u32, and u32(negative float) is backend-defined. The shift
 // absorbs coordinates down to -512 — scales up to ~1000 cells at
 // non-negative sample-window offsets. Inputs below that (e.g. a large
 // negative seed offset upstream) land in backend-defined territory; a
-// wrap-safe fold is deferred to the backend-stable hash work (MAT-92),
-// since any change to hash inputs re-rolls every cell layout.
+// wrap-safe fold inside stableHash is MAT-106, kept out of the backend
+// fix (MAT-92) because changing hash inputs re-rolls every cell layout.
 const HASH_DOMAIN_OFFSET = 512;
 
 const TWO_PI = Math.PI * 2;
@@ -114,14 +114,19 @@ export function voronoiCells(p: TSLNode, options: VoronoiCellsOptions = {}): Vor
   // Per-cell random streams, derived by NESTING hashes (grain's pattern) so
   // no linear seed axis leaks through as diagonal correlation across the
   // field. One stream colors the cell, two anchor its seed, two phase its
-  // orbit.
+  // orbit. The chain stays u32 end to end — stableHashUint into
+  // stableHashUint — because a float round-trip between hashes is what let
+  // the two backends diverge (MAT-92); the float view is taken only at the
+  // very end, where an ULP of difference is invisible instead of a reseed.
   const cellRandom = (cell: ShaderNodeObject<Node>) => {
     const shifted = add(cell, HASH_DOMAIN_OFFSET);
-    const rowHash = hash(shifted.y).mul(0xffffff).toUint();
-    const cellHash = hash(shifted.x.toUint().add(rowHash));
-    const streamSeed = cellHash.mul(0xffffff).toUint();
-    const homeOffset = vec2(hash(streamSeed), hash(streamSeed.add(1)));
-    const orbitPhase = vec2(hash(streamSeed.add(2)), hash(streamSeed.add(3)));
+    const rowHash = stableHashUint(shifted.y);
+    // One PCG word per cell, cached in a GPU variable: its float view
+    // colors the cell, and the raw word seeds the four streams below.
+    const cellWord = stableHashUint(shifted.x.toUint().add(rowHash)).toVar();
+    const cellHash = cellWord.toFloat().mul(1 / 2 ** 32);
+    const homeOffset = vec2(stableHash(cellWord), stableHash(cellWord.add(1)));
+    const orbitPhase = vec2(stableHash(cellWord.add(2)), stableHash(cellWord.add(3)));
 
     return { cellHash, homeOffset, orbitPhase };
   };
