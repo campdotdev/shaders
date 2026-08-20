@@ -17,6 +17,8 @@ interface GraphNode {
   isNode?: boolean;
   nodeType?: string;
   value?: unknown;
+  method?: string;
+  bNode?: GraphNode;
   // TSL wraps nodes in a proxy; `self` is the proxy's escape hatch back to
   // the raw node. Walking raw nodes matters: the proxy intercepts property
   // access (swizzles, assign sugar), so generic traversal only behaves on
@@ -48,16 +50,19 @@ describe('stableHash', () => {
     expect(stableHash(float(1))).toBeDefined();
   });
 
-  it('caps the float output below 1', () => {
+  it('caps the float output below 1 through min()', () => {
     // toFloat() rounds hash words at or above 0xFFFFFF80 up to 2^32, which
-    // would scale to an exact 1.0 and break the [0, 1) contract. The cap is
-    // min(x, 1 - 2^-24); this walk asserts the cap constant survives in the
-    // graph, since no GPU runs in this suite.
+    // would scale to an exact 1.0 and break the [0, 1) contract. No GPU runs
+    // in this suite, so assert the structure instead: a min() MathNode whose
+    // second operand is the cap. Matching the constant alone would pass with
+    // the cap attached to anything at all.
     const proxied = stableHash(float(1)) as unknown as GraphNode;
     const nodes = collectNodes(proxied.self ?? proxied);
-    const cap = nodes.filter((node) => node.value === 1 - 2 ** -24);
+    const caps = nodes.filter(
+      (node) => node.method === 'min' && node.bNode?.value === 1 - 2 ** -24,
+    );
 
-    expect(cap.length).toBeGreaterThan(0);
+    expect(caps.length).toBe(1);
   });
 
   it('stableHashUint carries every PCG constant as a uint-typed node', () => {
