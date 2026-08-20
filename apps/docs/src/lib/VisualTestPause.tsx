@@ -17,7 +17,7 @@ const isReducedMotionPolicy = (policyName: string): policyName is ReducedMotionP
 
 declare global {
   interface Window {
-    __matterTestReady?: boolean;
+    __shadersTestReady?: boolean;
   }
 }
 
@@ -58,7 +58,7 @@ function useVisualTestPause(): void {
       if (frame > TARGET_FRAME) {
         ctx.scheduler.remove(client);
         ctx.scheduler.pause();
-        window.__matterTestReady = true;
+        window.__shadersTestReady = true;
       }
     };
 

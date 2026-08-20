@@ -62,7 +62,7 @@ import { time } from '@mattermix/shaders'  // still here — reduced-motion-gate
 
 All Matter-owned primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) remain exported from `@mattermix/shaders` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@mattermix/shaders` to `three/tsl` for the dropped symbols (or re-add the component via the CLI to pull the 0.2.0 source).
 
-**Why:** Re-exporting pure TSL primitives provided no value beyond shared import paths — no rename, no added docs, no future-swap benefit. Dropping them clarifies the layer boundary: Matter ships value-add primitives, TSL provides the math. See the [matter engine reference](/reference/shaders) for the current public surface.
+**Why:** Re-exporting pure TSL primitives provided no value beyond shared import paths — no rename, no added docs, no future-swap benefit. Dropping them clarifies the layer boundary: Matter ships value-add primitives, TSL provides the math. See the [shaders engine reference](/reference/shaders) for the current public surface.
 
 ## 0.1.0 — Initial public release
 

@@ -5,7 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { runPoster } from '../commands/poster.js';
 
-const E2E_ENABLED = process.env.MATTER_E2E === '1';
+const E2E_ENABLED = process.env.SHADERS_E2E === '1';
 
 const FIXTURES = new URL('../test-fixtures/posters/', import.meta.url).pathname;
 
@@ -43,7 +43,7 @@ const cases = [
   },
 ] as const;
 
-describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
+describe.skipIf(!E2E_ENABLED)('runPoster — E2E (SHADERS_E2E=1)', () => {
   let outDir: string;
 
   beforeEach(async () => {
