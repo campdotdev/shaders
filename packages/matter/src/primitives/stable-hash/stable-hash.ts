@@ -3,7 +3,7 @@
 // primitive that needs per-cell or per-frame randomness (voronoi, grain,
 // metaballs, dither-pattern) draws from this instead of three's hash().
 import type { ShaderNodeObject } from 'three/tsl';
-import { uint } from 'three/tsl';
+import { min, uint } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 // ---------------------------------------------------------------
@@ -84,8 +84,16 @@ export function stableHashUint(seed: ShaderNodeObject<Node>): ShaderNodeObject<N
  * Same conversion contract as stableHashUint.
  */
 export function stableHash(seed: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
-  // 2^-32 is a power of two, so the scale constant is exact everywhere.
-  return stableHashUint(seed)
-    .toFloat()
-    .mul(1 / 2 ** 32);
+  // 2^-32 is a power of two, so the scale constant is exact everywhere. The
+  // cap keeps the documented [0, 1) contract at the top of the range:
+  // toFloat() rounds any word at or above 0xFFFFFF80 up to 2^32 (f32 spacing
+  // there is 256), and 2^32 * 2^-32 would leak an exact 1.0 roughly once per
+  // 33 million draws. 1 - 2^-24 is the largest float below 1, so the cap
+  // moves only those out-of-contract draws and no others.
+  return min(
+    stableHashUint(seed)
+      .toFloat()
+      .mul(1 / 2 ** 32),
+    1 - 2 ** -24,
+  );
 }

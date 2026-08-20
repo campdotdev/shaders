@@ -48,6 +48,18 @@ describe('stableHash', () => {
     expect(stableHash(float(1))).toBeDefined();
   });
 
+  it('caps the float output below 1', () => {
+    // toFloat() rounds hash words at or above 0xFFFFFF80 up to 2^32, which
+    // would scale to an exact 1.0 and break the [0, 1) contract. The cap is
+    // min(x, 1 - 2^-24); this walk asserts the cap constant survives in the
+    // graph, since no GPU runs in this suite.
+    const proxied = stableHash(float(1)) as unknown as GraphNode;
+    const nodes = collectNodes(proxied.self ?? proxied);
+    const cap = nodes.filter((node) => node.value === 1 - 2 ** -24);
+
+    expect(cap.length).toBeGreaterThan(0);
+  });
+
   it('stableHashUint carries every PCG constant as a uint-typed node', () => {
     const proxied = stableHashUint(float(1)) as unknown as GraphNode;
     const nodes = collectNodes(proxied.self ?? proxied);
