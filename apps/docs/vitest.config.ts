@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  // Mirrors packages/matter/vitest.config.ts: Vite 8 OXC cannot resolve
+  // Mirrors packages/shaders/vitest.config.ts: Vite 8 OXC cannot resolve
   // ${configDir} in our shared tsconfig, so the essential option is inline.
   // @ts-expect-error -- oxc is not in UserConfig types yet; this is the documented workaround
   oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } },

@@ -13,7 +13,7 @@
     "apps/docs/content/**",
     "**/*.mdx",
     "apps/playground/**",
-    "packages/matter-cli/src/test-fixtures/**"
+    "packages/shaders-cli/src/test-fixtures/**"
   ],
   "ignoreDependencies": [
     "@tweakpane/core",

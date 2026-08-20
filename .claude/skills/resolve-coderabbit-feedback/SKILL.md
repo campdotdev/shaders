@@ -267,7 +267,7 @@ pnpm test --filter <touched package>
 
 Four repo traps apply here:
 
-- If a fix changed source under `packages/matter` or `packages/matter-react`, run `pnpm --filter @mattermix/shaders build`. The docs site consumes `dist`, so an unbuilt fix looks like no fix at all.
+- If a fix changed source under `packages/shaders` or `packages/shaders-react`, run `pnpm --filter @mattermix/shaders build`. The docs site consumes `dist`, so an unbuilt fix looks like no fix at all.
 - If a fix changed a dependency in any `package.json`, commit the updated `pnpm-lock.yaml` with it, and check that the lockfile still pins `node@runtime` at `version: 22.22.2` with `hasBin: true`. Every pnpm resolution step rewrites that entry to `0.0.0`, and CI then dies at install in every job.
 - Never run `pnpm snap` as part of this workflow. Ask first. It needs Docker and Node 22, it takes a long time, and it corrupts a running docs or editor dev server.
 - If you ran Playwright or `pnpm snap` for any reason, tell the user to restart the dev server before trusting the browser. The procedure is in `AGENTS.md` under the environment gotchas.

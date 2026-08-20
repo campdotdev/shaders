@@ -4,7 +4,7 @@ import { getComponentsCatalog } from '@/content/catalog';
 
 export const metadata = {
   title: 'Components',
-  description: 'Tier 1 shader components delivered shadcn-style via matter-cli add <name>.',
+  description: 'Tier 1 shader components delivered shadcn-style via shaders-cli add <name>.',
 };
 
 export default async function ComponentsIndex() {
@@ -15,7 +15,7 @@ export default async function ComponentsIndex() {
       <h1 style={{ marginTop: 0 }}>Components</h1>
       <p style={{ color: 'var(--fg-muted)' }}>
         Tier 1 — polished shader components delivered shadcn-style via{' '}
-        <code>matter-cli add &lt;name&gt;</code>. Each component is yours to edit after copy-in.
+        <code>shaders-cli add &lt;name&gt;</code>. Each component is yours to edit after copy-in.
         Each page below has a live demo, a props playground, and the byte-identical source the CLI
         copies into your project.
       </p>

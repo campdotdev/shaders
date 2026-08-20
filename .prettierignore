@@ -22,4 +22,4 @@ pnpm-lock.yaml
 # Isolated workspaces / vendored fixtures
 .worktrees/
 .fallow/
-packages/matter-cli/src/test-fixtures/
+packages/shaders-cli/src/test-fixtures/

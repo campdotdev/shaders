@@ -103,10 +103,10 @@ importers:
         version: 1.6.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@mattermix/shaders':
         specifier: workspace:*
-        version: link:../../packages/matter
+        version: link:../../packages/shaders
       '@mattermix/shaders-react':
         specifier: workspace:*
-        version: link:../../packages/matter-react
+        version: link:../../packages/shaders-react
       '@shaders/registry':
         specifier: workspace:*
         version: link:../../registry
@@ -227,10 +227,10 @@ importers:
         version: 1.6.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
       '@mattermix/shaders':
         specifier: workspace:*
-        version: link:../../packages/matter
+        version: link:../../packages/shaders
       '@mattermix/shaders-react':
         specifier: workspace:*
-        version: link:../../packages/matter-react
+        version: link:../../packages/shaders-react
       '@xyflow/react':
         specifier: ^12.11.2
         version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -272,7 +272,7 @@ importers:
         specifier: 'catalog:'
         version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
 
-  packages/matter:
+  packages/shaders:
     devDependencies:
       '@shaders/tsconfig':
         specifier: workspace:*
@@ -299,7 +299,7 @@ importers:
         specifier: 'catalog:'
         version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
 
-  packages/matter-cli:
+  packages/shaders-cli:
     dependencies:
       commander:
         specifier: ^12.1.0
@@ -310,10 +310,10 @@ importers:
     devDependencies:
       '@mattermix/shaders':
         specifier: workspace:*
-        version: link:../matter
+        version: link:../shaders
       '@mattermix/shaders-react':
         specifier: workspace:*
-        version: link:../matter-react
+        version: link:../shaders-react
       '@shaders/registry':
         specifier: workspace:*
         version: link:../../registry
@@ -351,11 +351,11 @@ importers:
         specifier: 'catalog:'
         version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
 
-  packages/matter-react:
+  packages/shaders-react:
     devDependencies:
       '@mattermix/shaders':
         specifier: workspace:*
-        version: link:../matter
+        version: link:../shaders
       '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
@@ -403,10 +403,10 @@ importers:
     dependencies:
       '@mattermix/shaders':
         specifier: workspace:*
-        version: link:../packages/matter
+        version: link:../packages/shaders
       '@mattermix/shaders-react':
         specifier: workspace:*
-        version: link:../packages/matter-react
+        version: link:../packages/shaders-react
       react:
         specifier: ^19.0.0
         version: 19.2.5
