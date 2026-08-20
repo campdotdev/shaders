@@ -1,8 +1,9 @@
-import { float, hash, screenCoordinate } from 'three/tsl';
+import { float, screenCoordinate } from 'three/tsl';
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
+import { stableHash, stableHashUint } from '../stable-hash/stable-hash.js';
 
 type TSLScalar = TSLNode | number;
 
@@ -28,9 +29,9 @@ export function grain(intensity: TSLScalar, timeOffset: TSLScalar = 0): ShaderNo
   // both read as grain "drifting" in one direction. Nesting scrambles each axis
   // before they meet, so there is no shared gradient axis: every frame is an
   // independent, isotropic field that boils in place with no directional drift.
-  const frameHash = hash(float(timeOffset)).mul(0xffffff).toUint();
-  const rowHash = hash(row.add(frameHash)).mul(0xffffff).toUint();
+  const frameHash = stableHashUint(float(timeOffset));
+  const rowHash = stableHashUint(row.add(frameHash));
   const seed = column.add(rowHash);
 
-  return hash(seed).sub(0.5).mul(intensity);
+  return stableHash(seed).sub(0.5).mul(intensity);
 }

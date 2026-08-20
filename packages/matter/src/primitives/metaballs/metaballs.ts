@@ -15,7 +15,6 @@ import {
   float,
   Fn,
   fract,
-  hash,
   If,
   int,
   length,
@@ -32,6 +31,7 @@ import {
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
+import { stableHash, stableHashUint } from '../stable-hash/stable-hash.js';
 
 type TSLScalar = TSLNode | number;
 
@@ -92,7 +92,7 @@ export interface MetaballsResult {
 /** Hard cap on the GPU loop — `count` clamps to this. */
 export const MAX_BLOBS = 20;
 
-// Shifts the seed positive before hashing: three's hash() converts its
+// Shifts the seed positive before hashing: stableHash() converts its
 // input to u32, and u32(negative float) is backend-defined (same guard as
 // voronoiCells).
 const HASH_DOMAIN_OFFSET = 512;
@@ -129,7 +129,7 @@ const FAST_WEIGHT = 0.35;
  * them exactly once — so this stays clear of the exponential getNodeType
  * recursion that bans select-chain argmins (see AGENTS.md's running-minimum
  * gotcha; fbm's additive chain is the safe precedent). In-loop randomness
- * comes only from the integer hash() — never a heavyweight noise primitive
+ * comes only from the integer stableHash() — never a heavyweight noise primitive
  * (the 128-second-compile gotcha).
  *
  * @param p — Vec2 TSL node in centered pattern space (blobs roam around the
@@ -148,7 +148,7 @@ export function metaballs(p: TSLNode, options: MetaballsOptions = {}): Metaballs
   // Root of every per-blob stream: hashing the seed first (rather than
   // adding it to the blob index) means consecutive seeds re-roll every
   // stream to unrelated values instead of shifting blobs one index over.
-  const seedHash = hash(add(seed, HASH_DOMAIN_OFFSET)).mul(0xffffff).toUint();
+  const seedHash = stableHashUint(add(seed, HASH_DOMAIN_OFFSET));
 
   // Fn provides the statement context (a "stack") that Loop/If/assign
   // append to — TSL's imperative side. Both outputs pack into one vec2.
@@ -167,12 +167,12 @@ export function metaballs(p: TSLNode, options: MetaballsOptions = {}): Metaballs
       // pattern) so no linear index axis leaks through as correlation
       // between neighboring blobs. One stream colors the blob, one sizes
       // it, two shape its path.
-      const blobSeed = hash(float(i).toUint().add(seedHash)).mul(0xffffff).toUint();
-      const colorHash = hash(blobSeed);
-      const sizeHash = hash(blobSeed.add(1));
-      const roamHash = vec2(hash(blobSeed.add(2)), hash(blobSeed.add(3)));
-      const slowPhase = vec2(hash(blobSeed.add(4)), hash(blobSeed.add(5))).mul(TWO_PI);
-      const fastPhase = vec2(hash(blobSeed.add(6)), hash(blobSeed.add(7))).mul(TWO_PI);
+      const blobSeed = stableHashUint(float(i).toUint().add(seedHash));
+      const colorHash = stableHash(blobSeed);
+      const sizeHash = stableHash(blobSeed.add(1));
+      const roamHash = vec2(stableHash(blobSeed.add(2)), stableHash(blobSeed.add(3)));
+      const slowPhase = vec2(stableHash(blobSeed.add(4)), stableHash(blobSeed.add(5))).mul(TWO_PI);
+      const fastPhase = vec2(stableHash(blobSeed.add(6)), stableHash(blobSeed.add(7))).mul(TWO_PI);
 
       // Where this blob is right now: per axis, a base-frequency sine plus
       // a double-frequency sine (an integer multiple, so the combined path

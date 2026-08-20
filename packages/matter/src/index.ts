@@ -65,6 +65,7 @@ export { elapsedTime } from './primitives/time/time.js';
 export { resetRendererClock } from './runtime/clock/reset-clock.js';
 
 export { grain } from './primitives/grain/grain.js';
+export { stableHash, stableHashUint } from './primitives/stable-hash/stable-hash.js';
 
 export { dither } from './primitives/dither/dither.js';
 export { ditherThreshold } from './primitives/dither-pattern/dither-pattern.js';
