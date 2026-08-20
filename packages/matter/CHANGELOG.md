@@ -1,4 +1,4 @@
-# @lovo/matter
+# @mattermix/shaders
 
 ## 3.9.0
 
@@ -44,7 +44,7 @@
 
 ### Minor Changes
 
-- dd8f99b: Adds `@lovo/matter/color`, a second entry point for the CPU-side color math: `parseColorString`, the OKLab and OKLCH conversions, the gamut helpers, and the sRGB transfer functions. The root entry still exports all of them, so nothing has to move. The difference is that the subpath has no path to three, so it can be imported during a server render. The root entry cannot, because it reaches the renderer and `three/webgpu` reads `self` at module load.
+- dd8f99b: Adds `@mattermix/shaders/color`, a second entry point for the CPU-side color math: `parseColorString`, the OKLab and OKLCH conversions, the gamut helpers, and the sRGB transfer functions. The root entry still exports all of them, so nothing has to move. The difference is that the subpath has no path to three, so it can be imported during a server render. The root entry cannot, because it reaches the renderer and `three/webgpu` reads `self` at module load.
 
   `parseColorString` now throws on input it used to mangle. Components that aren't numbers ran through `parseFloat` to NaN and came back as `[NaN, NaN, NaN]`, which reached the GPU as a blank shader with a clean console. Hex is checked for format now too: it takes `#rrggbb` and `#rrggbbaa` (alpha parsed and dropped, the same way `oklch()` and `oklab()` already handle it) and throws on anything else. `#abcdefgh` used to slice its first six digits and return a confidently wrong color.
 
@@ -75,11 +75,11 @@
 
   ```ts
   // Before
-  import { filmGrain } from '@lovo/matter';
+  import { filmGrain } from '@mattermix/shaders';
   const g = filmGrain(0.08);
 
   // After
-  import { grain } from '@lovo/matter';
+  import { grain } from '@mattermix/shaders';
   const g = grain(0.08);
   ```
 
@@ -123,7 +123,7 @@
 
 - 1c69220: Rename public API symbols to domain-accurate names.
 
-  New primary names: `FrameScheduler`, `GpuRenderer`, `GpuBackend` (`@lovo/matter`); `ShaderScene`, `ShaderSceneProps`, `ShaderContext`, `ShaderContextValue`, `useShaderContext`, `ShaderMonitor`, `ShaderMonitorProps`, `AnimatableSignal` (`@lovo/matter-react`).
+  New primary names: `FrameScheduler`, `GpuRenderer`, `GpuBackend` (`@mattermix/shaders`); `ShaderScene`, `ShaderSceneProps`, `ShaderContext`, `ShaderContextValue`, `useShaderContext`, `ShaderMonitor`, `ShaderMonitorProps`, `AnimatableSignal` (`@mattermix/shaders-react`).
 
   Old names (`MatterScheduler`, `MatterRenderer`, `MatterBackend`, `MatterScene`, `MatterSceneProps`, `MatterContext`, `MatterContextValue`, `useMatterContext`, `MatterMonitor`, `MatterMonitorProps`, `MatterSignal`, `MatterBackend`) are deprecated with `@deprecated` JSDoc and continue to work. They will be removed no earlier than 0.5.0.
 
@@ -136,7 +136,7 @@
 - 3856367: Add `grain` primitive — hash-based, centered film grain for shader compositions.
 
   ```ts
-  import { grain, time } from "@lovo/matter";
+  import { grain, time } from "@mattermix/shaders";
   import { uv } from "three/tsl";
 
   // Static grain:
@@ -159,24 +159,24 @@
 
 ### Minor Changes
 
-- Drop pure TSL re-exports from `@lovo/matter` public API.
+- Drop pure TSL re-exports from `@mattermix/shaders` public API.
 
-  The following 15 nodes are no longer exported by `@lovo/matter`. Import them directly from `three/tsl`:
+  The following 15 nodes are no longer exported by `@mattermix/shaders`. Import them directly from `three/tsl`:
 
   `uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`
 
   ```ts
   // Before (0.1.x)
-  import { vec3, uv, time } from "@lovo/matter";
+  import { vec3, uv, time } from "@mattermix/shaders";
 
   // After (0.2.0)
   import { vec3, uv } from "three/tsl";
-  import { time } from "@lovo/matter"; // still here — reduced-motion-gated
+  import { time } from "@mattermix/shaders"; // still here — reduced-motion-gated
   ```
 
-  The Matter-owned `time` (reduced-motion gated) continues to be exported from `@lovo/matter` unchanged. For raw uncapped time, import from `three/tsl` directly.
+  The Matter-owned `time` (reduced-motion gated) continues to be exported from `@mattermix/shaders` unchanged. For raw uncapped time, import from `three/tsl` directly.
 
-  All Matter-owned primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) remain exported from `@lovo/matter` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@lovo/matter` to `three/tsl` for the dropped symbols (or re-add the component via the CLI to pull the 0.2.0 source).
+  All Matter-owned primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) remain exported from `@mattermix/shaders` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@mattermix/shaders` to `three/tsl` for the dropped symbols (or re-add the component via the CLI to pull the 0.2.0 source).
 
   **Why:** Re-exporting pure TSL primitives provided no value beyond shared import paths. Dropping them clarifies the layer boundary — Matter ships value-add primitives; TSL provides the math.
 
@@ -186,11 +186,11 @@
 
 - Initial public release of Matter — React shader components on WebGPU + Three.js TSL.
 
-  **`@lovo/matter`** — Framework-agnostic engine: TSL primitives (`fbm`, `voronoi`, `colorRamp`, `quantize`, …), WebGPU renderer wrapper, visibility/intersection-aware scheduler.
+  **`@mattermix/shaders`** — Framework-agnostic engine: TSL primitives (`fbm`, `voronoi`, `colorRamp`, `quantize`, …), WebGPU renderer wrapper, visibility/intersection-aware scheduler.
 
-  **`@lovo/matter-react`** — React binding: `<MatterScene>` (shared canvas), `useShaderMaterial` (r3f-compatible), input hooks (`useCursor`, `useScroll`).
+  **`@mattermix/shaders-react`** — React binding: `<MatterScene>` (shared canvas), `useShaderMaterial` (r3f-compatible), input hooks (`useCursor`, `useScroll`).
 
-  **`@lovo/matter-cli`** — shadcn-style copy-paste CLI: `init`, `list`, `add`, `update`. Default registry tracks the CLI's published version tag (`v0.1.0`) so component code is stable per release.
+  **`@mattermix/shaders-cli`** — shadcn-style copy-paste CLI: `init`, `list`, `add`, `update`. Default registry tracks the CLI's published version tag (`v0.1.0`) so component code is stable per release.
 
   **v1 components** (via `matter-cli add <name>`): `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, `waves`. Each component is yours to edit after copy-in.
 

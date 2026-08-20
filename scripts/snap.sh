@@ -23,7 +23,7 @@ if ! docker info >/dev/null 2>&1; then
 fi
 
 echo "==> macOS baseline (native)"
-pnpm --filter @matter/docs-tests exec playwright test "${PW_ARGS[@]}"
+pnpm --filter @shaders/docs-tests exec playwright test "${PW_ARGS[@]}"
 
 echo
 echo "==> Linux baseline (Docker)"
@@ -72,7 +72,7 @@ docker run --rm \
     corepack enable &&
     corepack prepare ${PNPM_SPEC} --activate &&
     pnpm install --frozen-lockfile &&
-    pnpm --filter @matter/docs-tests exec playwright test${PW_ARGS_INNER}
+    pnpm --filter @shaders/docs-tests exec playwright test${PW_ARGS_INNER}
   "
 
 echo

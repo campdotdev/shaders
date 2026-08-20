@@ -8,7 +8,7 @@
 // compiled mix chain's arity (structuralKeyOf, graph.ts), so adding or
 // removing a stop is expected to rebuild; that only happens on the add/remove
 // buttons, never mid-drag.
-import { parseColorString } from '@lovo/matter/color';
+import { parseColorString } from '@mattermix/shaders/color';
 
 import { ColorInput } from '@/controls/ColorInput';
 import type { ColorStop } from '@/editor/graph/registry';

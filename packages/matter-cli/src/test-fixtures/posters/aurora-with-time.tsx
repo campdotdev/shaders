@@ -1,5 +1,5 @@
-import { ShaderScene } from '@lovo/matter-react'
-import { Aurora } from '@matter/registry/aurora'
+import { ShaderScene } from '@mattermix/shaders-react'
+import { Aurora } from '@shaders/registry/aurora'
 
 export default function AuroraWithTime() {
   return (

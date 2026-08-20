@@ -75,7 +75,7 @@ docker run --rm \
     corepack enable &&
     corepack prepare "$(node -p "require(\"./package.json\").packageManager")" --activate &&
     pnpm install --frozen-lockfile &&
-    pnpm --filter @matter/docs-tests exec playwright test \
+    pnpm --filter @shaders/docs-tests exec playwright test \
       --update-snapshots --grep "Aurora"
   '
 ```
@@ -117,7 +117,7 @@ future runs match it.
 Run natively, no Docker:
 
 ```bash
-pnpm --filter @matter/docs-tests exec playwright test \
+pnpm --filter @shaders/docs-tests exec playwright test \
   --update-snapshots --grep "Aurora"
 ```
 

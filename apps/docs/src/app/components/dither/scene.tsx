@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { Dither } from '@matter/registry/dither';
-import { MeshGradient } from '@matter/registry/mesh-gradient';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { Dither } from '@shaders/registry/dither';
+import { MeshGradient } from '@shaders/registry/mesh-gradient';
 
 import { type DitherParams, INITIAL } from './params';
 

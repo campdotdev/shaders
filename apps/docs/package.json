@@ -1,5 +1,5 @@
 {
-  "name": "@matter/docs",
+  "name": "@shaders/docs",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,9 +14,9 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@lovo/matter": "workspace:*",
-    "@lovo/matter-react": "workspace:*",
-    "@matter/registry": "workspace:*",
+    "@mattermix/shaders": "workspace:*",
+    "@mattermix/shaders-react": "workspace:*",
+    "@shaders/registry": "workspace:*",
     "@xyflow/react": "^12.11.2",
     "github-slugger": "^2.0.0",
     "gray-matter": "^4.0.3",
@@ -38,7 +38,7 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
-    "@matter/tsconfig": "workspace:*",
+    "@shaders/tsconfig": "workspace:*",
     "@tweakpane/core": "^2.0.5",
     "@types/culori": "^4.0.1",
     "@types/node": "^22.7.0",

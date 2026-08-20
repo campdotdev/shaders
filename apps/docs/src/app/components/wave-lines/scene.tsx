@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { WaveLines } from '@matter/registry/wave-lines';
-import type { WaveLine } from '@matter/registry/wave-lines';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { WaveLines } from '@shaders/registry/wave-lines';
+import type { WaveLine } from '@shaders/registry/wave-lines';
 
 import { INITIAL, type Params } from './params';
 

@@ -18,8 +18,8 @@ Matter is a React component library for WebGPU shaders built on Three.js TSL. Co
 Add the engine and the React binding to your app, and the CLI as a dev dependency:
 
 ```bash
-pnpm add @lovo/matter @lovo/matter-react
-pnpm add -D @lovo/matter-cli
+pnpm add @mattermix/shaders @mattermix/shaders-react
+pnpm add -D @mattermix/shaders-cli
 ```
 
 Requirements:
@@ -64,7 +64,7 @@ Requirements:
 Every Matter component is bare — it needs a `<ShaderScene>` parent to provide the WebGPU canvas. The simplest valid usage:
 
 ```tsx
-import { ShaderScene } from '@lovo/matter-react'
+import { ShaderScene } from '@mattermix/shaders-react'
 import { LinearGradient } from '@/components/matter/linear-gradient'
 
 export function Hero() {

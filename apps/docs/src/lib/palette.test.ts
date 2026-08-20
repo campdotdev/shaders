@@ -1,8 +1,8 @@
 // Guards the brand palette against the two mistakes that produced the 2026-07-26
 // correction: colors no display can show, and neutral scales drifting off their
-// intended tint. Reads L/C/h back through @lovo/matter's own conversions rather
+// intended tint. Reads L/C/h back through @mattermix/shaders's own conversions rather
 // than parsing strings, so the assertions use the same math the renderer does.
-import { linearSrgbToOklch, oklchInGamut, parseColorString } from '@lovo/matter/color';
+import { linearSrgbToOklch, oklchInGamut, parseColorString } from '@mattermix/shaders/color';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -409,7 +409,7 @@ describe('brand palette', () => {
     // `keeps globals.css hex literals in sync`, aimed at that second surface.
     const registryRoot = join(
       dirname(fileURLToPath(import.meta.url)),
-      '../../node_modules/@matter/registry',
+      '../../node_modules/@shaders/registry',
     );
     const registryFiles = [
       'aurora/aurora.tsx',

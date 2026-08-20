@@ -1,5 +1,5 @@
 {
-  "name": "@lovo/matter-cli",
+  "name": "@mattermix/shaders-cli",
   "version": "3.9.0",
   "description": "CLI for Matter — copy-paste components from the registry into your project.",
   "keywords": [
@@ -10,15 +10,15 @@
     "shadcn",
     "shader"
   ],
-  "homepage": "https://github.com/lovo-hq/matter#readme",
+  "homepage": "https://github.com/mattermix/shaders#readme",
   "bugs": {
-    "url": "https://github.com/lovo-hq/matter/issues"
+    "url": "https://github.com/mattermix/shaders/issues"
   },
   "license": "MIT",
-  "author": "lovo-hq",
+  "author": "mattermix",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lovo-hq/matter.git",
+    "url": "git+https://github.com/mattermix/shaders.git",
     "directory": "packages/matter-cli"
   },
   "bin": {
@@ -46,10 +46,10 @@
     "esbuild": "^0.27.0"
   },
   "devDependencies": {
-    "@lovo/matter": "workspace:*",
-    "@lovo/matter-react": "workspace:*",
-    "@matter/registry": "workspace:*",
-    "@matter/tsconfig": "workspace:*",
+    "@mattermix/shaders": "workspace:*",
+    "@mattermix/shaders-react": "workspace:*",
+    "@shaders/registry": "workspace:*",
+    "@shaders/tsconfig": "workspace:*",
     "@types/node": "^22.7.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

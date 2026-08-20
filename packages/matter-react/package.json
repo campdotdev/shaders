@@ -1,5 +1,5 @@
 {
-  "name": "@lovo/matter-react",
+  "name": "@mattermix/shaders-react",
   "version": "3.9.0",
   "description": "React binding for Matter — MatterScene, useShaderMaterial, input hooks.",
   "keywords": [
@@ -13,15 +13,15 @@
     "tsl",
     "webgpu"
   ],
-  "homepage": "https://github.com/lovo-hq/matter#readme",
+  "homepage": "https://github.com/mattermix/shaders#readme",
   "bugs": {
-    "url": "https://github.com/lovo-hq/matter/issues"
+    "url": "https://github.com/mattermix/shaders/issues"
   },
   "license": "MIT",
-  "author": "lovo-hq",
+  "author": "mattermix",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/lovo-hq/matter.git",
+    "url": "git+https://github.com/mattermix/shaders.git",
     "directory": "packages/matter-react"
   },
   "files": [
@@ -63,8 +63,8 @@
     "clean": "rm -rf dist .turbo *.tsbuildinfo"
   },
   "devDependencies": {
-    "@lovo/matter": "workspace:*",
-    "@matter/tsconfig": "workspace:*",
+    "@mattermix/shaders": "workspace:*",
+    "@shaders/tsconfig": "workspace:*",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
@@ -80,7 +80,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
-    "@lovo/matter": "workspace:>=0.2.0",
+    "@mattermix/shaders": "workspace:>=0.2.0",
     "react": "^19.0.0",
     "three": "^0.170.0"
   }

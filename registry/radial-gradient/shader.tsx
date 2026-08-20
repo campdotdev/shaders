@@ -8,7 +8,7 @@
 // a color from the ramp.
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, type HueInterpolation } from '@lovo/matter';
+import { colorRamp, type ColorSpace, type HueInterpolation } from '@mattermix/shaders';
 import {
   type AnimatableProp,
   useAnimatablePoint,
@@ -17,7 +17,7 @@ import {
   useResize,
   useShaderContext,
   useStaticSceneHint,
-} from '@lovo/matter-react';
+} from '@mattermix/shaders-react';
 import { clamp, cos, fract, length, mix, sin, step, uniform, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 

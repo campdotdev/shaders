@@ -1,12 +1,12 @@
-# @lovo/matter-cli
+# @mattermix/shaders-cli
 
 shadcn-style copy-paste CLI for **Matter** — fetch polished shader components from the registry into your project, where they're yours to edit.
 
 ## Install
 
 ```bash
-npm install -D @lovo/matter-cli
-# or run ad-hoc: npx @lovo/matter-cli <command>
+npm install -D @mattermix/shaders-cli
+# or run ad-hoc: npx @mattermix/shaders-cli <command>
 ```
 
 Requires Node 22+.
@@ -24,7 +24,7 @@ Writes `matter.config.json` to your project root with sensible defaults:
 ```json
 {
   "componentsDir": "src/components/matter",
-  "registryUrl": "https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry",
+  "registryUrl": "https://raw.githubusercontent.com/mattermix/shaders/${ref}/registry",
   "aliases": { "@/": "src/" }
 }
 ```
@@ -112,7 +112,7 @@ npx matter-cli poster --source ./aurora.tsx --output ./public/aurora.jpg --quali
 Wire it up:
 
 ```tsx
-import { ShaderPoster } from '@lovo/matter-react/poster';
+import { ShaderPoster } from '@mattermix/shaders-react/poster';
 
 <ShaderPoster poster={<img src="/hero.jpg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}>
   <ShaderScene>
@@ -131,15 +131,15 @@ import { ShaderPoster } from '@lovo/matter-react/poster';
 
 `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `wave-lines`.
 
-Each component depends on `@lovo/matter` and `@lovo/matter-react`, which you install separately:
+Each component depends on `@mattermix/shaders` and `@mattermix/shaders-react`, which you install separately:
 
 ```bash
-npm install @lovo/matter @lovo/matter-react three
+npm install @mattermix/shaders @mattermix/shaders-react three
 ```
 
 ## Docs
 
-<https://github.com/lovo-hq/matter>
+<https://github.com/mattermix/shaders>
 
 ## License
 

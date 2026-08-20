@@ -1,20 +1,20 @@
 ---
 title: React API
-description: Public exports from @lovo/matter-react — ShaderScene, hooks, fallbacks, dev tools.
+description: Public exports from @mattermix/shaders-react — ShaderScene, hooks, fallbacks, dev tools.
 section: react.api
 order: 10
 ---
 
 # React API
 
-Everything exported from `@lovo/matter-react`. This page is hand-written for the launch milestone; a generated reference from TypeDoc lands post-launch.
+Everything exported from `@mattermix/shaders-react`. This page is hand-written for the launch milestone; a generated reference from TypeDoc lands post-launch.
 
 ## `<ShaderScene>`
 
 The scene wrapper. Owns the WebGPU canvas, creates the renderer, runs the scheduler. Every Tier 1 Matter component must render inside one.
 
 ```tsx
-import { ShaderScene } from '@lovo/matter-react'
+import { ShaderScene } from '@mattermix/shaders-react'
 
 <ShaderScene
   style={{ height: '100vh' }}
@@ -42,9 +42,9 @@ import { ShaderScene } from '@lovo/matter-react'
 The lower-level hook for users who already own a `<Canvas>` from `@react-three/fiber`. Use this when you want Matter primitives inside your own r3f scene — see [Three / r3f](/react/guides/three-r3f).
 
 ```tsx
-import { useShaderMaterial } from '@lovo/matter-react'
+import { useShaderMaterial } from '@mattermix/shaders-react'
 import { uv } from 'three/tsl'
-import { fractalNoise } from '@lovo/matter'
+import { fractalNoise } from '@mattermix/shaders'
 
 function Plane() {
   const material = useShaderMaterial({
@@ -69,7 +69,7 @@ All three are Strict-Mode-safe (no leaked listeners on dev double-mount) and mus
 Low-level animation glue. Pass an animatable prop — a static value or a signal — and get back a stable TSL uniform node that tracks it:
 
 ```tsx
-import { useAnimatableUniform, type AnimatableProp } from '@lovo/matter-react'
+import { useAnimatableUniform, type AnimatableProp } from '@mattermix/shaders-react'
 
 function Inner({ reach }: { reach: AnimatableProp<number> }) {
   const reachUniform = useAnimatableUniform(reach)
@@ -84,7 +84,7 @@ The returned node keeps its identity for the component's lifetime, so a material
 The `[x, y]` sibling, for props like `center`. Same contract — static pair or signal in, one stable `vec2` uniform out, backed by a single `Vector2` mutated in place:
 
 ```tsx
-import { useAnimatablePoint, type AnimatableProp } from '@lovo/matter-react'
+import { useAnimatablePoint, type AnimatableProp } from '@mattermix/shaders-react'
 
 function Inner({ center }: { center: AnimatableProp<readonly [number, number]> }) {
   const centerUniform = useAnimatablePoint(center, { screenOrigin: true })
@@ -99,7 +99,7 @@ function Inner({ center }: { center: AnimatableProp<readonly [number, number]> }
 The animation glue behind every registry component's `speed` prop. It does not return a speed uniform — it returns a scalar **phase** uniform, integrating speed over time on the CPU:
 
 ```tsx
-import { useAnimatableSpeed, type AnimatableProp } from '@lovo/matter-react'
+import { useAnimatableSpeed, type AnimatableProp } from '@mattermix/shaders-react'
 
 function Inner({ speed }: { speed: AnimatableProp<number> }) {
   const phaseUniform = useAnimatableSpeed(speed)
@@ -132,7 +132,7 @@ A static stand-in shown until the shader's first content frame is on screen, and
 Imported from its own entry point, which has no path to three and so server-renders:
 
 ```tsx
-import { ShaderPoster } from '@lovo/matter-react/poster'
+import { ShaderPoster } from '@mattermix/shaders-react/poster'
 
 <ShaderPoster poster={<img alt="" src="/hero-poster.avif" style={{ width: '100%', height: '100%' }} />}>
   <ShaderScene>
@@ -146,7 +146,7 @@ import { ShaderPoster } from '@lovo/matter-react/poster'
 Resolves a gamut preference to what the display can actually show. Pass `'srgb'` or `'p3'` to fix it, or `'auto'` to query `(color-gamut: p3)` and re-resolve when the window moves to another monitor.
 
 ```tsx
-import { useDisplayGamut } from '@lovo/matter-react/gamut'
+import { useDisplayGamut } from '@mattermix/shaders-react/gamut'
 
 const gamut = useDisplayGamut('auto') // 'srgb' | 'p3'
 ```

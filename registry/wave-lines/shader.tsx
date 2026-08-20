@@ -9,13 +9,13 @@
 // (./wave-lines.tsx) supplies the props.
 import { useEffect } from 'react';
 
-import { colorRamp, type ColorSpace } from '@lovo/matter';
+import { colorRamp, type ColorSpace } from '@mattermix/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
   useAnimatableUniform,
   useShaderContext,
-} from '@lovo/matter-react';
+} from '@mattermix/shaders-react';
 import {
   float,
   fract,

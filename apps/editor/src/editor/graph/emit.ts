@@ -956,9 +956,9 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
   };
 
   const matterImportLine =
-    sortedMatter.length > 0 ? `${importLineOf(sortedMatter, '@lovo/matter')}\n` : '';
+    sortedMatter.length > 0 ? `${importLineOf(sortedMatter, '@mattermix/shaders')}\n` : '';
   const parseColorLine = emission.usesParseColor
-    ? `import { parseColorString } from '@lovo/matter/color';\n`
+    ? `import { parseColorString } from '@mattermix/shaders/color';\n`
     : '';
 
   return `'use client';
@@ -969,7 +969,7 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
 // as a prop with the editor's value as its default.
 import { useEffect } from 'react';
 
-${matterImportLine}${importLineOf(sortedMatterReact, '@lovo/matter-react')}
+${matterImportLine}${importLineOf(sortedMatterReact, '@mattermix/shaders-react')}
 ${parseColorLine}${importLineOf(sortedTsl, 'three/tsl')}
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';

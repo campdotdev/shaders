@@ -104,7 +104,7 @@ export default function SimplexNoisePage() {
               fontSize: '0.85rem',
             }}
           >
-            {`import { ShaderScene } from '@lovo/matter-react'
+            {`import { ShaderScene } from '@mattermix/shaders-react'
 import { SimplexNoise } from '@/components/matter/simplex-noise'
 
 <ShaderScene>

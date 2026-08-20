@@ -3,7 +3,7 @@
 // user-facing ColorStop[] props into the engine's ColorRampStop[] shape.
 // This file ships alongside each component the CLI copies out, so it stays
 // dependency-light (engine + TSL only).
-import { type ColorRampStop, parseColorString } from '@lovo/matter';
+import { type ColorRampStop, parseColorString } from '@mattermix/shaders';
 import { vec3 } from 'three/tsl';
 
 /**

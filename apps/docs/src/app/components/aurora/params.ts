@@ -1,4 +1,4 @@
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
+import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
 
 import { paletteOklch } from '../../../lib/palette';
 

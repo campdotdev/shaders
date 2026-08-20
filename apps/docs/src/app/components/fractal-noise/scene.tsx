@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { FractalNoise } from '@matter/registry/fractal-noise';
-import type { ColorStop } from '@matter/registry/fractal-noise';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { FractalNoise } from '@shaders/registry/fractal-noise';
+import type { ColorStop } from '@shaders/registry/fractal-noise';
 
 import { INITIAL, type Params } from './params';
 

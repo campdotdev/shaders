@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { SimplexNoise } from '@matter/registry/simplex-noise';
-import type { ColorStop } from '@matter/registry/simplex-noise';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { SimplexNoise } from '@shaders/registry/simplex-noise';
+import type { ColorStop } from '@shaders/registry/simplex-noise';
 
 import { INITIAL, type Params } from './params';
 

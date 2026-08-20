@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 
-import type { ColorSpace } from '@lovo/matter';
-import { mixColor } from '@lovo/matter';
-import { ShaderScene, useShaderContext } from '@lovo/matter-react';
+import type { ColorSpace } from '@mattermix/shaders';
+import { mixColor } from '@mattermix/shaders';
+import { ShaderScene, useShaderContext } from '@mattermix/shaders-react';
 import { mix, step, uv, vec3, vec4 } from 'three/tsl';
 
 import { addPlaneMesh } from '@/lib/meshUtils';

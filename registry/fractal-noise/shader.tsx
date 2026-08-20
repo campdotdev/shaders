@@ -16,14 +16,14 @@ import {
   fractalNoise,
   type HueInterpolation,
   quantize,
-} from '@lovo/matter';
+} from '@mattermix/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
   useAnimatableUniform,
   useShaderContext,
   useStaticSceneHint,
-} from '@lovo/matter-react';
+} from '@mattermix/shaders-react';
 import { clamp, float, mix, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 

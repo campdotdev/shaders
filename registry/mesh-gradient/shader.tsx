@@ -15,14 +15,14 @@ import {
   type HueInterpolation,
   mixColor,
   simplexNoise,
-} from '@lovo/matter';
+} from '@mattermix/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
-} from '@lovo/matter-react';
+} from '@mattermix/shaders-react';
 import { abs, cos, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 

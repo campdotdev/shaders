@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { LinearGradient } from '@matter/registry/linear-gradient';
-import { Vignette } from '@matter/registry/vignette';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { LinearGradient } from '@shaders/registry/linear-gradient';
+import { Vignette } from '@shaders/registry/vignette';
 
 import { INITIAL, type VignetteParams } from './params';
 

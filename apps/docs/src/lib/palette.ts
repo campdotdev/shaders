@@ -23,7 +23,7 @@
  * it. Before the 2026-07-26 pass, the accent then called `sky.dark` asked for
  * 0.145 chroma where P3 allows 0.109, and clipping landed it 14.7 degrees off
  * its stated hue. So: keep every oklch value inside P3 (`oklchInGamut` from
- * `@lovo/matter` is the check), and derive the hex from it with
+ * `@mattermix/shaders` is the check), and derive the hex from it with
  * `oklchToGamut(..., 'srgb')` rather than by clipping.
  */
 import { accents } from './accents';

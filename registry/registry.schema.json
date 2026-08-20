@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://github.com/lovo-hq/matter/blob/main/registry/registry.schema.json",
+  "$id": "https://github.com/mattermix/shaders/blob/main/registry/registry.schema.json",
   "title": "Matter registry index",
-  "description": "The index @lovo/matter-cli reads to copy Tier 1 components into a user's project.",
+  "description": "The index @mattermix/shaders-cli reads to copy Tier 1 components into a user's project.",
   "type": "object",
   "required": ["version", "components"],
   "additionalProperties": false,

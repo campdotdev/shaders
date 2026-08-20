@@ -15,7 +15,7 @@ import {
   mixColor,
   quantize,
   voronoiCells,
-} from '@lovo/matter';
+} from '@mattermix/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
@@ -23,7 +23,7 @@ import {
   useResize,
   useShaderContext,
   useStaticSceneHint,
-} from '@lovo/matter-react';
+} from '@mattermix/shaders-react';
 import { clamp, float, fwidth, mix, pow, select, smoothstep, uniform, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
 

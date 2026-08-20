@@ -6,9 +6,9 @@
 // graph's STRUCTURE changes — drags and selections never recompile.
 import { useEffect } from 'react';
 
-import { getReducedMotionTimeScale } from '@lovo/matter';
-import type { SchedulerTick } from '@lovo/matter';
-import { ShaderScene, useShaderContext } from '@lovo/matter-react';
+import { getReducedMotionTimeScale } from '@mattermix/shaders';
+import type { SchedulerTick } from '@mattermix/shaders';
+import { ShaderScene, useShaderContext } from '@mattermix/shaders-react';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { compileOutputColor } from '@/editor/graph/compile';

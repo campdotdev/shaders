@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { Grain } from '@matter/registry/grain';
-import { LinearGradient } from '@matter/registry/linear-gradient';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { Grain } from '@shaders/registry/grain';
+import { LinearGradient } from '@shaders/registry/linear-gradient';
 
 import { type GrainParams, INITIAL } from './params';
 

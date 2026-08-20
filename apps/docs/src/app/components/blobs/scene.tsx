@@ -2,10 +2,10 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { Blobs } from '@matter/registry/blobs';
-import type { ColorStop } from '@matter/registry/blobs';
-import { LinearGradient } from '@matter/registry/linear-gradient';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { Blobs } from '@shaders/registry/blobs';
+import type { ColorStop } from '@shaders/registry/blobs';
+import { LinearGradient } from '@shaders/registry/linear-gradient';
 
 import { INITIAL, type Params } from './params';
 

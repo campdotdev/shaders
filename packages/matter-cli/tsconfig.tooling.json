@@ -1,5 +1,5 @@
 {
-  "extends": "@matter/tsconfig/base.json",
+  "extends": "@shaders/tsconfig/base.json",
   "compilerOptions": {
     "composite": true,
     "emitDeclarationOnly": true,

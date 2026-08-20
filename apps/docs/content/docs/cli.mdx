@@ -1,18 +1,18 @@
 ---
 title: CLI
-description: Copy components from the Matter registry into your project with @lovo/matter-cli.
+description: Copy components from the Matter registry into your project with @mattermix/shaders-cli.
 section: overview
 order: 20
 ---
 
 # CLI
 
-`@lovo/matter-cli` copies polished shader components from the Matter registry directly into your project. It's a shadcn-style copy-paste workflow — once a component is in your repo, it's yours to edit. There's no runtime CLI dependency; you only need it installed during development.
+`@mattermix/shaders-cli` copies polished shader components from the Matter registry directly into your project. It's a shadcn-style copy-paste workflow — once a component is in your repo, it's yours to edit. There's no runtime CLI dependency; you only need it installed during development.
 
 ## Install
 
 ```bash
-pnpm add -D @lovo/matter-cli
+pnpm add -D @mattermix/shaders-cli
 ```
 
 Requires Node 22+.
@@ -32,7 +32,7 @@ Default config:
 ```json
 {
   "componentsDir": "src/components/matter",
-  "registryUrl": "https://raw.githubusercontent.com/lovo-hq/matter/${ref}/registry",
+  "registryUrl": "https://raw.githubusercontent.com/mattermix/shaders/${ref}/registry",
   "aliases": { "@/": "src/" },
   "tsx": true
 }
@@ -68,7 +68,7 @@ Without `--force`, `update` refuses to overwrite a file you've modified — you 
 
 ## Why not a runtime dependency?
 
-Tier 1 components (`<LinearGradient>`, `<Aurora>`, etc.) aren't published to npm. They live in [the registry](https://github.com/lovo-hq/matter/tree/main/registry) and get copied into your project, where you can edit the shader, swap props, or refactor the JSX freely. The two packages you do depend on at runtime — `@lovo/matter` and `@lovo/matter-react` — provide the primitives, hooks, and `<ShaderScene>` that those components call into.
+Tier 1 components (`<LinearGradient>`, `<Aurora>`, etc.) aren't published to npm. They live in [the registry](https://github.com/mattermix/shaders/tree/main/registry) and get copied into your project, where you can edit the shader, swap props, or refactor the JSX freely. The two packages you do depend on at runtime — `@mattermix/shaders` and `@mattermix/shaders-react` — provide the primitives, hooks, and `<ShaderScene>` that those components call into.
 
 <Callout>
   There is no hosted registry endpoint. The CLI fetches sources from GitHub raw URLs at the pinned `${ref}`. If you want to host your own fork, change `registryUrl` in `matter.config.json` to point at your fork's raw URL.

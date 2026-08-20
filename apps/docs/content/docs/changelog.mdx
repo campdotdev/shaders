@@ -7,7 +7,7 @@ order: 30
 
 # Changelog
 
-Matter ships as three coordinated npm packages: `@lovo/matter` (engine), `@lovo/matter-react` (React binding), and `@lovo/matter-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo; this page summarizes the headline changes.
+Matter ships as three coordinated npm packages: `@mattermix/shaders` (engine), `@mattermix/shaders-react` (React binding), and `@mattermix/shaders-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo; this page summarizes the headline changes.
 
 ## Unreleased
 
@@ -43,24 +43,24 @@ Same copy-paste rule: installed copies keep rendering as before; re-add `waves` 
 
 ## 0.2.0
 
-**Breaking change — `@lovo/matter` no longer re-exports pure TSL primitives.**
+**Breaking change — `@mattermix/shaders` no longer re-exports pure TSL primitives.**
 
-The following 15 nodes are no longer exported by `@lovo/matter`. Import them directly from `three/tsl`:
+The following 15 nodes are no longer exported by `@mattermix/shaders`. Import them directly from `three/tsl`:
 
 `uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`
 
 ```ts
 // Before (0.1.x)
-import { vec3, uv, time } from '@lovo/matter'
+import { vec3, uv, time } from '@mattermix/shaders'
 
 // After (0.2.0)
 import { vec3, uv } from 'three/tsl'
-import { time } from '@lovo/matter'  // still here — reduced-motion-gated
+import { time } from '@mattermix/shaders'  // still here — reduced-motion-gated
 ```
 
-`time` continues to be exported from `@lovo/matter` because Matter owns its semantics (reduced-motion gating). For raw uncapped time, import from `three/tsl` directly.
+`time` continues to be exported from `@mattermix/shaders` because Matter owns its semantics (reduced-motion gating). For raw uncapped time, import from `three/tsl` directly.
 
-All Matter-owned primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) remain exported from `@lovo/matter` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@lovo/matter` to `three/tsl` for the dropped symbols (or re-add the component via the CLI to pull the 0.2.0 source).
+All Matter-owned primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) remain exported from `@mattermix/shaders` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@mattermix/shaders` to `three/tsl` for the dropped symbols (or re-add the component via the CLI to pull the 0.2.0 source).
 
 **Why:** Re-exporting pure TSL primitives provided no value beyond shared import paths — no rename, no added docs, no future-swap benefit. Dropping them clarifies the layer boundary: Matter ships value-add primitives, TSL provides the math. See the [matter engine reference](/reference/matter) for the current public surface.
 
@@ -68,7 +68,7 @@ All Matter-owned primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`
 
 The first public release of Matter — React shader components on WebGPU + Three.js TSL.
 
-### `@lovo/matter`
+### `@mattermix/shaders`
 
 Framework-agnostic engine. Exports:
 
@@ -77,7 +77,7 @@ Framework-agnostic engine. Exports:
 - **Runtime:** `createRenderer`, `MatterScheduler`, visibility/intersection watchers, reduced-motion policy.
 - **Inputs:** `CursorInput` (framework-agnostic cursor source).
 
-### `@lovo/matter-react`
+### `@mattermix/shaders-react`
 
 React binding for the engine. Exports:
 
@@ -87,7 +87,7 @@ React binding for the engine. Exports:
 - Animation glue — `useAnimatableUniform`, accepts any MotionValue-shaped signal.
 - Fallback / dev utilities — `FallbackBoundary`, `useStaticHint`, `MatterMonitor`.
 
-### `@lovo/matter-cli`
+### `@mattermix/shaders-cli`
 
 shadcn-style copy-paste CLI: `init`, `list`, `add`, `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so the component source you copy is stable per release.
 
@@ -102,5 +102,5 @@ Available via `matter-cli add <name>`: `linear-gradient`, `mesh-gradient`, `auro
 - React ^19, Three.js ^0.170.
 
 <Callout>
-  Detailed per-package changelogs live in the repo: [`packages/matter/CHANGELOG.md`](https://github.com/lovo-hq/matter/blob/main/packages/matter/CHANGELOG.md), [`packages/matter-react/CHANGELOG.md`](https://github.com/lovo-hq/matter/blob/main/packages/matter-react/CHANGELOG.md), [`packages/matter-cli/CHANGELOG.md`](https://github.com/lovo-hq/matter/blob/main/packages/matter-cli/CHANGELOG.md).
+  Detailed per-package changelogs live in the repo: [`packages/matter/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/matter/CHANGELOG.md), [`packages/matter-react/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/matter-react/CHANGELOG.md), [`packages/matter-cli/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/matter-cli/CHANGELOG.md).
 </Callout>

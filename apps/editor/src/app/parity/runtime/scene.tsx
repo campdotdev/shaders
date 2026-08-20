@@ -8,7 +8,7 @@
 // see page.dev.tsx beside this file.
 import { useMemo } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
+import { ShaderScene } from '@mattermix/shaders-react';
 
 import { CompiledMesh } from '@/editor/canvas/OutputPreview';
 import { structuralKeyOf } from '@/editor/graph/graph';

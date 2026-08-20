@@ -1,5 +1,5 @@
 {
-  "name": "@matter/tsconfig",
+  "name": "@shaders/tsconfig",
   "version": "0.0.0",
   "private": true,
   "files": [

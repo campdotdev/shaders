@@ -2,14 +2,19 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, type HueInterpolation, type TSLNode } from '@lovo/matter';
+import {
+  colorRamp,
+  type ColorSpace,
+  type HueInterpolation,
+  type TSLNode,
+} from '@mattermix/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
-} from '@lovo/matter-react';
+} from '@mattermix/shaders-react';
 import {
   cos,
   dot,

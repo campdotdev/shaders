@@ -22,7 +22,7 @@ describe('runInit', () => {
     const matterConfig = JSON.parse(raw);
 
     expect(matterConfig.componentsDir).toBe('src/components/matter');
-    expect(matterConfig.registryUrl).toContain('lovo-hq/matter');
+    expect(matterConfig.registryUrl).toContain('mattermix/shaders');
   });
 
   it('refuses to overwrite an existing config without --force', async () => {

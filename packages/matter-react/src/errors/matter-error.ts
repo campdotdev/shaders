@@ -5,7 +5,7 @@
 export type MatterErrorCode = 'renderer-init';
 
 /**
- * A typed error surfaced by @lovo/matter-react. The original thrown value is
+ * A typed error surfaced by @mattermix/shaders-react. The original thrown value is
  * always available on `cause`.
  */
 export class MatterError extends Error {

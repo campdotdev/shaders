@@ -5,7 +5,7 @@
  * oklab(), and throws on anything else, so emitting rgb() or hsl() would crash
  * the shader.
  */
-import { linearSrgbToOklch, parseColorString } from '@lovo/matter/color';
+import { linearSrgbToOklch, parseColorString } from '@mattermix/shaders/color';
 
 /**
  * OKLCH in one line: lightness is how bright (0 black, 1 white), chroma is how

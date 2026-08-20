@@ -5,8 +5,8 @@
 // metaball field over roaming blob centers and thresholds it into merging,
 // splitting shapes. Render it inside a <ShaderScene>, typically stacked
 // over a background layer — the space between blobs is transparent.
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-import type { AnimatableProp } from '@lovo/matter-react';
+import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
+import type { AnimatableProp } from '@mattermix/shaders-react';
 
 import type { ColorStop } from '../utils/color';
 import { BlobsShader } from './shader';

@@ -8,8 +8,8 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef } from 'react';
 
-import type { FractalNoiseStyle } from '@matter/registry/fractal-noise';
-import { STYLE_DIAL_DEFAULTS } from '@matter/registry/fractal-noise/style-dial-defaults';
+import type { FractalNoiseStyle } from '@shaders/registry/fractal-noise';
+import { STYLE_DIAL_DEFAULTS } from '@shaders/registry/fractal-noise/style-dial-defaults';
 
 import {
   COLOR_SPACE_OPTIONS,

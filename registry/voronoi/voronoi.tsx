@@ -4,8 +4,8 @@
 // defaults, then delegates to VoronoiShader (./shader.tsx), which carves the
 // canvas into cells around scattered seed points and colors each cell from
 // the ramp. Render it inside a <ShaderScene>.
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-import type { AnimatableProp } from '@lovo/matter-react';
+import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
+import type { AnimatableProp } from '@mattermix/shaders-react';
 
 import type { ColorStop } from '../utils/color';
 import { VoronoiShader } from './shader';
