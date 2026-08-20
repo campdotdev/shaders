@@ -11,9 +11,8 @@ import {
 } from './shadersConfig.js';
 
 describe('DEFAULT_SHADERS_CONFIG.registryUrl', () => {
-  it('points at the mattermix/shaders org (NOT lovo/matter — that is a 404)', () => {
+  it('points at the mattermix/shaders org', () => {
     expect(DEFAULT_SHADERS_CONFIG.registryUrl).toContain('/mattermix/shaders/');
-    expect(DEFAULT_SHADERS_CONFIG.registryUrl).not.toMatch(/\/lovo\/matter\//);
   });
 
   it('contains the ${ref} placeholder for resolveRef substitution', () => {
@@ -28,7 +27,7 @@ describe('DEFAULT_SHADERS_CONFIG.registryUrl', () => {
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'matter-config-test-'));
+  dir = await mkdtemp(join(tmpdir(), 'shaders-config-test-'));
 });
 
 afterEach(async () => {
@@ -46,7 +45,7 @@ describe('shadersConfig', () => {
   it('reads back what it wrote', async () => {
     const shadersConfig: ShadersConfig = {
       ...DEFAULT_SHADERS_CONFIG,
-      componentsDir: 'app/matter',
+      componentsDir: 'app/shaders',
     };
 
     await writeShadersConfig(dir, shadersConfig);

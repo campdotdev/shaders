@@ -8,7 +8,7 @@ import { writeFileNoFollow } from './writeFileNoFollow.js';
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'matter-nofollow-test-'));
+  dir = await mkdtemp(join(tmpdir(), 'shaders-nofollow-test-'));
 });
 
 afterEach(async () => {

@@ -1,5 +1,5 @@
 // Node vocabulary for the shader editor. Each entry is one "macro node": a
-// whole Matter primitive presented as a single card, never a raw TSL op.
+// whole Shaders primitive presented as a single card, never a raw TSL op.
 // Users only ever see two port types — field (a grayscale value per pixel) and
 // color. Every port carries exactly one small word: "in"/"out" for the main
 // flow, prepositions ("by", "with", "using") for modifier inputs — never vague

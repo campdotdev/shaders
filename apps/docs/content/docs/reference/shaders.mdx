@@ -25,13 +25,13 @@ TSL building blocks for writing shader expressions. Each primitive is documented
 
 ## Layering and `elapsedTime`
 
-Matter sits on top of Three.js's TSL. Pure TSL primitives (`uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`) live in `three/tsl` — import them directly from there:
+Shaders sits on top of Three.js's TSL. Pure TSL primitives (`uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`) live in `three/tsl` — import them directly from there:
 
 ```ts
 import { uv, vec3, uniform, mix } from 'three/tsl'
 ```
 
-Matter exports one TSL node of its own: **`elapsedTime`**. It's the TSL built-in `time` multiplied by an engine-owned reduced-motion scale uniform, so every component that animates against `elapsedTime` from `@mattermix/shaders` automatically respects `prefers-reduced-motion` and the policy override set via `setReducedMotionPolicy`.
+Shaders exports one TSL node of its own: **`elapsedTime`**. It's the TSL built-in `time` multiplied by an engine-owned reduced-motion scale uniform, so every component that animates against `elapsedTime` from `@mattermix/shaders` automatically respects `prefers-reduced-motion` and the policy override set via `setReducedMotionPolicy`.
 
 ```ts
 import { elapsedTime } from '@mattermix/shaders'

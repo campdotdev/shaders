@@ -77,7 +77,7 @@ try {
     'utf-8',
   );
   const actual = readFileSync(
-    join(smokeDir, 'src/components/matter/linear-gradient/linear-gradient.tsx'),
+    join(smokeDir, 'src/components/shaders/linear-gradient/linear-gradient.tsx'),
     'utf-8',
   );
   if (expected !== actual) {
@@ -87,14 +87,14 @@ try {
 
   step(`Edit the copied component and run \`shaders-cli update --force\``);
   writeFileSync(
-    join(smokeDir, 'src/components/matter/linear-gradient/linear-gradient.tsx'),
+    join(smokeDir, 'src/components/shaders/linear-gradient/linear-gradient.tsx'),
     'export const stale = true\n',
   );
   run(`node node_modules/@mattermix/shaders-cli/dist/index.js update linear-gradient --force`, {
     cwd: smokeDir,
   });
   const refreshed = readFileSync(
-    join(smokeDir, 'src/components/matter/linear-gradient/linear-gradient.tsx'),
+    join(smokeDir, 'src/components/shaders/linear-gradient/linear-gradient.tsx'),
     'utf-8',
   );
   if (refreshed !== expected) {

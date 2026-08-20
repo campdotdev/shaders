@@ -104,7 +104,7 @@ export interface ScreenshotOpts {
 export async function launchAndScreenshot(opts: ScreenshotOpts): Promise<{ bytes: number }> {
   const playwright = await resolvePlaywright(opts.projectRoot);
 
-  // Real browsers render Matter on WebGPU, but headless Chromium silently
+  // Real browsers render Shaders on WebGPU, but headless Chromium silently
   // falls back to WebGL2 unless WebGPU is requested explicitly — and
   // hash-driven shaders (voronoi, blobs) lay out DIFFERENTLY per backend,
   // so a fallback capture produces a poster that never matches what the

@@ -20,7 +20,7 @@ const program = new Command();
 
 program
   .name('shaders-cli')
-  .description('CLI for Matter — copy-paste components from the registry into your project')
+  .description('CLI for Shaders — copy-paste components from the registry into your project')
   .version(__VERSION__);
 
 program
@@ -109,7 +109,7 @@ program
 program
   .command('poster')
   .description(
-    'render a Matter component tree to a static image for use as a <ShaderPoster> poster',
+    'render a Shaders component tree to a static image for use as a <ShaderPoster> poster',
   )
   .requiredOption('--source <file>', 'path to a .tsx/.ts file exporting the component to render')
   .requiredOption('--output <path>', 'where to write the image (extension optional; --format wins)')

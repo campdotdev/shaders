@@ -1,11 +1,11 @@
 {
   "name": "@mattermix/shaders-cli",
   "version": "3.9.0",
-  "description": "CLI for Matter — copy-paste components from the registry into your project.",
+  "description": "CLI for Shaders — copy-paste components from the registry into your project.",
   "keywords": [
     "cli",
     "components",
-    "matter",
+    "shaders",
     "scaffold",
     "shadcn",
     "shader"

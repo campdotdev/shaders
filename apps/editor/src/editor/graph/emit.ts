@@ -54,8 +54,8 @@ class Emission {
   hookLines: string[] = [];
   props: PropLine[] = [];
   /** Named imports actually used, per module, so the file imports stay clean. */
-  matterImports = new Set<string>();
-  matterReactImports = new Set<string>(['useShaderContext']);
+  shadersImports = new Set<string>();
+  shadersReactImports = new Set<string>(['useShaderContext']);
   tslImports = new Set<string>();
   usesParseColor = false;
   usesColorSpaces = false;
@@ -105,7 +105,7 @@ function grainBlendOf(node: GraphNode): string {
 
 /**
  * Emits a complete, drop-in component file for the subgraph feeding
- * `outputId`. The result is a bare Matter component (mount inside a
+ * `outputId`. The result is a bare Shaders component (mount inside a
  * ShaderScene); unwired inputs fall back exactly like the runtime compiler,
  * so the generated file renders the same image as the Output card.
  */
@@ -224,7 +224,7 @@ export function emitComponentSource(
 
     const propName = claimDialProp(node, baseName, 'speed');
 
-    emission.matterReactImports.add('useAnimatableSpeed');
+    emission.shadersReactImports.add('useAnimatableSpeed');
     emission.hookLines.push(`const ${propName}Phase = useAnimatableSpeed(${propName});`);
     dialNames.set(dialKey, `${propName}Phase`);
     speedPropNames.set(node.id, propName);
@@ -251,7 +251,7 @@ export function emitComponentSource(
 
     const gateName = emission.claim(`${propName}Uniform`);
 
-    emission.matterReactImports.add('useAnimatableUniform');
+    emission.shadersReactImports.add('useAnimatableUniform');
     emission.hookLines.push(`const ${gateName} = useAnimatableUniform(${propName});`);
     speedGateNames.set(node.id, gateName);
 
@@ -389,7 +389,7 @@ export function emitComponentSource(
         const balance = emitDial(node, base, 'balance');
         const phase = emitSpeedDial(node, base);
 
-        emission.matterImports.add('simplexNoise');
+        emission.shadersImports.add('simplexNoise');
         for (const used of ['clamp', 'vec3']) emission.tslImports.add(used);
         emission.helperLines.push(
           `// 3D simplex with the animation phase on z: the pattern morphs in`,
@@ -424,7 +424,7 @@ export function emitComponentSource(
         const style = fractalStyleOf(node);
         const { stretch, lift } = FRACTAL_STYLE_REMAP[style];
 
-        emission.matterImports.add('fractalNoise');
+        emission.shadersImports.add('fractalNoise');
         for (const used of ['clamp', 'float', 'mix', 'vec3']) emission.tslImports.add(used);
         emission.helperLines.push(
           `// The detail dial maps onto fBm gain — the per-octave amplitude`,
@@ -467,7 +467,7 @@ export function emitComponentSource(
         const drift = emitDial(node, base, 'drift');
         const phase = emitSpeedDial(node, base);
 
-        emission.matterImports.add('voronoiCells');
+        emission.shadersImports.add('voronoiCells');
         for (const used of ['clamp', 'mix']) emission.tslImports.add(used);
         emission.helperLines.push(
           `// Two fields from one cell walk, blended by shading: edgeDistance`,
@@ -502,7 +502,7 @@ export function emitComponentSource(
         const centerY = emitDial(node, base, 'center.y');
         const phase = emitSpeedDial(node, base);
 
-        emission.matterImports.add('metaballs');
+        emission.shadersImports.add('metaballs');
         for (const used of ['float', 'fwidth', 'smoothstep', 'vec2']) emission.tslImports.add(used);
         emission.helperLines.push(
           `// metaballs wants centered pattern space — subtracting center puts`,
@@ -561,7 +561,7 @@ export function emitComponentSource(
     const name = `${base}Field`;
     const amount = emitDial(node, base, 'amount');
 
-    emission.matterImports.add('displace');
+    emission.shadersImports.add('displace');
     emission.tslImports.add('vec2');
     emission.helperLines.push(
       `// Domain warp: two far-apart taps of the driver become the x/y of a`,
@@ -728,7 +728,7 @@ export function emitComponentSource(
         const centerY = emitDial(node, base, 'center.y');
         const tint = emitColorDial(node, base, 'color');
 
-        emission.matterImports.add('mixColor');
+        emission.shadersImports.add('mixColor');
         for (const used of ['vec2', 'vec3', 'uv', 'length', 'smoothstep', 'max', 'screenSize'])
           emission.tslImports.add(used);
         emission.helperLines.push(
@@ -755,7 +755,7 @@ export function emitComponentSource(
         const phase = emitSpeedDial(node, base);
         const subtractive = grainBlendOf(node) === 'subtractive';
 
-        emission.matterImports.add('grain');
+        emission.shadersImports.add('grain');
         for (const used of [subtractive ? 'sub' : 'add', 'floor', 'vec3'])
           emission.tslImports.add(used);
         emission.helperLines.push(
@@ -794,7 +794,7 @@ export function emitComponentSource(
           const base = emission.claim('ramp');
           const name = `${base}Color`;
 
-          emission.matterImports.add('colorRamp');
+          emission.shadersImports.add('colorRamp');
           emission.usesParseColor = true;
           emission.tslImports.add('vec3');
           emission.tslImports.add('uv');
@@ -878,11 +878,11 @@ export function emitComponentSource(
 // ---------------------------------------------------------------------------
 
 function assembleFile(emission: Emission, finalColorExpr: string): string {
-  if (emission.usesColorSpaces) emission.matterImports.add('colorSpaces');
+  if (emission.usesColorSpaces) emission.shadersImports.add('colorSpaces');
 
   const sortedTsl = [...emission.tslImports].sort();
-  const sortedMatter = [...emission.matterImports].sort();
-  const sortedMatterReact = [...emission.matterReactImports].sort();
+  const sortedShadersImports = [...emission.shadersImports].sort();
+  const sortedShadersReactImports = [...emission.shadersReactImports].sort();
 
   const propsInterface = emission.props
     .map((prop) => `  /** ${prop.jsdoc} */\n  ${prop.name}?: ${prop.tsType};`)
@@ -955,21 +955,23 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
     return `import {\n${names.map((name) => `  ${name},`).join('\n')}\n} from '${moduleName}';`;
   };
 
-  const matterImportLine =
-    sortedMatter.length > 0 ? `${importLineOf(sortedMatter, '@mattermix/shaders')}\n` : '';
+  const shadersImportLine =
+    sortedShadersImports.length > 0
+      ? `${importLineOf(sortedShadersImports, '@mattermix/shaders')}\n`
+      : '';
   const parseColorLine = emission.usesParseColor
     ? `import { parseColorString } from '@mattermix/shaders/color';\n`
     : '';
 
   return `'use client';
 
-// Generated by the Matter editor. A bare Matter component: mount it inside a
+// Generated by the Shaders editor. A bare Shaders component: mount it inside a
 // ShaderScene. Fields are functions of the sample position — warping is
 // calling a field at a shifted point — and every editor dial arrived below
 // as a prop with the editor's value as its default.
 import { useEffect } from 'react';
 
-${matterImportLine}${importLineOf(sortedMatterReact, '@mattermix/shaders-react')}
+${shadersImportLine}${importLineOf(sortedShadersReactImports, '@mattermix/shaders-react')}
 ${parseColorLine}${importLineOf(sortedTsl, 'three/tsl')}
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';

@@ -23,15 +23,15 @@ describe('ShaderMonitor', () => {
     const scheduler = new FrameScheduler();
 
     render(<ShaderMonitor />, { wrapper: createSchedulerWrapper(scheduler) });
-    expect(screen.getByTestId('matter-monitor')).toBeInTheDocument();
+    expect(screen.getByTestId('shaders-monitor')).toBeInTheDocument();
   });
 
   it('shows initial state: 0 ticks, fps —', () => {
     const scheduler = new FrameScheduler();
 
     render(<ShaderMonitor />, { wrapper: createSchedulerWrapper(scheduler) });
-    expect(screen.getByTestId('matter-monitor-ticks').textContent).toContain('0');
-    expect(screen.getByTestId('matter-monitor-fps').textContent).toMatch(/—|0/);
+    expect(screen.getByTestId('shaders-monitor-ticks').textContent).toContain('0');
+    expect(screen.getByTestId('shaders-monitor-fps').textContent).toMatch(/—|0/);
   });
 
   it('renders without context (graceful no-op)', () => {

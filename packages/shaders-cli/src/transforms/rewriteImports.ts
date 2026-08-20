@@ -1,5 +1,5 @@
 // Copied source must resolve imports inside the USER's project, not the
-// Matter monorepo. This transform maps import specifiers through the
+// Shaders monorepo. This transform maps import specifiers through the
 // aliases in shaders.config.json: every specifier starting with an alias key
 // gets that prefix swapped for the configured value, in both static
 // (`from '...'`) and dynamic (`import('...')`) forms. Relative imports and

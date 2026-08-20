@@ -1,4 +1,4 @@
-// The heart of Matter's render-on-demand system: one requestAnimationFrame
+// The heart of Shaders' render-on-demand system: one requestAnimationFrame
 // loop per scene, with clients (render callbacks) ticked every frame. The
 // interesting part is that the loop can STOP — components vote on whether
 // anything is animating (setIdle), and when the votes say "all static" the

@@ -18,7 +18,7 @@ describe('resolvePlaywright', () => {
     const { mkdtemp } = await import('node:fs/promises');
     const { tmpdir } = await import('node:os');
     const { join } = await import('node:path');
-    const dir = await mkdtemp(join(tmpdir(), 'matter-no-pw-'));
+    const dir = await mkdtemp(join(tmpdir(), 'shaders-no-pw-'));
 
     await expect(resolvePlaywright(dir)).rejects.toThrow(/Install playwright to use this command/);
   });

@@ -8,7 +8,7 @@ import { runInit } from './init.js';
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'matter-init-test-'));
+  dir = await mkdtemp(join(tmpdir(), 'shaders-init-test-'));
 });
 
 afterEach(async () => {
@@ -21,7 +21,7 @@ describe('runInit', () => {
     const raw = await readFile(join(dir, 'shaders.config.json'), 'utf-8');
     const shadersConfig = JSON.parse(raw);
 
-    expect(shadersConfig.componentsDir).toBe('src/components/matter');
+    expect(shadersConfig.componentsDir).toBe('src/components/shaders');
     expect(shadersConfig.registryUrl).toContain('mattermix/shaders');
   });
 
@@ -36,7 +36,7 @@ describe('runInit', () => {
     const raw = await readFile(join(dir, 'shaders.config.json'), 'utf-8');
     const shadersConfig = JSON.parse(raw);
 
-    expect(shadersConfig.componentsDir).toBe('src/components/matter');
+    expect(shadersConfig.componentsDir).toBe('src/components/shaders');
   });
 
   it('logs a confirmation message after writing', async () => {

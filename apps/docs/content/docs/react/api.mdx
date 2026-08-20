@@ -11,7 +11,7 @@ Everything exported from `@mattermix/shaders-react`. This page is hand-written f
 
 ## `<ShaderScene>`
 
-The scene wrapper. Owns the WebGPU canvas, creates the renderer, runs the scheduler. Every Tier 1 Matter component must render inside one.
+The scene wrapper. Owns the WebGPU canvas, creates the renderer, runs the scheduler. Every Tier 1 Shaders component must render inside one.
 
 ```tsx
 import { ShaderScene } from '@mattermix/shaders-react'
@@ -34,12 +34,12 @@ import { ShaderScene } from '@mattermix/shaders-react'
 | `pauseOffscreen` | `boolean` | `true` | Whether to pause rendering when the canvas leaves the viewport. |
 | `style` | `CSSProperties` | — | Forwarded to the canvas container. |
 | `className` | `string` | — | Forwarded to the canvas container. |
-| `children` | `ReactNode` | — | One or more Matter components. |
+| `children` | `ReactNode` | — | One or more Shaders components. |
 | `onError` | `(error: ShadersError) => void` | — | Called once if renderer init fails (e.g. no GPU backend). Receives a `ShadersError` with `code: 'renderer-init'` and the original error on `.cause`. |
 
 ## `useShaderMaterial`
 
-The lower-level hook for users who already own a `<Canvas>` from `@react-three/fiber`. Use this when you want Matter primitives inside your own r3f scene — see [Three / r3f](/react/guides/three-r3f).
+The lower-level hook for users who already own a `<Canvas>` from `@react-three/fiber`. Use this when you want Shaders primitives inside your own r3f scene — see [Three / r3f](/react/guides/three-r3f).
 
 ```tsx
 import { useShaderMaterial } from '@mattermix/shaders-react'
@@ -111,7 +111,7 @@ Each scheduler tick adds `speed × min(delta, 0.1)` (scaled for `prefers-reduced
 
 ## `<FallbackBoundary>`
 
-Renders fallback content when WebGPU is unavailable or initialization fails. Wrap any Matter subtree:
+Renders fallback content when WebGPU is unavailable or initialization fails. Wrap any Shaders subtree:
 
 ```tsx
 <FallbackBoundary fallback={<img src="/hero-fallback.png" />}>

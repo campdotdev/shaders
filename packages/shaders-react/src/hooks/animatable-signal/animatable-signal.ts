@@ -1,6 +1,6 @@
 'use client';
 
-// The animation-signal protocol, shared by every animatable hook. Matter
+// The animation-signal protocol, shared by every animatable hook. Shaders
 // never depends on an animation library: a "signal" is anything carrying
 // callable get/on, which is a shape Motion's MotionValue happens to have.
 // Keeping the protocol here means the scalar hook and the point hook agree
@@ -14,7 +14,7 @@ export interface AnimatableSignal<T> {
 export type AnimatableProp<T> = T | AnimatableSignal<T>;
 
 // Duck-type check rather than instanceof, which is what lets foreign objects
-// like Motion's MotionValue qualify without Matter importing anything.
+// like Motion's MotionValue qualify without Shaders importing anything.
 export const isSignal = <T>(value: AnimatableProp<T>): value is AnimatableSignal<T> => {
   if (typeof value !== 'object' || value === null) return false;
 

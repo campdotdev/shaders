@@ -1,4 +1,4 @@
-// OKLab — the default mixing space for Matter's interpolating components.
+// OKLab — the default mixing space for Shaders' interpolating components.
 // It's built so equal numeric steps look like equal visual steps: L is
 // perceived lightness, a runs green<->red, b runs blue<->yellow. Blending
 // here avoids the muddy midpoints and lightness dips you get from averaging

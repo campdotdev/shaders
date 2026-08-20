@@ -103,8 +103,8 @@ export async function bundlePoster(opts: BundlePosterOpts): Promise<BundlePoster
     absWorkingDir: opts.projectRoot,
     nodePaths: [join(opts.projectRoot, 'node_modules')],
     define: {
-      __MATTER_USER_MODULE_PATH: JSON.stringify(opts.from),
-      __MATTER_EXPORT_NAME: JSON.stringify(opts.exportName),
+      __SHADERS_USER_MODULE_PATH: JSON.stringify(opts.from),
+      __SHADERS_EXPORT_NAME: JSON.stringify(opts.exportName),
     },
     write: false,
     sourcemap: 'inline',

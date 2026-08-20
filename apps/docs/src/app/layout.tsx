@@ -8,7 +8,7 @@ import './globals.css';
 import { Providers } from './providers';
 
 export const metadata = {
-  title: 'Matter — React shader components',
+  title: 'Shaders — React shader components',
   description: 'WebGPU + TSL shader components for React.',
 };
 
@@ -32,7 +32,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             }}
           >
             <Link href="/" style={{ fontWeight: 600, color: 'var(--fg)' }}>
-              Matter
+              Shaders
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
               <SearchBar />

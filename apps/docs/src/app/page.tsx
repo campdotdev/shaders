@@ -13,7 +13,7 @@ const COMPONENTS = [
 export default function Home() {
   return (
     <main style={{ padding: '4rem 2rem', maxWidth: '60ch', margin: '0 auto' }}>
-      <h1 style={{ marginTop: 0 }}>Matter</h1>
+      <h1 style={{ marginTop: 0 }}>Shaders</h1>
       <p>React shader components powered by WebGPU and Three.js TSL.</p>
       <p style={{ opacity: 0.75 }}>Status: pre-release, M3 complete — six v1 components live.</p>
       <h2 style={{ marginTop: '2rem' }}>Components</h2>

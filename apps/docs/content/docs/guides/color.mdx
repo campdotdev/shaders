@@ -7,7 +7,7 @@ order: 15
 
 # Color
 
-Matter has three color controls that sound related and are not. `colorSpace` decides how two colors blend. `gamut` decides what the framebuffer can hold. Wide-gamut input is neither — it's just what happens when you write a color that sRGB can't express. Most confusion here comes from assuming one of them does another's job.
+Shaders has three color controls that sound related and are not. `colorSpace` decides how two colors blend. `gamut` decides what the framebuffer can hold. Wide-gamut input is neither — it's just what happens when you write a color that sRGB can't express. Most confusion here comes from assuming one of them does another's job.
 
 ## `colorSpace` — how colors blend
 
@@ -55,7 +55,7 @@ Whatever the gamut, every scene quietly dithers its final output: noise smaller 
 
 ## Wide-gamut input
 
-This is the part that needs no props at all. Write a color in `oklch()` or `oklab()` and Matter decodes it to unclamped linear-sRGB, so a color outside the sRGB cube stays outside it, all the way to the framebuffer:
+This is the part that needs no props at all. Write a color in `oklch()` or `oklab()` and Shaders decodes it to unclamped linear-sRGB, so a color outside the sRGB cube stays outside it, all the way to the framebuffer:
 
 ```tsx
 // Greener than sRGB can express. Survives if the output gamut allows it.
@@ -74,4 +74,4 @@ Think of it as a pipeline, one control per stage:
 
 They compose independently. A wide-gamut `oklch()` input blended in `oklab` and written to a `p3` framebuffer is the common case, and none of those three choices constrains the others. Reaching for `colorSpace` to fix a color that looks dull on a wide display is the usual mistake — that's stage 3's job.
 
-For the CPU-side functions behind stage 1 — `parseColorString`, the conversions, the gamut helpers — see [the engine reference](/reference/matter#color-math--lovomattercolor). They come from `@mattermix/shaders/color`, which has no path to three, so you can call them wherever you need them: in the browser, or during a server render where the root entry would crash.
+For the CPU-side functions behind stage 1 — `parseColorString`, the conversions, the gamut helpers — see [the engine reference](/reference/shaders#color-math--mattermixshaderscolor). They come from `@mattermix/shaders/color`, which has no path to three, so you can call them wherever you need them: in the browser, or during a server render where the root entry would crash.

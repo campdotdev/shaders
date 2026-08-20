@@ -40,7 +40,7 @@ const state: PolicyState = {
 };
 
 /**
- * Override Matter's default behavior of honoring `prefers-reduced-motion`.
+ * Override Shaders' default behavior of honoring `prefers-reduced-motion`.
  * - 'auto'   — follow the OS media query (default)
  * - 'off'    — full speed regardless of OS setting
  * - 'slow'   — 30% speed regardless of OS setting
@@ -71,7 +71,7 @@ const computeScale = (mqlMatches: boolean): number => {
 
 /**
  * Create a watcher that tracks `prefers-reduced-motion: reduce` and the
- * global Matter policy override. Strict-mode-safe — callers create+dispose
+ * global Shaders policy override. Strict-mode-safe — callers create+dispose
  * one per mount cycle.
  */
 export function createReducedMotionWatcher(): ReducedMotionWatcher {
@@ -81,7 +81,7 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
   // watchers because they are not added to state.watchers — but in
   // practice the AGENTS.md gotcha on three/webgpu referencing `self` at
   // module load requires `ssr: false` for any component that touches the
-  // matter engine).
+  // Shaders engine).
   if (typeof matchMedia !== 'function') {
     return {
       scale: () => computeScale(false),

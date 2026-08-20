@@ -1,13 +1,13 @@
 ---
 title: Changelog
-description: Notable changes per release across the Matter packages.
+description: Notable changes per release across the Shaders packages.
 section: overview
 order: 30
 ---
 
 # Changelog
 
-Matter ships as three coordinated npm packages: `@mattermix/shaders` (engine), `@mattermix/shaders-react` (React binding), and `@mattermix/shaders-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo; this page summarizes the headline changes.
+Shaders ships as three coordinated npm packages: `@mattermix/shaders` (engine), `@mattermix/shaders-react` (React binding), and `@mattermix/shaders-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo; this page summarizes the headline changes.
 
 ## Unreleased
 
@@ -62,7 +62,7 @@ import { time } from '@mattermix/shaders'  // still here — reduced-motion-gate
 
 All Matter-owned primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) remain exported from `@mattermix/shaders` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@mattermix/shaders` to `three/tsl` for the dropped symbols (or re-add the component via the CLI to pull the 0.2.0 source).
 
-**Why:** Re-exporting pure TSL primitives provided no value beyond shared import paths — no rename, no added docs, no future-swap benefit. Dropping them clarifies the layer boundary: Matter ships value-add primitives, TSL provides the math. See the [matter engine reference](/reference/matter) for the current public surface.
+**Why:** Re-exporting pure TSL primitives provided no value beyond shared import paths — no rename, no added docs, no future-swap benefit. Dropping them clarifies the layer boundary: Matter ships value-add primitives, TSL provides the math. See the [matter engine reference](/reference/shaders) for the current public surface.
 
 ## 0.1.0 — Initial public release
 

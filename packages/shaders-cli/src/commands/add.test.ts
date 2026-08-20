@@ -15,7 +15,7 @@ const VERSION = '0.0.0';
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'matter-add-test-'));
+  dir = await mkdtemp(join(tmpdir(), 'shaders-add-test-'));
 });
 
 afterEach(async () => {
@@ -26,7 +26,7 @@ async function seedConfig(overrides: Partial<typeof DEFAULT_SHADERS_CONFIG> = {}
   await writeShadersConfig(dir, {
     ...DEFAULT_SHADERS_CONFIG,
     registryUrl: FIXTURE_BASE,
-    componentsDir: 'src/components/matter',
+    componentsDir: 'src/components/shaders',
     ...overrides,
   });
 }
@@ -35,7 +35,7 @@ describe('runAdd (single component, no aliases)', () => {
   it('writes the component source to componentsDir/<name>.tsx', async () => {
     await seedConfig();
     await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
-    const target = join(dir, 'src/components/matter/synthetic-component.tsx');
+    const target = join(dir, 'src/components/shaders/synthetic-component.tsx');
     const written = await readFile(target, 'utf-8');
 
     expect(written).toContain('SyntheticComponent');
@@ -43,9 +43,9 @@ describe('runAdd (single component, no aliases)', () => {
   });
 
   it('creates componentsDir if it does not exist', async () => {
-    await seedConfig({ componentsDir: 'app/very/nested/matter' });
+    await seedConfig({ componentsDir: 'app/very/nested/shaders' });
     await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
-    const target = join(dir, 'app/very/nested/matter/synthetic-component.tsx');
+    const target = join(dir, 'app/very/nested/shaders/synthetic-component.tsx');
     const written = await readFile(target, 'utf-8');
 
     expect(written).toContain('SyntheticComponent');
@@ -53,9 +53,9 @@ describe('runAdd (single component, no aliases)', () => {
 
   it('refuses to overwrite an existing file without --force', async () => {
     await seedConfig();
-    await mkdir(join(dir, 'src/components/matter'), { recursive: true });
+    await mkdir(join(dir, 'src/components/shaders'), { recursive: true });
     await writeFile(
-      join(dir, 'src/components/matter/synthetic-component.tsx'),
+      join(dir, 'src/components/shaders/synthetic-component.tsx'),
       'existing',
       'utf-8',
     );
@@ -66,15 +66,15 @@ describe('runAdd (single component, no aliases)', () => {
 
   it('overwrites with --force', async () => {
     await seedConfig();
-    await mkdir(join(dir, 'src/components/matter'), { recursive: true });
-    await writeFile(join(dir, 'src/components/matter/synthetic-component.tsx'), 'old', 'utf-8');
+    await mkdir(join(dir, 'src/components/shaders'), { recursive: true });
+    await writeFile(join(dir, 'src/components/shaders/synthetic-component.tsx'), 'old', 'utf-8');
     await runAdd(
       ['synthetic-component'],
       { force: true, cliVersion: VERSION },
       { cwd: dir, log: vi.fn() },
     );
     const written = await readFile(
-      join(dir, 'src/components/matter/synthetic-component.tsx'),
+      join(dir, 'src/components/shaders/synthetic-component.tsx'),
       'utf-8',
     );
 
@@ -105,7 +105,7 @@ describe('runAdd (multi-file components)', () => {
   it('writes every file the entry lists, not just the entry point', async () => {
     await seedConfig();
     await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
-    const base = join(dir, 'src/components/matter');
+    const base = join(dir, 'src/components/shaders');
 
     expect(await readFile(join(base, 'nested-component/nested-component.tsx'), 'utf-8')).toContain(
       'NestedComponent',
@@ -118,7 +118,7 @@ describe('runAdd (multi-file components)', () => {
 
   it('refuses the whole set when a non-entry file already exists, writing nothing', async () => {
     await seedConfig();
-    const base = join(dir, 'src/components/matter');
+    const base = join(dir, 'src/components/shaders');
 
     await mkdir(join(base, 'nested-component'), { recursive: true });
     await writeFile(join(base, 'nested-component/shader.tsx'), 'mine', 'utf-8');
@@ -158,7 +158,7 @@ describe('runAdd (multi-file components)', () => {
 
   it('skips a file already on disk with identical content, so a later add succeeds', async () => {
     await seedConfig();
-    const base = join(dir, 'src/components/matter');
+    const base = join(dir, 'src/components/shaders');
 
     // Last week: add one component, which brings utils/color.ts with it.
     await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
@@ -180,7 +180,7 @@ describe('runAdd (multi-file components)', () => {
 
   it('refuses when a file on disk has diverged from the registry copy', async () => {
     await seedConfig();
-    const base = join(dir, 'src/components/matter');
+    const base = join(dir, 'src/components/shaders');
 
     await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
     await writeFile(join(base, 'utils/color.ts'), '// my own edits\n', 'utf-8');
@@ -196,7 +196,7 @@ describe('runAdd (multi-file components)', () => {
   });
 
   it('refuses a registry entry whose file escapes componentsDir', async () => {
-    const inlineDir = await mkdtemp(join(tmpdir(), 'matter-escape-fixture-'));
+    const inlineDir = await mkdtemp(join(tmpdir(), 'shaders-escape-fixture-'));
 
     await writeFile(
       join(inlineDir, 'registry.json'),
@@ -226,7 +226,7 @@ describe('runAdd (multi-file components)', () => {
 
   it('treats a file differing only in line endings as unchanged', async () => {
     await seedConfig();
-    const base = join(dir, 'src/components/matter');
+    const base = join(dir, 'src/components/shaders');
 
     await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
 
@@ -254,11 +254,11 @@ describe('runAdd (multi-file components)', () => {
       await rm(join(dir, 'src'), { recursive: true, force: true });
       await seedConfig();
       await mkdir(outside, { recursive: true });
-      await mkdir(join(dir, 'src/components/matter/utils'), { recursive: true });
+      await mkdir(join(dir, 'src/components/shaders/utils'), { recursive: true });
       if (name === 'existing') await writeFile(linkTarget, '// theirs\n', 'utf-8');
       // A dangling link is the sharper case: the existence check reads through
       // it, finds nothing, and would happily create the file outside.
-      await symlink(linkTarget, join(dir, 'src/components/matter/utils/color.ts'));
+      await symlink(linkTarget, join(dir, 'src/components/shaders/utils/color.ts'));
 
       await expect(
         runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() }),
@@ -274,7 +274,7 @@ describe('runAdd (multi-file components)', () => {
 
   it('refuses to write through a symlink that escapes componentsDir', async () => {
     await seedConfig();
-    const base = join(dir, 'src/components/matter');
+    const base = join(dir, 'src/components/shaders');
     const outside = join(dir, 'outside');
 
     await mkdir(outside, { recursive: true });
@@ -296,7 +296,7 @@ describe('runAdd (multi-file components)', () => {
 
   it('overwrites a diverged file with --force', async () => {
     await seedConfig();
-    const base = join(dir, 'src/components/matter');
+    const base = join(dir, 'src/components/shaders');
 
     await runAdd(['nested-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
     await writeFile(join(base, 'utils/color.ts'), '// my own edits\n', 'utf-8');
@@ -313,7 +313,7 @@ describe('runAdd (multi-file components)', () => {
 
 describe('runAdd (multi-component + dedup + alias rewriting)', () => {
   it('writes multiple components in one invocation against a custom registry', async () => {
-    const inlineDir = await mkdtemp(join(tmpdir(), 'matter-multi-fixture-'));
+    const inlineDir = await mkdtemp(join(tmpdir(), 'shaders-multi-fixture-'));
 
     await writeFile(
       join(inlineDir, 'registry.json'),
@@ -334,8 +334,8 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
 
     await runAdd(['alpha', 'beta'], { cliVersion: VERSION }, { cwd: dir, log });
 
-    const a = await readFile(join(dir, 'src/components/matter/alpha.tsx'), 'utf-8');
-    const b = await readFile(join(dir, 'src/components/matter/beta.tsx'), 'utf-8');
+    const a = await readFile(join(dir, 'src/components/shaders/alpha.tsx'), 'utf-8');
+    const b = await readFile(join(dir, 'src/components/shaders/beta.tsx'), 'utf-8');
 
     expect(a).toContain('alpha = 1');
     expect(b).toContain('beta = 2');
@@ -352,7 +352,7 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
   it('rewrites @matter-internal imports per shaders.config.json aliases', async () => {
     await seedConfig({ aliases: { '@matter-internal/': '@/lib/matter/' } });
     await runAdd(['synthetic-component'], { cliVersion: VERSION }, { cwd: dir, log: vi.fn() });
-    const target = join(dir, 'src/components/matter/synthetic-component.tsx');
+    const target = join(dir, 'src/components/shaders/synthetic-component.tsx');
     const written = await readFile(target, 'utf-8');
 
     expect(written).toContain(`from '@/lib/matter/lib'`);
@@ -362,7 +362,7 @@ describe('runAdd (multi-component + dedup + alias rewriting)', () => {
 
 describe('runAdd (--ref handling)', () => {
   it('substitutes ${ref} into the registry URL when present', async () => {
-    const inlineDir = await mkdtemp(join(tmpdir(), 'matter-ref-fixture-'));
+    const inlineDir = await mkdtemp(join(tmpdir(), 'shaders-ref-fixture-'));
 
     await mkdir(join(inlineDir, 'main'), { recursive: true });
     await writeFile(
@@ -392,7 +392,7 @@ describe('runAdd (--ref handling)', () => {
       { ref: 'main', cliVersion: VERSION },
       { cwd: dir, log: vi.fn() },
     );
-    const target = join(dir, 'src/components/matter/synthetic-component.tsx');
+    const target = join(dir, 'src/components/shaders/synthetic-component.tsx');
     const written = await readFile(target, 'utf-8');
 
     expect(written).toContain('function X');

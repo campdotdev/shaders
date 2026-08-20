@@ -94,7 +94,7 @@ export default function LinearGradientPage() {
         </DemoLayout>
         <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
           <h1 style={{ marginTop: 0 }}>&lt;LinearGradient /&gt;</h1>
-          <p>Animated linear gradient. The simplest, foundational Matter component.</p>
+          <p>Animated linear gradient. The simplest, foundational Shaders component.</p>
           <pre
             style={{
               background: '#1a1a2a',

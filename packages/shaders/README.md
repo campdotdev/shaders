@@ -1,6 +1,6 @@
 # @mattermix/shaders
 
-Framework-agnostic engine for **Matter** — React shader components on WebGPU + Three.js TSL.
+Framework-agnostic engine for **Shaders** — React shader components on WebGPU + Three.js TSL.
 
 This package contains the TSL primitives, the renderer, and the scheduler. It has no React dependency. If you're using React, install [`@mattermix/shaders-react`](https://www.npmjs.com/package/@mattermix/shaders-react) alongside this package — it adds React-friendly wrappers (a shared `<ShaderScene>`, input hooks, and `@react-three/fiber` integration) on top of this engine.
 
@@ -11,7 +11,7 @@ npm install @mattermix/shaders three
 # or: pnpm add @mattermix/shaders three
 ```
 
-`three` is a peer dependency. Matter targets `three@^0.170.0` and uses the WebGPU TSL API exclusively.
+`three` is a peer dependency. Shaders targets `three@^0.170.0` and uses the WebGPU TSL API exclusively.
 
 ## What's inside
 
@@ -38,10 +38,6 @@ For polished drop-in components like `<LinearGradient>` and `<Aurora>`, install 
 ## Docs
 
 Full docs and live demos: <https://github.com/mattermix/shaders>
-
-## Migration from 0.3.x
-
-`MatterScheduler`, `MatterRenderer`, and `MatterBackend` have been renamed to `FrameScheduler`, `GpuRenderer`, and `GpuBackend`. The old names are deprecated and still work — remove them at your leisure before 0.5.0.
 
 ## License
 

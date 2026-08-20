@@ -7,20 +7,20 @@ order: 10
 
 # SSR and fallbacks
 
-Matter is fundamentally a client runtime — it needs `navigator.gpu`, which doesn't exist on the server. This page covers the patterns for using Matter in Next.js (or any SSR framework) and handling browsers that don't support WebGPU at all.
+Shaders is fundamentally a client runtime — it needs `navigator.gpu`, which doesn't exist on the server. This page covers the patterns for using Shaders in Next.js (or any SSR framework) and handling browsers that don't support WebGPU at all.
 
 ## The core constraint
 
 `three/webgpu` references `self` and `navigator` at module load time. Importing it in a server bundle (RSC, getServerSideProps, etc.) throws. So:
 
-- Matter components are always client components.
-- Pages that import them either need `'use client'` themselves, or they need to load Matter via `next/dynamic` with SSR disabled.
+- Shaders components are always client components.
+- Pages that import them either need `'use client'` themselves, or they need to load Shaders via `next/dynamic` with SSR disabled.
 
 That applies to anything reaching the renderer. It does not apply to every export both packages have, which is what the subpaths below are for.
 
 ## The three-free subpaths
 
-Some of what Matter ships is plain arithmetic that never touches the GPU: parsing a color string, converting between OKLCH and linear sRGB, asking whether a display can show a color. Those reach `three/webgpu` only because the root entry re-exports the renderer alongside them, so each has a second entry point that doesn't.
+Some of what Shaders ships is plain arithmetic that never touches the GPU: parsing a color string, converting between OKLCH and linear sRGB, asking whether a display can show a color. Those reach `three/webgpu` only because the root entry re-exports the renderer alongside them, so each has a second entry point that doesn't.
 
 | Import from | Instead of | For |
 | --- | --- | --- |
@@ -91,11 +91,11 @@ This forces every `three` import to resolve to the unified bundle. Same idea app
 
 ## Fallback for browsers without WebGPU
 
-Some browsers (Firefox stable, Safari < 18, older Chrome) don't ship WebGPU yet. Wrap any Matter subtree in `<FallbackBoundary>`:
+Some browsers (Firefox stable, Safari < 18, older Chrome) don't ship WebGPU yet. Wrap any Shaders subtree in `<FallbackBoundary>`:
 
 ```tsx
 import { FallbackBoundary, ShaderScene } from '@mattermix/shaders-react'
-import { Aurora } from '@/components/matter/aurora'
+import { Aurora } from '@/components/shaders/aurora'
 
 export function Hero() {
   return (
@@ -134,4 +134,4 @@ If you wrap a scene in `next/dynamic` with `ssr: false`, nothing from that subtr
 
 The subpaths are the exception, and worth remembering when you reach for `ssr: false` reflexively. A page that reads colors with `@mattermix/shaders/color`, or checks the display gamut with `@mattermix/shaders-react/gamut`, or shows a `<ShaderPoster>` while the scene loads, renders all of that on the server normally. Only the scene itself has to wait.
 
-If you have SEO-critical content that's currently hidden behind a Matter component, lift it out into the surrounding RSC. Matter is for decoration; the surrounding page is for content.
+If you have SEO-critical content that's currently hidden behind a Shaders component, lift it out into the surrounding RSC. Shaders is for decoration; the surrounding page is for content.

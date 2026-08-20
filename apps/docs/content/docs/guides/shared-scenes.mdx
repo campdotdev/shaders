@@ -7,14 +7,14 @@ order: 30
 
 # Shared scenes
 
-Every Matter component renders to a WebGPU canvas owned by its parent `<ShaderScene>`. Components are bare — they don't bring their own canvas. To compose multiple effects, you stack them as children of the same `<ShaderScene>`.
+Every Shaders component renders to a WebGPU canvas owned by its parent `<ShaderScene>`. Components are bare — they don't bring their own canvas. To compose multiple effects, you stack them as children of the same `<ShaderScene>`.
 
 ## The pattern
 
 ```tsx
 import { ShaderScene } from '@mattermix/shaders-react'
-import { Aurora } from '@/components/matter/aurora'
-import { DotField } from '@/components/matter/dot-field'
+import { Aurora } from '@/components/shaders/aurora'
+import { DotField } from '@/components/shaders/dot-field'
 
 export function Hero() {
   return (
@@ -63,4 +63,4 @@ Each component renders to its own quad in the scene — there's no built-in blen
 
 ## Multiple scenes on one page
 
-There's no restriction on how many `<ShaderScene>` instances a page can host. Each owns its own WebGPU device, so they're truly independent. The home-page mock for Matter uses four scenes (hero, feature row, section divider, footer) and pauses each one when it scrolls out of view.
+There's no restriction on how many `<ShaderScene>` instances a page can host. Each owns its own WebGPU device, so they're truly independent. The home-page mock for Shaders uses four scenes (hero, feature row, section divider, footer) and pauses each one when it scrolls out of view.

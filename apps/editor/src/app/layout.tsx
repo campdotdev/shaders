@@ -7,7 +7,7 @@ import type { ReactNode } from 'react';
 // styles.
 import '@/controls/controls.css';
 
-export const metadata = { title: 'Matter Editor' };
+export const metadata = { title: 'Shaders Editor' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

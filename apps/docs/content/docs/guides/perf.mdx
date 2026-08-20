@@ -1,19 +1,19 @@
 ---
 title: Performance
-description: What Matter does automatically and what you can tune for offscreen pausing, DPR, reduced motion, and static renders.
+description: What Shaders does automatically and what you can tune for offscreen pausing, DPR, reduced motion, and static renders.
 section: guides
 order: 20
 ---
 
 # Performance
 
-Matter applies five engine-level defaults you don't have to wire up yourself. This page covers what's automatic, what's tunable, and how to opt out when you need to.
+Shaders applies five engine-level defaults you don't have to wire up yourself. This page covers what's automatic, what's tunable, and how to opt out when you need to.
 
 ## Pause when offscreen
 
 Every `<ShaderScene>` registers an `IntersectionObserver` on its canvas. When the canvas leaves the viewport, the scheduler unsubscribes the scene — no GPU frames are produced. When the canvas re-enters, rendering resumes from where it left off.
 
-This is on by default and applies to all Matter components without per-component code. You don't need to do anything.
+This is on by default and applies to all Shaders components without per-component code. You don't need to do anything.
 
 <Callout>
   If you depend on continuous rendering — for example, you're capturing the canvas as a texture for another effect — opt out of offscreen pause by setting `pauseOffscreen={false}` on `<ShaderScene>`.
@@ -35,11 +35,11 @@ Drop to `dprMax={1}` for the cheapest possible render, or set `dprMax={Infinity}
 
 ## Reduced motion
 
-Matter reads `prefers-reduced-motion: reduce` on mount and respects the user's choice automatically. Three policies are available via `setReducedMotionPolicy`:
+Shaders reads `prefers-reduced-motion: reduce` on mount and respects the user's choice automatically. Three policies are available via `setReducedMotionPolicy`:
 
 - `'respect'` (default) — when the user prefers reduced motion, animation time scales by `0` (effectively pausing time).
 - `'slow'` — time scales by `0.3`.
-- `'ignore'` — Matter ignores the OS hint entirely.
+- `'ignore'` — Shaders ignores the OS hint entirely.
 
 ```ts
 import { setReducedMotionPolicy } from '@mattermix/shaders'
@@ -51,7 +51,7 @@ This is global to the page and runs once at module init. The hook `useStaticScen
 
 ## Static / render-on-demand
 
-For decorative shaders that don't actually need to animate every frame, you can hint to Matter that the scene is "static" — it renders once on mount, then only on prop / signal changes.
+For decorative shaders that don't actually need to animate every frame, you can hint to Shaders that the scene is "static" — it renders once on mount, then only on prop / signal changes.
 
 ```tsx
 import { ShaderScene, useStaticSceneHint } from '@mattermix/shaders-react'

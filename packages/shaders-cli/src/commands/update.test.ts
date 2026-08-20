@@ -12,7 +12,7 @@ const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'matter-update-test-'));
+  dir = await mkdtemp(join(tmpdir(), 'shaders-update-test-'));
 });
 
 afterEach(async () => {
@@ -24,9 +24,9 @@ async function seedConfigAndComponent() {
     ...DEFAULT_SHADERS_CONFIG,
     registryUrl: FIXTURE_BASE,
   });
-  await mkdir(join(dir, 'src/components/matter'), { recursive: true });
+  await mkdir(join(dir, 'src/components/shaders'), { recursive: true });
   await writeFile(
-    join(dir, 'src/components/matter/synthetic-component.tsx'),
+    join(dir, 'src/components/shaders/synthetic-component.tsx'),
     'export const STALE = true\n',
     'utf-8',
   );
@@ -41,7 +41,7 @@ describe('runUpdate', () => {
       { cwd: dir, log: vi.fn() },
     );
     const written = await readFile(
-      join(dir, 'src/components/matter/synthetic-component.tsx'),
+      join(dir, 'src/components/shaders/synthetic-component.tsx'),
       'utf-8',
     );
 
@@ -53,7 +53,7 @@ describe('runUpdate', () => {
     await seedConfigAndComponent();
     await runUpdate([], { force: true, cliVersion: '0.0.0' }, { cwd: dir, log: vi.fn() });
     const written = await readFile(
-      join(dir, 'src/components/matter/synthetic-component.tsx'),
+      join(dir, 'src/components/shaders/synthetic-component.tsx'),
       'utf-8',
     );
 
@@ -65,7 +65,7 @@ describe('runUpdate', () => {
       ...DEFAULT_SHADERS_CONFIG,
       registryUrl: FIXTURE_BASE,
     });
-    await mkdir(join(dir, 'src/components/matter'), { recursive: true });
+    await mkdir(join(dir, 'src/components/shaders'), { recursive: true });
     await expect(
       runUpdate([], { force: true, cliVersion: '0.0.0' }, { cwd: dir, log: vi.fn() }),
     ).rejects.toThrow(/no components/i);
@@ -76,7 +76,7 @@ describe('runUpdate', () => {
       ...DEFAULT_SHADERS_CONFIG,
       registryUrl: FIXTURE_BASE,
     });
-    await mkdir(join(dir, 'src/components/matter'), { recursive: true });
+    await mkdir(join(dir, 'src/components/shaders'), { recursive: true });
     await expect(
       runUpdate(
         ['synthetic-component'],

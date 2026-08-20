@@ -58,7 +58,7 @@ export function EditorActions({
   };
 
   const exportFile = () => {
-    downloadTextFile('matter-graph.json', serializePreset(buildPreset()), 'application/json');
+    downloadTextFile('shaders-graph.json', serializePreset(buildPreset()), 'application/json');
   };
 
   const importFile = (event: ChangeEvent<HTMLInputElement>) => {

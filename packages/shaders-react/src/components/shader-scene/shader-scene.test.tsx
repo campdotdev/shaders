@@ -1,4 +1,4 @@
-import type * as MatterModule from '@mattermix/shaders';
+import type * as ShadersModule from '@mattermix/shaders';
 import { createRenderer } from '@mattermix/shaders';
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -8,7 +8,7 @@ import { PosterContext } from '../shader-poster/poster-context.js';
 import { ShaderScene } from './shader-scene.js';
 
 vi.mock('@mattermix/shaders', async (importOriginal) => {
-  const actual = await importOriginal<typeof MatterModule>();
+  const actual = await importOriginal<typeof ShadersModule>();
 
   return {
     ...actual,

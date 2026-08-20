@@ -1,6 +1,6 @@
 # Visual regression testing
 
-Matter's shader components are validated by Playwright visual regression
+Shader components are validated by Playwright visual regression
 tests that live in [`apps/docs-tests/visual/`](../../apps/docs-tests/visual/).
 Each test navigates to a deterministic visual-test route on the docs site
 (`/components/<name>?visualTest=1`), screenshots the canvas, and compares
