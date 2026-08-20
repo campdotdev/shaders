@@ -3,7 +3,7 @@
 // Visual-test harness, ported verbatim from apps/docs/src/lib (apps can't
 // import each other's source): behind `?visualTest=1`, rewinds both time
 // sources (renderer clock + scheduler phase accumulators), lets exactly two
-// frames render, pauses, and flips `__matterTestReady` for waitForShader.
+// frames render, pauses, and flips `__shadersTestReady` for waitForShader.
 // Mounted inside the parity scenes' ShaderScene trees.
 import { useEffect } from 'react';
 
@@ -22,7 +22,7 @@ const isReducedMotionPolicy = (policyName: string): policyName is ReducedMotionP
 
 declare global {
   interface Window {
-    __matterTestReady?: boolean;
+    __shadersTestReady?: boolean;
   }
 }
 
@@ -63,7 +63,7 @@ function useVisualTestPause(): void {
       if (frame > TARGET_FRAME) {
         ctx.scheduler.remove(client);
         ctx.scheduler.pause();
-        window.__matterTestReady = true;
+        window.__shadersTestReady = true;
       }
     };
 
