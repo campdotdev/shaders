@@ -34,7 +34,7 @@ The animation engine doesn't run on the CPU per-frame — values flow straight i
 
 ```tsx
 import { useMotionValue, useTransform, useScroll } from 'motion/react'
-import { ShaderScene } from '@lovo/matter-react'
+import { ShaderScene } from '@mattermix/shaders-react'
 import { DotField } from '@/components/matter/dot-field'
 
 export function Hero() {
@@ -60,7 +60,7 @@ Matter ships three React hooks that produce ready-to-use signals — they handle
 - `useResize()` — returns a `ResizeSignal` with current canvas dimensions.
 
 ```tsx
-import { ShaderScene, useCursor } from '@lovo/matter-react'
+import { ShaderScene, useCursor } from '@mattermix/shaders-react'
 
 function App() {
   return (

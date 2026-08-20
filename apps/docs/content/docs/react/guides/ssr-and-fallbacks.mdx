@@ -24,13 +24,13 @@ Some of what Matter ships is plain arithmetic that never touches the GPU: parsin
 
 | Import from | Instead of | For |
 | --- | --- | --- |
-| `@lovo/matter/color` | `@lovo/matter` | `parseColorString`, the OKLab/OKLCH conversions, the gamut helpers, the sRGB transfer functions |
-| `@lovo/matter-react/gamut` | `@lovo/matter-react` | `useDisplayGamut` |
-| `@lovo/matter-react/poster` | `@lovo/matter-react` | `<ShaderPoster>` |
+| `@mattermix/shaders/color` | `@mattermix/shaders` | `parseColorString`, the OKLab/OKLCH conversions, the gamut helpers, the sRGB transfer functions |
+| `@mattermix/shaders-react/gamut` | `@mattermix/shaders-react` | `useDisplayGamut` |
+| `@mattermix/shaders-react/poster` | `@mattermix/shaders-react` | `<ShaderPoster>` |
 
 ```tsx
 // Server-renders fine — no path to three.
-import { parseColorString, linearSrgbToOklch } from '@lovo/matter/color'
+import { parseColorString, linearSrgbToOklch } from '@mattermix/shaders/color'
 
 export default function Swatch({ color }: { color: string }) {
   const [lightness] = linearSrgbToOklch(...parseColorString(color))
@@ -57,7 +57,7 @@ export default function Page() {
 }
 ```
 
-`Hero` is a regular client component that imports `@lovo/matter-react` and the registry component. The page itself can stay an RSC.
+`Hero` is a regular client component that imports `@mattermix/shaders-react` and the registry component. The page itself can stay an RSC.
 
 ## Webpack alias for three (Next 14+)
 
@@ -94,7 +94,7 @@ This forces every `three` import to resolve to the unified bundle. Same idea app
 Some browsers (Firefox stable, Safari < 18, older Chrome) don't ship WebGPU yet. Wrap any Matter subtree in `<FallbackBoundary>`:
 
 ```tsx
-import { FallbackBoundary, ShaderScene } from '@lovo/matter-react'
+import { FallbackBoundary, ShaderScene } from '@mattermix/shaders-react'
 import { Aurora } from '@/components/matter/aurora'
 
 export function Hero() {
@@ -132,6 +132,6 @@ To show something in its place, wrap it in `<ShaderPoster>`: the poster stays up
 
 If you wrap a scene in `next/dynamic` with `ssr: false`, nothing from that subtree ships in the server HTML — which is right, because a canvas has nothing useful to say before it has a GPU. The fallback inside `<FallbackBoundary>` is what users see during hydration and on unsupported browsers.
 
-The subpaths are the exception, and worth remembering when you reach for `ssr: false` reflexively. A page that reads colors with `@lovo/matter/color`, or checks the display gamut with `@lovo/matter-react/gamut`, or shows a `<ShaderPoster>` while the scene loads, renders all of that on the server normally. Only the scene itself has to wait.
+The subpaths are the exception, and worth remembering when you reach for `ssr: false` reflexively. A page that reads colors with `@mattermix/shaders/color`, or checks the display gamut with `@mattermix/shaders-react/gamut`, or shows a `<ShaderPoster>` while the scene loads, renders all of that on the server normally. Only the scene itself has to wait.
 
 If you have SEO-critical content that's currently hidden behind a Matter component, lift it out into the surrounding RSC. Matter is for decoration; the surrounding page is for content.

@@ -30,7 +30,7 @@ export interface BundlePosterResult {
 // `dist/index.tsx` instead of `dist/harness/index.tsx`.
 //
 // The fix: walk up the directory tree from `import.meta.url` until we find a `package.json`
-// with `name === '@lovo/matter-cli'`, then try `dist/harness` then `src/harness` in order.
+// with `name === '@mattermix/shaders-cli'`, then try `dist/harness` then `src/harness` in order.
 // This is robust to any output chunk location tsup chooses.
 
 let harnessDirPromise: Promise<string> | undefined;
@@ -48,7 +48,7 @@ async function locateHarnessDir(): Promise<string> {
           name?: string;
         };
 
-        if (packageJson.name === '@lovo/matter-cli') {
+        if (packageJson.name === '@mattermix/shaders-cli') {
           for (const candidate of ['dist/harness', 'src/harness']) {
             const harnessPath = join(dir, candidate);
 
@@ -61,14 +61,14 @@ async function locateHarnessDir(): Promise<string> {
             }
           }
           throw new Error(
-            `Found @lovo/matter-cli at ${dir} but neither dist/harness nor src/harness contains index.html`,
+            `Found @mattermix/shaders-cli at ${dir} but neither dist/harness nor src/harness contains index.html`,
           );
         }
       } catch (caughtError) {
         // Re-throw if we found the package but harness is missing
         if (
           caughtError instanceof Error &&
-          caughtError.message.startsWith('Found @lovo/matter-cli')
+          caughtError.message.startsWith('Found @mattermix/shaders-cli')
         ) {
           throw caughtError;
         }
@@ -78,7 +78,8 @@ async function locateHarnessDir(): Promise<string> {
 
       if (parent === dir) {
         throw new Error(
-          'Could not locate @lovo/matter-cli package root from ' + fileURLToPath(import.meta.url),
+          'Could not locate @mattermix/shaders-cli package root from ' +
+            fileURLToPath(import.meta.url),
         );
       }
       dir = parent;

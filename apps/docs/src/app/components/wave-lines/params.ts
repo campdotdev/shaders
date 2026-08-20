@@ -1,4 +1,4 @@
-import type { ColorSpace } from '@lovo/matter';
+import type { ColorSpace } from '@mattermix/shaders';
 
 import { paletteOklch } from '../../../lib/palette';
 

@@ -4,7 +4,7 @@
 // defaults, then delegates to GrainShader (./shader.tsx). Grain is a
 // post-process layer — stack it after other components inside a
 // <ShaderScene> and it textures whatever rendered beneath it.
-import type { AnimatableProp } from '@lovo/matter-react';
+import type { AnimatableProp } from '@mattermix/shaders-react';
 
 import { type GrainBlend, GrainShader } from './shader';
 

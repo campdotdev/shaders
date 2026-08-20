@@ -7,7 +7,7 @@
 // rather than snapped to the neutral ladder, which is now a formality for the
 // accents — every one of them sits on a tick — but still matters for limeScale,
 // whose ramp has a ladder of its own.
-import { linearSrgbToOklch, parseColorString } from '@lovo/matter/color';
+import { linearSrgbToOklch, parseColorString } from '@mattermix/shaders/color';
 
 import { palette, paletteOklch } from '@/lib/palette';
 

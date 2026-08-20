@@ -1,13 +1,13 @@
 ---
 title: Engine API
-description: '@lovo/matter — primitives, runtime, inputs, and reduced-motion-gated time.'
+description: '@mattermix/shaders — primitives, runtime, inputs, and reduced-motion-gated time.'
 section: reference
 order: 10
 ---
 
 # Engine API
 
-`@lovo/matter` is the framework-agnostic engine. This page lists everything it exports. A generated TypeDoc reference replaces this hand-written page post-launch.
+`@mattermix/shaders` is the framework-agnostic engine. This page lists everything it exports. A generated TypeDoc reference replaces this hand-written page post-launch.
 
 ## Tier 2 primitives
 
@@ -31,17 +31,17 @@ Matter sits on top of Three.js's TSL. Pure TSL primitives (`uv`, `vec2`, `vec3`,
 import { uv, vec3, uniform, mix } from 'three/tsl'
 ```
 
-Matter exports one TSL node of its own: **`elapsedTime`**. It's the TSL built-in `time` multiplied by an engine-owned reduced-motion scale uniform, so every component that animates against `elapsedTime` from `@lovo/matter` automatically respects `prefers-reduced-motion` and the policy override set via `setReducedMotionPolicy`.
+Matter exports one TSL node of its own: **`elapsedTime`**. It's the TSL built-in `time` multiplied by an engine-owned reduced-motion scale uniform, so every component that animates against `elapsedTime` from `@mattermix/shaders` automatically respects `prefers-reduced-motion` and the policy override set via `setReducedMotionPolicy`.
 
 ```ts
-import { elapsedTime } from '@lovo/matter'
+import { elapsedTime } from '@mattermix/shaders'
 //  → equivalent to three/tsl's `time.mul(reducedMotionScale)`
 
 // If you specifically want raw uncapped time (e.g. a debug overlay):
 import { time as rawTime } from 'three/tsl'
 ```
 
-> **Migrating from 0.1.x?** Before 0.2.0, `@lovo/matter` re-exported the TSL primitives listed above as a convenience. They're gone in 0.2.0 — replace `import { vec3, uv, … } from '@lovo/matter'` with `import { vec3, uv, … } from 'three/tsl'`. `elapsedTime` (named `time` before 0.5.0) is the only carry-over and stays imported from `@lovo/matter`.
+> **Migrating from 0.1.x?** Before 0.2.0, `@mattermix/shaders` re-exported the TSL primitives listed above as a convenience. They're gone in 0.2.0 — replace `import { vec3, uv, … } from '@mattermix/shaders'` with `import { vec3, uv, … } from 'three/tsl'`. `elapsedTime` (named `time` before 0.5.0) is the only carry-over and stays imported from `@mattermix/shaders`.
 
 ## Runtime
 
@@ -51,7 +51,7 @@ import { time as rawTime } from 'three/tsl'
 
 ## Inputs
 
-- **`CursorInput`** — framework-agnostic cursor source. `useCursor()` in `@lovo/matter-react` wraps it; in Mode 2 or non-React contexts, you instantiate it directly.
+- **`CursorInput`** — framework-agnostic cursor source. `useCursor()` in `@mattermix/shaders-react` wraps it; in Mode 2 or non-React contexts, you instantiate it directly.
 
 ## Reduced motion
 
@@ -60,14 +60,14 @@ import { time as rawTime } from 'three/tsl'
 - **`getReducedMotionTimeScale()`** — get the current animation time scale (0, 0.3, or 1).
 - **`createReducedMotionWatcher()`** — subscribe to policy changes.
 
-## Color math — `@lovo/matter/color`
+## Color math — `@mattermix/shaders/color`
 
 CPU-side color conversion, run once in JavaScript when a prop is parsed. The GPU only ever sees the resulting numbers.
 
 These are also exported from the root entry, but prefer the subpath: it has no path to three, so it can be imported during a server render, where the root entry cannot. See [SSR and fallbacks](/react/guides/ssr-and-fallbacks#the-three-free-subpaths).
 
 ```ts
-import { parseColorString, linearSrgbToOklch } from '@lovo/matter/color'
+import { parseColorString, linearSrgbToOklch } from '@mattermix/shaders/color'
 ```
 
 - `parseColorString(input)` → extended linear-sRGB. Accepts `#rrggbb`, `#rrggbbaa` (alpha dropped), `oklab(L a b)`, and `oklch(L C H)`. Throws on anything else, including components that aren't numbers.
@@ -83,5 +83,5 @@ import { parseColorString, linearSrgbToOklch } from '@lovo/matter/color'
 The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vector2`, `ColorRampStop`, `TSLNode`, `FractalNoiseOptions`, `FractalFold`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`, `OutputGamut`, `ColorSpace`, `HueInterpolation`.
 
 <Callout>
-  For React-specific exports (`<ShaderScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@lovo/matter`.
+  For React-specific exports (`<ShaderScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@mattermix/shaders`.
 </Callout>

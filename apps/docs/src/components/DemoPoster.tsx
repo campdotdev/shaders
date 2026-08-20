@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 
-import { ShaderPoster } from '@lovo/matter-react/poster';
+import { ShaderPoster } from '@mattermix/shaders-react/poster';
 
 export interface DemoPosterProps {
   src: string;

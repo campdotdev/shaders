@@ -6,6 +6,6 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['react', 'three', '@lovo/matter'],
+  external: ['react', 'three', '@mattermix/shaders'],
   banner: { js: "'use client';" },
 });

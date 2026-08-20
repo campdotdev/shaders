@@ -7,7 +7,7 @@
 // the level math.
 import { useEffect, useMemo } from 'react';
 
-import { type DitherPattern, ditherThreshold, quantize } from '@lovo/matter';
+import { type DitherPattern, ditherThreshold, quantize } from '@mattermix/shaders';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -15,10 +15,10 @@ import {
   usePostProcessPass,
   useResize,
   useShaderContext,
-} from '@lovo/matter-react';
+} from '@mattermix/shaders-react';
 import { floor, mix, screenCoordinate, screenSize, step, uniform, vec3, vec4 } from 'three/tsl';
 
-export type { DitherPattern } from '@lovo/matter';
+export type { DitherPattern } from '@mattermix/shaders';
 
 export interface DitherShaderProps {
   /**

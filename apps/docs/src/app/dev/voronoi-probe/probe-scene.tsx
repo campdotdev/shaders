@@ -7,8 +7,8 @@
 // bisector distance works. Swap the colorNode lines below to isolate fields.
 import { useEffect } from 'react';
 
-import { voronoiCells } from '@lovo/matter';
-import { ShaderScene, useShaderContext } from '@lovo/matter-react';
+import { voronoiCells } from '@mattermix/shaders';
+import { ShaderScene, useShaderContext } from '@mattermix/shaders-react';
 import { smoothstep, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 

@@ -2,7 +2,7 @@
 
 React shader components powered by WebGPU and Three.js TSL.
 
-> **Status:** v0.1.0 shipped to npm. `npm install -D @lovo/matter-cli && npx matter-cli init && npx matter-cli add linear-gradient` to scaffold your first component.
+> **Status:** v0.1.0 shipped to npm. `npm install -D @mattermix/shaders-cli && npx matter-cli init && npx matter-cli add linear-gradient` to scaffold your first component.
 
 ## What is Matter?
 
@@ -12,15 +12,15 @@ Matter is a React component library for shader-driven backgrounds and interactiv
 
 ```
 apps/
-├── docs/           # @matter/docs — Next.js docs site (Tweakpane-driven demos)
-└── playground/     # @matter/playground — Vite app with M1 manual harnesses
+├── docs/           # @shaders/docs — Next.js docs site (Tweakpane-driven demos)
+└── playground/     # @shaders/playground — Vite app with M1 manual harnesses
 
 packages/
-├── matter/         # @lovo/matter — engine: TSL primitives, renderer, scheduler
-├── matter-react/   # @lovo/matter-react — React binding
-└── matter-cli/     # @lovo/matter-cli — copy-paste CLI
+├── matter/         # @mattermix/shaders — engine: TSL primitives, renderer, scheduler
+├── matter-react/   # @mattermix/shaders-react — React binding
+└── matter-cli/     # @mattermix/shaders-cli — copy-paste CLI
 
-registry/           # @matter/registry — Tier 1 component source files (CLI consumes)
+registry/           # @shaders/registry — Tier 1 component source files (CLI consumes)
 
 tooling/
 ├── eslint-config/  # shared ESLint flat config
@@ -41,20 +41,20 @@ pnpm install
 pnpm build       # build all packages + apps
 pnpm typecheck   # typecheck all packages + apps
 pnpm lint        # lint all packages + apps
-pnpm test        # run all tests (Vitest in @lovo/matter)
+pnpm test        # run all tests (Vitest in @mattermix/shaders)
 
 # Live shader demo
-pnpm --filter @matter/docs dev        # Next.js docs at http://localhost:3000
+pnpm --filter @shaders/docs dev        # Next.js docs at http://localhost:3000
 
 # Engine playground (per-phase manual harnesses)
-pnpm --filter @matter/playground dev  # Vite at http://localhost:5173
+pnpm --filter @shaders/playground dev  # Vite at http://localhost:5173
 ```
 
 ## Roadmap
 
 - ✅ **Milestone 0** — Repo bootstrap
 - ✅ **Milestone 1** — Vertical slice: `<LinearGradient>` end-to-end
-- ✅ **Milestone 2** — `@lovo/matter-cli` (copy-paste delivery)
+- ✅ **Milestone 2** — `@mattermix/shaders-cli` (copy-paste delivery)
 - ✅ **Milestone 3** — The other 5 v1 components (MeshGradient, Aurora, DotField, NoiseField, Waves)
 - ✅ **Milestone 4** — Docs site polish
 - ✅ **Milestone 5** — Performance, testing, accessibility

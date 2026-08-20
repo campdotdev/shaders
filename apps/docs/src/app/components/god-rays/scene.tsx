@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { GodRays } from '@matter/registry/god-rays';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { GodRays } from '@shaders/registry/god-rays';
 
 import { type GodRaysParams, INITIAL } from './params';
 

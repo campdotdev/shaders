@@ -1,14 +1,14 @@
-# @lovo/matter
+# @mattermix/shaders
 
 Framework-agnostic engine for **Matter** — React shader components on WebGPU + Three.js TSL.
 
-This package contains the TSL primitives, the renderer, and the scheduler. It has no React dependency. If you're using React, install [`@lovo/matter-react`](https://www.npmjs.com/package/@lovo/matter-react) alongside this package — it adds React-friendly wrappers (a shared `<ShaderScene>`, input hooks, and `@react-three/fiber` integration) on top of this engine.
+This package contains the TSL primitives, the renderer, and the scheduler. It has no React dependency. If you're using React, install [`@mattermix/shaders-react`](https://www.npmjs.com/package/@mattermix/shaders-react) alongside this package — it adds React-friendly wrappers (a shared `<ShaderScene>`, input hooks, and `@react-three/fiber` integration) on top of this engine.
 
 ## Install
 
 ```bash
-npm install @lovo/matter three
-# or: pnpm add @lovo/matter three
+npm install @mattermix/shaders three
+# or: pnpm add @mattermix/shaders three
 ```
 
 `three` is a peer dependency. Matter targets `three@^0.170.0` and uses the WebGPU TSL API exclusively.
@@ -22,7 +22,7 @@ npm install @lovo/matter three
 ## Minimal usage
 
 ```typescript
-import { fractalNoise, colorRamp } from '@lovo/matter'
+import { fractalNoise, colorRamp } from '@mattermix/shaders'
 import { uv, vec3, time } from 'three/tsl'
 
 // Inside your TSL fragment graph:
@@ -33,11 +33,11 @@ const color = colorRamp(noise, [
 ])
 ```
 
-For polished drop-in components like `<LinearGradient>` and `<Aurora>`, install [`@lovo/matter-cli`](https://www.npmjs.com/package/@lovo/matter-cli) and copy them into your project.
+For polished drop-in components like `<LinearGradient>` and `<Aurora>`, install [`@mattermix/shaders-cli`](https://www.npmjs.com/package/@mattermix/shaders-cli) and copy them into your project.
 
 ## Docs
 
-Full docs and live demos: <https://github.com/lovo-hq/matter>
+Full docs and live demos: <https://github.com/mattermix/shaders>
 
 ## Migration from 0.3.x
 

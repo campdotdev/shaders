@@ -9,8 +9,8 @@
 // smoothly from wherever it is (MAT-66).
 import { useEffect, useMemo, useRef } from 'react';
 
-import { getReducedMotionTimeScale } from '@lovo/matter';
-import type { SchedulerTick } from '@lovo/matter';
+import { getReducedMotionTimeScale } from '@mattermix/shaders';
+import type { SchedulerTick } from '@mattermix/shaders';
 import { uniform } from 'three/tsl';
 
 import { type AnimatableProp, isSignal } from '../animatable-signal/animatable-signal.js';

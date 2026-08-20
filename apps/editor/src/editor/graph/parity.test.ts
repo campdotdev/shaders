@@ -4,8 +4,8 @@
 // generator, never by hand-edit.
 //
 // Two modes, same test:
-//   check (default):  pnpm --filter @matter/editor test parity
-//   regenerate:       REGEN_PARITY=1 pnpm --filter @matter/editor test parity
+//   check (default):  pnpm --filter @shaders/editor test parity
+//   regenerate:       REGEN_PARITY=1 pnpm --filter @shaders/editor test parity
 //
 // The pixel half lives in apps/docs-tests/visual/editor-parity.spec.ts,
 // which drives /parity/runtime (the editor's live compiler) and
@@ -44,14 +44,14 @@ describe('eject parity (source half)', () => {
     } catch {
       throw new Error(
         `generated.gen.tsx is missing — regenerate it:\n` +
-          `  REGEN_PARITY=1 pnpm --filter @matter/editor test parity`,
+          `  REGEN_PARITY=1 pnpm --filter @shaders/editor test parity`,
       );
     }
 
     expect(
       checkedIn,
       `generated.gen.tsx drifted from the emitter. If the emitter change is intentional, regenerate:\n` +
-        `  REGEN_PARITY=1 pnpm --filter @matter/editor test parity`,
+        `  REGEN_PARITY=1 pnpm --filter @shaders/editor test parity`,
     ).toBe(source);
   });
 });

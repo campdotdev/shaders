@@ -2,9 +2,9 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { Voronoi } from '@matter/registry/voronoi';
-import type { ColorStop } from '@matter/registry/voronoi';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { Voronoi } from '@shaders/registry/voronoi';
+import type { ColorStop } from '@shaders/registry/voronoi';
 
 import { INITIAL, type Params } from './params';
 

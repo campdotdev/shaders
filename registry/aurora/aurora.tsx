@@ -5,8 +5,8 @@
 // glowing curtain ribbons by marching a virtual view ray through a noise
 // field. The aurora emits light over a transparent background — stack it
 // above a dark layer inside a <ShaderScene>.
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-import type { AnimatableProp } from '@lovo/matter-react';
+import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
+import type { AnimatableProp } from '@mattermix/shaders-react';
 
 import type { ColorStop } from '../utils/color';
 import { AuroraShader } from './shader';

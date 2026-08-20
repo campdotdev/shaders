@@ -1,4 +1,4 @@
-# @lovo/matter-react
+# @mattermix/shaders-react
 
 ## 3.9.0
 
@@ -44,9 +44,9 @@
 
 ### Minor Changes
 
-- 0d924ce: Adds `@lovo/matter-react/gamut`, a second entry point carrying `useDisplayGamut` with no path to three. The root entry re-exports `ShaderScene`, which imports `three/webgpu`, and that reads `self` at module load, so a server-rendered page that only wanted to know whether the display can show P3 had to load the renderer to ask. The hook itself never needed it.
+- 0d924ce: Adds `@mattermix/shaders-react/gamut`, a second entry point carrying `useDisplayGamut` with no path to three. The root entry re-exports `ShaderScene`, which imports `three/webgpu`, and that reads `self` at module load, so a server-rendered page that only wanted to know whether the display can show P3 had to load the renderer to ask. The hook itself never needed it.
 
-  Same idea as `@lovo/matter/color`, and this package already shipped `./poster` on the same reasoning. Both subpaths now have a test that imports them under a bare Node environment, so three creeping back into either one fails there rather than in someone's server render.
+  Same idea as `@mattermix/shaders/color`, and this package already shipped `./poster` on the same reasoning. Both subpaths now have a test that imports them under a bare Node environment, so three creeping back into either one fails there rather than in someone's server render.
 
 ## 3.1.0
 
@@ -54,7 +54,7 @@
 
 ### Major Changes
 
-- 1b0bbcb: Remove `ShaderScene`'s `fallback` prop (breaking). Use the new `ShaderPoster` component from `@lovo/matter-react/poster` instead — it renders in the initial HTML (SSR-safe, no three import) and dismisses when the wrapped `ShaderScene` paints its first frame.
+- 1b0bbcb: Remove `ShaderScene`'s `fallback` prop (breaking). Use the new `ShaderPoster` component from `@mattermix/shaders-react/poster` instead — it renders in the initial HTML (SSR-safe, no three import) and dismisses when the wrapped `ShaderScene` paints its first frame.
 
 ## 2.0.0
 
@@ -68,7 +68,7 @@
 
 ### Minor Changes
 
-- 35274c3: Rename ambiguous `@lovo/matter-react` public exports to clearer names (BREAKING, pre-1.0):
+- 35274c3: Rename ambiguous `@mattermix/shaders-react` public exports to clearer names (BREAKING, pre-1.0):
 
   - `useOverlayPass` → `usePostProcessPass` (and the paired type `OverlayTransform` → `PostProcessTransform`)
   - `useStaticHint` → `useStaticSceneHint`
@@ -84,7 +84,7 @@
 
 - 1c69220: Rename public API symbols to domain-accurate names.
 
-  New primary names: `FrameScheduler`, `GpuRenderer`, `GpuBackend` (`@lovo/matter`); `ShaderScene`, `ShaderSceneProps`, `ShaderContext`, `ShaderContextValue`, `useShaderContext`, `ShaderMonitor`, `ShaderMonitorProps`, `AnimatableSignal` (`@lovo/matter-react`).
+  New primary names: `FrameScheduler`, `GpuRenderer`, `GpuBackend` (`@mattermix/shaders`); `ShaderScene`, `ShaderSceneProps`, `ShaderContext`, `ShaderContextValue`, `useShaderContext`, `ShaderMonitor`, `ShaderMonitorProps`, `AnimatableSignal` (`@mattermix/shaders-react`).
 
   Old names (`MatterScheduler`, `MatterRenderer`, `MatterBackend`, `MatterScene`, `MatterSceneProps`, `MatterContext`, `MatterContextValue`, `useMatterContext`, `MatterMonitor`, `MatterMonitorProps`, `MatterSignal`, `MatterBackend`) are deprecated with `@deprecated` JSDoc and continue to work. They will be removed no earlier than 0.5.0.
 
@@ -99,7 +99,7 @@
   **New: `useOverlayPass(transform, deps)` hook**
 
   ```ts
-  import { useAnimatableUniform, useOverlayPass } from '@lovo/matter-react';
+  import { useAnimatableUniform, useOverlayPass } from '@mattermix/shaders-react';
 
   export function MyOverlay({ intensity }) {
     const intensityU = useAnimatableUniform(intensity);
@@ -113,7 +113,7 @@
 
   Mount the component inside any `<MatterScene>` and it composes onto the pipeline; multiple overlays chain in mount order. Uniforms captured inside `transform` update in place and don't need to be in `deps` — only put structural changes (mode toggles, etc.) in `deps` so the transform gets re-registered.
 
-  **Registry-side ships (delivered via `@lovo/matter-cli` copy-paste):**
+  **Registry-side ships (delivered via `@mattermix/shaders-cli` copy-paste):**
 
   - `<Grain>` — additive or subtractive grain overlay.
   - `<Vignette>` — radial edge darkening, aspect-corrected so the mask is a circle on widescreen.
@@ -122,13 +122,13 @@
 ### Patch Changes
 
 - Updated dependencies [3856367]
-  - @lovo/matter@0.3.0
+  - @mattermix/shaders@0.3.0
 
 ## 0.2.0
 
 ### Minor Changes
 
-- No API changes. Bumped alongside `@lovo/matter` 0.2.0 because the three packages ship as a fixed version group. See [`@lovo/matter`'s 0.2.0 changelog](../matter/CHANGELOG.md#020) for the engine-level breaking change.
+- No API changes. Bumped alongside `@mattermix/shaders` 0.2.0 because the three packages ship as a fixed version group. See [`@mattermix/shaders`'s 0.2.0 changelog](../matter/CHANGELOG.md#020) for the engine-level breaking change.
 
 ## 0.1.0
 
@@ -136,11 +136,11 @@
 
 - Initial public release of Matter — React shader components on WebGPU + Three.js TSL.
 
-  **`@lovo/matter`** — Framework-agnostic engine: TSL primitives (`fbm`, `voronoi`, `colorRamp`, `quantize`, …), WebGPU renderer wrapper, visibility/intersection-aware scheduler.
+  **`@mattermix/shaders`** — Framework-agnostic engine: TSL primitives (`fbm`, `voronoi`, `colorRamp`, `quantize`, …), WebGPU renderer wrapper, visibility/intersection-aware scheduler.
 
-  **`@lovo/matter-react`** — React binding: `<MatterScene>` (shared canvas), `useShaderMaterial` (r3f-compatible), input hooks (`useCursor`, `useScroll`).
+  **`@mattermix/shaders-react`** — React binding: `<MatterScene>` (shared canvas), `useShaderMaterial` (r3f-compatible), input hooks (`useCursor`, `useScroll`).
 
-  **`@lovo/matter-cli`** — shadcn-style copy-paste CLI: `init`, `list`, `add`, `update`. Default registry tracks the CLI's published version tag (`v0.1.0`) so component code is stable per release.
+  **`@mattermix/shaders-cli`** — shadcn-style copy-paste CLI: `init`, `list`, `add`, `update`. Default registry tracks the CLI's published version tag (`v0.1.0`) so component code is stable per release.
 
   **v1 components** (via `matter-cli add <name>`): `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, `waves`. Each component is yours to edit after copy-in.
 

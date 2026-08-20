@@ -1,5 +1,5 @@
-import type * as MatterModule from '@lovo/matter';
-import { createRenderer } from '@lovo/matter';
+import type * as MatterModule from '@mattermix/shaders';
+import { createRenderer } from '@mattermix/shaders';
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -7,7 +7,7 @@ import { MatterError } from '../../errors/matter-error.js';
 import { PosterContext } from '../shader-poster/poster-context.js';
 import { ShaderScene } from './shader-scene.js';
 
-vi.mock('@lovo/matter', async (importOriginal) => {
+vi.mock('@mattermix/shaders', async (importOriginal) => {
   const actual = await importOriginal<typeof MatterModule>();
 
   return {

@@ -1,5 +1,5 @@
 {
-  "extends": "@matter/tsconfig/react-library.json",
+  "extends": "@shaders/tsconfig/react-library.json",
   "compilerOptions": {
     "noEmit": true,
     "moduleResolution": "Bundler",

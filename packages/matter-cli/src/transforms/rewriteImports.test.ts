@@ -26,16 +26,16 @@ describe('rewriteImports', () => {
 
   it('leaves unrelated imports alone', () => {
     const src =
-      `import { LinearGradient } from '@lovo/matter-react'\n` +
+      `import { LinearGradient } from '@mattermix/shaders-react'\n` +
       `import { foo } from '@matter-internal/lib'\n`;
     const out = rewriteImports(src, { '@matter-internal/': '@/lib/matter/' });
 
-    expect(out).toContain(`import { LinearGradient } from '@lovo/matter-react'`);
+    expect(out).toContain(`import { LinearGradient } from '@mattermix/shaders-react'`);
     expect(out).toContain(`import { foo } from '@/lib/matter/lib'`);
   });
 
   it('is a no-op when no alias matches', () => {
-    const src = `import { LinearGradient } from '@lovo/matter-react'\n`;
+    const src = `import { LinearGradient } from '@mattermix/shaders-react'\n`;
     const out = rewriteImports(src, { '@/': 'src/' });
 
     expect(out).toBe(src);

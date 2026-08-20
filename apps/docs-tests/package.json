@@ -1,5 +1,5 @@
 {
-  "name": "@matter/docs-tests",
+  "name": "@shaders/docs-tests",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.10.0",
-    "@matter/tsconfig": "workspace:*",
+    "@shaders/tsconfig": "workspace:*",
     "@playwright/test": "^1.48.0",
     "@types/node": "^22",
     "typescript": "^5"

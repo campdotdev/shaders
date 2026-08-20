@@ -21,7 +21,7 @@ import {
   useResize,
   useShaderContext,
   useStaticSceneHint,
-} from '@lovo/matter-react';
+} from '@mattermix/shaders-react';
 import {
   abs,
   atan2,

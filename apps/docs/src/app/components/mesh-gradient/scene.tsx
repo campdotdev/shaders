@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { MeshGradient, type Palette } from '@matter/registry/mesh-gradient';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { MeshGradient, type Palette } from '@shaders/registry/mesh-gradient';
 
 import { INITIAL, type Params } from './params';
 

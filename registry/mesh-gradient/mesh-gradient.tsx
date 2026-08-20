@@ -5,8 +5,8 @@
 // anchors four colors near the canvas corners, melts the boundaries with a
 // noise-driven warp, and cross-fades the whole thing between two palettes.
 // Render it inside a <ShaderScene>.
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-import type { AnimatableProp } from '@lovo/matter-react';
+import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
+import type { AnimatableProp } from '@mattermix/shaders-react';
 
 import type { Palette } from '../utils/color';
 import { MeshGradientShader } from './shader';

@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { Aurora, type ColorStop } from '@matter/registry/aurora';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { Aurora, type ColorStop } from '@shaders/registry/aurora';
 
 import { type AuroraParams, INITIAL } from './params';
 

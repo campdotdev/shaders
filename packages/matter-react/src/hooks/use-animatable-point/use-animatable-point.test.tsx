@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { FrameScheduler } from '@lovo/matter';
+import { FrameScheduler } from '@mattermix/shaders';
 import { renderHook } from '@testing-library/react';
 import type { Vector2 } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';

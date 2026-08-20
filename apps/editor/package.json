@@ -1,5 +1,5 @@
 {
-  "name": "@matter/editor",
+  "name": "@shaders/editor",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@lovo/matter": "workspace:*",
-    "@lovo/matter-react": "workspace:*",
+    "@mattermix/shaders": "workspace:*",
+    "@mattermix/shaders-react": "workspace:*",
     "@xyflow/react": "^12.11.2",
     "next": "^15.5.18",
     "react": "^19.0.0",
@@ -23,7 +23,7 @@
     "three": "^0.170.0"
   },
   "devDependencies": {
-    "@matter/tsconfig": "workspace:*",
+    "@shaders/tsconfig": "workspace:*",
     "@types/node": "^22.7.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",

@@ -11,8 +11,8 @@ import {
 } from './matterConfig.js';
 
 describe('DEFAULT_MATTER_CONFIG.registryUrl', () => {
-  it('points at the lovo-hq/matter org (NOT lovo/matter — that is a 404)', () => {
-    expect(DEFAULT_MATTER_CONFIG.registryUrl).toContain('/lovo-hq/matter/');
+  it('points at the mattermix/shaders org (NOT lovo/matter — that is a 404)', () => {
+    expect(DEFAULT_MATTER_CONFIG.registryUrl).toContain('/mattermix/shaders/');
     expect(DEFAULT_MATTER_CONFIG.registryUrl).not.toMatch(/\/lovo\/matter\//);
   });
 

@@ -1,6 +1,6 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
-  "extends": "@matter/tsconfig/react-library.json",
+  "extends": "@shaders/tsconfig/react-library.json",
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "../../dist/harness",

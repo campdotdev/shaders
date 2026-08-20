@@ -10,7 +10,7 @@
 // instance — collapsed into one effect, each cycle cleans up after itself.
 import { useEffect, useState } from 'react';
 
-import { CursorInput, type CursorInputOptions, type Vector2 } from '@lovo/matter';
+import { CursorInput, type CursorInputOptions, type Vector2 } from '@mattermix/shaders';
 
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 

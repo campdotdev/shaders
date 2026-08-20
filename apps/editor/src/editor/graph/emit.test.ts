@@ -142,7 +142,7 @@ describe('emitComponentSource on the starter graph', () => {
   it('animates speed through useAnimatableSpeed, outside the effect deps', () => {
     // The generated component is a fixed graph, so hooks are callable — one
     // per speed dial, placed before the effect.
-    expect(source).toContain("from '@lovo/matter-react'");
+    expect(source).toContain("from '@mattermix/shaders-react'");
     expect(source).toContain('const noiseSpeedPhase = useAnimatableSpeed(noiseSpeed);');
     // The phase uniform absorbs speed changes, so the speed prop must NOT
     // rebuild the material: it stays out of the deps array.
@@ -163,7 +163,7 @@ describe('emitComponentSource on the starter graph', () => {
     expect(source).toContain("{ position: 0.5, color: vec3(...parseColorString('#7C3AED')) }");
     expect(source).toContain("{ position: 1, color: vec3(...parseColorString('#F472B6')) }");
     expect(source).not.toContain('stops?:');
-    expect(source).toContain("from '@lovo/matter/color'");
+    expect(source).toContain("from '@mattermix/shaders/color'");
   });
 
   it('routes the ramp color into the material', () => {

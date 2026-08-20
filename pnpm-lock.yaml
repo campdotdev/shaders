@@ -101,13 +101,13 @@ importers:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@lovo/matter':
+      '@mattermix/shaders':
         specifier: workspace:*
         version: link:../../packages/matter
-      '@lovo/matter-react':
+      '@mattermix/shaders-react':
         specifier: workspace:*
         version: link:../../packages/matter-react
-      '@matter/registry':
+      '@shaders/registry':
         specifier: workspace:*
         version: link:../../registry
       '@xyflow/react':
@@ -168,7 +168,7 @@ importers:
         specifier: ^4.4.3
         version: 4.4.3
     devDependencies:
-      '@matter/tsconfig':
+      '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
       '@tweakpane/core':
@@ -207,12 +207,12 @@ importers:
       '@axe-core/playwright':
         specifier: ^4.10.0
         version: 4.11.3(playwright-core@1.59.1)
-      '@matter/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/tsconfig
       '@playwright/test':
         specifier: ^1.48.0
         version: 1.59.1
+      '@shaders/tsconfig':
+        specifier: workspace:*
+        version: link:../../tooling/tsconfig
       '@types/node':
         specifier: ^22
         version: 22.19.17
@@ -225,10 +225,10 @@ importers:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@lovo/matter':
+      '@mattermix/shaders':
         specifier: workspace:*
         version: link:../../packages/matter
-      '@lovo/matter-react':
+      '@mattermix/shaders-react':
         specifier: workspace:*
         version: link:../../packages/matter-react
       '@xyflow/react':
@@ -247,7 +247,7 @@ importers:
         specifier: ^0.170.0
         version: 0.170.0
     devDependencies:
-      '@matter/tsconfig':
+      '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
       '@types/node':
@@ -274,7 +274,7 @@ importers:
 
   packages/matter:
     devDependencies:
-      '@matter/tsconfig':
+      '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
       '@types/three':
@@ -308,16 +308,16 @@ importers:
         specifier: ^0.27.0
         version: 0.27.7
     devDependencies:
-      '@lovo/matter':
+      '@mattermix/shaders':
         specifier: workspace:*
         version: link:../matter
-      '@lovo/matter-react':
+      '@mattermix/shaders-react':
         specifier: workspace:*
         version: link:../matter-react
-      '@matter/registry':
+      '@shaders/registry':
         specifier: workspace:*
         version: link:../../registry
-      '@matter/tsconfig':
+      '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
       '@types/node':
@@ -353,10 +353,10 @@ importers:
 
   packages/matter-react:
     devDependencies:
-      '@lovo/matter':
+      '@mattermix/shaders':
         specifier: workspace:*
         version: link:../matter
-      '@matter/tsconfig':
+      '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
       '@testing-library/dom':
@@ -401,10 +401,10 @@ importers:
 
   registry:
     dependencies:
-      '@lovo/matter':
+      '@mattermix/shaders':
         specifier: workspace:*
         version: link:../packages/matter
-      '@lovo/matter-react':
+      '@mattermix/shaders-react':
         specifier: workspace:*
         version: link:../packages/matter-react
       react:
@@ -414,7 +414,7 @@ importers:
         specifier: ^0.170.0
         version: 0.170.0
     devDependencies:
-      '@matter/tsconfig':
+      '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../tooling/tsconfig
       '@types/react':

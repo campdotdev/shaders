@@ -15,7 +15,7 @@ WIDTH=1080
 HEIGHT=720
 
 if [ ! -f packages/matter-cli/dist/index.js ]; then
-  echo "error: CLI not built. Run: pnpm --filter @lovo/matter-cli build" >&2
+  echo "error: CLI not built. Run: pnpm --filter @mattermix/shaders-cli build" >&2
   exit 1
 fi
 

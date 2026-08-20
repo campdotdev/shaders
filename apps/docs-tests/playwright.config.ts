@@ -24,7 +24,7 @@ export default defineConfig({
       // than running the dev server, so without the flag those specs 404. The
       // deploy build omits it, which is the point — see next.config.ts.
       command:
-        'INCLUDE_DEV_ROUTES=1 pnpm turbo run build --filter=@matter/docs --force && pnpm --filter @matter/docs preview',
+        'INCLUDE_DEV_ROUTES=1 pnpm turbo run build --filter=@shaders/docs --force && pnpm --filter @shaders/docs preview',
       url: 'http://localhost:3000',
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,
@@ -34,7 +34,7 @@ export default defineConfig({
       // build as the docs entry above, and the same dev-routes flag, which is
       // what puts the parity routes in the bundle these specs load.
       command:
-        'INCLUDE_DEV_ROUTES=1 pnpm turbo run build --filter=@matter/editor --force && pnpm --filter @matter/editor preview',
+        'INCLUDE_DEV_ROUTES=1 pnpm turbo run build --filter=@shaders/editor --force && pnpm --filter @shaders/editor preview',
       url: 'http://localhost:3010',
       reuseExistingServer: !process.env.CI,
       timeout: 180_000,

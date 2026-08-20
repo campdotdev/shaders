@@ -6,7 +6,7 @@
 // noise fields — one decorrelated layer of rays per entry in `colors`. The
 // rays emit light over a transparent background — stack them above a dark
 // layer inside a <ShaderScene>.
-import type { AnimatableProp } from '@lovo/matter-react';
+import type { AnimatableProp } from '@mattermix/shaders-react';
 
 import { GodRaysShader } from './shader';
 

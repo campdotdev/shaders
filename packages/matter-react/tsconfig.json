@@ -1,5 +1,5 @@
 {
-  "extends": "@matter/tsconfig/react-library.json",
+  "extends": "@shaders/tsconfig/react-library.json",
   "compilerOptions": {
     "rootDir": "./src",
     "outDir": "dist"

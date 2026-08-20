@@ -1,4 +1,4 @@
-// @lovo/matter-react/gamut — display-gamut detection, SSR-safe.
+// @mattermix/shaders-react/gamut — display-gamut detection, SSR-safe.
 //
 // Deliberately shipped as its own entry point, for the same reason as
 // ./poster: the main barrel re-exports ShaderScene, which imports

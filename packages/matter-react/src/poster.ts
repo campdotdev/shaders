@@ -1,4 +1,4 @@
-// @lovo/matter-react/poster — SSR-safe poster boundary.
+// @mattermix/shaders-react/poster — SSR-safe poster boundary.
 //
 // Deliberately shipped as its own entry point: the main barrel imports
 // three/webgpu, which references `self` at module load and crashes SSR. This

@@ -1,4 +1,4 @@
-import type { DitherPattern } from '@matter/registry/dither';
+import type { DitherPattern } from '@shaders/registry/dither';
 
 export interface DitherParams {
   pixelSize: number;

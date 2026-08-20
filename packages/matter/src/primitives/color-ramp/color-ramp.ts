@@ -7,7 +7,7 @@ import { colorSpaces } from '../color-space/registry.js';
 import type { ColorSpace, HueInterpolation } from '../color-space/types.js';
 
 /**
- * Canonical TSL-node *input* shape used throughout `@lovo/matter`.
+ * Canonical TSL-node *input* shape used throughout `@mattermix/shaders`.
  *
  * Stays as the broad `Node | ShaderNodeObject<Node>` union so callers can
  * pass uniform-typed nodes (e.g. `ShaderNodeObject<UniformNode<Vector2>>`)

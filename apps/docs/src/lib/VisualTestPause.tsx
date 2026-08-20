@@ -2,9 +2,9 @@
 
 import { useEffect } from 'react';
 
-import { resetRendererClock, setReducedMotionPolicy } from '@lovo/matter';
-import type { ReducedMotionPolicy, SchedulerTick } from '@lovo/matter';
-import { useShaderContext } from '@lovo/matter-react';
+import { resetRendererClock, setReducedMotionPolicy } from '@mattermix/shaders';
+import type { ReducedMotionPolicy, SchedulerTick } from '@mattermix/shaders';
+import { useShaderContext } from '@mattermix/shaders-react';
 
 const TARGET_FRAME = 2;
 

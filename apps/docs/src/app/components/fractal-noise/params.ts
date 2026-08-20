@@ -1,6 +1,6 @@
-import type { ColorSpace, HueInterpolation } from '@lovo/matter';
-import type { FractalNoiseStyle } from '@matter/registry/fractal-noise';
-import { STYLE_DIAL_DEFAULTS } from '@matter/registry/fractal-noise/style-dial-defaults';
+import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
+import type { FractalNoiseStyle } from '@shaders/registry/fractal-noise';
+import { STYLE_DIAL_DEFAULTS } from '@shaders/registry/fractal-noise/style-dial-defaults';
 
 import { paletteOklch } from '../../../lib/palette';
 

@@ -1,5 +1,5 @@
 {
-  "extends": "@matter/tsconfig/library.json",
+  "extends": "@shaders/tsconfig/library.json",
   "compilerOptions": {
     "noEmit": true,
     "module": "ESNext",

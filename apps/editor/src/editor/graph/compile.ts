@@ -17,8 +17,8 @@ import {
   mixColor,
   simplexNoise,
   voronoiCells,
-} from '@lovo/matter';
-import { parseColorString } from '@lovo/matter/color';
+} from '@mattermix/shaders';
+import { parseColorString } from '@mattermix/shaders/color';
 import {
   add,
   clamp,

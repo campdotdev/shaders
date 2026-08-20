@@ -1,4 +1,4 @@
-import type { GrainBlend } from '@matter/registry/grain';
+import type { GrainBlend } from '@shaders/registry/grain';
 
 export interface GrainParams {
   intensity: number;

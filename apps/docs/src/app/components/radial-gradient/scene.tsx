@@ -2,8 +2,8 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@lovo/matter-react';
-import { RadialGradient } from '@matter/registry/radial-gradient';
+import { ShaderScene } from '@mattermix/shaders-react';
+import { RadialGradient } from '@shaders/registry/radial-gradient';
 
 import { INITIAL, type Params } from './params';
 

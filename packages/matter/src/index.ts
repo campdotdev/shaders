@@ -1,4 +1,4 @@
-// @lovo/matter — engine package public API.
+// @mattermix/shaders — engine package public API.
 
 export { createRenderer } from './runtime/create-renderer/create-renderer.js';
 export type {

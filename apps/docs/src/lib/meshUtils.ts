@@ -1,4 +1,4 @@
-import type { ShaderContextValue } from '@lovo/matter-react';
+import type { ShaderContextValue } from '@mattermix/shaders-react';
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 import type { Node } from 'three/webgpu';

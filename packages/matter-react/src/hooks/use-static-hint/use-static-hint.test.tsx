@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-import { FrameScheduler } from '@lovo/matter';
+import { FrameScheduler } from '@mattermix/shaders';
 import { renderHook } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 

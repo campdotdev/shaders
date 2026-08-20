@@ -1,4 +1,4 @@
-// @lovo/matter/color — the CPU-only half of the color system, published as its
+// @mattermix/shaders/color — the CPU-only half of the color system, published as its
 // own entry point. Everything here is plain scalar arithmetic with no path to
 // three, which makes this module safe to import during a server render; the
 // root entry is not, because its barrel reaches the renderer and three/webgpu

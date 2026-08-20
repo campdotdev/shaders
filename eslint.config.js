@@ -172,8 +172,8 @@ export default defineConfig([
     // reaches three/webgpu — the engine's through the renderer, the binding's
     // through ShaderScene. three/webgpu reads `self` at module load, so the
     // wrong import crashes at render time, which is far too late to notice.
-    // Each has a three-free subpath carrying the same code: @lovo/matter/color
-    // and @lovo/matter-react/gamut.
+    // Each has a three-free subpath carrying the same code: @mattermix/shaders/color
+    // and @mattermix/shaders-react/gamut.
     //
     // Banning the names rather than the specifiers is deliberate: it lets /dev
     // playgrounds keep importing colorRamp, ShaderScene and friends from the
@@ -186,7 +186,7 @@ export default defineConfig([
         {
           paths: [
             {
-              name: '@lovo/matter',
+              name: '@mattermix/shaders',
               importNames: [
                 'linearChannelToSrgb',
                 'linearSrgbToLinearDisplayP3',
@@ -200,14 +200,14 @@ export default defineConfig([
               ],
               allowTypeImports: true,
               message:
-                "Import CPU color math from '@lovo/matter/color'. The root entry pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
+                "Import CPU color math from '@mattermix/shaders/color'. The root entry pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
             },
             {
-              name: '@lovo/matter-react',
+              name: '@mattermix/shaders-react',
               importNames: ['useDisplayGamut'],
               allowTypeImports: true,
               message:
-                "Import useDisplayGamut from '@lovo/matter-react/gamut'. The root entry re-exports ShaderScene and so pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
+                "Import useDisplayGamut from '@mattermix/shaders-react/gamut'. The root entry re-exports ShaderScene and so pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
             },
           ],
         },
