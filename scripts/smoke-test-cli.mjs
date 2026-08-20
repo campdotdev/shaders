@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url));
 const repoRoot = resolve(__dirname, '..');
-const cliDir = join(repoRoot, 'packages/matter-cli');
+const cliDir = join(repoRoot, 'packages/shaders-cli');
 const registryFileUrl = `file://${join(repoRoot, 'registry')}/`;
 
 function step(label) {
@@ -25,7 +25,7 @@ function runQuiet(cmd, opts = {}) {
   }).toString();
 }
 
-const smokeDir = mkdtempSync(join(tmpdir(), 'matter-cli-smoke-'));
+const smokeDir = mkdtempSync(join(tmpdir(), 'shaders-cli-smoke-'));
 let exitCode = 0;
 
 try {
@@ -44,29 +44,29 @@ try {
   step(`Initialize a fresh project in ${smokeDir}`);
   writeFileSync(
     join(smokeDir, 'package.json'),
-    JSON.stringify({ name: 'matter-cli-smoke', version: '0.0.0', private: true }, null, 2) + '\n',
+    JSON.stringify({ name: 'shaders-cli-smoke', version: '0.0.0', private: true }, null, 2) + '\n',
   );
 
   step(`Install the packed CLI`);
   run(`npm install --no-save "${tarball}"`, { cwd: smokeDir });
 
-  step(`Run \`matter-cli init\``);
+  step(`Run \`shaders-cli init\``);
   run(`node node_modules/@mattermix/shaders-cli/dist/index.js init`, {
     cwd: smokeDir,
   });
 
-  step(`Point matter.config.json at the local registry (no GitHub remote yet)`);
-  const cfgPath = join(smokeDir, 'matter.config.json');
+  step(`Point shaders.config.json at the local registry (no GitHub remote yet)`);
+  const cfgPath = join(smokeDir, 'shaders.config.json');
   const cfg = JSON.parse(readFileSync(cfgPath, 'utf-8'));
   cfg.registryUrl = registryFileUrl;
   writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
 
-  step(`Run \`matter-cli list\``);
+  step(`Run \`shaders-cli list\``);
   run(`node node_modules/@mattermix/shaders-cli/dist/index.js list`, {
     cwd: smokeDir,
   });
 
-  step(`Run \`matter-cli add linear-gradient\``);
+  step(`Run \`shaders-cli add linear-gradient\``);
   run(`node node_modules/@mattermix/shaders-cli/dist/index.js add linear-gradient`, {
     cwd: smokeDir,
   });
@@ -85,7 +85,7 @@ try {
   }
   console.log('  ✓ files are byte-identical');
 
-  step(`Edit the copied component and run \`matter-cli update --force\``);
+  step(`Edit the copied component and run \`shaders-cli update --force\``);
   writeFileSync(
     join(smokeDir, 'src/components/matter/linear-gradient/linear-gradient.tsx'),
     'export const stale = true\n',

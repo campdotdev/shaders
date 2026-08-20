@@ -1,6 +1,6 @@
 // Generates a 64x64 blue-noise threshold tile with the void-and-cluster
 // method (Ulichney 1993) and writes it as base64 into
-// packages/matter/src/primitives/dither-pattern/blue-noise-tile.ts.
+// packages/shaders/src/primitives/dither-pattern/blue-noise-tile.ts.
 // Deterministic (seeded PRNG), so re-running reproduces the same tile.
 import { writeFileSync } from 'node:fs';
 
@@ -147,7 +147,7 @@ export const BLUE_NOISE_TILE: Uint8Array<ArrayBuffer> = Uint8Array.from(
 `;
 
 writeFileSync(
-  new URL('../packages/matter/src/primitives/dither-pattern/blue-noise-tile.ts', import.meta.url),
+  new URL('../packages/shaders/src/primitives/dither-pattern/blue-noise-tile.ts', import.meta.url),
   output,
 );
 console.log('blue-noise-tile.ts written');

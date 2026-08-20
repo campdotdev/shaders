@@ -13,7 +13,7 @@ import { waitForShader } from './helpers';
  * the P3-vs-sRGB difference we'd want to measure. So output-widening is validated
  * by eye on a P3 display; the deterministic automated proof that wide-gamut colors
  * decode to extended linear-sRGB lives in the `parseColorString` unit tests
- * (`packages/matter`). This spec guards that the P3 output path itself stays alive
+ * (`packages/shaders`). This spec guards that the P3 output path itself stays alive
  * (the manual context.configure into Display P3 doesn't throw or blank the canvas).
  */
 test('gamut probe — sRGB and P3 output paths both render without error', async ({ page }) => {

@@ -2,7 +2,7 @@
 
 React shader components powered by WebGPU and Three.js TSL.
 
-> **Status:** v0.1.0 shipped to npm. `npm install -D @mattermix/shaders-cli && npx matter-cli init && npx matter-cli add linear-gradient` to scaffold your first component.
+> **Status:** v0.1.0 shipped to npm. `npm install -D @mattermix/shaders-cli && npx shaders-cli init && npx shaders-cli add linear-gradient` to scaffold your first component.
 
 ## What is Matter?
 
@@ -16,9 +16,9 @@ apps/
 └── playground/     # @shaders/playground — Vite app with M1 manual harnesses
 
 packages/
-├── matter/         # @mattermix/shaders — engine: TSL primitives, renderer, scheduler
-├── matter-react/   # @mattermix/shaders-react — React binding
-└── matter-cli/     # @mattermix/shaders-cli — copy-paste CLI
+├── shaders/         # @mattermix/shaders — engine: TSL primitives, renderer, scheduler
+├── shaders-react/   # @mattermix/shaders-react — React binding
+└── shaders-cli/     # @mattermix/shaders-cli — copy-paste CLI
 
 registry/           # @shaders/registry — Tier 1 component source files (CLI consumes)
 

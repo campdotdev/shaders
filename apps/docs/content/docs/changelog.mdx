@@ -13,7 +13,7 @@ Matter ships as three coordinated npm packages: `@mattermix/shaders` (engine), `
 
 **Breaking change — `Waves` is now `WaveLines`.**
 
-The old name read as water. The component draws glowing lines, so it's renamed to match: add it with `matter-cli add wave-lines`, import `WaveLines`, and pass `lines` instead of `layers` (the per-line type is `WaveLine`, formerly `WaveLayer`). Nothing else moved: same props, same rendering, no visual change.
+The old name read as water. The component draws glowing lines, so it's renamed to match: add it with `shaders-cli add wave-lines`, import `WaveLines`, and pass `lines` instead of `layers` (the per-line type is `WaveLine`, formerly `WaveLayer`). Nothing else moved: same props, same rendering, no visual change.
 
 Components ship by copy-paste, so installed copies keep working under the old name; re-add `wave-lines` through the CLI to pick up the new one.
 
@@ -93,7 +93,7 @@ shadcn-style copy-paste CLI: `init`, `list`, `add`, `update`. The default regist
 
 ### v1 components
 
-Available via `matter-cli add <name>`: `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `waves`. Each lands in your project as a regular `.tsx` file — you own and edit it from that point.
+Available via `shaders-cli add <name>`: `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `waves`. Each lands in your project as a regular `.tsx` file — you own and edit it from that point.
 
 ### Requirements
 
@@ -102,5 +102,5 @@ Available via `matter-cli add <name>`: `linear-gradient`, `mesh-gradient`, `auro
 - React ^19, Three.js ^0.170.
 
 <Callout>
-  Detailed per-package changelogs live in the repo: [`packages/matter/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/matter/CHANGELOG.md), [`packages/matter-react/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/matter-react/CHANGELOG.md), [`packages/matter-cli/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/matter-cli/CHANGELOG.md).
+  Detailed per-package changelogs live in the repo: [`packages/shaders/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders/CHANGELOG.md), [`packages/shaders-react/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders-react/CHANGELOG.md), [`packages/shaders-cli/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders-cli/CHANGELOG.md).
 </Callout>

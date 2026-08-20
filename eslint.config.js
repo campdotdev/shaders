@@ -26,7 +26,7 @@ export default defineConfig([
     'apps/editor/out/**',
     'apps/editor/.next/**',
     'apps/editor/next-env.d.ts',
-    'packages/matter-cli/src/test-fixtures/**',
+    'packages/shaders-cli/src/test-fixtures/**',
   ]),
   {
     files: ['**/*.{js,mjs,cjs,jsx}'],
@@ -57,8 +57,8 @@ export default defineConfig([
       parserOptions: {
         projectService: {
           allowDefaultProject: [
-            'packages/matter/*.config.{ts,mts,cts}',
-            'packages/matter-react/*.config.{ts,mts,cts}',
+            'packages/shaders/*.config.{ts,mts,cts}',
+            'packages/shaders-react/*.config.{ts,mts,cts}',
             'apps/docs/vitest.config.ts',
             'apps/editor/vitest.config.ts',
             'packages/*/posters/*.{ts,tsx}',

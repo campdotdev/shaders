@@ -1,0 +1,73 @@
+{
+  "name": "@mattermix/shaders",
+  "version": "3.9.0",
+  "description": "Engine for Matter — TSL primitives, renderer, scheduler. Framework-agnostic.",
+  "keywords": [
+    "background",
+    "components",
+    "gradient",
+    "react",
+    "shader",
+    "shaders",
+    "three.js",
+    "tsl",
+    "webgpu"
+  ],
+  "homepage": "https://github.com/mattermix/shaders#readme",
+  "bugs": {
+    "url": "https://github.com/mattermix/shaders/issues"
+  },
+  "license": "MIT",
+  "author": "mattermix",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mattermix/shaders.git",
+    "directory": "packages/shaders"
+  },
+  "files": [
+    "dist",
+    "CHANGELOG.md"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./color": {
+      "types": "./dist/color.d.ts",
+      "import": "./dist/color.js",
+      "require": "./dist/color.cjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist .turbo *.tsbuildinfo"
+  },
+  "devDependencies": {
+    "@shaders/tsconfig": "workspace:*",
+    "@types/three": "^0.170.0",
+    "happy-dom": "^15.0.0",
+    "three": "^0.170.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vite": "catalog:",
+    "vitest": "catalog:"
+  },
+  "peerDependencies": {
+    "three": "^0.170.0"
+  }
+}

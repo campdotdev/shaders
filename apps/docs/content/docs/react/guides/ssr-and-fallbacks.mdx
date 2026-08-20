@@ -126,7 +126,7 @@ To show something in its place, wrap it in `<ShaderPoster>`: the poster stays up
 </ShaderScene>
 ```
 
-`onError` receives a `MatterError` with `code: 'renderer-init'`; the original thrown error is on `.cause`. This is separate from `<FallbackBoundary>`, which covers SSR and hydration — not renderer failure.
+`onError` receives a `ShadersError` with `code: 'renderer-init'`; the original thrown error is on `.cause`. This is separate from `<FallbackBoundary>`, which covers SSR and hydration — not renderer failure.
 
 ## What gets server-rendered
 

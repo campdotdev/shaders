@@ -8,13 +8,13 @@ set -euo pipefail
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$REPO_ROOT"
 
-CLI="node packages/matter-cli/dist/index.js poster"
+CLI="node packages/shaders-cli/dist/index.js poster"
 COMPONENTS_DIR="apps/docs/src/app/components"
 OUT_DIR="apps/docs/public/posters"
 WIDTH=1080
 HEIGHT=720
 
-if [ ! -f packages/matter-cli/dist/index.js ]; then
+if [ ! -f packages/shaders-cli/dist/index.js ]; then
   echo "error: CLI not built. Run: pnpm --filter @mattermix/shaders-cli build" >&2
   exit 1
 fi

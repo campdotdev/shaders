@@ -33,10 +33,10 @@ Requirements:
 
 <Steps>
   <li>
-    **Initialize the project** to write a `matter.config.json` at your repo root:
+    **Initialize the project** to write a `shaders.config.json` at your repo root:
 
     ```bash
-    npx matter-cli init
+    npx shaders-cli init
     ```
 
     This creates a config with sensible defaults — components land in `src/components/matter/`, the registry tracks the CLI's published version tag, and TSX is enabled.
@@ -45,14 +45,14 @@ Requirements:
     **List available components:**
 
     ```bash
-    npx matter-cli list
+    npx shaders-cli list
     ```
   </li>
   <li>
     **Copy your first component into your project:**
 
     ```bash
-    npx matter-cli add linear-gradient
+    npx shaders-cli add linear-gradient
     ```
 
     The component lands in `src/components/matter/linear-gradient.tsx`. From that point on, the file is yours — edit it however you want.
