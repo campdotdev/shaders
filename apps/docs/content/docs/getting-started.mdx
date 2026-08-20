@@ -1,16 +1,16 @@
 ---
 title: Get Started
-description: Install Matter, copy your first component, and render it inside ShaderScene.
+description: Install Shaders, copy your first component, and render it inside ShaderScene.
 section: overview
 order: 10
 ---
 
 # Get Started
 
-Matter is a React component library for WebGPU shaders built on Three.js TSL. Components are delivered shadcn-style — the CLI copies polished `.tsx` files into your project, where you own and edit them.
+Shaders is a React component library for WebGPU shaders built on Three.js TSL. Components are delivered shadcn-style — the CLI copies polished `.tsx` files into your project, where you own and edit them.
 
 <Callout>
-  **WebGPU only.** Matter requires a WebGPU-capable browser (recent Chromium, Safari Technology Preview, or Firefox Nightly with the flag). Plan a fallback for users without WebGPU — see [SSR and fallbacks](/react/guides/ssr-and-fallbacks).
+  **WebGPU only.** Shaders requires a WebGPU-capable browser (recent Chromium, Safari Technology Preview, or Firefox Nightly with the flag). Plan a fallback for users without WebGPU — see [SSR and fallbacks](/react/guides/ssr-and-fallbacks).
 </Callout>
 
 ## Install
@@ -27,7 +27,7 @@ Requirements:
 - React 19
 - Three.js `^0.170`
 - Node 22+ (for the CLI)
-- Next.js 15+ if you're using one (Matter doesn't require Next, but the docs and recipes assume it)
+- Next.js 15+ if you're using one (Shaders doesn't require Next, but the docs and recipes assume it)
 
 ## Initialize
 
@@ -39,7 +39,7 @@ Requirements:
     npx shaders-cli init
     ```
 
-    This creates a config with sensible defaults — components land in `src/components/matter/`, the registry tracks the CLI's published version tag, and TSX is enabled.
+    This creates a config with sensible defaults — components land in `src/components/shaders/`, the registry tracks the CLI's published version tag, and TSX is enabled.
   </li>
   <li>
     **List available components:**
@@ -55,17 +55,17 @@ Requirements:
     npx shaders-cli add linear-gradient
     ```
 
-    The component lands in `src/components/matter/linear-gradient.tsx`. From that point on, the file is yours — edit it however you want.
+    The component lands in `src/components/shaders/linear-gradient.tsx`. From that point on, the file is yours — edit it however you want.
   </li>
 </Steps>
 
 ## Render it
 
-Every Matter component is bare — it needs a `<ShaderScene>` parent to provide the WebGPU canvas. The simplest valid usage:
+Every Shaders component is bare — it needs a `<ShaderScene>` parent to provide the WebGPU canvas. The simplest valid usage:
 
 ```tsx
 import { ShaderScene } from '@mattermix/shaders-react'
-import { LinearGradient } from '@/components/matter/linear-gradient'
+import { LinearGradient } from '@/components/shaders/linear-gradient'
 
 export function Hero() {
   return (
@@ -76,11 +76,11 @@ export function Hero() {
 }
 ```
 
-`<ShaderScene>` owns the canvas and the WebGPU renderer. Multiple Matter components can share the same scene — just stack them as children. See [Shared scenes](/guides/shared-scenes).
+`<ShaderScene>` owns the canvas and the WebGPU renderer. Multiple Shaders components can share the same scene — just stack them as children. See [Shared scenes](/guides/shared-scenes).
 
 ## What's next
 
 - [Animation](/guides/animation) — signal-shaped props for cursor, scroll, and any MotionValue-compatible library.
-- [Performance](/guides/perf) — what Matter does for you automatically, and what you can tune.
+- [Performance](/guides/perf) — what Shaders does for you automatically, and what you can tune.
 - [The CLI](/cli) — `add`, `update`, refresh workflows, and registry refs.
-- [Three / r3f](/react/guides/three-r3f) — using Matter inside a `<Canvas>` you already own.
+- [Three / r3f](/react/guides/three-r3f) — using Shaders inside a `<Canvas>` you already own.

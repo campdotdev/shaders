@@ -1,7 +1,7 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://github.com/mattermix/shaders/blob/main/registry/registry.schema.json",
-  "title": "Matter registry index",
+  "title": "Shaders registry index",
   "description": "The index @mattermix/shaders-cli reads to copy Tier 1 components into a user's project.",
   "type": "object",
   "required": ["version", "components"],
@@ -14,7 +14,7 @@
     },
     "components": {
       "type": "object",
-      "description": "Component slug to entry. The slug is what a user passes to `matter add`.",
+      "description": "Component slug to entry. The slug is what a user passes to `shaders-cli add`.",
       "additionalProperties": { "$ref": "#/$defs/entry" }
     }
   },
@@ -41,11 +41,11 @@
         },
         "description": {
           "type": "string",
-          "description": "One line, shown by `matter list`."
+          "description": "One line, shown by `shaders-cli list`."
         },
         "dependencies": {
           "type": "array",
-          "description": "npm packages the component needs. Printed as an install hint after `matter add`.",
+          "description": "npm packages the component needs. Printed as an install hint after `shaders-cli add`.",
           "items": { "type": "string" },
           "uniqueItems": true
         },

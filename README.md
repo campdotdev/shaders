@@ -1,12 +1,12 @@
-# Matter
+# Shaders
 
 React shader components powered by WebGPU and Three.js TSL.
 
 > **Status:** v0.1.0 shipped to npm. `npm install -D @mattermix/shaders-cli && npx shaders-cli init && npx shaders-cli add linear-gradient` to scaffold your first component.
 
-## What is Matter?
+## What is Shaders?
 
-Matter is a React component library for shader-driven backgrounds and interactive surfaces. It ships polished drop-in components like `<LinearGradient>`, `<Aurora>`, and `<DotField>` for developers who don't want to write shaders, alongside a primitives library and recipe gallery for those who do.
+Shaders is a React component library for shader-driven backgrounds and interactive surfaces. It ships polished drop-in components like `<LinearGradient>`, `<Aurora>`, and `<DotField>` for developers who don't want to write shaders, alongside a primitives library and recipe gallery for those who do.
 
 ## Repository structure
 

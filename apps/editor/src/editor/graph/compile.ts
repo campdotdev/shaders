@@ -1,5 +1,5 @@
 // The graph-to-TSL compiler: walks the card graph from an Output node
-// backward and assembles a TSL color expression from Matter's Tier 2
+// backward and assembles a TSL color expression from Shaders' Tier 2
 // primitives. The core representation: a compiled field is a FUNCTION of the
 // sample position, `(p) => value`, not a value — that's what lets Warp work,
 // because warping IS calling the upstream field at a shifted position. Slider

@@ -168,9 +168,9 @@ describe('runPoster — --background threading', () => {
 
   beforeEach(async () => {
     launchAndScreenshotMock.mockClear();
-    sourceDir = await mkdtemp(join(tmpdir(), 'matter-poster-test-'));
+    sourceDir = await mkdtemp(join(tmpdir(), 'shaders-poster-test-'));
     sourceFile = join(sourceDir, 'scene.tsx');
-    await writeFile(join(sourceDir, 'package.json'), '{"name":"matter-poster-test-fixture"}');
+    await writeFile(join(sourceDir, 'package.json'), '{"name":"shaders-poster-test-fixture"}');
     await writeFile(sourceFile, 'export default function Scene() { return null; }');
   });
 

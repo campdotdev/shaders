@@ -32,7 +32,7 @@ describe('bundlePoster', () => {
 
 describe('bundlePoster — error messages', () => {
   it('surfaces a TS/JSX syntax error with the user file path', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'matter-bundle-err-'));
+    const dir = await mkdtemp(join(tmpdir(), 'shaders-bundle-err-'));
 
     await writeFile(join(dir, 'package.json'), '{}');
     const bad = join(dir, 'bad.tsx');

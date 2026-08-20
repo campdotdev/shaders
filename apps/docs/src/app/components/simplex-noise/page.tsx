@@ -105,7 +105,7 @@ export default function SimplexNoisePage() {
             }}
           >
             {`import { ShaderScene } from '@mattermix/shaders-react'
-import { SimplexNoise } from '@/components/matter/simplex-noise'
+import { SimplexNoise } from '@/components/shaders/simplex-noise'
 
 <ShaderScene>
   <SimplexNoise />

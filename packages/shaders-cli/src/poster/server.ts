@@ -56,7 +56,7 @@ export async function createPosterServer(opts: {
   const rawAddress = server.address();
 
   if (rawAddress === null || typeof rawAddress === 'string') {
-    throw new Error('matter poster: expected server to bind a TCP address');
+    throw new Error('shaders poster: expected server to bind a TCP address');
   }
   const address: AddressInfo = rawAddress;
   const url = `http://127.0.0.1:${address.port}`;

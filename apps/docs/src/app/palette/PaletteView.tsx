@@ -281,7 +281,7 @@ export function PaletteView() {
           }}
         >
           <div>
-            <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Matter palette</h1>
+            <h1 style={{ fontSize: 28, fontWeight: 700, margin: 0 }}>Shaders palette</h1>
             <p style={{ color: subFg, fontSize: 14, margin: '4px 0 0' }}>
               Gray, moss, and all twelve accents share one twelve-step lightness ladder; the brand
               lime scale runs a ladder of its own.

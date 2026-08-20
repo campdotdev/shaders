@@ -1,5 +1,5 @@
 // CIELAB LCh — the older (1976) perceptual space that CSS `lch()` exposes;
-// provided so Matter's colorSpace options line up with CSS Color 4. Same
+// provided so Shaders' colorSpace options line up with CSS Color 4. Same
 // polar idea as OKLch (lightness, chroma, hue-angle) but derived through
 // CIE XYZ, the 1931 measurement space, with lightness on a 0..100 scale.
 // The route: rgb -> XYZ (a weighted-sum matrix) -> Lab's f() nonlinearity

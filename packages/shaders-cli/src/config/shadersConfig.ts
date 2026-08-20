@@ -16,7 +16,7 @@ export interface ShadersConfig {
 }
 
 export const DEFAULT_SHADERS_CONFIG: ShadersConfig = {
-  componentsDir: 'src/components/matter',
+  componentsDir: 'src/components/shaders',
   registryUrl: 'https://raw.githubusercontent.com/mattermix/shaders/${ref}/registry',
   aliases: { '@/': 'src/' },
 };

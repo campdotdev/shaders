@@ -47,7 +47,7 @@ describe.skipIf(!E2E_ENABLED)('runPoster — E2E (MATTER_E2E=1)', () => {
   let outDir: string;
 
   beforeEach(async () => {
-    outDir = await mkdtemp(join(tmpdir(), 'matter-poster-e2e-'));
+    outDir = await mkdtemp(join(tmpdir(), 'shaders-poster-e2e-'));
   });
 
   afterEach(async () => {

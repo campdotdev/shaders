@@ -1,12 +1,12 @@
-# AGENTS.md: Matter project guide
+# AGENTS.md: Shaders project guide
 
-You are working on **Matter**, a React shader component library built on WebGPU and Three.js TSL. This file orients any coding agent at the start of a session, including Claude Code, Codex, Cursor, and Gemini CLI. Read it fully before doing anything else.
+You are working on **Shaders**, a React shader component library built on WebGPU and Three.js TSL. This file orients any coding agent at the start of a session, including Claude Code, Codex, Cursor, and Gemini CLI. Read it fully before doing anything else.
 
 ## Where to find things
 
 | You need…                              | Read…                                                |
 | -------------------------------------- | ---------------------------------------------------- |
-| The full design, what we're building and why | `docs/superpowers/specs/2026-05-02-matter-design.md` |
+| The full design, what we're building and why | `docs/superpowers/specs/2026-05-02-shaders-design.md` |
 | Feature specs and implementation plans  | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
 
 > **Note.** `docs/superpowers/` holds the specs and plans, and it is gitignored, so it exists only on machines it has been synced to. On a fresh clone those paths are absent. This file plus git history are the portable orientation.
@@ -41,7 +41,7 @@ Read the spec for architecture, public APIs, the component catalog, and the anim
 
 ## Shader development process
 
-These rules exist because Matter doubles as a shader-learning project for its author. The author is fluent in React, TypeScript, and build tooling. The gap is GPU concepts: uniforms, sampler space, noise types, domain warping, smoothstep, and render passes. Spend explanation budget there.
+These rules exist because Shaders doubles as a shader-learning project for its author. The author is fluent in React, TypeScript, and build tooling. The gap is GPU concepts: uniforms, sampler space, noise types, domain warping, smoothstep, and render passes. Spend explanation budget there.
 
 1. **Rebuilds go step by step.** When you improve or rebuild a shader component, translate the design into TSL one step at a time and explain each TSL and GPU concept as it appears. Don't silently refactor existing TSL.
 2. **Target structure is the Aurora split.** Write `registry/<name>/<name>.tsx` for the component wrapper, holding props, uniforms, and mesh lifecycle in roughly 80 lines, plus `registry/<name>/shader.tsx` for the TSL shader function, isolated and reusable.
@@ -155,7 +155,7 @@ These rules exist because Matter doubles as a shader-learning project for its au
 
 ## Out of scope (don't drift)
 
-The spec puts all of these at v2 or later, even where they'd be easy: image and video filters, particle systems, 3D objects and materials, text effects, cursor effects, Vue and Svelte bindings, a hosted registry endpoint, audio-reactive primitives, a built-in animation library (Matter accepts MotionValue-shaped signals instead), CSS custom-property theming, and per-component material hooks.
+The spec puts all of these at v2 or later, even where they'd be easy: image and video filters, particle systems, 3D objects and materials, text effects, cursor effects, Vue and Svelte bindings, a hosted registry endpoint, audio-reactive primitives, a built-in animation library (Shaders accepts MotionValue-shaped signals instead), CSS custom-property theming, and per-component material hooks.
 
 ## Deployment
 

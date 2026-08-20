@@ -66,17 +66,17 @@ export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
 
   if (!shaderContext) {
     return (
-      <div data-testid="matter-monitor" style={{ ...baseStyle, ...anchorStyle[anchor] }}>
+      <div data-testid="shaders-monitor" style={{ ...baseStyle, ...anchorStyle[anchor] }}>
         no scene
       </div>
     );
   }
 
   return (
-    <div data-testid="matter-monitor" style={{ ...baseStyle, ...anchorStyle[anchor] }}>
-      <span data-testid="matter-monitor-fps">fps: {stats.fps || '—'}</span>
+    <div data-testid="shaders-monitor" style={{ ...baseStyle, ...anchorStyle[anchor] }}>
+      <span data-testid="shaders-monitor-fps">fps: {stats.fps || '—'}</span>
       {'\n'}
-      <span data-testid="matter-monitor-ticks">ticks: {stats.ticks}</span>
+      <span data-testid="shaders-monitor-ticks">ticks: {stats.ticks}</span>
     </div>
   );
 }

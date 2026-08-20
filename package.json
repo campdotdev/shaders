@@ -2,7 +2,7 @@
   "name": "shaders-monorepo",
   "version": "0.0.0",
   "private": true,
-  "description": "Monorepo root for Matter — React shader components on WebGPU + TSL",
+  "description": "Monorepo root for Shaders — React shader components on WebGPU + TSL",
   "license": "MIT",
   "type": "module",
   "scripts": {

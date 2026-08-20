@@ -8,7 +8,7 @@ import { findProjectRoot } from './projectRoot.js';
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'matter-projectroot-'));
+  dir = await mkdtemp(join(tmpdir(), 'shaders-projectroot-'));
 });
 
 afterEach(async () => {

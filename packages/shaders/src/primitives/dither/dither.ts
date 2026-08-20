@@ -19,7 +19,7 @@ import { ditherThreshold } from '../dither-pattern/dither-pattern.js';
  * important for static scenes).
  *
  * For correctness the dither belongs in display-encoded space, immediately
- * before 8-bit quantization. In a Matter-managed scene that placement is handled
+ * before 8-bit quantization. In a Shaders-managed scene that placement is handled
  * for you (`ShaderScene` applies it as a final output stage after the color
  * transfer). This primitive is the entry point for Mode 2 (your own r3f canvas),
  * where you apply it to your shader's output yourself.

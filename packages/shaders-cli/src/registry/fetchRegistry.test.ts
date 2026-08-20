@@ -32,7 +32,7 @@ describe('fetchRegistry', () => {
   });
 
   it('rejects an array-shaped "components" field', async () => {
-    const dir = await mkdtemp(join(tmpdir(), 'matter-registry-array-'));
+    const dir = await mkdtemp(join(tmpdir(), 'shaders-registry-array-'));
 
     await writeFile(
       join(dir, 'registry.json'),

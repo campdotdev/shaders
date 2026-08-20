@@ -11,7 +11,7 @@ const FIXTURE_BASE = `file://${fileURLToPath(new URL('../test-fixtures/registry/
 let dir: string;
 
 beforeEach(async () => {
-  dir = await mkdtemp(join(tmpdir(), 'matter-list-test-'));
+  dir = await mkdtemp(join(tmpdir(), 'shaders-list-test-'));
 });
 
 afterEach(async () => {

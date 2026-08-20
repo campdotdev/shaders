@@ -25,7 +25,7 @@ test('export, reload, import round-trips the graph', async ({ page }) => {
 
   const download = await downloadPromise;
 
-  expect(download.suggestedFilename()).toBe('matter-graph.json');
+  expect(download.suggestedFilename()).toBe('shaders-graph.json');
 
   const downloadPath = await download.path();
 

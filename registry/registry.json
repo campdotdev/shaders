@@ -5,7 +5,7 @@
     "linear-gradient": {
       "file": "linear-gradient/linear-gradient.tsx",
       "files": ["linear-gradient/shader.tsx", "utils/color.ts"],
-      "description": "Animated linear gradient. The simplest, foundational Matter component.",
+      "description": "Animated linear gradient. The simplest, foundational Shaders component.",
       "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
       "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "uniform"],
       "tier": 1
@@ -30,7 +30,7 @@
     "dot-field": {
       "file": "dot-field/dot-field.tsx",
       "files": ["dot-field/shader.tsx", "utils/color.ts"],
-      "description": "Tiled dot field with center-anchored ripple displacement \u2014 the architecturally-validating Matter component.",
+      "description": "Tiled dot field with center-anchored ripple displacement \u2014 the architecturally-validating Shaders component.",
       "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
       "uses_primitives": [
         "signedDistanceFieldCircle",

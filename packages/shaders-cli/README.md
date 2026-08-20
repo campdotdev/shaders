@@ -1,6 +1,6 @@
 # @mattermix/shaders-cli
 
-shadcn-style copy-paste CLI for **Matter** — fetch polished shader components from the registry into your project, where they're yours to edit.
+shadcn-style copy-paste CLI for **Shaders** — fetch polished shader components from the registry into your project, where they're yours to edit.
 
 ## Install
 
@@ -23,7 +23,7 @@ Writes `shaders.config.json` to your project root with sensible defaults:
 
 ```json
 {
-  "componentsDir": "src/components/matter",
+  "componentsDir": "src/components/shaders",
   "registryUrl": "https://raw.githubusercontent.com/mattermix/shaders/${ref}/registry",
   "aliases": { "@/": "src/" }
 }
@@ -45,7 +45,7 @@ npx shaders-cli add linear-gradient
 npx shaders-cli add linear-gradient aurora dot-field
 ```
 
-The component lands in `componentsDir` (default `src/components/matter/`) — you own it from that point forward.
+The component lands in `componentsDir` (default `src/components/shaders/`) — you own it from that point forward.
 
 ### Refresh a previously-added component
 
@@ -59,7 +59,7 @@ npx shaders-cli update --force
 
 ### Render a static fallback image
 
-Render a Matter component tree to an image for use as the `poster` in `<ShaderPoster>` — eliminates the visible blank canvas during WebGPU initialization.
+Render a Shaders component tree to an image for use as the `poster` in `<ShaderPoster>` — eliminates the visible blank canvas during WebGPU initialization.
 
 ```bash
 npx shaders-cli poster --source <file> --output <path> [options]
@@ -100,7 +100,7 @@ pnpm exec playwright install chromium
 
 ```bash
 # Default — writes ./public/hero.jpg (JPEG q80)
-npx shaders-cli poster --source ./src/components/matter/hero.tsx --output ./public/hero.jpg
+npx shaders-cli poster --source ./src/components/shaders/hero.tsx --output ./public/hero.jpg
 
 # Posterized shader — PNG compresses smaller
 npx shaders-cli poster --source ./gradient.tsx --output ./public/gradient.png --format png
