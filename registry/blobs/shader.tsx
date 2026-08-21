@@ -8,7 +8,7 @@
 // supplies the props.
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, type HueInterpolation, metaballs } from '@mattermix/shaders';
+import { colorRamp, type ColorSpace, type HueInterpolation, metaballs } from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatablePoint,
@@ -17,7 +17,7 @@ import {
   useResize,
   useShaderContext,
   useStaticSceneHint,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import { add, clamp, fwidth, smoothstep, sub, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 

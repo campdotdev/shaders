@@ -7,7 +7,7 @@ order: 30
 
 # Changelog
 
-Shaders ships as three coordinated npm packages: `@mattermix/shaders` (engine), `@mattermix/shaders-react` (React binding), and `@mattermix/shaders-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo, and this page summarizes the headline changes.
+Shaders ships as three coordinated npm packages: `@camp-dev/shaders` (engine), `@camp-dev/shaders-react` (React binding), and `@camp-dev/shaders-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo, and this page summarizes the headline changes.
 
 Everything through 0.18.0 shipped under the earlier name, as `@lovo/matter`. The 1.0.0 through 3.9.0 releases from that history are renumbered as 0.7.0 through 0.18.0 in the per-package changelogs, because 1.0.0 went out by accident and the project is not at 1.0 yet.
 
@@ -45,24 +45,24 @@ The same copy-paste rule applies. Installed copies keep rendering as before, and
 
 ## 0.2.0
 
-**Breaking: `@mattermix/shaders` no longer re-exports pure TSL primitives.**
+**Breaking: `@camp-dev/shaders` no longer re-exports pure TSL primitives.**
 
-The following 15 nodes are no longer exported by `@mattermix/shaders`. Import them directly from `three/tsl`:
+The following 15 nodes are no longer exported by `@camp-dev/shaders`. Import them directly from `three/tsl`:
 
 `uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`
 
 ```ts
 // Before (0.1.x)
-import { vec3, uv, time } from '@mattermix/shaders'
+import { vec3, uv, time } from '@camp-dev/shaders'
 
 // After (0.2.0)
 import { vec3, uv } from 'three/tsl'
-import { time } from '@mattermix/shaders' // still here, reduced-motion-gated
+import { time } from '@camp-dev/shaders' // still here, reduced-motion-gated
 ```
 
-`time` stays exported from `@mattermix/shaders` because the engine owns its semantics, which is the reduced-motion gating. For raw uncapped time, import from `three/tsl` directly.
+`time` stays exported from `@camp-dev/shaders` because the engine owns its semantics, which is the reduced-motion gating. For raw uncapped time, import from `three/tsl` directly.
 
-The primitives the engine owns (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) stay exported from `@mattermix/shaders` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@mattermix/shaders` to `three/tsl` for the dropped symbols, or re-add the component through the CLI to pull the 0.2.0 source.
+The primitives the engine owns (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) stay exported from `@camp-dev/shaders` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@camp-dev/shaders` to `three/tsl` for the dropped symbols, or re-add the component through the CLI to pull the 0.2.0 source.
 
 **Why:** re-exporting pure TSL primitives bought nothing beyond shared import paths. No rename, no added docs, no future swap. Dropping them clarifies the layer boundary. The engine ships value-add primitives, and TSL provides the math. The [shaders engine reference](/reference/shaders) lists what the engine exports today.
 
@@ -70,7 +70,7 @@ The primitives the engine owns (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCirc
 
 React shader components on WebGPU and Three.js TSL.
 
-### `@mattermix/shaders`
+### `@camp-dev/shaders`
 
 The framework-agnostic engine. It exports:
 
@@ -79,7 +79,7 @@ The framework-agnostic engine. It exports:
 - Runtime: `createRenderer`, `MatterScheduler`, the visibility and intersection watchers, and the reduced-motion policy.
 - Inputs: `CursorInput`, a framework-agnostic cursor source.
 
-### `@mattermix/shaders-react`
+### `@camp-dev/shaders-react`
 
 The React binding for the engine. It exports:
 
@@ -89,7 +89,7 @@ The React binding for the engine. It exports:
 - Animation glue: `useAnimatableUniform`, which accepts any MotionValue-shaped signal.
 - Fallback and dev utilities: `FallbackBoundary`, `useStaticHint`, and `MatterMonitor`.
 
-### `@mattermix/shaders-cli`
+### `@camp-dev/shaders-cli`
 
 The shadcn-style copy-paste CLI, with `init`, `list`, `add`, and `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so the component source you copy is stable per release.
 
@@ -104,5 +104,5 @@ Six components are available through `shaders-cli add <name>`: `linear-gradient`
 - React ^19 and Three.js ^0.170.
 
 <Callout>
-  Detailed per-package changelogs live in the repo: [`packages/shaders/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders/CHANGELOG.md), [`packages/shaders-react/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders-react/CHANGELOG.md), [`packages/shaders-cli/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders-cli/CHANGELOG.md).
+  Detailed per-package changelogs live in the repo: [`packages/shaders/CHANGELOG.md`](https://github.com/campdotdev/shaders/blob/main/packages/shaders/CHANGELOG.md), [`packages/shaders-react/CHANGELOG.md`](https://github.com/campdotdev/shaders/blob/main/packages/shaders-react/CHANGELOG.md), [`packages/shaders-cli/CHANGELOG.md`](https://github.com/campdotdev/shaders/blob/main/packages/shaders-cli/CHANGELOG.md).
 </Callout>

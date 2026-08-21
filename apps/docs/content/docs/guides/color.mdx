@@ -74,4 +74,4 @@ Think of it as a pipeline, one control per stage:
 
 They compose independently. A wide-gamut `oklch()` input blended in `oklab` and written to a `p3` framebuffer is the common case, and none of those three choices constrains the others. Reaching for `colorSpace` to fix a color that looks dull on a wide display is the usual mistake — that's stage 3's job.
 
-For the CPU-side functions behind stage 1 — `parseColorString`, the conversions, the gamut helpers — see [the engine reference](/reference/shaders#color-math--mattermixshaderscolor). They come from `@mattermix/shaders/color`, which has no path to three, so you can call them wherever you need them: in the browser, or during a server render where the root entry would crash.
+For the CPU-side functions behind stage 1 — `parseColorString`, the conversions, the gamut helpers — see [the engine reference](/reference/shaders#color-math--camp-devshaderscolor). They come from `@camp-dev/shaders/color`, which has no path to three, so you can call them wherever you need them: in the browser, or during a server render where the root entry would crash.

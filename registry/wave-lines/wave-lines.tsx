@@ -5,8 +5,8 @@
 // bundle of waving ribbons — each a solid body plus an additive light halo —
 // sharing one wave so they move as a coherent group. Render it inside a
 // <ShaderScene>.
-import type { ColorSpace } from '@mattermix/shaders';
-import type { AnimatableProp } from '@mattermix/shaders-react';
+import type { ColorSpace } from '@camp-dev/shaders';
+import type { AnimatableProp } from '@camp-dev/shaders-react';
 
 import { WaveLinesShader } from './shader';
 

@@ -6,7 +6,7 @@
       "file": "linear-gradient/linear-gradient.tsx",
       "files": ["linear-gradient/shader.tsx", "utils/color.ts"],
       "description": "Animated linear gradient. The simplest, foundational Shaders component.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "uniform"],
       "tier": 1
     },
@@ -14,7 +14,7 @@
       "file": "simplex-noise/simplex-noise.tsx",
       "files": ["simplex-noise/shader.tsx", "utils/color.ts"],
       "description": "Evolving 3D simplex noise with color ramp, contour bands, and brightness/contrast histogram shaping.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "colorRamp",
         "simplexNoise",
@@ -31,7 +31,7 @@
       "file": "dot-field/dot-field.tsx",
       "files": ["dot-field/shader.tsx", "utils/color.ts"],
       "description": "Tiled dot field with center-anchored ripple displacement \u2014 the architecturally-validating Shaders component.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "signedDistanceFieldCircle",
         "displace",
@@ -51,7 +51,7 @@
       "file": "grain/grain.tsx",
       "files": ["grain/shader.tsx"],
       "description": "Additive or subtractive film grain overlay. Stacks on top of any base component inside <ShaderScene>.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": ["grain", "uv", "vec4", "uniform", "floor"],
       "tier": 1
     },
@@ -59,7 +59,7 @@
       "file": "wave-lines/wave-lines.tsx",
       "files": ["wave-lines/shader.tsx", "utils/color.ts"],
       "description": "Coherent wave-line bundle: translucent ribbon bodies wrapped in additive halo light. Lines share one wave and braid, breathe, and fray wide toward the canvas edges, with per-line flat or gradient color.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "sin",
         "uv",
@@ -83,7 +83,7 @@
       "file": "mesh-gradient/mesh-gradient.tsx",
       "files": ["mesh-gradient/shader.tsx", "utils/color.ts"],
       "description": "Warped 4-color fluid gradient with time-cycling palette and film grain. Linear/Stripe marketing-page style.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "simplexNoise",
         "elapsedTime",
@@ -105,7 +105,7 @@
       "file": "aurora/aurora.tsx",
       "files": ["aurora/shader.tsx", "utils/color.ts"],
       "description": "Four color-seeded noise curtains sharing one atmospheric noise field, layered over a dusk sky.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "simplexNoise",
         "smoothstep",
@@ -122,7 +122,7 @@
       "file": "vignette/vignette.tsx",
       "files": ["vignette/shader.tsx", "utils/color.ts"],
       "description": "Radial darkening at the canvas edges. Stacks on top of any base component inside <ShaderScene>.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": ["uv", "vec2", "vec3", "vec4", "mix", "smoothstep", "length", "uniform"],
       "tier": 1
     },
@@ -130,7 +130,7 @@
       "file": "radial-gradient/radial-gradient.tsx",
       "files": ["radial-gradient/shader.tsx", "utils/color.ts"],
       "description": "A color ramp radiating from a point, with an elliptical shape control and repeating concentric rings. The radial counterpart to LinearGradient.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "colorRamp",
         "clamp",
@@ -148,7 +148,7 @@
       "file": "god-rays/god-rays.tsx",
       "files": ["god-rays/shader.tsx", "utils/color.ts"],
       "description": "Layered soft light rays radiating from a controllable origin: two flowing noise fields multiplied per color, with patchiness, diffusion, and an interactive source glow.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "abs",
         "atan2",
@@ -174,7 +174,7 @@
       "file": "conic-gradient/conic-gradient.tsx",
       "files": ["conic-gradient/shader.tsx", "utils/color.ts"],
       "description": "A color ramp sweeping clockwise around a center point, with pinwheel repeats and rotation. Completes the CSS gradient trio with LinearGradient and RadialGradient.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": ["colorRamp", "atan2", "fract", "uv", "vec2", "uniform"],
       "tier": 1
     },
@@ -182,7 +182,7 @@
       "file": "dither/dither.tsx",
       "files": ["dither/shader.tsx"],
       "description": "Retro ordered dithering: pixelates the scene into chunky cells and posterizes its colors. Stacks on top of any base component inside <ShaderScene>.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "ditherThreshold",
         "quantize",
@@ -197,7 +197,7 @@
       "file": "voronoi/voronoi.tsx",
       "files": ["voronoi/shader.tsx", "utils/color.ts"],
       "description": "Cellular mosaic \u2014 flat color patches around drifting seed points, with crisp constant-width borders.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "voronoiCells",
         "colorRamp",
@@ -224,7 +224,7 @@
         "utils/color.ts"
       ],
       "description": "Layered fractal noise \u2014 multi-octave texture with a style dial from soft clouds to crisp vein networks.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "fractalNoise",
         "colorRamp",
@@ -241,7 +241,7 @@
       "file": "blobs/blobs.tsx",
       "files": ["blobs/shader.tsx", "utils/color.ts"],
       "description": "Soft gooey blobs \u2014 colored metaballs drifting around the center, merging and splitting over a transparent background.",
-      "dependencies": ["@mattermix/shaders", "@mattermix/shaders-react", "react", "three"],
+      "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": [
         "metaballs",
         "colorRamp",

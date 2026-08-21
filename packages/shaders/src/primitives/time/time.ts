@@ -1,5 +1,5 @@
 // Engine-gated `time` — equals the TSL built-in `time` multiplied by the
-// reduced-motion scale uniform. Components consuming `time` from `@mattermix/shaders`
+// reduced-motion scale uniform. Components consuming `time` from `@camp-dev/shaders`
 // automatically respect `prefers-reduced-motion` and the policy override set
 // via `setReducedMotionPolicy`.
 //

@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { useDisplayGamut } from './gamut.js';
 
-describe('@mattermix/shaders-react/gamut', () => {
+describe('@camp-dev/shaders-react/gamut', () => {
   it('imports with no DOM globals present', () => {
     // Guards the guard. If the environment docblock above is ever removed, the
     // package's happy-dom default would supply `self` and this file would go on

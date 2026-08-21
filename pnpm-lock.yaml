@@ -101,10 +101,10 @@ importers:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@mattermix/shaders':
+      '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../../packages/shaders
-      '@mattermix/shaders-react':
+      '@camp-dev/shaders-react':
         specifier: workspace:*
         version: link:../../packages/shaders-react
       '@shaders/registry':
@@ -225,10 +225,10 @@ importers:
       '@base-ui/react':
         specifier: ^1.6.0
         version: 1.6.0(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@mattermix/shaders':
+      '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../../packages/shaders
-      '@mattermix/shaders-react':
+      '@camp-dev/shaders-react':
         specifier: workspace:*
         version: link:../../packages/shaders-react
       '@xyflow/react':
@@ -308,10 +308,10 @@ importers:
         specifier: ^0.27.0
         version: 0.27.7
     devDependencies:
-      '@mattermix/shaders':
+      '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../shaders
-      '@mattermix/shaders-react':
+      '@camp-dev/shaders-react':
         specifier: workspace:*
         version: link:../shaders-react
       '@shaders/registry':
@@ -353,7 +353,7 @@ importers:
 
   packages/shaders-react:
     devDependencies:
-      '@mattermix/shaders':
+      '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../shaders
       '@shaders/tsconfig':
@@ -401,10 +401,10 @@ importers:
 
   registry:
     dependencies:
-      '@mattermix/shaders':
+      '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../packages/shaders
-      '@mattermix/shaders-react':
+      '@camp-dev/shaders-react':
         specifier: workspace:*
         version: link:../packages/shaders-react
       react:

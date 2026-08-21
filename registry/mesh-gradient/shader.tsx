@@ -15,14 +15,14 @@ import {
   type HueInterpolation,
   mixColor,
   simplexNoise,
-} from '@mattermix/shaders';
+} from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
   useAnimatableUniform,
   useResize,
   useShaderContext,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import { abs, cos, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
 

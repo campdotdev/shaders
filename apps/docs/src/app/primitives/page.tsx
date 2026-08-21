@@ -5,7 +5,7 @@ import { PRIMITIVES } from '@/data/primitives';
 export const metadata = {
   title: 'Primitives',
   description:
-    'Tier 2 — pure TSL functions exported from @mattermix/shaders. Compose them into your own shaders.',
+    'Tier 2 — pure TSL functions exported from @camp-dev/shaders. Compose them into your own shaders.',
 };
 
 export default function PrimitivesIndex() {
@@ -13,7 +13,7 @@ export default function PrimitivesIndex() {
     <article style={{ lineHeight: 1.65 }}>
       <h1 style={{ marginTop: 0 }}>Primitives</h1>
       <p style={{ color: 'var(--fg-muted)' }}>
-        Tier 2 — pure TSL functions exported from <code>@mattermix/shaders</code>. Use them inside
+        Tier 2 — pure TSL functions exported from <code>@camp-dev/shaders</code>. Use them inside
         your own shaders or compose them into Tier 1 components.
       </p>
       <ul style={{ paddingLeft: '1.25rem', lineHeight: 1.8 }}>

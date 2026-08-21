@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@mattermix/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders-react';
 import { Grain } from '@shaders/registry/grain';
 import { LinearGradient } from '@shaders/registry/linear-gradient';
 

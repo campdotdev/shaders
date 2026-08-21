@@ -9,13 +9,13 @@
 // (./wave-lines.tsx) supplies the props.
 import { useEffect } from 'react';
 
-import { colorRamp, type ColorSpace } from '@mattermix/shaders';
+import { colorRamp, type ColorSpace } from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
   useAnimatableUniform,
   useShaderContext,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import {
   float,
   fract,

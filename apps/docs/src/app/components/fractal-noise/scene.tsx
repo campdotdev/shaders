@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@mattermix/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders-react';
 import { FractalNoise } from '@shaders/registry/fractal-noise';
 import type { ColorStop } from '@shaders/registry/fractal-noise';
 

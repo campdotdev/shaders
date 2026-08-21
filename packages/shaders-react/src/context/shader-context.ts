@@ -1,6 +1,6 @@
 import { createContext } from 'react';
 
-import type { FrameScheduler, GpuRenderer } from '@mattermix/shaders';
+import type { FrameScheduler, GpuRenderer } from '@camp-dev/shaders';
 import type { Camera, Scene } from 'three';
 import type { ShaderNodeObject } from 'three/tsl';
 import type { Node } from 'three/webgpu';

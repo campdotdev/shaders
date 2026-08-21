@@ -6,15 +6,15 @@
 // props; the engine's mixColor() does the color-space-aware blending.
 import { useEffect, useMemo } from 'react';
 
-import { mixColor } from '@mattermix/shaders';
-import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
+import { mixColor } from '@camp-dev/shaders';
+import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatablePoint,
   useAnimatableUniform,
   usePostProcessPass,
   useResize,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import { length, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
 import { Vector3 } from 'three/webgpu';
 

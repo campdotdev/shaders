@@ -165,7 +165,7 @@ interface CursorRippleOptions {
     signature: `const elapsedTime: TSLNode
 // Equals three/tsl's built-in time * reducedMotionScale. Honors
 // prefers-reduced-motion and any setReducedMotionPolicy override.
-// Import from '@mattermix/shaders'. For raw uncapped time, import from
+// Import from '@camp-dev/shaders'. For raw uncapped time, import from
 // 'three/tsl' directly.`,
     usedBy: ['linear-gradient', 'simplex-noise', 'wave-lines', 'mesh-gradient', 'aurora'],
     controls: [],

@@ -957,10 +957,10 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
 
   const shadersImportLine =
     sortedShadersImports.length > 0
-      ? `${importLineOf(sortedShadersImports, '@mattermix/shaders')}\n`
+      ? `${importLineOf(sortedShadersImports, '@camp-dev/shaders')}\n`
       : '';
   const parseColorLine = emission.usesParseColor
-    ? `import { parseColorString } from '@mattermix/shaders/color';\n`
+    ? `import { parseColorString } from '@camp-dev/shaders/color';\n`
     : '';
 
   return `'use client';
@@ -971,7 +971,7 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
 // as a prop with the editor's value as its default.
 import { useEffect } from 'react';
 
-${shadersImportLine}${importLineOf(sortedShadersReactImports, '@mattermix/shaders-react')}
+${shadersImportLine}${importLineOf(sortedShadersReactImports, '@camp-dev/shaders-react')}
 ${parseColorLine}${importLineOf(sortedTsl, 'three/tsl')}
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';

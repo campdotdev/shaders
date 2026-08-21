@@ -8,9 +8,9 @@ export default defineConfig({
   test: {
     // No DOM environment on purpose. These tests are pure color math, and
     // running them in plain Node means a future test that imports root
-    // @mattermix/shaders fails here — three/webgpu reads `self` at module load — the
+    // @camp-dev/shaders fails here — three/webgpu reads `self` at module load — the
     // same way it would fail in a server render. Import from
-    // @mattermix/shaders/color instead.
+    // @camp-dev/shaders/color instead.
     name: '@shaders/docs',
     include: ['src/**/*.test.{ts,tsx}'],
     passWithNoTests: true,

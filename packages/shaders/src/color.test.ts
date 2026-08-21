@@ -10,7 +10,7 @@ import { describe, expect, it } from 'vitest';
 
 import { linearSrgbToOklch, parseColorString, srgbChannelToLinear } from './color.js';
 
-describe('@mattermix/shaders/color', () => {
+describe('@camp-dev/shaders/color', () => {
   it('runs with no DOM globals present', () => {
     // Guards the guard. If the environment docblock above is ever removed or
     // changed, this fails loudly rather than the file quietly becoming

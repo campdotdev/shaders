@@ -1,4 +1,4 @@
-import { ShaderScene } from '@mattermix/shaders-react'
+import { ShaderScene } from '@camp-dev/shaders-react'
 import { Aurora } from '@shaders/registry/aurora'
 
 export default function AuroraWithTime() {

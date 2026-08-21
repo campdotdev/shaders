@@ -38,7 +38,7 @@ const nextConfig: NextConfig = {
   // `next build` lint too just runs the same rules a second time. Turning it off
   // here is not a way of skipping the check — it is saying where the check lives.
   eslint: { ignoreDuringBuilds: true },
-  transpilePackages: ['@mattermix/shaders', '@mattermix/shaders-react', '@shaders/registry'],
+  transpilePackages: ['@camp-dev/shaders', '@camp-dev/shaders-react', '@shaders/registry'],
   webpack(config: WebpackConfig): WebpackConfig {
     config.resolve = config.resolve ?? {};
     const webgpuBundle = resolve(threeDir, 'build/three.webgpu.js');

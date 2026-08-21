@@ -21,7 +21,7 @@ import {
   useResize,
   useShaderContext,
   useStaticSceneHint,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import {
   abs,
   atan2,

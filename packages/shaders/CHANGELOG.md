@@ -1,6 +1,6 @@
-# @mattermix/shaders
+# @camp-dev/shaders
 
-> Versions 0.18.0 and below shipped as `@lovo/matter` before the project moved to the mattermix org. Releases 1.0.0 through 3.9.0 from that history are renumbered here as 0.7.0 through 0.18.0.
+> Versions 0.18.0 and below shipped as `@lovo/matter` before the project moved to the camp-dev org. Releases 1.0.0 through 3.9.0 from that history are renumbered here as 0.7.0 through 0.18.0.
 
 ## 0.18.0
 
@@ -46,7 +46,7 @@
 
 ### Minor Changes
 
-- dd8f99b: Add `@mattermix/shaders/color`, a second entry point for the CPU-side color math: `parseColorString`, the OKLab and OKLCH conversions, the gamut helpers, and the sRGB transfer functions. The root entry still exports all of them, so nothing has to move. The difference is that the subpath has no path to three, so a server render can import it. The root entry cannot, because it reaches the renderer and `three/webgpu` reads `self` at module load.
+- dd8f99b: Add `@camp-dev/shaders/color`, a second entry point for the CPU-side color math: `parseColorString`, the OKLab and OKLCH conversions, the gamut helpers, and the sRGB transfer functions. The root entry still exports all of them, so nothing has to move. The difference is that the subpath has no path to three, so a server render can import it. The root entry cannot, because it reaches the renderer and `three/webgpu` reads `self` at module load.
 
   `parseColorString` now throws on input it used to mangle. Components that aren't numbers ran through `parseFloat` to NaN and came back as `[NaN, NaN, NaN]`, which reached the GPU as a blank shader with a clean console. Hex is checked for format now too. It takes `#rrggbb` and `#rrggbbaa`, parsing and dropping alpha the same way `oklch()` and `oklab()` already do, and throws on anything else. `#abcdefgh` used to slice its first six digits and return a confidently wrong color.
 
@@ -77,11 +77,11 @@
 
   ```ts
   // Before
-  import { filmGrain } from '@mattermix/shaders';
+  import { filmGrain } from '@camp-dev/shaders';
   const g = filmGrain(0.08);
 
   // After
-  import { grain } from '@mattermix/shaders';
+  import { grain } from '@camp-dev/shaders';
   const g = grain(0.08);
   ```
 
@@ -126,7 +126,7 @@
 
 - 1c69220: Rename public API symbols to domain-accurate names.
 
-  New primary names: `FrameScheduler`, `GpuRenderer`, `GpuBackend` (`@mattermix/shaders`); `ShaderScene`, `ShaderSceneProps`, `ShaderContext`, `ShaderContextValue`, `useShaderContext`, `ShaderMonitor`, `ShaderMonitorProps`, `AnimatableSignal` (`@mattermix/shaders-react`).
+  New primary names: `FrameScheduler`, `GpuRenderer`, `GpuBackend` (`@camp-dev/shaders`); `ShaderScene`, `ShaderSceneProps`, `ShaderContext`, `ShaderContextValue`, `useShaderContext`, `ShaderMonitor`, `ShaderMonitorProps`, `AnimatableSignal` (`@camp-dev/shaders-react`).
 
   The old names `MatterScheduler`, `MatterRenderer`, `MatterBackend`, `MatterScene`, `MatterSceneProps`, `MatterContext`, `MatterContextValue`, `useMatterContext`, `MatterMonitor`, `MatterMonitorProps`, and `MatterSignal` carry `@deprecated` JSDoc and continue to work. They will be removed no earlier than 0.5.0.
 
@@ -139,7 +139,7 @@
 - 3856367: Add the `grain` primitive, a hash-based, centered film grain for shader compositions.
 
   ```ts
-  import { grain, time } from "@mattermix/shaders";
+  import { grain, time } from "@camp-dev/shaders";
   import { uv } from "three/tsl";
 
   // Static grain:
@@ -162,24 +162,24 @@
 
 ### Minor Changes
 
-- Drop pure TSL re-exports from the `@mattermix/shaders` public API.
+- Drop pure TSL re-exports from the `@camp-dev/shaders` public API.
 
-  The following 15 nodes are no longer exported by `@mattermix/shaders`. Import them directly from `three/tsl`:
+  The following 15 nodes are no longer exported by `@camp-dev/shaders`. Import them directly from `three/tsl`:
 
   `uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`
 
   ```ts
   // Before (0.1.x)
-  import { vec3, uv, time } from "@mattermix/shaders";
+  import { vec3, uv, time } from "@camp-dev/shaders";
 
   // After (0.2.0)
   import { vec3, uv } from "three/tsl";
-  import { time } from "@mattermix/shaders"; // still here, reduced-motion-gated
+  import { time } from "@camp-dev/shaders"; // still here, reduced-motion-gated
   ```
 
-  `time` stays exported from `@mattermix/shaders` unchanged, because this package owns its reduced-motion gating. For raw uncapped time, import from `three/tsl` directly.
+  `time` stays exported from `@camp-dev/shaders` unchanged, because this package owns its reduced-motion gating. For raw uncapped time, import from `three/tsl` directly.
 
-  The primitives this package owns (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) also stay exported unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@mattermix/shaders` to `three/tsl` for the dropped symbols, or re-add the component through the CLI to pull the 0.2.0 source.
+  The primitives this package owns (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) also stay exported unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@camp-dev/shaders` to `three/tsl` for the dropped symbols, or re-add the component through the CLI to pull the 0.2.0 source.
 
   **Why:** re-exporting pure TSL primitives bought nothing beyond shared import paths. Dropping them clarifies the layer boundary. This library ships value-add primitives, and TSL provides the math.
 
@@ -189,9 +189,9 @@
 
 - Initial public release. React shader components on WebGPU and Three.js TSL.
 
-  - `@mattermix/shaders` is the framework-agnostic engine: TSL primitives such as `fbm`, `voronoi`, `colorRamp`, and `quantize`, a WebGPU renderer wrapper, and a scheduler that watches visibility and intersection.
-  - `@mattermix/shaders-react` is the React binding: `<MatterScene>` for the shared canvas, `useShaderMaterial` for r3f, and the `useCursor` and `useScroll` input hooks.
-  - `@mattermix/shaders-cli` is the shadcn-style copy-paste CLI, with `init`, `list`, `add`, and `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so component code is stable per release.
+  - `@camp-dev/shaders` is the framework-agnostic engine: TSL primitives such as `fbm`, `voronoi`, `colorRamp`, and `quantize`, a WebGPU renderer wrapper, and a scheduler that watches visibility and intersection.
+  - `@camp-dev/shaders-react` is the React binding: `<MatterScene>` for the shared canvas, `useShaderMaterial` for r3f, and the `useCursor` and `useScroll` input hooks.
+  - `@camp-dev/shaders-cli` is the shadcn-style copy-paste CLI, with `init`, `list`, `add`, and `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so component code is stable per release.
 
   Six components ship through `shaders-cli add <name>`: `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, and `waves`. Each component is yours to edit after copy-in.
 

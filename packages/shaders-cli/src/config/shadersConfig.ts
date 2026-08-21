@@ -17,7 +17,7 @@ export interface ShadersConfig {
 
 export const DEFAULT_SHADERS_CONFIG: ShadersConfig = {
   componentsDir: 'src/components/shaders',
-  registryUrl: 'https://raw.githubusercontent.com/mattermix/shaders/${ref}/registry',
+  registryUrl: 'https://raw.githubusercontent.com/campdotdev/shaders/${ref}/registry',
   aliases: { '@/': 'src/' },
 };
 

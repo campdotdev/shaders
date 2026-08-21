@@ -6,6 +6,6 @@ export default defineConfig({
   dts: true,
   sourcemap: true,
   clean: true,
-  external: ['react', 'three', '@mattermix/shaders'],
+  external: ['react', 'three', '@camp-dev/shaders'],
   banner: { js: "'use client';" },
 });

@@ -1,5 +1,5 @@
 {
-  "name": "@mattermix/shaders",
+  "name": "@camp-dev/shaders",
   "version": "0.18.0",
   "description": "Engine for Shaders — TSL primitives, renderer, scheduler. Framework-agnostic.",
   "keywords": [
@@ -13,15 +13,15 @@
     "tsl",
     "webgpu"
   ],
-  "homepage": "https://github.com/mattermix/shaders#readme",
+  "homepage": "https://github.com/campdotdev/shaders#readme",
   "bugs": {
-    "url": "https://github.com/mattermix/shaders/issues"
+    "url": "https://github.com/campdotdev/shaders/issues"
   },
   "license": "MIT",
-  "author": "mattermix",
+  "author": "camp-dev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mattermix/shaders.git",
+    "url": "git+https://github.com/campdotdev/shaders.git",
     "directory": "packages/shaders"
   },
   "files": [

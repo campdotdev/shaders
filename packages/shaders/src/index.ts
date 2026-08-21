@@ -1,4 +1,4 @@
-// @mattermix/shaders — engine package public API.
+// @camp-dev/shaders — engine package public API.
 
 export { createRenderer } from './runtime/create-renderer/create-renderer.js';
 export type {

@@ -1,4 +1,4 @@
-// @mattermix/shaders-react — React binding for Shaders.
+// @camp-dev/shaders-react — React binding for Shaders.
 
 export * from './components/index.js';
 export * from './hooks/index.js';

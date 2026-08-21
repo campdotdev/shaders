@@ -4,8 +4,8 @@
 // and their default values, then hands everything to LinearGradientShader
 // (./shader.tsx), which does the actual GPU work. Render it inside a
 // <ShaderScene> — the component draws nothing on its own.
-import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
-import type { AnimatableProp } from '@mattermix/shaders-react';
+import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
+import type { AnimatableProp } from '@camp-dev/shaders-react';
 
 import type { ColorStop } from '../utils/color';
 import { LinearGradientShader } from './shader';

@@ -4,14 +4,14 @@
 // the engine's grain() primitive (a screen-position hash); this file decides
 // the two things layered on top of it: how often the pattern re-rolls
 // (speed) and how the noise combines with the image underneath (blend).
-import { grain } from '@mattermix/shaders';
+import { grain } from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
   useAnimatableUniform,
   usePostProcessPass,
   useStaticSceneHint,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import { floor, vec4 } from 'three/tsl';
 
 export type GrainBlend = 'additive' | 'subtractive';

@@ -6,13 +6,13 @@
 // as a prop with the editor's value as its default.
 import { useEffect } from 'react';
 
-import { colorRamp, displace, simplexNoise } from '@mattermix/shaders';
+import { colorRamp, displace, simplexNoise } from '@camp-dev/shaders';
 import {
   useAnimatableSpeed,
   useAnimatableUniform,
   useShaderContext,
-} from '@mattermix/shaders-react';
-import { parseColorString } from '@mattermix/shaders/color';
+} from '@camp-dev/shaders-react';
+import { parseColorString } from '@camp-dev/shaders/color';
 import {
   clamp,
   cos,

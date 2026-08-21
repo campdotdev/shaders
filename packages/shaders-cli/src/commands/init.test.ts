@@ -22,7 +22,7 @@ describe('runInit', () => {
     const shadersConfig = JSON.parse(raw);
 
     expect(shadersConfig.componentsDir).toBe('src/components/shaders');
-    expect(shadersConfig.registryUrl).toContain('mattermix/shaders');
+    expect(shadersConfig.registryUrl).toContain('campdotdev/shaders');
   });
 
   it('refuses to overwrite an existing config without --force', async () => {

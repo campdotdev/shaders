@@ -34,7 +34,7 @@ The animation engine doesn't run on the CPU per-frame — values flow straight i
 
 ```tsx
 import { useMotionValue, useTransform, useScroll } from 'motion/react'
-import { ShaderScene } from '@mattermix/shaders-react'
+import { ShaderScene } from '@camp-dev/shaders-react'
 import { DotField } from '@/components/shaders/dot-field'
 
 export function Hero() {
@@ -60,7 +60,7 @@ Shaders ships three React hooks that produce ready-to-use signals — they handl
 - `useResize()` — returns a `ResizeSignal` with current canvas dimensions.
 
 ```tsx
-import { ShaderScene, useCursor } from '@mattermix/shaders-react'
+import { ShaderScene, useCursor } from '@camp-dev/shaders-react'
 
 function App() {
   return (

@@ -8,7 +8,7 @@
  * This used to load the popover through `next/dynamic` with `ssr: false`,
  * because reaching the color math meant importing three/webgpu, which reads
  * `self` at module load. Both halves of that now come from three-free subpaths
- * (`@mattermix/shaders/color` and `@mattermix/shaders-react/gamut`), so it is a plain
+ * (`@camp-dev/shaders/color` and `@camp-dev/shaders-react/gamut`), so it is a plain
  * import.
  */
 import { Popover } from '@base-ui/react/popover';

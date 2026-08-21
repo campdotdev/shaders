@@ -267,7 +267,7 @@ pnpm test --filter <touched package>
 
 Four repo traps apply here:
 
-- If a fix changed source under `packages/shaders` or `packages/shaders-react`, run `pnpm --filter @mattermix/shaders build`. The docs site consumes `dist`, so an unbuilt fix looks like no fix at all.
+- If a fix changed source under `packages/shaders` or `packages/shaders-react`, run `pnpm --filter @camp-dev/shaders build`. The docs site consumes `dist`, so an unbuilt fix looks like no fix at all.
 - If a fix changed a dependency in any `package.json`, commit the updated `pnpm-lock.yaml` with it, and check that the lockfile still pins `node@runtime` at `version: 22.22.2` with `hasBin: true`. Every pnpm resolution step rewrites that entry to `0.0.0`, and CI then dies at install in every job.
 - Never run `pnpm snap` as part of this workflow. Ask first. It needs Docker and Node 22, it takes a long time, and it corrupts a running docs or editor dev server.
 - If you ran Playwright or `pnpm snap` for any reason, tell the user to restart the dev server before trusting the browser. The procedure is in `AGENTS.md` under the environment gotchas.
@@ -296,7 +296,7 @@ Pick `<type>` from the file class the approved fixes touched, and add no AI attr
 | A workflow under `.github/`                              | `ci`            |
 | Tests, tooling config, or a lockfile on its own          | `chore`         |
 
-The command above supplies the colon, so these values carry none. Scope is the package name without the `@mattermix/` prefix. When a run spans classes, name the class that carries the substantive fix, so a code fix that drags a lockfile with it stays `fix(<scope>)`. The user already saw the commit line in the Step 6 preview, so change it there rather than asking again here.
+The command above supplies the colon, so these values carry none. Scope is the package name without the `@camp-dev/` prefix. When a run spans classes, name the class that carries the substantive fix, so a code fix that drags a lockfile with it stays `fix(<scope>)`. The user already saw the commit line in the Step 6 preview, so change it there rather than asking again here.
 
 ## Step 10: Reply and resolve the threads
 

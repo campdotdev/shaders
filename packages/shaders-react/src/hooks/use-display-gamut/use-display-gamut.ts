@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 
-import type { OutputGamut } from '@mattermix/shaders';
+import type { OutputGamut } from '@camp-dev/shaders';
 
 /** What the consumer asks for: a fixed gamut, or 'auto' to detect the display. */
 export type GamutPreference = 'auto' | OutputGamut;

@@ -16,7 +16,7 @@ import {
   dither,
   FrameScheduler,
   resetRendererClock,
-} from '@mattermix/shaders';
+} from '@camp-dev/shaders';
 import { OrthographicCamera, Scene } from 'three';
 import type { ShaderNodeObject } from 'three/tsl';
 import { pass, passTexture, renderOutput, uv, vec4 } from 'three/tsl';

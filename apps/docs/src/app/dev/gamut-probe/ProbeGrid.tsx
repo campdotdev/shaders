@@ -2,8 +2,8 @@
 
 import { useEffect } from 'react';
 
-import { ShaderScene, useShaderContext } from '@mattermix/shaders-react';
-import { oklchToLinearSrgb } from '@mattermix/shaders/color';
+import { ShaderScene, useShaderContext } from '@camp-dev/shaders-react';
+import { oklchToLinearSrgb } from '@camp-dev/shaders/color';
 import { vec3, vec4 } from 'three/tsl';
 
 import { addPlaneMesh } from '@/lib/meshUtils';

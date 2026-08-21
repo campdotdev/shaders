@@ -17,8 +17,8 @@ import {
   mixColor,
   simplexNoise,
   voronoiCells,
-} from '@mattermix/shaders';
-import { parseColorString } from '@mattermix/shaders/color';
+} from '@camp-dev/shaders';
+import { parseColorString } from '@camp-dev/shaders/color';
 import {
   add,
   clamp,

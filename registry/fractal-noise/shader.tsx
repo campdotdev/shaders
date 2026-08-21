@@ -16,14 +16,14 @@ import {
   fractalNoise,
   type HueInterpolation,
   quantize,
-} from '@mattermix/shaders';
+} from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatableSpeed,
   useAnimatableUniform,
   useShaderContext,
   useStaticSceneHint,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import { clamp, float, mix, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 

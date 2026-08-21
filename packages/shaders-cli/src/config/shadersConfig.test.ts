@@ -11,8 +11,8 @@ import {
 } from './shadersConfig.js';
 
 describe('DEFAULT_SHADERS_CONFIG.registryUrl', () => {
-  it('points at the mattermix/shaders org', () => {
-    expect(DEFAULT_SHADERS_CONFIG.registryUrl).toContain('/mattermix/shaders/');
+  it('points at the campdotdev/shaders org', () => {
+    expect(DEFAULT_SHADERS_CONFIG.registryUrl).toContain('/campdotdev/shaders/');
   });
 
   it('contains the ${ref} placeholder for resolveRef substitution', () => {

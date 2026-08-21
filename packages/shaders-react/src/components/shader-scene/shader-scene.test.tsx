@@ -1,5 +1,5 @@
-import type * as ShadersModule from '@mattermix/shaders';
-import { createRenderer } from '@mattermix/shaders';
+import type * as ShadersModule from '@camp-dev/shaders';
+import { createRenderer } from '@camp-dev/shaders';
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -7,7 +7,7 @@ import { ShadersError } from '../../errors/shaders-error.js';
 import { PosterContext } from '../shader-poster/poster-context.js';
 import { ShaderScene } from './shader-scene.js';
 
-vi.mock('@mattermix/shaders', async (importOriginal) => {
+vi.mock('@camp-dev/shaders', async (importOriginal) => {
   const actual = await importOriginal<typeof ShadersModule>();
 
   return {

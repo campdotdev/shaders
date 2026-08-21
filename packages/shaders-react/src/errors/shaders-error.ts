@@ -5,7 +5,7 @@
 export type ShadersErrorCode = 'renderer-init';
 
 /**
- * A typed error surfaced by @mattermix/shaders-react. The original thrown value is
+ * A typed error surfaced by @camp-dev/shaders-react. The original thrown value is
  * always available on `cause`.
  */
 export class ShadersError extends Error {

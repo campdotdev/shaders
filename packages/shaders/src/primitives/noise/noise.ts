@@ -14,7 +14,7 @@ import type { TSLNode } from '../color-ramp/color-ramp.js';
  *   place — see the simplex-noise registry component).
  *
  * Built on top of three's `mx_noise_float`; we wrap it so consumers have a
- * stable import path through `@mattermix/shaders` and we can swap the
+ * stable import path through `@camp-dev/shaders` and we can swap the
  * implementation if a different noise primitive proves better in practice.
  *
  * Returns `ShaderNodeObject<Node>` (chainable) rather than the broader

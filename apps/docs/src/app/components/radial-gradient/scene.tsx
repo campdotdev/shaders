@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@mattermix/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders-react';
 import { RadialGradient } from '@shaders/registry/radial-gradient';
 
 import { INITIAL, type Params } from './params';

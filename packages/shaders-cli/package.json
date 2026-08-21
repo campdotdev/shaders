@@ -1,5 +1,5 @@
 {
-  "name": "@mattermix/shaders-cli",
+  "name": "@camp-dev/shaders-cli",
   "version": "0.18.0",
   "description": "CLI for Shaders — copy-paste components from the registry into your project.",
   "keywords": [
@@ -10,15 +10,15 @@
     "shadcn",
     "shader"
   ],
-  "homepage": "https://github.com/mattermix/shaders#readme",
+  "homepage": "https://github.com/campdotdev/shaders#readme",
   "bugs": {
-    "url": "https://github.com/mattermix/shaders/issues"
+    "url": "https://github.com/campdotdev/shaders/issues"
   },
   "license": "MIT",
-  "author": "mattermix",
+  "author": "camp-dev",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mattermix/shaders.git",
+    "url": "git+https://github.com/campdotdev/shaders.git",
     "directory": "packages/shaders-cli"
   },
   "bin": {
@@ -46,8 +46,8 @@
     "esbuild": "^0.27.0"
   },
   "devDependencies": {
-    "@mattermix/shaders": "workspace:*",
-    "@mattermix/shaders-react": "workspace:*",
+    "@camp-dev/shaders": "workspace:*",
+    "@camp-dev/shaders-react": "workspace:*",
     "@shaders/registry": "workspace:*",
     "@shaders/tsconfig": "workspace:*",
     "@types/node": "^22.7.0",
