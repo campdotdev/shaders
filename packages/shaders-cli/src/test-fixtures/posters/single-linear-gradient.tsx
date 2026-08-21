@@ -1,4 +1,4 @@
-import { ShaderScene } from '@mattermix/shaders-react'
+import { ShaderScene } from '@camp-dev/shaders-react'
 import { LinearGradient } from '@shaders/registry/linear-gradient'
 
 export default function SingleLinearGradient() {

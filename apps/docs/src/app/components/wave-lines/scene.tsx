@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@mattermix/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders-react';
 import { WaveLines } from '@shaders/registry/wave-lines';
 import type { WaveLine } from '@shaders/registry/wave-lines';
 

@@ -1,4 +1,4 @@
-import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
+import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
 import type { FractalNoiseStyle } from '@shaders/registry/fractal-noise';
 import { STYLE_DIAL_DEFAULTS } from '@shaders/registry/fractal-noise/style-dial-defaults';
 

@@ -1,7 +1,7 @@
 import { type ReactNode, StrictMode } from 'react';
 
-import { getReducedMotionTimeScale } from '@mattermix/shaders';
-import type { SchedulerClient, SchedulerTick } from '@mattermix/shaders';
+import { getReducedMotionTimeScale } from '@camp-dev/shaders';
+import type { SchedulerClient, SchedulerTick } from '@camp-dev/shaders';
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 

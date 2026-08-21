@@ -6,7 +6,7 @@ export default defineConfig({
   // @ts-expect-error -- oxc is not in UserConfig types yet; this is the documented workaround
   oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } },
   test: {
-    name: '@mattermix/shaders-react',
+    name: '@camp-dev/shaders-react',
     environment: 'happy-dom',
     globals: false,
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],

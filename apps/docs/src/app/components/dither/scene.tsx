@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@mattermix/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders-react';
 import { Dither } from '@shaders/registry/dither';
 import { MeshGradient } from '@shaders/registry/mesh-gradient';
 

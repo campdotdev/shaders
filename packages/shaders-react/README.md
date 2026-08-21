@@ -1,16 +1,16 @@
-# @mattermix/shaders-react
+# @camp-dev/shaders-react
 
 React binding for **Shaders** — shader components on WebGPU + Three.js TSL.
 
-This package wraps the engine ([`@mattermix/shaders`](https://www.npmjs.com/package/@mattermix/shaders)) with React-friendly primitives: a shared `<ShaderScene>` canvas, a `useShaderMaterial` hook for `@react-three/fiber` integration, and input hooks (`useCursor`, `useScroll`).
+This package wraps the engine ([`@camp-dev/shaders`](https://www.npmjs.com/package/@camp-dev/shaders)) with React-friendly primitives: a shared `<ShaderScene>` canvas, a `useShaderMaterial` hook for `@react-three/fiber` integration, and input hooks (`useCursor`, `useScroll`).
 
 ## Install
 
 ```bash
-npm install @mattermix/shaders @mattermix/shaders-react react three
+npm install @camp-dev/shaders @camp-dev/shaders-react react three
 ```
 
-`react` (^19), `@mattermix/shaders`, and `three` (^0.170) are peer dependencies.
+`react` (^19), `@camp-dev/shaders`, and `three` (^0.170) are peer dependencies.
 
 ## Three rendering modes
 
@@ -23,8 +23,8 @@ Shaders components work in three configurations:
 ## Minimal usage (Mode 2: shared scene)
 
 ```tsx
-import { ShaderScene } from '@mattermix/shaders-react'
-// LinearGradient is copy-pasted into your project via @mattermix/shaders-cli
+import { ShaderScene } from '@camp-dev/shaders-react'
+// LinearGradient is copy-pasted into your project via @camp-dev/shaders-cli
 import { LinearGradient } from '@/components/shaders/linear-gradient'
 
 export default function Hero() {
@@ -41,7 +41,7 @@ export default function Hero() {
 Polished drop-in components (`<LinearGradient>`, `<Aurora>`, `<DotField>`, `<SimplexNoise>`, `<MeshGradient>`, `<WaveLines>`) ship via the shadcn-style copy-paste CLI. Install it once:
 
 ```bash
-npm install -D @mattermix/shaders-cli
+npm install -D @camp-dev/shaders-cli
 npx shaders-cli init
 npx shaders-cli add linear-gradient
 ```
@@ -50,7 +50,7 @@ The component lands in `src/components/shaders/linear-gradient.tsx` and is yours
 
 ## Docs
 
-<https://github.com/mattermix/shaders>
+<https://github.com/campdotdev/shaders>
 
 ## License
 

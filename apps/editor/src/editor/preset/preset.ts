@@ -8,7 +8,7 @@
 // spec's default instead of failing the whole load. Kept dependency-free
 // (hand-rolled validation, no schema library) so every consumer -- including
 // the code emitter, which stays three-free -- can pull it in cheaply.
-import { parseColorString } from '@mattermix/shaders/color';
+import { parseColorString } from '@camp-dev/shaders/color';
 
 import type { ColorStop, ParamSpec, ParamValue, SpecId } from '@/editor/graph/registry';
 import { NODE_SPECS, xyKeysOf } from '@/editor/graph/registry';

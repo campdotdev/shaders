@@ -4,8 +4,8 @@
 // their defaults, then delegates to FractalNoiseShader (./shader.tsx), which
 // sums several octaves of noise per pixel and maps the result onto a color
 // ramp. Render it inside a <ShaderScene>.
-import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
-import type { AnimatableProp } from '@mattermix/shaders-react';
+import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
+import type { AnimatableProp } from '@camp-dev/shaders-react';
 
 import type { ColorStop } from '../utils/color';
 import { FractalNoiseShader, type FractalNoiseStyle } from './shader';

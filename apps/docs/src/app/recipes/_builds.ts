@@ -5,7 +5,7 @@ import {
   fractalNoise,
   quantize,
   voronoi,
-} from '@mattermix/shaders';
+} from '@camp-dev/shaders';
 import type UniformNode from 'three/src/nodes/core/UniformNode.js';
 import { length, max, sin, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
 import type { ShaderNodeObject } from 'three/tsl';

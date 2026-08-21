@@ -1,6 +1,6 @@
-# @mattermix/shaders-react
+# @camp-dev/shaders-react
 
-> Versions 0.18.0 and below shipped as `@lovo/matter-react` before the project moved to the mattermix org. Releases 1.0.0 through 3.9.0 from that history are renumbered here as 0.7.0 through 0.18.0.
+> Versions 0.18.0 and below shipped as `@lovo/matter-react` before the project moved to the camp-dev org. Releases 1.0.0 through 3.9.0 from that history are renumbered here as 0.7.0 through 0.18.0.
 
 ## 0.18.0
 
@@ -46,9 +46,9 @@
 
 ### Minor Changes
 
-- 0d924ce: Add `@mattermix/shaders-react/gamut`, a second entry point carrying `useDisplayGamut` with no path to three. The root entry re-exports `ShaderScene`, which imports `three/webgpu`, and that reads `self` at module load, so a server-rendered page that only wanted to know whether the display can show P3 had to load the renderer to ask. The hook itself never needed it.
+- 0d924ce: Add `@camp-dev/shaders-react/gamut`, a second entry point carrying `useDisplayGamut` with no path to three. The root entry re-exports `ShaderScene`, which imports `three/webgpu`, and that reads `self` at module load, so a server-rendered page that only wanted to know whether the display can show P3 had to load the renderer to ask. The hook itself never needed it.
 
-  Same reasoning as `@mattermix/shaders/color`, and as the `./poster` subpath this package already shipped. Both subpaths now have a test that imports them under a bare Node environment, so three creeping back into either one fails there rather than in someone's server render.
+  Same reasoning as `@camp-dev/shaders/color`, and as the `./poster` subpath this package already shipped. Both subpaths now have a test that imports them under a bare Node environment, so three creeping back into either one fails there rather than in someone's server render.
 
 ## 0.10.0
 
@@ -56,7 +56,7 @@
 
 ### Major Changes
 
-- 1b0bbcb: Remove `ShaderScene`'s `fallback` prop. This is a breaking change. Use the new `ShaderPoster` component from `@mattermix/shaders-react/poster` instead. It renders in the initial HTML, with no three import, and dismisses when the wrapped `ShaderScene` paints its first frame.
+- 1b0bbcb: Remove `ShaderScene`'s `fallback` prop. This is a breaking change. Use the new `ShaderPoster` component from `@camp-dev/shaders-react/poster` instead. It renders in the initial HTML, with no three import, and dismisses when the wrapped `ShaderScene` paints its first frame.
 
 ## 0.8.0
 
@@ -70,7 +70,7 @@
 
 ### Minor Changes
 
-- 35274c3: Rename ambiguous `@mattermix/shaders-react` public exports to clearer names. This is a breaking change before 1.0.
+- 35274c3: Rename ambiguous `@camp-dev/shaders-react` public exports to clearer names. This is a breaking change before 1.0.
 
   - `useOverlayPass` → `usePostProcessPass` (and the paired type `OverlayTransform` → `PostProcessTransform`)
   - `useStaticHint` → `useStaticSceneHint`
@@ -86,7 +86,7 @@
 
 - 1c69220: Rename public API symbols to domain-accurate names.
 
-  New primary names: `FrameScheduler`, `GpuRenderer`, `GpuBackend` (`@mattermix/shaders`); `ShaderScene`, `ShaderSceneProps`, `ShaderContext`, `ShaderContextValue`, `useShaderContext`, `ShaderMonitor`, `ShaderMonitorProps`, `AnimatableSignal` (`@mattermix/shaders-react`).
+  New primary names: `FrameScheduler`, `GpuRenderer`, `GpuBackend` (`@camp-dev/shaders`); `ShaderScene`, `ShaderSceneProps`, `ShaderContext`, `ShaderContextValue`, `useShaderContext`, `ShaderMonitor`, `ShaderMonitorProps`, `AnimatableSignal` (`@camp-dev/shaders-react`).
 
   The old names `MatterScheduler`, `MatterRenderer`, `MatterBackend`, `MatterScene`, `MatterSceneProps`, `MatterContext`, `MatterContextValue`, `useMatterContext`, `MatterMonitor`, `MatterMonitorProps`, and `MatterSignal` carry `@deprecated` JSDoc and continue to work. They will be removed no earlier than 0.5.0.
 
@@ -101,7 +101,7 @@
   The new hook is `useOverlayPass(transform, deps)`:
 
   ```ts
-  import { useAnimatableUniform, useOverlayPass } from '@mattermix/shaders-react';
+  import { useAnimatableUniform, useOverlayPass } from '@camp-dev/shaders-react';
 
   export function MyOverlay({ intensity }) {
     const intensityU = useAnimatableUniform(intensity);
@@ -115,7 +115,7 @@
 
   Mount the component inside any `<MatterScene>` and it composes onto the pipeline. Multiple overlays chain in mount order. Uniforms captured inside `transform` update in place and don't need to be in `deps`. Put only structural changes there, such as a mode toggle, so the transform gets re-registered.
 
-  Two registry components ship with it, delivered through `@mattermix/shaders-cli` copy-paste:
+  Two registry components ship with it, delivered through `@camp-dev/shaders-cli` copy-paste:
 
   - `<Grain>`, an additive or subtractive grain overlay.
   - `<Vignette>`, radial edge darkening, aspect-corrected so the mask is a circle on widescreen.
@@ -125,13 +125,13 @@
 ### Patch Changes
 
 - Updated dependencies [3856367]
-  - @mattermix/shaders@0.3.0
+  - @camp-dev/shaders@0.3.0
 
 ## 0.2.0
 
 ### Minor Changes
 
-- No API changes. This package bumped alongside `@mattermix/shaders` 0.2.0 because the three packages ship as a fixed version group. See [`@mattermix/shaders`'s 0.2.0 changelog](../shaders/CHANGELOG.md#020) for the engine-level breaking change.
+- No API changes. This package bumped alongside `@camp-dev/shaders` 0.2.0 because the three packages ship as a fixed version group. See [`@camp-dev/shaders`'s 0.2.0 changelog](../shaders/CHANGELOG.md#020) for the engine-level breaking change.
 
 ## 0.1.0
 
@@ -139,9 +139,9 @@
 
 - Initial public release. React shader components on WebGPU and Three.js TSL.
 
-  - `@mattermix/shaders` is the framework-agnostic engine: TSL primitives such as `fbm`, `voronoi`, `colorRamp`, and `quantize`, a WebGPU renderer wrapper, and a scheduler that watches visibility and intersection.
-  - `@mattermix/shaders-react` is the React binding: `<MatterScene>` for the shared canvas, `useShaderMaterial` for r3f, and the `useCursor` and `useScroll` input hooks.
-  - `@mattermix/shaders-cli` is the shadcn-style copy-paste CLI, with `init`, `list`, `add`, and `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so component code is stable per release.
+  - `@camp-dev/shaders` is the framework-agnostic engine: TSL primitives such as `fbm`, `voronoi`, `colorRamp`, and `quantize`, a WebGPU renderer wrapper, and a scheduler that watches visibility and intersection.
+  - `@camp-dev/shaders-react` is the React binding: `<MatterScene>` for the shared canvas, `useShaderMaterial` for r3f, and the `useCursor` and `useScroll` input hooks.
+  - `@camp-dev/shaders-cli` is the shadcn-style copy-paste CLI, with `init`, `list`, `add`, and `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so component code is stable per release.
 
   Six components ship through `shaders-cli add <name>`: `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, and `waves`. Each component is yours to edit after copy-in.
 

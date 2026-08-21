@@ -14,8 +14,8 @@ import {
   signedDistanceFieldCircle,
   simplexNoise,
   voronoi,
-} from '@mattermix/shaders';
-import { ShaderScene, useShaderContext } from '@mattermix/shaders-react';
+} from '@camp-dev/shaders';
+import { ShaderScene, useShaderContext } from '@camp-dev/shaders-react';
 import type { ShaderNodeObject } from 'three/tsl';
 import { mix, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Vector2 } from 'three/webgpu';

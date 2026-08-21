@@ -1,12 +1,12 @@
-# @mattermix/shaders-cli
+# @camp-dev/shaders-cli
 
 shadcn-style copy-paste CLI for **Shaders** — fetch polished shader components from the registry into your project, where they're yours to edit.
 
 ## Install
 
 ```bash
-npm install -D @mattermix/shaders-cli
-# or run ad-hoc: npx @mattermix/shaders-cli <command>
+npm install -D @camp-dev/shaders-cli
+# or run ad-hoc: npx @camp-dev/shaders-cli <command>
 ```
 
 Requires Node 22+.
@@ -24,7 +24,7 @@ Writes `shaders.config.json` to your project root with sensible defaults:
 ```json
 {
   "componentsDir": "src/components/shaders",
-  "registryUrl": "https://raw.githubusercontent.com/mattermix/shaders/${ref}/registry",
+  "registryUrl": "https://raw.githubusercontent.com/campdotdev/shaders/${ref}/registry",
   "aliases": { "@/": "src/" }
 }
 ```
@@ -112,7 +112,7 @@ npx shaders-cli poster --source ./aurora.tsx --output ./public/aurora.jpg --qual
 Wire it up:
 
 ```tsx
-import { ShaderPoster } from '@mattermix/shaders-react/poster';
+import { ShaderPoster } from '@camp-dev/shaders-react/poster';
 
 <ShaderPoster poster={<img src="/hero.jpg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}>
   <ShaderScene>
@@ -131,15 +131,15 @@ import { ShaderPoster } from '@mattermix/shaders-react/poster';
 
 `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `wave-lines`.
 
-Each component depends on `@mattermix/shaders` and `@mattermix/shaders-react`, which you install separately:
+Each component depends on `@camp-dev/shaders` and `@camp-dev/shaders-react`, which you install separately:
 
 ```bash
-npm install @mattermix/shaders @mattermix/shaders-react three
+npm install @camp-dev/shaders @camp-dev/shaders-react three
 ```
 
 ## Docs
 
-<https://github.com/mattermix/shaders>
+<https://github.com/campdotdev/shaders>
 
 ## License
 

@@ -21,9 +21,9 @@ export interface PosterContextValue {
 // package, `PosterContextValue`'s shape is a forever-contract for the
 // lifetime of this key: any future change to it must stay backward-compatible
 // with older copies reading/writing the same global slot, or the key itself
-// must be bumped (e.g. to `@mattermix/shaders-react:poster-context/v2`) so
+// must be bumped (e.g. to `@camp-dev/shaders-react:poster-context/v2`) so
 // incompatible shapes don't collide.
-const POSTER_CONTEXT_KEY = Symbol.for('@mattermix/shaders-react:poster-context');
+const POSTER_CONTEXT_KEY = Symbol.for('@camp-dev/shaders-react:poster-context');
 
 const globalRegistry = globalThis as Record<symbol, unknown>;
 

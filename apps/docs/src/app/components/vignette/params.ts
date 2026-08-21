@@ -1,4 +1,4 @@
-import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
+import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
 
 export interface VignetteParams {
   intensity: number;

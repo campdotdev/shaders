@@ -14,8 +14,8 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
-    "@mattermix/shaders": "workspace:*",
-    "@mattermix/shaders-react": "workspace:*",
+    "@camp-dev/shaders": "workspace:*",
+    "@camp-dev/shaders-react": "workspace:*",
     "@shaders/registry": "workspace:*",
     "@xyflow/react": "^12.11.2",
     "github-slugger": "^2.0.0",

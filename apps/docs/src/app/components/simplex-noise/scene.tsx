@@ -2,7 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@mattermix/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders-react';
 import { SimplexNoise } from '@shaders/registry/simplex-noise';
 import type { ColorStop } from '@shaders/registry/simplex-noise';
 

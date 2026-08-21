@@ -5,7 +5,7 @@
 // one place that writes node data) and passes it down here. Split out of
 // CardNode.tsx (MAT-94 Task 11.5) so the card shell stays under the
 // 300-line bar.
-import { parseColorString } from '@mattermix/shaders/color';
+import { parseColorString } from '@camp-dev/shaders/color';
 
 import { ColorInput } from '@/controls/ColorInput';
 import { colorParamOf, rampStopsOf } from '@/editor/graph/graph';

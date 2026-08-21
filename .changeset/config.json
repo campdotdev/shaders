@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@mattermix/shaders", "@mattermix/shaders-react", "@mattermix/shaders-cli"]],
+  "fixed": [["@camp-dev/shaders", "@camp-dev/shaders-react", "@camp-dev/shaders-cli"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

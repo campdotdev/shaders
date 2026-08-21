@@ -8,7 +8,7 @@
 // the canvas resolution to convert between pixels and cell units.
 import { useEffect, useMemo } from 'react';
 
-import { displace, signedDistanceFieldCircle, type TSLNode } from '@mattermix/shaders';
+import { displace, signedDistanceFieldCircle, type TSLNode } from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatablePoint,
@@ -16,7 +16,7 @@ import {
   useAnimatableUniform,
   useResize,
   useShaderContext,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import { exp, length, round, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 

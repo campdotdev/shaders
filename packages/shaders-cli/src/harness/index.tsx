@@ -5,7 +5,7 @@
 // watcher the screenshot side polls for.
 import type React from 'react';
 
-import { setReducedMotionPolicy } from '@mattermix/shaders';
+import { setReducedMotionPolicy } from '@camp-dev/shaders';
 import { createRoot } from 'react-dom/client';
 
 import { installFrameReadyWatcher } from './frameReady.js';

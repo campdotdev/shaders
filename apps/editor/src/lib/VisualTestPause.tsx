@@ -7,9 +7,9 @@
 // Mounted inside the parity scenes' ShaderScene trees.
 import { useEffect } from 'react';
 
-import { resetRendererClock, setReducedMotionPolicy } from '@mattermix/shaders';
-import type { ReducedMotionPolicy, SchedulerTick } from '@mattermix/shaders';
-import { useShaderContext } from '@mattermix/shaders-react';
+import { resetRendererClock, setReducedMotionPolicy } from '@camp-dev/shaders';
+import type { ReducedMotionPolicy, SchedulerTick } from '@camp-dev/shaders';
+import { useShaderContext } from '@camp-dev/shaders-react';
 
 const TARGET_FRAME = 2;
 

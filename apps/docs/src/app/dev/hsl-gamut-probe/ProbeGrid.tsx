@@ -1,6 +1,6 @@
 'use client';
 
-import { ShaderScene } from '@mattermix/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders-react';
 import { LinearGradient } from '@shaders/registry/linear-gradient';
 
 import { VisualTestPause } from '@/lib/visualTestHooks';

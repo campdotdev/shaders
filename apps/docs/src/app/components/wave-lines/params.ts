@@ -1,4 +1,4 @@
-import type { ColorSpace } from '@mattermix/shaders';
+import type { ColorSpace } from '@camp-dev/shaders';
 
 import { paletteOklch } from '../../../lib/palette';
 

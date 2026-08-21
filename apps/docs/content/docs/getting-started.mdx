@@ -18,8 +18,8 @@ Shaders is a React component library for WebGPU shaders built on Three.js TSL. C
 Add the engine and the React binding to your app, and the CLI as a dev dependency:
 
 ```bash
-pnpm add @mattermix/shaders @mattermix/shaders-react
-pnpm add -D @mattermix/shaders-cli
+pnpm add @camp-dev/shaders @camp-dev/shaders-react
+pnpm add -D @camp-dev/shaders-cli
 ```
 
 Requirements:
@@ -64,7 +64,7 @@ Requirements:
 Every Shaders component is bare — it needs a `<ShaderScene>` parent to provide the WebGPU canvas. The simplest valid usage:
 
 ```tsx
-import { ShaderScene } from '@mattermix/shaders-react'
+import { ShaderScene } from '@camp-dev/shaders-react'
 import { LinearGradient } from '@/components/shaders/linear-gradient'
 
 export function Hero() {

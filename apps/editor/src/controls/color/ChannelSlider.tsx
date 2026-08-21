@@ -28,7 +28,7 @@ import {
   linearSrgbToLinearDisplayP3,
   oklchInGamut,
   oklchToLinearSrgb,
-} from '@mattermix/shaders/color';
+} from '@camp-dev/shaders/color';
 
 import { MAX_CHROMA, type OklchColor } from './oklch';
 

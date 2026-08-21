@@ -4,8 +4,8 @@
 // defaults, then delegates to VignetteShader (./shader.tsx). The vignette is
 // a post-process layer — stack it after other components inside a
 // <ShaderScene> and it blends the image toward `color` at the edges.
-import type { ColorSpace, HueInterpolation } from '@mattermix/shaders';
-import type { AnimatableProp } from '@mattermix/shaders-react';
+import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
+import type { AnimatableProp } from '@camp-dev/shaders-react';
 
 import { VignetteShader } from './shader';
 

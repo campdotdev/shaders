@@ -9,7 +9,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ShaderPoster } from './poster.js';
 
-describe('@mattermix/shaders-react/poster', () => {
+describe('@camp-dev/shaders-react/poster', () => {
   it('imports with no DOM globals present', () => {
     expect(typeof self).toBe('undefined');
   });

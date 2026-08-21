@@ -10,7 +10,7 @@
  * wiring around it was left behind (ColorInput/ColorPopoverContents here take
  * plain value/onChange/onCommit props instead).
  */
-import { linearSrgbToOklch, parseColorString } from '@mattermix/shaders/color';
+import { linearSrgbToOklch, parseColorString } from '@camp-dev/shaders/color';
 
 /**
  * OKLCH in one line: lightness is how bright (0 black, 1 white), chroma is how

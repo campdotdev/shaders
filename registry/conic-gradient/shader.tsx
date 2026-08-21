@@ -8,7 +8,7 @@
 // fraction of a full turn? That fraction picks a color from the ramp.
 import { useEffect, useMemo } from 'react';
 
-import { colorRamp, type ColorSpace, type HueInterpolation } from '@mattermix/shaders';
+import { colorRamp, type ColorSpace, type HueInterpolation } from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatablePoint,
@@ -17,7 +17,7 @@ import {
   useResize,
   useShaderContext,
   useStaticSceneHint,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import { atan2, fract, uniform, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 

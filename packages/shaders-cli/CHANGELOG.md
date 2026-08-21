@@ -1,6 +1,6 @@
-# @mattermix/shaders-cli
+# @camp-dev/shaders-cli
 
-> Versions 0.18.0 and below shipped as `@lovo/matter-cli` before the project moved to the mattermix org. Releases 1.0.0 through 3.9.0 from that history are renumbered here as 0.7.0 through 0.18.0.
+> Versions 0.18.0 and below shipped as `@lovo/matter-cli` before the project moved to the camp-dev org. Releases 1.0.0 through 3.9.0 from that history are renumbered here as 0.7.0 through 0.18.0.
 
 ## 0.18.0
 
@@ -92,7 +92,7 @@
 
 ### Minor Changes
 
-- No API changes. This package bumped alongside `@mattermix/shaders` 0.2.0 because the three packages ship as a fixed version group. See [`@mattermix/shaders`'s 0.2.0 changelog](../shaders/CHANGELOG.md#020) for the engine-level breaking change.
+- No API changes. This package bumped alongside `@camp-dev/shaders` 0.2.0 because the three packages ship as a fixed version group. See [`@camp-dev/shaders`'s 0.2.0 changelog](../shaders/CHANGELOG.md#020) for the engine-level breaking change.
 
 ## 0.1.0
 
@@ -100,9 +100,9 @@
 
 - Initial public release. React shader components on WebGPU and Three.js TSL.
 
-  - `@mattermix/shaders` is the framework-agnostic engine: TSL primitives such as `fbm`, `voronoi`, `colorRamp`, and `quantize`, a WebGPU renderer wrapper, and a scheduler that watches visibility and intersection.
-  - `@mattermix/shaders-react` is the React binding: `<MatterScene>` for the shared canvas, `useShaderMaterial` for r3f, and the `useCursor` and `useScroll` input hooks.
-  - `@mattermix/shaders-cli` is the shadcn-style copy-paste CLI, with `init`, `list`, `add`, and `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so component code is stable per release.
+  - `@camp-dev/shaders` is the framework-agnostic engine: TSL primitives such as `fbm`, `voronoi`, `colorRamp`, and `quantize`, a WebGPU renderer wrapper, and a scheduler that watches visibility and intersection.
+  - `@camp-dev/shaders-react` is the React binding: `<MatterScene>` for the shared canvas, `useShaderMaterial` for r3f, and the `useCursor` and `useScroll` input hooks.
+  - `@camp-dev/shaders-cli` is the shadcn-style copy-paste CLI, with `init`, `list`, `add`, and `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so component code is stable per release.
 
   Six components ship through `shaders-cli add <name>`: `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `noise-field`, and `waves`. Each component is yours to edit after copy-in.
 

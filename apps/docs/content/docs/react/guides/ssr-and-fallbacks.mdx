@@ -24,13 +24,13 @@ Some of what Shaders ships is plain arithmetic that never touches the GPU: parsi
 
 | Import from | Instead of | For |
 | --- | --- | --- |
-| `@mattermix/shaders/color` | `@mattermix/shaders` | `parseColorString`, the OKLab/OKLCH conversions, the gamut helpers, the sRGB transfer functions |
-| `@mattermix/shaders-react/gamut` | `@mattermix/shaders-react` | `useDisplayGamut` |
-| `@mattermix/shaders-react/poster` | `@mattermix/shaders-react` | `<ShaderPoster>` |
+| `@camp-dev/shaders/color` | `@camp-dev/shaders` | `parseColorString`, the OKLab/OKLCH conversions, the gamut helpers, the sRGB transfer functions |
+| `@camp-dev/shaders-react/gamut` | `@camp-dev/shaders-react` | `useDisplayGamut` |
+| `@camp-dev/shaders-react/poster` | `@camp-dev/shaders-react` | `<ShaderPoster>` |
 
 ```tsx
 // Server-renders fine — no path to three.
-import { parseColorString, linearSrgbToOklch } from '@mattermix/shaders/color'
+import { parseColorString, linearSrgbToOklch } from '@camp-dev/shaders/color'
 
 export default function Swatch({ color }: { color: string }) {
   const [lightness] = linearSrgbToOklch(...parseColorString(color))
@@ -57,7 +57,7 @@ export default function Page() {
 }
 ```
 
-`Hero` is a regular client component that imports `@mattermix/shaders-react` and the registry component. The page itself can stay an RSC.
+`Hero` is a regular client component that imports `@camp-dev/shaders-react` and the registry component. The page itself can stay an RSC.
 
 ## Webpack alias for three (Next 14+)
 
@@ -94,7 +94,7 @@ This forces every `three` import to resolve to the unified bundle. Same idea app
 Some browsers (Firefox stable, Safari < 18, older Chrome) don't ship WebGPU yet. Wrap any Shaders subtree in `<FallbackBoundary>`:
 
 ```tsx
-import { FallbackBoundary, ShaderScene } from '@mattermix/shaders-react'
+import { FallbackBoundary, ShaderScene } from '@camp-dev/shaders-react'
 import { Aurora } from '@/components/shaders/aurora'
 
 export function Hero() {
@@ -132,6 +132,6 @@ To show something in its place, wrap it in `<ShaderPoster>`: the poster stays up
 
 If you wrap a scene in `next/dynamic` with `ssr: false`, nothing from that subtree ships in the server HTML — which is right, because a canvas has nothing useful to say before it has a GPU. The fallback inside `<FallbackBoundary>` is what users see during hydration and on unsupported browsers.
 
-The subpaths are the exception, and worth remembering when you reach for `ssr: false` reflexively. A page that reads colors with `@mattermix/shaders/color`, or checks the display gamut with `@mattermix/shaders-react/gamut`, or shows a `<ShaderPoster>` while the scene loads, renders all of that on the server normally. Only the scene itself has to wait.
+The subpaths are the exception, and worth remembering when you reach for `ssr: false` reflexively. A page that reads colors with `@camp-dev/shaders/color`, or checks the display gamut with `@camp-dev/shaders-react/gamut`, or shows a `<ShaderPoster>` while the scene loads, renders all of that on the server normally. Only the scene itself has to wait.
 
 If you have SEO-critical content that's currently hidden behind a Shaders component, lift it out into the surrounding RSC. Shaders is for decoration; the surrounding page is for content.

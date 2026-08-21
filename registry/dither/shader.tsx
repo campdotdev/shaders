@@ -7,7 +7,7 @@
 // the level math.
 import { useEffect, useMemo } from 'react';
 
-import { type DitherPattern, ditherThreshold, quantize } from '@mattermix/shaders';
+import { type DitherPattern, ditherThreshold, quantize } from '@camp-dev/shaders';
 import {
   type AnimatableProp,
   useAnimatableUniform,
@@ -15,10 +15,10 @@ import {
   usePostProcessPass,
   useResize,
   useShaderContext,
-} from '@mattermix/shaders-react';
+} from '@camp-dev/shaders-react';
 import { floor, mix, screenCoordinate, screenSize, step, uniform, vec3, vec4 } from 'three/tsl';
 
-export type { DitherPattern } from '@mattermix/shaders';
+export type { DitherPattern } from '@camp-dev/shaders';
 
 export interface DitherShaderProps {
   /**

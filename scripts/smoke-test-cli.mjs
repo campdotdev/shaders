@@ -30,7 +30,7 @@ let exitCode = 0;
 
 try {
   step('Build the CLI');
-  run('pnpm --filter @mattermix/shaders-cli build', { cwd: repoRoot });
+  run('pnpm --filter @camp-dev/shaders-cli build', { cwd: repoRoot });
 
   step(`Pack the CLI from ${cliDir}`);
   const packOutput = runQuiet(`pnpm pack --pack-destination "${smokeDir}"`, {
@@ -51,7 +51,7 @@ try {
   run(`npm install --no-save "${tarball}"`, { cwd: smokeDir });
 
   step(`Run \`shaders-cli init\``);
-  run(`node node_modules/@mattermix/shaders-cli/dist/index.js init`, {
+  run(`node node_modules/@camp-dev/shaders-cli/dist/index.js init`, {
     cwd: smokeDir,
   });
 
@@ -62,12 +62,12 @@ try {
   writeFileSync(cfgPath, JSON.stringify(cfg, null, 2) + '\n');
 
   step(`Run \`shaders-cli list\``);
-  run(`node node_modules/@mattermix/shaders-cli/dist/index.js list`, {
+  run(`node node_modules/@camp-dev/shaders-cli/dist/index.js list`, {
     cwd: smokeDir,
   });
 
   step(`Run \`shaders-cli add linear-gradient\``);
-  run(`node node_modules/@mattermix/shaders-cli/dist/index.js add linear-gradient`, {
+  run(`node node_modules/@camp-dev/shaders-cli/dist/index.js add linear-gradient`, {
     cwd: smokeDir,
   });
 
@@ -90,7 +90,7 @@ try {
     join(smokeDir, 'src/components/shaders/linear-gradient/linear-gradient.tsx'),
     'export const stale = true\n',
   );
-  run(`node node_modules/@mattermix/shaders-cli/dist/index.js update linear-gradient --force`, {
+  run(`node node_modules/@camp-dev/shaders-cli/dist/index.js update linear-gradient --force`, {
     cwd: smokeDir,
   });
   const refreshed = readFileSync(

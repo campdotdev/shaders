@@ -6,7 +6,7 @@
 // the canvas shows the page background (black) there instead. The paired
 // spec (visual/dot-field-stack.spec.ts) asserts pixel-color fractions, so
 // there is no screenshot baseline to regenerate.
-import { ShaderScene } from '@mattermix/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders-react';
 import { DotField } from '@shaders/registry/dot-field';
 import { LinearGradient } from '@shaders/registry/linear-gradient';
 

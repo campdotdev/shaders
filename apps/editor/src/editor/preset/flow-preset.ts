@@ -12,7 +12,7 @@
 // must serialize byte-identically to `p`, because that identity is what stops
 // an undo from recording itself as a fresh history entry (see
 // use-editor-history.ts).
-import { parseColorString } from '@mattermix/shaders/color';
+import { parseColorString } from '@camp-dev/shaders/color';
 import type { Edge } from '@xyflow/react';
 
 import type { CardNodeType } from '@/editor/canvas/CardNode';

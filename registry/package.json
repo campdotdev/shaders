@@ -2,7 +2,7 @@
   "name": "@shaders/registry",
   "version": "0.0.0",
   "private": true,
-  "description": "Source-of-truth Tier 1 components shipped via the @mattermix/shaders-cli copy-paste flow. Not published to npm.",
+  "description": "Source-of-truth Tier 1 components shipped via the @camp-dev/shaders-cli copy-paste flow. Not published to npm.",
   "type": "module",
   "exports": {
     "./linear-gradient": "./linear-gradient/linear-gradient.tsx",
@@ -27,8 +27,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@mattermix/shaders": "workspace:*",
-    "@mattermix/shaders-react": "workspace:*",
+    "@camp-dev/shaders": "workspace:*",
+    "@camp-dev/shaders-react": "workspace:*",
     "react": "^19.0.0",
     "three": "^0.170.0"
   },
