@@ -7,43 +7,45 @@ order: 30
 
 # Changelog
 
-Shaders ships as three coordinated npm packages: `@mattermix/shaders` (engine), `@mattermix/shaders-react` (React binding), and `@mattermix/shaders-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo; this page summarizes the headline changes.
+Shaders ships as three coordinated npm packages: `@mattermix/shaders` (engine), `@mattermix/shaders-react` (React binding), and `@mattermix/shaders-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo, and this page summarizes the headline changes.
+
+Everything through 0.18.0 shipped under the earlier name, as `@lovo/matter`. The 1.0.0 through 3.9.0 releases from that history are renumbered as 0.7.0 through 0.18.0 in the per-package changelogs, because 1.0.0 went out by accident and the project is not at 1.0 yet.
 
 ## Unreleased
 
-**Breaking change — `Waves` is now `WaveLines`.**
+**Breaking: `Waves` is now `WaveLines`.**
 
-The old name read as water. The component draws glowing lines, so it's renamed to match: add it with `shaders-cli add wave-lines`, import `WaveLines`, and pass `lines` instead of `layers` (the per-line type is `WaveLine`, formerly `WaveLayer`). Nothing else moved: same props, same rendering, no visual change.
+The old name read as water. The component draws glowing lines, so it's renamed to match: add it with `shaders-cli add wave-lines`, import `WaveLines`, and pass `lines` instead of `layers`. The per-line type is `WaveLine`, formerly `WaveLayer`. Nothing else moved. Same props, same rendering, no visual change.
 
-Components ship by copy-paste, so installed copies keep working under the old name; re-add `wave-lines` through the CLI to pick up the new one.
+Components ship by copy-paste, so installed copies keep working under the old name. Re-add `wave-lines` through the CLI to pick up the new one.
 
-**Breaking change — `Waves` rebuilt around one shared wave.**
+**Breaking: `Waves` is rebuilt around one shared wave.**
 
-The old Waves gave every layer its own `frequency`, `speed`, `offset`, and `waviness`, so getting multiple lines to move together was mostly luck. Those per-layer fields are gone. Every line now renders one shared wave, and the motion comes from two new props: `braiding` weaves the lines apart and back together over time, and `breathing` pulses their heights on a slow cycle, strongest on the first layer. Two more props, `flare` and `flareRadius`, widen the line ends into a soft fray toward the canvas edges.
+The old Waves gave every layer its own `frequency`, `speed`, `offset`, and `waviness`, so getting multiple lines to move together was mostly luck. Those per-layer fields are gone. Every line now renders one shared wave, and the motion comes from two new props. `braiding` weaves the lines apart and back together over time, and `breathing` pulses their heights on a slow cycle, strongest on the first layer. Two more props, `flare` and `flareRadius`, widen the line ends into a soft fray toward the canvas edges.
 
-`color` on a layer now accepts either a single color or an array of stops that form a gradient along the line; `colorDrift` slides the gradient and `colorSpace` (default `oklab`) sets the mixing space. The default set is eight blue-to-violet lines.
+`color` on a layer now accepts either a single color or an array of stops that form a gradient along the line. `colorDrift` slides the gradient, and `colorSpace` (default `oklab`) sets the mixing space. The default set is eight blue-to-violet lines.
 
-Components ship by copy-paste, so installed copies keep rendering as before; re-add `waves` through the CLI to get the rebuild. If you had custom `layers`, they will render differently: the removed movement fields have no equivalent.
+Components ship by copy-paste, so installed copies keep rendering as before. Re-add `waves` through the CLI to get the rebuild. If you had custom `layers`, they will render differently, because the removed movement fields have no equivalent.
 
-**Breaking change — `Waves` lines are now ribbons wrapped in light.**
+**Breaking: `Waves` lines are now ribbons wrapped in light.**
 
-The rebuild above still drew every line as pure added light, which kept the controls tangled: thicker lines made the whole canvas brighter, and `glow` changed brightness and edge softness at the same time. A line is now two parts with one control each. The body is a surface: `thickness` sets its width and `opacity` its transparency, from 0 (no body, the line renders as pure light) to 1 (solid ribbons that cover the lines behind them; the first layer sits in front). The halo is light: `softness` shapes how it falls off and `brightness` sets how much it casts. `glow` is gone, split into `softness` and `brightness`.
+The rebuild above still drew every line as pure added light, which kept the controls tangled. Thicker lines made the whole canvas brighter, and `glow` changed brightness and edge softness at the same time. A line is now two parts with one control each. The body is a surface. `thickness` sets its width and `opacity` its transparency. At 0 the line has no body and renders as pure light, and at 1 the ribbons are solid and cover the lines behind them, with the first layer in front. The halo is light. `softness` shapes how it falls off, and `brightness` sets how much it casts. `glow` is gone, split into `softness` and `brightness`.
 
-Per-layer overrides (`amplitude`, `glow`, `thickness` on a layer) are gone too. A layer is just a color or gradient now, and lines differ through color, the movement system, and paint order. Defaults changed to show the new look: wide translucent ribbons with slow drifting gradients.
+Per-layer overrides of `amplitude`, `glow`, and `thickness` are gone too. A layer is just a color or a gradient now, and lines differ through color, the movement system, and paint order. Defaults changed to show the new look: wide translucent ribbons with slow drifting gradients.
 
-Same copy-paste rule: installed copies keep rendering as before; re-add `waves` through the CLI to get the new line rendering.
+The same copy-paste rule applies. Installed copies keep rendering as before, and re-adding `waves` through the CLI gets the new line rendering.
 
-**Registry components: prop renames and prop docs.** Every Tier 1 component prop now has JSDoc hover documentation, and a few props got plainer names. Components ship by copy-paste, so your installed copies are unaffected; re-add a component through the CLI to get the new names.
+**Registry components: prop renames and prop docs.** Every Tier 1 component prop now has JSDoc hover documentation, and a few props got plainer names. Components ship by copy-paste, so your installed copies are unaffected. Re-add a component through the CLI to get the new names.
 
 - `Aurora`: `turbulence` → `waviness`, `falloff` → `coverage`
 - `Vignette`: `falloff` → `radius`
 - `SimplexNoise`: `bias` → `balance`
-- `LinearGradient`: `focalPoint` → `center`; `interactive` removed (cursor following was dropped from all components)
+- `LinearGradient`: `focalPoint` → `center`, and `interactive` is removed, because cursor following was dropped from all components
 - `Grain`: `grainBlend` → `blend`
 
 ## 0.2.0
 
-**Breaking change — `@mattermix/shaders` no longer re-exports pure TSL primitives.**
+**Breaking: `@mattermix/shaders` no longer re-exports pure TSL primitives.**
 
 The following 15 nodes are no longer exported by `@mattermix/shaders`. Import them directly from `three/tsl`:
 
@@ -55,51 +57,51 @@ import { vec3, uv, time } from '@mattermix/shaders'
 
 // After (0.2.0)
 import { vec3, uv } from 'three/tsl'
-import { time } from '@mattermix/shaders'  // still here — reduced-motion-gated
+import { time } from '@mattermix/shaders' // still here, reduced-motion-gated
 ```
 
-`time` continues to be exported from `@mattermix/shaders` because Matter owns its semantics (reduced-motion gating). For raw uncapped time, import from `three/tsl` directly.
+`time` stays exported from `@mattermix/shaders` because the engine owns its semantics, which is the reduced-motion gating. For raw uncapped time, import from `three/tsl` directly.
 
-All Matter-owned primitives (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) remain exported from `@mattermix/shaders` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@mattermix/shaders` to `three/tsl` for the dropped symbols (or re-add the component via the CLI to pull the 0.2.0 source).
+The primitives the engine owns (`fbm`, `noise`, `voronoi`, `colorRamp`, `sdfCircle`, `displace`, `cursorRipple`, `quantize`) stay exported from `@mattermix/shaders` unchanged. Registry component sources at 0.2.0 use the new convention. If you copied a component at 0.1.x, update its imports from `@mattermix/shaders` to `three/tsl` for the dropped symbols, or re-add the component through the CLI to pull the 0.2.0 source.
 
-**Why:** Re-exporting pure TSL primitives provided no value beyond shared import paths — no rename, no added docs, no future-swap benefit. Dropping them clarifies the layer boundary: Matter ships value-add primitives, TSL provides the math. See the [shaders engine reference](/reference/shaders) for the current public surface.
+**Why:** re-exporting pure TSL primitives bought nothing beyond shared import paths. No rename, no added docs, no future swap. Dropping them clarifies the layer boundary. The engine ships value-add primitives, and TSL provides the math. The [shaders engine reference](/reference/shaders) lists what the engine exports today.
 
-## 0.1.0 — Initial public release
+## 0.1.0, the initial public release
 
-The first public release of Matter — React shader components on WebGPU + Three.js TSL.
+React shader components on WebGPU and Three.js TSL.
 
 ### `@mattermix/shaders`
 
-Framework-agnostic engine. Exports:
+The framework-agnostic engine. It exports:
 
-- **TSL primitives:** `fbm`, `voronoi`, `noise`, `colorRamp`, `quantize`, `sdfCircle`, `displace`, `cursorRipple`.
-- **TSL re-exports:** a stable surface for common TSL nodes (`uniform`, `uv`, `vec2`, `vec3`, `mix`, `time`, etc.) so registry components import everything from one entry point.
-- **Runtime:** `createRenderer`, `MatterScheduler`, visibility/intersection watchers, reduced-motion policy.
-- **Inputs:** `CursorInput` (framework-agnostic cursor source).
+- TSL primitives: `fbm`, `voronoi`, `noise`, `colorRamp`, `quantize`, `sdfCircle`, `displace`, and `cursorRipple`.
+- TSL re-exports: a stable set of common TSL nodes, among them `uniform`, `uv`, `vec2`, `vec3`, `mix`, and `time`, so registry components import everything from one entry point.
+- Runtime: `createRenderer`, `MatterScheduler`, the visibility and intersection watchers, and the reduced-motion policy.
+- Inputs: `CursorInput`, a framework-agnostic cursor source.
 
 ### `@mattermix/shaders-react`
 
-React binding for the engine. Exports:
+The React binding for the engine. It exports:
 
-- `<MatterScene>` — shared WebGPU canvas wrapper.
-- `useShaderMaterial` — r3f-compatible hook for using Matter inside your own `<Canvas>`.
-- Input hooks — `useCursor`, `useScroll`, `useResize`.
-- Animation glue — `useAnimatableUniform`, accepts any MotionValue-shaped signal.
-- Fallback / dev utilities — `FallbackBoundary`, `useStaticHint`, `MatterMonitor`.
+- `<MatterScene>`, the shared WebGPU canvas wrapper.
+- `useShaderMaterial`, an r3f-compatible hook for using the engine inside your own `<Canvas>`.
+- Input hooks: `useCursor`, `useScroll`, and `useResize`.
+- Animation glue: `useAnimatableUniform`, which accepts any MotionValue-shaped signal.
+- Fallback and dev utilities: `FallbackBoundary`, `useStaticHint`, and `MatterMonitor`.
 
 ### `@mattermix/shaders-cli`
 
-shadcn-style copy-paste CLI: `init`, `list`, `add`, `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so the component source you copy is stable per release.
+The shadcn-style copy-paste CLI, with `init`, `list`, `add`, and `update`. The default registry tracks the CLI's published version tag (`v0.1.0`), so the component source you copy is stable per release.
 
 ### v1 components
 
-Available via `shaders-cli add <name>`: `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `waves`. Each lands in your project as a regular `.tsx` file — you own and edit it from that point.
+Six components are available through `shaders-cli add <name>`: `linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, and `waves`. Each lands in your project as a regular `.tsx` file, and you own and edit it from that point.
 
 ### Requirements
 
-- Node 22+ for the CLI.
-- WebGPU-capable browser at runtime (Chromium-based, Safari Technology Preview, Firefox Nightly with the flag).
-- React ^19, Three.js ^0.170.
+- Node 22 or newer for the CLI.
+- A WebGPU-capable browser at runtime: Chromium-based, Safari Technology Preview, or Firefox Nightly with the flag.
+- React ^19 and Three.js ^0.170.
 
 <Callout>
   Detailed per-package changelogs live in the repo: [`packages/shaders/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders/CHANGELOG.md), [`packages/shaders-react/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders-react/CHANGELOG.md), [`packages/shaders-cli/CHANGELOG.md`](https://github.com/mattermix/shaders/blob/main/packages/shaders-cli/CHANGELOG.md).

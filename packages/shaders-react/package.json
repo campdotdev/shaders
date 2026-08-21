@@ -1,6 +1,6 @@
 {
   "name": "@mattermix/shaders-react",
-  "version": "3.9.0",
+  "version": "0.18.0",
   "description": "React binding for Shaders — ShaderScene, useShaderMaterial, input hooks.",
   "keywords": [
     "components",

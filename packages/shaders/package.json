@@ -1,6 +1,6 @@
 {
   "name": "@mattermix/shaders",
-  "version": "3.9.0",
+  "version": "0.18.0",
   "description": "Engine for Shaders — TSL primitives, renderer, scheduler. Framework-agnostic.",
   "keywords": [
     "background",
