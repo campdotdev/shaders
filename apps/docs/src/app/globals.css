@@ -1,46 +1,29 @@
-/* Chrome colors come from the `moss` scale in src/lib/palette.ts — the brand
-   neutral, hue 120. CSS cannot import the palette, so these are literals; when
-   moss changes, change them here too. The step each value came from is named
-   so the pairing stays checkable. Accent and link now use the brand chartreuse
-   from limeScale; the two themes take different steps because a single value
-   cannot clear contrast on both white and near-black. */
-:root {
-  --bg: #0d0f06; /* moss[0] */
-  --bg-muted: #14170c; /* moss[1] */
-  --fg: #e8e8e8; /* moss[11] */
-  --fg-muted: #a3a69c; /* moss[9] */
-  --accent: #a4c102; /* limeScale[9], brand chartreuse */
-  --link: #a4c102; /* limeScale[9], brand chartreuse */
-  --code-bg: #14170c; /* moss[1] */
-  --border: #212419; /* moss[2] */
-}
+/* Site-wide styles. tokens.css holds the primitive design tokens mirrored
+   from the Figma file; this file maps them to the semantic names components
+   consume, then styles the shared chrome. The site is dark-only by design,
+   so there is a single semantic mapping and no theme switching. */
+@import './tokens.css';
 
-[data-theme='light'] {
-  --bg: #ffffff; /* pure white on purpose: moss tops out at L=0.932, short of white */
-  --bg-muted: #e8e8e8; /* moss[11] */
-  --fg: #0d0f06; /* moss[0] */
-  --fg-muted: #45483c; /* moss[5] */
-  --accent: #5a6b01; /* limeScale[6] */
-  --link: #5a6b01; /* limeScale[6] */
-  --code-bg: #e8e8e8; /* moss[11] */
-  --border: #d1d2cf; /* moss[10] */
+:root {
+  --bg: var(--black);
+  --bg-muted: var(--gray-900);
+  --fg: var(--white);
+  --fg-muted: var(--gray-100);
+  --accent: var(--lime-100);
+  --link: var(--lime-100);
+  --code-bg: var(--gray-900);
+  --border: var(--gray-800);
 }
 
 html {
-  color-scheme: light dark;
+  color-scheme: dark;
 }
 
 html,
 body {
   background: var(--bg);
   color: var(--fg);
-  font-family:
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    'Segoe UI',
-    Roboto,
-    sans-serif;
+  font-family: var(--font-sans);
   margin: 0;
   padding: 0;
 }
@@ -71,26 +54,6 @@ a:hover {
   line-height: 1.5;
   overflow-x: auto;
   border: 1px solid var(--border);
-}
-
-[data-theme='dark'] .codeblock-light {
-  display: none;
-}
-[data-theme='light'] .codeblock-dark {
-  display: none;
-}
-[data-theme='dark'] .codeblock-dark {
-  display: block;
-}
-[data-theme='light'] .codeblock-light {
-  display: block;
-}
-
-:root .codeblock-light {
-  display: none;
-}
-:root .codeblock-dark {
-  display: block;
 }
 
 /* ---- Demo control panel ---- */

@@ -16,7 +16,13 @@ export default function RecipesIndex() {
       <ul style={{ paddingLeft: '1.25rem', lineHeight: 1.8 }}>
         {RECIPES.map((r) => (
           <li key={r.slug}>
-            <Link href={`/recipes/${r.slug}`}>{r.name}</Link>
+            {/* Underlined for axe's link-in-text-block rule: on the dark palette
+                the lime link is under 3:1 against the muted text beside it, so
+                color alone cannot mark it as a link. Same fix as the primitives
+                link above. */}
+            <Link href={`/recipes/${r.slug}`} style={{ textDecoration: 'underline' }}>
+              {r.name}
+            </Link>
             <span
               style={{
                 color: 'var(--fg-muted)',

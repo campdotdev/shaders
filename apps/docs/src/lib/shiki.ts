@@ -8,7 +8,7 @@ let highlighterPromise: Promise<Highlighter> | null = null;
 
 export function getHighlighter(): Promise<Highlighter> {
   highlighterPromise ??= createHighlighter({
-    themes: ['github-light', 'github-dark'],
+    themes: ['github-dark'],
     langs: [...SHIKI_LANGS],
   });
 
