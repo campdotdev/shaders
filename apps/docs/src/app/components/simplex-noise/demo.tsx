@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * SimplexNoise demo page: shader preview plus an owned control panel for
- * the field's shape, color ramp, and mixing.
+ * SimplexNoise demo island: the interactive slice of the SimplexNoise page —
+ * control store, shader preview, and control panel for the field's shape,
+ * color ramp, and mixing. The shared components/[slug] template renders this
+ * between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -81,38 +83,16 @@ function SimplexNoiseControls() {
   );
 }
 
-export default function SimplexNoisePage() {
+export function SimplexNoiseIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<SimplexNoiseControls />}>
-          <div data-shader-demo style={{ position: 'relative' }}>
-            <SimplexNoiseDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;SimplexNoise /&gt;</h1>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              overflow: 'auto',
-              fontSize: '0.85rem',
-            }}
-          >
-            {`import { ShaderScene } from '@camp-dev/shaders-react'
-import { SimplexNoise } from '@/components/shaders/simplex-noise'
-
-<ShaderScene>
-  <SimplexNoise />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<SimplexNoiseControls />}>
+        <div data-shader-demo>
+          <SimplexNoiseDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

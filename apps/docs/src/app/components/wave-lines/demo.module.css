@@ -1,0 +1,8 @@
+/* Styles owned by the WaveLines demo island; the surrounding page shell is
+   styled by the shared components/[slug] template. */
+
+/* Near-black backdrop the glowing lines emit over — the component itself is
+   transparent between the ribbons. */
+.demoBackdrop {
+  background: #0a0a14;
+}

@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * DotField demo page: shader preview plus an owned control panel for the
- * ripple's motion, grid, and color.
+ * DotField demo island: the interactive slice of the DotField page — control
+ * store, shader preview, and control panel for the ripple's motion, grid,
+ * and color. The shared components/[slug] template renders this between its
+ * static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -20,6 +22,7 @@ import {
 import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
+import styles from './demo.module.css';
 import { INITIAL, type Params } from './params';
 
 const DotFieldScene = dynamic(() => import('./scene'), { ssr: false });
@@ -64,34 +67,16 @@ function DotFieldControls() {
   );
 }
 
-export default function DotFieldPage() {
+export function DotFieldIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<DotFieldControls />}>
-          <div data-shader-demo style={{ position: 'relative', background: '#0a0a14' }}>
-            <DotFieldDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;DotField /&gt;</h1>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-            }}
-          >
-            {`<ShaderScene>
-  <DotField spacing={30} dotSize={3} color="oklch(0.65 0.01 150)" speed={0.45} amplitude={0.15} />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<DotFieldControls />}>
+        <div className={styles.demoBackdrop} data-shader-demo>
+          <DotFieldDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

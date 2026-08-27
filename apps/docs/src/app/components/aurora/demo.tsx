@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * Aurora demo page: shader preview plus an owned control panel for the
- * curtain's motion, shape, and color mixing.
+ * Aurora demo island: the interactive slice of the Aurora page — control
+ * store, shader preview, and control panel. The shared components/[slug]
+ * template renders this between its static header and prose sections, so
+ * only this slice ships as client JavaScript.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -25,6 +27,7 @@ import { DemoPoster } from '@/components/DemoPoster';
 import { createStop, newStopIndex } from '@/lib/stops';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
+import styles from './demo.module.css';
 import { type AuroraParams, INITIAL, MAX_STOPS, MIN_STOPS, type PlainColorStop } from './params';
 
 const AuroraScene = dynamic(() => import('./scene'), { ssr: false });
@@ -81,49 +84,16 @@ function AuroraControls() {
   );
 }
 
-export default function AuroraPage() {
+export function AuroraIsland() {
   const store = useMemo(() => createControlStore<AuroraParams>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<AuroraControls />}>
-          <div
-            data-shader-demo
-            style={{
-              position: 'relative',
-              // sRGB approximation of the reference sky the aurora was tuned
-              // against — the component itself is transparent.
-              background: 'linear-gradient(to top, #193157, #1b2138)',
-            }}
-          >
-            <AuroraDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;Aurora /&gt;</h1>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <Aurora intensity={1} stops={[...]} />
-</ShaderScene>`}
-          </pre>
-          <p>
-            The aurora fills its scene; compose with the container. For a curtain band hanging in a
-            wide dark sky, place a short ShaderScene near the top of a taller dark section.{' '}
-            <code>coverage</code> reveals the curtain from the bottom up — 1 covers the canvas, 0
-            hides it.
-          </p>
-        </section>
-      </main>
+      <DemoLayout controls={<AuroraControls />}>
+        <div className={styles.demoBackdrop} data-shader-demo>
+          <AuroraDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

@@ -1,0 +1,8 @@
+/* Styles owned by the DotField demo island; the surrounding page shell is
+   styled by the shared components/[slug] template. */
+
+/* Near-black backdrop the dots render over — the component itself draws dots
+   on a transparent background. */
+.demoBackdrop {
+  background: #0a0a14;
+}

@@ -1,9 +1,17 @@
 'use client';
 
 /**
- * WaveLines demo page: shader preview plus an owned control panel for
- * motion, shape, and light, plus a nested list of lines, each with its own
- * color stops.
+ * WaveLines demo island: the interactive slice of the WaveLines page —
+ * control store, shader preview, and control panel for motion, shape, and
+ * light, plus a nested list of lines, each with its own color stops. The
+ * shared components/[slug] template renders this between its static header
+ * and prose sections.
+ *
+ * The legacy page rendered a live usage snippet (formatJsx over the store's
+ * params) in its prose section. The template's Usage section is a server
+ * component outside this island's store, so that snippet is a static string
+ * for now; the Usage-section issue (SHA-114) decides whether a live one
+ * comes back.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -15,7 +23,6 @@ import {
   ControlsProvider,
   createControlStore,
   DemoLayout,
-  formatJsx,
   ListInput,
   Section,
   SelectInput,
@@ -25,6 +32,7 @@ import {
 import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
+import styles from './demo.module.css';
 import {
   INITIAL,
   MAX_LINES,
@@ -114,51 +122,16 @@ function WaveLinesControls() {
   );
 }
 
-/**
- * The prose section's live usage snippet. Split out so it alone subscribes to
- * the store -- it re-renders on every drag tick, which is correct here since
- * it sits below the fold and doesn't drag the control panel with it.
- */
-function WaveLinesUsage() {
-  const params = useSnapshot<Params>();
-
-  return (
-    <pre
-      style={{
-        background: '#1a1a2a',
-        color: '#e0e0f0',
-        padding: '1rem',
-        borderRadius: '0.5rem',
-        fontSize: '0.85rem',
-        whiteSpace: 'pre-wrap',
-      }}
-    >
-      {formatJsx(COPY_CONFIG, params)}
-    </pre>
-  );
-}
-
-export default function WaveLinesPage() {
+export function WaveLinesIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<WaveLinesControls />}>
-          <div data-shader-demo style={{ position: 'relative', background: '#0a0a14' }}>
-            <WaveLinesDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;WaveLines /&gt;</h1>
-          <p>
-            A coherent bundle of glowing wave ribbons in an analogous blue-to-violet run. The lines
-            share one wave and braid, breathe, and fray wide toward the canvas edges; each line
-            takes a flat color or a gradient.
-          </p>
-          <WaveLinesUsage />
-        </section>
-      </main>
+      <DemoLayout controls={<WaveLinesControls />}>
+        <div className={styles.demoBackdrop} data-shader-demo>
+          <WaveLinesDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

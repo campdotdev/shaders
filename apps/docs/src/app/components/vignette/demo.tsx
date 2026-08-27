@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * Vignette demo page: shader preview plus an owned control panel for the
- * mask's shape (intensity, feather, radius, center) and color mixing.
+ * Vignette demo island: the interactive slice of the Vignette page — control
+ * store, shader preview, and control panel for the mask's shape (intensity,
+ * feather, radius, center) and color mixing. The shared components/[slug]
+ * template renders this between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -63,49 +65,16 @@ function VignetteControls() {
   );
 }
 
-export default function VignettePage() {
+export function VignetteIsland() {
   const store = useMemo(() => createControlStore<VignetteParams>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<VignetteControls />}>
-          <div data-shader-demo style={{ position: 'relative' }}>
-            <VignetteDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;Vignette /&gt;</h1>
-          <p>
-            Radial darkening at the canvas edges. Stacks inside any <code>&lt;ShaderScene&gt;</code>{' '}
-            on top of whatever base component you want and fades the upstream pixels toward an edge
-            color along a soft radial ring. Unlike <code>&lt;Grain /&gt;</code>, which generates new
-            noise from <code>uv</code>, Vignette reads the upstream pixel and mixes it toward{' '}
-            <code>color</code> — the {`"read-upstream"`} half of the post-processing pipeline.
-          </p>
-          <p>
-            <code>feather</code> controls how gradual the blend is. At <code>0</code> the ring is a
-            hard cutoff; at <code>1</code> the entire canvas is in the blend (a smooth radial
-            gradient from center to edge). <code>radius</code> is the outer edge of the ring;{' '}
-            <code>center</code> is the bright spot in normalized UV space.
-          </p>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <LinearGradient />
-  <Vignette intensity={0.5} radius={0.6} feather={0.5} />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<VignetteControls />}>
+        <div data-shader-demo>
+          <VignetteDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

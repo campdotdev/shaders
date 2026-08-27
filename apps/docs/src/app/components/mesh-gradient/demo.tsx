@@ -1,9 +1,11 @@
 'use client';
 
 /**
- * MeshGradient demo page: shader preview plus an owned control panel for
- * motion, palette cycling, and the two four-color palettes the gradient
- * crossfades between.
+ * MeshGradient demo island: the interactive slice of the MeshGradient page —
+ * control store, shader preview, and control panel for motion, palette
+ * cycling, and the two four-color palettes the gradient crossfades between.
+ * The shared components/[slug] template renders this between its static
+ * header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -90,39 +92,16 @@ function MeshGradientControls() {
   );
 }
 
-export default function MeshGradientPage() {
+export function MeshGradientIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<MeshGradientControls />}>
-          <div data-shader-demo style={{ position: 'relative' }}>
-            <MeshGradientDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;MeshGradient /&gt;</h1>
-          <p>
-            Animated four-color mesh gradient with a time-cycling palette crossfade and a sine
-            domain warp for organic motion.
-          </p>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <MeshGradient />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<MeshGradientControls />}>
+        <div data-shader-demo>
+          <MeshGradientDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

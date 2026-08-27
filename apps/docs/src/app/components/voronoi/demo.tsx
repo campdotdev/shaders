@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * Voronoi demo page: shader preview plus an owned control panel for the cell
- * field and palette. Sections grow as later phases land (borders, motion,
- * color depth, glow).
+ * Voronoi demo island: the interactive slice of the Voronoi page — control
+ * store, shader preview, and control panel for the cell field and palette.
+ * The shared components/[slug] template renders this between its static
+ * header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -93,39 +94,16 @@ function VoronoiControls() {
   );
 }
 
-export default function VoronoiPage() {
+export function VoronoiIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<VoronoiControls />}>
-          <div data-shader-demo style={{ position: 'relative' }}>
-            <VoronoiDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;Voronoi /&gt;</h1>
-          <p>
-            A cellular mosaic — flat color patches around scattered seed points, cut by crisp
-            constant-width borders.
-          </p>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <Voronoi />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<VoronoiControls />}>
+        <div data-shader-demo>
+          <VoronoiDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

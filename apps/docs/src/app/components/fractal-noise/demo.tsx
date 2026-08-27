@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * FractalNoise demo page: shader preview plus an owned control panel for the
- * layered noise field and palette. Sections grow as later phases land
- * (style folds, ramp shaping).
+ * FractalNoise demo island: the interactive slice of the FractalNoise page —
+ * control store, shader preview, and control panel for the layered noise
+ * field and palette. The shared components/[slug] template renders this
+ * between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef } from 'react';
@@ -125,40 +126,17 @@ function FractalNoiseControls() {
   );
 }
 
-export default function FractalNoisePage() {
+export function FractalNoiseIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
       <StyleDialSync />
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<FractalNoiseControls />}>
-          <div data-shader-demo style={{ position: 'relative' }}>
-            <FractalNoiseDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;FractalNoise /&gt;</h1>
-          <p>
-            Layered fractal noise — several octaves of noise stacked from broad shapes down to fine
-            grain, mapped onto a color ramp.
-          </p>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <FractalNoise />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<FractalNoiseControls />}>
+        <div data-shader-demo>
+          <FractalNoiseDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

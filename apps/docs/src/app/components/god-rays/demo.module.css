@@ -1,0 +1,8 @@
+/* Styles owned by the GodRays demo island; the surrounding page shell is
+   styled by the shared components/[slug] template. */
+
+/* Dark dusk backdrop the rays emit over — the component itself is
+   transparent. */
+.demoBackdrop {
+  background: linear-gradient(to top, #131b31, #0b0f1a);
+}

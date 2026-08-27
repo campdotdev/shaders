@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * ConicGradient demo page: shader preview plus an owned control panel for the
- * sweep's shape, mixing, and its list of color stops.
+ * RadialGradient demo island: the interactive slice of the RadialGradient
+ * page — control store, shader preview, and control panel for the gradient's
+ * shape, mixing, and its list of color stops. The shared components/[slug]
+ * template renders this between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -28,36 +30,38 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 import { INITIAL, MAX_STOPS, MIN_STOPS } from './params';
 import type { Params, Stop } from './params';
 
-const ConicGradientScene = dynamic(() => import('./scene'), { ssr: false });
+const RadialGradientScene = dynamic(() => import('./scene'), { ssr: false });
 
-const COPY_CONFIG = { componentName: 'ConicGradient' } as const;
+const COPY_CONFIG = { componentName: 'RadialGradient' } as const;
 
-function ConicGradientDemo() {
+function RadialGradientDemo() {
   const params = useSnapshot<Params>();
 
   return (
     <DemoPoster
-      alt="Conic gradient shader preview: a magenta, purple, and blue wheel sweeping clockwise around the center"
-      src="/posters/conic-gradient.jpg"
+      alt="Radial gradient shader preview: a pink core fading through purple into deep blue at the edges"
+      src="/posters/radial-gradient.jpg"
     >
-      <ConicGradientScene params={params}>
+      <RadialGradientScene params={params}>
         <VisualTestPause />
-      </ConicGradientScene>
+      </RadialGradientScene>
     </DemoPoster>
   );
 }
 
-function ConicGradientControls() {
+function RadialGradientControls() {
   return (
-    <ControlPanel copyConfig={COPY_CONFIG} title="<ConicGradient>">
+    <ControlPanel copyConfig={COPY_CONFIG} title="<RadialGradient>">
       <Section title="Motion">
-        <SliderInput label="Speed" max={2} min={-2} path="speed" step={0.01} />
+        <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
       </Section>
       <Section title="Shape">
+        <SliderInput label="Radius" max={2} min={0.01} path="radius" step={0.01} />
         <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />
         <SliderInput label="Center y" max={1} min={0} path="center.1" step={0.01} />
+        <SliderInput label="Stretch" max={4} min={0.05} path="stretch" step={0.01} />
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
-        <SliderInput label="Repeat" max={8} min={0.1} path="repeat" step={0.1} />
+        <SliderInput label="Repeat" max={8} min={1} path="repeat" step={0.1} />
       </Section>
       <Section title="Mixing">
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
@@ -83,39 +87,16 @@ function ConicGradientControls() {
   );
 }
 
-export default function ConicGradientPage() {
+export function RadialGradientIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<ConicGradientControls />}>
-          <div data-shader-demo style={{ position: 'relative' }}>
-            <ConicGradientDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;ConicGradient /&gt;</h1>
-          <p>
-            A color ramp sweeping clockwise around a point. Completes the CSS gradient trio with
-            &lt;LinearGradient&gt; and &lt;RadialGradient&gt;.
-          </p>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <ConicGradient />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<RadialGradientControls />}>
+        <div data-shader-demo>
+          <RadialGradientDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

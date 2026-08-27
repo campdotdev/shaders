@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * Blobs demo page: shader preview plus an owned control panel for the goo
- * field, surface dials, placement, and palette.
+ * Blobs demo island: the interactive slice of the Blobs page — control store,
+ * shader preview, and control panel for the goo field, surface dials,
+ * placement, and palette. The shared components/[slug] template renders this
+ * between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -91,41 +93,16 @@ function BlobsControls() {
   );
 }
 
-export default function BlobsPage() {
+export function BlobsIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<BlobsControls />}>
-          <div data-shader-demo style={{ position: 'relative' }}>
-            <BlobsDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;Blobs /&gt;</h1>
-          <p>
-            Soft organic blobs that drift around the center, merging into gooey shapes and splitting
-            apart. The space between blobs is transparent — stack Blobs over a gradient or any other
-            layer and it shows through.
-          </p>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <LinearGradient />
-  <Blobs />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<BlobsControls />}>
+        <div data-shader-demo>
+          <BlobsDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

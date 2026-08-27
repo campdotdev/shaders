@@ -1,8 +1,11 @@
 'use client';
 
 /**
- * LinearGradient demo page: shader preview plus an owned control panel for
- * the gradient's angle, motion, mixing, and its list of color stops.
+ * LinearGradient demo island: the interactive slice of the LinearGradient
+ * page — control store, shader preview, and control panel for the gradient's
+ * angle, motion, mixing, and its list of color stops. The shared
+ * components/[slug] template renders this between its static header and
+ * prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -81,36 +84,16 @@ function LinearGradientControls() {
   );
 }
 
-export default function LinearGradientPage() {
+export function LinearGradientIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<LinearGradientControls />}>
-          <div data-shader-demo style={{ position: 'relative' }}>
-            <LinearGradientDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;LinearGradient /&gt;</h1>
-          <p>Animated linear gradient. The simplest, foundational Shaders component.</p>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <LinearGradient />
-</ShaderScene>`}
-          </pre>
-        </section>
-      </main>
+      <DemoLayout controls={<LinearGradientControls />}>
+        <div data-shader-demo>
+          <LinearGradientDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }
