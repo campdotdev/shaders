@@ -1,0 +1,82 @@
+/* Page shell for the shared component page template, in the mock's section
+   order: header above the demo, Usage and API Reference below it, then
+   prev/next pagination. */
+
+/* The demo grid (.demo-layout in globals.css) pads itself 1.5rem and caps
+   its shader column at 896px. The header and prose sections use the same
+   inset and cap so everything shares one left edge. Margin rather than
+   padding, so the cap measures the content box regardless of box-sizing. */
+
+.header {
+  max-width: var(--container-4xl);
+  margin: var(--spacing-8) var(--spacing-6) 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.description {
+  margin: var(--spacing-2) 0 0;
+  color: var(--fg-muted);
+  line-height: var(--leading-6);
+}
+
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-12);
+  max-width: var(--container-4xl);
+  margin: var(--spacing-6) var(--spacing-6) var(--spacing-20);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--spacing-4);
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: var(--tracking-tight);
+}
+
+.prose {
+  margin: var(--spacing-4) 0 0;
+  color: var(--fg-muted);
+  line-height: var(--leading-6);
+}
+
+/* Multi-paragraph notes bring their own <p> tags; single-paragraph notes are
+   bare text, so spacing lives on the paragraphs rather than the container. */
+.prose p {
+  margin: var(--spacing-4) 0 0;
+}
+
+.prose p:first-child {
+  margin-top: 0;
+}
+
+.snippet {
+  margin: var(--spacing-4) 0 0;
+  padding: var(--spacing-4);
+  background: var(--code-bg);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-lg);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-6);
+  white-space: pre-wrap;
+  overflow-x: auto;
+}
+
+.pagination {
+  display: flex;
+  justify-content: space-between;
+}
+
+.paginationLink {
+  padding: var(--spacing-2) var(--spacing-4);
+  color: var(--fg);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-md);
+}

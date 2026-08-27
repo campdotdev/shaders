@@ -1,0 +1,8 @@
+/* Styles owned by the Aurora demo island; the surrounding page shell is
+   styled by the shared components/[slug] template. */
+
+/* sRGB approximation of the reference sky the aurora was tuned against —
+   the component itself is transparent. */
+.demoBackdrop {
+  background: linear-gradient(to top, #193157, #1b2138);
+}

@@ -1,8 +1,10 @@
 'use client';
 
 /**
- * GodRays demo page: shader preview plus an owned control panel for the ray
- * origin and cone, motion, shape dials, and layer colors.
+ * GodRays demo island: the interactive slice of the GodRays page — control
+ * store, shader preview, and control panel for the ray origin and cone,
+ * motion, shape dials, and layer colors. The shared components/[slug]
+ * template renders this between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -21,6 +23,7 @@ import {
 import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
+import styles from './demo.module.css';
 import { type GodRaysParams, INITIAL, MAX_COLORS, MIN_COLORS } from './params';
 
 const GodRaysScene = dynamic(() => import('./scene'), { ssr: false });
@@ -81,47 +84,16 @@ function GodRaysControls() {
   );
 }
 
-export default function GodRaysPage() {
+export function GodRaysIsland() {
   const store = useMemo(() => createControlStore<GodRaysParams>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <main style={{ minHeight: '100vh' }}>
-        <DemoLayout controls={<GodRaysControls />}>
-          <div
-            data-shader-demo
-            style={{
-              position: 'relative',
-              // Dark dusk backdrop the rays emit over — the component itself
-              // is transparent.
-              background: 'linear-gradient(to top, #131b31, #0b0f1a)',
-            }}
-          >
-            <GodRaysDemo />
-          </div>
-        </DemoLayout>
-        <section style={{ padding: '2rem', maxWidth: '60ch', margin: '0 auto' }}>
-          <h1 style={{ marginTop: 0 }}>&lt;GodRays /&gt;</h1>
-          <pre
-            style={{
-              background: '#1a1a2a',
-              color: '#e0e0f0',
-              padding: '1rem',
-              borderRadius: '0.5rem',
-              fontSize: '0.85rem',
-              whiteSpace: 'pre-wrap',
-            }}
-          >
-            {`<ShaderScene>
-  <GodRays center={[0.5, -0.05]} />
-</ShaderScene>`}
-          </pre>
-          <p>
-            Light rays radiate from <code>center</code> — park it off-canvas for a top-of-page sun.
-            The rays emit over a transparent background; stack them above a dark layer.
-          </p>
-        </section>
-      </main>
+      <DemoLayout controls={<GodRaysControls />}>
+        <div className={styles.demoBackdrop} data-shader-demo>
+          <GodRaysDemo />
+        </div>
+      </DemoLayout>
     </ControlsProvider>
   );
 }

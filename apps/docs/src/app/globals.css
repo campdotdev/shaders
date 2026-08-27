@@ -37,6 +37,9 @@ a:hover {
 }
 
 [data-shader-demo] {
+  /* Anchors the absolutely-positioned poster and scene layers every demo
+     stacks inside this wrapper. */
+  position: relative;
   aspect-ratio: 3 / 2;
   overflow: hidden;
   isolation: isolate;
