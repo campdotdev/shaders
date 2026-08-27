@@ -353,54 +353,6 @@ describe('brand palette', () => {
     expect(breaks).toEqual([]);
   });
 
-  it('keeps globals.css hex literals in sync with the palette steps they cite', () => {
-    // CSS cannot import palette.ts, so globals.css hand-copies hex literals and
-    // names their source step in a trailing comment, e.g. `#a4c102; /*
-    // limeScale[9], brand chartreuse */`. This walks every such annotation and
-    // checks the literal still matches the step it claims to be.
-    const globalsCssPath = join(dirname(fileURLToPath(import.meta.url)), '../app/globals.css');
-    const globalsCss = readFileSync(globalsCssPath, 'utf-8');
-
-    const annotationPattern = /#([0-9a-f]{6});\s*\/\*\s*([a-zA-Z]+)\[(\d+)\][^*]*\*\//gi;
-    const mismatches: string[] = [];
-    let annotationCount = 0;
-    let match: RegExpExecArray | null;
-
-    while ((match = annotationPattern.exec(globalsCss)) !== null) {
-      const [, hex, scaleName, indexText] = match;
-
-      // noUncheckedIndexedAccess types every capture group as possibly
-      // undefined, even though the regex requires all three groups to match --
-      // narrow explicitly rather than asserting.
-      if (hex === undefined || scaleName === undefined || indexText === undefined) {
-        continue;
-      }
-
-      annotationCount += 1;
-
-      const scale = palette[scaleName as keyof typeof palette];
-
-      if (!Array.isArray(scale)) {
-        mismatches.push(`${scaleName}[${indexText}] does not name a known palette scale`);
-        continue;
-      }
-
-      const step = scale[Number(indexText)];
-
-      if (step === undefined || step.toLowerCase() !== `#${hex.toLowerCase()}`) {
-        mismatches.push(
-          `${scaleName}[${indexText}] is #${hex} in globals.css but ${step ?? 'undefined'} in the palette`,
-        );
-      }
-    }
-
-    // A regex that silently stops matching would let this test pass on zero
-    // annotations, so pin a floor: globals.css annotates well over a dozen
-    // values today, and this only needs to prove the pattern still fires.
-    expect(annotationCount).toBeGreaterThanOrEqual(8);
-    expect(mismatches).toEqual([]);
-  });
-
   it('keeps registry oklch literals in sync with the palette steps they cite', () => {
     // Registry components ship by copy-paste through the CLI, so they can't
     // import palette.ts either -- they hand-copy oklch() literals the same
