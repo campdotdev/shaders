@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
-import { CodeBlock } from '@/components/CodeBlock';
+import { CodeBlock } from '@/components/code-block/code-block';
 import { RecipeViewer } from '@/components/RecipeViewer';
 import { RECIPES } from '@/data/recipes';
 

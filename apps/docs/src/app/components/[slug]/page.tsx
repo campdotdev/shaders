@@ -11,7 +11,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { CodeBlock } from '@/components/code-block/code-block';
 import { getComponentsCatalog } from '@/content/catalog';
+import { deriveUsageImport } from '@/lib/usage-import';
 
 import { COMPONENT_PAGES } from '../demo-registry';
 import styles from './page.module.css';
@@ -61,7 +63,8 @@ export default async function ComponentPage({ params }: PageProps) {
           {entry.usageNotes === undefined ? null : (
             <div className={styles.prose}>{entry.usageNotes}</div>
           )}
-          <pre className={styles.snippet}>{entry.usageSnippet}</pre>
+          <CodeBlock source={deriveUsageImport(entry.usageSnippet)} />
+          <CodeBlock source={entry.usageSnippet} />
         </section>
         <section>
           <h2 className={styles.sectionTitle}>API Reference</h2>

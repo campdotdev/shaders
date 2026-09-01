@@ -27,7 +27,12 @@ import { WaveLinesIsland } from './wave-lines/demo';
 export interface ComponentPageEntry {
   /** Client island rendering the control store, shader demo, and control panel. */
   Island: ComponentType;
-  /** Code snippet for the Usage section, rendered verbatim in a <pre>. */
+  /**
+   * Code snippet for the Usage section, rendered through the shiki CodeBlock.
+   * The import line shown above it is derived from this snippet's JSX tags
+   * (lib/usage-import), so don't write import statements here — every
+   * component tag used in the snippet lands in the import automatically.
+   */
   usageSnippet: string;
   /**
    * Optional prose above the snippet. Single-paragraph notes are bare
@@ -168,10 +173,7 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   },
   'simplex-noise': {
     Island: SimplexNoiseIsland,
-    usageSnippet: `import { ShaderScene } from '@camp-dev/shaders-react'
-import { SimplexNoise } from '@/components/shaders/simplex-noise'
-
-<ShaderScene>
+    usageSnippet: `<ShaderScene>
   <SimplexNoise />
 </ShaderScene>`,
   },
