@@ -1,4 +1,12 @@
+/**
+ * Server-rendered syntax-highlighted code block. Shiki turns the source
+ * string into styled HTML at build time (the site is a static export), so no
+ * highlighting JavaScript ships to the client. Used by the component pages'
+ * Usage section and the primitives/recipes reference pages.
+ */
 import { type CodeLang, getHighlighter } from '@/lib/shiki';
+
+import styles from './code-block.module.css';
 
 interface CodeBlockProps {
   source: string;
@@ -13,7 +21,7 @@ export async function CodeBlock({ source, lang = 'tsx' }: CodeBlockProps) {
   });
 
   return (
-    <div className="codeblock">
+    <div className={styles.codeBlock}>
       <div dangerouslySetInnerHTML={{ __html: html }} />
     </div>
   );
