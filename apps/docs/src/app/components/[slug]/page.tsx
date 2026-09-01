@@ -3,8 +3,9 @@
  * order: header above the demo, Usage and API Reference below it, then
  * prev/next pagination. Titles, descriptions, and page order come from the
  * catalog (registry.json); the interactive demo and Usage content come from
- * the demo registry. Only slugs in that registry render here — the rest are
- * still served by their own legacy page.tsx and convert incrementally.
+ * the demo registry, which every component page has an entry in.
+ * Rendering waits on that entry, so a new component joins the site by
+ * registering its demo island here rather than by adding a page file.
  */
 import type { Metadata } from 'next';
 import Link from 'next/link';
