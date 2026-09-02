@@ -60,11 +60,10 @@
   --gray-900: #131614;
 
   /* ---- Typography ----
-     PP Mori is a licensed Pangram Pangram font; its files are not committed,
-     so the sans stack falls back to system fonts until a web license lands.
-     IBM Plex Mono is loaded via next/font in layout.tsx, which sets
-     --font-plex-mono. */
-  --font-sans: 'PP Mori', ui-sans-serif, system-ui, sans-serif;
+     Both faces load through next/font in layout.tsx, which sets
+     --font-pp-mori and --font-plex-mono; the stacks below fold those in and
+     fall back to system fonts while the files are still loading. */
+  --font-sans: var(--font-pp-mori, 'PP Mori'), ui-sans-serif, system-ui, sans-serif;
   --font-mono:
     var(--font-plex-mono, 'IBM Plex Mono'), ui-monospace, SFMono-Regular, Menlo, monospace;
 
