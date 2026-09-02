@@ -1,0 +1,202 @@
+/* Accordion rows for the API Reference section. The collapsed row is a
+   three-column grid (prop, type, default) plus a chevron; the same column
+   split is repeated on the header row and the expanded details so the labels
+   line up down the table. Base UI provides the open state as data attributes
+   on the trigger and panel, so every state style keys off those. */
+
+.table {
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  overflow: hidden;
+}
+
+/* ---- Column split shared by the header row and every trigger ---- */
+
+.head,
+.trigger {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr) minmax(0, 1fr) 1rem;
+  align-items: center;
+  gap: var(--spacing-4);
+  padding: var(--spacing-3) var(--spacing-4);
+}
+
+.head {
+  color: var(--fg-muted);
+  border-bottom: var(--border-width-1) solid var(--border);
+}
+
+.row + .row {
+  border-top: var(--border-width-1) solid var(--border);
+}
+
+/* ---- Collapsed row ---- */
+
+/* Accordion.Header is an h3 for the ARIA pattern; reset the heading font so
+   the row reads as a table row, not a title. */
+.header {
+  margin: 0;
+  font: inherit;
+}
+
+.trigger {
+  width: 100%;
+  background: transparent;
+  color: var(--fg);
+  border: 0;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: var(--bg-muted);
+}
+
+.trigger:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: calc(-1 * var(--border-width-2));
+}
+
+/* The prop name is the one accent in the row: lime text on the darkest lime
+   so it reads as a chip without competing with the demo above. */
+.name {
+  justify-self: start;
+  padding: var(--spacing-1) var(--spacing-2);
+  background: var(--lime-900);
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+}
+
+/* Long types such as AnimatableProp<readonly [number, number]> clip with an
+   ellipsis here; the expanded panel shows the full text. */
+.type,
+.default {
+  color: var(--fg-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.chevron {
+  color: var(--fg-muted);
+  transition: transform 150ms ease-out;
+}
+
+.trigger[data-panel-open] .chevron {
+  transform: rotate(180deg);
+}
+
+/* ---- Expanded panel ---- */
+
+/* Base UI measures the panel and exposes its height as a custom property, so
+   the open and close animate as a height change. The starting and ending
+   style attributes are present for one frame at each end of the transition,
+   which is what gives the transition a 0 to start from and to end at. */
+.panel {
+  height: var(--accordion-panel-height);
+  overflow: hidden;
+  transition: height 150ms ease-out;
+}
+
+.panel[data-starting-style],
+.panel[data-ending-style] {
+  height: 0;
+}
+
+/* Label column matches the prop column above, so "Description", "Type", and
+   "Default" sit under the prop names. */
+.details {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 3.4fr);
+  gap: var(--spacing-4);
+  margin: 0;
+  padding: var(--spacing-4);
+  background: var(--bg-muted);
+  border-top: var(--border-width-1) solid var(--border);
+}
+
+.details dt {
+  color: var(--fg-muted);
+}
+
+.details dd {
+  margin: 0;
+  line-height: var(--leading-6);
+}
+
+/* CodeBlock carries its own vertical margin for prose contexts; inside the
+   grid the gap already spaces it. */
+.details dd > div {
+  margin: 0;
+}
+
+/* Scoped to the description cell: the code blocks below it carry their own
+   shiki <code> elements that must not pick up the chip treatment. */
+.description code {
+  padding: 0 var(--spacing-1);
+  background: var(--code-bg);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+/* ---- Narrow layouts ---- */
+
+/* The table sizes to whatever column it's given (a sidebar layout, a
+   narrow window), so the breakpoint is the table's own width, not the
+   viewport's. Below it, the three columns stack: the prop name keeps the
+   chevron on its line, and the type and default drop underneath with a
+   label standing in for the hidden header row. */
+.table {
+  container-type: inline-size;
+}
+
+@container (width < 40rem) {
+  .head {
+    display: none;
+  }
+
+  .trigger {
+    grid-template-columns: minmax(0, 1fr) 1rem;
+    row-gap: var(--spacing-2);
+  }
+
+  /* Auto-placement would push the chevron below the stacked type and
+     default rows; pin it beside the prop name instead. */
+  .chevron {
+    grid-area: 1 / 2;
+  }
+
+  .type,
+  .default {
+    grid-column: 1 / -1;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .type::before,
+  .default::before {
+    margin-right: var(--spacing-2);
+    color: var(--fg-muted);
+  }
+
+  .type::before {
+    content: 'Type';
+  }
+
+  .default::before {
+    content: 'Default';
+  }
+
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--spacing-2) 0;
+  }
+
+  .details dd + dt {
+    margin-top: var(--spacing-2);
+  }
+}

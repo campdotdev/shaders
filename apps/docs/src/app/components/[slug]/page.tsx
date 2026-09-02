@@ -12,7 +12,9 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { CodeBlock } from '@/components/code-block/code-block';
+import { PropsTable } from '@/components/props-table/props-table';
 import { getComponentsCatalog } from '@/content/catalog';
+import { getComponentProps } from '@/content/props';
 import { deriveUsageImport } from '@/lib/usage-import';
 
 import { COMPONENT_PAGES } from '../demo-registry';
@@ -69,6 +71,7 @@ export default async function ComponentPage({ params }: PageProps) {
         <section>
           <h2 className={styles.sectionTitle}>API Reference</h2>
           <p className={styles.prose}>Customize the shader with the following props.</p>
+          <PropsTable rows={await getComponentProps(slug)} />
         </section>
         <nav aria-label="Component pages" className={styles.pagination}>
           {previous ? (
