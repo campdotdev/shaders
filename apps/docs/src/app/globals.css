@@ -28,6 +28,13 @@ body {
   padding: 0;
 }
 
+/* Code elements otherwise fall through to the browser's default monospace;
+   this is the one place the mono token is applied. */
+code,
+pre {
+  font-family: var(--font-mono);
+}
+
 a {
   color: var(--link);
   text-decoration: none;

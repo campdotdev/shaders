@@ -173,6 +173,23 @@
   --border-width-4: 4px;
   --border-width-8: 8px;
 
+  /* ---- Motion ----
+     Durations for UI transitions. Everything user-facing stays under
+     300ms; the two larger steps are for surfaces that enter the screen,
+     such as a toast or drawer. The easing names say when to use each:
+     ease-out for anything entering or exiting, ease-in-out for things that
+     move while on screen, ease-hover for color and opacity on hover, and
+     linear only for constant motion. Sources and reasoning are in
+     docs/development/animation.md. */
+  --duration-xs: 100ms; /* icon rotation, hover color and opacity */
+  --duration-sm: 150ms; /* panels, popups, button press */
+  --duration-md: 250ms; /* larger reveals */
+  --duration-lg: 400ms; /* toasts and drawers only */
+  --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-in-out: cubic-bezier(0.59, 0.02, 0.39, 1);
+  --ease-hover: ease;
+  --ease-linear: linear;
+
   /* ---- Containers ----
      Fixed content widths. In the doc page design, 3xs is the floating menus,
      2xs the sidebar and control panel, and 4xl the main content column. */
@@ -190,4 +207,16 @@
   --container-6xl: 72rem; /* 1152px */
   --container-7xl: 80rem; /* 1280px */
   --container-8xl: 90rem; /* 1440px */
+}
+
+/* Reduce Motion turns the durations to zero rather than removing the
+   transitions, so every state change still applies, instantly, and no
+   component needs its own media query. */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-xs: 0ms;
+    --duration-sm: 0ms;
+    --duration-md: 0ms;
+    --duration-lg: 0ms;
+  }
 }
