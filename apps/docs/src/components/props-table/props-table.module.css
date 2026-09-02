@@ -161,12 +161,14 @@
 }
 
 /* Label column matches the prop column above, so "Description", "Type", and
-   "Default" sit under the prop names, each centered on its content. In the
-   mock every cell pads 16px, so rows sit 32px apart and 16px from the edges. */
+   "Default" sit under the prop names, each at the top of its content rather
+   than floating mid-way down a multi-line description or a code block. In
+   the mock every cell pads 16px, so rows sit 32px apart and 16px from the
+   edges. */
 .details {
   display: grid;
   grid-template-columns: var(--spacing-48) minmax(0, 1fr);
-  align-items: center;
+  align-items: start;
   column-gap: var(--spacing-4);
   row-gap: var(--spacing-8);
   margin: 0;
