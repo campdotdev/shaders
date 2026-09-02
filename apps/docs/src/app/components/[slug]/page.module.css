@@ -99,7 +99,13 @@
 }
 
 /* The glyph points down; a quarter turn each way gives the left and right
-   arrows. */
+   arrows, which on the 16-unit pixel grid match the mock's own exports
+   exactly. The mock draws them in the muted gray against the white label. */
+.chevronPrevious,
+.chevronNext {
+  color: var(--fg-muted);
+}
+
 .chevronPrevious {
   transform: rotate(90deg);
 }

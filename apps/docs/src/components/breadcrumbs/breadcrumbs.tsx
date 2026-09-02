@@ -1,6 +1,6 @@
 /**
  * Breadcrumb trail for the docs pages, after the Figma mock: muted links
- * separated by right-pointing chevrons, with the current page last, in lime,
+ * separated by pixel triangles, with the current page last, in lime,
  * and not linked. The MDX route derives its trail from the nav tree in
  * content/nav.ts and the component page template hands over a fixed
  * four-entry trail, but both pass the same DocsBreadcrumb shape, so this
@@ -8,7 +8,7 @@
  */
 import Link from 'next/link';
 
-import { ChevronDownIcon } from '@/components/icons/chevron-down';
+import { CaretRightIcon } from '@/components/icons/caret-right';
 import type { DocsBreadcrumb } from '@/content/types';
 
 import styles from './breadcrumbs.module.css';
@@ -41,9 +41,7 @@ export function Breadcrumbs({ crumbs, className }: BreadcrumbsProps) {
             ) : (
               <Ancestor crumb={crumb} />
             )}
-            {index < last && (
-              <ChevronDownIcon className={styles.separator} height={20} width={20} />
-            )}
+            {index < last && <CaretRightIcon className={styles.separator} />}
           </li>
         ))}
       </ol>

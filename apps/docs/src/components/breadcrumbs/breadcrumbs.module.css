@@ -1,5 +1,5 @@
 /* Breadcrumb trail after the Figma mock: one 32px row of 16px text, muted
-   links, a 20px pixel chevron between each pair, and the current page in
+   links, a 20px pixel triangle between each pair, and the current page in
    lime as plain text. The nav carries no outer margin; the page that renders
    it decides where it sits. */
 
@@ -47,10 +47,9 @@
   color: var(--accent);
 }
 
-/* The glyph points down; a quarter turn counter-clockwise makes it the
-   right-pointing separator. */
+/* The mock draws the separator two steps darker than the crumb text, so it
+   reads as punctuation rather than another label. */
 .separator {
   flex: none;
-  color: var(--gray-200);
-  transform: rotate(-90deg);
+  color: var(--gray-400);
 }
