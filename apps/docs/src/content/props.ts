@@ -63,31 +63,32 @@ export async function extractProps(source: string, componentName: string): Promi
   }
 
   const defaults = readDestructuringDefaults(file, componentName);
-  const rows: PropRow[] = [];
 
-  for (const member of propsInterface.members.filter(ts.isPropertySignature)) {
-    const name = member.name.getText(file);
-    const description = readJsDocText(member);
+  // Each prop's default goes through Prettier independently, so the rows are
+  // built together rather than one await at a time.
+  return Promise.all(
+    propsInterface.members.filter(ts.isPropertySignature).map(async (member): Promise<PropRow> => {
+      const name = member.name.getText(file);
+      const description = readJsDocText(member);
 
-    // Fail the build rather than render an empty cell — AGENTS.md mandates
-    // JSDoc on every user-facing prop, so a miss here is a registry bug.
-    if (description === '') {
-      throw new Error(`Prop "${name}" on ${componentName}Props has no JSDoc description`);
-    }
+      // Fail the build rather than render an empty cell — AGENTS.md mandates
+      // JSDoc on every user-facing prop, so a miss here is a registry bug.
+      if (description === '') {
+        throw new Error(`Prop "${name}" on ${componentName}Props has no JSDoc description`);
+      }
 
-    const initializer = defaults.get(name);
-    const defaultValue = initializer ? await formatDefault(file, initializer) : undefined;
+      const initializer = defaults.get(name);
+      const defaultValue = initializer ? await formatDefault(file, initializer) : undefined;
 
-    rows.push({
-      name,
-      type: member.type ? member.type.getText(file) : 'unknown',
-      description,
-      defaultValue,
-      defaultSummary: summarizeDefault(defaultValue),
-    });
-  }
-
-  return rows;
+      return {
+        name,
+        type: member.type ? member.type.getText(file) : 'unknown',
+        description,
+        defaultValue,
+        defaultSummary: summarizeDefault(defaultValue),
+      };
+    }),
+  );
 }
 
 // The wrapper states defaults as destructuring initializers, e.g.
