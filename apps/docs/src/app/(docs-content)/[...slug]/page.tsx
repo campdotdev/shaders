@@ -5,7 +5,7 @@ import { MDXRemote } from 'next-mdx-remote/rsc';
 import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
 
-import { Breadcrumbs } from '@/components/docs/Breadcrumbs';
+import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
 import { PrevNext } from '@/components/docs/PrevNext';
 import { TableOfContents } from '@/components/docs/TableOfContents';
 import { mdxComponents } from '@/content/mdx';
@@ -52,7 +52,9 @@ export default async function DocsPage({ params }: PageProps) {
       }}
     >
       <article style={{ minWidth: 0, lineHeight: 1.65 }}>
-        <Breadcrumbs crumbs={crumbs} />
+        <div style={{ marginBottom: '1.5rem' }}>
+          <Breadcrumbs crumbs={crumbs} />
+        </div>
         <MDXRemote
           components={mdxComponents}
           options={{

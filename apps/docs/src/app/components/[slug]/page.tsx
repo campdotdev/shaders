@@ -1,7 +1,7 @@
 /**
  * Shared shell for every converted component page, in the mock's section
- * order: header above the demo, Usage and API Reference below it, then
- * prev/next pagination. Titles, descriptions, and page order come from the
+ * order: breadcrumbs and header above the demo, Usage and API Reference
+ * below it, then prev/next pagination. Titles, descriptions, and page order come from the
  * catalog (registry.json); the interactive demo and Usage content come from
  * the demo registry, which every component page has an entry in.
  * Rendering waits on that entry, so a new component joins the site by
@@ -11,10 +11,13 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
+import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
 import { CodeBlock } from '@/components/code-block/code-block';
+import { ChevronDownIcon } from '@/components/icons/chevron-down';
 import { PropsTable } from '@/components/props-table/props-table';
 import { getComponentsCatalog } from '@/content/catalog';
 import { getComponentProps } from '@/content/props';
+import type { DocsBreadcrumb } from '@/content/types';
 import { deriveUsageImport } from '@/lib/usage-import';
 
 import { COMPONENT_PAGES } from '../demo-registry';
@@ -52,8 +55,19 @@ export default async function ComponentPage({ params }: PageProps) {
   const next = catalog[index + 1] ?? null;
   const Island = entry.Island;
 
+  // Every component page sits at the same depth, so the trail is fixed apart
+  // from its last entry. "Documentation" has no landing route yet, so it
+  // renders as plain text until one exists.
+  const crumbs: DocsBreadcrumb[] = [
+    { label: 'Home', url: '/' },
+    { label: 'Documentation', url: null },
+    { label: 'Components', url: '/components' },
+    { label: record.label, url: record.url },
+  ];
+
   return (
     <main>
+      <Breadcrumbs className={styles.breadcrumbs} crumbs={crumbs} />
       <header className={styles.header}>
         <h1 className={styles.title}>{record.label}</h1>
         <p className={styles.description}>{record.description}</p>
@@ -76,6 +90,7 @@ export default async function ComponentPage({ params }: PageProps) {
         <nav aria-label="Component pages" className={styles.pagination}>
           {previous ? (
             <Link className={styles.paginationLink} href={previous.url}>
+              <ChevronDownIcon className={styles.chevronPrevious} />
               {previous.label}
             </Link>
           ) : (
@@ -84,6 +99,7 @@ export default async function ComponentPage({ params }: PageProps) {
           {next ? (
             <Link className={styles.paginationLink} href={next.url}>
               {next.label}
+              <ChevronDownIcon className={styles.chevronNext} />
             </Link>
           ) : (
             <span />

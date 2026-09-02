@@ -1,15 +1,23 @@
 /* Page shell for the shared component page template, in the mock's section
-   order: header above the demo, Usage and API Reference below it, then
-   prev/next pagination. */
+   order: breadcrumbs and header above the demo, Usage and API Reference
+   below it, then prev/next pagination. */
 
 /* The demo grid (.demo-layout in globals.css) pads itself 1.5rem and caps
-   its shader column at 896px. The header and prose sections use the same
-   inset and cap so everything shares one left edge. Margin rather than
-   padding, so the cap measures the content box regardless of box-sizing. */
+   its shader column at 896px. The breadcrumbs, header, and prose sections
+   use the same inset and cap so everything shares one left edge. Margin
+   rather than padding, so the cap measures the content box regardless of
+   box-sizing. */
+
+/* The mock's breadcrumb row sits 16px below the top of the page and 24px
+   above the title, which with the row's own 32px puts the title at 72px. */
+.breadcrumbs {
+  max-width: var(--container-4xl);
+  margin: var(--spacing-4) var(--spacing-6) 0;
+}
 
 .header {
   max-width: var(--container-4xl);
-  margin: var(--spacing-8) var(--spacing-6) 0;
+  margin: var(--spacing-6) var(--spacing-6) 0;
 }
 
 .title {
@@ -61,9 +69,47 @@
   justify-content: space-between;
 }
 
+/* Prev and next are the mock's 32px pill buttons: a 14px label with a 16px
+   chevron on the outer side, on a dark fill with no border. */
 .paginationLink {
-  padding: var(--spacing-2) var(--spacing-4);
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-2);
+  background: var(--gray-800);
   color: var(--fg);
-  border: var(--border-width-1) solid var(--border);
   border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the lighter fill would then stick on the tapped button. */
+@media (hover: hover) and (pointer: fine) {
+  .paginationLink:hover {
+    background: var(--gray-700);
+    text-decoration: none;
+  }
+}
+
+.paginationLink:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+}
+
+/* The glyph points down; a quarter turn each way gives the left and right
+   arrows, which on the 16-unit pixel grid match the mock's own exports
+   exactly. The mock draws them in the muted gray against the white label. */
+.chevronPrevious,
+.chevronNext {
+  color: var(--fg-muted);
+}
+
+.chevronPrevious {
+  transform: rotate(90deg);
+}
+
+.chevronNext {
+  transform: rotate(-90deg);
 }
