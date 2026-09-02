@@ -160,6 +160,8 @@
   row-gap: var(--spacing-4);
   margin: 0;
   padding: 0 var(--spacing-4) var(--spacing-4);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
 }
 
 .details dt {
@@ -169,7 +171,6 @@
 
 .details dd {
   margin: 0;
-  line-height: var(--leading-5);
 }
 
 .description {
@@ -187,9 +188,16 @@
 }
 
 /* CodeBlock carries its own vertical margin for prose contexts; inside the
-   grid the gap already spaces it. */
+   grid the gap already spaces it. Its type is stepped down to match the
+   panel, with the padding tightened to suit the smaller size. */
 .details dd > div {
   margin: 0;
+}
+
+.details dd pre {
+  padding: var(--spacing-3);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
 }
 
 /* ---- Narrow layouts ---- */
