@@ -56,21 +56,26 @@
   cursor: pointer;
 }
 
-.trigger:hover {
-  background: var(--white-a5);
-}
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the fill would then stick on the tapped row. */
+@media (hover: hover) and (pointer: fine) {
+  .trigger:hover {
+    background: var(--white-a5);
+  }
 
-/* The header band and the first row are both rounded, so hovering that row
-   would show two curves meeting across the gap. Square the corners that
-   touch, on both sides, so the band and the hovered row read as one shape. */
-.head:has(+ .row .trigger:hover) {
-  border-bottom-left-radius: 0;
-  border-bottom-right-radius: 0;
-}
+  /* The header band and the first row are both rounded, so hovering that
+     row would show two curves meeting across the gap. Square the corners
+     that touch, on both sides, so the band and the hovered row read as one
+     shape. */
+  .head:has(+ .row .trigger:hover) {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
 
-.head + .row .trigger:hover {
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
+  .head + .row .trigger:hover {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
 }
 
 .trigger:focus-visible {
@@ -131,7 +136,7 @@
 
 .chevron {
   color: var(--gray-200);
-  transition: transform 150ms ease-out;
+  transition: transform var(--duration-xs) var(--ease-out);
 }
 
 .trigger[data-panel-open] .chevron {
@@ -147,7 +152,7 @@
 .panel {
   height: var(--accordion-panel-height);
   overflow: hidden;
-  transition: height 150ms ease-out;
+  transition: height var(--duration-sm) var(--ease-out);
 }
 
 .panel[data-starting-style],
