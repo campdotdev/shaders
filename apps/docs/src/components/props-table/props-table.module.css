@@ -157,7 +157,7 @@
   grid-template-columns: var(--spacing-48) minmax(0, 1fr);
   align-items: center;
   column-gap: var(--spacing-4);
-  row-gap: var(--spacing-4);
+  row-gap: var(--spacing-3);
   margin: 0;
   padding: 0 var(--spacing-4) var(--spacing-4);
   font-size: var(--font-size-xs);
@@ -173,8 +173,12 @@
   margin: 0;
 }
 
+/* The one run of prose in the table stays at the body size; labels and code
+   step down to xs around it. */
 .description {
   color: var(--gray-100);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
 }
 
 /* Scoped to the description cell: the code blocks below it carry their own
@@ -195,7 +199,8 @@
 }
 
 .details dd pre {
-  padding: var(--spacing-3);
+  padding: var(--spacing-3-5);
+  border-radius: var(--radius-lg);
   font-size: var(--font-size-xs);
   line-height: var(--leading-4);
 }
