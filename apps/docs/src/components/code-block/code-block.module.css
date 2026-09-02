@@ -1,6 +1,7 @@
-/* Frame around the shiki output. Shiki emits its own <pre> with the theme's
-   inline background color, so this styles the box (spacing, border, radius)
-   and leaves the colors to the theme until SHA-123 brings custom tokens. */
+/* Frame around the shiki output. Shiki emits its own <pre> carrying the
+   theme's background and foreground as inline styles (var(--code-bg) and
+   var(--code-plain), see lib/code-theme.ts), so this styles the box
+   (spacing, radius) and leaves every color to the tokens. */
 
 .codeBlock {
   margin: var(--spacing-4) 0;
@@ -9,7 +10,6 @@
 .codeBlock pre {
   margin: 0;
   padding: var(--spacing-4);
-  border: var(--border-width-1) solid var(--border);
   border-radius: var(--radius-xl);
   font-size: var(--font-size-sm);
   line-height: var(--leading-5);
