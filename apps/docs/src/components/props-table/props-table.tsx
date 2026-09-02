@@ -1,12 +1,14 @@
 /**
  * API Reference rows for a component page: one accordion row per prop showing
- * the name, type, and a one-line default, expanding to the full description
- * plus the type and default as code. Rows come from content/props.ts, which
- * extracts them from the registry wrapper at build time.
+ * the name, a one-line default, and the type, expanding to the full
+ * description plus the type and default as code. Rows come from
+ * content/props.ts, which extracts them from the registry wrapper at build
+ * time. Layout follows the Figma "api section" mock.
  */
 import { Accordion } from '@base-ui/react/accordion';
 
 import { CodeBlock } from '@/components/code-block/code-block';
+import { ChevronDownIcon } from '@/components/icons/chevron-down';
 import type { PropRow } from '@/content/props';
 import { splitInlineCode } from '@/lib/inline-code';
 
@@ -20,20 +22,22 @@ export function PropsTable({ rows }: PropsTableProps) {
   return (
     <Accordion.Root className={styles.table} hiddenUntilFound multiple>
       <div aria-hidden="true" className={styles.head}>
-        <span>Prop</span>
-        <span>Type</span>
+        <span>Props</span>
         <span>Default</span>
+        <span>Type</span>
       </div>
       {rows.map((row) => (
         <Accordion.Item className={styles.row} key={row.name} value={row.name}>
           <Accordion.Header className={styles.header}>
             <Accordion.Trigger className={styles.trigger}>
-              <code className={styles.name}>{row.name}</code>
-              <code className={styles.type}>{row.type}</code>
+              <span className={styles.name}>{row.name}</span>
               <span className={styles.default}>
                 <DefaultSummary row={row} />
               </span>
-              <ChevronIcon className={styles.chevron} />
+              <span className={styles.type}>
+                <code>{row.type}</code>
+              </span>
+              <ChevronDownIcon className={styles.chevron} />
             </Accordion.Trigger>
           </Accordion.Header>
           <Accordion.Panel className={styles.panel}>
@@ -72,29 +76,10 @@ function Description({ text }: { text: string }) {
 
 // The collapsed row shows the default only when it fits on one line. A large
 // default (a stops array) gets a bracket hint so the reader knows to expand,
-// and a prop with no default gets a dash.
+// and a prop with no default gets a dash with no chip around it.
 function DefaultSummary({ row }: { row: PropRow }) {
   if (row.defaultSummary !== undefined) return <code>{row.defaultSummary}</code>;
   if (row.defaultValue !== undefined) return <code>[…]</code>;
 
-  return <span>—</span>;
-}
-
-function ChevronIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      aria-hidden="true"
-      className={className}
-      fill="none"
-      height="16"
-      stroke="currentColor"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeWidth="1.5"
-      viewBox="0 0 16 16"
-      width="16"
-    >
-      <path d="M4 6l4 4 4-4" />
-    </svg>
-  );
+  return <span className={styles.none}>—</span>;
 }
