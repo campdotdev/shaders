@@ -108,9 +108,12 @@ function readDestructuringDefaults(
 
   if (!propsParam || !ts.isObjectBindingPattern(propsParam.name)) return defaults;
 
+  // An aliased binding such as `{ intensity: localIntensity = 0.3 }` keys on
+  // the interface's property name, `intensity`, which is what extractProps
+  // looks up. `propertyName` is only set when the binding is aliased.
   for (const element of propsParam.name.elements) {
     if (element.initializer) {
-      defaults.set(element.name.getText(file), element.initializer);
+      defaults.set((element.propertyName ?? element.name).getText(file), element.initializer);
     }
   }
 

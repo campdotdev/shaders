@@ -64,6 +64,23 @@ export function Glow({ intensity = 0.3, center = [0.5, 0.5] }: GlowProps) {
     expect(center?.description).toBe('Glow center, 0..1 across the canvas.');
   });
 
+  it('keys an aliased destructuring default on the prop name, not the local name', async () => {
+    const source = `
+export interface GlowProps {
+  /** Overlay strength toward the edges. */
+  intensity?: number;
+}
+
+export function Glow({ intensity: localIntensity = 0.3 }: GlowProps) {
+  return null;
+}
+`;
+
+    const [intensity] = await extractProps(source, 'Glow');
+
+    expect(intensity?.defaultValue).toBe('0.3');
+  });
+
   it('throws when a prop has no JSDoc description', async () => {
     const source = `
 export interface GlowProps {
