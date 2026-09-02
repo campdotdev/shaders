@@ -60,6 +60,19 @@
   background: var(--white-a5);
 }
 
+/* The header band and the first row are both rounded, so hovering that row
+   would show two curves meeting across the gap. Square the corners that
+   touch, on both sides, so the band and the hovered row read as one shape. */
+.head:has(+ .row .trigger:hover) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+}
+
+.head + .row .trigger:hover {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
 .trigger:focus-visible {
   outline: var(--border-width-2) solid var(--accent);
   outline-offset: calc(-1 * var(--border-width-2));
