@@ -131,7 +131,7 @@ Base UI has two patterns, and the difference is which attributes it sets. For tr
 
 Because Base UI holds the starting attribute for the first frame itself, the docs site does not need `@starting-style` for Base UI components. That at-rule exists for the case Base UI is solving on its own: "CSS transitions are by default not triggered on an element's initial style update, or when its `display` type changes from `none` to another value. To enable first-style transitions, `@starting-style` rules are needed" ([MDN, @starting-style](https://developer.mozilla.org/en-US/docs/Web/CSS/@starting-style)). Reach for it, together with `transition-behavior: allow-discrete`, only for a plain element the site toggles through `display: none` without Base UI. With `allow-discrete`, "When animating `display` from `block` (or another visible `display` value) to `none`, the value will flip to `none` at `100%` of the animation duration so it is visible throughout" ([MDN, transition-behavior](https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior)). Both are Baseline 2024, "Since August 2024" (same pages).
 
-The existing props-table CSS, rewritten on the tokens. Two things change. Both transitions take the custom curve in place of the `ease-out` keyword, and the chevron drops from 150ms to `--duration-xs`, the 100ms Base UI's own demo uses for its icon. The panel keeps its 150ms as `--duration-sm`:
+The existing props-table CSS is rewritten on the tokens. Two things change. Both transitions take the custom curve in place of the `ease-out` keyword, and the chevron drops from 150ms to `--duration-xs`, the 100ms Base UI's own demo uses for its icon. The panel keeps its 150ms as `--duration-sm`:
 
 ```css
 .chevron {
