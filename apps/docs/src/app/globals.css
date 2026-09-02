@@ -11,8 +11,20 @@
   --fg-muted: var(--gray-100);
   --accent: var(--lime-100);
   --link: var(--lime-100);
-  --code-bg: var(--gray-900);
   --border: var(--gray-800);
+
+  /* Code blocks and inline code. One hue stepped by lightness: the language
+     itself at full lime, names you call one step lighter, literal values
+     palest, prop names in white, and the structure in gray. Which TextMate
+     scope lands on which role is decided in src/lib/code-theme.ts. */
+  --code-bg: var(--white-a5);
+  --code-plain: var(--gray-50);
+  --code-keyword: var(--lime-100);
+  --code-name: var(--lime-50);
+  --code-literal: var(--lime-25);
+  --code-prop: var(--white);
+  --code-punctuation: var(--gray-100);
+  --code-comment: var(--gray-200);
 }
 
 html {
