@@ -85,7 +85,6 @@ Naming follows the file's existing shapes: t-shirt sizes as in `--radius-xl` and
    linear for constant motion. Never ease-in for UI. */
 --ease-out: cubic-bezier(0.32, 0.72, 0, 1);
 --ease-in-out: cubic-bezier(0.59, 0.02, 0.39, 1);
---ease-in: cubic-bezier(0.3, 0, 0.8, 0.15);
 --ease-hover: ease;
 --ease-linear: linear;
 ```
@@ -100,9 +99,10 @@ Where each value comes from:
 | `--duration-lg` | 400ms | Sonner's toast enter `400ms` ([Sonner styles.css](https://raw.githubusercontent.com/emilkowalski/sonner/main/src/styles.css)). Material `duration-medium4`. |
 | `--ease-out` | `cubic-bezier(0.32, 0.72, 0, 1)` | Vaul's curve, "closely matches the one used in iOS" ([Building a drawer component](https://emilkowal.ski/ui/building-a-drawer-component), [Vaul constants.ts](https://raw.githubusercontent.com/emilkowalski/vaul/main/src/constants.ts)). Chosen over the keyword because "the accelerations of the built-in ones are not strong enough" ([The Easing Blueprint](https://animations.dev/learn/animation-theory/the-easing-blueprint)). Material's `easing-emphasized-decelerate`, `cubic-bezier(0.05, 0.7, 0.1, 1)`, is the alternative if the site wants a more pronounced settle. |
 | `--ease-in-out` | `cubic-bezier(0.59, 0.02, 0.39, 1)` | The curve the free lesson's on-screen movement demo runs ([The Easing Blueprint](https://animations.dev/learn/animation-theory/the-easing-blueprint), page markup). Material's `easing-standard`, `cubic-bezier(0.2, 0, 0, 1)`, is the alternative with a published name. |
-| `--ease-in` | `cubic-bezier(0.3, 0, 0.8, 0.15)` | Material `easing-emphasized-accelerate`, for elements that exit ([Material Web tokens](https://raw.githubusercontent.com/material-components/material-web/main/tokens/versions/v0_192/_md-sys-motion.scss), [Material Android motion guide](https://github.com/material-components/material-components-android/blob/master/docs/theming/Motion.md)). Kept for exits that need to clear fast, following Base UI's `scaleOut 250ms ease-in` example. Never for anything the user is waiting on. |
 | `--ease-hover` | `ease` | "I use this one mostly for hover effects that transition color, background-color, opacity" ([The Easing Blueprint](https://animations.dev/learn/animation-theory/the-easing-blueprint)). Spec value `cubic-bezier(0.25, 0.1, 0.25, 1)` ([CSS Easing Functions Level 2](https://www.w3.org/TR/css-easing-2/)). |
 | `--ease-linear` | `linear` | "only for constant animations like a marquee" (same lesson). |
+
+There is no `--ease-in` token. Material's `easing-emphasized-accelerate`, `cubic-bezier(0.3, 0, 0.8, 0.15)`, is the candidate if the site ever needs an exit that clears fast, but the site has no such exit, the rule at the top of this doc says never to use `ease-in` for UI, and AGENTS.md rules out inert entries added for symmetry.
 
 ### Reduced-motion strategy
 
@@ -131,7 +131,7 @@ Base UI has two patterns, and the difference is which attributes it sets. For tr
 
 Because Base UI holds the starting attribute for the first frame itself, the docs site does not need `@starting-style` for Base UI components. That at-rule exists for the case Base UI is solving on its own: "CSS transitions are by default not triggered on an element's initial style update, or when its `display` type changes from `none` to another value. To enable first-style transitions, `@starting-style` rules are needed" ([MDN, @starting-style](https://developer.mozilla.org/en-US/docs/Web/CSS/@starting-style)). Reach for it, together with `transition-behavior: allow-discrete`, only for a plain element the site toggles through `display: none` without Base UI. With `allow-discrete`, "When animating `display` from `block` (or another visible `display` value) to `none`, the value will flip to `none` at `100%` of the animation duration so it is visible throughout" ([MDN, transition-behavior](https://developer.mozilla.org/en-US/docs/Web/CSS/transition-behavior)). Both are Baseline 2024, "Since August 2024" (same pages).
 
-The existing props-table CSS, rewritten on the tokens. The only functional change is the curve. The chevron rotates in `--duration-xs`, which matches Base UI's own demo, and the panel keeps its 150ms:
+The existing props-table CSS, rewritten on the tokens. Two things change. Both transitions take the custom curve in place of the `ease-out` keyword, and the chevron drops from 150ms to `--duration-xs`, the 100ms Base UI's own demo uses for its icon. The panel keeps its 150ms as `--duration-sm`:
 
 ```css
 .chevron {
