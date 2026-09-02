@@ -1,0 +1,283 @@
+/* Accordion rows for the API Reference section, after the Figma "api section"
+   mock: a rounded header band, then one row per prop with the name, default,
+   and type as chips and a chevron at the far right. Expanding a row adds
+   label-and-content lines beneath it, sharing the 192px first column so the
+   labels sit under the prop names. Base UI provides the open state as data
+   attributes on the trigger and panel, so every state style keys off those. */
+
+.table {
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}
+
+/* ---- Column split shared by the header band and every trigger ---- */
+
+/* The mock fixes the first two columns at 192px and lets the type column
+   take the rest; the chevron rides at the end of the type column. */
+.head,
+.trigger {
+  display: grid;
+  grid-template-columns: var(--spacing-48) var(--spacing-48) minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: var(--spacing-4);
+}
+
+.head {
+  margin-top: var(--spacing-5);
+  padding: var(--spacing-3) var(--spacing-4);
+  background: var(--white-a5);
+  color: var(--gray-50);
+  border-radius: var(--radius-xl);
+  font-weight: var(--font-weight-semibold);
+}
+
+.row + .row {
+  border-top: var(--border-width-1) solid var(--white-a5);
+}
+
+/* ---- Collapsed row ---- */
+
+/* Accordion.Header is an h3 for the ARIA pattern; reset the heading font so
+   the row reads as a table row, not a title. */
+.header {
+  margin: 0;
+  font: inherit;
+}
+
+.trigger {
+  width: 100%;
+  padding: var(--spacing-4);
+  background: transparent;
+  color: var(--fg);
+  border: 0;
+  border-radius: var(--radius-xl);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the fill would then stick on the tapped row. */
+@media (hover: hover) and (pointer: fine) {
+  .trigger:hover {
+    background: var(--white-a5);
+  }
+
+  /* The header band and the first row are both rounded, so hovering that
+     row would show two curves meeting across the gap. Square the corners
+     that touch, on both sides, so the band and the hovered row read as one
+     shape. */
+  .head:has(+ .row .trigger:hover) {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+  }
+
+  .head + .row .trigger:hover {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+  }
+}
+
+.trigger:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: calc(-1 * var(--border-width-2));
+}
+
+/* Every value in the row is a 28px chip in 12px mono. The name is the one
+   accent (lime on the darkest lime); default and type are hairline outlines. */
+.name,
+.default code,
+.type code {
+  display: inline-flex;
+  align-items: center;
+  box-sizing: border-box;
+  height: var(--spacing-7);
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
+  white-space: nowrap;
+}
+
+.name {
+  justify-self: start;
+  background: var(--lime-800);
+  color: var(--accent);
+  font-weight: var(--font-weight-semibold);
+}
+
+.default code,
+.type code {
+  color: var(--fg);
+  border: var(--border-width-1) solid var(--white-a10);
+}
+
+/* Flex cells, so the chip sets the row height with no inline line-box strut
+   around it; that strut is what would push the trigger past 60px. */
+.default,
+.type {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+/* Long types such as AnimatableProp<readonly [number, number]> clip with an
+   ellipsis here; the expanded panel shows the full text. */
+.type code {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.none {
+  color: var(--gray-200);
+}
+
+.chevron {
+  color: var(--gray-200);
+  transition: transform var(--duration-xs) var(--ease-out);
+}
+
+.trigger[data-panel-open] .chevron {
+  transform: rotate(180deg);
+}
+
+/* ---- Expanded panel ---- */
+
+/* Base UI measures the panel and exposes its height as a custom property, so
+   the open and close animate as a height change. The starting and ending
+   style attributes are present for one frame at each end of the transition,
+   which is what gives the transition a 0 to start from and to end at. */
+.panel {
+  height: var(--accordion-panel-height);
+  overflow: hidden;
+  transition: height var(--duration-sm) var(--ease-out);
+}
+
+.panel[data-starting-style],
+.panel[data-ending-style] {
+  height: 0;
+}
+
+/* Label column matches the prop column above, so "Description", "Type", and
+   "Default" sit under the prop names, each at the top of its content rather
+   than floating mid-way down a multi-line description or a code block. In
+   the mock every cell pads 16px, so rows sit 32px apart and 16px from the
+   edges. */
+.details {
+  display: grid;
+  grid-template-columns: var(--spacing-48) minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--spacing-4);
+  row-gap: var(--spacing-8);
+  margin: 0;
+  padding: var(--spacing-4);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
+}
+
+.details dt {
+  color: var(--gray-50);
+  font-weight: var(--font-weight-semibold);
+}
+
+.details dd {
+  margin: 0;
+}
+
+/* The one run of prose in the table stays at the body size; labels and code
+   step down to xs around it. */
+.description {
+  color: var(--gray-100);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}
+
+/* Scoped to the description cell: the code blocks below it carry their own
+   shiki <code> elements that must not pick up the chip treatment. */
+.description code {
+  padding: 0 var(--spacing-1);
+  background: var(--code-bg);
+  border: var(--border-width-1) solid var(--border);
+  border-radius: var(--radius-sm);
+  font-size: var(--font-size-xs);
+}
+
+/* CodeBlock carries its own vertical margin for prose contexts; inside the
+   grid the gap already spaces it. Its type is stepped down to match the
+   panel, with the padding tightened to suit the smaller size. */
+.details dd > div {
+  margin: 0;
+}
+
+.details dd pre {
+  padding: var(--spacing-3-5);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
+}
+
+/* ---- Narrow layouts ---- */
+
+/* The table sizes to whatever column it's given (a sidebar layout, a
+   narrow window), so the breakpoint is the table's own width, not the
+   viewport's. Below it, the three columns stack: the prop name keeps the
+   chevron on its line, and the default and type drop underneath with a
+   label standing in for the hidden header band. */
+.table {
+  container-type: inline-size;
+}
+
+@container (width < 40rem) {
+  .head {
+    display: none;
+  }
+
+  .trigger {
+    grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: var(--spacing-2);
+  }
+
+  /* Auto-placement would push the chevron below the stacked default and
+     type rows; pin it beside the prop name instead. */
+  .chevron {
+    grid-area: 1 / 2;
+  }
+
+  .default,
+  .type {
+    grid-column: 1 / -1;
+  }
+
+  .type code {
+    height: auto;
+    padding: var(--spacing-1-5) var(--spacing-2);
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .default::before,
+  .type::before {
+    margin-right: var(--spacing-2);
+    color: var(--gray-200);
+    font-family: var(--font-sans);
+  }
+
+  .default::before {
+    content: 'Default';
+  }
+
+  .type::before {
+    content: 'Type';
+  }
+
+  .details {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: var(--spacing-2);
+  }
+
+  .details dd + dt {
+    margin-top: var(--spacing-2);
+  }
+}
