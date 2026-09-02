@@ -50,6 +50,7 @@
   background: transparent;
   color: var(--fg);
   border: 0;
+  border-radius: var(--radius-xl);
   font: inherit;
   text-align: left;
   cursor: pointer;
