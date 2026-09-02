@@ -1,0 +1,56 @@
+/* Breadcrumb trail after the Figma mock: one 32px row of 16px text, muted
+   links, a 20px pixel chevron between each pair, and the current page in
+   lime as plain text. The nav carries no outer margin; the page that renders
+   it decides where it sits. */
+
+.list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--font-size-base);
+  line-height: var(--leading-6);
+}
+
+/* 4px above and below the 24px line box makes the 32px row the mock draws. */
+.crumb {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  padding: var(--spacing-1) 0;
+}
+
+.link,
+.label {
+  color: var(--fg-muted);
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the brighter color would then stick on the tapped crumb. */
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    color: var(--fg);
+    text-decoration: none;
+  }
+}
+
+.link:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+  border-radius: var(--radius-sm);
+}
+
+.current {
+  color: var(--accent);
+}
+
+/* The glyph points down; a quarter turn counter-clockwise makes it the
+   right-pointing separator. */
+.separator {
+  flex: none;
+  color: var(--gray-200);
+  transform: rotate(-90deg);
+}
