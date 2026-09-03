@@ -1,9 +1,8 @@
 import { IBM_Plex_Mono } from 'next/font/google';
 import localFont from 'next/font/local';
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 
-import { SearchBar } from '@/components/SearchBar';
+import { SiteHeader } from '@/components/site-header/site-header';
 
 import './globals.css';
 
@@ -34,27 +33,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html className={`${plexMono.variable} ${ppMori.variable}`} lang="en">
       <body>
-        <header
-          data-pagefind-ignore="all"
-          style={{
-            position: 'sticky',
-            top: 0,
-            zIndex: 10,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            padding: '0.75rem 1.5rem',
-            background: 'var(--bg)',
-            borderBottom: '1px solid var(--border)',
-          }}
-        >
-          <Link href="/" style={{ fontWeight: 600, color: 'var(--fg)' }}>
-            Shaders
-          </Link>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <SearchBar />
-          </div>
-        </header>
+        <SiteHeader />
         <main>{children}</main>
       </body>
     </html>

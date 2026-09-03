@@ -1,0 +1,70 @@
+/* Site navigation after the Figma mock: one 56px row, logo mark at the left
+   edge, links at the right, no divider underneath. The mock nests a 32px
+   frame inset and a 16px row inset; here that is one 48px inset, which is
+   also where the banner title below it lines up. */
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--spacing-14);
+  padding: 0 var(--spacing-12);
+}
+
+/* A 36px box around the 24px mark, so the home link has a comfortable
+   target. The mark is lime in the mock. */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-9);
+  height: var(--spacing-9);
+  color: var(--accent);
+  border-radius: var(--radius-md);
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-6);
+}
+
+/* Links are full white at rest in the mock; the mock draws no hover state,
+   so the hover borrows the sidebar's lime for the active item. */
+.link {
+  color: var(--fg);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+.iconLink {
+  display: inline-flex;
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the lime would then stick on the tapped link. */
+@media (hover: hover) and (pointer: fine) {
+  .link:hover,
+  .iconLink:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+}
+
+.logo:focus-visible,
+.link:focus-visible,
+.iconLink:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+  border-radius: var(--radius-sm);
+}

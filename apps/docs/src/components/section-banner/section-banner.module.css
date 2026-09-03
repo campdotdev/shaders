@@ -1,0 +1,46 @@
+/* Section banner after the Figma mock: a 144px band that puts the title at
+   its bottom-left, 32px up from the bottom and on the 48px inset the site
+   navigation uses, over a lime glow that fades in from the bottom edge. */
+
+/* Positioned and isolated so the glow can sit behind the title as its own
+   layer. A future shader takes the glow's place as one absolutely
+   positioned child and nothing else has to move. */
+.banner {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: flex-end;
+  height: var(--spacing-36);
+  padding: var(--spacing-8) var(--spacing-12);
+  overflow: hidden;
+}
+
+/* The mock's glow is a half-ellipse centered on the bottom edge of the
+   whole 200px header block: 864px wide at 1728px, so half the width, and
+   200px tall. The band is only the bottom 144px of that block, so the
+   ellipse overshoots the top by 56px and gets clipped, which matches the
+   mock's rendering inside the band. Its 7.5% opacity is what keeps the lime
+   steps reading as a glow rather than a fill; the four lime stops are the
+   palette's 400, 500, and 700, then an off-palette dark green before black. */
+.banner::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse 50% 200px at 50% 100%,
+    var(--lime-400) 0%,
+    var(--lime-500) 33%,
+    var(--lime-700) 66%,
+    rgb(29 37 7) 83%,
+    var(--black) 100%
+  );
+  opacity: 0.075;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-10);
+}

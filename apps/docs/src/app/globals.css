@@ -40,6 +40,15 @@ body {
   padding: 0;
 }
 
+/* Grayscale antialiasing instead of subpixel rendering. Light text on the
+   dark ground otherwise picks up colored fringes and reads heavier than the
+   Figma mock, which renders with grayscale smoothing. Only macOS and iOS
+   browsers honor these; everywhere else they are ignored. */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* Code elements otherwise fall through to the browser's default monospace;
    this is the one place the mono token is applied. */
 code,
