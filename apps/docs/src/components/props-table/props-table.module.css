@@ -148,7 +148,9 @@
 /* Base UI measures the panel and exposes its height as a custom property, so
    the open and close animate as a height change. The starting and ending
    style attributes are present for one frame at each end of the transition,
-   which is what gives the transition a 0 to start from and to end at. */
+   which is what gives the transition a 0 to start from and to end at.
+   Animating height pays for layout on every frame. That trade is deliberate
+   at 150ms on a panel of a few rows; see docs/development/animation.md. */
 .panel {
   height: var(--accordion-panel-height);
   overflow: hidden;

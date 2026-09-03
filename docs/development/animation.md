@@ -75,10 +75,17 @@ Naming follows the file's existing shapes: t-shirt sizes as in `--radius-xl` and
 /* ---- Motion ----
    Durations in ms. UI animation stays under 300ms; the two larger steps
    exist for surfaces that enter the screen, such as a toast or drawer. */
---duration-xs: 100ms; /* icon rotation, color and opacity on hover */
+--duration-xs: 100ms; /* icon rotation */
 --duration-sm: 150ms; /* panels, popups, button press */
 --duration-md: 250ms; /* larger reveals, still under the 300ms ceiling */
 --duration-lg: 400ms; /* toasts and drawers only */
+
+/* The same steps again for opacity and color. Reduce Motion zeroes the
+   --duration-* family and leaves this one alone. */
+--fade-xs: 100ms; /* hover color and opacity */
+--fade-sm: 150ms; /* the opacity half of a popup or panel */
+--fade-md: 250ms;
+--fade-lg: 400ms;
 
 /* Easings. ease-out for anything entering or exiting, ease-in-out for
    things that move while on screen, ease for hover color changes,
@@ -119,9 +126,9 @@ Put the override next to the tokens, so every consumer inherits it and no compon
 }
 ```
 
-This follows Sonner's approach of turning motion off wholesale ([Sonner styles.css](https://raw.githubusercontent.com/emilkowalski/sonner/main/src/styles.css)) and Google's "all non-essential movement is removed" ([web.dev, prefers-reduced-motion](https://web.dev/articles/prefers-reduced-motion)). Zeroing the duration through the token rather than writing `transition: none` keeps each component's declaration intact, so a state change still applies instantly and nothing has to be written twice.
+This follows Google's "all non-essential movement is removed" ([web.dev, prefers-reduced-motion](https://web.dev/articles/prefers-reduced-motion)) for the movement, while stopping short of Sonner's wholesale `transition: none` ([Sonner styles.css](https://raw.githubusercontent.com/emilkowalski/sonner/main/src/styles.css)), which would also delete the fades. Zeroing the duration through the token rather than writing `transition: none` keeps each component's declaration intact, so a state change still applies instantly and nothing has to be written twice.
 
-Two refinements the sources support. First, Apple asks for fades in place of movement ("Replacing transitions in x-, y-, and z-axes with fades to avoid motion", [Apple HIG, Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility)), so an opacity-only transition may keep a short duration under the media query. If the site adds fades, give them a token that the override leaves alone, and zero only the tokens that drive `transform` and `height`. Second, MDN's guidance is that `reduce` is "equivalent to `@media (prefers-reduced-motion)`" and that the setting maps to the OS switches it lists, macOS "System Settings > Accessibility > Display > Reduce motion" among them ([MDN, prefers-reduced-motion](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)). Test with that switch, not with DevTools alone.
+Two refinements the sources support. First, Apple asks for fades in place of movement ("Replacing transitions in x-, y-, and z-axes with fades to avoid motion", [Apple HIG, Accessibility](https://developer.apple.com/design/human-interface-guidelines/accessibility)), and Emil's course puts it as "gentler, not zero": keep the opacity or color change that carries meaning, drop the travel. That is why the fades have their own `--fade-*` family with the same steps. The override zeroes `--duration-*`, which drives `transform` and `height`, and leaves `--fade-*` alone, so a popup that scales in becomes a popup that fades in and a hover color still eases. The split is by property, not by size: a fade written on a `--duration-*` token disappears under Reduce Motion, which is the bug to look for in review. Second, MDN's guidance is that `reduce` is "equivalent to `@media (prefers-reduced-motion)`" and that the setting maps to the OS switches it lists, macOS "System Settings > Accessibility > Display > Reduce motion" among them ([MDN, prefers-reduced-motion](https://developer.mozilla.org/en-US/docs/Web/CSS/@media/prefers-reduced-motion)). Test with that switch, not with DevTools alone.
 
 One thing to verify before shipping the override: Base UI detects the end of an exit through `element.getAnimations()` ([Base UI, Animation handbook](https://base-ui.com/react/handbook/animation)). A 0ms transition starts no animation, so the panel should unmount at once. That is the intended result, but the handbook does not state it, so check the props table with Reduce Motion on.
 
@@ -162,7 +169,7 @@ For a popup or tooltip, the same two attributes carry a compositor-only fade and
 	transform-origin: var(--transform-origin);
 	transition:
 		transform var(--duration-sm) var(--ease-out),
-		opacity var(--duration-sm) var(--ease-out);
+		opacity var(--fade-sm) var(--ease-out);
 }
 
 .popup[data-starting-style],
