@@ -69,7 +69,7 @@ The accordion panel animates `height`, so it pays for layout on every frame. Tha
 
 ## Proposed tokens for `tokens.css`
 
-Naming follows the file's existing shapes: t-shirt sizes as in `--radius-xl` and `--font-size-sm`, and plain nouns as in `--font-mono`. Two families, one for duration and one for easing, plus a reduced-motion override.
+Naming follows the file's existing shapes: t-shirt sizes as in `--radius-xl` and `--font-size-sm`, and plain nouns as in `--font-mono`. Three families, one for movement durations, one for fade durations, and one for easing, plus a reduced-motion override.
 
 ```css
 /* ---- Motion ----
