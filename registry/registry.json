@@ -8,7 +8,8 @@
       "description": "Animated linear gradient. The simplest, foundational Shaders component.",
       "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": ["colorRamp", "mix", "uv", "vec2", "vec3", "uniform"],
-      "tier": 1
+      "tier": 1,
+      "category": "gradients"
     },
     "simplex-noise": {
       "file": "simplex-noise/simplex-noise.tsx",
@@ -25,7 +26,8 @@
         "vec3",
         "uniform"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "noise"
     },
     "dot-field": {
       "file": "dot-field/dot-field.tsx",
@@ -45,7 +47,8 @@
         "vec4",
         "uniform"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "patterns"
     },
     "grain": {
       "file": "grain/grain.tsx",
@@ -53,7 +56,8 @@
       "description": "Additive or subtractive film grain overlay. Stacks on top of any base component inside <ShaderScene>.",
       "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": ["grain", "uv", "vec4", "uniform", "floor"],
-      "tier": 1
+      "tier": 1,
+      "category": "lens-film"
     },
     "wave-lines": {
       "file": "wave-lines/wave-lines.tsx",
@@ -77,7 +81,8 @@
         "uniform",
         "colorRamp"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "scenes"
     },
     "mesh-gradient": {
       "file": "mesh-gradient/mesh-gradient.tsx",
@@ -99,7 +104,8 @@
         "pow",
         "uniform"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "gradients"
     },
     "aurora": {
       "file": "aurora/aurora.tsx",
@@ -116,7 +122,8 @@
         "vec4",
         "uniform"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "scenes"
     },
     "vignette": {
       "file": "vignette/vignette.tsx",
@@ -124,7 +131,8 @@
       "description": "Radial darkening at the canvas edges. Stacks on top of any base component inside <ShaderScene>.",
       "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": ["uv", "vec2", "vec3", "vec4", "mix", "smoothstep", "length", "uniform"],
-      "tier": 1
+      "tier": 1,
+      "category": "lens-film"
     },
     "radial-gradient": {
       "file": "radial-gradient/radial-gradient.tsx",
@@ -142,7 +150,8 @@
         "vec2",
         "uniform"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "gradients"
     },
     "god-rays": {
       "file": "god-rays/god-rays.tsx",
@@ -168,7 +177,8 @@
         "vec4",
         "uniform"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "scenes"
     },
     "conic-gradient": {
       "file": "conic-gradient/conic-gradient.tsx",
@@ -176,7 +186,8 @@
       "description": "A color ramp sweeping clockwise around a center point, with pinwheel repeats and rotation. Completes the CSS gradient trio with LinearGradient and RadialGradient.",
       "dependencies": ["@camp-dev/shaders", "@camp-dev/shaders-react", "react", "three"],
       "uses_primitives": ["colorRamp", "atan2", "fract", "uv", "vec2", "uniform"],
-      "tier": 1
+      "tier": 1,
+      "category": "gradients"
     },
     "dither": {
       "file": "dither/dither.tsx",
@@ -191,7 +202,8 @@
         "vec3",
         "vec4"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "retro-glitch"
     },
     "voronoi": {
       "file": "voronoi/voronoi.tsx",
@@ -214,7 +226,8 @@
         "uv",
         "vec2"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "noise"
     },
     "fractal-noise": {
       "file": "fractal-noise/fractal-noise.tsx",
@@ -235,7 +248,8 @@
         "uv",
         "vec3"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "noise"
     },
     "blobs": {
       "file": "blobs/blobs.tsx",
@@ -255,7 +269,8 @@
         "vec2",
         "vec4"
       ],
-      "tier": 1
+      "tier": 1,
+      "category": "scenes"
     }
   }
 }

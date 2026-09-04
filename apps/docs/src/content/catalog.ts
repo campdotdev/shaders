@@ -6,6 +6,7 @@ import { resolve } from 'node:path';
 import { PRIMITIVES } from '@/data/primitives';
 
 import { parseRegistry } from './schema';
+import type { CategorySlug } from './taxonomy';
 
 const REGISTRY_JSON = resolve(process.cwd(), '..', '..', 'registry', 'registry.json');
 
@@ -18,6 +19,13 @@ interface CatalogRecord {
   tags: string[];
 }
 
+/* Component records also carry the leaf group the registry files them
+   under, which is what the sidebar groups by. Primitives have no taxonomy. */
+export interface ComponentCatalogRecord extends CatalogRecord {
+  source: 'components';
+  category: CategorySlug;
+}
+
 function prettifySlug(slug: string): string {
   return slug
     .split('-')
@@ -25,7 +33,7 @@ function prettifySlug(slug: string): string {
     .join(' ');
 }
 
-export const getComponentsCatalog = cache(async (): Promise<CatalogRecord[]> => {
+export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogRecord[]> => {
   const raw = await readFile(REGISTRY_JSON, 'utf8');
   const data = parseRegistry(JSON.parse(raw), REGISTRY_JSON);
 
@@ -38,6 +46,7 @@ export const getComponentsCatalog = cache(async (): Promise<CatalogRecord[]> => 
       label: prettifySlug(slug),
       description: info.description,
       source: 'components' as const,
+      category: info.category,
       order: index * 10,
       tags: [],
     }));
