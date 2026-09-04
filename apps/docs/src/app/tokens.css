@@ -196,8 +196,10 @@
   --ease-linear: linear;
 
   /* ---- Containers ----
-     Fixed content widths. In the doc page design, 3xs is the floating menus,
-     2xs the sidebar and control panel, and 4xl the main content column. */
+     Fixed content widths. In the doc page design, 9xl is the page container
+     that the header, banner, and docs shell all cap at, 3xs is the floating
+     menus, 2xs the sidebar and control panel, and 4xl the main content
+     column. */
   --container-3xs: 16rem; /* 256px */
   --container-2xs: 18rem; /* 288px */
   --container-xs: 20rem; /* 320px */
@@ -212,6 +214,7 @@
   --container-6xl: 72rem; /* 1152px */
   --container-7xl: 80rem; /* 1280px */
   --container-8xl: 90rem; /* 1440px */
+  --container-9xl: 104rem; /* 1664px */
 }
 
 /* Reduce Motion zeroes the movement durations and leaves the fades alone,

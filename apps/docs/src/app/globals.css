@@ -64,6 +64,24 @@ a:hover {
   text-decoration: underline;
 }
 
+/* ---- Page layout ---- */
+
+/* The mock builds every page in three levels. A full-bleed parent carries
+   the 32px gutter and any edge-to-edge background such as the banner glow.
+   A 9xl container inside it caps and centers the content: 32 plus 1664 plus
+   32 is exactly the 1728px artboard. Each child then owns its own inset and
+   its own vertical rhythm, which is 16px for the nav row and the banner
+   title, and the sidebar's own padding in the shell. The container carries
+   no padding of its own because the shell's sidebar sits flush at its edge. */
+.site-gutter {
+  padding-inline: var(--spacing-8);
+}
+
+.site-container {
+  max-width: var(--container-9xl);
+  margin-inline: auto;
+}
+
 [data-shader-demo] {
   /* Anchors the absolutely-positioned poster and scene layers every demo
      stacks inside this wrapper. */
@@ -71,6 +89,16 @@ a:hover {
   aspect-ratio: 3 / 2;
   overflow: hidden;
   isolation: isolate;
+}
+
+/* Under Playwright the visual fixture stamps data-visual-test on <html>
+   (apps/docs-tests/visual/fixtures.ts) and the demo wrapper takes the width
+   every baseline was captured at. The suite screenshots the canvas alone, so
+   its size must not depend on the chrome around it: without this, a change
+   to the shell, sidebar, or gutters re-rolls all fifteen baselines. 560px is
+   what the 1280px test viewport produced before the pin existed. */
+:root[data-visual-test] [data-shader-demo] {
+  width: 560px;
 }
 
 /* ---- Demo control panel ---- */
@@ -249,12 +277,15 @@ a:hover {
 
 /* ---- Demo page layout ---- */
 
+/* Shader column at 4xl and the control panel at 2xs, the mock's widths.
+   The horizontal inset comes from the docs shell's main column, so the grid
+   pads only vertically. */
 .demo-layout {
   display: grid;
-  grid-template-columns: minmax(0, 896px) minmax(0, 20rem);
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, var(--container-4xl)) minmax(0, var(--container-2xs));
+  gap: var(--spacing-4);
   align-items: start;
-  padding: 1.5rem;
+  padding: var(--spacing-6) 0;
 }
 
 .demo-layout-controls {
