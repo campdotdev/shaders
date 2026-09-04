@@ -88,3 +88,10 @@ export function groupByTaxonomy<Record extends { category: CategorySlug; label: 
 
   return tiers;
 }
+
+/** The tree's records in reading order: tier by tier, group by group. Prev
+ * and next paging walks this so a reader steps through the sidebar top to
+ * bottom. */
+export function flattenTaxonomy<Record>(tiers: ReadonlyArray<TaxonomyTier<Record>>): Record[] {
+  return tiers.flatMap((tier) => tier.groups.flatMap((group) => group.items));
+}

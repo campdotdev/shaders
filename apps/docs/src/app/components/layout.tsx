@@ -7,7 +7,7 @@ export default function ComponentsLayout({ children }: { children: ReactNode }) 
   return (
     <>
       <SectionBanner title="Components" />
-      <DocsShell>{children}</DocsShell>
+      <DocsShell section="components">{children}</DocsShell>
     </>
   );
 }

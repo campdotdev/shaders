@@ -1,6 +1,6 @@
 import { cache } from 'react';
 
-import { getCatalogRecords } from './catalog';
+import { getCatalogRecords, getComponentsTree } from './catalog';
 import { NAV } from './nav.config';
 import { getMdxDocsPages } from './source';
 import type {
@@ -11,25 +11,35 @@ import type {
   NavItem,
   ResolvedNavGroup,
   ResolvedNavItem,
+  SidebarSection,
 } from './types';
 
 function isNavGroup(candidate: NavGroup | NavItem): candidate is NavGroup {
   return 'label' in candidate && 'items' in candidate;
 }
 
+function isResolvedGroup(
+  candidate: ResolvedNavGroup | ResolvedNavItem,
+): candidate is ResolvedNavGroup {
+  return 'items' in candidate;
+}
+
+// Every item resolves to a list: a group to a list of one, a page or link to
+// a list of one entry, and a section, catalog, or taxonomy to however many
+// entries it expands to. The caller flattens, which splices expanded
+// sections into their parent in order.
 async function resolveItem(
   item: NavGroup | NavItem,
   pages: DocsPage[],
-): Promise<ResolvedNavGroup | ResolvedNavItem[]> {
+): Promise<Array<ResolvedNavGroup | ResolvedNavItem>> {
   if (isNavGroup(item)) {
     // Children resolve independently, so run them together; Promise.all
-    // preserves item order, and flat() splices expanded sections (which
-    // resolve to arrays) into the group the same way sequential pushes did.
+    // preserves item order.
     const resolvedChildren = await Promise.all(
       item.items.map((child) => resolveItem(child, pages)),
     );
 
-    return { label: item.label, items: resolvedChildren.flat() };
+    return [{ label: item.label, sidebar: item.sidebar, items: resolvedChildren.flat() }];
   }
 
   switch (item.kind) {
@@ -55,17 +65,46 @@ async function resolveItem(
 
       return records.map((record) => ({ label: record.label, url: record.url }));
     }
+    case 'taxonomy': {
+      // Each tier becomes a group whose items are the leaf groups, so the
+      // sidebar renders tier headers over group headers over rows, and
+      // flatten() below gives MDX breadcrumbs the full trail if a component
+      // ever needs one.
+      const tiers = await getComponentsTree();
+
+      return tiers.map((tier) => ({
+        label: tier.label,
+        items: tier.groups.map((group) => ({
+          label: group.label,
+          items: group.items.map((record) => ({ label: record.label, url: record.url })),
+        })),
+      }));
+    }
   }
 }
 
 export const getDocsNavTree = cache(async (): Promise<ResolvedNavGroup[]> => {
   const pages = await getMdxDocsPages();
-  // Top-level entries are all groups; resolveItem only returns an array for
-  // bare items, so the filter keeps the same shape the sequential loop built.
   const resolved = await Promise.all(NAV.map((group) => resolveItem(group, pages)));
 
-  return resolved.filter((group): group is ResolvedNavGroup => !Array.isArray(group));
+  // Top-level entries are all groups, so the filter only narrows the type.
+  return resolved.flat().filter(isResolvedGroup);
 });
+
+/**
+ * The groups one sidebar shows. The components sidebar unwraps its single
+ * group so the taxonomy tiers render as the top-level headers, as in the
+ * mock; the other sections show their groups as they are.
+ */
+export const getDocsSidebarTree = cache(
+  async (section: SidebarSection): Promise<ResolvedNavGroup[]> => {
+    const groups = (await getDocsNavTree()).filter((group) => group.sidebar === section);
+
+    if (section !== 'components') return groups;
+
+    return groups.flatMap((group) => group.items.filter(isResolvedGroup));
+  },
+);
 
 interface FlatEntry {
   url: string;

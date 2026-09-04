@@ -6,7 +6,8 @@ import { resolve } from 'node:path';
 import { PRIMITIVES } from '@/data/primitives';
 
 import { parseRegistry } from './schema';
-import type { CategorySlug } from './taxonomy';
+import { groupByTaxonomy } from './taxonomy';
+import type { CategorySlug, TaxonomyTier } from './taxonomy';
 
 const REGISTRY_JSON = resolve(process.cwd(), '..', '..', 'registry', 'registry.json');
 
@@ -51,6 +52,14 @@ export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogReco
       tags: [],
     }));
 });
+
+// The components catalog folded into the sidebar's tiers and groups. The
+// sidebar renders it and the component pages page through it, so both agree
+// on what comes next.
+export const getComponentsTree = cache(
+  async (): Promise<Array<TaxonomyTier<ComponentCatalogRecord>>> =>
+    groupByTaxonomy(await getComponentsCatalog()),
+);
 
 // eslint-disable-next-line @typescript-eslint/require-await -- kept async for parity with getComponentsCatalog and to allow future async additions
 export const getPrimitivesCatalog = cache(async (): Promise<CatalogRecord[]> => {

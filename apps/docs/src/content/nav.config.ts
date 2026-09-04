@@ -3,6 +3,7 @@ import type { NavGroup } from './types';
 export const NAV: NavGroup[] = [
   {
     label: 'Overview',
+    sidebar: 'docs',
     items: [
       { kind: 'page', slug: '/getting-started' },
       { kind: 'page', slug: '/cli' },
@@ -11,15 +12,16 @@ export const NAV: NavGroup[] = [
       { kind: 'link', label: 'Palette', url: '/palette' },
     ],
   },
+  // The mock's components sidebar is the taxonomy tiers and nothing else,
+  // so there is no Overview row: the index is reachable from the header.
   {
     label: 'Components',
-    items: [
-      { kind: 'link', label: 'Overview', url: '/components' },
-      { kind: 'catalog', source: 'components' },
-    ],
+    sidebar: 'components',
+    items: [{ kind: 'taxonomy' }],
   },
   {
     label: 'Primitives',
+    sidebar: 'primitives',
     items: [
       { kind: 'link', label: 'Overview', url: '/primitives' },
       { kind: 'catalog', source: 'primitives' },
@@ -27,10 +29,12 @@ export const NAV: NavGroup[] = [
   },
   {
     label: 'Guides',
+    sidebar: 'docs',
     items: [{ kind: 'section', collectsFrom: 'guides' }],
   },
   {
     label: 'Frameworks',
+    sidebar: 'docs',
     items: [
       {
         label: 'React',
@@ -43,6 +47,7 @@ export const NAV: NavGroup[] = [
   },
   {
     label: 'Reference',
+    sidebar: 'docs',
     items: [{ kind: 'section', collectsFrom: 'reference' }],
   },
 ];

@@ -37,14 +37,23 @@ export interface DocsSearchDocument {
   tags: string[];
 }
 
+/** Which sidebar a top-level nav group belongs to. Each docs layout renders
+ * only its own section's groups, so a component page shows the component
+ * tiers and nothing else. */
+export type SidebarSection = 'components' | 'primitives' | 'docs';
+
 export type NavItem =
   | { kind: 'page'; slug: string }
   | { kind: 'link'; label: string; url: string }
   | { kind: 'section'; collectsFrom: DocsSection }
-  | { kind: 'catalog'; source: 'components' | 'primitives' };
+  | { kind: 'catalog'; source: 'components' | 'primitives' }
+  /** The components catalog folded into taxonomy tiers, each a group of groups. */
+  | { kind: 'taxonomy' };
 
 export interface NavGroup {
   label: string;
+  /** Set on top-level groups only; nested groups inherit their parent's sidebar. */
+  sidebar?: SidebarSection;
   items: Array<NavGroup | NavItem>;
 }
 
@@ -55,6 +64,7 @@ export interface ResolvedNavItem {
 
 export interface ResolvedNavGroup {
   label: string;
+  sidebar?: SidebarSection;
   items: Array<ResolvedNavGroup | ResolvedNavItem>;
 }
 

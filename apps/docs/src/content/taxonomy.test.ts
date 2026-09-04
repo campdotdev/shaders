@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CATEGORIES, groupByTaxonomy } from './taxonomy';
+import { CATEGORIES, flattenTaxonomy, groupByTaxonomy } from './taxonomy';
 
 const record = (label: string, category: keyof typeof CATEGORIES) => ({ label, category });
 
@@ -45,5 +45,23 @@ describe('groupByTaxonomy', () => {
 
   it('returns an empty tree for no records', () => {
     expect(groupByTaxonomy([])).toEqual([]);
+  });
+});
+
+describe('flattenTaxonomy', () => {
+  it('walks the tree tier by tier and group by group', () => {
+    const tree = groupByTaxonomy([
+      record('Grain', 'lens-film'),
+      record('Dot Field', 'patterns'),
+      record('Wave Lines', 'scenes'),
+      record('Aurora', 'scenes'),
+    ]);
+
+    expect(flattenTaxonomy(tree).map((item) => item.label)).toEqual([
+      'Dot Field',
+      'Aurora',
+      'Wave Lines',
+      'Grain',
+    ]);
   });
 });
