@@ -9,7 +9,7 @@
  */
 import type { ReactNode } from 'react';
 
-import { DocsSidebar } from '@/components/docs/DocsSidebar';
+import { DocsSidebar } from '@/components/docs-sidebar/docs-sidebar';
 import { getDocsSidebarTree } from '@/content/nav';
 import type { SidebarSection } from '@/content/types';
 
