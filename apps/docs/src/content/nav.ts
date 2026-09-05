@@ -130,10 +130,21 @@ function flatten(groups: ResolvedNavGroup[], trail: string[] = []): FlatEntry[] 
   return out;
 }
 
+/**
+ * The pages before and after this one, walking only the sidebar section the
+ * page belongs to. Each docs layout shows one section, so paging across into
+ * another section would land the reader on a page whose sidebar replaces the
+ * one they were browsing: the first guide would step back into the last
+ * primitive instead of the end of Overview.
+ */
 export const getDocsPrevNext = cache(
   async (page: DocsPage): Promise<{ prev: DocsNeighbor | null; next: DocsNeighbor | null }> => {
     const tree = await getDocsNavTree();
-    const flat = flatten(tree);
+    const home = tree.find((group) => flatten([group]).some((item) => item.url === page.url));
+
+    if (!home) return { prev: null, next: null };
+
+    const flat = flatten(tree.filter((group) => group.sidebar === home.sidebar));
     const idx = flat.findIndex((item) => item.url === page.url);
 
     if (idx === -1) return { prev: null, next: null };
