@@ -1,6 +1,6 @@
 {
   "name": "@camp-dev/shaders-cli",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "CLI for Shaders — copy-paste components from the registry into your project.",
   "keywords": [
     "cli",

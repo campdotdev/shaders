@@ -1,6 +1,6 @@
 {
   "name": "@camp-dev/shaders",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Engine for Shaders — TSL primitives, renderer, scheduler. Framework-agnostic.",
   "keywords": [
     "background",

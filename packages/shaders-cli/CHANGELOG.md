@@ -1,5 +1,17 @@
 # @camp-dev/shaders-cli
 
+## 0.19.0
+
+### Minor Changes
+
+- 0b58731: The three packages are renamed. `@lovo/matter` is now `@camp-dev/shaders`, `@lovo/matter-react` is now `@camp-dev/shaders-react`, and `@lovo/matter-cli` is now `@camp-dev/shaders-cli`. The repository moved to github.com/campdotdev/shaders. Update your dependency names and every import specifier. Apart from the removals below, the exports themselves are unchanged.
+
+  The CLI binary is renamed from `matter-cli` to `shaders-cli`, and its config file from `matter.config.json` to `shaders.config.json`. Rename the file and update any script that calls the old binary. Two defaults that `shaders-cli init` writes also change: `componentsDir` goes from `src/components/matter` to `src/components/shaders`, and `registryUrl` now points at `campdotdev/shaders` instead of `lovo-hq/matter`. A config you already have keeps the values it records, so edit its `registryUrl` by hand or re-run `init` with `--force`.
+
+  `MatterError` and `MatterErrorCode` in `@camp-dev/shaders-react` are now `ShadersError` and `ShadersErrorCode`. A `catch` block that tests `instanceof MatterError` has to switch to the new name.
+
+  The READMEs drop their migration notes for the `Matter*` aliases that 0.4.0 deprecated, such as `MatterScene` and `MatterScheduler`. The aliases themselves left the source several releases ago.
+
 > Versions 0.18.0 and below shipped as `@lovo/matter-cli` before the project moved to the camp-dev org. Releases 1.0.0 through 3.9.0 from that history are renumbered here as 0.7.0 through 0.18.0.
 
 ## 0.18.0
