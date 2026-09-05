@@ -1,9 +1,10 @@
 /**
  * Shared shell for every converted component page, in the mock's section
  * order: breadcrumbs and header above the demo, Usage and API Reference
- * below it, then prev/next pagination. Titles, descriptions, and page order come from the
- * catalog (registry.json); the interactive demo and Usage content come from
- * the demo registry, which every component page has an entry in.
+ * below it, then prev/next pagination. Titles and descriptions come from the
+ * catalog (registry.json) and page order from its taxonomy tree; the
+ * interactive demo and Usage content come from the demo registry, which
+ * every component page has an entry in.
  * Rendering waits on that entry, so a new component joins the site by
  * registering its demo island here rather than by adding a page file.
  */
@@ -15,8 +16,9 @@ import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
 import { CodeBlock } from '@/components/code-block/code-block';
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
 import { PropsTable } from '@/components/props-table/props-table';
-import { getComponentsCatalog } from '@/content/catalog';
+import { getComponentsCatalog, getComponentsTree } from '@/content/catalog';
 import { getComponentProps } from '@/content/props';
+import { flattenTaxonomy } from '@/content/taxonomy';
 import type { DocsBreadcrumb } from '@/content/types';
 import { deriveUsageImport } from '@/lib/usage-import';
 
@@ -50,9 +52,12 @@ export default async function ComponentPage({ params }: PageProps) {
 
   if (!entry || !record) notFound();
 
-  const index = catalog.indexOf(record);
-  const previous = catalog[index - 1] ?? null;
-  const next = catalog[index + 1] ?? null;
+  // Prev and next walk the sidebar's order, tier by tier and group by group,
+  // rather than the catalog's alphabetical order.
+  const ordered = flattenTaxonomy(await getComponentsTree());
+  const index = ordered.findIndex((candidate) => candidate.url === record.url);
+  const previous = ordered[index - 1] ?? null;
+  const next = ordered[index + 1] ?? null;
   const Island = entry.Island;
 
   // Every component page sits at the same depth, so the trail is fixed apart

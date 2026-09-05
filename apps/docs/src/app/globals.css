@@ -4,6 +4,118 @@
    so there is a single semantic mapping and no theme switching. */
 @import './tokens.css';
 
+/* Two cascade layers. `reset` neutralizes browser defaults and `base`
+   carries the site's own element defaults, such as prose spacing. Rules in
+   either layer lose to any unlayered rule, whatever its specificity, so
+   CSS modules and inline styles override both without effort. That matters
+   for the margin reset below: `:not(dialog)` gives it class-level
+   specificity, and an element selector like `article p` would lose to it
+   outside a layer. */
+@layer reset, base;
+
+/* ---- Reset ---- */
+
+/* After Josh Comeau's reset. Two departures: `svg` keeps its inline
+   display, because the site's icons sit inside text and links, and the
+   root stacking context rule is dropped, because the App Router has no
+   `#__next` wrapper. Font smoothing lives here because it is a browser
+   correction rather than a site choice. */
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* `dialog` keeps `margin: auto`, which is what centers it. */
+  *:not(dialog) {
+    margin: 0;
+  }
+
+  /* Lets `height` and similar animate to and from `auto`. Chrome-only for
+     now; other browsers ignore it. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      interpolate-size: allow-keywords;
+    }
+  }
+
+  /* Grayscale antialiasing instead of subpixel rendering. Light text on the
+     dark ground otherwise picks up colored fringes and reads heavier than
+     the Figma mock, which renders with grayscale smoothing. Only macOS and
+     iOS browsers honor these; everywhere else they are ignored. */
+  body {
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Block display removes the baseline gap under inline media. The shader
+     canvas already sets this inline, so nothing changes there. */
+  img,
+  picture,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+
+  [hidden]:where(:not([hidden='until-found'])) {
+    display: none !important;
+  }
+}
+
+/* ---- Prose ---- */
+
+/* MDX content renders bare elements, and the reset above zeroed the
+   browser margins that used to space them. `.prose` gives that spacing
+   back on the site's scale: one step between blocks, a larger step above
+   a heading so sections read as sections. Only direct children are spaced,
+   because nested lists and list paragraphs are close enough already. */
+@layer base {
+  .prose {
+    line-height: 1.65;
+  }
+
+  .prose > * + * {
+    margin-block-start: var(--spacing-4);
+  }
+
+  .prose > :is(h2, h3, h4) {
+    margin-block-start: var(--spacing-8);
+  }
+}
+
 :root {
   --bg: var(--black);
   --bg-muted: var(--gray-900);
@@ -36,17 +148,6 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
-  margin: 0;
-  padding: 0;
-}
-
-/* Grayscale antialiasing instead of subpixel rendering. Light text on the
-   dark ground otherwise picks up colored fringes and reads heavier than the
-   Figma mock, which renders with grayscale smoothing. Only macOS and iOS
-   browsers honor these; everywhere else they are ignored. */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Code elements otherwise fall through to the browser's default monospace;
@@ -64,6 +165,24 @@ a:hover {
   text-decoration: underline;
 }
 
+/* ---- Page layout ---- */
+
+/* The mock builds every page in three levels. A full-bleed parent carries
+   the 32px gutter and any edge-to-edge background such as the banner glow.
+   A 9xl container inside it caps and centers the content: 32 plus 1664 plus
+   32 is exactly the 1728px artboard. Each child then owns its own inset and
+   its own vertical rhythm, which is 16px for the nav row and the banner
+   title, and the sidebar's own padding in the shell. The container carries
+   no padding of its own because the shell's sidebar sits flush at its edge. */
+.site-gutter {
+  padding-inline: var(--spacing-8);
+}
+
+.site-container {
+  max-width: var(--container-9xl);
+  margin-inline: auto;
+}
+
 [data-shader-demo] {
   /* Anchors the absolutely-positioned poster and scene layers every demo
      stacks inside this wrapper. */
@@ -71,6 +190,16 @@ a:hover {
   aspect-ratio: 3 / 2;
   overflow: hidden;
   isolation: isolate;
+}
+
+/* Under Playwright the visual fixture stamps data-visual-test on <html>
+   (apps/docs-tests/visual/fixtures.ts) and the demo wrapper takes the width
+   every baseline was captured at. The suite screenshots the canvas alone, so
+   its size must not depend on the chrome around it: without this, a change
+   to the shell, sidebar, or gutters re-rolls all fifteen baselines. 560px is
+   what the 1280px test viewport produced before the pin existed. */
+:root[data-visual-test] [data-shader-demo] {
+  width: 560px;
 }
 
 /* ---- Demo control panel ---- */
@@ -87,7 +216,6 @@ a:hover {
 }
 
 .controls-panel-title {
-  margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -122,7 +250,6 @@ a:hover {
   flex-direction: column;
   gap: 0.6rem;
   border: 0;
-  margin: 0;
   padding: 0;
 }
 
@@ -249,12 +376,15 @@ a:hover {
 
 /* ---- Demo page layout ---- */
 
+/* Shader column at 4xl and the control panel at 2xs, the mock's widths.
+   The horizontal inset comes from the docs shell's main column, so the grid
+   pads only vertically. */
 .demo-layout {
   display: grid;
-  grid-template-columns: minmax(0, 896px) minmax(0, 20rem);
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, var(--container-4xl)) minmax(0, var(--container-2xs));
+  gap: var(--spacing-4);
   align-items: start;
-  padding: 1.5rem;
+  padding: var(--spacing-6) 0;
 }
 
 .demo-layout-controls {
@@ -434,7 +564,6 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin: 0;
   padding: 0;
   list-style: none;
 }

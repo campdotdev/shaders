@@ -15,8 +15,10 @@ interface SectionBannerProps {
 
 export function SectionBanner({ title }: SectionBannerProps) {
   return (
-    <div className={styles.banner} data-pagefind-ignore="all">
-      <p className={styles.title}>{title}</p>
+    <div className={`site-gutter ${styles.banner}`} data-pagefind-ignore="all">
+      <div className={`site-container ${styles.inner}`}>
+        <p className={styles.title}>{title}</p>
+      </div>
     </div>
   );
 }

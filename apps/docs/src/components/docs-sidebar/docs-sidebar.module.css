@@ -1,0 +1,100 @@
+/* Docs sidebar after the Figma mock. The aside is 2xs wide with a 16px
+   inset all round, which puts its text on the same 48px line as the logo
+   and the banner title. Tiers stack with a 16px gap, groups inside a tier
+   with 8px, and rows with 2px. Every header and row shares one 36px box:
+   12px on the left, 8px elsewhere, 6px corners. */
+
+/* Sticky so the sidebar stays put while a long page scrolls, and scrolls
+   itself once the tree outgrows the viewport. The shell's grid gives it the
+   2xs column; the padding is the mock's aside inset. */
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-4);
+}
+
+.tier,
+.group,
+.groups {
+  display: flex;
+  flex-direction: column;
+}
+
+.groups {
+  gap: var(--spacing-2);
+}
+
+.group {
+  gap: var(--spacing-0-5);
+}
+
+/* Tier header: 16px semibold white on a 24px line, so the box is 40px. */
+.tierHeader {
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-6);
+  color: var(--fg);
+}
+
+/* Group header: 14px semibold white on a 20px line, the same 36px box as
+   a row but not a link. */
+.groupHeader {
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-5);
+  color: var(--fg);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  padding: 0;
+  list-style: none;
+}
+
+/* A row: 14px muted text in the 36px box. The active row is the mock's
+   lime-900 fill with lime text. The mock draws no hover, so hover borrows
+   the faint white fill code blocks use and lifts the text to full white. */
+.row {
+  display: block;
+  height: var(--spacing-9);
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition:
+    color var(--fade-xs) var(--ease-hover),
+    background-color var(--fade-xs) var(--ease-hover);
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the fill would then stick on the tapped row. */
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    background: var(--white-a5);
+    color: var(--fg);
+    text-decoration: none;
+  }
+}
+
+.row[aria-current='page'],
+.row[aria-current='page']:hover {
+  background: var(--lime-900);
+  color: var(--accent);
+}
+
+.row:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+}

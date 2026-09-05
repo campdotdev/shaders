@@ -1,3 +1,4 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
@@ -5,6 +6,11 @@ export default defineConfig({
   // ${configDir} in our shared tsconfig, so the essential option is inline.
   // @ts-expect-error -- oxc is not in UserConfig types yet; this is the documented workaround
   oxc: { tsconfig: { compilerOptions: { verbatimModuleSyntax: true } } },
+  // Vitest does not read tsconfig `paths`, so the `@` alias the content
+  // modules import through has to be declared here as well.
+  resolve: {
+    alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) },
+  },
   test: {
     // No DOM environment on purpose. These tests are pure color math, and
     // running them in plain Node means a future test that imports root

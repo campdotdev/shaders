@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { CATEGORY_SLUGS } from './taxonomy';
 import type { DocsFrontmatter } from './types';
 
 const sectionEnum = z.enum(['overview', 'guides', 'react.guides', 'react.api', 'reference']);
@@ -48,6 +49,7 @@ export function parseFrontmatter(data: unknown, sourcePath: string): DocsFrontma
 const registryComponentSchema = z.object({
   description: z.string().min(1),
   tier: z.number().int(),
+  category: z.enum(CATEGORY_SLUGS),
   file: z.string().optional(),
   dependencies: z.array(z.string()).optional(),
   uses_primitives: z.array(z.string()).optional(),

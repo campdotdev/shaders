@@ -2,26 +2,25 @@
    order: breadcrumbs and header above the demo, Usage and API Reference
    below it, then prev/next pagination. */
 
-/* The demo grid (.demo-layout in globals.css) pads itself 1.5rem and caps
-   its shader column at 896px. The breadcrumbs, header, and prose sections
-   use the same inset and cap so everything shares one left edge. Margin
-   rather than padding, so the cap measures the content box regardless of
-   box-sizing. */
+/* The docs shell's main column insets everything by 40px, and the demo grid
+   (.demo-layout in globals.css) caps its shader column at 4xl. The
+   breadcrumbs, header, and prose sections take the same cap so everything
+   shares one left edge and one width. Margin rather than padding, so the cap
+   measures the content box regardless of box-sizing. */
 
 /* The mock's breadcrumb row sits 16px below the top of the page and 24px
    above the title, which with the row's own 32px puts the title at 72px. */
 .breadcrumbs {
   max-width: var(--container-4xl);
-  margin: var(--spacing-4) var(--spacing-6) 0;
+  margin: var(--spacing-4) 0 0;
 }
 
 .header {
   max-width: var(--container-4xl);
-  margin: var(--spacing-6) var(--spacing-6) 0;
+  margin: var(--spacing-6) 0 0;
 }
 
 .title {
-  margin: 0;
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--tracking-tight);
@@ -38,7 +37,7 @@
   flex-direction: column;
   gap: var(--spacing-12);
   max-width: var(--container-4xl);
-  margin: var(--spacing-6) var(--spacing-6) var(--spacing-20);
+  margin: var(--spacing-6) 0 var(--spacing-20);
 }
 
 .sectionTitle {

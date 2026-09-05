@@ -1,14 +1,15 @@
 /* Site navigation after the Figma mock: one 56px row, logo mark at the left
-   edge, links at the right, no divider underneath. The mock nests a 32px
-   frame inset and a 16px row inset; here that is one 48px inset, which is
-   also where the banner title below it lines up. */
+   edge, links at the right, no divider underneath. The header element is the
+   page gutter and the row is the 9xl container (both in globals.css), so the
+   32px comes from the gutter and the 16px here, and the banner title below
+   lines up because it nests the same way. */
 
-.header {
+.row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   height: var(--spacing-14);
-  padding: 0 var(--spacing-12);
+  padding: 0 var(--spacing-4);
 }
 
 /* A 36px box around the 24px mark, so the home link has a comfortable

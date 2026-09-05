@@ -40,7 +40,6 @@
 /* Accordion.Header is an h3 for the ARIA pattern; reset the heading font so
    the row reads as a table row, not a title. */
 .header {
-  margin: 0;
   font: inherit;
 }
 
@@ -51,7 +50,6 @@
   color: var(--fg);
   border: 0;
   border-radius: var(--radius-xl);
-  font: inherit;
   text-align: left;
   cursor: pointer;
 }
@@ -90,7 +88,6 @@
 .type code {
   display: inline-flex;
   align-items: center;
-  box-sizing: border-box;
   height: var(--spacing-7);
   padding: 0 var(--spacing-2);
   border-radius: var(--radius-md);
@@ -173,7 +170,6 @@
   align-items: start;
   column-gap: var(--spacing-4);
   row-gap: var(--spacing-8);
-  margin: 0;
   padding: var(--spacing-4);
   font-size: var(--font-size-xs);
   line-height: var(--leading-4);
@@ -182,10 +178,6 @@
 .details dt {
   color: var(--gray-50);
   font-weight: var(--font-weight-semibold);
-}
-
-.details dd {
-  margin: 0;
 }
 
 /* The one run of prose in the table stays at the body size; labels and code

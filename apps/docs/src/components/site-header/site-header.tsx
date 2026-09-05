@@ -17,34 +17,36 @@ const REPO_URL = 'https://github.com/campdotdev/shaders';
 
 export function SiteHeader() {
   return (
-    <header className={styles.header} data-pagefind-ignore="all">
-      <Link aria-label="Shaders home" className={styles.logo} href="/">
-        <LogoMark />
-      </Link>
-      <div className={styles.actions}>
-        {/* Search is not in the mock. It stays here, ahead of the nav, until
-            SHA-120 designs its place in the header. */}
-        <SearchBar />
-        <nav aria-label="Site" className={styles.nav}>
-          {/* Docs lands on the components index until a documentation home
-              exists; Examples points at recipes, the nearest thing to
-              examples the site has today. */}
-          <Link className={styles.link} href="/components">
-            Docs
-          </Link>
-          <Link className={styles.link} href="/recipes">
-            Examples
-          </Link>
-          <a
-            aria-label="GitHub repository"
-            className={styles.iconLink}
-            href={REPO_URL}
-            rel="noreferrer"
-            target="_blank"
-          >
-            <GitHubIcon />
-          </a>
-        </nav>
+    <header className="site-gutter" data-pagefind-ignore="all">
+      <div className={`site-container ${styles.row}`}>
+        <Link aria-label="Shaders home" className={styles.logo} href="/">
+          <LogoMark />
+        </Link>
+        <div className={styles.actions}>
+          {/* Search is not in the mock. It stays here, ahead of the nav, until
+              SHA-120 designs its place in the header. */}
+          <SearchBar />
+          <nav aria-label="Site" className={styles.nav}>
+            {/* Docs lands on the components index until a documentation home
+                exists; Examples points at recipes, the nearest thing to
+                examples the site has today. */}
+            <Link className={styles.link} href="/components">
+              Docs
+            </Link>
+            <Link className={styles.link} href="/recipes">
+              Examples
+            </Link>
+            <a
+              aria-label="GitHub repository"
+              className={styles.iconLink}
+              href={REPO_URL}
+              rel="noreferrer"
+              target="_blank"
+            >
+              <GitHubIcon />
+            </a>
+          </nav>
+        </div>
       </div>
     </header>
   );

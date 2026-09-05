@@ -1,0 +1,15 @@
+/* Sidebar column at 2xs, content in the rest. The mock puts main flush
+   against the aside and gives the content its own 40px inset, so the shell
+   itself has no gap and no vertical padding: the sidebar pads itself, and
+   each page owns its top and bottom rhythm. */
+.shell {
+  display: grid;
+  grid-template-columns: var(--container-2xs) minmax(0, 1fr);
+}
+
+/* min-width: 0 lets a wide code block scroll inside the column instead of
+   forcing the grid wider. */
+.main {
+  min-width: 0;
+  padding-left: var(--spacing-10);
+}

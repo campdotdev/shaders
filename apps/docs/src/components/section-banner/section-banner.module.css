@@ -1,18 +1,27 @@
 /* Section banner after the Figma mock: a 144px band that puts the title at
-   its bottom-left, 32px up from the bottom and on the 48px inset the site
-   navigation uses, over a lime glow that fades in from the bottom edge. */
+   its bottom-left, 32px up from the bottom and on the same 32-plus-16 inset
+   the site navigation uses, over a lime glow that fades in from the bottom
+   edge. The band is the page gutter and the inner block is the 9xl
+   container, both from globals.css. */
 
-/* Positioned and isolated so the glow can sit behind the title as its own
-   layer. A future shader takes the glow's place as one absolutely
-   positioned child and nothing else has to move. */
+/* Full-bleed so the glow spans the viewport. Positioned and isolated so the
+   glow can sit behind the title as its own layer. A future shader takes the
+   glow's place as one absolutely positioned child and nothing else has to
+   move. */
 .banner {
   position: relative;
   isolation: isolate;
+  overflow: hidden;
+}
+
+/* The title block: 144px tall with the title at its bottom, 32px up, on the
+   16px inset. The height includes the padding, so the band measures 144,
+   not 208. */
+.inner {
   display: flex;
   align-items: flex-end;
   height: var(--spacing-36);
-  padding: var(--spacing-8) var(--spacing-12);
-  overflow: hidden;
+  padding: var(--spacing-8) var(--spacing-4);
 }
 
 /* The mock's glow is a half-ellipse centered on the bottom edge of the
@@ -39,7 +48,6 @@
 }
 
 .title {
-  margin: 0;
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-10);
