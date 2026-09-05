@@ -1,6 +1,6 @@
 {
   "name": "@camp-dev/shaders-react",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "React binding for Shaders — ShaderScene, useShaderMaterial, input hooks.",
   "keywords": [
     "components",
