@@ -21,7 +21,6 @@
 }
 
 .title {
-  margin: 0;
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-semibold);
   letter-spacing: var(--tracking-tight);

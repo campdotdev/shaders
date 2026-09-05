@@ -51,7 +51,7 @@ export default async function DocsPage({ params }: PageProps) {
         alignItems: 'start',
       }}
     >
-      <article style={{ minWidth: 0, lineHeight: 1.65 }}>
+      <article className="prose" style={{ minWidth: 0 }}>
         <div style={{ marginBottom: '1.5rem' }}>
           <Breadcrumbs crumbs={crumbs} />
         </div>

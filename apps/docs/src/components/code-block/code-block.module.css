@@ -8,7 +8,6 @@
 }
 
 .codeBlock pre {
-  margin: 0;
   padding: var(--spacing-4);
   border-radius: var(--radius-xl);
   font-size: var(--font-size-sm);

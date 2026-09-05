@@ -4,6 +4,118 @@
    so there is a single semantic mapping and no theme switching. */
 @import './tokens.css';
 
+/* Two cascade layers. `reset` neutralizes browser defaults and `base`
+   carries the site's own element defaults, such as prose spacing. Rules in
+   either layer lose to any unlayered rule, whatever its specificity, so
+   CSS modules and inline styles override both without effort. That matters
+   for the margin reset below: `:not(dialog)` gives it class-level
+   specificity, and an element selector like `article p` would lose to it
+   outside a layer. */
+@layer reset, base;
+
+/* ---- Reset ---- */
+
+/* After Josh Comeau's reset. Two departures: `svg` keeps its inline
+   display, because the site's icons sit inside text and links, and the
+   root stacking context rule is dropped, because the App Router has no
+   `#__next` wrapper. Font smoothing lives here because it is a browser
+   correction rather than a site choice. */
+@layer reset {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  /* `dialog` keeps `margin: auto`, which is what centers it. */
+  *:not(dialog) {
+    margin: 0;
+  }
+
+  /* Lets `height` and similar animate to and from `auto`. Chrome-only for
+     now; other browsers ignore it. */
+  @media (prefers-reduced-motion: no-preference) {
+    html {
+      interpolate-size: allow-keywords;
+    }
+  }
+
+  /* Grayscale antialiasing instead of subpixel rendering. Light text on the
+     dark ground otherwise picks up colored fringes and reads heavier than
+     the Figma mock, which renders with grayscale smoothing. Only macOS and
+     iOS browsers honor these; everywhere else they are ignored. */
+  body {
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Block display removes the baseline gap under inline media. The shader
+     canvas already sets this inline, so nothing changes there. */
+  img,
+  picture,
+  video,
+  canvas {
+    display: block;
+    max-width: 100%;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    text-wrap: balance;
+  }
+
+  [hidden]:where(:not([hidden='until-found'])) {
+    display: none !important;
+  }
+}
+
+/* ---- Prose ---- */
+
+/* MDX content renders bare elements, and the reset above zeroed the
+   browser margins that used to space them. `.prose` gives that spacing
+   back on the site's scale: one step between blocks, a larger step above
+   a heading so sections read as sections. Only direct children are spaced,
+   because nested lists and list paragraphs are close enough already. */
+@layer base {
+  .prose {
+    line-height: 1.65;
+  }
+
+  .prose > * + * {
+    margin-block-start: var(--spacing-4);
+  }
+
+  .prose > :is(h2, h3, h4) {
+    margin-block-start: var(--spacing-8);
+  }
+}
+
 :root {
   --bg: var(--black);
   --bg-muted: var(--gray-900);
@@ -36,17 +148,6 @@ body {
   background: var(--bg);
   color: var(--fg);
   font-family: var(--font-sans);
-  margin: 0;
-  padding: 0;
-}
-
-/* Grayscale antialiasing instead of subpixel rendering. Light text on the
-   dark ground otherwise picks up colored fringes and reads heavier than the
-   Figma mock, which renders with grayscale smoothing. Only macOS and iOS
-   browsers honor these; everywhere else they are ignored. */
-body {
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
 /* Code elements otherwise fall through to the browser's default monospace;
@@ -115,7 +216,6 @@ a:hover {
 }
 
 .controls-panel-title {
-  margin: 0;
   font-size: 0.9rem;
   font-weight: 600;
 }
@@ -150,7 +250,6 @@ a:hover {
   flex-direction: column;
   gap: 0.6rem;
   border: 0;
-  margin: 0;
   padding: 0;
 }
 
@@ -465,7 +564,6 @@ a:hover {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin: 0;
   padding: 0;
   list-style: none;
 }
