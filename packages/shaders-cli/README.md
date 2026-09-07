@@ -1,141 +1,75 @@
 # @camp-dev/shaders-cli
 
-shadcn-style copy-paste CLI for **Shaders** — fetch polished shader components from the registry into your project, where they're yours to edit.
+Dev-time CLI for **Shaders**. It has one command, `poster`, which renders a Shaders component tree to a static image so `<ShaderPoster>` has something to show while WebGPU starts up.
+
+Components themselves ship in `@camp-dev/shaders`. Nothing here copies files into your project.
 
 ## Install
 
 ```bash
-npm install -D @camp-dev/shaders-cli
-# or run ad-hoc: npx @camp-dev/shaders-cli <command>
-```
-
-Requires Node 22+.
-
-## Usage
-
-### One-time setup
-
-```bash
-npx shaders-cli init
-```
-
-Writes `shaders.config.json` to your project root with sensible defaults:
-
-```json
-{
-  "componentsDir": "src/components/shaders",
-  "registryUrl": "https://raw.githubusercontent.com/campdotdev/shaders/${ref}/registry",
-  "aliases": { "@/": "src/" }
-}
-```
-
-The `${ref}` placeholder is auto-substituted with the CLI's published version tag (e.g., `v0.1.0`), so you get a stable snapshot. Override with `--reference <tag|branch|sha>` if you want to track `main` or a specific commit.
-
-### List available components
-
-```bash
-npx shaders-cli list
-```
-
-### Copy a component into your project
-
-```bash
-npx shaders-cli add linear-gradient
-# or multiple at once:
-npx shaders-cli add linear-gradient aurora dot-field
-```
-
-The component lands in `componentsDir` (default `src/components/shaders/`) — you own it from that point forward.
-
-### Refresh a previously-added component
-
-```bash
-# Refresh one (errors if you have local edits):
-npx shaders-cli update linear-gradient
-
-# Refresh all, overwriting local edits:
-npx shaders-cli update --force
-```
-
-### Render a static fallback image
-
-Render a Shaders component tree to an image for use as the `poster` in `<ShaderPoster>` — eliminates the visible blank canvas during WebGPU initialization.
-
-```bash
-npx shaders-cli poster --source <file> --output <path> [options]
-```
-
-| Flag               | Default    | Description                                                                                          |
-| ------------------ | ---------- | ---------------------------------------------------------------------------------------------------- |
-| `--source <file>`           | (required) | Path to a `.tsx`/`.ts` file whose chosen export renders the full tree (must include `<ShaderScene>`) |
-| `--output <path>`           | (required) | Where to write the image. Extension optional — `--format` decides. Parent directories auto-created.    |
-| `--format <format>`         | `jpg`      | Output format: `png` or `jpg`. Default is `jpg` — best size/quality for most shaders.                |
-| `--quality <n>`             | `80`       | JPEG quality 1–100. Ignored for PNG.                                                                 |
-| `--export-name <name>`      | `default`  | Named export to render.                                                                              |
-| `--capture-delay <seconds>` | `0`        | Wait this long after the first non-blank frame before snapshotting.                                  |
-| `--width <px>`              | `1280`     | Render width.                                                                                        |
-| `--height <px>`             | `720`      | Render height.                                                                                       |
-| `--device-scale-factor <n>` | `2`        | Capture device pixel ratio. Default matches the live renderer's DPR cap for crisp posters on retina. |
-
-#### Which format should I pick?
-
-The default (JPEG q80) handles most shaders well. PNG wins on shaders with large flat-color regions where its lossless palette compression beats JPEG's DCT. As a rule of thumb:
-
-| Use PNG (`--format png`) for…     | Use the default JPEG for…                  |
-| --------------------------------- | ------------------------------------------ |
-| `LinearGradient` with hard stops  | `Aurora` and similar gradient-heavy scenes |
-| `SimplexNoise` with contour bands | `MeshGradient` (smooth color flow)         |
-| Anything with < ~20 unique colors | `Grain` (high-entropy noise)           |
-
-If unsure, run both — the difference can be 3–7× either direction.
-
-**Requires Playwright** as a peer dependency:
-
-```bash
-pnpm add -D playwright
+pnpm add -D @camp-dev/shaders-cli playwright
 pnpm exec playwright install chromium
 ```
 
-**Examples:**
+Requires Node 22 or later. Playwright is an optional peer dependency: the CLI drives the copy your project installs, so the poster renders with the same package versions your app uses.
+
+## Render a poster
 
 ```bash
-# Default — writes ./public/hero.jpg (JPEG q80)
-npx shaders-cli poster --source ./src/components/shaders/hero.tsx --output ./public/hero.jpg
-
-# Posterized shader — PNG compresses smaller
-npx shaders-cli poster --source ./gradient.tsx --output ./public/gradient.png --format png
-
-# Higher quality JPEG
-npx shaders-cli poster --source ./aurora.tsx --output ./public/aurora.jpg --quality 92
+npx shaders-cli poster --source ./src/hero.tsx --output ./public/hero.jpg
 ```
 
-Wire it up:
+The source file's chosen export must render the whole tree, including `<ShaderScene>`. The CLI bundles that file with esbuild against your project's `node_modules`, serves it to headless Chromium, waits for the first frame with content, and writes the screenshot. The animation clock is pinned to zero, so the same source produces the same image every run.
+
+| Flag                        | Default    | What it does                                                                                                       |
+| --------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------ |
+| `--source <file>`           | required   | A `.tsx` or `.ts` file whose export renders the full tree.                                                         |
+| `--output <path>`           | required   | Where to write the image. The extension is optional; `--format` decides it. Parent directories are created.        |
+| `--format <format>`         | `jpg`      | `png` or `jpg`.                                                                                                    |
+| `--quality <n>`             | `80`       | JPEG quality from 1 to 100. Ignored for PNG.                                                                       |
+| `--export-name <name>`      | `default`  | Which export of the source file to render.                                                                         |
+| `--capture-delay <seconds>` | `0`        | How long to wait after the first frame with content before capturing.                                              |
+| `--width <px>`              | `1280`     | Render width, up to 4096.                                                                                          |
+| `--height <px>`             | `720`      | Render height, up to 4096.                                                                                         |
+| `--device-scale-factor <n>` | `2`        | Capture device pixel ratio. The default matches the live renderer's cap, so posters stay crisp on retina displays. |
+| `--background <color>`      | none       | A CSS color composited behind the shader before capture. Use it for shaders with a transparent base layer.         |
+
+If no frame with content arrives within 10 seconds, the command fails with an error rather than writing a blank image.
+
+### Pick a format
+
+The default, JPEG at quality 80, suits most shaders. PNG wins on shaders with large flat regions, where lossless compression beats JPEG.
+
+| Use `--format png` for                 | Use the default JPEG for             |
+| -------------------------------------- | ------------------------------------ |
+| `LinearGradient` with hard stops       | `Aurora` and other gradient-heavy scenes |
+| `SimplexNoise` with contour bands      | `MeshGradient`                        |
+| Anything with fewer than about 20 colors | `Grain` and other high-entropy noise |
+
+If you are unsure, render both. The size difference runs several times in either direction.
+
+### Wire it up
+
+The command prints the `<ShaderPoster>` wrapper when it finishes, with the path filled in. Add the imports and it is ready to use:
 
 ```tsx
-import { ShaderPoster } from '@camp-dev/shaders-react/poster';
+import { ShaderScene, LinearGradient } from '@camp-dev/shaders';
+import { ShaderPoster } from '@camp-dev/shaders/poster';
 
 <ShaderPoster poster={<img src="/hero.jpg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}>
   <ShaderScene>
-    <LinearGradient ... />
+    <LinearGradient />
   </ShaderScene>
 </ShaderPoster>
 ```
 
-**Limitations:**
+`@camp-dev/shaders/poster` imports no three.js, so a server-rendered page can put the poster in its initial HTML while the scene loads behind a dynamic import.
 
-- The component you point at must render the entire tree (including `<ShaderScene>`); the CLI doesn't wrap.
-- Components that depend on app-context hooks (`useTheme`, `useRouter`, etc.) won't render in the headless harness. Extract a presentational child.
-- WebP and AVIF are not supported (would require an extra dependency for marginal savings over JPEG).
+### Limitations
 
-## v1 components
-
-`linear-gradient`, `mesh-gradient`, `aurora`, `dot-field`, `simplex-noise`, `wave-lines`.
-
-Each component depends on `@camp-dev/shaders` and `@camp-dev/shaders-react`, which you install separately:
-
-```bash
-npm install @camp-dev/shaders @camp-dev/shaders-react three
-```
+- The source export has to render the entire tree. The CLI does not wrap it in `<ShaderScene>` for you.
+- Components that read app context, such as a theme or router hook, do not render in the headless harness. Extract a presentational child and point `--source` at that.
+- WebP and AVIF output are not supported.
 
 ## Docs
 
@@ -143,4 +77,4 @@ npm install @camp-dev/shaders @camp-dev/shaders-react three
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).

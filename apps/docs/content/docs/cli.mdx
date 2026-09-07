@@ -1,75 +1,73 @@
 ---
 title: CLI
-description: Copy components from the Shaders registry into your project with @camp-dev/shaders-cli.
+description: Render a static poster image for ShaderPoster with the shaders-cli poster command.
 section: overview
 order: 20
 ---
 
 # CLI
 
-`@camp-dev/shaders-cli` copies polished shader components from the Shaders registry directly into your project. It's a shadcn-style copy-paste workflow — once a component is in your repo, it's yours to edit. There's no runtime CLI dependency; you only need it installed during development.
+`@camp-dev/shaders-cli` has one command, `poster`. It renders a Shaders component tree to a static image so `<ShaderPoster>` has something to show while WebGPU starts up. Components themselves ship in `@camp-dev/shaders`, so there is nothing to copy into your project and no config file to keep.
 
 ## Install
 
 ```bash
-pnpm add -D @camp-dev/shaders-cli
+pnpm add -D @camp-dev/shaders-cli playwright
+pnpm exec playwright install chromium
 ```
 
-Requires Node 22+.
+Requires Node 22 or later. Playwright is an optional peer dependency: the CLI drives the copy your project installs, so the poster renders with the same package versions your app uses.
 
-## Commands
-
-### `init`
-
-Run once per project to write a `shaders.config.json`:
+## Render a poster
 
 ```bash
-npx shaders-cli init
+npx shaders-cli poster --source ./src/hero.tsx --output ./public/hero.jpg
 ```
 
-Default config:
+The source file's chosen export must render the whole tree, including `<ShaderScene>`. The CLI bundles that file against your project's `node_modules`, serves it to headless Chromium, waits for the first frame with content, and writes the screenshot. The animation clock is pinned to zero, so the same source produces the same image every run.
 
-```json
-{
-  "componentsDir": "src/components/shaders",
-  "registryUrl": "https://raw.githubusercontent.com/campdotdev/shaders/${ref}/registry",
-  "aliases": { "@/": "src/" },
-  "tsx": true
+| Flag                        | Default   | What it does                                                                                                 |
+| --------------------------- | --------- | ------------------------------------------------------------------------------------------------------------ |
+| `--source <file>`           | required  | A `.tsx` or `.ts` file whose export renders the full tree.                                                   |
+| `--output <path>`           | required  | Where to write the image. The extension is optional; `--format` decides it.                                  |
+| `--format <format>`         | `jpg`     | `png` or `jpg`.                                                                                              |
+| `--quality <n>`             | `80`      | JPEG quality from 1 to 100. Ignored for PNG.                                                                 |
+| `--export-name <name>`      | `default` | Which export of the source file to render.                                                                   |
+| `--capture-delay <seconds>` | `0`       | How long to wait after the first frame with content before capturing.                                        |
+| `--width <px>`              | `1280`    | Render width, up to 4096.                                                                                    |
+| `--height <px>`             | `720`     | Render height, up to 4096.                                                                                   |
+| `--device-scale-factor <n>` | `2`       | Capture device pixel ratio. The default matches the live renderer's cap.                                     |
+| `--background <color>`      | none      | A CSS color composited behind the shader before capture, for shaders with a transparent base layer.          |
+
+If no frame with content arrives within 10 seconds, the command fails rather than writing a blank image.
+
+## Pick a format
+
+The default, JPEG at quality 80, suits most shaders. PNG wins on shaders with large flat regions, where lossless compression beats JPEG: a `LinearGradient` with hard stops, a `SimplexNoise` with contour bands, anything with fewer than about 20 colors. Gradient-heavy scenes like `Aurora` and high-entropy noise like `Grain` stay smaller as JPEG. If you are unsure, render both.
+
+## Wire it up
+
+The command prints the `<ShaderPoster>` wrapper when it finishes, with the path filled in. Add the imports and it is ready to use:
+
+```tsx
+import { ShaderScene, LinearGradient } from '@camp-dev/shaders'
+import { ShaderPoster } from '@camp-dev/shaders/poster'
+
+export function Hero() {
+  return (
+    <ShaderPoster poster={<img src="/hero.jpg" alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}>
+      <ShaderScene>
+        <LinearGradient />
+      </ShaderScene>
+    </ShaderPoster>
+  )
 }
 ```
 
-The `${ref}` placeholder resolves to the CLI's published version tag (e.g. `v0.1.0`), so every CLI release pins a stable snapshot. Override with `--ref <tag|branch|sha>` to track `main` or a specific commit.
+`@camp-dev/shaders/poster` imports no three.js, so a server-rendered page can put the poster in its initial HTML while the scene loads. See [SSR and fallbacks](/react/guides/ssr-and-fallbacks) for the pattern.
 
-### `list`
+## Limitations
 
-```bash
-npx shaders-cli list
-```
-
-Prints the components in the configured registry.
-
-### `add`
-
-```bash
-npx shaders-cli add linear-gradient
-npx shaders-cli add aurora dot-field wave-lines
-```
-
-Copies the component file (and any utility files it depends on) into `componentsDir`. The fetched source is byte-identical to what's documented on this site.
-
-### `update`
-
-```bash
-npx shaders-cli update linear-gradient    # one component
-npx shaders-cli update --force            # refresh all, overwriting local edits
-```
-
-Without `--force`, `update` refuses to overwrite a file you've modified — you keep your edits unless you explicitly ask to discard them.
-
-## Why not a runtime dependency?
-
-Tier 1 components (`<LinearGradient>`, `<Aurora>`, etc.) aren't published to npm. They live in [the registry](https://github.com/campdotdev/shaders/tree/main/registry) and get copied into your project, where you can edit the shader, swap props, or refactor the JSX freely. The two packages you do depend on at runtime — `@camp-dev/shaders` and `@camp-dev/shaders-react` — provide the primitives, hooks, and `<ShaderScene>` that those components call into.
-
-<Callout>
-  There is no hosted registry endpoint. The CLI fetches sources from GitHub raw URLs at the pinned `${ref}`. If you want to host your own fork, change `registryUrl` in `shaders.config.json` to point at your fork's raw URL.
-</Callout>
+- The source export has to render the entire tree. The CLI does not wrap it in `<ShaderScene>` for you.
+- Components that read app context, such as a theme or router hook, do not render in the headless harness. Extract a presentational child and point `--source` at that.
+- WebP and AVIF output are not supported.
