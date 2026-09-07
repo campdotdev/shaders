@@ -26,20 +26,28 @@ import type { GpuBackend } from './create-renderer.js';
 export type { OutputGamut };
 
 // three 0.170 core registers only sRGB and linear-sRGB in ColorManagement. The
-// Display P3 spaces ship as an addon that does NOT self-register, so we define
-// them once here (idempotent) before any P3 output. This makes the renderer's
-// linear-sRGB working space convert correctly into P3 on output.
-ColorManagement.define({
-  [DisplayP3ColorSpace]: DisplayP3ColorSpaceImpl,
-  [LinearDisplayP3ColorSpace]: LinearDisplayP3ColorSpaceImpl,
-});
+// Display P3 spaces ship as an addon that does NOT self-register. This
+// registers them, and it runs on demand rather than at module load so that
+// nothing in the package has an import-time side effect: package.json
+// declares "sideEffects": false, and a bundler trusts that flag to drop any
+// module a page never imports. `define` is idempotent in three, so calling
+// this on every P3 request costs nothing.
+export function defineDisplayP3ColorSpaces(): void {
+  ColorManagement.define({
+    [DisplayP3ColorSpace]: DisplayP3ColorSpaceImpl,
+    [LinearDisplayP3ColorSpace]: LinearDisplayP3ColorSpaceImpl,
+  });
+}
 
 /**
  * Map a resolved output gamut to the three color-space constant for
  * `renderer.outputColorSpace`. `'p3'` selects Display P3; `'srgb'` the default.
  */
 export function gamutToColorSpace(gamut: OutputGamut): string {
-  return gamut === 'p3' ? DisplayP3ColorSpace : SRGBColorSpace;
+  if (gamut !== 'p3') return SRGBColorSpace;
+  defineDisplayP3ColorSpaces();
+
+  return DisplayP3ColorSpace;
 }
 
 /**

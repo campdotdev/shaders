@@ -3,7 +3,7 @@
 import Image from 'next/image';
 import type { ReactNode } from 'react';
 
-import { ShaderPoster } from '@camp-dev/shaders-react/poster';
+import { ShaderPoster } from '@camp-dev/shaders/poster';
 
 export interface DemoPosterProps {
   src: string;

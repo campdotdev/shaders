@@ -15,7 +15,6 @@ apps/docs/out/
 
 # Generated files
 .claude/hooks/
-registry/registry.schema.json
 **/next-env.d.ts
 **/.tsbuildinfo
 pnpm-lock.yaml

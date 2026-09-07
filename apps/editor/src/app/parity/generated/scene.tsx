@@ -6,7 +6,7 @@
 // full-viewport ShaderScene. The visual spec drives this and /parity/runtime
 // to the same screenshot baseline; parity.test.ts keeps the file honest
 // against the emitter.
-import { ShaderScene } from '@camp-dev/shaders-react';
+import { ShaderScene } from '@camp-dev/shaders';
 
 import VisualTestPause from '@/lib/VisualTestPause';
 

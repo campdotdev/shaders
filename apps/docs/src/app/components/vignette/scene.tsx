@@ -2,9 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@camp-dev/shaders-react';
-import { LinearGradient } from '@shaders/registry/linear-gradient';
-import { Vignette } from '@shaders/registry/vignette';
+import { LinearGradient, ShaderScene, Vignette } from '@camp-dev/shaders';
 
 import { INITIAL, type VignetteParams } from './params';
 

@@ -9,8 +9,8 @@
  */
 import { type ChangeEvent, useEffect, useId, useRef, useState } from 'react';
 
-import { useDisplayGamut } from '@camp-dev/shaders-react/gamut';
 import { oklchInGamut, oklchToGamut } from '@camp-dev/shaders/color';
+import { useDisplayGamut } from '@camp-dev/shaders/gamut';
 
 import { CopyIcon } from '@/components/icons/copy';
 

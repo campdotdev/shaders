@@ -104,12 +104,6 @@ importers:
       '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../../packages/shaders
-      '@camp-dev/shaders-react':
-        specifier: workspace:*
-        version: link:../../packages/shaders-react
-      '@shaders/registry':
-        specifier: workspace:*
-        version: link:../../registry
       '@xyflow/react':
         specifier: ^12.11.2
         version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -225,9 +219,6 @@ importers:
       '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../../packages/shaders
-      '@camp-dev/shaders-react':
-        specifier: workspace:*
-        version: link:../../packages/shaders-react
       '@xyflow/react':
         specifier: ^12.11.2
         version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -277,88 +268,6 @@ importers:
       '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
-      '@types/three':
-        specifier: ^0.170.0
-        version: 0.170.0
-      happy-dom:
-        specifier: ^15.0.0
-        version: 15.11.7
-      three:
-        specifier: ^0.170.0
-        version: 0.170.0
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.6.0
-        version: 5.9.3
-      vite:
-        specifier: 'catalog:'
-        version: 8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
-
-  packages/shaders-cli:
-    dependencies:
-      commander:
-        specifier: ^12.1.0
-        version: 12.1.0
-      esbuild:
-        specifier: ^0.27.0
-        version: 0.27.7
-    devDependencies:
-      '@camp-dev/shaders':
-        specifier: workspace:*
-        version: link:../shaders
-      '@camp-dev/shaders-react':
-        specifier: workspace:*
-        version: link:../shaders-react
-      '@shaders/registry':
-        specifier: workspace:*
-        version: link:../../registry
-      '@shaders/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/tsconfig
-      '@types/node':
-        specifier: ^22.7.0
-        version: 22.19.17
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.14
-      '@types/react-dom':
-        specifier: ^19.0.0
-        version: 19.2.3(@types/react@19.2.14)
-      playwright:
-        specifier: ^1.50.0
-        version: 1.59.1
-      react:
-        specifier: ^19.0.0
-        version: 19.2.5
-      react-dom:
-        specifier: ^19.0.0
-        version: 19.2.5(react@19.2.5)
-      tsup:
-        specifier: ^8.3.0
-        version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
-      typescript:
-        specifier: ^5.6.0
-        version: 5.9.3
-      vite:
-        specifier: 'catalog:'
-        version: 8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0)
-      vitest:
-        specifier: 'catalog:'
-        version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
-
-  packages/shaders-react:
-    devDependencies:
-      '@camp-dev/shaders':
-        specifier: workspace:*
-        version: link:../shaders
-      '@shaders/tsconfig':
-        specifier: workspace:*
-        version: link:../../tooling/tsconfig
       '@testing-library/dom':
         specifier: ^10.4.1
         version: 10.4.1
@@ -399,33 +308,51 @@ importers:
         specifier: 'catalog:'
         version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
 
-  registry:
+  packages/shaders-cli:
     dependencies:
+      commander:
+        specifier: ^12.1.0
+        version: 12.1.0
+      esbuild:
+        specifier: ^0.27.0
+        version: 0.27.7
+    devDependencies:
       '@camp-dev/shaders':
         specifier: workspace:*
-        version: link:../packages/shaders
-      '@camp-dev/shaders-react':
-        specifier: workspace:*
-        version: link:../packages/shaders-react
-      react:
-        specifier: ^19.0.0
-        version: 19.2.5
-      three:
-        specifier: ^0.170.0
-        version: 0.170.0
-    devDependencies:
+        version: link:../shaders
       '@shaders/tsconfig':
         specifier: workspace:*
-        version: link:../tooling/tsconfig
+        version: link:../../tooling/tsconfig
+      '@types/node':
+        specifier: ^22.7.0
+        version: 22.19.17
       '@types/react':
         specifier: ^19.0.0
         version: 19.2.14
-      '@types/three':
-        specifier: ^0.170.0
-        version: 0.170.0
+      '@types/react-dom':
+        specifier: ^19.0.0
+        version: 19.2.3(@types/react@19.2.14)
+      playwright:
+        specifier: ^1.50.0
+        version: 1.59.1
+      react:
+        specifier: ^19.0.0
+        version: 19.2.5
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.5(react@19.2.5)
+      tsup:
+        specifier: ^8.3.0
+        version: 8.5.1(jiti@2.7.0)(postcss@8.5.15)(typescript@5.9.3)(yaml@2.9.0)
       typescript:
         specifier: ^5.6.0
         version: 5.9.3
+      vite:
+        specifier: 'catalog:'
+        version: 8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0)
+      vitest:
+        specifier: 'catalog:'
+        version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
 
   tooling/tsconfig: {}
 
@@ -6442,7 +6369,7 @@ snapshots:
 
   '@testing-library/dom@10.4.1':
     dependencies:
-      '@babel/code-frame': 7.29.0
+      '@babel/code-frame': 7.29.7
       '@babel/runtime': 7.29.2
       '@types/aria-query': 5.0.4
       aria-query: 5.3.0

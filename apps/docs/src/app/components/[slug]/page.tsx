@@ -2,7 +2,7 @@
  * Shared shell for every converted component page, in the mock's section
  * order: breadcrumbs and header above the demo, Usage and API Reference
  * below it, then prev/next pagination. Titles and descriptions come from the
- * catalog (registry.json) and page order from its taxonomy tree; the
+ * catalog (content/components.ts) and page order from its taxonomy tree; the
  * interactive demo and Usage content come from the demo registry, which
  * every component page has an entry in.
  * Rendering waits on that entry, so a new component joins the site by

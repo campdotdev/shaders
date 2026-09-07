@@ -54,8 +54,7 @@ class Emission {
   hookLines: string[] = [];
   props: PropLine[] = [];
   /** Named imports actually used, per module, so the file imports stay clean. */
-  shadersImports = new Set<string>();
-  shadersReactImports = new Set<string>(['useShaderContext']);
+  shadersImports = new Set<string>(['useShaderContext']);
   tslImports = new Set<string>();
   usesParseColor = false;
   usesColorSpaces = false;
@@ -224,7 +223,7 @@ export function emitComponentSource(
 
     const propName = claimDialProp(node, baseName, 'speed');
 
-    emission.shadersReactImports.add('useAnimatableSpeed');
+    emission.shadersImports.add('useAnimatableSpeed');
     emission.hookLines.push(`const ${propName}Phase = useAnimatableSpeed(${propName});`);
     dialNames.set(dialKey, `${propName}Phase`);
     speedPropNames.set(node.id, propName);
@@ -251,7 +250,7 @@ export function emitComponentSource(
 
     const gateName = emission.claim(`${propName}Uniform`);
 
-    emission.shadersReactImports.add('useAnimatableUniform');
+    emission.shadersImports.add('useAnimatableUniform');
     emission.hookLines.push(`const ${gateName} = useAnimatableUniform(${propName});`);
     speedGateNames.set(node.id, gateName);
 
@@ -882,7 +881,6 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
 
   const sortedTsl = [...emission.tslImports].sort();
   const sortedShadersImports = [...emission.shadersImports].sort();
-  const sortedShadersReactImports = [...emission.shadersReactImports].sort();
 
   const propsInterface = emission.props
     .map((prop) => `  /** ${prop.jsdoc} */\n  ${prop.name}?: ${prop.tsType};`)
@@ -955,10 +953,6 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
     return `import {\n${names.map((name) => `  ${name},`).join('\n')}\n} from '${moduleName}';`;
   };
 
-  const shadersImportLine =
-    sortedShadersImports.length > 0
-      ? `${importLineOf(sortedShadersImports, '@camp-dev/shaders')}\n`
-      : '';
   const parseColorLine = emission.usesParseColor
     ? `import { parseColorString } from '@camp-dev/shaders/color';\n`
     : '';
@@ -971,7 +965,7 @@ function assembleFile(emission: Emission, finalColorExpr: string): string {
 // as a prop with the editor's value as its default.
 import { useEffect } from 'react';
 
-${shadersImportLine}${importLineOf(sortedShadersReactImports, '@camp-dev/shaders-react')}
+${importLineOf(sortedShadersImports, '@camp-dev/shaders')}
 ${parseColorLine}${importLineOf(sortedTsl, 'three/tsl')}
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';

@@ -20,8 +20,8 @@
  */
 import { type ChangeEvent, useEffect, useRef, useState } from 'react';
 
-import { useDisplayGamut } from '@camp-dev/shaders-react/gamut';
 import { oklchInGamut, oklchToGamut } from '@camp-dev/shaders/color';
+import { useDisplayGamut } from '@camp-dev/shaders/gamut';
 
 import { ChannelSlider } from './color/ChannelSlider';
 import { formatOklch, type OklchColor, parseToOklch } from './color/oklch';

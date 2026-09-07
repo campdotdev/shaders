@@ -1,15 +1,10 @@
 import { cache } from 'react';
 
-import { readFile } from 'node:fs/promises';
-import { resolve } from 'node:path';
-
 import { PRIMITIVES } from '@/data/primitives';
 
-import { parseRegistry } from './schema';
+import { COMPONENTS } from './components';
 import { groupByTaxonomy } from './taxonomy';
 import type { CategorySlug, TaxonomyTier } from './taxonomy';
-
-const REGISTRY_JSON = resolve(process.cwd(), '..', '..', 'registry', 'registry.json');
 
 interface CatalogRecord {
   url: string;
@@ -20,7 +15,7 @@ interface CatalogRecord {
   tags: string[];
 }
 
-/* Component records also carry the leaf group the registry files them
+/* Component records also carry the leaf group the taxonomy files them
    under, which is what the sidebar groups by. Primitives have no taxonomy. */
 export interface ComponentCatalogRecord extends CatalogRecord {
   source: 'components';
@@ -34,13 +29,11 @@ function prettifySlug(slug: string): string {
     .join(' ');
 }
 
+// eslint-disable-next-line @typescript-eslint/require-await -- kept async so every catalog getter has one shape
 export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogRecord[]> => {
-  const raw = await readFile(REGISTRY_JSON, 'utf8');
-  const data = parseRegistry(JSON.parse(raw), REGISTRY_JSON);
-
-  // registry.json lists components in ship order; the catalog (sidebar,
-  // components index, search) presents them alphabetically.
-  return Object.entries(data.components)
+  // COMPONENTS is written in whatever order made sense to its author; the
+  // catalog (sidebar, components index, search) presents slugs alphabetically.
+  return Object.entries(COMPONENTS)
     .sort(([slugA], [slugB]) => slugA.localeCompare(slugB))
     .map(([slug, info], index) => ({
       url: `/components/${slug}`,
