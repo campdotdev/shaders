@@ -54,6 +54,10 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
 
         lastNow = now;
         newCursorInput.tick(delta);
+        // Mode 2 has no renderer of ours to hand a setAnimationLoop callback
+        // to; this loop only advances cursor smoothing, and the scheduler
+        // branch above takes over whenever a ShaderScene owns the frame.
+        // react-doctor-disable-next-line react-doctor/three-prefer-set-animation-loop
         animationFrameId = requestAnimationFrame(loop);
       };
 
