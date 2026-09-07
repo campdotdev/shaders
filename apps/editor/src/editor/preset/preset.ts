@@ -5,12 +5,18 @@
 // exist, a version from the future) throws a PresetError carrying a message
 // meant to be shown to a human. Anything it CAN safely repair (a missing
 // param, an out-of-range slider, a malformed ramp) is coerced back onto the
-// spec's default instead of failing the whole load. Kept dependency-free
-// (hand-rolled validation, no schema library) so every consumer -- including
-// the code emitter, which stays three-free -- can pull it in cheaply.
+// spec's default instead of failing the whole load.
+//
+// Zod owns the shape and the coercion: every check below is a schema, and
+// `.catch(default)` is the repair rule. What Zod cannot see stays as a second
+// pass after the parse: node ids have to be unique, and an edge has to land
+// on a node and an input handle that exist in the parsed set. This file used
+// to be hand-rolled to stay dependency-free for the three-free code emitter;
+// Zod is pure and pulls in no renderer, so that concern does not apply to it.
 import { parseColorString } from '@camp-dev/shaders/color';
+import { z } from 'zod';
 
-import type { ColorStop, ParamSpec, ParamValue, SpecId } from '@/editor/graph/registry';
+import type { ParamSpec, ParamValue, SpecId } from '@/editor/graph/registry';
 import { NODE_SPECS, xyKeysOf } from '@/editor/graph/registry';
 
 /** Current preset format version. Bump alongside a MIGRATIONS entry whenever the shape changes. */
@@ -120,8 +126,245 @@ export function serializePreset(preset: Preset): string {
 }
 
 // ---------------------------------------------------------------------------
-// Read side
+// Read side: the schemas
 // ---------------------------------------------------------------------------
+
+/**
+ * The version envelope, checked BEFORE migrations run, on the loose bag they
+ * operate on. Versions above `PRESET_VERSION` come from a newer editor and
+ * can't be understood, so they fail loudly rather than falling through to
+ * node validation and producing a confusing downstream error. Versions below
+ * zero aren't just invalid, they're dangerous: the migration walk in
+ * `parsePreset` counts up from the saved version to `PRESET_VERSION` one step
+ * at a time, so a very negative version would spin through billions of no-op
+ * loop iterations before ever reaching the shape check that would otherwise
+ * catch it. Zero stays valid -- it's the version below this format's first
+ * shape, which is what the migration-walk test exercises.
+ * Each check carries its own toast wording; `issue.input` is the raw value.
+ */
+const integerMessage = (issue: { input: unknown }) =>
+  `Preset version must be an integer (got ${JSON.stringify(issue.input)}).`;
+
+const envelopeSchema = z.looseObject(
+  {
+    version: z
+      .number({ error: integerMessage })
+      .int({ error: integerMessage })
+      .max(PRESET_VERSION, {
+        error: (issue) =>
+          `This preset needs a newer editor (preset version ${String(issue.input)}, editor supports ${PRESET_VERSION}).`,
+      })
+      .min(0, {
+        error: (issue) => `Preset version must not be negative (got ${String(issue.input)}).`,
+      }),
+  },
+  { error: 'Preset must be a JSON object.' },
+);
+
+/** A number, or the fallback. `z.number()` already rejects NaN and the infinities, which are not dial values. */
+const numberOr = (fallback: number) => z.number().catch(fallback);
+
+/** A saved canvas position, each axis repaired on its own and the origin if
+    the whole thing is missing. The origin is built per fallback: a static
+    `.catch` value is handed back as the same object every time, and two nodes
+    must never share one mutable position. */
+const positionSchema = z.object({ x: numberOr(0), y: numberOr(0) }).catch(() => ({ x: 0, y: 0 }));
+
+/** Does the engine's own decoder accept this color? Anything it rejects here
+    would otherwise throw much later, in pushPresetToStore or the compiler,
+    past the point where a PresetError toast could catch it. */
+function isDecodableColor(value: string): boolean {
+  try {
+    parseColorString(value);
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** A number clamped into `[min, max]`; the repair for a slider that drifted out of range. */
+function clampedNumber(min: number, max: number) {
+  return z.number().transform((value) => Math.min(max, Math.max(min, value)));
+}
+
+/**
+ * A ramp must be an array of 2-8 `{ color, position }` stops with colors the
+ * engine can decode, or the whole param resets to the spec default -- there's
+ * no safe way to patch a ramp missing a stop's color, so this doesn't try to
+ * fix individual entries. A well-formed ramp keeps its stops but clamps each
+ * position into 0..1, since a stop past either end of the ramp is just a
+ * mispositioned stop, not a broken one.
+ */
+const rampSchema = z
+  .array(
+    z.object({
+      color: z.string().refine(isDecodableColor),
+      position: clampedNumber(0, 1),
+    }),
+  )
+  .min(2)
+  .max(8);
+
+/**
+ * The schema for one param's saved value: the well-formed case passes
+ * through (clamped for sliders, checked against `options` for selects,
+ * decoded for colors, shape-checked for ramps) and `.catch` turns anything
+ * else, including a missing value, into the spec default. The ramp default
+ * is cloned per catch, because a shared array would be aliased across every
+ * node that fell back to it.
+ */
+function paramValueSchema(paramSpec: Exclude<ParamSpec, { kind: 'xy' }>): z.ZodType<ParamValue> {
+  switch (paramSpec.kind) {
+    case 'slider':
+      return clampedNumber(paramSpec.min, paramSpec.max).catch(paramSpec.defaultValue);
+    case 'select':
+      return z.enum(paramSpec.options).catch(paramSpec.defaultValue);
+    case 'color':
+      return z.string().refine(isDecodableColor).catch(paramSpec.defaultValue);
+    case 'ramp':
+      return rampSchema.catch(() => structuredClone(paramSpec.defaultValue));
+  }
+}
+
+/** One axis of an xy param: a clamped number, or that axis's default. */
+function axisSchema(paramSpec: Extract<ParamSpec, { kind: 'xy' }>, axis: number) {
+  return clampedNumber(paramSpec.min, paramSpec.max).catch(
+    paramSpec.defaultValue[axis] ?? paramSpec.min,
+  );
+}
+
+/**
+ * The params schema for a spec, built once from its declared param list and
+ * in that list's order. `z.object` is what does the rest of the work: every
+ * declared id gets a value (its schema repairs a missing one), any saved id
+ * the spec doesn't declare is dropped, and the output keys come out in
+ * declaration order, which is what keeps `serializePreset` canonical
+ * regardless of the order params happened to appear in on disk.
+ */
+const paramsSchemas = new Map<SpecId, z.ZodType<Record<string, ParamValue>>>();
+
+function paramsSchemaFor(spec: SpecId): z.ZodType<Record<string, ParamValue>> {
+  const cached = paramsSchemas.get(spec);
+
+  if (cached) return cached;
+
+  const shape: Record<string, z.ZodType<ParamValue>> = {};
+
+  for (const paramSpec of NODE_SPECS[spec].params) {
+    // An xy param owns TWO storage keys (`${id}.x` / `${id}.y`), each a
+    // plain clamped number, mirroring defaultParamsOf's expansion.
+    if (paramSpec.kind === 'xy') {
+      xyKeysOf(paramSpec.id).forEach((key, axis) => {
+        shape[key] = axisSchema(paramSpec, axis);
+      });
+    } else {
+      shape[paramSpec.id] = paramValueSchema(paramSpec);
+    }
+  }
+
+  const schema = z.object(shape);
+
+  paramsSchemas.set(spec, schema);
+
+  return schema;
+}
+
+const unknownSpecMessage = (issue: { input: unknown }) =>
+  `Unknown node type "${String(issue.input)}" — this preset may come from a newer editor.`;
+
+/**
+ * One node. The spec must exist in the registry: an unknown spec means the
+ * preset came from a newer editor and there's no safe default to fall back
+ * to, so it fails rather than dropping the node. The params bag is then run
+ * through that spec's own schema, which is why it is a transform rather than
+ * a field: which schema applies depends on the sibling `spec` value.
+ */
+const nodeSchema = z
+  .object(
+    {
+      id: z.string({ error: 'is missing a string "id".' }).min(1, 'is missing a string "id".'),
+      spec: z
+        .string({ error: unknownSpecMessage })
+        .refine((value): value is SpecId => value in NODE_SPECS, { error: unknownSpecMessage }),
+      position: positionSchema,
+      params: z.record(z.string(), z.unknown()).catch({}),
+    },
+    { error: 'must be an object.' },
+  )
+  .transform(
+    (node): PresetNode => ({
+      id: node.id,
+      spec: node.spec,
+      position: node.position,
+      params: paramsSchemaFor(node.spec).parse(node.params),
+    }),
+  );
+
+/** One wire's shape. Whether its endpoints exist is the second pass's job. */
+const edgeSchema = z.object(
+  {
+    source: z.string({ error: 'is missing a string "source".' }),
+    target: z.string({ error: 'is missing a string "target".' }),
+    targetHandle: z.string({ error: 'is missing a string "targetHandle".' }),
+  },
+  { error: 'must be an object.' },
+);
+
+/** The post-migration shape: the two arrays, each element checked by its own schema. */
+const arraysMessage = 'Preset must contain "nodes" and "edges" arrays.';
+
+const presetShapeSchema = z.object({
+  nodes: z.array(nodeSchema, { error: arraysMessage }),
+  edges: z.array(edgeSchema, { error: arraysMessage }),
+});
+
+// ---------------------------------------------------------------------------
+// Read side: the parse
+// ---------------------------------------------------------------------------
+
+/**
+ * Turns a Zod failure into the PresetError a toast shows. Only the first
+ * issue is reported, because one clear sentence beats a list, and an issue
+ * inside a node or edge is prefixed with where it sits so the reader can
+ * find it in the file. A message written as a predicate ("is missing a
+ * string "id".") continues the prefix; one written as a sentence ("Unknown
+ * node type ...") follows it after a colon.
+ */
+function toPresetError(error: z.ZodError): PresetError {
+  const issue = error.issues[0];
+
+  if (!issue) return new PresetError('Preset is invalid.');
+
+  const [collection, index] = issue.path;
+
+  if (typeof index !== 'number' || (collection !== 'nodes' && collection !== 'edges')) {
+    return new PresetError(issue.message);
+  }
+
+  const where = `${collection === 'nodes' ? 'Node' : 'Edge'} at index ${index}`;
+  const joiner = /^[A-Z]/.test(issue.message) ? ': ' : ' ';
+
+  return new PresetError(`${where}${joiner}${issue.message}`);
+}
+
+/** Runs a schema and converts its failure into a PresetError. */
+function parseWith<T>(schema: z.ZodType<T>, input: unknown): T {
+  const result = schema.safeParse(input);
+
+  if (!result.success) throw toPresetError(result.error);
+
+  return result.data;
+}
+
+/** Wraps `JSON.parse` so a syntax error becomes a `PresetError` instead of a raw `SyntaxError`. */
+function parseJson(json: string): unknown {
+  try {
+    return JSON.parse(json);
+  } catch {
+    throw new PresetError('Preset is not valid JSON.');
+  }
+}
 
 /**
  * Parses and validates a saved preset. Runs in passes: check the version and
@@ -131,17 +374,11 @@ export function serializePreset(preset: Preset): string {
  * can throw; none of them drop a node silently.
  */
 export function parsePreset(json: string): Preset {
-  const raw = parseJson(json);
+  const envelope = parseWith(envelopeSchema, parseJson(json));
 
-  if (!isRecord(raw)) {
-    throw new PresetError('Preset must be a JSON object.');
-  }
+  let working: PresetLike = envelope;
 
-  assertValidVersion(raw.version);
-
-  let working: PresetLike = raw;
-
-  for (let walkedVersion = raw.version; walkedVersion < PRESET_VERSION; walkedVersion += 1) {
+  for (let walkedVersion = envelope.version; walkedVersion < PRESET_VERSION; walkedVersion += 1) {
     const migrate = MIGRATIONS[walkedVersion];
 
     if (migrate) {
@@ -149,15 +386,11 @@ export function parsePreset(json: string): Preset {
     }
   }
 
-  if (!Array.isArray(working.nodes) || !Array.isArray(working.edges)) {
-    throw new PresetError('Preset must contain "nodes" and "edges" arrays.');
-  }
+  const shape = parseWith(presetShapeSchema, working);
+  const nodesById = buildNodesById(shape.nodes);
+  const edges = validateEdges(shape.edges, nodesById);
 
-  const nodes = working.nodes.map((node, index) => validateNode(node, index));
-  const nodesById = buildNodesById(nodes);
-  const edges = validateEdges(working.edges, nodesById);
-
-  return { version: PRESET_VERSION, nodes, edges };
+  return { version: PRESET_VERSION, nodes: shape.nodes, edges };
 }
 
 /**
@@ -182,246 +415,15 @@ function buildNodesById(nodes: PresetNode[]): Map<string, PresetNode> {
   return nodesById;
 }
 
-/** Narrows `unknown` to a plain object without lying about its contents -- the
-    one guard every other validator in this file is built on. */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null;
-}
-
-/** Wraps `JSON.parse` so a syntax error becomes a `PresetError` instead of a raw `SyntaxError`. */
-function parseJson(json: string): unknown {
-  try {
-    return JSON.parse(json);
-  } catch {
-    throw new PresetError('Preset is not valid JSON.');
-  }
-}
-
 /**
- * Confirms `version` is an integer this editor can load. Versions above
- * `PRESET_VERSION` come from a newer editor and can't be understood, so they
- * fail loudly rather than falling through to node validation and producing
- * a confusing downstream error. Versions below zero aren't just invalid,
- * they're dangerous: the migration walk in `parsePreset` counts up from the
- * saved version to `PRESET_VERSION` one step at a time, so a very negative
- * version would spin through billions of no-op loop iterations before ever
- * reaching the array-shape check that would otherwise catch it. Zero stays
- * valid -- it's the version below this format's first shape, which is what
- * the migration-walk test exercises.
+ * Checks every well-formed edge against the now-validated node set: both
+ * endpoints must reference a node that exists, and `targetHandle` must be
+ * one of the target node's declared inputs. Unlike params, there's no safe
+ * coercion for a dangling wire -- it either connects two real ports or it's
+ * dropped data, so a bad edge throws instead of being silently discarded.
  */
-function assertValidVersion(version: unknown): asserts version is number {
-  if (typeof version !== 'number' || !Number.isInteger(version)) {
-    throw new PresetError(`Preset version must be an integer (got ${JSON.stringify(version)}).`);
-  }
-
-  if (version > PRESET_VERSION) {
-    throw new PresetError(
-      `This preset needs a newer editor (preset version ${version}, editor supports ${PRESET_VERSION}).`,
-    );
-  }
-
-  if (version < 0) {
-    throw new PresetError(`Preset version must not be negative (got ${version}).`);
-  }
-}
-
-/** Type guard for a registry spec id -- used to narrow a saved node's `spec`
-    string down to `SpecId` without asserting past what's actually checked. */
-function isSpecId(value: string): value is SpecId {
-  return value in NODE_SPECS;
-}
-
-/**
- * Validates one node: its spec must exist in the registry (an unknown spec
- * means the preset came from a newer editor and there's no safe default to
- * fall back to, so this throws rather than dropping the node), and its
- * params are coerced onto that spec's param list.
- */
-function validateNode(raw: unknown, index: number): PresetNode {
-  if (!isRecord(raw)) {
-    throw new PresetError(`Node at index ${index} must be an object.`);
-  }
-
-  const { id, spec, position, params } = raw;
-
-  if (typeof id !== 'string' || id.length === 0) {
-    throw new PresetError(`Node at index ${index} is missing a string "id".`);
-  }
-
-  if (typeof spec !== 'string' || !isSpecId(spec)) {
-    throw new PresetError(
-      `Unknown node type "${String(spec)}" — this preset may come from a newer editor.`,
-    );
-  }
-
-  return {
-    id,
-    spec,
-    position: validatePosition(position),
-    params: validateParams(spec, params),
-  };
-}
-
-/** Coerces a node's saved position to finite numbers, defaulting to the origin. */
-function validatePosition(raw: unknown): { x: number; y: number } {
-  if (!isRecord(raw)) {
-    return { x: 0, y: 0 };
-  }
-
-  return { x: finiteNumberOr(raw.x, 0), y: finiteNumberOr(raw.y, 0) };
-}
-
-function finiteNumberOr(value: unknown, fallback: number): number {
-  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
-}
-
-/**
- * Rebuilds a node's params from its spec's declared param list, in that
- * list's order -- this is what keeps `serializePreset` output canonical
- * regardless of the order params happened to appear in on disk. Every param
- * id gets a value: a well-formed saved value passes through (clamped for
- * sliders, checked against `options` for selects, shape-checked for ramps),
- * anything missing or malformed falls back to the spec default, and any
- * saved id the spec doesn't declare is dropped.
- */
-function validateParams(spec: SpecId, raw: unknown): Record<string, ParamValue> {
-  const savedParams: Record<string, unknown> = isRecord(raw) ? raw : {};
-
-  return Object.fromEntries(
-    NODE_SPECS[spec].params.flatMap((paramSpec): Array<[string, ParamValue]> => {
-      // An xy param owns TWO storage keys (`${id}.x` / `${id}.y`), each a
-      // plain clamped number — mirroring defaultParamsOf's expansion.
-      if (paramSpec.kind === 'xy') {
-        return xyKeysOf(paramSpec.id).map((key, axis) => [
-          key,
-          validateAxis(paramSpec, savedParams[key], axis),
-        ]);
-      }
-
-      return [[paramSpec.id, validateParamValue(paramSpec, savedParams[paramSpec.id])]];
-    }),
-  );
-}
-
-/** One axis of an xy param: a finite number clamped into the range, or that
-    axis's default. */
-function validateAxis(
-  paramSpec: Extract<ParamSpec, { kind: 'xy' }>,
-  value: unknown,
-  axis: number,
-): number {
-  if (typeof value !== 'number' || !Number.isFinite(value)) {
-    return paramSpec.defaultValue[axis] ?? paramSpec.min;
-  }
-
-  return Math.min(paramSpec.max, Math.max(paramSpec.min, value));
-}
-
-function validateParamValue(
-  paramSpec: Exclude<ParamSpec, { kind: 'xy' }>,
-  value: unknown,
-): ParamValue {
-  if (paramSpec.kind === 'slider') {
-    if (typeof value !== 'number' || !Number.isFinite(value)) {
-      return paramSpec.defaultValue;
-    }
-
-    return Math.min(paramSpec.max, Math.max(paramSpec.min, value));
-  }
-
-  if (paramSpec.kind === 'select') {
-    if (typeof value === 'string' && paramSpec.options.includes(value)) {
-      return value;
-    }
-
-    return paramSpec.defaultValue;
-  }
-
-  // A color param must survive the engine's decoder for the same reason ramp
-  // stops must (see validateRamp) — reject-to-default here beats a throw in
-  // pushPresetToStore later.
-  if (paramSpec.kind === 'color') {
-    if (typeof value !== 'string') {
-      return paramSpec.defaultValue;
-    }
-
-    try {
-      parseColorString(value);
-    } catch {
-      return paramSpec.defaultValue;
-    }
-
-    return value;
-  }
-
-  return validateRamp(value, paramSpec.defaultValue);
-}
-
-/**
- * A ramp param must be an array of 2-8 `{ color, position }` stops or the
- * whole param resets to the spec default -- there's no safe way to patch a
- * ramp missing a stop's color, so this doesn't try to fix individual
- * entries. A well-formed ramp keeps its stops but clamps each position into
- * 0..1, since a stop past either end of the ramp is just a mispositioned
- * stop, not a broken one.
- */
-function validateRamp(value: unknown, fallback: ColorStop[]): ColorStop[] {
-  if (!Array.isArray(value) || value.length < 2 || value.length > 8) {
-    return structuredClone(fallback);
-  }
-
-  const stops: ColorStop[] = [];
-
-  for (const entry of value) {
-    if (
-      !isRecord(entry) ||
-      typeof entry.color !== 'string' ||
-      typeof entry.position !== 'number' ||
-      !Number.isFinite(entry.position)
-    ) {
-      return structuredClone(fallback);
-    }
-
-    // The color has to survive the engine's own decoder: anything it rejects
-    // here would otherwise throw much later — in pushPresetToStore or the
-    // compiler — past the point where a PresetError toast could catch it.
-    try {
-      parseColorString(entry.color);
-    } catch {
-      return structuredClone(fallback);
-    }
-
-    stops.push({ color: entry.color, position: Math.min(1, Math.max(0, entry.position)) });
-  }
-
-  return stops;
-}
-
-/**
- * Validates every edge against the now-validated node set: both endpoints
- * must reference a node that exists, and `targetHandle` must be one of the
- * target node's declared inputs. Unlike params, there's no safe coercion for
- * a dangling wire -- it either connects two real ports or it's dropped data,
- * so a bad edge throws instead of being silently discarded.
- */
-function validateEdges(raw: unknown[], nodesById: Map<string, PresetNode>): PresetEdge[] {
-  return raw.map((entry, index) => {
-    if (!isRecord(entry)) {
-      throw new PresetError(`Edge at index ${index} must be an object.`);
-    }
-
-    const { source, target, targetHandle } = entry;
-
-    if (
-      typeof source !== 'string' ||
-      typeof target !== 'string' ||
-      typeof targetHandle !== 'string'
-    ) {
-      throw new PresetError(
-        `Edge at index ${index} is missing a "source", "target", or "targetHandle" string.`,
-      );
-    }
-
+function validateEdges(edges: PresetEdge[], nodesById: Map<string, PresetNode>): PresetEdge[] {
+  return edges.map(({ source, target, targetHandle }) => {
     if (!nodesById.has(source)) {
       throw new PresetError(`Edge references source node "${source}", which doesn't exist.`);
     }

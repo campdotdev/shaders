@@ -326,3 +326,55 @@ describe('migrations', () => {
     expect(preset.version).toBe(PRESET_VERSION);
   });
 });
+
+describe('parsePreset error wording', () => {
+  it('turns invalid JSON into a PresetError', () => {
+    expect(() => parsePreset('{not json')).toThrow(PresetError);
+    expect(() => parsePreset('{not json')).toThrow('Preset is not valid JSON.');
+  });
+
+  it('says where in the file a malformed node sits', () => {
+    const json = JSON.stringify({
+      version: PRESET_VERSION,
+      nodes: [{ id: 'o1', spec: 'output', position: { x: 0, y: 0 }, params: {} }, 'nope'],
+      edges: [],
+    });
+
+    expect(() => parsePreset(json)).toThrow('Node at index 1 must be an object.');
+  });
+
+  it('gives every node that falls back to the default ramp its own copy', () => {
+    const json = JSON.stringify({
+      version: PRESET_VERSION,
+      nodes: [
+        { id: 'r1', spec: 'colorRamp', position: { x: 0, y: 0 }, params: { stops: 'bad' } },
+        { id: 'r2', spec: 'colorRamp', position: { x: 0, y: 0 }, params: { stops: 'bad' } },
+      ],
+      edges: [],
+    });
+    const preset = parsePreset(json);
+    const [first, second] = preset.nodes;
+
+    expect(first!.params.stops).toEqual(DEFAULT_RAMP_STOPS);
+    expect(first!.params.stops).not.toBe(second!.params.stops);
+    expect(first!.params.stops).not.toBe(DEFAULT_RAMP_STOPS);
+  });
+});
+
+describe('parsePreset fallback identity', () => {
+  it('gives every node that falls back to the origin its own position object', () => {
+    const json = JSON.stringify({
+      version: PRESET_VERSION,
+      nodes: [
+        { id: 'a', spec: 'output', params: {} },
+        { id: 'b', spec: 'output', params: {} },
+      ],
+      edges: [],
+    });
+    const [first, second] = parsePreset(json).nodes;
+
+    expect(first!.position).toEqual({ x: 0, y: 0 });
+    expect(second!.position).toEqual({ x: 0, y: 0 });
+    expect(first!.position).not.toBe(second!.position);
+  });
+});
