@@ -6,9 +6,12 @@
 // graph's STRUCTURE changes — drags and selections never recompile.
 import { useEffect } from 'react';
 
-import { getReducedMotionTimeScale } from '@camp-dev/shaders';
-import type { SchedulerTick } from '@camp-dev/shaders';
-import { ShaderScene, useShaderContext } from '@camp-dev/shaders-react';
+import {
+  getReducedMotionTimeScale,
+  type SchedulerTick,
+  ShaderScene,
+  useShaderContext,
+} from '@camp-dev/shaders';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { compileOutputColor } from '@/editor/graph/compile';

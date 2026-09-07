@@ -142,7 +142,8 @@ describe('emitComponentSource on the starter graph', () => {
   it('animates speed through useAnimatableSpeed, outside the effect deps', () => {
     // The generated component is a fixed graph, so hooks are callable — one
     // per speed dial, placed before the effect.
-    expect(source).toContain("from '@camp-dev/shaders-react'");
+    expect(source).not.toContain('@camp-dev/shaders-react');
+    expect(source).toMatch(/import \{[^}]*useAnimatableSpeed[^}]*\} from '@camp-dev\/shaders';/);
     expect(source).toContain('const noiseSpeedPhase = useAnimatableSpeed(noiseSpeed);');
     // The phase uniform absorbs speed changes, so the speed prop must NOT
     // rebuild the material: it stays out of the deps array.

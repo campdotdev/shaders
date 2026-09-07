@@ -8,9 +8,16 @@ const require = createRequire(import.meta.url);
 const threeMain = require.resolve('three');
 const threeDir = resolve(threeMain, '..', '..');
 
+// The package is consumed as source, not as its built dist, so a shader edit
+// hot-reloads here without a tsup rebuild. Each public entry maps to its
+// source file; tsconfig.json carries the same four mappings under `paths` so
+// the typechecker sees what the bundler bundles.
+const shadersSrc = resolve(import.meta.dirname, '..', '..', 'packages', 'shaders', 'src');
+
 interface WebpackConfig {
   resolve?: {
     alias?: Record<string, string>;
+    extensionAlias?: Record<string, string[]>;
   };
 }
 
@@ -38,7 +45,7 @@ const nextConfig: NextConfig = {
   // `next build` lint too just runs the same rules a second time. Turning it off
   // here is not a way of skipping the check — it is saying where the check lives.
   eslint: { ignoreDuringBuilds: true },
-  transpilePackages: ['@camp-dev/shaders', '@camp-dev/shaders-react'],
+  transpilePackages: ['@camp-dev/shaders'],
   webpack(config: WebpackConfig): WebpackConfig {
     config.resolve = config.resolve ?? {};
     const webgpuBundle = resolve(threeDir, 'build/three.webgpu.js');
@@ -48,6 +55,22 @@ const nextConfig: NextConfig = {
       three$: webgpuBundle,
       'three/webgpu$': webgpuBundle,
       'three/tsl$': webgpuBundle,
+      '@camp-dev/shaders$': resolve(shadersSrc, 'index.ts'),
+      '@camp-dev/shaders/color$': resolve(shadersSrc, 'color.ts'),
+      '@camp-dev/shaders/gamut$': resolve(shadersSrc, 'gamut.ts'),
+      '@camp-dev/shaders/poster$': resolve(shadersSrc, 'poster.ts'),
+    };
+
+    // The package's own relative imports spell their specifiers with a
+    // `.js` extension (e.g. `export * from './engine.js'`), the TypeScript-ESM
+    // convention for a file that is actually `.ts` on disk. tsc resolves that
+    // through `moduleResolution: "bundler"`, but webpack does not remap
+    // extensions unless told to, so it looked for a literal `engine.js` next
+    // to `index.ts` and failed. This alias is the same fix Next.js ships
+    // behind `experimental.extensionAlias`, applied directly here instead.
+    config.resolve.extensionAlias = {
+      ...config.resolve.extensionAlias,
+      '.js': ['.ts', '.tsx', '.js'],
     };
 
     return config;

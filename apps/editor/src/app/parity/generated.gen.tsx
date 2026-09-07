@@ -6,12 +6,14 @@
 // as a prop with the editor's value as its default.
 import { useEffect } from 'react';
 
-import { colorRamp, displace, simplexNoise } from '@camp-dev/shaders';
 import {
+  colorRamp,
+  displace,
+  simplexNoise,
   useAnimatableSpeed,
   useAnimatableUniform,
   useShaderContext,
-} from '@camp-dev/shaders-react';
+} from '@camp-dev/shaders';
 import { parseColorString } from '@camp-dev/shaders/color';
 import {
   clamp,
