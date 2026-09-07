@@ -6,7 +6,7 @@
 // noise-driven warp, and cross-fades the whole thing between two palettes.
 // Render it inside a <ShaderScene>.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { Palette } from '../shared/color.js';
 import { MeshGradientShader } from './shader.js';
 

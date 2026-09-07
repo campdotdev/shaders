@@ -4,7 +4,7 @@
 // defaults, then delegates to GrainShader (./shader.tsx). Grain is a
 // post-process layer — stack it after other components inside a
 // <ShaderScene> and it textures whatever rendered beneath it.
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { type GrainBlend, GrainShader } from './shader.js';
 
 export type { GrainBlend } from './shader.js';

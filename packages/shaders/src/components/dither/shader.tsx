@@ -10,14 +10,12 @@ import { useEffect, useMemo } from 'react';
 import { floor, mix, screenCoordinate, screenSize, step, uniform, vec3, vec4 } from 'three/tsl';
 
 import { type DitherPattern, ditherThreshold, quantize } from '../../engine.js';
-import {
-  type AnimatableProp,
-  useAnimatableUniform,
-  useBasePassUv,
-  usePostProcessPass,
-  useResize,
-  useShaderContext,
-} from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
+import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useResize } from '../../react/hooks/use-resize/use-resize.js';
+import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 
 export type { DitherPattern } from '../../engine.js';
 

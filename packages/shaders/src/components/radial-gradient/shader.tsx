@@ -12,15 +12,13 @@ import { clamp, cos, fract, length, mix, sin, step, uniform, uv, vec2 } from 'th
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { colorRamp, type ColorSpace, type HueInterpolation } from '../../engine.js';
-import {
-  type AnimatableProp,
-  useAnimatablePoint,
-  useAnimatableSpeed,
-  useAnimatableUniform,
-  useResize,
-  useShaderContext,
-  useStaticSceneHint,
-} from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
+import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
+import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useResize } from '../../react/hooks/use-resize/use-resize.js';
+import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
+import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color.js';
 
 export interface RadialGradientShaderProps {

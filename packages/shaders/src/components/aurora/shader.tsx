@@ -25,13 +25,11 @@ import {
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
 import { colorRamp, type ColorSpace, type HueInterpolation, type TSLNode } from '../../engine.js';
-import {
-  type AnimatableProp,
-  useAnimatableSpeed,
-  useAnimatableUniform,
-  useResize,
-  useShaderContext,
-} from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
+import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useResize } from '../../react/hooks/use-resize/use-resize.js';
+import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color.js';
 
 // The aurora's GPU half. Unlike the flat 2D components, this one fakes a 3D

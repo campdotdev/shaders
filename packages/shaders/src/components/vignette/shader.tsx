@@ -11,13 +11,11 @@ import { Vector3 } from 'three/webgpu';
 
 import { mixColor } from '../../engine.js';
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import {
-  type AnimatableProp,
-  useAnimatablePoint,
-  useAnimatableUniform,
-  usePostProcessPass,
-  useResize,
-} from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
+import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { parseColor } from '../shared/color.js';
 
 export interface VignetteShaderProps {

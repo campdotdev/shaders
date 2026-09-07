@@ -25,12 +25,10 @@ import {
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
 import { colorRamp, type ColorSpace } from '../../engine.js';
-import {
-  type AnimatableProp,
-  useAnimatableSpeed,
-  useAnimatableUniform,
-  useShaderContext,
-} from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
+import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { parseColor, toColorRampStops } from '../shared/color.js';
 
 /** A single wave line: a flat color or a gradient along its length. */

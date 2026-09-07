@@ -5,7 +5,7 @@
 // samples a noise field per pixel and maps the result onto a color ramp.
 // Render it inside a <ShaderScene>.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { ColorStop } from '../shared/color.js';
 import { SimplexNoiseShader } from './shader.js';
 

@@ -12,14 +12,12 @@ import { exp, length, round, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } fr
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import { displace, signedDistanceFieldCircle, type TSLNode } from '../../engine.js';
-import {
-  type AnimatableProp,
-  useAnimatablePoint,
-  useAnimatableSpeed,
-  useAnimatableUniform,
-  useResize,
-  useShaderContext,
-} from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
+import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
+import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useResize } from '../../react/hooks/use-resize/use-resize.js';
+import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { parseColor } from '../shared/color.js';
 
 export interface DotFieldShaderProps {

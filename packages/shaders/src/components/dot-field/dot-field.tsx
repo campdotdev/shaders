@@ -5,7 +5,7 @@
 // pixel-spaced grid of dots and ripples them outward from a center point.
 // Render it inside a <ShaderScene>; the gaps between dots are transparent,
 // so it can sit over other layers.
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { DotFieldShader } from './shader.js';
 
 export interface DotFieldProps {

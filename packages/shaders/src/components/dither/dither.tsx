@@ -4,7 +4,7 @@
 // defaults, then delegates to DitherShader (./shader.tsx). Dither is a
 // post-process layer — stack it after other components inside a
 // <ShaderScene> and it pixelates and posterizes everything beneath it.
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { type DitherPattern, DitherShader } from './shader.js';
 
 export type { DitherPattern } from './shader.js';

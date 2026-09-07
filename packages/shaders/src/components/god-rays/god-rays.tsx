@@ -6,7 +6,7 @@
 // noise fields — one decorrelated layer of rays per entry in `colors`. The
 // rays emit light over a transparent background — stack them above a dark
 // layer inside a <ShaderScene>.
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { GodRaysShader } from './shader.js';
 
 // Cool analogous palette, near to far — sky blue in front, purple behind

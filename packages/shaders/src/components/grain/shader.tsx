@@ -7,13 +7,11 @@
 import { floor, vec4 } from 'three/tsl';
 
 import { grain } from '../../engine.js';
-import {
-  type AnimatableProp,
-  useAnimatableSpeed,
-  useAnimatableUniform,
-  usePostProcessPass,
-  useStaticSceneHint,
-} from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
+import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 
 export type GrainBlend = 'additive' | 'subtractive';
 

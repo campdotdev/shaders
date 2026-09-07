@@ -6,7 +6,7 @@
 // field. The aurora emits light over a transparent background — stack it
 // above a dark layer inside a <ShaderScene>.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { ColorStop } from '../shared/color.js';
 import { AuroraShader } from './shader.js';
 

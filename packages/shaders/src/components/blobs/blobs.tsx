@@ -6,7 +6,7 @@
 // splitting shapes. Render it inside a <ShaderScene>, typically stacked
 // over a background layer — the space between blobs is transparent.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { ColorStop } from '../shared/color.js';
 import { BlobsShader } from './shader.js';
 

@@ -5,7 +5,7 @@
 // (./shader.tsx), which does the actual GPU work. Render it inside a
 // <ShaderScene> — the component draws nothing on its own.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { ColorStop } from '../shared/color.js';
 import { RadialGradientShader } from './shader.js';
 

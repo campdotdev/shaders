@@ -6,7 +6,7 @@
 // sharing one wave so they move as a coherent group. Render it inside a
 // <ShaderScene>.
 import type { ColorSpace } from '../../engine.js';
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { WaveLinesShader } from './shader.js';
 
 /** A single wave line: a flat color or a gradient along its length. */

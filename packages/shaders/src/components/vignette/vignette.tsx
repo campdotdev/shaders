@@ -5,7 +5,7 @@
 // a post-process layer — stack it after other components inside a
 // <ShaderScene> and it blends the image toward `color` at the edges.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/index.js';
+import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { VignetteShader } from './shader.js';
 
 export interface VignetteProps {
