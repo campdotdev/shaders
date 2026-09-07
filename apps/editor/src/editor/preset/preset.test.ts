@@ -374,6 +374,7 @@ describe('parsePreset fallback identity', () => {
     const [first, second] = parsePreset(json).nodes;
 
     expect(first!.position).toEqual({ x: 0, y: 0 });
+    expect(second!.position).toEqual({ x: 0, y: 0 });
     expect(first!.position).not.toBe(second!.position);
   });
 });
