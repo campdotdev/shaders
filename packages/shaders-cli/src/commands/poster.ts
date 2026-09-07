@@ -52,7 +52,7 @@ function normalizeType(rawType: string | undefined): PosterFormat {
     return 'jpeg';
   if (normalizedType === 'png') return 'png';
 
-  throw new Error(`--type must be 'png' or 'jpg' (got ${String(rawType)})`);
+  throw new Error(`--format must be 'png' or 'jpg' (got ${String(rawType)})`);
 }
 
 function extensionFor(format: PosterFormat): string {
@@ -67,7 +67,7 @@ export function resolveOutPath(out: string, format: PosterFormat): string {
   if (format === 'jpeg' && ext === '.jpeg') return out;
   if (ext === '.png' || ext === '.jpg' || ext === '.jpeg') {
     throw new Error(
-      `--out extension '${ext}' doesn't match --type '${format === 'jpeg' ? 'jpg' : 'png'}'`,
+      `--output extension '${ext}' doesn't match --format '${format === 'jpeg' ? 'jpg' : 'png'}'`,
     );
   }
 
@@ -85,7 +85,7 @@ export async function runPoster(
     throw new Error(`--height must be a positive integer ≤ 4096 (got ${opts.height})`);
   }
   if (!Number.isFinite(opts.timeSeconds) || opts.timeSeconds < 0) {
-    throw new Error(`--time must be ≥ 0 (got ${opts.timeSeconds})`);
+    throw new Error(`--capture-delay must be ≥ 0 (got ${opts.timeSeconds})`);
   }
   if (opts.quality !== undefined) {
     if (!Number.isInteger(opts.quality) || opts.quality < 1 || opts.quality > 100) {
@@ -108,7 +108,7 @@ export async function runPoster(
   try {
     await stat(fromAbs);
   } catch {
-    throw new Error(`--from ${opts.from}: file not found`);
+    throw new Error(`--source ${opts.from}: file not found`);
   }
 
   const projectRoot = await findProjectRoot(fromAbs);

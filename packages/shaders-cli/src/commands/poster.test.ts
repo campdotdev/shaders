@@ -53,7 +53,7 @@ describe('runPoster — flag validation', () => {
   it('rejects timeSeconds < 0', async () => {
     await expect(
       runPoster({ ...base, timeSeconds: -1 }, { cwd: '/tmp', log: vi.fn() }),
-    ).rejects.toThrow(/--time.*must be ≥ 0/);
+    ).rejects.toThrow(/--capture-delay.*must be ≥ 0/);
   });
 
   it('rejects --quality below 1', async () => {
@@ -74,21 +74,21 @@ describe('runPoster — flag validation', () => {
     ).rejects.toThrow(/--quality must be an integer 1–100/);
   });
 
-  it('rejects invalid --type', async () => {
+  it('rejects invalid --format', async () => {
     await expect(
       runPoster({ ...base, type: 'webp' }, { cwd: '/tmp', log: vi.fn() }),
-    ).rejects.toThrow(/--type must be 'png' or 'jpg'/);
+    ).rejects.toThrow(/--format must be 'png' or 'jpg'/);
   });
 });
 
-describe('runPoster — --from validation', () => {
-  it('throws if --from file does not exist', async () => {
+describe('runPoster — --source validation', () => {
+  it('throws if --source file does not exist', async () => {
     await expect(
       runPoster(
         { ...base, from: '/tmp/__matter_test_missing__.tsx' },
         { cwd: '/tmp', log: vi.fn() },
       ),
-    ).rejects.toThrow(/--from .* file not found/);
+    ).rejects.toThrow(/--source .* file not found/);
   });
 });
 
@@ -107,7 +107,7 @@ describe('runPoster — PNG + --quality warning', () => {
         },
         { cwd: '/tmp', log },
       ),
-    ).rejects.toThrow(/--from .* file not found/);
+    ).rejects.toThrow(/--source .* file not found/);
     expect(log).toHaveBeenCalledWith(expect.stringContaining('--quality is ignored for PNG'));
   });
 
@@ -119,7 +119,7 @@ describe('runPoster — PNG + --quality warning', () => {
         { ...base, from: '/tmp/__matter_test_missing__.tsx', out: '/tmp/poster', type: 'png' },
         { cwd: '/tmp', log },
       ),
-    ).rejects.toThrow(/--from .* file not found/);
+    ).rejects.toThrow(/--source .* file not found/);
     for (const call of log.mock.calls) {
       expect(String(call[0])).not.toMatch(/--quality is ignored/);
     }
@@ -127,11 +127,11 @@ describe('runPoster — PNG + --quality warning', () => {
 });
 
 describe('resolveOutPath', () => {
-  it('appends .jpg when --out has no extension and format is jpeg', () => {
+  it('appends .jpg when --output has no extension and format is jpeg', () => {
     expect(resolveOutPath('/tmp/hero', 'jpeg')).toBe('/tmp/hero.jpg');
   });
 
-  it('appends .png when --out has no extension and format is png', () => {
+  it('appends .png when --output has no extension and format is png', () => {
     expect(resolveOutPath('/tmp/hero', 'png')).toBe('/tmp/hero.png');
   });
 
@@ -152,9 +152,9 @@ describe('resolveOutPath', () => {
     expect(resolveOutPath('/tmp/hero.PNG', 'png')).toBe('/tmp/hero.PNG');
   });
 
-  it('errors when --out extension contradicts --type', () => {
-    expect(() => resolveOutPath('/tmp/hero.png', 'jpeg')).toThrow(/doesn't match --type 'jpg'/);
-    expect(() => resolveOutPath('/tmp/hero.jpg', 'png')).toThrow(/doesn't match --type 'png'/);
+  it('errors when --output extension contradicts --format', () => {
+    expect(() => resolveOutPath('/tmp/hero.png', 'jpeg')).toThrow(/doesn't match --format 'jpg'/);
+    expect(() => resolveOutPath('/tmp/hero.jpg', 'png')).toThrow(/doesn't match --format 'png'/);
   });
 
   it('appends the format extension to non-image extensions', () => {
