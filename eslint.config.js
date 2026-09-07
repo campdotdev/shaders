@@ -170,13 +170,16 @@ export default defineConfig([
     // The framework-free half of the package. Nothing here may import React
     // or reach into src/react or src/components, so that a second framework
     // binding could take this half as its own package by moving the folders.
-    // The package boundary used to enforce this; this rule does now.
-    files: [
-      'packages/shaders/src/engine.ts',
-      'packages/shaders/src/color.ts',
-      'packages/shaders/src/primitives/**/*.{ts,tsx}',
-      'packages/shaders/src/runtime/**/*.{ts,tsx}',
-      'packages/shaders/src/inputs/**/*.{ts,tsx}',
+    // The package boundary used to enforce this; this rule does now. The
+    // scope is the whole package minus the React entries and folders, so a
+    // new top-level file is covered by default.
+    files: ['packages/shaders/src/**/*.{ts,tsx}'],
+    ignores: [
+      'packages/shaders/src/index.ts',
+      'packages/shaders/src/gamut.ts',
+      'packages/shaders/src/poster.ts',
+      'packages/shaders/src/react/**',
+      'packages/shaders/src/components/**',
     ],
     rules: {
       '@typescript-eslint/no-restricted-imports': [
