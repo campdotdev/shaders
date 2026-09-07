@@ -4,7 +4,7 @@ import { getComponentsCatalog } from '@/content/catalog';
 
 export const metadata = {
   title: 'Components',
-  description: 'Tier 1 shader components delivered shadcn-style via shaders-cli add <name>.',
+  description: 'Tier 1 shader components, imported from @camp-dev/shaders and tuned through props.',
 };
 
 export default async function ComponentsIndex() {
@@ -14,10 +14,9 @@ export default async function ComponentsIndex() {
     <article style={{ lineHeight: 1.65 }}>
       <h1 style={{ marginTop: 0 }}>Components</h1>
       <p style={{ color: 'var(--fg-muted)' }}>
-        Tier 1 — polished shader components delivered shadcn-style via{' '}
-        <code>shaders-cli add &lt;name&gt;</code>. Each component is yours to edit after copy-in.
-        Each page below has a live demo, a props playground, and the byte-identical source the CLI
-        copies into your project.
+        Tier 1: polished shader components, imported from <code>@camp-dev/shaders</code> and tuned
+        through props. Each page below has a live demo, a props playground, and the usage snippet to
+        paste into your app.
       </p>
       <ul style={{ paddingLeft: '1.25rem', lineHeight: 1.8 }}>
         {components.map((c) => (

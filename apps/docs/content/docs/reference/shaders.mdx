@@ -7,7 +7,7 @@ order: 10
 
 # Engine API
 
-`@camp-dev/shaders` is the framework-agnostic engine. This page lists everything it exports. A generated TypeDoc reference replaces this hand-written page post-launch.
+This page lists the engine half of `@camp-dev/shaders`: the TSL primitives, the runtime, the inputs, and reduced-motion-gated time. The React half is on the [React API](/react/api) page. A generated TypeDoc reference replaces this hand-written page post-launch.
 
 ## Tier 2 primitives
 
@@ -51,7 +51,7 @@ import { time as rawTime } from 'three/tsl'
 
 ## Inputs
 
-- **`CursorInput`** — framework-agnostic cursor source. `useCursor()` in `@camp-dev/shaders-react` wraps it; in Mode 2 or non-React contexts, you instantiate it directly.
+- **`CursorInput`** — framework-agnostic cursor source. `useCursor()` wraps it; in Mode 2 or non-React contexts, you instantiate it directly.
 
 ## Reduced motion
 
