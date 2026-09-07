@@ -45,7 +45,7 @@ export default defineConfig([
     },
   },
   {
-    files: ['packages/**/*.{ts,tsx}', 'apps/**/*.{ts,tsx}', 'registry/**/*.{ts,tsx}'],
+    files: ['packages/**/*.{ts,tsx}', 'apps/**/*.{ts,tsx}'],
     plugins: {
       import: importPlugin,
       'jsx-a11y': jsxA11y,
@@ -58,7 +58,6 @@ export default defineConfig([
         projectService: {
           allowDefaultProject: [
             'packages/shaders/*.config.{ts,mts,cts}',
-            'packages/shaders-react/*.config.{ts,mts,cts}',
             'apps/docs/vitest.config.ts',
             'apps/editor/vitest.config.ts',
             'packages/*/posters/*.{ts,tsx}',
@@ -80,7 +79,7 @@ export default defineConfig([
       'import/resolver': {
         typescript: {
           alwaysTryTypes: true,
-          project: ['packages/*/tsconfig.json', 'apps/*/tsconfig.json', 'registry/tsconfig.json'],
+          project: ['packages/*/tsconfig.json', 'apps/*/tsconfig.json'],
         },
         node: true,
       },
@@ -148,7 +147,7 @@ export default defineConfig([
       'packages/*/src/**/*.spec.{ts,tsx}',
       'apps/*/src/**/*.test.{ts,tsx}',
       'apps/docs-tests/**/*.{ts,tsx}',
-      'packages/*/src/test-setup.ts',
+      'packages/*/src/**/test-setup.ts',
     ],
     rules: {
       '@typescript-eslint/no-unnecessary-condition': 'off',
@@ -168,16 +167,52 @@ export default defineConfig([
     },
   },
   {
-    // The docs site server-renders, and both packages have a root entry that
-    // reaches three/webgpu — the engine's through the renderer, the binding's
-    // through ShaderScene. three/webgpu reads `self` at module load, so the
-    // wrong import crashes at render time, which is far too late to notice.
-    // Each has a three-free subpath carrying the same code: @camp-dev/shaders/color
-    // and @camp-dev/shaders-react/gamut.
+    // The framework-free half of the package. Nothing here may import React
+    // or reach into src/react or src/components, so that a second framework
+    // binding could take this half as its own package by moving the folders.
+    // The package boundary used to enforce this; this rule does now.
+    files: [
+      'packages/shaders/src/engine.ts',
+      'packages/shaders/src/color.ts',
+      'packages/shaders/src/primitives/**/*.{ts,tsx}',
+      'packages/shaders/src/runtime/**/*.{ts,tsx}',
+      'packages/shaders/src/inputs/**/*.{ts,tsx}',
+    ],
+    rules: {
+      '@typescript-eslint/no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              name: 'react',
+              message: 'The engine is framework-free. React belongs under src/react.',
+            },
+            {
+              name: 'react-dom',
+              message: 'The engine is framework-free. React belongs under src/react.',
+            },
+          ],
+          patterns: [
+            {
+              group: ['react/*', 'react-dom/*', '**/react/**', '**/components/**'],
+              message:
+                'The engine is framework-free: it must not import React or anything under src/react or src/components. See the React-free core note in AGENTS.md.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    // The docs site server-renders, and the package's root entry reaches
+    // three/webgpu through the renderer and ShaderScene. three/webgpu reads
+    // `self` at module load, so the wrong import crashes at render time,
+    // which is far too late to notice. Two three-free subpaths carry the
+    // same code: @camp-dev/shaders/color and @camp-dev/shaders/gamut.
     //
-    // Banning the names rather than the specifiers is deliberate: it lets /dev
+    // Banning the names rather than the specifier is deliberate: it lets /dev
     // playgrounds keep importing colorRamp, ShaderScene and friends from the
-    // roots, which is correct, while still catching the pieces that have a
+    // root, which is correct, while still catching the pieces that have a
     // three-free door.
     files: ['apps/docs/**/*.{ts,tsx}'],
     rules: {
@@ -197,17 +232,11 @@ export default defineConfig([
                 'oklchToLinearSrgb',
                 'parseColorString',
                 'srgbChannelToLinear',
+                'useDisplayGamut',
               ],
               allowTypeImports: true,
               message:
-                "Import CPU color math from '@camp-dev/shaders/color'. The root entry pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
-            },
-            {
-              name: '@camp-dev/shaders-react',
-              importNames: ['useDisplayGamut'],
-              allowTypeImports: true,
-              message:
-                "Import useDisplayGamut from '@camp-dev/shaders-react/gamut'. The root entry re-exports ShaderScene and so pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
+                "Import CPU color math from '@camp-dev/shaders/color' and useDisplayGamut from '@camp-dev/shaders/gamut'. The root entry pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
             },
           ],
         },
