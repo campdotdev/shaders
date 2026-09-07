@@ -2,12 +2,12 @@
   "$schema": "https://unpkg.com/@changesets/config@3.1.4/schema.json",
   "changelog": "@changesets/cli/changelog",
   "commit": false,
-  "fixed": [["@camp-dev/shaders", "@camp-dev/shaders-react", "@camp-dev/shaders-cli"]],
+  "fixed": [["@camp-dev/shaders", "@camp-dev/shaders-cli"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@shaders/registry", "@shaders/tsconfig", "@shaders/docs", "@shaders/docs-tests"],
+  "ignore": ["@shaders/tsconfig", "@shaders/docs", "@shaders/docs-tests"],
   "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
     "onlyUpdatePeerDependentsWhenOutOfRange": true
   }
