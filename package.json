@@ -12,7 +12,6 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "clean": "turbo run clean && rm -rf node_modules .turbo",
-    "smoke": "node scripts/smoke-test-cli.mjs",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "dev:docs": "turbo run dev --filter=@shaders/docs",
@@ -27,7 +26,7 @@
     "posters": "bash scripts/build-posters.sh",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm smoke && pnpm publish -r --access public --no-git-checks",
+    "release": "pnpm build && pnpm typecheck && pnpm lint && pnpm format:check && pnpm test && pnpm publish -r --access public --no-git-checks",
     "doctor": "react-doctor"
   },
   "devDependencies": {

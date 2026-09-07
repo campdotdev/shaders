@@ -1,14 +1,13 @@
 {
   "name": "@camp-dev/shaders-cli",
   "version": "0.18.0",
-  "description": "CLI for Shaders — copy-paste components from the registry into your project.",
+  "description": "Dev-time CLI for Shaders. Renders a component tree to a poster image with the poster command.",
   "keywords": [
     "cli",
-    "components",
+    "poster",
     "shaders",
-    "scaffold",
-    "shadcn",
-    "shader"
+    "shader",
+    "webgpu"
   ],
   "homepage": "https://github.com/campdotdev/shaders#readme",
   "bugs": {
