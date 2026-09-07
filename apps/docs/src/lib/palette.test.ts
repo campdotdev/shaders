@@ -141,7 +141,7 @@ interface RegistryAnnotation {
  * look for that many literals on the same line first and the next line
  * second.
  */
-function parseRegistryAnnotations(fileContent: string): RegistryAnnotation[] {
+function parseComponentAnnotations(fileContent: string): RegistryAnnotation[] {
   const lines = fileContent.split('\n');
   const annotations: RegistryAnnotation[] = [];
 
@@ -377,7 +377,7 @@ describe('brand palette', () => {
     for (const relativePath of componentFiles) {
       const fileContent = readFileSync(join(componentsRoot, relativePath), 'utf-8');
 
-      for (const { name, index, literal } of parseRegistryAnnotations(fileContent)) {
+      for (const { name, index, literal } of parseComponentAnnotations(fileContent)) {
         annotationCount += 1;
 
         const scale = paletteOklch[name as keyof typeof paletteOklch];
