@@ -8,3 +8,4 @@
 // build banner. esbuild keeps it on the emitted entry chunk.
 export * from './engine.js';
 export * from './react/index.js';
+export * from './components/index.js';

@@ -47,7 +47,6 @@
   },
   "devDependencies": {
     "@camp-dev/shaders": "workspace:*",
-    "@shaders/registry": "workspace:*",
     "@shaders/tsconfig": "workspace:*",
     "@types/node": "^22.7.0",
     "@types/react": "^19.0.0",

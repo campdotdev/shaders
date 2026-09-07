@@ -104,9 +104,6 @@ importers:
       '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../../packages/shaders
-      '@shaders/registry':
-        specifier: workspace:*
-        version: link:../../registry
       '@xyflow/react':
         specifier: ^12.11.2
         version: 12.11.2(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
@@ -323,9 +320,6 @@ importers:
       '@camp-dev/shaders':
         specifier: workspace:*
         version: link:../shaders
-      '@shaders/registry':
-        specifier: workspace:*
-        version: link:../../registry
       '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
@@ -359,31 +353,6 @@ importers:
       vitest:
         specifier: 'catalog:'
         version: 4.1.7(@opentelemetry/api@1.9.1)(@types/node@22.19.17)(@vitest/ui@4.1.7)(happy-dom@15.11.7)(vite@8.0.14(@types/node@22.19.17)(esbuild@0.27.7)(jiti@2.7.0)(yaml@2.9.0))
-
-  registry:
-    dependencies:
-      '@camp-dev/shaders':
-        specifier: workspace:*
-        version: link:../packages/shaders
-      react:
-        specifier: ^19.0.0
-        version: 19.2.5
-      three:
-        specifier: ^0.170.0
-        version: 0.170.0
-    devDependencies:
-      '@shaders/tsconfig':
-        specifier: workspace:*
-        version: link:../tooling/tsconfig
-      '@types/react':
-        specifier: ^19.0.0
-        version: 19.2.14
-      '@types/three':
-        specifier: ^0.170.0
-        version: 0.170.0
-      typescript:
-        specifier: ^5.6.0
-        version: 5.9.3
 
   tooling/tsconfig: {}
 

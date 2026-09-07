@@ -1,7 +1,6 @@
 packages:
   - 'apps/*'
   - 'packages/*'
-  - 'registry'
   - 'tooling/*'
 
 # Supply-chain hardening (react-doctor require-pnpm-hardening, 2026-08-11).
