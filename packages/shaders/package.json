@@ -1,12 +1,14 @@
 {
   "name": "@camp-dev/shaders",
   "version": "0.18.0",
-  "description": "Engine for Shaders — TSL primitives, renderer, scheduler. Framework-agnostic.",
+  "description": "React shader components on WebGPU and Three.js TSL: Tier 1 components, ShaderScene, hooks, and the TSL primitives they build on.",
   "keywords": [
     "background",
     "components",
     "gradient",
+    "hooks",
     "react",
+    "react-three-fiber",
     "shader",
     "shaders",
     "three.js",
@@ -43,6 +45,16 @@
       "types": "./dist/color.d.ts",
       "import": "./dist/color.js",
       "require": "./dist/color.cjs"
+    },
+    "./gamut": {
+      "types": "./dist/gamut.d.ts",
+      "import": "./dist/gamut.js",
+      "require": "./dist/gamut.cjs"
+    },
+    "./poster": {
+      "types": "./dist/poster.d.ts",
+      "import": "./dist/poster.js",
+      "require": "./dist/poster.cjs"
     }
   },
   "publishConfig": {
@@ -59,8 +71,14 @@
   },
   "devDependencies": {
     "@shaders/tsconfig": "workspace:*",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.0.0",
     "@types/three": "^0.170.0",
+    "@vitejs/plugin-react": "^6.0.1",
     "happy-dom": "^15.0.0",
+    "react": "^19.0.0",
     "three": "^0.170.0",
     "tsup": "^8.3.0",
     "typescript": "^5.6.0",
@@ -68,6 +86,7 @@
     "vitest": "catalog:"
   },
   "peerDependencies": {
+    "react": "^19.0.0",
     "three": "^0.170.0"
   }
 }

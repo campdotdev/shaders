@@ -7,3 +7,4 @@
 // not the built dist, so the directive has to live here rather than in a
 // build banner. esbuild keeps it on the emitted entry chunk.
 export * from './engine.js';
+export * from './react/index.js';

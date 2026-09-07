@@ -1,8 +1,0 @@
-{
-  "extends": "@shaders/tsconfig/react-library.json",
-  "compilerOptions": {
-    "rootDir": "./src",
-    "outDir": "dist"
-  },
-  "include": ["src"]
-}

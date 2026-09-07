@@ -28,7 +28,6 @@
   },
   "dependencies": {
     "@camp-dev/shaders": "workspace:*",
-    "@camp-dev/shaders-react": "workspace:*",
     "react": "^19.0.0",
     "three": "^0.170.0"
   },
