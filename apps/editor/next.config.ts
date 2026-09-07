@@ -17,7 +17,12 @@ const shadersSrc = resolve(import.meta.dirname, '..', '..', 'packages', 'shaders
 interface WebpackConfig {
   resolve?: {
     alias?: Record<string, string>;
-    extensionAlias?: Record<string, string[]>;
+  };
+  module?: {
+    rules?: Array<{
+      include?: string;
+      resolve?: { extensionAlias?: Record<string, string[]> };
+    }>;
   };
 }
 
@@ -68,10 +73,15 @@ const nextConfig: NextConfig = {
     // extensions unless told to, so it looked for a literal `engine.js` next
     // to `index.ts` and failed. This alias is the same fix Next.js ships
     // behind `experimental.extensionAlias`, applied directly here instead.
-    config.resolve.extensionAlias = {
-      ...config.resolve.extensionAlias,
-      '.js': ['.ts', '.tsx', '.js'],
-    };
+    // It is scoped to the package source through a module rule, so a
+    // third-party package that ships a `foo.ts` beside `foo.js` is never
+    // resolved to its TypeScript file.
+    config.module = config.module ?? {};
+    config.module.rules = config.module.rules ?? [];
+    config.module.rules.push({
+      include: shadersSrc,
+      resolve: { extensionAlias: { '.js': ['.ts', '.tsx', '.js'] } },
+    });
 
     return config;
   },
