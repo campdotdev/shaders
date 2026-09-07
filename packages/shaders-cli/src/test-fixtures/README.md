@@ -1,22 +1,12 @@
 # Test fixtures
 
-These files are consumed by `vitest` tests in this package. They mimic the
-shape of `registry/registry.json` and a Tier 1 component, but exist
-exclusively to exercise the CLI without requiring network access or a
-checked-out remote.
+These files are consumed by `vitest` tests in this package. They exist to
+exercise the poster pipeline without a real project.
 
-- `registry/registry.json` — minimal registry manifest
-- `registry/synthetic-component.tsx` — tiny single-file component used to
-  exercise import rewriting and add/update flows
-- `registry/nested-component/` and `registry/sibling-component/` — two
-  multi-file components mirroring the real registry's wrapper + shader split
-- `registry/utils/color.ts` — shared helper both of them import, so tests can
-  cover a file claimed by more than one component
+- `posters/*.tsx` — small component trees the poster end-to-end and bundle
+  tests render: a single gradient, a gradient with grain, an aurora that
+  needs a capture delay, a named export, and a trivial non-shader component.
 
-The synthetic component is deliberately flat. The nested pair exists because
-that flatness once hid a bug: `add` copied only the entry point, so every real
-component installed with unresolvable imports.
-
-The synthetic component imports from `@matter-internal/lib` — a deliberate
-fake alias used by `transforms/rewriteImports.test.ts` to verify the
-rewriter applies the user's `aliases` config.
+The poster tests bundle these against this package's own `node_modules`, so
+`@camp-dev/shaders` resolves to the workspace package's built `dist`. Build
+the package before running them.
