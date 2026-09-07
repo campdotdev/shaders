@@ -1,6 +1,9 @@
-import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
-import type { FractalNoiseStyle } from '@shaders/registry/fractal-noise';
-import { STYLE_DIAL_DEFAULTS } from '@shaders/registry/fractal-noise/style-dial-defaults';
+import {
+  type ColorSpace,
+  type FractalNoiseStyle,
+  type HueInterpolation,
+  STYLE_DIAL_DEFAULTS,
+} from '@camp-dev/shaders';
 
 import { paletteOklch } from '../../../lib/palette';
 

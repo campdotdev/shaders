@@ -353,17 +353,17 @@ describe('brand palette', () => {
     expect(breaks).toEqual([]);
   });
 
-  it('keeps registry oklch literals in sync with the palette steps they cite', () => {
-    // Registry components ship by copy-paste through the CLI, so they can't
-    // import palette.ts either -- they hand-copy oklch() literals the same
-    // way globals.css hand-copies hex, and cite their source with a trailing
-    // `// paletteOklch.name[index]` comment. This is the same guard as
-    // `keeps globals.css hex literals in sync`, aimed at that second surface.
-    const registryRoot = join(
+  it('keeps component oklch literals in sync with the palette steps they cite', () => {
+    // The package cannot import the docs' palette.ts, so its components
+    // hand-copy oklch() literals the same way globals.css hand-copies hex,
+    // and cite their source with a trailing `// paletteOklch.name[index]`
+    // comment. This is the same guard as `keeps globals.css hex literals in
+    // sync`, aimed at that second surface.
+    const componentsRoot = join(
       dirname(fileURLToPath(import.meta.url)),
-      '../../node_modules/@shaders/registry',
+      '../../../../packages/shaders/src/components',
     );
-    const registryFiles = [
+    const componentFiles = [
       'aurora/aurora.tsx',
       'linear-gradient/linear-gradient.tsx',
       'mesh-gradient/mesh-gradient.tsx',
@@ -374,8 +374,8 @@ describe('brand palette', () => {
     const mismatches: string[] = [];
     let annotationCount = 0;
 
-    for (const relativePath of registryFiles) {
-      const fileContent = readFileSync(join(registryRoot, relativePath), 'utf-8');
+    for (const relativePath of componentFiles) {
+      const fileContent = readFileSync(join(componentsRoot, relativePath), 'utf-8');
 
       for (const { name, index, literal } of parseRegistryAnnotations(fileContent)) {
         annotationCount += 1;
@@ -391,7 +391,7 @@ describe('brand palette', () => {
 
         if (step === undefined || step !== literal) {
           mismatches.push(
-            `${relativePath}: ${name}[${index}] is ${literal} in the registry but ${step ?? 'undefined'} in the palette`,
+            `${relativePath}: ${name}[${index}] is ${literal} in the component but ${step ?? 'undefined'} in the palette`,
           );
         }
       }

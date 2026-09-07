@@ -2,8 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@camp-dev/shaders-react';
-import { GodRays } from '@shaders/registry/god-rays';
+import { GodRays, ShaderScene } from '@camp-dev/shaders';
 
 import { type GodRaysParams, INITIAL } from './params';
 

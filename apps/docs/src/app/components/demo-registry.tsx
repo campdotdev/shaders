@@ -1,6 +1,6 @@
 /**
  * Maps a component slug to the pieces the shared components/[slug] template
- * cannot derive from the catalog (registry.json): the client demo island and
+ * cannot derive from the catalog (content/components.ts): the client demo island and
  * the Usage content. The template renders usageNotes above the snippet, so
  * notes read as guidance introducing the code. Paragraphs that merely
  * restated the catalog description were dropped when pages converted — the

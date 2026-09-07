@@ -1,10 +1,10 @@
 /**
- * Build-time props extraction for the API Reference table. Parses a registry
- * component's wrapper file with the TypeScript compiler API and returns one
- * row per prop: the name, the type as written in the `*Props` interface, the
- * JSDoc description, and the default from the wrapper's destructuring. The
- * docs site is a static export, so this only ever runs at build, the same
- * way content/catalog.ts reads registry.json.
+ * Build-time props extraction for the API Reference table. Parses a component's
+ * wrapper file under packages/shaders/src/components with the TypeScript
+ * compiler API and returns one row per prop: the name, the type as written in
+ * the `*Props` interface, the JSDoc description, and the default from the
+ * wrapper's destructuring. The docs site is a static export, so this only ever
+ * runs at build, the same way content/catalog.ts reads components.ts.
  */
 import { cache } from 'react';
 
@@ -29,9 +29,9 @@ export interface PropRow {
 }
 
 // Widest default that still reads inside the table's Default column;
-// `'oklch(0.145 0.02 265)'` (23 characters) is the longest inline literal in
-// the registry today. Anything longer, or multi-line, is only shown in the
-// expanded row's code block.
+// `'oklch(0.145 0.02 265)'` (23 characters) is the longest inline literal
+// among the components today. Anything longer, or multi-line, is only shown
+// in the expanded row's code block.
 const SUMMARY_MAX_LENGTH = 24;
 
 // Narrower than the repo's 100 so a resolved stops array breaks one entry per
@@ -39,9 +39,19 @@ const SUMMARY_MAX_LENGTH = 24;
 // tuples still fit on one line each.
 const DEFAULT_PRINT_WIDTH = 80;
 
-/** Reads `registry/<slug>/<slug>.tsx` and extracts its props table rows. */
+/** Reads `packages/shaders/src/components/<slug>/<slug>.tsx` and extracts its props table rows. */
 export const getComponentProps = cache(async (slug: string): Promise<PropRow[]> => {
-  const wrapperPath = resolve(process.cwd(), '..', '..', 'registry', slug, `${slug}.tsx`);
+  const wrapperPath = resolve(
+    process.cwd(),
+    '..',
+    '..',
+    'packages',
+    'shaders',
+    'src',
+    'components',
+    slug,
+    `${slug}.tsx`,
+  );
   const componentName = slug
     .split('-')
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
@@ -72,7 +82,7 @@ export async function extractProps(source: string, componentName: string): Promi
       const description = readJsDocText(member);
 
       // Fail the build rather than render an empty cell — AGENTS.md mandates
-      // JSDoc on every user-facing prop, so a miss here is a registry bug.
+      // JSDoc on every user-facing prop, so a miss here is a component bug.
       if (description === '') {
         throw new Error(`Prop "${name}" on ${componentName}Props has no JSDoc description`);
       }

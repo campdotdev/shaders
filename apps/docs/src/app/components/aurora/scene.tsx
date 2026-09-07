@@ -2,8 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@camp-dev/shaders-react';
-import { Aurora, type ColorStop } from '@shaders/registry/aurora';
+import { Aurora, type ColorStop, ShaderScene } from '@camp-dev/shaders';
 
 import { type AuroraParams, INITIAL } from './params';
 

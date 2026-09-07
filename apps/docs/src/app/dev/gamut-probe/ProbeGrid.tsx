@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 
-import { ShaderScene, useShaderContext } from '@camp-dev/shaders-react';
+import { ShaderScene, useShaderContext } from '@camp-dev/shaders';
 import { oklchToLinearSrgb } from '@camp-dev/shaders/color';
 import { vec3, vec4 } from 'three/tsl';
 

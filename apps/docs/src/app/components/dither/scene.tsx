@@ -2,9 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@camp-dev/shaders-react';
-import { Dither } from '@shaders/registry/dither';
-import { MeshGradient } from '@shaders/registry/mesh-gradient';
+import { Dither, MeshGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { type DitherParams, INITIAL } from './params';
 

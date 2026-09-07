@@ -7,8 +7,7 @@
 // bisector distance works. Swap the colorNode lines below to isolate fields.
 import { useEffect } from 'react';
 
-import { voronoiCells } from '@camp-dev/shaders';
-import { ShaderScene, useShaderContext } from '@camp-dev/shaders-react';
+import { ShaderScene, useShaderContext, voronoiCells } from '@camp-dev/shaders';
 import { smoothstep, uniform, uv, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 

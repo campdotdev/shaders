@@ -11,11 +11,12 @@ import {
   fractalNoise,
   mixColor,
   quantize,
+  ShaderScene,
   signedDistanceFieldCircle,
   simplexNoise,
+  useShaderContext,
   voronoi,
 } from '@camp-dev/shaders';
-import { ShaderScene, useShaderContext } from '@camp-dev/shaders-react';
 import type { ShaderNodeObject } from 'three/tsl';
 import { mix, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Vector2 } from 'three/webgpu';

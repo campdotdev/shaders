@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo } from 'react';
 
-import { ShaderScene, useCursor, useShaderContext } from '@camp-dev/shaders-react';
+import { ShaderScene, useCursor, useShaderContext } from '@camp-dev/shaders';
 import { uniform } from 'three/tsl';
 import { Vector2 } from 'three/webgpu';
 

@@ -1,4 +1,4 @@
-import type { GrainBlend } from '@shaders/registry/grain';
+import type { GrainBlend } from '@camp-dev/shaders';
 
 export interface GrainParams {
   intensity: number;

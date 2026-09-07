@@ -1,12 +1,10 @@
 /**
- * The component taxonomy: which leaf group each registry category belongs
+ * The component taxonomy: which leaf group each component category belongs
  * to, which tier each group sits in, and how to fold a flat list of catalog
- * records into that tree. The registry stores one word per component and
- * this file owns everything else, so adding a group is one entry here plus a
- * regenerated registry/registry.schema.json, which schema.ts derives from
- * these tuples (the registry-schema test writes it). The sidebar, prev and next
- * paging, and breadcrumbs all read the tree this builds. The decision record
- * is the "Component taxonomy" document in Linear.
+ * records into that tree. components.ts stores one category per component
+ * and this file owns everything else, so adding a group is one entry here.
+ * The sidebar, prev and next paging, and breadcrumbs all read the tree this
+ * builds. The decision record is the "Component taxonomy" document in Linear.
  */
 
 // ---- The table ----
@@ -14,9 +12,8 @@
 /* Tuple order is the curated order: Sources before Effects before Motion,
    and within a tier the simpler groups first. Motion has no shipped group
    yet, so it is not listed; a tier appears here when its first group does.
-   The tuples are also what z.enum checks the registry against, and the
-   records beside them are typed so a slug cannot be added to one without
-   the other. */
+   The records beside the tuples are typed so a slug cannot be added to one
+   without the other. */
 export const TIER_SLUGS = ['sources', 'effects'] as const;
 
 export type TierSlug = (typeof TIER_SLUGS)[number];

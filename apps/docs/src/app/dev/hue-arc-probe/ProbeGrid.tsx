@@ -2,9 +2,7 @@
 
 import { useEffect } from 'react';
 
-import type { HueInterpolation } from '@camp-dev/shaders';
-import { colorRamp } from '@camp-dev/shaders';
-import { ShaderScene, useShaderContext } from '@camp-dev/shaders-react';
+import { colorRamp, type HueInterpolation, ShaderScene, useShaderContext } from '@camp-dev/shaders';
 import { srgbChannelToLinear } from '@camp-dev/shaders/color';
 import type { ShaderNodeObject } from 'three/tsl';
 import { mix, step, uv, vec3, vec4 } from 'three/tsl';

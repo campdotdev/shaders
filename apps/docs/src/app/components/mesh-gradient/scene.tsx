@@ -2,8 +2,7 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene } from '@camp-dev/shaders-react';
-import { MeshGradient, type Palette } from '@shaders/registry/mesh-gradient';
+import { MeshGradient, type Palette, ShaderScene } from '@camp-dev/shaders';
 
 import { INITIAL, type Params } from './params';
 

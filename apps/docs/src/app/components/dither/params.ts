@@ -1,4 +1,4 @@
-import type { DitherPattern } from '@shaders/registry/dither';
+import type { DitherPattern } from '@camp-dev/shaders';
 
 export interface DitherParams {
   pixelSize: number;

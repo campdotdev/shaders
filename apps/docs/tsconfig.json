@@ -11,7 +11,11 @@
     "isolatedModules": true,
     "verbatimModuleSyntax": false,
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@camp-dev/shaders": ["../../packages/shaders/src/index.ts"],
+      "@camp-dev/shaders/color": ["../../packages/shaders/src/color.ts"],
+      "@camp-dev/shaders/gamut": ["../../packages/shaders/src/gamut.ts"],
+      "@camp-dev/shaders/poster": ["../../packages/shaders/src/poster.ts"]
     },
     "plugins": [
       {

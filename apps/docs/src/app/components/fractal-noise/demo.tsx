@@ -9,8 +9,7 @@
 import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useRef } from 'react';
 
-import type { FractalNoiseStyle } from '@shaders/registry/fractal-noise';
-import { STYLE_DIAL_DEFAULTS } from '@shaders/registry/fractal-noise/style-dial-defaults';
+import { type FractalNoiseStyle, STYLE_DIAL_DEFAULTS } from '@camp-dev/shaders';
 
 import {
   COLOR_SPACE_OPTIONS,
