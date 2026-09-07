@@ -360,3 +360,20 @@ describe('parsePreset error wording', () => {
     expect(first!.params.stops).not.toBe(DEFAULT_RAMP_STOPS);
   });
 });
+
+describe('parsePreset fallback identity', () => {
+  it('gives every node that falls back to the origin its own position object', () => {
+    const json = JSON.stringify({
+      version: PRESET_VERSION,
+      nodes: [
+        { id: 'a', spec: 'output', params: {} },
+        { id: 'b', spec: 'output', params: {} },
+      ],
+      edges: [],
+    });
+    const [first, second] = parsePreset(json).nodes;
+
+    expect(first!.position).toEqual({ x: 0, y: 0 });
+    expect(first!.position).not.toBe(second!.position);
+  });
+});

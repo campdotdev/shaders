@@ -164,8 +164,11 @@ const envelopeSchema = z.looseObject(
 /** A number, or the fallback. `z.number()` already rejects NaN and the infinities, which are not dial values. */
 const numberOr = (fallback: number) => z.number().catch(fallback);
 
-/** A saved canvas position, each axis repaired on its own and the origin if the whole thing is missing. */
-const positionSchema = z.object({ x: numberOr(0), y: numberOr(0) }).catch({ x: 0, y: 0 });
+/** A saved canvas position, each axis repaired on its own and the origin if
+    the whole thing is missing. The origin is built per fallback: a static
+    `.catch` value is handed back as the same object every time, and two nodes
+    must never share one mutable position. */
+const positionSchema = z.object({ x: numberOr(0), y: numberOr(0) }).catch(() => ({ x: 0, y: 0 }));
 
 /** Does the engine's own decoder accept this color? Anything it rejects here
     would otherwise throw much later, in pushPresetToStore or the compiler,
