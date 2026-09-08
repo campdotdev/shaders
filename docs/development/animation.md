@@ -67,6 +67,8 @@ Google names exactly two compositor-only properties: "Today there are only two p
 
 The accordion panel animates `height`, so it pays for layout on every frame. That is the trade the Base UI pattern makes, and it is acceptable at 150ms on a panel that holds a few rows of text. Two things keep it cheap. The panel already sets `overflow: hidden`, and Base UI supplies a pixel value in `--accordion-panel-height`, so the transition runs between two lengths and needs no `interpolate-size`. Chrome's `interpolate-size: allow-keywords` and `calc-size()` exist for the `height: auto` case, but as of the Chrome article they ship in "Chrome: 129+" and "Edge: 129+" with "Firefox: Not supported" and "Safari: Not supported" ([Chrome, Animate to height: auto](https://developer.chrome.com/docs/css-ui/animate-to-height-auto)). Don't reach for them here.
 
+The floating table of contents makes the same trade on `width`. Its rules grow from 18px to 24px as the current section changes, at `--duration-xs`. The stack is three 2px spans in a fixed-width column that nothing else depends on, so the layout pass touches three boxes and the rounded end caps stay round, which a `scaleX()` on a 2px rule would not quite manage. See `.line` in `page-toc.module.css`.
+
 ## Proposed tokens for `tokens.css`
 
 Naming follows the file's existing shapes: t-shirt sizes as in `--radius-xl` and `--font-size-sm`, and plain nouns as in `--font-mono`. Three families, one for movement durations, one for fade durations, and one for easing, plus a reduced-motion override.
