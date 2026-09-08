@@ -74,18 +74,30 @@
   outline-offset: var(--spacing-1);
 }
 
-/* A 2px rule in the mock's resting gray. The current section's rule is
-   lime, and the change eases as the reader scrolls from one section into
-   the next, at the same hover-color timing as the rows. */
+/* A 2px rule in the mock's resting gray, 18px of the stack's 24px. The
+   current section's rule is lime and runs the full 24px, and both changes
+   ease as the reader scrolls from one section into the next, at the same
+   100ms step so they read as one event. The color rides a fade token and the
+   width a duration token, so Reduce Motion snaps the width and keeps the
+   fade. Animating width runs layout, which the site otherwise avoids, but
+   the stack is three 2px rules in a fixed-width column that nothing else
+   depends on, the same trade the props table's panel makes on height
+   (docs/development/animation.md). An explicit width on a flex-column item
+   sits at the column's left edge, so the rule grows rightward from the
+   sidebar side without a transform. */
 .line {
   display: block;
+  width: calc(var(--spacing-6) * 0.75);
   height: var(--spacing-0-5);
   border-radius: var(--radius-full);
   background: var(--gray-600);
-  transition: background-color var(--fade-xs) var(--ease-hover);
+  transition:
+    background-color var(--fade-xs) var(--ease-hover),
+    width var(--duration-xs) var(--ease-out);
 }
 
 .line[data-active] {
+  width: var(--spacing-6);
   background: var(--accent);
 }
 

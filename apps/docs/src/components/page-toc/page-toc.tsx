@@ -14,6 +14,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Popover } from '@base-ui/react/popover';
 
+import { pickCurrentSection } from './current-section';
 import styles from './page-toc.module.css';
 
 export interface PageTocSection {
@@ -29,30 +30,23 @@ export interface PageTocSection {
 // enough to tell a rest from a crossing, short enough to feel like hover.
 const OPEN_DELAY_MS = 150;
 
-// How far down the viewport the reading line sits, in px. A section is
-// current once its top has scrolled up past this line. A fixed distance
-// rather than a share of the viewport, so that a jump from the menu (which
-// lands a section's title 24px from the top) always puts that section, and
-// never the next one, under the line, however tall the window is.
-const READING_LINE_PX = 200;
-
 // ----------------------------------------------------------------------------
 // Which section is current
 // ----------------------------------------------------------------------------
 
 /**
- * Tracks which of the given elements the reader is in as the page scrolls:
- * the last one whose top has passed the reading line. Reading positions on
- * every scroll frame rather than watching for crossings, so a jump that
- * skips a whole section still lands on the right answer.
- * The bottom of the page is the one exception. A short page can end before
- * its last section's title ever reaches the line, so once the page can
- * scroll no further, the first section whose title is still on screen
- * counts as reached. That lights API Reference at the foot of a short page.
- * A section the reader chose from the menu overrides both rules for as long
- * as its title stays on screen, because a jump that lands at the bottom of
- * a short page can leave two titles in view, and the reader has already
- * said which one they meant. Scrolling the title off releases it.
+ * Tracks which of the given elements the reader is in as the page scrolls.
+ * This hook only measures: once a frame it reads where every section's title
+ * sits and how far the page has scrolled, and pickCurrentSection in
+ * current-section.ts applies the rules (a chosen section holds while its
+ * title is on screen, the last section wins at the bottom of the page, and
+ * otherwise the reading line decides). The hold on a chosen section is the
+ * one rule that can keep a title other than the last one lit at the bottom.
+ * That happens only when a menu jump landed there because the page ran out
+ * of scroll, and the reader has just said which section they meant, so it
+ * stays. Releasing it on the next wheel or key press instead would flip the
+ * lit row to the last section after a one-pixel nudge, with the chosen title
+ * still in the middle of the screen.
  * Returns the current id and the function the menu calls with a choice.
  */
 function useCurrentSection(ids: string[]): [string | undefined, (id: string) => void] {
@@ -81,28 +75,17 @@ function useCurrentSection(ids: string[]): [string | undefined, (id: string) => 
     const measure = () => {
       frame = 0;
 
-      const tops = elements.map((element) => element.getBoundingClientRect().top);
-      const chosenIndex = elements.findIndex((element) => element.id === chosenRef.current);
-      const chosenTop = tops[chosenIndex];
+      const { index, held } = pickCurrentSection({
+        tops: elements.map((element) => element.getBoundingClientRect().top),
+        chosenIndex: elements.findIndex((element) => element.id === chosenRef.current),
+        viewportHeight: window.innerHeight,
+        scrollTop: window.scrollY,
+        scrollHeight: document.documentElement.scrollHeight,
+      });
 
-      if (chosenTop !== undefined && chosenTop >= 0 && chosenTop <= window.innerHeight) return;
+      if (!held) chosenRef.current = null;
 
-      chosenRef.current = null;
-
-      const atBottom =
-        window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 1;
-      let index = atBottom ? tops.findIndex((top) => top >= 0) : -1;
-
-      if (index === -1) {
-        for (let candidate = tops.length - 1; candidate >= 0; candidate -= 1) {
-          if ((tops[candidate] ?? Infinity) <= READING_LINE_PX) {
-            index = candidate;
-            break;
-          }
-        }
-      }
-
-      setCurrentId(elements[Math.max(index, 0)]?.id);
+      setCurrentId(elements[index]?.id);
     };
 
     // One measurement per frame however many scroll events arrive in it.
