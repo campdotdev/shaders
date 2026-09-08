@@ -1,39 +1,57 @@
 # @camp-dev/shaders
 
-Framework-agnostic engine for **Shaders** — React shader components on WebGPU + Three.js TSL.
+React shader components on WebGPU and Three.js TSL, plus the primitives they are built from.
 
-This package contains the TSL primitives, the renderer, and the scheduler. It has no React dependency. If you're using React, install [`@camp-dev/shaders-react`](https://www.npmjs.com/package/@camp-dev/shaders-react) alongside this package — it adds React-friendly wrappers (a shared `<ShaderScene>`, input hooks, and `@react-three/fiber` integration) on top of this engine.
+One package holds three layers. The components, such as `<LinearGradient>`, `<Aurora>`, and `<DotField>`, render inside a shared `<ShaderScene>` and are tuned through props. The React binding is `<ShaderScene>` itself, `useShaderMaterial` for a `@react-three/fiber` canvas you already own, and the input and animation hooks. Underneath are the TSL primitives, such as `fractalNoise`, `voronoi`, and `colorRamp`, and the renderer and scheduler that run them.
 
 ## Install
 
 ```bash
-npm install @camp-dev/shaders three
-# or: pnpm add @camp-dev/shaders three
+pnpm add @camp-dev/shaders three
 ```
 
-`three` is a peer dependency. Shaders targets `three@^0.170.0` and uses the WebGPU TSL API exclusively.
+`react` (`^19`) and `three` (`^0.170`) are peer dependencies. Shaders uses the WebGPU TSL API exclusively, so it needs a WebGPU-capable browser at runtime.
 
-## What's inside
+## Render a component
 
-- **TSL primitives**: `fractalNoise`, `voronoi`, `colorRamp`, `quantize`, and a handful of others — composable shader fragments for procedural visuals.
-- **Renderer**: thin wrapper around `WebGPURenderer` that handles canvas resize, DPR, and `setClearColor`.
-- **Scheduler**: visibility/intersection-aware render loop that pauses when the canvas is off-screen or the tab is hidden.
+```tsx
+import { LinearGradient, ShaderScene } from '@camp-dev/shaders'
 
-## Minimal usage
+export function Hero() {
+  return (
+    <ShaderScene style={{ height: '60vh' }}>
+      <LinearGradient />
+    </ShaderScene>
+  )
+}
+```
+
+Every component is bare: it needs a `<ShaderScene>` parent, which owns the canvas and the WebGPU renderer. Stack several components as children of one scene to compose them.
+
+## Write your own shader
+
+The primitives are plain TSL nodes, so they compose with anything from `three/tsl`:
 
 ```typescript
-import { fractalNoise, colorRamp } from '@camp-dev/shaders'
+import { colorRamp, fractalNoise } from '@camp-dev/shaders'
 import { uv, vec3, time } from 'three/tsl'
 
-// Inside your TSL fragment graph:
 const noise = fractalNoise(uv().mul(4).add(time.mul(0.1)))
 const color = colorRamp(noise, [
-  { stop: 0.0, color: vec3(0.05, 0.05, 0.1) },
-  { stop: 1.0, color: vec3(0.3, 0.5, 0.95) },
+  { position: 0, color: vec3(0.05, 0.05, 0.1) },
+  { position: 1, color: vec3(0.3, 0.5, 0.95) },
 ])
 ```
 
-For polished drop-in components like `<LinearGradient>` and `<Aurora>`, install [`@camp-dev/shaders-cli`](https://www.npmjs.com/package/@camp-dev/shaders-cli) and copy them into your project.
+## Server-safe subpaths
+
+The root entry reaches `three/webgpu`, which reads `self` at module load and so cannot run on a server. Three subpaths carry code that never touches three:
+
+| Import                     | For                                                             |
+| -------------------------- | --------------------------------------------------------------- |
+| `@camp-dev/shaders/color`  | `parseColorString` and the OKLab, OKLCH, and gamut math         |
+| `@camp-dev/shaders/gamut`  | `useDisplayGamut`                                               |
+| `@camp-dev/shaders/poster` | `<ShaderPoster>`, a static stand-in shown until the first frame |
 
 ## Docs
 

@@ -16,17 +16,19 @@ Mode 2 doesn't auto-detect r3f — it's an explicit opt-in via the `useShaderMat
 
 ## The escape hatch — `useShaderMaterial`
 
-`useShaderMaterial` takes a TSL color expression and returns a Three.js material you can drop onto any mesh:
+`useShaderMaterial` takes a function that builds a TSL color expression and returns a Three.js material you can drop onto any mesh:
 
 ```tsx
 import { Canvas } from '@react-three/fiber'
-import { useShaderMaterial } from '@camp-dev/shaders-react'
-import { fractalNoise, uv, vec3, mix } from '@camp-dev/shaders'
+import { fractalNoise, useShaderMaterial } from '@camp-dev/shaders'
+import { mix, uv, vec3 } from 'three/tsl'
+
+// Hoisted so its reference is stable: useShaderMaterial rebuilds the material
+// whenever the builder changes, so an inline arrow would recompile every render.
+const buildColor = () => mix(vec3(0.1, 0.2, 0.6), vec3(0.8, 0.6, 0.2), fractalNoise(uv()))
 
 function ShaderPlane() {
-  const material = useShaderMaterial({
-    color: mix(vec3(0.1, 0.2, 0.6), vec3(0.8, 0.6, 0.2), fractalNoise(uv())),
-  })
+  const material = useShaderMaterial(buildColor)
   return (
     <mesh material={material}>
       <planeGeometry args={[2, 2]} />
@@ -55,7 +57,7 @@ The material plays by r3f's rules — dispose, frameloop, demand-rendering all w
 ## What you lose in Mode 2
 
 - **No `<ShaderScene>` defaults.** Pause-when-offscreen, DPR clamping, the scheduler — none of that is wired up by `useShaderMaterial`. You manage r3f's lifecycle yourself (or use r3f's `frameloop="demand"`).
-- **No Tier 1 components.** `<Aurora>`, `<LinearGradient>`, etc. are bound to Mode 1. The CLI delivers them assuming `<ShaderScene>` is the parent. You'd need to extract their TSL math by hand if you want it in Mode 2.
+- **No Tier 1 components.** `<Aurora>`, `<LinearGradient>`, etc. are bound to Mode 1 and assume `<ShaderScene>` is the parent. You'd need to extract their TSL math by hand if you want it in Mode 2.
 - **No `useCursor` / `useScroll` / `useResize`.** Those hooks require a `<ShaderScene>` to plumb the canvas; in Mode 2, use r3f's `useThree()` and write your own cursor/scroll wiring.
 
 ## The recommendation

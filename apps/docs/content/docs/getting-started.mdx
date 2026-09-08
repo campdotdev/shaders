@@ -1,13 +1,13 @@
 ---
 title: Get Started
-description: Install Shaders, copy your first component, and render it inside ShaderScene.
+description: Install Shaders, import your first component, and render it inside ShaderScene.
 section: overview
 order: 10
 ---
 
 # Get Started
 
-Shaders is a React component library for WebGPU shaders built on Three.js TSL. Components are delivered shadcn-style — the CLI copies polished `.tsx` files into your project, where you own and edit them.
+Shaders is a React component library for WebGPU shaders built on Three.js TSL. Components import from one npm package and render inside a shared `<ShaderScene>`.
 
 <Callout>
   **WebGPU only.** Shaders requires a WebGPU-capable browser (recent Chromium, Safari Technology Preview, or Firefox Nightly with the flag). Plan a fallback for users without WebGPU — see [SSR and fallbacks](/react/guides/ssr-and-fallbacks).
@@ -15,57 +15,22 @@ Shaders is a React component library for WebGPU shaders built on Three.js TSL. C
 
 ## Install
 
-Add the engine and the React binding to your app, and the CLI as a dev dependency:
-
 ```bash
-pnpm add @camp-dev/shaders @camp-dev/shaders-react
-pnpm add -D @camp-dev/shaders-cli
+pnpm add @camp-dev/shaders three
 ```
 
 Requirements:
 
 - React 19
 - Three.js `^0.170`
-- Node 22+ (for the CLI)
 - Next.js 15+ if you're using one (Shaders doesn't require Next, but the docs and recipes assume it)
 
-## Initialize
+## Render a component
 
-<Steps>
-  <li>
-    **Initialize the project** to write a `shaders.config.json` at your repo root:
-
-    ```bash
-    npx shaders-cli init
-    ```
-
-    This creates a config with sensible defaults — components land in `src/components/shaders/`, the registry tracks the CLI's published version tag, and TSX is enabled.
-  </li>
-  <li>
-    **List available components:**
-
-    ```bash
-    npx shaders-cli list
-    ```
-  </li>
-  <li>
-    **Copy your first component into your project:**
-
-    ```bash
-    npx shaders-cli add linear-gradient
-    ```
-
-    The component lands in `src/components/shaders/linear-gradient.tsx`. From that point on, the file is yours — edit it however you want.
-  </li>
-</Steps>
-
-## Render it
-
-Every Shaders component is bare — it needs a `<ShaderScene>` parent to provide the WebGPU canvas. The simplest valid usage:
+Every Shaders component is bare: it needs a `<ShaderScene>` parent to provide the WebGPU canvas. The simplest valid usage:
 
 ```tsx
-import { ShaderScene } from '@camp-dev/shaders-react'
-import { LinearGradient } from '@/components/shaders/linear-gradient'
+import { LinearGradient, ShaderScene } from '@camp-dev/shaders'
 
 export function Hero() {
   return (
@@ -76,11 +41,13 @@ export function Hero() {
 }
 ```
 
-`<ShaderScene>` owns the canvas and the WebGPU renderer. Multiple Shaders components can share the same scene — just stack them as children. See [Shared scenes](/guides/shared-scenes).
+`<ShaderScene>` owns the canvas and the WebGPU renderer. Several components can share one scene. Stack them as children, and see [Shared scenes](/guides/shared-scenes) for how they compose.
+
+Each component is tuned through props. The [component pages](/components) list every prop next to a live demo, so you can find values by eye before you type them.
 
 ## What's next
 
 - [Animation](/guides/animation) — signal-shaped props for cursor, scroll, and any MotionValue-compatible library.
 - [Performance](/guides/perf) — what Shaders does for you automatically, and what you can tune.
-- [The CLI](/cli) — `add`, `update`, refresh workflows, and registry refs.
+- [The CLI](/cli) — render a static poster image so `<ShaderPoster>` has something to show while WebGPU starts.
 - [Three / r3f](/react/guides/three-r3f) — using Shaders inside a `<Canvas>` you already own.

@@ -7,17 +7,21 @@ order: 30
 
 # Changelog
 
-Shaders ships as three coordinated npm packages: `@camp-dev/shaders` (engine), `@camp-dev/shaders-react` (React binding), and `@camp-dev/shaders-cli` (copy-paste CLI). Each package has its own `CHANGELOG.md` in the repo, and this page summarizes the headline changes.
+Shaders ships as two npm packages: `@camp-dev/shaders`, which holds the components, the React binding, and the TSL primitives, and `@camp-dev/shaders-cli`, which renders poster images. Each package has its own `CHANGELOG.md` in the repo, and this page summarizes the headline changes. Entries before the merge describe `@camp-dev/shaders-react` and the copy-paste CLI as they were at the time.
 
 Everything through 0.18.0 shipped under the earlier name, as `@lovo/matter`. The 1.0.0 through 3.9.0 releases from that history are renumbered as 0.7.0 through 0.18.0 in the per-package changelogs, because 1.0.0 went out by accident and the project is not at 1.0 yet.
 
 ## Unreleased
 
+**Breaking: one package.**
+
+`@camp-dev/shaders` now ships the components and the React binding. `@camp-dev/shaders-react` is gone, and components are no longer copied into your project. Import `Aurora`, `ShaderScene`, and `useShaderMaterial` from the root, `useDisplayGamut` from `@camp-dev/shaders/gamut`, and `ShaderPoster` from `@camp-dev/shaders/poster`. Peer dependencies are `react ^19` and `three ^0.170`.
+
+`shaders-cli` keeps one command, `poster`. `init`, `add`, `list`, and `update` are gone, along with `shaders.config.json` and the registry they copied from. If you added a component with the CLI, delete the copied file and import it from the package.
+
 **Breaking: `Waves` is now `WaveLines`.**
 
-The old name read as water. The component draws glowing lines, so it's renamed to match: add it with `shaders-cli add wave-lines`, import `WaveLines`, and pass `lines` instead of `layers`. The per-line type is `WaveLine`, formerly `WaveLayer`. Nothing else moved. Same props, same rendering, no visual change.
-
-Components ship by copy-paste, so installed copies keep working under the old name. Re-add `wave-lines` through the CLI to pick up the new one.
+The old name read as water. The component draws glowing lines, so it's renamed to match: import `WaveLines` and pass `lines` instead of `layers`. The per-line type is `WaveLine`, formerly `WaveLayer`. Nothing else moved. Same props, same rendering, no visual change.
 
 **Breaking: `Waves` is rebuilt around one shared wave.**
 
@@ -25,7 +29,7 @@ The old Waves gave every layer its own `frequency`, `speed`, `offset`, and `wavi
 
 `color` on a layer now accepts either a single color or an array of stops that form a gradient along the line. `colorDrift` slides the gradient, and `colorSpace` (default `oklab`) sets the mixing space. The default set is eight blue-to-violet lines.
 
-Components ship by copy-paste, so installed copies keep rendering as before. Re-add `waves` through the CLI to get the rebuild. If you had custom `layers`, they will render differently, because the removed movement fields have no equivalent.
+If you had custom `layers`, they render differently, because the removed movement fields have no equivalent.
 
 **Breaking: `Waves` lines are now ribbons wrapped in light.**
 
@@ -33,9 +37,7 @@ The rebuild above still drew every line as pure added light, which kept the cont
 
 Per-layer overrides of `amplitude`, `glow`, and `thickness` are gone too. A layer is just a color or a gradient now, and lines differ through color, the movement system, and paint order. Defaults changed to show the new look: wide translucent ribbons with slow drifting gradients.
 
-The same copy-paste rule applies. Installed copies keep rendering as before, and re-adding `waves` through the CLI gets the new line rendering.
-
-**Registry components: prop renames and prop docs.** Every Tier 1 component prop now has JSDoc hover documentation, and a few props got plainer names. Components ship by copy-paste, so your installed copies are unaffected. Re-add a component through the CLI to get the new names.
+**Component prop renames and prop docs.** Every Tier 1 component prop now has JSDoc hover documentation, and a few props got plainer names.
 
 - `Aurora`: `turbulence` → `waviness`, `falloff` → `coverage`
 - `Vignette`: `falloff` → `radius`
@@ -104,5 +106,5 @@ Six components are available through `shaders-cli add <name>`: `linear-gradient`
 - React ^19 and Three.js ^0.170.
 
 <Callout>
-  Detailed per-package changelogs live in the repo: [`packages/shaders/CHANGELOG.md`](https://github.com/campdotdev/shaders/blob/main/packages/shaders/CHANGELOG.md), [`packages/shaders-react/CHANGELOG.md`](https://github.com/campdotdev/shaders/blob/main/packages/shaders-react/CHANGELOG.md), [`packages/shaders-cli/CHANGELOG.md`](https://github.com/campdotdev/shaders/blob/main/packages/shaders-cli/CHANGELOG.md).
+  Detailed per-package changelogs live in the repo: [`packages/shaders/CHANGELOG.md`](https://github.com/campdotdev/shaders/blob/main/packages/shaders/CHANGELOG.md) and [`packages/shaders-cli/CHANGELOG.md`](https://github.com/campdotdev/shaders/blob/main/packages/shaders-cli/CHANGELOG.md).
 </Callout>

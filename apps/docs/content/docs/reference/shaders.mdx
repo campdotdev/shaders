@@ -7,13 +7,13 @@ order: 10
 
 # Engine API
 
-`@camp-dev/shaders` is the framework-agnostic engine. This page lists everything it exports. A generated TypeDoc reference replaces this hand-written page post-launch.
+This page lists the engine half of `@camp-dev/shaders`: the TSL primitives, the runtime, the inputs, and reduced-motion-gated time. The React half is on the [React API](/react/api) page. A generated TypeDoc reference replaces this hand-written page post-launch.
 
 ## Tier 2 primitives
 
 TSL building blocks for writing shader expressions. Each primitive is documented individually under [/primitives](/primitives) with a live demo and parameter sliders.
 
-- `colorRamp(stops, t)` — multi-stop color gradient sampled at `t` ∈ [0, 1].
+- `colorRamp(t, stops)` — multi-stop color gradient sampled at `t` ∈ [0, 1].
 - `simplexNoise(uv, opts?)` — single-octave 2D value noise.
 - `fractalNoise(uv, opts?)` — fractional Brownian motion. Octave-stacked noise with `octaves`, `lacunarity`, `gain` (a number, or a uniform node for a live dial), and `fold` (`'none' | 'smooth' | 'sharp'` turbulence folding).
 - `voronoi(uv, opts?)` — distance-to-nearest-feature noise.
@@ -51,7 +51,7 @@ import { time as rawTime } from 'three/tsl'
 
 ## Inputs
 
-- **`CursorInput`** — framework-agnostic cursor source. `useCursor()` in `@camp-dev/shaders-react` wraps it; in Mode 2 or non-React contexts, you instantiate it directly.
+- **`CursorInput`** — framework-agnostic cursor source. `useCursor()` wraps it; in Mode 2 or non-React contexts, you instantiate it directly.
 
 ## Reduced motion
 
