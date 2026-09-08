@@ -1,7 +1,5 @@
 import { cache } from 'react';
 
-import { PRIMITIVES } from '@/data/primitives';
-
 import { COMPONENTS } from './components';
 import { groupByTaxonomy } from './taxonomy';
 import type { CategorySlug, TaxonomyTier } from './taxonomy';
@@ -10,15 +8,13 @@ interface CatalogRecord {
   url: string;
   label: string;
   description: string;
-  source: 'components' | 'primitives';
   order: number;
   tags: string[];
 }
 
 /* Component records also carry the leaf group the taxonomy files them
-   under, which is what the sidebar groups by. Primitives have no taxonomy. */
+   under, which is what the sidebar groups by. */
 export interface ComponentCatalogRecord extends CatalogRecord {
-  source: 'components';
   category: CategorySlug;
 }
 
@@ -39,7 +35,6 @@ export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogReco
       url: `/components/${slug}`,
       label: prettifySlug(slug),
       description: info.description,
-      source: 'components' as const,
       category: info.category,
       order: index * 10,
       tags: [],
@@ -52,24 +47,4 @@ export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogReco
 export const getComponentsTree = cache(
   async (): Promise<Array<TaxonomyTier<ComponentCatalogRecord>>> =>
     groupByTaxonomy(await getComponentsCatalog()),
-);
-
-// eslint-disable-next-line @typescript-eslint/require-await -- kept async for parity with getComponentsCatalog and to allow future async additions
-export const getPrimitivesCatalog = cache(async (): Promise<CatalogRecord[]> => {
-  return PRIMITIVES.map((primitive, index) => ({
-    url: `/primitives/${primitive.slug}`,
-    label: primitive.name,
-    description: primitive.description,
-    source: 'primitives' as const,
-    order: index * 10,
-    tags: [],
-  }));
-});
-
-export const getCatalogRecords = cache(
-  async (source: 'components' | 'primitives'): Promise<CatalogRecord[]> => {
-    if (source === 'components') return getComponentsCatalog();
-
-    return getPrimitivesCatalog();
-  },
 );

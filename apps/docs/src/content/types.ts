@@ -40,13 +40,12 @@ export interface DocsSearchDocument {
 /** Which sidebar a top-level nav group belongs to. Each docs layout renders
  * only its own section's groups, so a component page shows the component
  * tiers and nothing else. */
-export type SidebarSection = 'components' | 'primitives' | 'docs';
+export type SidebarSection = 'components' | 'docs';
 
 export type NavItem =
   | { kind: 'page'; slug: string }
   | { kind: 'link'; label: string; url: string }
   | { kind: 'section'; collectsFrom: DocsSection }
-  | { kind: 'catalog'; source: 'components' | 'primitives' }
   /** The components catalog folded into taxonomy tiers, each a group of groups. */
   | { kind: 'taxonomy' };
 

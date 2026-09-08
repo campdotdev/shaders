@@ -20,14 +20,6 @@ export const NAV: NavGroup[] = [
     items: [{ kind: 'taxonomy' }],
   },
   {
-    label: 'Primitives',
-    sidebar: 'primitives',
-    items: [
-      { kind: 'link', label: 'Overview', url: '/primitives' },
-      { kind: 'catalog', source: 'primitives' },
-    ],
-  },
-  {
     label: 'Guides',
     sidebar: 'docs',
     items: [{ kind: 'section', collectsFrom: 'guides' }],

@@ -16,7 +16,6 @@ const routes = [
   '/components/vignette',
   '/components/voronoi',
   '/components/wave-lines',
-  '/recipes',
 ];
 
 for (const route of routes) {

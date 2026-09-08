@@ -28,12 +28,12 @@ export function SiteHeader() {
           <SearchBar />
           <nav aria-label="Site" className={styles.nav}>
             {/* Docs lands on the components index until a documentation home
-                exists; Examples points at recipes, the nearest thing to
-                examples the site has today. */}
+                exists. Examples is a placeholder page until SHA-135 designs
+                it. */}
             <Link className={styles.link} href="/components">
               Docs
             </Link>
-            <Link className={styles.link} href="/recipes">
+            <Link className={styles.link} href="/examples">
               Examples
             </Link>
             <a
