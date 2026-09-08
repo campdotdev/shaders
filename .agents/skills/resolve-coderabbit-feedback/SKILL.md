@@ -343,14 +343,20 @@ gh api graphql -f query='
 
 Findings from Source 2 have no thread to resolve, so cover them in the summary instead.
 
-Restore the starting state if Step 2 changed it. Run this on the success path, and after a Step 6 cancel, when the tree is clean:
+Restore the starting state if Step 2 changed it. Whether that is safe depends on the worktree, not on which step you reached, so check the tree first:
+
+```bash
+git status --porcelain
+```
+
+If that prints nothing, the tree is clean. That is the success path, a Step 6 cancel, and any failure that struck before Step 7 edited a file, or after Step 9 committed. Restore:
 
 ```bash
 git checkout "$START_REF"
 [ "$STASH_CREATED" = "true" ] && git stash pop
 ```
 
-**On a failure before Step 9's commit, the run's own edits are still in the tree, so skip the checkout.** Git refuses to switch branches when uncommitted edits touch files that differ between the two refs, which is the normal case here because the PR branch changed those files. A refused checkout leaves you on the PR branch while the report claims the start ref was restored. Stay on the PR branch, say plainly that it was not restored and why, and leave the stash alone, because popping it onto the PR branch would mix the user's work into the run's leftovers. Never discard the edits on the user's behalf, and never hand over a command that rewrites the worktree wholesale. Report the three kinds of leftover separately, because each needs a different answer:
+**If it prints anything, the run's own edits are still in the tree, so skip the checkout.** That is a failure between Step 7's first edit and Step 9's commit. Git refuses to switch branches when uncommitted edits touch files that differ between the two refs, which is the normal case here because the PR branch changed those files. A refused checkout leaves you on the PR branch while the report claims the start ref was restored. Stay on the PR branch, say plainly that it was not restored and why, and leave the stash alone, because popping it onto the PR branch would mix the user's work into the run's leftovers. Never discard the edits on the user's behalf, and never hand over a command that rewrites the worktree wholesale. Report the three kinds of leftover separately, because each needs a different answer:
 
 ```bash
 git diff --stat "$WORK_BASE"        # tracked edits since work began
