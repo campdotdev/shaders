@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { type MouseEvent, useRef } from 'react';
 
+import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types';
 
 import styles from './docs-sidebar.module.css';
@@ -57,9 +58,13 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
       onClick={pinSidebar}
       ref={navRef}
     >
-      {tree.map((group) => (
-        <Tier group={group} key={group.label} pathname={pathname} />
-      ))}
+      <ScrollArea>
+        <div className={styles.tree}>
+          {tree.map((group) => (
+            <Tier group={group} key={group.label} pathname={pathname} />
+          ))}
+        </div>
+      </ScrollArea>
     </nav>
   );
 }

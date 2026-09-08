@@ -7,10 +7,19 @@
   margin: var(--spacing-4) 0;
 }
 
+/* The viewport does the sideways scrolling and the clipping, so the radius
+   sits here, where it rounds the clipped corners of a wide block too. */
+.viewport {
+  border-radius: var(--radius-xl);
+}
+
+/* Wide enough for its longest line and never narrower than the block, so
+   the theme's background covers the code however far it scrolls. */
 .codeBlock pre {
+  width: max-content;
+  min-width: 100%;
   padding: var(--spacing-4);
   border-radius: var(--radius-xl);
   font-size: var(--font-size-sm);
   line-height: var(--leading-5);
-  overflow-x: auto;
 }

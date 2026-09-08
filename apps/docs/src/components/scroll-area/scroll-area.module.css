@@ -1,0 +1,53 @@
+/* The shared scroll container's look: the root and viewport take whatever
+   height cap their parent has, and the bar is the control panel's thin one.
+   Base UI positions the bar absolutely against the root and sizes the thumb
+   itself, so this file only decides how thick the bar is, where it sits,
+   and when it shows. */
+
+/* The root is what the bar and any overlay position against. max-height
+   flows down from the parent through inherit rather than being set here, so
+   a sticky column caps the scroll region without measuring it. */
+.root {
+  position: relative;
+  max-height: inherit;
+}
+
+/* The element that scrolls. Base UI sets its overflow and hides the native
+   scrollbar; the cap comes down from the root. */
+.viewport {
+  max-height: inherit;
+}
+
+/* An 8px bar inset 4px from the edge, shown only while the reader scrolls
+   (Base UI keeps data-scrolling on for half a second after the last scroll)
+   or while the pointer is on the bar, so it can be grabbed. Otherwise it
+   fades out and the content has the region's full width. */
+.scrollbar {
+  z-index: 2;
+  margin: var(--spacing-1);
+  opacity: 0;
+  transition: opacity var(--fade-sm) var(--ease-hover);
+}
+
+.vertical {
+  width: var(--spacing-2);
+}
+
+.horizontal {
+  height: var(--spacing-2);
+}
+
+.root[data-scrolling] .scrollbar,
+.scrollbar:hover {
+  opacity: 1;
+}
+
+/* Base UI sets the thumb's length inline, its height on a vertical bar and
+   its width on a horizontal one. The other dimension fills the bar, so the
+   thumb is as thick as the bar whichever way it runs. */
+.thumb {
+  width: 100%;
+  height: 100%;
+  background: var(--gray-600);
+  border-radius: var(--radius-full);
+}

@@ -231,3 +231,12 @@ a:hover {
 .search-dialog::backdrop {
   background: rgba(0, 0, 0, 0.5);
 }
+
+/* The search results' scroll viewport (SearchBar wraps the listbox in the
+   shared ScrollArea). Half the viewport is as tall as the list gets before
+   it scrolls. Two classes on purpose: the ScrollArea's own viewport rule
+   sets max-height to inherit, and at equal specificity that module rule
+   loads later and would win. */
+.search-dialog .search-results-viewport {
+  max-height: 50vh;
+}
