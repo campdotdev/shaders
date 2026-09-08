@@ -13,7 +13,7 @@ function urlsIn(group: ResolvedNavGroup): string[] {
 // Crossing into another section would land them on a page whose sidebar
 // replaces the one they were browsing.
 describe('getDocsPrevNext', () => {
-  it('never pages a docs-section page into the components or primitives sections', async () => {
+  it('never pages a docs-section page into the components section', async () => {
     const pages = await getMdxDocsPages();
     const docsUrls = new Set((await getDocsSidebarTree('docs')).flatMap(urlsIn));
 
@@ -26,7 +26,7 @@ describe('getDocsPrevNext', () => {
     }
   });
 
-  it('starts the first guide from the end of Overview, not from the last primitive', async () => {
+  it('starts the first guide from the end of Overview, not from the last component', async () => {
     const pages = await getMdxDocsPages();
     const animation = pages.find((page) => page.url === '/guides/animation');
 
@@ -34,7 +34,7 @@ describe('getDocsPrevNext', () => {
     const { prev } = await getDocsPrevNext(animation!);
     const tree = await getDocsNavTree();
 
-    expect(tree.map((group) => group.label)).toContain('Primitives');
-    expect(prev?.url.startsWith('/primitives')).toBe(false);
+    expect(tree.map((group) => group.label)).toContain('Components');
+    expect(prev?.url.startsWith('/components')).toBe(false);
   });
 });

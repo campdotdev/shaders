@@ -1,9 +1,9 @@
 /**
  * The two-column frame under the section banner: the docs sidebar on the
  * left and the page on the right, in the page gutter and 9xl container that
- * globals.css defines. The three docs layouts (components, primitives, and
- * the MDX content) each render it with their own section, and the sidebar
- * shows only that section's groups. Column widths follow the Figma mock: a
+ * globals.css defines. The two docs layouts (components and the MDX
+ * content) each render it with their own section, and the sidebar shows
+ * only that section's groups. Column widths follow the Figma mock: a
  * 2xs sidebar with no gap, then a main column that insets its own content
  * by 40px.
  */

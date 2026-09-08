@@ -1,6 +1,6 @@
 import { cache } from 'react';
 
-import { getCatalogRecords, getComponentsTree } from './catalog';
+import { getComponentsTree } from './catalog';
 import { NAV } from './nav.config';
 import { getMdxDocsPages } from './source';
 import type {
@@ -59,11 +59,6 @@ async function resolveItem(
           (page) => page.frontmatter.section === item.collectsFrom && !page.frontmatter.hidden,
         )
         .map((page) => ({ label: page.frontmatter.navTitle, url: page.url }));
-    }
-    case 'catalog': {
-      const records = await getCatalogRecords(item.source);
-
-      return records.map((record) => ({ label: record.label, url: record.url }));
     }
     case 'taxonomy': {
       // Each tier becomes a group whose items are the leaf groups, so the
