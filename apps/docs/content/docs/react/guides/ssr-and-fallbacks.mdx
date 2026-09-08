@@ -94,8 +94,7 @@ This forces every `three` import to resolve to the unified bundle. Same idea app
 Some browsers (Firefox stable, Safari < 18, older Chrome) don't ship WebGPU yet. Wrap any Shaders subtree in `<FallbackBoundary>`:
 
 ```tsx
-import { FallbackBoundary, ShaderScene } from '@camp-dev/shaders'
-import { Aurora } from '@/components/shaders/aurora'
+import { Aurora, FallbackBoundary, ShaderScene } from '@camp-dev/shaders'
 
 export function Hero() {
   return (
