@@ -1,6 +1,6 @@
 {
   "name": "@camp-dev/shaders-cli",
-  "version": "0.18.0",
+  "version": "0.19.0",
   "description": "Dev-time CLI for Shaders. Renders a component tree to a poster image with the poster command.",
   "keywords": [
     "cli",

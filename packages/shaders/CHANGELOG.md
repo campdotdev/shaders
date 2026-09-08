@@ -1,5 +1,31 @@
 # @camp-dev/shaders
 
+## 0.19.0
+
+### Minor Changes
+
+- 0b58731: The packages move to the `@camp-dev` scope. `@lovo/matter` is now `@camp-dev/shaders`, `@lovo/matter-cli` is now `@camp-dev/shaders-cli`, and `@lovo/matter-react` is folded into `@camp-dev/shaders`, which now exports everything it did. The repository moved to github.com/campdotdev/shaders. Update your dependency names and every import specifier. Apart from the removals below, the exports themselves are unchanged.
+
+  The CLI binary is renamed from `matter-cli` to `shaders-cli`. Update any script that calls the old binary.
+
+  `MatterError` and `MatterErrorCode` in `@camp-dev/shaders` are now `ShadersError` and `ShadersErrorCode`. A `catch` block that tests `instanceof MatterError` has to switch to the new name.
+
+  The READMEs drop their migration notes for the `Matter*` aliases that 0.4.0 deprecated, such as `MatterScene` and `MatterScheduler`. The aliases themselves left the source several releases ago.
+
+- e740a5a: `@camp-dev/shaders` now ships the components and the React binding too. It absorbs `@camp-dev/shaders-react` and the components that `shaders-cli add` used to copy into your project, so `Aurora`, `ShaderScene`, `useShaderMaterial`, and `fractalNoise` all import from the root:
+
+  ```tsx
+  import { Aurora, ShaderScene } from '@camp-dev/shaders';
+  ```
+
+  `@camp-dev/shaders/color` is unchanged. `@camp-dev/shaders-react/gamut` is now `@camp-dev/shaders/gamut`, and `@camp-dev/shaders-react/poster` is now `@camp-dev/shaders/poster`. Peer dependencies are `react ^19` and `three ^0.170`.
+
+  Components are no longer copied into your project. If you added one with `shaders-cli add`, delete the copied file and import the component from the package instead. The `shaders-cli` commands `init`, `add`, `list`, and `update` are retired in this release too; `poster` stays.
+
+- fc0d728: Seeded randomness now renders the same pattern on the WebGPU and WebGL2 backends. three's TSL `hash()` writes its PCG constants as float literals, which GLSL rounds to a different hash than WGSL computes, so the same `seed` produced a different Voronoi layout in Safari than in Chrome. The new `stableHash` and `stableHashUint` exports run the same PCG with integer-typed constants and chain hash streams u32 to u32, and `voronoiCells`, `grain`, `metaballs`, and `ditherPattern` now draw from them.
+
+  This costs one visual break. Deriving seeds from the raw hash word re-rolls every seeded layout once, on both backends, so any `seed` value renders a new pattern after this release. The new pattern is stable from here.
+
 > Versions 0.18.0 and below shipped as `@lovo/matter` before the project moved to the camp-dev org. Releases 1.0.0 through 3.9.0 from that history are renumbered here as 0.7.0 through 0.18.0.
 
 ## 0.18.0
