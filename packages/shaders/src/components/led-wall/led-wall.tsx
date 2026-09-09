@@ -60,6 +60,24 @@ export interface LedWallProps {
    * Accepts a static value or an animation signal.
    */
   speed?: AnimatableProp<number>;
+  /**
+   * Where the spotlight sits, 0..1 across the canvas in the same frame as
+   * `center`. Feed it a cursor signal to follow the pointer. Defaults to
+   * `[0.5, 0.5]`. Accepts a static value or an animation signal.
+   */
+  spotlight?: AnimatableProp<readonly [number, number]>;
+  /**
+   * Reach of the spotlight from its position, in canvas units where 1 is
+   * the canvas height. Defaults to 0.3. Accepts a static value or an
+   * animation signal.
+   */
+  spotlightRadius?: AnimatableProp<number>;
+  /**
+   * Strength of the spotlight. 0 turns it off, 1 lifts the dots under it to
+   * full brightness and full swell. Defaults to 0. Accepts a static value
+   * or an animation signal.
+   */
+  spotlightIntensity?: AnimatableProp<number>;
   /** TEMPORARY tuning rig. Removed at the defaults gate. */
   tuning?: Partial<LedWallTuning>;
 }
@@ -73,6 +91,9 @@ export function LedWall({
   waviness = 0.25,
   flicker = 0.3,
   speed = 2.4,
+  spotlight = [0.5, 0.5],
+  spotlightRadius = 0.3,
+  spotlightIntensity = 0,
   tuning,
 }: LedWallProps) {
   return (
@@ -84,6 +105,9 @@ export function LedWall({
       progress={progress}
       spacing={spacing}
       speed={speed}
+      spotlight={spotlight}
+      spotlightIntensity={spotlightIntensity}
+      spotlightRadius={spotlightRadius}
       tuning={tuning}
       waviness={waviness}
     />

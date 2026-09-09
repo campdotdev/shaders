@@ -63,6 +63,10 @@ function LedWallControls() {
         <SliderInput label="Flicker" max={1} min={0} path="flicker" step={0.01} />
         <SliderInput label="Speed" max={8} min={0} path="speed" step={0.1} />
       </Section>
+      <Section title="Spotlight">
+        <SliderInput label="Radius" max={1} min={0.05} path="spotlightRadius" step={0.01} />
+        <SliderInput label="Intensity" max={1} min={0} path="spotlightIntensity" step={0.01} />
+      </Section>
       <Section title="Tuning (dev)">
         <SliderInput
           label="Fade width"
@@ -81,6 +85,7 @@ function LedWallControls() {
           step={0.25}
         />
         <SliderInput label="Variance" max={0.9} min={0} path="tuning.variance" step={0.01} />
+        <SliderInput label="Swell" max={1.5} min={0} path="tuning.swell" step={0.05} />
       </Section>
     </ControlPanel>
   );
