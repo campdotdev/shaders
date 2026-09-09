@@ -47,6 +47,23 @@ test('Copy React copies the demo with its current params', async ({ page }) => {
   await expect(button).not.toHaveAttribute('data-copied', 'true', { timeout: 3000 });
 });
 
+test('a two-word page copies its PascalCase tag, not its label', async ({ page }) => {
+  await page.goto('/components/conic-gradient');
+  await page.waitForLoadState('networkidle');
+
+  const button = page.getByRole('button', { name: 'Copy React' });
+
+  await expect(button).toBeEnabled();
+  await button.click();
+  await expect(button).toHaveAttribute('data-copied', 'true');
+
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+
+  expect(copied).toContain("import { ConicGradient, ShaderScene } from '@camp-dev/shaders'");
+  expect(copied).toContain('<ConicGradient');
+  expect(copied).not.toContain('Conic Gradient');
+});
+
 test('the menu lines up with the button box', async ({ page }) => {
   await page.goto('/components/aurora');
   await page.waitForLoadState('networkidle');

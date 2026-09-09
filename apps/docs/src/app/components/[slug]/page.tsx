@@ -90,8 +90,7 @@ export default async function ComponentPage({ params }: PageProps) {
     <main>
       <Breadcrumbs className={styles.breadcrumbs} crumbs={crumbs} />
       {/* The header's Copy React reads the island's control store through
-          this provider; see the copy source in controls/context.tsx. The
-          catalog label doubles as the JSX tag name. */}
+          this provider; see the copy source in controls/context.tsx. */}
       <CopySourceProvider>
         <div id={slug}>
           <header className={styles.header}>
@@ -99,7 +98,7 @@ export default async function ComponentPage({ params }: PageProps) {
               <h1 className={styles.title}>{record.label}</h1>
               <p className={styles.description}>{record.description}</p>
             </div>
-            <PageActions componentName={record.label} siblings={entry.copySiblings} />
+            <PageActions componentName={record.componentName} siblings={entry.copySiblings} />
           </header>
           <Island />
         </div>

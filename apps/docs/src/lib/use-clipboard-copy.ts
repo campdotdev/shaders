@@ -36,6 +36,20 @@ export function useClipboardCopy(): { status: CopyStatus; copy: (text: string) =
   }, []);
 
   const copy = useCallback((text: string) => {
+    // A reset still pending from an earlier copy is dropped now, so it
+    // cannot fire while this write is in flight and blank the feedback the
+    // write is about to set.
+    if (feedbackTimeoutRef.current !== null) clearTimeout(feedbackTimeoutRef.current);
+
+    // Shows the outcome, then clears it. The timer starts here, after the
+    // write has settled, rather than at click time: a write slower than the
+    // feedback window would otherwise be reset before it reported, and the
+    // status it then set would stay up for good.
+    const settle = (outcome: CopyStatus) => {
+      setStatus(outcome);
+      feedbackTimeoutRef.current = setTimeout(() => setStatus('idle'), FEEDBACK_MS);
+    };
+
     // The write starts inside a promise chain: `navigator.clipboard` is
     // undefined outside a secure context, and a plain call would throw out
     // of the click handler, whereas here the throw lands in the rejection
@@ -43,13 +57,9 @@ export function useClipboardCopy(): { status: CopyStatus; copy: (text: string) =
     void Promise.resolve()
       .then(() => navigator.clipboard.writeText(text))
       .then(
-        () => setStatus('copied'),
-        () => setStatus('failed'),
+        () => settle('copied'),
+        () => settle('failed'),
       );
-
-    if (feedbackTimeoutRef.current !== null) clearTimeout(feedbackTimeoutRef.current);
-
-    feedbackTimeoutRef.current = setTimeout(() => setStatus('idle'), FEEDBACK_MS);
   }, []);
 
   return { status, copy };
