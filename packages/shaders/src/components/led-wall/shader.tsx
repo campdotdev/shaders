@@ -5,7 +5,9 @@
 // the scene had at that cell's center. The wrapper (./led-wall.tsx)
 // supplies the props. Two overlay hooks do the work: a base-pass uv snap so
 // every pixel in a cell samples the same scene color, then a color pass
-// that masks each cell down to its dot and scales the gaps by `bleed`.
+// that masks each cell down to its dot, sweeps a jittered, noise-warped
+// reveal front outward from `center` as `progress` rises, and scales the
+// gaps by `bleed`.
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -15,6 +17,7 @@ import {
   length,
   max,
   mix,
+  saturate,
   screenSize,
   smoothstep,
   uniform,
@@ -43,8 +46,9 @@ export interface LedWallShaderProps {
   dotSize: AnimatableProp<number>;
   /**
    * How much of the scene shows between the dots. 0 leaves the gaps
-   * transparent, 1 leaves the scene untouched there. Accepts a static value
-   * or an animation signal.
+   * transparent, 1 leaves the scene untouched there. The reveal scales the
+   * gaps too, so they reach this much of the scene only once `progress` is
+   * 1. Accepts a static value or an animation signal.
    */
   bleed: AnimatableProp<number>;
   /**
@@ -233,10 +237,10 @@ export function LedWallShader({
       // ---------------------------------------------
       // Per-cell randomness
       // ---------------------------------------------
-      // One u32 seed per cell, from the integer cell index, then a chain of
-      // u32 hashes off it. Each stream is a fresh hash of the previous one,
-      // so the streams don't correlate, and nothing round-trips through
-      // float until the final stableHash, per the seeded-randomness gotcha.
+      // One u32 seed per cell: hash the integer y index, add it to the x
+      // index, and hash the sum. stableHash then turns that seed into the
+      // jitter delay below, staying in u32 until that final conversion, per
+      // the seeded-randomness gotcha.
       const cellSeed = stableHashUint(
         cellIndex.x.toUint().add(stableHashUint(cellIndex.y.toUint())),
       );
@@ -266,25 +270,32 @@ export function LedWallShader({
 
       // The warp: low-frequency noise over the corrected cell position,
       // pushed into 0..1 so it only ever ADDS distance. A negative warp
-      // would light dots at progress 0.
+      // would light dots at progress 0. fractalNoise's own range is only
+      // roughly -1..1, so saturate() clamps off the rare overshoot past
+      // either end and keeps the 0..1 promise exact.
       const warpPoint = vec3(cellCenterUv.x.mul(aspectUniform), cellCenterUv.y, 0).mul(
         warpFrequencyUniform,
       );
-      const warp = fractalNoise(warpPoint, { octaves: 2 }).mul(0.5).add(0.5);
+      const warp = saturate(fractalNoise(warpPoint, { octaves: 2 }).mul(0.5).add(0.5));
 
       // The field a dot has to wait for: its distance, plus its own random
-      // delay, plus the warp scaled by waviness. progress sweeps a threshold
-      // across it. The threshold's range covers 1 + jitter + warpAmount, so
-      // progress 1 lights the slowest dot at any waviness, and at progress 0
-      // it sits at 0 below every non-negative field value.
+      // delay, plus the warp scaled by waviness. progress sweeps a
+      // threshold across it. The threshold tracks the field's own maximum,
+      // which is 1 plus jitter plus warpAmount times waviness, plus one
+      // fade width of headroom, so that at progress 1 the far edge of the
+      // fade band lands on the slowest dot, and at progress 0 the threshold
+      // sits at 0 below every non-negative field value.
       const field = distance
         .add(jitterRandom.mul(jitterUniform))
         .add(warp.mul(wavinessUniform).mul(warpAmountUniform));
-      const threshold = progressUniform.mul(jitterUniform.add(warpAmountUniform).add(1));
+      const threshold = progressUniform.mul(
+        jitterUniform.add(warpAmountUniform.mul(wavinessUniform)).add(1).add(fadeWidthUniform),
+      );
 
-      // Reversed smoothstep again: 1 once the field sits a fade-width under
-      // the threshold, 0 above it, an S-curve in between. That band is the
-      // pop-in.
+      // The reveal itself: a smoothstep with its edges REVERSED (high to
+      // low), which flips the ramp so it returns 1 once the field sits a
+      // fade-width under the threshold, 0 above it, and an S-curve in
+      // between. That band is the pop-in.
       const reveal = smoothstep(threshold, threshold.sub(fadeWidthUniform), field);
 
       // The dot's half-edge in cell units. dotSize in device pixels over the
@@ -299,11 +310,11 @@ export function LedWallShader({
       // shape a square rather than length()'s circle.
       const squareDistance = max(abs(cellLocal.x), abs(cellLocal.y)).sub(halfEdge);
 
-      // smoothstep with its edges REVERSED (high to low) flips the ramp:
-      // pixels deeper than one rim-width inside get 1, pixels past it
-      // outside get 0, and the band across the rim fades smoothly. The
-      // width is in device pixels converted into cell units, so it stays
-      // sub-pixel at any pitch.
+      // Reversed smoothstep again, as at the reveal above: pixels deeper
+      // than one rim-width inside get 1, pixels past it outside get 0, and
+      // the band across the rim fades smoothly. The width is in device
+      // pixels converted into cell units, so it stays sub-pixel at any
+      // pitch.
       const rim = float(RIM_SOFTNESS_PX).div(cellPx);
       const dotMask = smoothstep(rim, rim.negate(), squareDistance);
 

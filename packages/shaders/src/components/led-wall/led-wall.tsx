@@ -23,8 +23,9 @@ export interface LedWallProps {
   /**
    * How much of the scene shows between the dots. 0 leaves the gaps
    * transparent so the page background shows through, 1 leaves the scene
-   * untouched there. Defaults to 0. Accepts a static value or an animation
-   * signal.
+   * untouched there. The reveal scales the gaps too, so they reach this
+   * much of the scene only once `progress` is 1. Defaults to 0. Accepts a
+   * static value or an animation signal.
    */
   bleed?: AnimatableProp<number>;
   /**
