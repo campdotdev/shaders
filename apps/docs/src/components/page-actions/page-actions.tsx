@@ -14,6 +14,8 @@
  * pattern: portaled, offset from its trigger, and scaled in from the edge
  * nearest it.
  */
+import { useRef } from 'react';
+
 import { Menu } from '@base-ui/react/menu';
 
 import { formatJsx, useCopySource } from '@/components/controls';
@@ -42,6 +44,7 @@ const COPY_ICON_SIZE = 16;
 export function PageActions({ slug, componentName, siblings }: PageActionsProps) {
   const store = useCopySource();
   const { status, copy } = useClipboardCopy();
+  const boxRef = useRef<HTMLDivElement>(null);
   const markdownHref = `/components/${slug}/index.md`;
 
   // The demo as it stands right now: the import line for every tag in the
@@ -57,7 +60,7 @@ export function PageActions({ slug, componentName, siblings }: PageActionsProps)
   };
 
   return (
-    <div className={styles.actions}>
+    <div className={styles.actions} ref={boxRef}>
       {/* Until the island mounts there is no store to read, and the button
           is disabled rather than copying nothing. */}
       <button
@@ -81,7 +84,11 @@ export function PageActions({ slug, componentName, siblings }: PageActionsProps)
           <ChevronDownIcon />
         </Menu.Trigger>
         <Menu.Portal>
-          <Menu.Positioner align="end" side="bottom" sideOffset={6}>
+          {/* Anchored to the whole box rather than the chevron, so the
+              menu's right edge meets the box's outer edge, which is the
+              shader's edge on a wide viewport. The chevron button sits
+              1px inside that edge, behind the box's border. */}
+          <Menu.Positioner align="end" anchor={boxRef} side="bottom" sideOffset={6}>
             <Menu.Popup className={styles.popup}>
               <Menu.Item className={styles.row} disabled={store === null} onClick={copyReact}>
                 Copy React
