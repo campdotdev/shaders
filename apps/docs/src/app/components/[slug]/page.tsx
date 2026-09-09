@@ -1,7 +1,8 @@
 /**
  * Shared shell for every converted component page, in the mock's section
  * order: breadcrumbs and header above the demo, Usage and API Reference
- * below it, then prev/next pagination. Titles and descriptions come from the
+ * below it, then prev/next pagination. The header carries the page's copy
+ * actions beside the title (page-actions/). Titles and descriptions come from the
  * catalog (content/components.ts) and page order from its taxonomy tree; the
  * interactive demo and Usage content come from the demo registry, which
  * every component page has an entry in.
@@ -17,7 +18,9 @@ import { notFound } from 'next/navigation';
 
 import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
 import { CodeBlock } from '@/components/code-block/code-block';
+import { CopySourceProvider } from '@/components/controls';
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
+import { PageActions } from '@/components/page-actions/page-actions';
 import { PageToc, type PageTocSection } from '@/components/page-toc/page-toc';
 import { PropsTable } from '@/components/props-table/props-table';
 import { getComponentsCatalog, getComponentsTree } from '@/content/catalog';
@@ -86,13 +89,20 @@ export default async function ComponentPage({ params }: PageProps) {
   return (
     <main>
       <Breadcrumbs className={styles.breadcrumbs} crumbs={crumbs} />
-      <div id={slug}>
-        <header className={styles.header}>
-          <h1 className={styles.title}>{record.label}</h1>
-          <p className={styles.description}>{record.description}</p>
-        </header>
-        <Island />
-      </div>
+      {/* The header's Copy React reads the island's control store through
+          this provider; see the copy source in controls/context.tsx. */}
+      <CopySourceProvider>
+        <div id={slug}>
+          <header className={styles.header}>
+            <div className={styles.heading}>
+              <h1 className={styles.title}>{record.label}</h1>
+              <p className={styles.description}>{record.description}</p>
+            </div>
+            <PageActions componentName={record.componentName} siblings={entry.copySiblings} />
+          </header>
+          <Island />
+        </div>
+      </CopySourceProvider>
       {/* Sits right after the demo grid so its lines can measure back up to
           the shader's center; see .dock in page-toc.module.css. */}
       <PageToc sections={sections} />

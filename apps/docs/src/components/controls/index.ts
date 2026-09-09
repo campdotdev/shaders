@@ -1,5 +1,12 @@
 export { ColorInput } from './ColorInput';
-export { ControlsProvider, ListRowProvider, PathPrefixProvider, useListRowTrail } from './context';
+export {
+  ControlsProvider,
+  CopySourceProvider,
+  ListRowProvider,
+  PathPrefixProvider,
+  useCopySource,
+  useListRowTrail,
+} from './context';
 export { ControlPanel } from './ControlPanel';
 export { formatJsx, formatParams } from './copy';
 export type { CopyConfig } from './copy';

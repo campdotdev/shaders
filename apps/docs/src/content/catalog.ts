@@ -13,16 +13,26 @@ interface CatalogRecord {
 }
 
 /* Component records also carry the leaf group the taxonomy files them
-   under, which is what the sidebar groups by. */
+   under, which is what the sidebar groups by, and the component's JSX tag
+   name, which the page header's Copy React writes into the copied snippet.
+   The label is for reading ("Conic Gradient") and the tag name is for code
+   ("ConicGradient"), so a page cannot use one for the other. */
 export interface ComponentCatalogRecord extends CatalogRecord {
   category: CategorySlug;
+  componentName: string;
 }
 
+const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
+
 function prettifySlug(slug: string): string {
-  return slug
-    .split('-')
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
+  return slug.split('-').map(capitalize).join(' ');
+}
+
+// The slug doubles as the component's folder name under
+// packages/shaders/src/components, and every component there is named as
+// the PascalCase of its folder, so the tag name derives from the slug too.
+function pascalizeSlug(slug: string): string {
+  return slug.split('-').map(capitalize).join('');
 }
 
 // eslint-disable-next-line @typescript-eslint/require-await -- kept async so every catalog getter has one shape
@@ -34,6 +44,7 @@ export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogReco
     .map(([slug, info], index) => ({
       url: `/components/${slug}`,
       label: prettifySlug(slug),
+      componentName: pascalizeSlug(slug),
       description: info.description,
       category: info.category,
       order: index * 10,

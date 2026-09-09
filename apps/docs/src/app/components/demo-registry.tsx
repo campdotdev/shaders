@@ -35,6 +35,13 @@ export interface ComponentPageEntry {
    */
   usageSnippet: string;
   /**
+   * Layers the demo scene renders under the component, as JSX, for pages
+   * whose scene composes a background. Copy React (page-actions/) emits them
+   * ahead of the component so the copied snippet reproduces the demo. Absent
+   * when the component fills the scene by itself.
+   */
+  copySiblings?: readonly string[];
+  /**
    * Optional prose above the snippet. Single-paragraph notes are bare
    * content; multi-paragraph notes bring their own <p> tags.
    */
@@ -58,6 +65,9 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   },
   blobs: {
     Island: BlobsIsland,
+    copySiblings: [
+      "<LinearGradient angle={90} speed={0} stops={[{ color: 'oklch(0.18 0.02 265)' }, { color: 'oklch(0.26 0.04 300)' }]} />",
+    ],
     usageSnippet: `<ShaderScene>
   <LinearGradient />
   <Blobs />
@@ -77,6 +87,7 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   },
   dither: {
     Island: DitherIsland,
+    copySiblings: ['<MeshGradient />'],
     usageSnippet: `<ShaderScene>
   <MeshGradient />
   <Dither pattern="bayer-8x8" pixelSize={4} levels={4} />
@@ -127,6 +138,7 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   },
   grain: {
     Island: GrainIsland,
+    copySiblings: ['<LinearGradient />'],
     usageSnippet: `<ShaderScene>
   <LinearGradient />
   <Grain intensity={0.45} speed={1} blend="additive" />
@@ -179,6 +191,7 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   },
   vignette: {
     Island: VignetteIsland,
+    copySiblings: ['<LinearGradient />'],
     usageSnippet: `<ShaderScene>
   <LinearGradient />
   <Vignette intensity={0.5} radius={0.6} feather={0.5} />

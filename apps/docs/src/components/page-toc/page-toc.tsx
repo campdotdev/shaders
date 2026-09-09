@@ -137,7 +137,7 @@ export function PageToc({ sections }: { sections: PageTocSection[] }) {
             the lines with a document-coordinate update one frame behind the
             scroll, which reads as jitter. */}
         <Popover.Portal container={dockRef}>
-          <Popover.Positioner align="center" side="right" sideOffset={8}>
+          <Popover.Positioner align="center" side="right" sideOffset={6}>
             <Popover.Popup className={styles.popup}>
               <nav aria-label="On this page">
                 <ul className={styles.list}>

@@ -13,6 +13,7 @@ import { oklchInGamut, oklchToGamut } from '@camp-dev/shaders/color';
 import { useDisplayGamut } from '@camp-dev/shaders/gamut';
 
 import { CopyIcon } from '@/components/icons/copy';
+import { COPY_ANNOUNCEMENTS, useClipboardCopy } from '@/lib/use-clipboard-copy';
 
 import { ChannelSlider } from './color/ChannelSlider';
 import { formatOklch, type OklchColor, parseToOklch } from './color/oklch';
@@ -139,16 +140,6 @@ export function ColorPopoverContents({ path, label }: { path: PathInput; label: 
   );
 }
 
-const COPIED_FEEDBACK_MS = 1200;
-
-type CopyStatus = 'idle' | 'copied' | 'failed';
-
-const COPY_ANNOUNCEMENTS: Record<CopyStatus, string> = {
-  idle: '',
-  copied: 'Copied',
-  failed: 'Copy failed',
-};
-
 /**
  * Copies the current color string. The glyph turns lime for a moment as the
  * only visible feedback, and a live region says "Copied" for screen readers,
@@ -158,31 +149,7 @@ const COPY_ANNOUNCEMENTS: Record<CopyStatus, string> = {
  * way rather than left as a silent rejection.
  */
 function CopyButton({ label, text }: { label: string; text: string }) {
-  const [status, setStatus] = useState<CopyStatus>('idle');
-  const feedbackTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    return () => {
-      if (feedbackTimeoutRef.current !== null) clearTimeout(feedbackTimeoutRef.current);
-    };
-  }, []);
-
-  const copy = () => {
-    // The write starts inside a promise chain: `navigator.clipboard` is
-    // undefined outside a secure context, and a plain call would throw out
-    // of the click handler, whereas here the throw lands in the rejection
-    // path with every other failure.
-    void Promise.resolve()
-      .then(() => navigator.clipboard.writeText(text))
-      .then(
-        () => setStatus('copied'),
-        () => setStatus('failed'),
-      );
-
-    if (feedbackTimeoutRef.current !== null) clearTimeout(feedbackTimeoutRef.current);
-
-    feedbackTimeoutRef.current = setTimeout(() => setStatus('idle'), COPIED_FEEDBACK_MS);
-  };
+  const { status, copy } = useClipboardCopy();
 
   return (
     <>
@@ -190,7 +157,7 @@ function CopyButton({ label, text }: { label: string; text: string }) {
         aria-label={`Copy ${label}`}
         className={styles.copyButton}
         data-copied={status === 'copied' || undefined}
-        onClick={copy}
+        onClick={() => copy(text)}
         title="Copy"
         type="button"
       >

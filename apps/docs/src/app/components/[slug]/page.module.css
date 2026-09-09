@@ -15,9 +15,24 @@
   margin: var(--spacing-4) 0 0;
 }
 
+/* The header is two columns: the title and description on the left, the
+   copy actions on the right, bottom-aligned so the button sits on the
+   description's line as in the mock. The text column wraps below a
+   comfortable reading width (the sm container) rather than squeezing, which
+   drops the actions onto their own line under it on a narrow viewport. */
 .header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--spacing-4) var(--spacing-6);
   max-width: var(--container-4xl);
   margin: var(--spacing-6) 0 0;
+}
+
+.heading {
+  flex: 1 1 var(--container-sm);
+  min-width: 0;
 }
 
 .title {
