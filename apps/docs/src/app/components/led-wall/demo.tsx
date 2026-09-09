@@ -53,6 +53,30 @@ function LedWallControls() {
         <SliderInput label="Dot size" max={24} min={1} path="dotSize" step={1} />
         <SliderInput label="Bleed" max={1} min={0} path="bleed" step={0.01} />
       </Section>
+      <Section title="Reveal">
+        <SliderInput label="Progress" max={1} min={0} path="progress" step={0.01} />
+        <SliderInput label="Center X" max={1} min={0} path="centerX" step={0.01} />
+        <SliderInput label="Center Y" max={1} min={0} path="centerY" step={0.01} />
+        <SliderInput label="Waviness" max={1} min={0} path="waviness" step={0.01} />
+      </Section>
+      <Section title="Tuning (dev)">
+        <SliderInput
+          label="Fade width"
+          max={0.3}
+          min={0.005}
+          path="tuning.fadeWidth"
+          step={0.005}
+        />
+        <SliderInput label="Jitter" max={0.5} min={0} path="tuning.jitter" step={0.01} />
+        <SliderInput label="Warp amount" max={1.5} min={0} path="tuning.warpAmount" step={0.05} />
+        <SliderInput
+          label="Warp frequency"
+          max={8}
+          min={0.5}
+          path="tuning.warpFrequency"
+          step={0.25}
+        />
+      </Section>
     </ControlPanel>
   );
 }

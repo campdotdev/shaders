@@ -16,7 +16,15 @@ export default function LedWallScene({
   return (
     <ShaderScene>
       <MeshGradient />
-      <LedWall bleed={params.bleed} dotSize={params.dotSize} spacing={params.spacing} />
+      <LedWall
+        bleed={params.bleed}
+        center={[params.centerX, params.centerY]}
+        dotSize={params.dotSize}
+        progress={params.progress}
+        spacing={params.spacing}
+        tuning={params.tuning}
+        waviness={params.waviness}
+      />
       {children}
     </ShaderScene>
   );

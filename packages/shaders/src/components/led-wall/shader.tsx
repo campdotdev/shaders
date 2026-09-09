@@ -12,6 +12,7 @@ import {
   abs,
   float,
   floor,
+  length,
   max,
   mix,
   screenSize,
@@ -23,7 +24,9 @@ import {
   vec4,
 } from 'three/tsl';
 
+import { fractalNoise, stableHash, stableHashUint } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
@@ -44,7 +47,48 @@ export interface LedWallShaderProps {
    * or an animation signal.
    */
   bleed: AnimatableProp<number>;
+  /**
+   * The reveal. 0 hides every dot, 1 lights every dot, and values between
+   * sweep the front outward from `center`. Accepts a static value or an
+   * animation signal.
+   */
+  progress: AnimatableProp<number>;
+  /**
+   * Where the reveal starts, 0..1 across the canvas; `[0.5, 0.5]` is the
+   * middle and `[0, 0]` the top-left corner. Accepts a static value or an
+   * animation signal.
+   */
+  center: AnimatableProp<readonly [number, number]>;
+  /**
+   * Shape of the reveal front. 0 is a clean ring around `center` with a
+   * little per-dot static, 1 is a fully warped front with fingers and bays.
+   * Accepts a static value or an animation signal.
+   */
+  waviness: AnimatableProp<number>;
+  /** TEMPORARY tuning rig. Removed at the defaults gate. */
+  tuning?: Partial<LedWallTuning>;
 }
+
+// TEMPORARY tuning rig. Each field rides a uniform so the demo panel's
+// sliders glide without a rebuild. Stripped at the defaults gate, when the
+// landed values become the named constants below.
+export interface LedWallTuning {
+  /** Width of the pop-in fade at the reveal front, in reveal units. */
+  fadeWidth: number;
+  /** Per-dot random offset on the front, in reveal units. */
+  jitter: number;
+  /** How far the noise warp can push the front at waviness 1, in reveal units. */
+  warpAmount: number;
+  /** Noise frequency of the warp across the canvas, in cycles per canvas height. */
+  warpFrequency: number;
+}
+
+export const DEFAULT_TUNING: LedWallTuning = {
+  fadeWidth: 0.08,
+  jitter: 0.12,
+  warpAmount: 0.6,
+  warpFrequency: 2.5,
+};
 
 // ---------------------------------------------
 // Constants
@@ -55,13 +99,42 @@ export interface LedWallShaderProps {
 // rim actually crosses.
 const RIM_SOFTNESS_PX = 0.7;
 
-export function LedWallShader({ spacing, dotSize, bleed }: LedWallShaderProps) {
+export function LedWallShader({
+  spacing,
+  dotSize,
+  bleed,
+  progress,
+  center,
+  waviness,
+  tuning,
+}: LedWallShaderProps) {
   // The dials live in uniforms: values the CPU can update each frame without
   // rebuilding the shader, tracking either a static number or an animation
   // signal.
   const spacingUniform = useAnimatableUniform(spacing);
   const dotSizeUniform = useAnimatableUniform(dotSize);
   const bleedUniform = useAnimatableUniform(bleed);
+  const progressUniform = useAnimatableUniform(progress);
+  const wavinessUniform = useAnimatableUniform(waviness);
+  // screenOrigin converts the prop's screen-style pair (y down, [0, 0]
+  // top-left, like CSS) into uv space, where v grows upward, so the reveal
+  // starts where the page author pointed.
+  const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
+
+  // Tuning rig uniforms. TEMPORARY.
+  const resolvedTuning = { ...DEFAULT_TUNING, ...tuning };
+  const fadeWidthUniform = useMemo(() => uniform(DEFAULT_TUNING.fadeWidth), []);
+  const jitterUniform = useMemo(() => uniform(DEFAULT_TUNING.jitter), []);
+  const warpAmountUniform = useMemo(() => uniform(DEFAULT_TUNING.warpAmount), []);
+  const warpFrequencyUniform = useMemo(() => uniform(DEFAULT_TUNING.warpFrequency), []);
+
+  useEffect(() => {
+    fadeWidthUniform.value = resolvedTuning.fadeWidth;
+    jitterUniform.value = resolvedTuning.jitter;
+    warpAmountUniform.value = resolvedTuning.warpAmount;
+    warpFrequencyUniform.value = resolvedTuning.warpFrequency;
+    shaderContext?.scheduler.requestRender();
+  });
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
@@ -91,6 +164,32 @@ export function LedWallShader({ spacing, dotSize, bleed }: LedWallShaderProps) {
 
     return resize.on('change', apply);
   }, [resize, dprUniform, shaderContext]);
+
+  // ---------------------------------------------
+  // Track the canvas aspect ratio
+  // ---------------------------------------------
+  // The distance math below multiplies the horizontal offset by
+  // width/height so a reveal ring stays a circle on a wide canvas. The
+  // uniform starts from the current canvas size (16:9 when the canvas has
+  // no layout yet and reports 0), then follows every resize.
+  const [initialWidth, initialHeight] = resize.get();
+  const aspectUniform = useMemo(
+    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
+  useEffect(() => {
+    const [canvasWidth, canvasHeight] = resize.get();
+
+    if (canvasWidth > 0 && canvasHeight > 0) aspectUniform.value = canvasWidth / canvasHeight;
+
+    return resize.on('change', ([updatedWidth, updatedHeight]) => {
+      if (updatedWidth > 0 && updatedHeight > 0) {
+        aspectUniform.value = updatedWidth / updatedHeight;
+      }
+    });
+  }, [resize, aspectUniform]);
 
   // ---------------------------------------------
   // Snap the scene sample to the cell center
@@ -131,6 +230,63 @@ export function LedWallShader({ spacing, dotSize, bleed }: LedWallShaderProps) {
       const cellIndex = floor(cellCoord);
       const cellLocal = cellCoord.sub(cellIndex).sub(0.5);
 
+      // ---------------------------------------------
+      // Per-cell randomness
+      // ---------------------------------------------
+      // One u32 seed per cell, from the integer cell index, then a chain of
+      // u32 hashes off it. Each stream is a fresh hash of the previous one,
+      // so the streams don't correlate, and nothing round-trips through
+      // float until the final stableHash, per the seeded-randomness gotcha.
+      const cellSeed = stableHashUint(
+        cellIndex.x.toUint().add(stableHashUint(cellIndex.y.toUint())),
+      );
+      const jitterRandom = stableHash(cellSeed);
+
+      // ---------------------------------------------
+      // The reveal: distance from center, jittered and warped
+      // ---------------------------------------------
+      // The cell's center in uv space (v up), so it compares with the
+      // center uniform in the same frame. Evaluated per CELL, not per pixel,
+      // so a dot pops in as one piece.
+      const cellCenterPx = cellIndex.add(0.5).mul(cellPx);
+      const cellCenterUv = vec2(
+        cellCenterPx.x.div(screenSize.x),
+        cellCenterPx.y.div(screenSize.y).oneMinus(),
+      );
+
+      // Aspect-corrected distance from center. The far corner then measures
+      // 1 wherever the center sits: the farthest corner from a point in the
+      // unit box is max(c, 1 - c) on each axis, corrected the same way.
+      const toCell = cellCenterUv.sub(centerUniform);
+      const corrected = vec2(toCell.x.mul(aspectUniform), toCell.y);
+      const centerLifted = vec2(0, 0).add(centerUniform);
+      const farCorner = max(centerLifted, centerLifted.oneMinus());
+      const farDistance = length(vec2(farCorner.x.mul(aspectUniform), farCorner.y)).max(0.001);
+      const distance = length(corrected).div(farDistance);
+
+      // The warp: low-frequency noise over the corrected cell position,
+      // pushed into 0..1 so it only ever ADDS distance. A negative warp
+      // would light dots at progress 0.
+      const warpPoint = vec3(cellCenterUv.x.mul(aspectUniform), cellCenterUv.y, 0).mul(
+        warpFrequencyUniform,
+      );
+      const warp = fractalNoise(warpPoint, { octaves: 2 }).mul(0.5).add(0.5);
+
+      // The field a dot has to wait for: its distance, plus its own random
+      // delay, plus the warp scaled by waviness. progress sweeps a threshold
+      // across it. The threshold's range covers 1 + jitter + warpAmount, so
+      // progress 1 lights the slowest dot at any waviness, and at progress 0
+      // it sits at 0 below every non-negative field value.
+      const field = distance
+        .add(jitterRandom.mul(jitterUniform))
+        .add(warp.mul(wavinessUniform).mul(warpAmountUniform));
+      const threshold = progressUniform.mul(jitterUniform.add(warpAmountUniform).add(1));
+
+      // Reversed smoothstep again: 1 once the field sits a fade-width under
+      // the threshold, 0 above it, an S-curve in between. That band is the
+      // pop-in.
+      const reveal = smoothstep(threshold, threshold.sub(fadeWidthUniform), field);
+
       // The dot's half-edge in cell units. dotSize in device pixels over the
       // cell pitch gives the edge as a fraction of the cell; half of it is
       // the distance from the center to the rim. min(0.5) keeps a dot from
@@ -157,11 +313,24 @@ export function LedWallShader({ spacing, dotSize, bleed }: LedWallShaderProps) {
       // factor is 1: the dot is the scene at full strength. In the gaps it
       // is bleed: 0 leaves alpha 0 so the page shows through, 1 leaves the
       // scene untouched.
-      const factor = mix(bleedUniform, float(1), dotMask);
+      const factor = mix(bleedUniform, float(1), dotMask).mul(reveal);
 
       return vec4(vec3(input.rgb).mul(factor), input.a.mul(factor));
     },
-    [spacingUniform, dotSizeUniform, bleedUniform, dprUniform],
+    [
+      spacingUniform,
+      dotSizeUniform,
+      bleedUniform,
+      progressUniform,
+      wavinessUniform,
+      centerUniform,
+      aspectUniform,
+      dprUniform,
+      fadeWidthUniform,
+      jitterUniform,
+      warpAmountUniform,
+      warpFrequencyUniform,
+    ],
   );
 
   return null;
