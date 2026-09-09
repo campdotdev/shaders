@@ -1,0 +1,165 @@
+/* The header's split "Copy React" button and the menu it opens. The box,
+   its two buttons, and the menu follow the Figma mock; the button's hover
+   and press feel copy the control panel's text button, and the menu's
+   panel and rows copy the floating table of contents, so the site's three
+   popups read as one family. */
+
+/* ---- The box ---- */
+
+/* One bordered 32px box around two buttons: the mock's darkest gray with
+   the hairline and 6px corners. The buttons carry no border of their own,
+   so the box's hairline is the only line around them. */
+.actions {
+  display: inline-flex;
+  flex: none;
+  align-items: stretch;
+  height: var(--spacing-8);
+  background: var(--gray-900);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}
+
+/* Shared by both buttons: the label gray on a transparent fill, hover to
+   the faint white fill under full-white text, and a press felt through a
+   slight scale rather than seen. Each button rounds only its outer corners,
+   so the hover fill follows the box's shape without clipping the focus
+   ring. */
+.copy,
+.more {
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--gray-50);
+  border: 0;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    color var(--fade-xs) var(--ease-hover),
+    background-color var(--fade-xs) var(--ease-hover),
+    transform var(--duration-sm) var(--ease-out);
+}
+
+.copy svg,
+.more svg {
+  flex: none;
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .copy:hover,
+  .more:hover {
+    background: var(--white-a5);
+    color: var(--fg);
+  }
+
+  .copy:hover svg,
+  .more:hover svg {
+    color: var(--fg);
+  }
+}
+
+.copy:active,
+.more:active {
+  transform: scale(0.97);
+}
+
+.copy:focus-visible,
+.more:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* The copy action: a 16px glyph and the label, 8px apart, with 8px on each
+   side. The mock draws the glyph one step lighter than the chevron. */
+.copy {
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-2);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+}
+
+.copy svg {
+  color: var(--gray-100);
+}
+
+/* The chevron cell: a 32px square behind a hairline, with the glyph
+   centered. The rule is drawn as a left border so the cell and its divider
+   are one box, and it stops 1px short of the top and bottom as in the mock
+   because the box's own border already covers those pixels. */
+.more {
+  justify-content: center;
+  width: var(--spacing-8);
+  border-left: var(--border-width-1) solid var(--white-a5);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+  color: var(--gray-200);
+}
+
+/* ---- The menu ---- */
+
+/* Portaled to <body>, so it sets its own type. The mock's panel, shared
+   with the table of contents: 256px wide, 10px of padding, the darkest
+   gray with a hairline and 6px corners. It scales in from the edge nearest
+   the chevron, the site's popup pattern; Base UI sets --transform-origin
+   from where the popup was placed. */
+.popup {
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  width: var(--container-3xs);
+  padding: var(--spacing-2-5);
+  background: var(--gray-900);
+  color: var(--fg);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-md);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  transform-origin: var(--transform-origin);
+  transition:
+    transform var(--duration-sm) var(--ease-out),
+    opacity var(--fade-sm) var(--ease-out);
+}
+
+.popup[data-starting-style],
+.popup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* A row is a title over a one-line description: 8px of padding with 12px
+   on the left, 6px corners, and the two lines 2px apart. Base UI marks the
+   row under the pointer or the keyboard cursor as highlighted, which the
+   mock draws as the darker gray fill, the same fill the table of contents
+   gives its current row. */
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  border-radius: var(--radius-md);
+  color: var(--fg);
+  text-decoration: none;
+  cursor: pointer;
+  outline: none;
+  transition: background-color var(--fade-xs) var(--ease-hover);
+}
+
+.row[data-highlighted] {
+  background: var(--gray-800);
+  text-decoration: none;
+}
+
+.rowTitle {
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}
+
+.rowDescription {
+  color: var(--gray-100);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
+}
