@@ -29,6 +29,9 @@ export { Grain } from './grain/grain.js';
 export type { GrainProps } from './grain/grain.js';
 export type { GrainBlend } from './grain/shader.js';
 
+export { LedWall } from './led-wall/led-wall.js';
+export type { LedWallProps } from './led-wall/led-wall.js';
+
 export { LinearGradient } from './linear-gradient/linear-gradient.js';
 export type { LinearGradientProps } from './linear-gradient/linear-gradient.js';
 
