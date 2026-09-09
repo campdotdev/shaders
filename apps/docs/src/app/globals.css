@@ -139,8 +139,15 @@
   --code-comment: var(--gray-200);
 }
 
+/* The window's scroll bar, in the same thin grey the inner scroll areas
+   draw (components/scroll-area): a gray-600 thumb on a transparent track.
+   These two properties are the whole styling, since a browser that honors
+   them ignores the ::-webkit-scrollbar pseudo-elements, and macOS overlay
+   bars on a trackpad hide themselves regardless. */
 html {
   color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-600) transparent;
 }
 
 html,
