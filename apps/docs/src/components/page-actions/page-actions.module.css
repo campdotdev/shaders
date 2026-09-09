@@ -8,7 +8,10 @@
 
 /* One bordered 32px box around two buttons: the mock's darkest gray with
    the hairline and 6px corners. The buttons carry no border of their own,
-   so the box's hairline is the only line around them. */
+   so the box's hairline is the only line around them. The press is felt
+   through a slight scale of the whole box, whichever half is pressed:
+   scaling one half alone pulls it away from the border and shows the box
+   behind it, so the box is the thing that moves. */
 .actions {
   display: inline-flex;
   flex: none;
@@ -19,13 +22,18 @@
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   line-height: var(--leading-5);
+  transition: transform var(--duration-sm) var(--ease-out);
+}
+
+.actions:has(.copy:active),
+.actions:has(.more:active) {
+  transform: scale(0.97);
 }
 
 /* Shared by both buttons: the label gray on a transparent fill, hover to
-   the faint white fill under full-white text, and a press felt through a
-   slight scale rather than seen. Each button rounds only its outer corners,
-   so the hover fill follows the box's shape without clipping the focus
-   ring. */
+   the faint white fill under full-white text. Each button rounds only its
+   outer corners, so the hover fill follows the box's shape without clipping
+   the focus ring. */
 .copy,
 .more {
   display: inline-flex;
@@ -39,8 +47,7 @@
   cursor: pointer;
   transition:
     color var(--fade-xs) var(--ease-hover),
-    background-color var(--fade-xs) var(--ease-hover),
-    transform var(--duration-sm) var(--ease-out);
+    background-color var(--fade-xs) var(--ease-hover);
 }
 
 .copy svg,
@@ -60,11 +67,6 @@
   .more:hover svg {
     color: var(--fg);
   }
-}
-
-.copy:active,
-.more:active {
-  transform: scale(0.97);
 }
 
 .copy:focus-visible,
