@@ -99,7 +99,7 @@ export default async function ComponentPage({ params }: PageProps) {
               <h1 className={styles.title}>{record.label}</h1>
               <p className={styles.description}>{record.description}</p>
             </div>
-            <PageActions componentName={record.label} siblings={entry.copySiblings} slug={slug} />
+            <PageActions componentName={record.label} siblings={entry.copySiblings} />
           </header>
           <Island />
         </div>

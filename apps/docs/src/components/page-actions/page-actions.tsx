@@ -4,8 +4,8 @@
  * The split "Copy React" button in a component page's header, after the
  * Figma mock: a bordered box holding the copy action on the left and a
  * chevron cell on the right that opens a menu of three actions. Copy React
- * copies the demo's current props as JSX, and the two markdown rows copy
- * and open the page's markdown export (SHA-115). The shared
+ * copies the demo's current props as JSX; the two markdown rows will copy
+ * and open the page's markdown export once it ships (SHA-115). The shared
  * components/[slug] template renders it beside the title and description,
  * inside the CopySourceProvider that the demo island publishes its control
  * store into (controls/context.tsx).
@@ -28,8 +28,6 @@ import { COPY_ANNOUNCEMENTS, useClipboardCopy } from '@/lib/use-clipboard-copy';
 import styles from './page-actions.module.css';
 
 interface PageActionsProps {
-  /** The component page's slug, which names its markdown export. */
-  slug: string;
   /** The component as written in JSX, e.g. 'WaveLines'. */
   componentName: string;
   /** Layers the demo renders under the component, as JSX, if any. */
@@ -41,11 +39,10 @@ interface PageActionsProps {
 // four thirds).
 const COPY_ICON_SIZE = 16;
 
-export function PageActions({ slug, componentName, siblings }: PageActionsProps) {
+export function PageActions({ componentName, siblings }: PageActionsProps) {
   const store = useCopySource();
   const { status, copy } = useClipboardCopy();
   const boxRef = useRef<HTMLDivElement>(null);
-  const markdownHref = `/components/${slug}/index.md`;
 
   // The demo as it stands right now: the import line for every tag in the
   // snippet, then the scene with the store's current params as props. Read
@@ -93,16 +90,16 @@ export function PageActions({ slug, componentName, siblings }: PageActionsProps)
               <Menu.Item className={styles.row} disabled={store === null} onClick={copyReact}>
                 Copy React
               </Menu.Item>
-              <Menu.Item className={styles.row}>Copy as markdown</Menu.Item>
-              <Menu.LinkItem
-                className={styles.row}
-                closeOnClick
-                href={markdownHref}
-                rel="noreferrer"
-                target="_blank"
-              >
+              {/* Disabled until the markdown export ships (SHA-115): the
+                  copy row will run through the same clipboard hook as Copy
+                  React, and the view row becomes a Menu.LinkItem to the
+                  export in a new tab. */}
+              <Menu.Item className={styles.row} disabled>
+                Copy as markdown
+              </Menu.Item>
+              <Menu.Item className={styles.row} disabled>
                 View as markdown
-              </Menu.LinkItem>
+              </Menu.Item>
             </Menu.Popup>
           </Menu.Positioner>
         </Menu.Portal>
