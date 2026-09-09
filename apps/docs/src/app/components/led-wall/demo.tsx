@@ -59,6 +59,9 @@ function LedWallControls() {
         <SliderInput label="Center Y" max={1} min={0} path="centerY" step={0.01} />
         <SliderInput label="Waviness" max={1} min={0} path="waviness" step={0.01} />
       </Section>
+      <Section title="Motion">
+        <SliderInput label="Flicker" max={1} min={0} path="flicker" step={0.01} />
+      </Section>
       <Section title="Tuning (dev)">
         <SliderInput
           label="Fade width"
@@ -75,6 +78,15 @@ function LedWallControls() {
           min={0.5}
           path="tuning.warpFrequency"
           step={0.25}
+        />
+        <SliderInput label="Variance" max={0.9} min={0} path="tuning.variance" step={0.01} />
+        <SliderInput label="Flicker depth" max={1} min={0} path="tuning.flickerDepth" step={0.01} />
+        <SliderInput
+          label="Flicker speed"
+          max={8}
+          min={0.2}
+          path="tuning.flickerSpeed"
+          step={0.1}
         />
       </Section>
     </ControlPanel>

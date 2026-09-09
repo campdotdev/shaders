@@ -19,6 +19,7 @@ import {
   mix,
   saturate,
   screenSize,
+  sin,
   smoothstep,
   uniform,
   uv,
@@ -27,7 +28,7 @@ import {
   vec4,
 } from 'three/tsl';
 
-import { fractalNoise, stableHash, stableHashUint } from '../../engine.js';
+import { elapsedTime, fractalNoise, stableHash, stableHashUint } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -35,6 +36,8 @@ import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
+import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
+import { isLedWallStatic } from './static.js';
 
 export interface LedWallShaderProps {
   /** Cell pitch in CSS pixels. Accepts a static value or an animation signal. */
@@ -69,6 +72,12 @@ export interface LedWallShaderProps {
    * Accepts a static value or an animation signal.
    */
   waviness: AnimatableProp<number>;
+  /**
+   * How much each dot's brightness breathes over time, on its own phase and
+   * tempo. 0 holds every dot still, 1 is full breathing. Accepts a static
+   * value or an animation signal.
+   */
+  flicker: AnimatableProp<number>;
   /** TEMPORARY tuning rig. Removed at the defaults gate. */
   tuning?: Partial<LedWallTuning>;
 }
@@ -85,6 +94,12 @@ export interface LedWallTuning {
   warpAmount: number;
   /** Noise frequency of the warp across the canvas, in cycles per canvas height. */
   warpFrequency: number;
+  /** Spread of the per-dot static brightness. 0 makes every dot equal, 0.5 lets a dot sit as low as half. */
+  variance: number;
+  /** Depth of the flicker at flicker 1, as a fraction of the dot's brightness. */
+  flickerDepth: number;
+  /** Tempo multiplier on the flicker, in radians per second. */
+  flickerSpeed: number;
 }
 
 export const DEFAULT_TUNING: LedWallTuning = {
@@ -92,6 +107,9 @@ export const DEFAULT_TUNING: LedWallTuning = {
   jitter: 0.12,
   warpAmount: 0.6,
   warpFrequency: 2.5,
+  variance: 0.5,
+  flickerDepth: 0.4,
+  flickerSpeed: 2.4,
 };
 
 // ---------------------------------------------
@@ -110,6 +128,7 @@ export function LedWallShader({
   progress,
   center,
   waviness,
+  flicker,
   tuning,
 }: LedWallShaderProps) {
   // The dials live in uniforms: values the CPU can update each frame without
@@ -120,6 +139,7 @@ export function LedWallShader({
   const bleedUniform = useAnimatableUniform(bleed);
   const progressUniform = useAnimatableUniform(progress);
   const wavinessUniform = useAnimatableUniform(waviness);
+  const flickerUniform = useAnimatableUniform(flicker);
   // screenOrigin converts the prop's screen-style pair (y down, [0, 0]
   // top-left, like CSS) into uv space, where v grows upward, so the reveal
   // starts where the page author pointed.
@@ -131,14 +151,27 @@ export function LedWallShader({
   const jitterUniform = useMemo(() => uniform(DEFAULT_TUNING.jitter), []);
   const warpAmountUniform = useMemo(() => uniform(DEFAULT_TUNING.warpAmount), []);
   const warpFrequencyUniform = useMemo(() => uniform(DEFAULT_TUNING.warpFrequency), []);
+  const varianceUniform = useMemo(() => uniform(DEFAULT_TUNING.variance), []);
+  const flickerDepthUniform = useMemo(() => uniform(DEFAULT_TUNING.flickerDepth), []);
+  const flickerSpeedUniform = useMemo(() => uniform(DEFAULT_TUNING.flickerSpeed), []);
 
   useEffect(() => {
     fadeWidthUniform.value = resolvedTuning.fadeWidth;
     jitterUniform.value = resolvedTuning.jitter;
     warpAmountUniform.value = resolvedTuning.warpAmount;
     warpFrequencyUniform.value = resolvedTuning.warpFrequency;
+    varianceUniform.value = resolvedTuning.variance;
+    flickerDepthUniform.value = resolvedTuning.flickerDepth;
+    flickerSpeedUniform.value = resolvedTuning.flickerSpeed;
     shaderContext?.scheduler.requestRender();
   });
+
+  // The render-on-demand vote: the scene may stop drawing only when nothing
+  // on the wall can change between frames. Spotlight props don't exist yet
+  // (Task 7), so the off state stands in for them here.
+  useStaticSceneHint(
+    isLedWallStatic({ flicker, progress, spotlight: [0.5, 0.5], spotlightIntensity: 0 }),
+  );
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
@@ -238,13 +271,22 @@ export function LedWallShader({
       // Per-cell randomness
       // ---------------------------------------------
       // One u32 seed per cell: hash the integer y index, add it to the x
-      // index, and hash the sum. stableHash then turns that seed into the
-      // jitter delay below, staying in u32 until that final conversion, per
-      // the seeded-randomness gotcha.
+      // index, and hash the sum. Every stream below chains forward from that
+      // seed with another stableHashUint, staying in u32 the whole way, and
+      // only takes a float (stableHash) at the point it is actually used, per
+      // the seeded-randomness gotcha. That gives four decorrelated streams
+      // off one cell: jitterRandom delays the reveal, levelRandom sets the
+      // dot's permanent brightness, and phaseRandom and tempoRandom offset
+      // and retune its flicker.
       const cellSeed = stableHashUint(
         cellIndex.x.toUint().add(stableHashUint(cellIndex.y.toUint())),
       );
       const jitterRandom = stableHash(cellSeed);
+      const levelSeed = stableHashUint(cellSeed);
+      const levelRandom = stableHash(levelSeed);
+      const phaseSeed = stableHashUint(levelSeed);
+      const phaseRandom = stableHash(phaseSeed);
+      const tempoRandom = stableHash(stableHashUint(phaseSeed));
 
       // ---------------------------------------------
       // The reveal: distance from center, jittered and warped
@@ -298,6 +340,25 @@ export function LedWallShader({
       // between. That band is the pop-in.
       const reveal = smoothstep(threshold, threshold.sub(fadeWidthUniform), field);
 
+      // ---------------------------------------------
+      // Brightness: static variance times flicker
+      // ---------------------------------------------
+      // Each dot sits at its own permanent level, 1 minus a random share of
+      // the variance, so the grid never reads as a flat print. Then it
+      // breathes: a sine on the engine's elapsed time (already scaled for
+      // reduced motion) at a per-dot tempo between 0.8 and 1.2 of the base
+      // speed, offset by a per-dot phase so the dots never breathe in step.
+      // The wave is pushed into 0..1, scaled by depth and by the flicker
+      // dial, and subtracted from 1: flicker 0 leaves the level untouched,
+      // flicker 1 dips it by the full depth at the bottom of each breath.
+      const staticLevel = levelRandom.mul(varianceUniform).oneMinus();
+      const tempo = tempoRandom.mul(0.4).add(0.8).mul(flickerSpeedUniform);
+      const breath = sin(elapsedTime.mul(tempo).add(phaseRandom.mul(Math.PI * 2)))
+        .mul(0.5)
+        .add(0.5);
+      const flickerTerm = breath.mul(flickerDepthUniform).mul(flickerUniform).oneMinus();
+      const brightness = staticLevel.mul(flickerTerm);
+
       // The dot's half-edge in cell units. dotSize in device pixels over the
       // cell pitch gives the edge as a fraction of the cell; half of it is
       // the distance from the center to the rim. min(0.5) keeps a dot from
@@ -321,10 +382,10 @@ export function LedWallShader({
       // Compose. The scene texture is premultiplied by construction (the
       // scene blends over a transparent clear), so scaling rgb and alpha by
       // the same factor is the correct way to dim it. Inside the dot the
-      // factor is 1: the dot is the scene at full strength. In the gaps it
-      // is bleed: 0 leaves alpha 0 so the page shows through, 1 leaves the
-      // scene untouched.
-      const factor = mix(bleedUniform, float(1), dotMask).mul(reveal);
+      // factor is the dot's brightness, so the static level and the flicker
+      // only ever apply to lit dots. In the gaps it is bleed: 0 leaves alpha
+      // 0 so the page shows through, 1 leaves the scene untouched.
+      const factor = mix(bleedUniform, brightness, dotMask).mul(reveal);
 
       return vec4(vec3(input.rgb).mul(factor), input.a.mul(factor));
     },
@@ -334,6 +395,7 @@ export function LedWallShader({
       bleedUniform,
       progressUniform,
       wavinessUniform,
+      flickerUniform,
       centerUniform,
       aspectUniform,
       dprUniform,
@@ -341,6 +403,9 @@ export function LedWallShader({
       jitterUniform,
       warpAmountUniform,
       warpFrequencyUniform,
+      varianceUniform,
+      flickerDepthUniform,
+      flickerSpeedUniform,
     ],
   );
 

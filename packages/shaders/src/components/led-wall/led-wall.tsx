@@ -47,6 +47,12 @@ export interface LedWallProps {
    * Defaults to 0.25. Accepts a static value or an animation signal.
    */
   waviness?: AnimatableProp<number>;
+  /**
+   * How much each dot's brightness breathes over time, on its own phase and
+   * tempo. 0 holds every dot still, 1 is full breathing. Defaults to 0.3.
+   * Accepts a static value or an animation signal.
+   */
+  flicker?: AnimatableProp<number>;
   /** TEMPORARY tuning rig. Removed at the defaults gate. */
   tuning?: Partial<LedWallTuning>;
 }
@@ -58,6 +64,7 @@ export function LedWall({
   progress = 1,
   center = [0.5, 0.5],
   waviness = 0.25,
+  flicker = 0.3,
   tuning,
 }: LedWallProps) {
   return (
@@ -65,6 +72,7 @@ export function LedWall({
       bleed={bleed}
       center={center}
       dotSize={dotSize}
+      flicker={flicker}
       progress={progress}
       spacing={spacing}
       tuning={tuning}

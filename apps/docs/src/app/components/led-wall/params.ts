@@ -8,6 +8,7 @@ export interface LedWallParams {
   centerX: number;
   centerY: number;
   waviness: number;
+  flicker: number;
   tuning: LedWallTuning;
 }
 
@@ -19,5 +20,14 @@ export const INITIAL: LedWallParams = {
   centerX: 0.5,
   centerY: 1,
   waviness: 0.25,
-  tuning: { fadeWidth: 0.08, jitter: 0.12, warpAmount: 0.6, warpFrequency: 2.5 },
+  flicker: 0.3,
+  tuning: {
+    fadeWidth: 0.08,
+    jitter: 0.12,
+    warpAmount: 0.6,
+    warpFrequency: 2.5,
+    variance: 0.5,
+    flickerDepth: 0.4,
+    flickerSpeed: 2.4,
+  },
 };

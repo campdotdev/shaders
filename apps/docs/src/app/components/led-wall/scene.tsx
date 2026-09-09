@@ -20,6 +20,7 @@ export default function LedWallScene({
         bleed={params.bleed}
         center={[params.centerX, params.centerY]}
         dotSize={params.dotSize}
+        flicker={params.flicker}
         progress={params.progress}
         spacing={params.spacing}
         tuning={params.tuning}
