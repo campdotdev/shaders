@@ -3,11 +3,13 @@ import { describe, expect, it } from 'vitest';
 import type { AnimatableSignal } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { isLedWallStatic } from './static.js';
 
-// Typed as AnimatableSignal<never> so this one mock satisfies both the
-// number-typed `progress` field and the tuple-typed `spotlight` field below:
-// isSignal only inspects get/on's shape and never reads the return value, so
-// the cast changes nothing the tests observe.
-const signal = { get: () => 0.5, on: () => () => undefined } as unknown as AnimatableSignal<never>;
+// Two correctly-typed mocks: one for the number-typed fields (`progress`,
+// `flicker`, `spotlightIntensity`), one for the tuple-typed `spotlight`.
+const numberSignal: AnimatableSignal<number> = { get: () => 0.5, on: () => () => undefined };
+const pointSignal: AnimatableSignal<readonly [number, number]> = {
+  get: () => [0.5, 0.5] as const,
+  on: () => () => undefined,
+};
 
 // The wall may tell the scene to stop drawing only when nothing on it can
 // change between frames: no flicker, no spotlight, and no live signal on
@@ -35,13 +37,13 @@ describe('isLedWallStatic', () => {
     expect(
       isLedWallStatic({
         flicker: 0,
-        progress: signal,
+        progress: numberSignal,
         spotlight: [0.5, 0.5],
         spotlightIntensity: 0,
       }),
     ).toBe(false);
     expect(
-      isLedWallStatic({ flicker: 0, progress: 1, spotlight: signal, spotlightIntensity: 0 }),
+      isLedWallStatic({ flicker: 0, progress: 1, spotlight: pointSignal, spotlightIntensity: 0 }),
     ).toBe(false);
   });
 
