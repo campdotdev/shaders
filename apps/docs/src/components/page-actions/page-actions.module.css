@@ -56,7 +56,7 @@
     color: var(--fg);
   }
 
-  .copy:hover svg,
+  .copy:hover .copyGlyph,
   .more:hover svg {
     color: var(--fg);
   }
@@ -81,8 +81,65 @@
   border-radius: var(--radius-md) 0 0 var(--radius-md);
 }
 
-.copy svg {
+.copy .copyGlyph {
   color: var(--gray-100);
+}
+
+.copy:disabled {
+  cursor: default;
+}
+
+/* ---- The copied swap ---- */
+
+/* The glyph is a 16px box with both icons laid over each other, and a
+   successful copy swaps one for the other: the copy glyph fades and shrinks
+   a touch as the check fades in and grows to full size, in lime, the same
+   lime the picker's copy button turns. The two run together so the swap
+   reads as one glyph changing rather than one leaving and another arriving.
+   The check starts at 0.9 and not 0, so it reads as already almost there;
+   opacity rides a fade token and the scale a duration token, so Reduce
+   Motion keeps the crossfade and drops the growth. */
+.glyph {
+  position: relative;
+  flex: none;
+  width: var(--spacing-4);
+  height: var(--spacing-4);
+}
+
+.copyGlyph,
+.checkGlyph {
+  position: absolute;
+  inset: 0;
+  transition:
+    opacity var(--fade-sm) var(--ease-out),
+    transform var(--duration-sm) var(--ease-out);
+}
+
+.copy .checkGlyph {
+  opacity: 0;
+  transform: scale(0.9);
+  color: var(--accent);
+}
+
+.copy[data-copied] .copyGlyph {
+  opacity: 0;
+  transform: scale(0.9);
+}
+
+.copy[data-copied] .checkGlyph {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 /* The chevron cell: a 32px square behind a hairline, with the glyph
@@ -136,7 +193,8 @@
    left and 8px on the right, 6px corners, 2px from the next row. Base UI
    marks the row under the pointer or the keyboard cursor as highlighted,
    which the mock draws as the darker gray fill, the same fill the table of
-   contents gives its current row. */
+   contents gives its current row. A disabled row, Copy React before the
+   island has mounted, dims to the muted gray. */
 .row {
   display: flex;
   align-items: center;
@@ -153,4 +211,9 @@
 .row[data-highlighted] {
   background: var(--gray-800);
   text-decoration: none;
+}
+
+.row[data-disabled] {
+  color: var(--fg-muted);
+  cursor: default;
 }

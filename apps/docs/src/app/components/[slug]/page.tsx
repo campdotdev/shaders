@@ -18,6 +18,7 @@ import { notFound } from 'next/navigation';
 
 import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
 import { CodeBlock } from '@/components/code-block/code-block';
+import { CopySourceProvider } from '@/components/controls';
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
 import { PageActions } from '@/components/page-actions/page-actions';
 import { PageToc, type PageTocSection } from '@/components/page-toc/page-toc';
@@ -88,16 +89,21 @@ export default async function ComponentPage({ params }: PageProps) {
   return (
     <main>
       <Breadcrumbs className={styles.breadcrumbs} crumbs={crumbs} />
-      <div id={slug}>
-        <header className={styles.header}>
-          <div className={styles.heading}>
-            <h1 className={styles.title}>{record.label}</h1>
-            <p className={styles.description}>{record.description}</p>
-          </div>
-          <PageActions slug={slug} />
-        </header>
-        <Island />
-      </div>
+      {/* The header's Copy React reads the island's control store through
+          this provider; see the copy source in controls/context.tsx. The
+          catalog label doubles as the JSX tag name. */}
+      <CopySourceProvider>
+        <div id={slug}>
+          <header className={styles.header}>
+            <div className={styles.heading}>
+              <h1 className={styles.title}>{record.label}</h1>
+              <p className={styles.description}>{record.description}</p>
+            </div>
+            <PageActions componentName={record.label} siblings={entry.copySiblings} slug={slug} />
+          </header>
+          <Island />
+        </div>
+      </CopySourceProvider>
       {/* Sits right after the demo grid so its lines can measure back up to
           the shader's center; see .dock in page-toc.module.css. */}
       <PageToc sections={sections} />
