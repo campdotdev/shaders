@@ -139,8 +139,15 @@
   --code-comment: var(--gray-200);
 }
 
+/* The window's scroll bar, in the same thin grey the inner scroll areas
+   draw (components/scroll-area): a gray-600 thumb on a transparent track.
+   These two properties are the whole styling, since a browser that honors
+   them ignores the ::-webkit-scrollbar pseudo-elements, and macOS overlay
+   bars on a trackpad hide themselves regardless. */
 html {
   color-scheme: dark;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gray-600) transparent;
 }
 
 html,
@@ -230,4 +237,13 @@ a:hover {
    pseudo-element, which inline styles cannot reach — so it lives here. */
 .search-dialog::backdrop {
   background: rgba(0, 0, 0, 0.5);
+}
+
+/* The search results' scroll viewport (SearchBar wraps the listbox in the
+   shared ScrollArea). Half the viewport is as tall as the list gets before
+   it scrolls. Two classes on purpose: the ScrollArea's own viewport rule
+   sets max-height to inherit, and at equal specificity that module rule
+   loads later and would win. */
+.search-dialog .search-results-viewport {
+  max-height: 50vh;
 }

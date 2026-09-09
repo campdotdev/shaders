@@ -1,5 +1,7 @@
 import type { HTMLAttributes, ReactNode } from 'react';
 
+import { ScrollArea } from '@/components/scroll-area/scroll-area';
+
 function Callout({ children }: { children: ReactNode }) {
   return (
     <div
@@ -32,20 +34,28 @@ function Steps({ children }: { children: ReactNode }) {
   );
 }
 
+// A fenced code block. The outer div carries the block's margin and rounds
+// the ScrollArea's clip, and the <pre> is as wide as its longest line and
+// never narrower than the block, so its background covers a line that
+// scrolls sideways.
 function Pre(props: HTMLAttributes<HTMLPreElement>) {
   return (
-    <pre
-      {...props}
-      style={{
-        background: 'color-mix(in oklab, currentColor 8%, transparent)',
-        padding: '1rem',
-        borderRadius: '0.5rem',
-        overflow: 'auto',
-        margin: '1rem 0',
-        fontSize: '0.875rem',
-        ...props.style,
-      }}
-    />
+    <div style={{ margin: '1rem 0', borderRadius: '0.5rem', overflow: 'hidden' }}>
+      <ScrollArea orientation="horizontal">
+        <pre
+          {...props}
+          style={{
+            width: 'max-content',
+            minWidth: '100%',
+            background: 'color-mix(in oklab, currentColor 8%, transparent)',
+            padding: '1rem',
+            margin: 0,
+            fontSize: '0.875rem',
+            ...props.style,
+          }}
+        />
+      </ScrollArea>
+    </div>
   );
 }
 

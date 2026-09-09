@@ -4,15 +4,19 @@
    with 8px, and rows with 2px. Every header and row shares one 36px box:
    12px on the left, 8px elsewhere, 6px corners. */
 
-/* Sticky so the sidebar stays put while a long page scrolls, and scrolls
-   itself once the tree outgrows the viewport. The shell's grid gives it the
-   2xs column; the padding is the mock's aside inset. */
+/* Sticky so the sidebar stays put while a long page scrolls. The shell's
+   grid gives it the 2xs column, and the 100vh cap flows into the ScrollArea
+   inside, which scrolls the tree once it outgrows the viewport. */
 .sidebar {
   position: sticky;
   top: 0;
   align-self: start;
   max-height: 100vh;
-  overflow-y: auto;
+}
+
+/* The tree itself: tiers stacked with a 16px gap, on the mock's aside
+   inset. The scroll bar overlays the right-hand inset. */
+.tree {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-4);

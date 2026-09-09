@@ -5,23 +5,66 @@
  * over rows, with the current page's row highlighted in lime. It renders
  * whatever tree the docs shell hands it, so on a component page the top
  * level is the taxonomy tiers and on a guide it is the section's groups.
- * A client component only because the active row comes from the pathname.
+ * A client component because the active row comes from the pathname and
+ * because a row click has to pin the sidebar before the page changes.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { type MouseEvent, useRef } from 'react';
 
+import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types';
 
 import styles from './docs-sidebar.module.css';
 
+type RowClickHandler = (event: MouseEvent<HTMLAnchorElement>) => void;
+
+interface GroupProps {
+  group: ResolvedNavGroup;
+  /** Every row's click handler, the sidebar pin. */
+  onRowClick: RowClickHandler;
+  pathname: string;
+}
+
 export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   const pathname = usePathname();
+  const navRef = useRef<HTMLElement>(null);
+
+  // The sidebar is sticky under a header and banner that scroll away, so a
+  // reader reaches its lower groups by scrolling the window until the nav
+  // pins at the top of the viewport. Next's default scroll-to-top on
+  // navigation would then drop the nav back under the banner and push those
+  // groups below the fold again (SHA-130). So the rows opt out of that
+  // scroll, and this handler, which every row runs on the old page before
+  // the router swaps in the new one, brings the window up to the point where
+  // the nav pins. A reader who was past the banner lands with the sidebar
+  // exactly where it was and the new page's breadcrumbs at the top; a reader
+  // who was not sees nothing move. Doing it here rather than after the route
+  // changes leaves back and forward to the browser's own scroll restoration.
+  // A modifier-key click opens a new tab and leaves this page alone. Enter
+  // on a focused row fires a click event too, so a keyboard reader gets the
+  // same pin.
+  function pinSidebar(event: MouseEvent<HTMLAnchorElement>) {
+    const opensHere =
+      event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+    const shell = navRef.current?.parentElement;
+
+    if (!opensHere || !shell) return;
+
+    const shellTop = shell.getBoundingClientRect().top + window.scrollY;
+
+    if (window.scrollY > shellTop) window.scrollTo({ top: shellTop, behavior: 'instant' });
+  }
 
   return (
-    <nav aria-label="Docs" className={styles.sidebar} data-pagefind-ignore="all">
-      {tree.map((group) => (
-        <Tier group={group} key={group.label} pathname={pathname} />
-      ))}
+    <nav aria-label="Docs" className={styles.sidebar} data-pagefind-ignore="all" ref={navRef}>
+      <ScrollArea>
+        <div className={styles.tree}>
+          {tree.map((group) => (
+            <Tier group={group} key={group.label} onRowClick={pinSidebar} pathname={pathname} />
+          ))}
+        </div>
+      </ScrollArea>
     </nav>
   );
 }
@@ -29,23 +72,23 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
 // A top-level group: the mock's "category", a 16px header over its groups.
 // A tier whose items are rows rather than groups, such as Guides on the
 // MDX pages, renders those rows directly under its header.
-function Tier({ group, pathname }: { group: ResolvedNavGroup; pathname: string }) {
+function Tier({ group, onRowClick, pathname }: GroupProps) {
   return (
     <section className={styles.tier}>
       <h2 className={styles.tierHeader}>{group.label}</h2>
       <div className={styles.groups}>
-        <Items items={group.items} pathname={pathname} />
+        <Items items={group.items} onRowClick={onRowClick} pathname={pathname} />
       </div>
     </section>
   );
 }
 
 // A nested group: the mock's "group", a 14px header over its rows.
-function Group({ group, pathname }: { group: ResolvedNavGroup; pathname: string }) {
+function Group({ group, onRowClick, pathname }: GroupProps) {
   return (
     <section className={styles.group}>
       <h3 className={styles.groupHeader}>{group.label}</h3>
-      <Items items={group.items} pathname={pathname} />
+      <Items items={group.items} onRowClick={onRowClick} pathname={pathname} />
     </section>
   );
 }
@@ -54,9 +97,11 @@ function Group({ group, pathname }: { group: ResolvedNavGroup; pathname: string 
 // group between them breaks the list rather than nesting inside it.
 function Items({
   items,
+  onRowClick,
   pathname,
 }: {
   items: Array<ResolvedNavGroup | ResolvedNavItem>;
+  onRowClick: RowClickHandler;
   pathname: string;
 }) {
   const blocks: Array<ResolvedNavGroup | ResolvedNavItem[]> = [];
@@ -74,10 +119,13 @@ function Items({
       <ul className={styles.list} key={block[0]?.url}>
         {block.map((item) => (
           <li key={item.url}>
+            {/* scroll={false} keeps the window where pinSidebar put it. */}
             <Link
               aria-current={item.url === pathname ? 'page' : undefined}
               className={styles.row}
               href={item.url}
+              onClick={onRowClick}
+              scroll={false}
             >
               {item.label}
             </Link>
@@ -85,7 +133,7 @@ function Items({
         ))}
       </ul>
     ) : (
-      <Group group={block} key={block.label} pathname={pathname} />
+      <Group group={block} key={block.label} onRowClick={onRowClick} pathname={pathname} />
     ),
   );
 }

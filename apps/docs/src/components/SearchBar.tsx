@@ -3,6 +3,8 @@
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { ScrollArea } from '@/components/scroll-area/scroll-area';
+
 interface SearchResult {
   url: string;
   title: string;
@@ -412,50 +414,53 @@ export function SearchBar() {
             </p>
           )}
         </div>
-        <ul
-          id="search-results"
-          ref={listRef}
-          role="listbox"
-          style={{
-            listStyle: 'none',
-            margin: 0,
-            padding: 0,
-            maxHeight: '50vh',
-            overflowY: 'auto',
-          }}
-        >
-          {results.map((result, resultIndex) => (
-            <li
-              aria-selected={resultIndex === selectedIndex}
-              id={`search-result-${resultIndex}`}
-              key={result.url}
-              onClick={() => navigate(result.url)}
-              onMouseEnter={() => setSelectedIndex(resultIndex)}
-              role="option"
-              style={{
-                padding: '0.625rem 1rem',
-                cursor: 'pointer',
-                background: resultIndex === selectedIndex ? 'var(--bg-muted)' : 'transparent',
-                borderBottom: '1px solid var(--border)',
-              }}
-            >
-              <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{result.title}</div>
-              <div
-                // Pagefind escapes indexed text and adds <mark>; fallback
-                // excerpts are this repo's own frontmatter descriptions.
-                // First-party static content — accepted, not re-sanitized.
-                // react-doctor-disable-next-line react-doctor/dangerous-html-sink
-                dangerouslySetInnerHTML={{ __html: result.excerpt }}
+        {/* The results scroll inside the shared ScrollArea; the list keeps
+            the listbox role so it still contains only options. Its height
+            cap is the .search-results-viewport rule in globals.css. */}
+        <ScrollArea viewportClassName="search-results-viewport">
+          <ul
+            id="search-results"
+            ref={listRef}
+            role="listbox"
+            style={{
+              listStyle: 'none',
+              margin: 0,
+              padding: 0,
+            }}
+          >
+            {results.map((result, resultIndex) => (
+              <li
+                aria-selected={resultIndex === selectedIndex}
+                id={`search-result-${resultIndex}`}
+                key={result.url}
+                onClick={() => navigate(result.url)}
+                onMouseEnter={() => setSelectedIndex(resultIndex)}
+                role="option"
                 style={{
-                  fontSize: '0.8125rem',
-                  color: 'var(--fg-muted)',
-                  marginTop: '0.25rem',
-                  lineHeight: 1.4,
+                  padding: '0.625rem 1rem',
+                  cursor: 'pointer',
+                  background: resultIndex === selectedIndex ? 'var(--bg-muted)' : 'transparent',
+                  borderBottom: '1px solid var(--border)',
                 }}
-              />
-            </li>
-          ))}
-        </ul>
+              >
+                <div style={{ fontWeight: 500, color: 'var(--fg)' }}>{result.title}</div>
+                <div
+                  // Pagefind escapes indexed text and adds <mark>; fallback
+                  // excerpts are this repo's own frontmatter descriptions.
+                  // First-party static content — accepted, not re-sanitized.
+                  // react-doctor-disable-next-line react-doctor/dangerous-html-sink
+                  dangerouslySetInnerHTML={{ __html: result.excerpt }}
+                  style={{
+                    fontSize: '0.8125rem',
+                    color: 'var(--fg-muted)',
+                    marginTop: '0.25rem',
+                    lineHeight: 1.4,
+                  }}
+                />
+              </li>
+            ))}
+          </ul>
+        </ScrollArea>
       </dialog>
     </>
   );

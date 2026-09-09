@@ -33,45 +33,20 @@
   max-height: min(calc(var(--stage-width) * 2 / 3), calc(100vh - var(--spacing-12)));
 }
 
-/* The scroll area root: the column's height cap flows down to the viewport
-   through `inherit`, and the scrollbar and fade position against this box. */
+/* The scroll area root, which the fade positions against. The height cap
+   and the bar itself come from the shared ScrollArea's own styles; this
+   class exists so the fade rule below and the mobile override can name it. */
 .scroller {
-  position: relative;
   max-height: inherit;
 }
 
-/* The element that scrolls. Base UI hides the native scrollbar here. It
-   carries the panel's corner radius so the panel's sticky title row, which
-   sits at this element's top edge once the panel has scrolled, is clipped
-   to the same rounded corners the panel itself has. */
+/* The element that scrolls. It carries the panel's corner radius so the
+   panel's sticky title row, which sits at this element's top edge once the
+   panel has scrolled, is clipped to the same rounded corners the panel
+   itself has. */
 .viewport {
-  max-height: inherit;
-  overflow-y: auto;
   border-radius: var(--radius-xl);
   overscroll-behavior: contain;
-}
-
-/* The custom scrollbar: an 8px track inset from the panel's edge and its
-   rounded corners, shown only while the reader scrolls (Base UI keeps
-   data-scrolling on for half a second after the last scroll) or while the
-   pointer is on the bar, so it can be grabbed. Otherwise it fades out and
-   the controls have the panel's full width. */
-.scrollbar {
-  z-index: 2;
-  width: var(--spacing-2);
-  margin: var(--spacing-1);
-  opacity: 0;
-  transition: opacity var(--fade-sm) var(--ease-hover);
-}
-
-.scroller[data-scrolling] .scrollbar,
-.scrollbar:hover {
-  opacity: 1;
-}
-
-.thumb {
-  background: var(--gray-600);
-  border-radius: var(--radius-full);
 }
 
 /* The mock's "reveal": 64px of the panel's own color fading upward over its
