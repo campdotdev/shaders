@@ -100,21 +100,21 @@
 /* ---- The menu ---- */
 
 /* Portaled to <body>, so it sets its own type. The mock's panel, shared
-   with the table of contents: 256px wide, 10px of padding, the darkest
-   gray with a hairline and 6px corners. It scales in from the edge nearest
-   the chevron, the site's popup pattern; Base UI sets --transform-origin
-   from where the popup was placed. */
+   with the table of contents: 256px wide, 12px of padding, the darkest
+   gray with a hairline and 12px corners, 8px below the chevron. It scales
+   in from the edge nearest the chevron, the site's popup pattern; Base UI
+   sets --transform-origin from where the popup was placed. */
 .popup {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-0-5);
   width: var(--container-3xs);
-  padding: var(--spacing-2-5);
+  padding: var(--spacing-3);
   background: var(--gray-900);
   color: var(--fg);
   border: var(--border-width-1) solid var(--white-a5);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-xl);
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
   font-size: var(--font-size-sm);
   line-height: var(--leading-5);

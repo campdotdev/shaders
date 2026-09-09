@@ -43,7 +43,7 @@ export function PageActions({ slug }: PageActionsProps) {
           <ChevronDownIcon />
         </Menu.Trigger>
         <Menu.Portal>
-          <Menu.Positioner align="end" side="bottom" sideOffset={4}>
+          <Menu.Positioner align="end" side="bottom" sideOffset={8}>
             <Menu.Popup className={styles.popup}>
               <Menu.Item className={styles.row}>
                 <span className={styles.rowTitle}>Copy React</span>
