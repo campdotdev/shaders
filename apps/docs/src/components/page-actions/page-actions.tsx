@@ -3,9 +3,10 @@
 /**
  * The split "Copy React" button in a component page's header, after the
  * Figma mock: a bordered box holding the copy action on the left and a
- * chevron cell on the right that opens a menu of three actions. Copy React
- * copies the demo's current props as JSX; the two markdown rows will copy
- * and open the page's markdown export once it ships (SHA-115). The shared
+ * chevron cell on the right that opens a menu of further actions. Copy
+ * React copies the demo's current props as JSX; the menu's two markdown
+ * rows will copy and open the page's markdown export once it ships
+ * (SHA-115). The shared
  * components/[slug] template renders it beside the title and description,
  * inside the CopySourceProvider that the demo island publishes its control
  * store into (controls/context.tsx).
@@ -87,13 +88,13 @@ export function PageActions({ componentName, siblings }: PageActionsProps) {
               1px inside that edge, behind the box's border. */}
           <Menu.Positioner align="end" anchor={boxRef} side="bottom" sideOffset={6}>
             <Menu.Popup className={styles.popup}>
-              <Menu.Item className={styles.row} disabled={store === null} onClick={copyReact}>
-                Copy React
-              </Menu.Item>
-              {/* Disabled until the markdown export ships (SHA-115): the
-                  copy row will run through the same clipboard hook as Copy
-                  React, and the view row becomes a Menu.LinkItem to the
-                  export in a new tab. */}
+              {/* Each row is its own action and runs on click; the left
+                  half of the button always means Copy React, so the menu
+                  does not repeat it. Both rows are disabled until the
+                  markdown export ships (SHA-115): the copy row will run
+                  through the same clipboard hook as Copy React, and the
+                  view row becomes a Menu.LinkItem to the export in a new
+                  tab. */}
               <Menu.Item className={styles.row} disabled>
                 Copy as markdown
               </Menu.Item>

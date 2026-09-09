@@ -47,11 +47,9 @@ test('Copy React copies the demo with its current params', async ({ page }) => {
   await expect(button).not.toHaveAttribute('data-copied', 'true', { timeout: 3000 });
 });
 
-test('the menu copies the same snippet and lines up with the button box', async ({ page }) => {
+test('the menu lines up with the button box', async ({ page }) => {
   await page.goto('/components/aurora');
   await page.waitForLoadState('networkidle');
-
-  await page.evaluate(() => navigator.clipboard.writeText('sentinel'));
 
   const chevron = page.getByRole('button', { name: 'More copy options' });
 
@@ -70,15 +68,11 @@ test('the menu copies the same snippet and lines up with the button box', async 
   expect(menuRight).toBe(boxRight);
   expect(shaderRight).toBe(boxRight);
 
-  await page.getByRole('menuitem', { name: 'Copy React' }).click();
+  // The left half of the button is Copy React, so the menu holds only the
+  // markdown rows, both disabled until the export ships.
+  const rows = page.getByRole('menuitem');
 
-  await expect(menu).toBeHidden();
-  await expect(page.getByRole('button', { name: 'Copy React' })).toHaveAttribute(
-    'data-copied',
-    'true',
-  );
-
-  const copied = await page.evaluate(() => navigator.clipboard.readText());
-
-  expect(copied).toContain('<Aurora');
+  await expect(rows).toHaveText(['Copy as markdown', 'View as markdown']);
+  await expect(rows.first()).toHaveAttribute('aria-disabled', 'true');
+  await expect(rows.last()).toHaveAttribute('aria-disabled', 'true');
 });
