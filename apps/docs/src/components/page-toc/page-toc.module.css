@@ -115,14 +115,14 @@
 /* ---- The menu ---- */
 
 /* Portaled to <body>, so it sets its own type. The mock's panel, shared
-   with the header's copy menu (page-actions/): 256px wide, 12px of padding,
-   the darkest gray with a hairline and 12px corners, 8px from the lines. It
+   with the header's copy menu (page-actions/): 256px wide, 6px of padding,
+   the darkest gray with a hairline and 12px corners, 6px from the lines. It
    scales in from the edge nearest the lines, the site's popup pattern; Base
    UI sets --transform-origin from where the popup was placed. */
 .popup {
   box-sizing: border-box;
   width: var(--container-3xs);
-  padding: var(--spacing-3);
+  padding: var(--spacing-1-5);
   background: var(--gray-900);
   color: var(--fg);
   border: var(--border-width-1) solid var(--white-a5);
@@ -151,15 +151,16 @@
   list-style: none;
 }
 
-/* A row is the sidebar's row: 14px muted text in a 36px box with 12px on
-   the left and 8px elsewhere, 6px corners. Hover borrows the sidebar's
-   faint white fill. The current section is the mock's darker gray fill
-   under full-white text, rather than the sidebar's lime, because it marks
-   where the reader is on the page and not a page they chose. */
+/* A row is the header button's shape: 14px muted text in a 32px box with
+   12px on the left and 8px on the right, 6px corners. Hover borrows the
+   sidebar's faint white fill. The current section is the mock's darker
+   gray fill under full-white text, rather than the sidebar's lime, because
+   it marks where the reader is on the page and not a page they chose. */
 .row {
-  display: block;
-  height: var(--spacing-9);
-  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  display: flex;
+  align-items: center;
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-2) 0 var(--spacing-3);
   border-radius: var(--radius-md);
   color: var(--fg-muted);
   text-decoration: none;

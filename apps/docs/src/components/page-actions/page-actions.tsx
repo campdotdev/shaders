@@ -43,16 +43,10 @@ export function PageActions({ slug }: PageActionsProps) {
           <ChevronDownIcon />
         </Menu.Trigger>
         <Menu.Portal>
-          <Menu.Positioner align="end" side="bottom" sideOffset={8}>
+          <Menu.Positioner align="end" side="bottom" sideOffset={6}>
             <Menu.Popup className={styles.popup}>
-              <Menu.Item className={styles.row}>
-                <span className={styles.rowTitle}>Copy React</span>
-                <span className={styles.rowDescription}>Copy this component as React</span>
-              </Menu.Item>
-              <Menu.Item className={styles.row}>
-                <span className={styles.rowTitle}>Copy as markdown</span>
-                <span className={styles.rowDescription}>Copy this page as markdown for LLMs</span>
-              </Menu.Item>
+              <Menu.Item className={styles.row}>Copy React</Menu.Item>
+              <Menu.Item className={styles.row}>Copy as markdown</Menu.Item>
               <Menu.LinkItem
                 className={styles.row}
                 closeOnClick
@@ -60,8 +54,7 @@ export function PageActions({ slug }: PageActionsProps) {
                 rel="noreferrer"
                 target="_blank"
               >
-                <span className={styles.rowTitle}>View as markdown</span>
-                <span className={styles.rowDescription}>View this page as plain text</span>
+                View as markdown
               </Menu.LinkItem>
             </Menu.Popup>
           </Menu.Positioner>

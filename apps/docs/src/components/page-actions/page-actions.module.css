@@ -100,17 +100,19 @@
 /* ---- The menu ---- */
 
 /* Portaled to <body>, so it sets its own type. The mock's panel, shared
-   with the table of contents: 256px wide, 12px of padding, the darkest
-   gray with a hairline and 12px corners, 8px below the chevron. It scales
-   in from the edge nearest the chevron, the site's popup pattern; Base UI
-   sets --transform-origin from where the popup was placed. */
+   with the table of contents: the darkest gray with a hairline and 12px
+   corners, 6px of padding, 6px below the chevron. This one is 208px wide,
+   the three labels' width with room to spare, where the table of contents
+   takes the 3xs container. It scales in from the edge nearest the chevron,
+   the site's popup pattern; Base UI sets --transform-origin from where the
+   popup was placed. */
 .popup {
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-0-5);
-  width: var(--container-3xs);
-  padding: var(--spacing-3);
+  width: var(--spacing-52);
+  padding: var(--spacing-1-5);
   background: var(--gray-900);
   color: var(--fg);
   border: var(--border-width-1) solid var(--white-a5);
@@ -130,16 +132,16 @@
   transform: scale(0.95);
 }
 
-/* A row is a title over a one-line description: 8px of padding with 12px
-   on the left, 6px corners, and the two lines 2px apart. Base UI marks the
-   row under the pointer or the keyboard cursor as highlighted, which the
-   mock draws as the darker gray fill, the same fill the table of contents
-   gives its current row. */
+/* A row is the button's shape: a 14px label in a 32px box with 12px on the
+   left and 8px on the right, 6px corners, 2px from the next row. Base UI
+   marks the row under the pointer or the keyboard cursor as highlighted,
+   which the mock draws as the darker gray fill, the same fill the table of
+   contents gives its current row. */
 .row {
   display: flex;
-  flex-direction: column;
-  gap: var(--spacing-0-5);
-  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
+  align-items: center;
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-2) 0 var(--spacing-3);
   border-radius: var(--radius-md);
   color: var(--fg);
   text-decoration: none;
@@ -151,15 +153,4 @@
 .row[data-highlighted] {
   background: var(--gray-800);
   text-decoration: none;
-}
-
-.rowTitle {
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-5);
-}
-
-.rowDescription {
-  color: var(--gray-100);
-  font-size: var(--font-size-xs);
-  line-height: var(--leading-4);
 }
