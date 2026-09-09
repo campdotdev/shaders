@@ -61,6 +61,7 @@ function LedWallControls() {
       </Section>
       <Section title="Motion">
         <SliderInput label="Flicker" max={1} min={0} path="flicker" step={0.01} />
+        <SliderInput label="Speed" max={8} min={0} path="speed" step={0.1} />
       </Section>
       <Section title="Tuning (dev)">
         <SliderInput
@@ -80,14 +81,6 @@ function LedWallControls() {
           step={0.25}
         />
         <SliderInput label="Variance" max={0.9} min={0} path="tuning.variance" step={0.01} />
-        <SliderInput label="Flicker depth" max={1} min={0} path="tuning.flickerDepth" step={0.01} />
-        <SliderInput
-          label="Flicker speed"
-          max={8}
-          min={0.2}
-          path="tuning.flickerSpeed"
-          step={0.1}
-        />
       </Section>
     </ControlPanel>
   );

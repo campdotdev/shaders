@@ -23,6 +23,7 @@ export default function LedWallScene({
         flicker={params.flicker}
         progress={params.progress}
         spacing={params.spacing}
+        speed={params.speed}
         tuning={params.tuning}
         waviness={params.waviness}
       />
