@@ -403,8 +403,10 @@ export function LedWallShader({
 
       // The dot's half-edge in cell units. dotSize in device pixels over the
       // cell pitch gives the edge as a fraction of the cell; half of it is
-      // the distance from the center to the rim. min(0.5) keeps a dot from
-      // growing past its own cell when dotSize animates above spacing.
+      // the distance from the center to the rim. The spotlight then grows
+      // that by up to swell's fraction, at full spot strength. min(0.5)
+      // comes last so a dot never crosses into the next cell, whether it
+      // got there from a large dotSize or from a strong spotlight.
       const halfEdge = dotSizeUniform
         .mul(dprUniform)
         .div(cellPx)
