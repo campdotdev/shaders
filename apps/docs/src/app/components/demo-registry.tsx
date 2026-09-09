@@ -16,6 +16,7 @@ import { DotFieldIsland } from './dot-field/demo';
 import { FractalNoiseIsland } from './fractal-noise/demo';
 import { GodRaysIsland } from './god-rays/demo';
 import { GrainIsland } from './grain/demo';
+import { LedWallIsland } from './led-wall/demo';
 import { LinearGradientIsland } from './linear-gradient/demo';
 import { MeshGradientIsland } from './mesh-gradient/demo';
 import { RadialGradientIsland } from './radial-gradient/demo';
@@ -162,6 +163,22 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
           at 60fps), <code>0.4</code> ≈ 24Hz (chunky film cadence), <code>0</code> freezes the grain
           pattern.
         </p>
+      </>
+    ),
+  },
+  'led-wall': {
+    Island: LedWallIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <LedWall spacing={5} dotSize={2} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        LED Wall is a post-process layer: stack it after any components inside a{' '}
+        <code>&lt;ShaderScene&gt;</code> and it screens the composed scene into a grid of square
+        dots, each lit with the scene color at its cell. The gaps are transparent unless{' '}
+        <code>bleed</code> lets the scene through.
       </>
     ),
   },

@@ -10,6 +10,11 @@ import type { CategorySlug } from './taxonomy';
 export interface ComponentMeta {
   description: string;
   category: CategorySlug;
+  /**
+   * Sidebar and page label, when the prettified slug gets an acronym wrong.
+   * Absent for every component whose slug prettifies correctly.
+   */
+  label?: string;
 }
 
 export const COMPONENTS = {
@@ -52,6 +57,12 @@ export const COMPONENTS = {
     description:
       'Additive or subtractive film grain overlay. Stacks on top of any base component inside <ShaderScene>.',
     category: 'lens-film',
+  },
+  'led-wall': {
+    description:
+      'Screens the scene into a wall of square LED dots, each lit with the color beneath it, with a reveal that spreads from a point, a flicker, and a cursor spotlight. Stacks on top of any base component inside <ShaderScene>.',
+    category: 'retro-glitch',
+    label: 'LED Wall',
   },
   'linear-gradient': {
     description: 'Animated linear gradient. The simplest, foundational Shaders component.',

@@ -1,0 +1,23 @@
+'use client';
+
+import type { ReactNode } from 'react';
+
+import { LedWall, MeshGradient, ShaderScene } from '@camp-dev/shaders';
+
+import { INITIAL, type LedWallParams } from './params';
+
+export default function LedWallScene({
+  params = INITIAL,
+  children,
+}: {
+  params?: LedWallParams;
+  children?: ReactNode;
+} = {}) {
+  return (
+    <ShaderScene>
+      <MeshGradient />
+      <LedWall bleed={params.bleed} dotSize={params.dotSize} spacing={params.spacing} />
+      {children}
+    </ShaderScene>
+  );
+}
