@@ -11,7 +11,10 @@
    so the box's hairline is the only line around them. The press is felt
    through a slight scale of the whole box, whichever half is pressed:
    scaling one half alone pulls it away from the border and shows the box
-   behind it, so the box is the thing that moves. */
+   behind it, so the box is the thing that moves. It scales to 0.98 rather
+   than the site's usual 0.97 because the box is about twice the width of
+   the panel's text button, and 2% of it is the same pixel of give that 3%
+   is there. */
 .actions {
   display: inline-flex;
   flex: none;
@@ -27,7 +30,7 @@
 
 .actions:has(.copy:active),
 .actions:has(.more:active) {
-  transform: scale(0.97);
+  transform: scale(0.98);
 }
 
 /* Shared by both buttons: the label gray on a transparent fill, hover to
