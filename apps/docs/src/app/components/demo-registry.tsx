@@ -88,6 +88,30 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   <ConicGradient />
 </ShaderScene>`,
   },
+  dissolve: {
+    Island: DissolveIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <Dissolve progress={0.5} pixelSize={4} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        <p>
+          Dissolve is a post-process layer: stack it after any components inside a{' '}
+          <code>&lt;ShaderScene&gt;</code> and drive <code>progress</code> from 0 to 1 to show them
+          block by block. Hidden blocks are transparent, so the page shows through.
+        </p>
+        <p>
+          It reads the alpha beneath it. Stacked after a feathered Radial Wipe, at{' '}
+          <code>progress</code> 1, it turns the wipe&apos;s soft edge into a ragged one, with the
+          wipe&apos;s <code>feather</code> setting how wide the ragged band is and{' '}
+          <code>pixelSize</code> its grain. A soft-edged source such as Blobs gets the same
+          treatment, which is the point of stacking a Dissolve over it.
+        </p>
+      </>
+    ),
+  },
   dither: {
     Island: DitherIsland,
     copySiblings: ['<MeshGradient />'],
@@ -111,30 +135,6 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
           (<code>0</code>) to gritty overshoot (<code>2</code>), and <code>threshold</code> gates
           the effect by brightness — slide it down to release the highlights until the effect is
           gone.
-        </p>
-      </>
-    ),
-  },
-  dissolve: {
-    Island: DissolveIsland,
-    copySiblings: ['<MeshGradient />'],
-    usageSnippet: `<ShaderScene>
-  <MeshGradient />
-  <Dissolve progress={0.5} pixelSize={4} />
-</ShaderScene>`,
-    usageNotes: (
-      <>
-        <p>
-          Dissolve is a post-process layer: stack it after any components inside a{' '}
-          <code>&lt;ShaderScene&gt;</code> and drive <code>progress</code> from 0 to 1 to show them
-          block by block. Hidden blocks are transparent, so the page shows through.
-        </p>
-        <p>
-          It reads the alpha beneath it. Stacked after a feathered Radial Wipe, at{' '}
-          <code>progress</code> 1, it turns the wipe&apos;s soft edge into a ragged one, with the
-          wipe&apos;s <code>feather</code> setting how wide the ragged band is and{' '}
-          <code>pixelSize</code> its grain. A soft-edged source such as Blobs gets the same
-          treatment, which is the point of stacking a Dissolve over it.
         </p>
       </>
     ),

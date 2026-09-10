@@ -6,7 +6,6 @@
 // <ShaderScene> and it screens everything beneath it into a grid of square
 // dots, each lit with the scene color at its cell's center.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
-import type { LedWallTuning } from './shader.js';
 import { LedWallShader } from './shader.js';
 
 export interface LedWallProps {
@@ -60,8 +59,6 @@ export interface LedWallProps {
    * value or an animation signal.
    */
   swell?: AnimatableProp<number>;
-  /** TEMPORARY tuning rig. Removed at the defaults gate. */
-  tuning?: Partial<LedWallTuning>;
 }
 
 export function LedWall({
@@ -73,7 +70,6 @@ export function LedWall({
   focus = [0.5, 0.5],
   focusRadius = 0.6,
   swell = 0.85,
-  tuning,
 }: LedWallProps) {
   return (
     <LedWallShader
@@ -85,7 +81,6 @@ export function LedWall({
       spacing={spacing}
       speed={speed}
       swell={swell}
-      tuning={tuning}
     />
   );
 }

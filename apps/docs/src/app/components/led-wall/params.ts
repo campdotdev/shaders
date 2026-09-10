@@ -1,5 +1,3 @@
-import type { LedWallTuning } from '@camp-dev/shaders';
-
 export interface LedWallParams {
   spacing: number;
   dotSize: number;
@@ -8,7 +6,6 @@ export interface LedWallParams {
   speed: number;
   focusRadius: number;
   swell: number;
-  tuning: LedWallTuning;
 }
 
 export const INITIAL: LedWallParams = {
@@ -19,7 +16,4 @@ export const INITIAL: LedWallParams = {
   speed: 2.4,
   focusRadius: 0.6,
   swell: 0.85,
-  tuning: {
-    variance: 0.5,
-  },
 };

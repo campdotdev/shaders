@@ -7,7 +7,6 @@
 // by block as `progress` rises. Stack it after a feathered wipe and it
 // grains the wipe's soft edge.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
-import type { DissolveTuning } from './shader.js';
 import { DissolveShader } from './shader.js';
 
 export interface DissolveProps {
@@ -26,10 +25,8 @@ export interface DissolveProps {
    * Accepts a static value or an animation signal.
    */
   pixelSize?: AnimatableProp<number>;
-  /** TEMPORARY tuning rig. Removed at the defaults gate. */
-  tuning?: Partial<DissolveTuning>;
 }
 
-export function Dissolve({ progress = 1, pixelSize = 4, tuning }: DissolveProps) {
-  return <DissolveShader pixelSize={pixelSize} progress={progress} tuning={tuning} />;
+export function Dissolve({ progress = 1, pixelSize = 4 }: DissolveProps) {
+  return <DissolveShader pixelSize={pixelSize} progress={progress} />;
 }

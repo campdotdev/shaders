@@ -16,7 +16,7 @@ export default function DissolveScene({
   return (
     <ShaderScene>
       <MeshGradient />
-      <Dissolve pixelSize={params.pixelSize} progress={params.progress} tuning={params.tuning} />
+      <Dissolve pixelSize={params.pixelSize} progress={params.progress} />
       {children}
     </ShaderScene>
   );

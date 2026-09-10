@@ -33,15 +33,15 @@ export const COMPONENTS = {
       'A color ramp sweeping clockwise around a center point, with pinwheel repeats and rotation. Completes the CSS gradient trio with LinearGradient and RadialGradient.',
     category: 'gradients',
   },
-  dither: {
-    description:
-      'Retro ordered dithering: pixelates the scene into chunky cells and posterizes its colors. Stacks on top of any base component inside <ShaderScene>.',
-    category: 'retro-glitch',
-  },
   dissolve: {
     description:
       'Turns the scene into grain, shown block by block as progress rises. Stacked after a feathered wipe, it grains the soft edge into a ragged one. Stacks on top of any base component inside <ShaderScene>.',
     category: 'transitions',
+  },
+  dither: {
+    description:
+      'Retro ordered dithering: pixelates the scene into chunky cells and posterizes its colors. Stacks on top of any base component inside <ShaderScene>.',
+    category: 'retro-glitch',
   },
   'dot-field': {
     description:

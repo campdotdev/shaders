@@ -84,21 +84,7 @@ export interface LedWallShaderProps {
    * animation signal.
    */
   swell: AnimatableProp<number>;
-  /** TEMPORARY tuning rig. Removed at the defaults gate. */
-  tuning?: Partial<LedWallTuning>;
 }
-
-// TEMPORARY tuning rig. Each field rides a uniform so the demo panel's
-// sliders glide without a rebuild. Stripped at the defaults gate, when the
-// landed values become the named constants below.
-export interface LedWallTuning {
-  /** Spread of the per-dot static brightness. 0 makes every dot equal, 0.5 lets a dot sit as low as half. */
-  variance: number;
-}
-
-export const DEFAULT_TUNING: LedWallTuning = {
-  variance: 0.5,
-};
 
 // ---------------------------------------------
 // Constants
@@ -108,6 +94,13 @@ export const DEFAULT_TUNING: LedWallTuning = {
 // displays. 0.7 is under one pixel, so the band touches only the pixels the
 // rim actually crosses.
 const RIM_SOFTNESS_PX = 0.7;
+
+// How far a dot's permanent brightness can fall below full, as a fraction.
+// Each dot draws its own share of this from its hash, so the grid never
+// reads as a flat print. 0 makes every dot equal; higher spreads them
+// further apart and reads as a wall with dead pixels. Found on the tuning
+// rig and baked at the defaults gate.
+const VARIANCE = 0.5;
 
 // The brightness dials are applied in a gamma-encoded approximation of
 // display space rather than in the linear light the pass composes in. In
@@ -127,7 +120,6 @@ export function LedWallShader({
   focus,
   focusRadius,
   swell,
-  tuning,
 }: LedWallShaderProps) {
   // The dials live in uniforms: values the CPU can update each frame without
   // rebuilding the shader, tracking either a static number or an animation
@@ -146,15 +138,6 @@ export function LedWallShader({
   const focusUniform = useAnimatablePoint(focus);
   const focusRadiusUniform = useAnimatableUniform(focusRadius);
   const swellUniform = useAnimatableUniform(swell);
-
-  // Tuning rig uniforms. TEMPORARY.
-  const resolvedTuning = { ...DEFAULT_TUNING, ...tuning };
-  const varianceUniform = useMemo(() => uniform(DEFAULT_TUNING.variance), []);
-
-  useEffect(() => {
-    varianceUniform.value = resolvedTuning.variance;
-    shaderContext?.scheduler.requestRender();
-  });
 
   // The render-on-demand vote: the scene may stop drawing only when nothing
   // on the wall can change between frames.
@@ -285,7 +268,7 @@ export function LedWallShader({
       // step. The wave is pushed into 0..1, scaled by the flicker dial, and
       // subtracted from 1: flicker 0 leaves the level untouched, flicker 1
       // takes the dot all the way to dark at the bottom of each breath.
-      const staticLevel = levelRandom.mul(varianceUniform).oneMinus();
+      const staticLevel = levelRandom.mul(VARIANCE).oneMinus();
       const tempo = tempoRandom.mul(0.4).add(0.8);
       const breath = sin(phaseUniform.mul(tempo).add(phaseRandom.mul(Math.PI * 2)))
         .mul(0.5)
@@ -363,7 +346,6 @@ export function LedWallShader({
       swellUniform,
       aspectUniform,
       dprUniform,
-      varianceUniform,
     ],
   );
 

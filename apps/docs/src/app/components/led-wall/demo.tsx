@@ -61,9 +61,6 @@ function LedWallControls() {
         <SliderInput label="Radius" max={1} min={0.05} path="focusRadius" step={0.01} />
         <SliderInput label="Swell" max={1.5} min={0} path="swell" step={0.05} />
       </Section>
-      <Section title="Tuning (dev)">
-        <SliderInput label="Variance" max={0.9} min={0} path="tuning.variance" step={0.01} />
-      </Section>
     </ControlPanel>
   );
 }

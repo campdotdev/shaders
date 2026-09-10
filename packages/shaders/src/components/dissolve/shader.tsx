@@ -38,48 +38,38 @@ export interface DissolveShaderProps {
    * value or an animation signal.
    */
   pixelSize: AnimatableProp<number>;
-  /** TEMPORARY tuning rig. Removed at the defaults gate. */
-  tuning?: Partial<DissolveTuning>;
 }
-
-// TEMPORARY tuning rig. Each field rides a uniform so the demo panel's
-// sliders glide without a rebuild. Stripped at the defaults gate, when the
-// landed values become named constants.
-export interface DissolveTuning {
-  /** Width of the pop-in fade per block, in block-value units, where 1 is the highest value a block can draw. */
-  fadeWidth: number;
-  /** How much of each block's value is its own static rather than the shared noise, 0 to 1. */
-  grain: number;
-  /** Frequency of the shared noise across the canvas, in cycles per canvas height. */
-  noiseFrequency: number;
-}
-
-export const DEFAULT_TUNING: DissolveTuning = {
-  fadeWidth: 0.08,
-  grain: 0.3,
-  noiseFrequency: 2.5,
-};
 
 // ---------------------------------------------
 // Constants
 // ---------------------------------------------
+// Width of the pop-in fade per block, in block-value units where 1 is the
+// highest value a block can draw. Wider makes each block ease in; narrower
+// snaps it on. Found on the tuning rig and baked at the defaults gate.
+const FADE_WIDTH = 0.08;
+
+// How much of a block's value is its own static rather than the shared
+// noise, 0 to 1. At 0 neighbouring blocks hold similar values and arrive
+// together in clumps; at 1 every block arrives on its own as pure static.
+// Found on the tuning rig and baked at the defaults gate.
+const GRAIN = 0.3;
+
+// Frequency of the shared noise across the canvas, in cycles per canvas
+// height. Higher breaks the clumps up smaller; lower makes them broad
+// drifts. Found on the tuning rig and baked at the defaults gate.
+const NOISE_FREQUENCY = 2.5;
+
 // Floor on the incoming alpha before the un-premultiply divide. Blocks
 // this transparent are hidden by the threshold anyway, so the floor only
 // keeps the divide finite.
 const MIN_ALPHA = 0.001;
 
-export function DissolveShader({ progress, pixelSize, tuning }: DissolveShaderProps) {
+export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
   // The dials live in uniforms: values the CPU can update each frame without
   // rebuilding the shader, tracking either a static number or an animation
   // signal.
   const progressUniform = useAnimatableUniform(progress);
   const pixelSizeUniform = useAnimatableUniform(pixelSize);
-
-  // Tuning rig uniforms. TEMPORARY.
-  const resolvedTuning = { ...DEFAULT_TUNING, ...tuning };
-  const fadeWidthUniform = useMemo(() => uniform(DEFAULT_TUNING.fadeWidth), []);
-  const grainUniform = useMemo(() => uniform(DEFAULT_TUNING.grain), []);
-  const noiseFrequencyUniform = useMemo(() => uniform(DEFAULT_TUNING.noiseFrequency), []);
 
   // The render-on-demand vote: a fixed progress at any value draws nothing
   // that changes between frames, so the scene may stop. A signal is live by
@@ -114,13 +104,6 @@ export function DissolveShader({ progress, pixelSize, tuning }: DissolveShaderPr
 
     return resize.on('change', apply);
   }, [resize, dprUniform, shaderContext]);
-
-  useEffect(() => {
-    fadeWidthUniform.value = resolvedTuning.fadeWidth;
-    grainUniform.value = resolvedTuning.grain;
-    noiseFrequencyUniform.value = resolvedTuning.noiseFrequency;
-    shaderContext?.scheduler.requestRender();
-  });
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -185,7 +168,7 @@ export function DissolveShader({ progress, pixelSize, tuning }: DissolveShaderPr
       // 0..1 promise exact. This is what gives the dissolve clumps rather
       // than pure static.
       const noisePoint = vec3(blockCenterUv.x.mul(aspectUniform), blockCenterUv.y, 0).mul(
-        noiseFrequencyUniform,
+        NOISE_FREQUENCY,
       );
       const noise = saturate(fractalNoise(noisePoint, { octaves: 2 }).mul(0.5).add(0.5));
 
@@ -193,7 +176,7 @@ export function DissolveShader({ progress, pixelSize, tuning }: DissolveShaderPr
       // static by the grain dial. Both inputs sit in 0..1, so the mix does
       // too. At grain 0 neighbouring blocks arrive together in clumps; at 1
       // every block arrives on its own.
-      const value = mix(noise, blockRandom, grainUniform);
+      const value = mix(noise, blockRandom, GRAIN);
 
       // The threshold is progress times the alpha the scene already has
       // here. Over an opaque scene that is just progress. Over a soft edge
@@ -203,13 +186,13 @@ export function DissolveShader({ progress, pixelSize, tuning }: DissolveShaderPr
       // the noise's own bell-shaped distribution instead. One fade width of
       // headroom lets progress 1 over alpha 1 show the slowest block.
       const target = progressUniform.mul(input.a);
-      const threshold = target.mul(fadeWidthUniform.add(1));
+      const threshold = target.mul(1 + FADE_WIDTH);
 
       // The front itself: a smoothstep with its edges REVERSED (high to
       // low), which flips the ramp so it returns 1 once the value sits a
       // fade-width under the threshold, 0 above it, and an S-curve in
       // between. That band is the pop-in.
-      const reveal = smoothstep(threshold, threshold.sub(fadeWidthUniform), value);
+      const reveal = smoothstep(threshold, threshold.sub(FADE_WIDTH), value);
 
       // Compose. A shown block is shown at full strength, not at the soft
       // alpha it arrived with: the scene texture is premultiplied, so
@@ -222,15 +205,7 @@ export function DissolveShader({ progress, pixelSize, tuning }: DissolveShaderPr
 
       return vec4(restoredRgb.mul(reveal), reveal);
     },
-    [
-      progressUniform,
-      pixelSizeUniform,
-      aspectUniform,
-      dprUniform,
-      fadeWidthUniform,
-      grainUniform,
-      noiseFrequencyUniform,
-    ],
+    [progressUniform, pixelSizeUniform, aspectUniform, dprUniform],
   );
 
   return null;

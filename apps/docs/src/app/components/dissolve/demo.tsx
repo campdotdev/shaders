@@ -52,23 +52,6 @@ function DissolveControls() {
         <SliderInput label="Progress" max={1} min={0} path="progress" step={0.01} />
         <SliderInput label="Pixel size" max={32} min={1} path="pixelSize" step={1} />
       </Section>
-      <Section title="Tuning (dev)">
-        <SliderInput
-          label="Fade width"
-          max={0.3}
-          min={0.005}
-          path="tuning.fadeWidth"
-          step={0.005}
-        />
-        <SliderInput label="Grain" max={1} min={0} path="tuning.grain" step={0.01} />
-        <SliderInput
-          label="Noise frequency"
-          max={8}
-          min={0.5}
-          path="tuning.noiseFrequency"
-          step={0.25}
-        />
-      </Section>
     </ControlPanel>
   );
 }

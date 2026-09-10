@@ -23,7 +23,6 @@ function CursorLedWall({ params }: { params: LedWallParams }) {
       spacing={params.spacing}
       speed={params.speed}
       swell={params.swell}
-      tuning={params.tuning}
     />
   );
 }

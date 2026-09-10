@@ -11,12 +11,11 @@ export type { BlobsProps } from './blobs/blobs.js';
 export { ConicGradient } from './conic-gradient/conic-gradient.js';
 export type { ConicGradientProps } from './conic-gradient/conic-gradient.js';
 
-export { Dither } from './dither/dither.js';
-export type { DitherProps } from './dither/dither.js';
-
 export { Dissolve } from './dissolve/dissolve.js';
 export type { DissolveProps } from './dissolve/dissolve.js';
-export type { DissolveTuning } from './dissolve/shader.js';
+
+export { Dither } from './dither/dither.js';
+export type { DitherProps } from './dither/dither.js';
 
 export { DotField } from './dot-field/dot-field.js';
 export type { DotFieldProps } from './dot-field/dot-field.js';
@@ -35,7 +34,6 @@ export type { GrainBlend } from './grain/shader.js';
 
 export { LedWall } from './led-wall/led-wall.js';
 export type { LedWallProps } from './led-wall/led-wall.js';
-export type { LedWallTuning } from './led-wall/shader.js';
 
 export { LinearGradient } from './linear-gradient/linear-gradient.js';
 export type { LinearGradientProps } from './linear-gradient/linear-gradient.js';
