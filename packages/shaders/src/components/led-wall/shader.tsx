@@ -32,6 +32,7 @@ import type { AnimatableProp } from '../../react/hooks/animatable-signal/animata
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
@@ -165,6 +166,9 @@ export function LedWallShader({
 
       dprUniform.value =
         rendererRatio !== undefined && rendererRatio > 0 ? rendererRatio : resize.get()[2] || 1;
+      // A bare uniform write repaints nothing on a static scene, so ask for
+      // a frame; requestRender returns at once unless the scene is idle.
+      shaderContext?.scheduler.requestRender();
     };
 
     apply();
@@ -176,27 +180,9 @@ export function LedWallShader({
   // Track the canvas aspect ratio
   // ---------------------------------------------
   // The distance math below multiplies the horizontal offset by
-  // width/height so the focus's reach stays a circle on a wide canvas. The
-  // uniform starts from the current canvas size (16:9 when the canvas has
-  // no layout yet and reports 0), then follows every resize.
-  const [initialWidth, initialHeight] = resize.get();
-  const aspectUniform = useMemo(
-    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
-
-    if (canvasWidth > 0 && canvasHeight > 0) aspectUniform.value = canvasWidth / canvasHeight;
-
-    return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) {
-        aspectUniform.value = updatedWidth / updatedHeight;
-      }
-    });
-  }, [resize, aspectUniform]);
+  // width/height so the focus's reach stays a circle on a wide canvas.
+  // useAspectUniform keeps the ratio current across resizes.
+  const aspectUniform = useAspectUniform();
 
   // ---------------------------------------------
   // Snap the scene sample to the cell center

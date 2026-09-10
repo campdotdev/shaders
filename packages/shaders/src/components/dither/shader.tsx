@@ -92,6 +92,9 @@ export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: 
 
       dprUniform.value =
         rendererRatio !== undefined && rendererRatio > 0 ? rendererRatio : resize.get()[2] || 1;
+      // A bare uniform write repaints nothing on a static scene, so ask for
+      // a frame; requestRender returns at once unless the scene is idle.
+      shaderContext?.scheduler.requestRender();
     };
 
     apply();

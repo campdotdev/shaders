@@ -19,6 +19,7 @@ import {
   isSignal,
 } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
@@ -100,6 +101,9 @@ export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
 
       dprUniform.value =
         rendererRatio !== undefined && rendererRatio > 0 ? rendererRatio : resize.get()[2] || 1;
+      // A bare uniform write repaints nothing on a static scene, so ask for
+      // a frame; requestRender returns at once unless the scene is idle.
+      shaderContext?.scheduler.requestRender();
     };
 
     apply();
@@ -111,27 +115,9 @@ export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
   // Track the canvas aspect ratio
   // ---------------------------------------------
   // The noise below samples an aspect-corrected position so its clumps are
-  // round on a wide canvas rather than stretched. The uniform starts from
-  // the current canvas size (16:9 when the canvas has no layout yet and
-  // reports 0), then follows every resize.
-  const [initialWidth, initialHeight] = resize.get();
-  const aspectUniform = useMemo(
-    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
-
-    if (canvasWidth > 0 && canvasHeight > 0) aspectUniform.value = canvasWidth / canvasHeight;
-
-    return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) {
-        aspectUniform.value = updatedWidth / updatedHeight;
-      }
-    });
-  }, [resize, aspectUniform]);
+  // round on a wide canvas rather than stretched. useAspectUniform keeps the
+  // ratio current across resizes.
+  const aspectUniform = useAspectUniform();
 
   // ---------------------------------------------
   // The pass: block -> value -> threshold -> compose

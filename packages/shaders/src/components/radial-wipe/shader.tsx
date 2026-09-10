@@ -6,9 +6,7 @@
 // `progress` sweeps a threshold across that distance with a feathered
 // band at the front. Stack a Dissolve after it to grain that band. The
 // wrapper (./radial-wipe.tsx) supplies the props.
-import { useEffect, useMemo } from 'react';
-
-import { length, max, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { length, max, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
 
 import {
   type AnimatableProp,
@@ -16,8 +14,8 @@ import {
 } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 
 export interface RadialWipeShaderProps {
@@ -70,28 +68,9 @@ export function RadialWipeShader({ progress, center, feather }: RadialWipeShader
   // Track the canvas aspect ratio
   // ---------------------------------------------
   // The distance math below multiplies the horizontal offset by
-  // width/height so the wipe's front stays a circle on a wide canvas. The
-  // uniform starts from the current canvas size (16:9 when the canvas has
-  // no layout yet and reports 0), then follows every resize.
-  const resize = useResize();
-  const [initialWidth, initialHeight] = resize.get();
-  const aspectUniform = useMemo(
-    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
-
-    if (canvasWidth > 0 && canvasHeight > 0) aspectUniform.value = canvasWidth / canvasHeight;
-
-    return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) {
-        aspectUniform.value = updatedWidth / updatedHeight;
-      }
-    });
-  }, [resize, aspectUniform]);
+  // width/height so the wipe's front stays a circle on a wide canvas.
+  // useAspectUniform keeps the ratio current across resizes.
+  const aspectUniform = useAspectUniform();
 
   // ---------------------------------------------
   // The pass: distance -> threshold -> compose
