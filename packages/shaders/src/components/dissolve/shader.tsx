@@ -5,10 +5,10 @@
 // the block is shown where that value sits under `progress` times the
 // alpha the scene already has there. Over an opaque scene that is a plain
 // dissolve driven by `progress`. Over a soft edge, such as a feathered
-// wipe's front, it replaces the smooth alpha with a scatter of shown and
-// hidden blocks in the same proportion, which is what makes a ragged edge
-// out of two components that share no code. The wrapper (./dissolve.tsx)
-// supplies the props.
+// wipe's front, each block's reveal instead ramps with the alpha it sees,
+// turning the smooth edge into a ragged scatter of grain, which is what
+// makes a ragged edge out of two components that share no code. The
+// wrapper (./dissolve.tsx) supplies the props.
 import { useEffect, useMemo } from 'react';
 
 import { floor, mix, saturate, screenSize, smoothstep, uniform, uv, vec3, vec4 } from 'three/tsl';
@@ -46,7 +46,7 @@ export interface DissolveShaderProps {
 // sliders glide without a rebuild. Stripped at the defaults gate, when the
 // landed values become named constants.
 export interface DissolveTuning {
-  /** Width of the pop-in fade per block, in progress units. */
+  /** Width of the pop-in fade per block, in block-value units, where 1 is the highest value a block can draw. */
   fadeWidth: number;
   /** How much of each block's value is its own static rather than the shared noise, 0 to 1. */
   grain: number;
@@ -159,8 +159,11 @@ export function DissolveShader({ progress, pixelSize, tuning }: DissolveShaderPr
       // screen-oriented, (0, 0) at the top-left with y growing downward, so
       // the grid anchors there with no flip. LedWall anchors its cells the
       // same way, so a pixelSize equal to a wall's spacing lands block for
-      // block on its dots. The value below is evaluated at the block's
-      // center, so a block arrives as one piece.
+      // block on its dots. The random value below is evaluated at the
+      // block's center, so the block shares one draw: over a scene with
+      // locally uniform alpha the block therefore arrives as one piece, but
+      // over a soft edge the block's reveal ramps with the alpha across it,
+      // so the ragged edge is softer than pure blocks.
       const blockPx = pixelSizeUniform.mul(dprUniform).max(1);
       const pixel = uv().mul(screenSize);
       const blockIndex = floor(pixel.div(blockPx));
@@ -193,10 +196,11 @@ export function DissolveShader({ progress, pixelSize, tuning }: DissolveShaderPr
       const value = mix(noise, blockRandom, grainUniform);
 
       // The threshold is progress times the alpha the scene already has
-      // here. Over an opaque scene that is just progress. Over a soft
-      // edge the threshold falls with the alpha, so the share of blocks
-      // shown across the band matches the alpha the band had, and the
-      // smooth edge becomes grain of the same density. One fade width of
+      // here. Over an opaque scene that is just progress. Over a soft edge
+      // the threshold falls with the alpha, so the share of blocks shown
+      // rises with the alpha: exact at 0, 0.5, and 1, and linear in between
+      // only when grain is 1, since at lower grain the block value leans on
+      // the noise's own bell-shaped distribution instead. One fade width of
       // headroom lets progress 1 over alpha 1 show the slowest block.
       const target = progressUniform.mul(input.a);
       const threshold = target.mul(fadeWidthUniform.add(1));
