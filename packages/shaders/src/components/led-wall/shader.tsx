@@ -333,7 +333,7 @@ export function LedWallShader({
       // shape a square rather than length()'s circle.
       const squareDistance = max(abs(cellLocal.x), abs(cellLocal.y)).sub(halfEdge);
 
-      // Reversed smoothstep again, as at the reveal above: pixels deeper
+      // Reversed smoothstep again, as at the swell above: pixels deeper
       // than one rim-width inside get 1, pixels past it outside get 0, and
       // the band across the rim fades smoothly. The width is in device
       // pixels converted into cell units, so it stays sub-pixel at any
