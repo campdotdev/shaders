@@ -16,17 +16,14 @@ function CursorLedWall({ params }: { params: LedWallParams }) {
   return (
     <LedWall
       bleed={params.bleed}
-      center={[params.centerX, params.centerY]}
       dotSize={params.dotSize}
       flicker={params.flicker}
       focus={cursor}
       focusRadius={params.focusRadius}
-      progress={params.progress}
       spacing={params.spacing}
       speed={params.speed}
       swell={params.swell}
       tuning={params.tuning}
-      waviness={params.waviness}
     />
   );
 }

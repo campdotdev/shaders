@@ -23,30 +23,10 @@ export interface LedWallProps {
   /**
    * How much of the scene shows between the dots. 0 leaves the gaps
    * transparent so the page background shows through, 1 leaves the scene
-   * untouched there. The reveal scales the gaps too, so they reach this
-   * much of the scene only once `progress` is 1. Defaults to 0. Accepts a
-   * static value or an animation signal.
+   * untouched there. Defaults to 0. Accepts a static value or an animation
+   * signal.
    */
   bleed?: AnimatableProp<number>;
-  /**
-   * The reveal. 0 hides every dot, 1 lights every dot, and values between
-   * sweep the front outward from `center`. Defaults to 1, so the wall is
-   * fully lit unless something drives it. Accepts a static value or an
-   * animation signal.
-   */
-  progress?: AnimatableProp<number>;
-  /**
-   * Where the reveal starts, 0..1 across the canvas; `[0.5, 0.5]` is the
-   * middle and `[0, 0]` the top-left corner. Defaults to `[0.5, 0.5]`.
-   * Accepts a static value or an animation signal.
-   */
-  center?: AnimatableProp<readonly [number, number]>;
-  /**
-   * Shape of the reveal front. 0 is a clean ring around `center` with a
-   * little per-dot static, 1 is a fully warped front with fingers and bays.
-   * Defaults to 0.25. Accepts a static value or an animation signal.
-   */
-  waviness?: AnimatableProp<number>;
   /**
    * How deep each dot's brightness breathes over time, on its own phase and
    * tempo. 0 holds every dot still, 1 takes each dot all the way to dark at
@@ -88,9 +68,6 @@ export function LedWall({
   spacing = 5,
   dotSize = 2,
   bleed = 0,
-  progress = 1,
-  center = [0.5, 0.5],
-  waviness = 0.25,
   flicker = 0.3,
   speed = 2.4,
   focus = [0.5, 0.5],
@@ -101,17 +78,14 @@ export function LedWall({
   return (
     <LedWallShader
       bleed={bleed}
-      center={center}
       dotSize={dotSize}
       flicker={flicker}
       focus={focus}
       focusRadius={focusRadius}
-      progress={progress}
       spacing={spacing}
       speed={speed}
       swell={swell}
       tuning={tuning}
-      waviness={waviness}
     />
   );
 }

@@ -53,12 +53,6 @@ function LedWallControls() {
         <SliderInput label="Dot size" max={24} min={1} path="dotSize" step={1} />
         <SliderInput label="Bleed" max={1} min={0} path="bleed" step={0.01} />
       </Section>
-      <Section title="Reveal">
-        <SliderInput label="Progress" max={1} min={0} path="progress" step={0.01} />
-        <SliderInput label="Center X" max={1} min={0} path="centerX" step={0.01} />
-        <SliderInput label="Center Y" max={1} min={0} path="centerY" step={0.01} />
-        <SliderInput label="Waviness" max={1} min={0} path="waviness" step={0.01} />
-      </Section>
       <Section title="Motion">
         <SliderInput label="Flicker" max={1} min={0} path="flicker" step={0.01} />
         <SliderInput label="Speed" max={8} min={0} path="speed" step={0.1} />
@@ -68,22 +62,6 @@ function LedWallControls() {
         <SliderInput label="Swell" max={1.5} min={0} path="swell" step={0.05} />
       </Section>
       <Section title="Tuning (dev)">
-        <SliderInput
-          label="Fade width"
-          max={0.3}
-          min={0.005}
-          path="tuning.fadeWidth"
-          step={0.005}
-        />
-        <SliderInput label="Jitter" max={0.5} min={0} path="tuning.jitter" step={0.01} />
-        <SliderInput label="Warp amount" max={1.5} min={0} path="tuning.warpAmount" step={0.05} />
-        <SliderInput
-          label="Warp frequency"
-          max={8}
-          min={0.5}
-          path="tuning.warpFrequency"
-          step={0.25}
-        />
         <SliderInput label="Variance" max={0.9} min={0} path="tuning.variance" step={0.01} />
       </Section>
     </ControlPanel>

@@ -20,6 +20,7 @@ import { LedWallIsland } from './led-wall/demo';
 import { LinearGradientIsland } from './linear-gradient/demo';
 import { MeshGradientIsland } from './mesh-gradient/demo';
 import { RadialGradientIsland } from './radial-gradient/demo';
+import { RadialWipeIsland } from './radial-wipe/demo';
 import { SimplexNoiseIsland } from './simplex-noise/demo';
 import { VignetteIsland } from './vignette/demo';
 import { VoronoiIsland } from './voronoi/demo';
@@ -199,6 +200,22 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     usageSnippet: `<ShaderScene>
   <RadialGradient />
 </ShaderScene>`,
+  },
+  'radial-wipe': {
+    Island: RadialWipeIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <RadialWipe progress={0.5} center={[0.5, 1]} dissolve={0.25} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        Radial Wipe is a post-process layer: stack it after any components inside a{' '}
+        <code>&lt;ShaderScene&gt;</code> and drive <code>progress</code> from 0 to 1 to reveal them
+        from <code>center</code>. At <code>dissolve</code> 0 the front is a clean ring, at 1 it is a
+        noise dissolve with no direction. Hidden areas are transparent, so the page shows through.
+      </>
+    ),
   },
   'simplex-noise': {
     Island: SimplexNoiseIsland,

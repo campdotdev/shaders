@@ -42,6 +42,10 @@ export type { MeshGradientProps } from './mesh-gradient/mesh-gradient.js';
 export { RadialGradient } from './radial-gradient/radial-gradient.js';
 export type { RadialGradientProps } from './radial-gradient/radial-gradient.js';
 
+export { RadialWipe } from './radial-wipe/radial-wipe.js';
+export type { RadialWipeProps } from './radial-wipe/radial-wipe.js';
+export type { RadialWipeTuning } from './radial-wipe/shader.js';
+
 export { SimplexNoise } from './simplex-noise/simplex-noise.js';
 export type { SimplexNoiseProps } from './simplex-noise/simplex-noise.js';
 

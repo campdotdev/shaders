@@ -9,15 +9,14 @@ import {
 
 export interface LedWallStaticInputs {
   flicker: AnimatableProp<number>;
-  progress: AnimatableProp<number>;
   focus: AnimatableProp<readonly [number, number]>;
   swell: AnimatableProp<number>;
 }
 
-export function isLedWallStatic({ flicker, progress, focus, swell }: LedWallStaticInputs): boolean {
+export function isLedWallStatic({ flicker, focus, swell }: LedWallStaticInputs): boolean {
   // A signal is live by definition, whatever it reads right now: the vote
   // is cast at render time and a signal changes between renders.
-  if (isSignal(flicker) || isSignal(progress) || isSignal(focus)) return false;
+  if (isSignal(flicker) || isSignal(focus)) return false;
   if (isSignal(swell)) return false;
 
   return flicker === 0 && swell === 0;
