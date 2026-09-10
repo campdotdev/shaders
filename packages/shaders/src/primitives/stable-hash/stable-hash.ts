@@ -3,8 +3,22 @@
 // primitive that needs per-cell or per-frame randomness (voronoi, grain,
 // metaballs, dither-pattern) draws from this instead of three's hash().
 import type { ShaderNodeObject } from 'three/tsl';
-import { min, uint } from 'three/tsl';
+import { Fn, min, uint } from 'three/tsl';
 import type { Node } from 'three/webgpu';
+
+// The shape three's Fn returns at runtime once it has a layout. @types/three
+// 0.170 declares Fn as a plain function and omits setLayout, which
+// three.webgpu.js defines on every Fn (grep `fn.setLayout`), so the cast
+// below is the typings lagging the runtime. Remove it, and this interface,
+// when a three types bump adds setLayout.
+interface LayoutFn<Args extends unknown[], Result> {
+  (...args: Args): Result;
+  setLayout(layout: {
+    name: string;
+    type: string;
+    inputs: Array<{ name: string; type: string }>;
+  }): LayoutFn<Args, Result>;
+}
 
 // ---------------------------------------------------------------
 // Why this exists (MAT-92)
@@ -32,6 +46,44 @@ import type { Node } from 'three/webgpu';
 // the WebGPU backend always produced, so the canonical pattern is the one
 // posters were already captured on; only WebGL2 output changes.
 
+// The PCG body as one emitted shader function. A laid-out Fn matters for
+// build time, not for the GPU: three resolves a node's type by walking its
+// subgraph, with no memoization across references, so an INLINE hash body
+// referenced several times per level costs multiplicatively per level of
+// nesting. LedWall nests six levels and took 19 seconds to type. With the
+// layout, a call site's type is read from the layout and the walk stops
+// there. Measured 2026-09-09: first frame went from about 20 seconds to
+// about 2.
+const pcgHashFn = Fn(([seed]: [ShaderNodeObject<Node>]) => {
+  // PCG (permuted congruential generator), from pcg-random.org via
+  // shadertoy XlGcRh — the exact algorithm three's hash() implements.
+  //
+  // Step 1, the LCG scramble: state = seed * 747796405 + 2891336453. Runs
+  // in u32, where multiplication wraps modulo 2^32 by definition on both
+  // backends — the wrap IS the mixing.
+  const state = seed.toUint().mul(uint(747796405)).add(uint(2891336453));
+
+  // Step 2, the permutation: xorshift by a data-dependent amount (the top
+  // bits of state pick how far to shift), then one more multiply. This is
+  // what breaks up the LCG's lattice structure.
+  const word = state
+    .shiftRight(state.shiftRight(uint(28)).add(uint(4)))
+    .bitXor(state)
+    .mul(uint(277803737));
+
+  // Step 3, fold: xor the halves together so every output bit depends on
+  // every input bit.
+  return word.shiftRight(uint(22)).bitXor(word);
+});
+
+const pcgHash =
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- @types/three 0.170 omits setLayout, which three.webgpu.js defines on every Fn; the cast papers over that typings gap, not our own code, and should go once a types bump adds it
+  (pcgHashFn as unknown as LayoutFn<[ShaderNodeObject<Node>], ShaderNodeObject<Node>>).setLayout({
+    name: 'stableHashUint',
+    type: 'uint',
+    inputs: [{ name: 'seed', type: 'uint' }],
+  });
+
 /**
  * Hash an integer-valued seed to a raw 32-bit word, identical on the WebGPU
  * and WebGL2 backends.
@@ -52,25 +104,9 @@ import type { Node } from 'three/webgpu';
  * MAT-106 tracks folding negatives safely inside this function.
  */
 export function stableHashUint(seed: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
-  // PCG (permuted congruential generator), from pcg-random.org via
-  // shadertoy XlGcRh — the exact algorithm three's hash() implements.
-  //
-  // Step 1, the LCG scramble: state = seed * 747796405 + 2891336453. Runs
-  // in u32, where multiplication wraps modulo 2^32 by definition on both
-  // backends — the wrap IS the mixing.
-  const state = seed.toUint().mul(uint(747796405)).add(uint(2891336453));
-
-  // Step 2, the permutation: xorshift by a data-dependent amount (the top
-  // bits of state pick how far to shift), then one more multiply. This is
-  // what breaks up the LCG's lattice structure.
-  const word = state
-    .shiftRight(state.shiftRight(uint(28)).add(uint(4)))
-    .bitXor(state)
-    .mul(uint(277803737));
-
-  // Step 3, fold: xor the halves together so every output bit depends on
-  // every input bit.
-  return word.shiftRight(uint(22)).bitXor(word);
+  // The call site converts to u32 so a float seed is truncated exactly once,
+  // here, before the layout's uint input sees it.
+  return pcgHash(seed.toUint());
 }
 
 /**
