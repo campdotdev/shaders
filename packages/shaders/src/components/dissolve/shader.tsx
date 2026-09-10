@@ -45,18 +45,20 @@ export interface DissolveShaderProps {
 // ---------------------------------------------
 // Width of the pop-in fade per block, in block-value units where 1 is the
 // highest value a block can draw. Wider makes each block ease in; narrower
-// snaps it on. Found on the tuning rig and baked at the defaults gate.
+// snaps it on.
+// Chosen by eye.
 const FADE_WIDTH = 0.08;
 
 // How much of a block's value is its own static rather than the shared
 // noise, 0 to 1. At 0 neighbouring blocks hold similar values and arrive
 // together in clumps; at 1 every block arrives on its own as pure static.
-// Found on the tuning rig and baked at the defaults gate.
+// Chosen by eye.
 const GRAIN = 0.3;
 
 // Frequency of the shared noise across the canvas, in cycles per canvas
 // height. Higher breaks the clumps up smaller; lower makes them broad
-// drifts. Found on the tuning rig and baked at the defaults gate.
+// drifts.
+// Chosen by eye.
 const NOISE_FREQUENCY = 2.5;
 
 // Floor on the incoming alpha before the un-premultiply divide. Blocks

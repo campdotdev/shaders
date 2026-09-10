@@ -98,8 +98,8 @@ const RIM_SOFTNESS_PX = 0.7;
 // How far a dot's permanent brightness can fall below full, as a fraction.
 // Each dot draws its own share of this from its hash, so the grid never
 // reads as a flat print. 0 makes every dot equal; higher spreads them
-// further apart and reads as a wall with dead pixels. Found on the tuning
-// rig and baked at the defaults gate.
+// further apart and reads as a wall with dead pixels.
+// Chosen by eye.
 const VARIANCE = 0.5;
 
 // The brightness dials are applied in a gamma-encoded approximation of
