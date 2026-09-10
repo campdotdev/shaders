@@ -3,10 +3,9 @@
 // Public face of the radial wipe: owns the props, their JSDoc, and their
 // defaults, then delegates to RadialWipeShader (./shader.tsx). RadialWipe
 // is a post-process layer: stack it after other components inside a
-// <ShaderScene> and it reveals or hides everything beneath it from a
-// point, with a front that runs from a clean ring to a noise dissolve.
+// <ShaderScene> and it reveals or hides everything beneath it from a point
+// with a feathered edge. Stack a Dissolve after it to grain that edge.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
-import type { RadialWipeTuning } from './shader.js';
 import { RadialWipeShader } from './shader.js';
 
 export interface RadialWipeProps {
@@ -19,43 +18,18 @@ export interface RadialWipeProps {
   progress?: AnimatableProp<number>;
   /**
    * Where the wipe starts, 0..1 across the canvas; `[0.5, 0.5]` is the
-   * middle and `[0, 0]` the top-left corner. Has no effect at `dissolve` 1,
-   * where the front has no direction. Defaults to `[0.5, 0.5]`. Accepts a
-   * static value or an animation signal.
+   * middle and `[0, 0]` the top-left corner. Defaults to `[0.5, 0.5]`.
+   * Accepts a static value or an animation signal.
    */
   center?: AnimatableProp<readonly [number, number]>;
   /**
-   * How much of the front dissolves into noise. 0 is a clean radial wipe
-   * from `center`, 1 is a full noise dissolve with no direction, and values
-   * between give a wipe with a ragged edge. Defaults to 0.25. Accepts a
-   * static value or an animation signal.
+   * Softness of the front, as a fraction of the distance from `center` to
+   * the far corner. 0 is a hard edge, 1 feathers across the whole canvas.
+   * Defaults to 0.15. Accepts a static value or an animation signal.
    */
-  dissolve?: AnimatableProp<number>;
-  /**
-   * Block size of the dissolve's grain in CSS pixels. Each block waits its
-   * own random moment, so the front arrives in blocks of this size. Match
-   * it to a dot grid's spacing and the dots arrive one at a time. Defaults
-   * to 4. Accepts a static value or an animation signal.
-   */
-  pixelSize?: AnimatableProp<number>;
-  /** TEMPORARY tuning rig. Removed at the defaults gate. */
-  tuning?: Partial<RadialWipeTuning>;
+  feather?: AnimatableProp<number>;
 }
 
-export function RadialWipe({
-  progress = 1,
-  center = [0.5, 0.5],
-  dissolve = 0.25,
-  pixelSize = 4,
-  tuning,
-}: RadialWipeProps) {
-  return (
-    <RadialWipeShader
-      center={center}
-      dissolve={dissolve}
-      pixelSize={pixelSize}
-      progress={progress}
-      tuning={tuning}
-    />
-  );
+export function RadialWipe({ progress = 1, center = [0.5, 0.5], feather = 0.15 }: RadialWipeProps) {
+  return <RadialWipeShader center={center} feather={feather} progress={progress} />;
 }

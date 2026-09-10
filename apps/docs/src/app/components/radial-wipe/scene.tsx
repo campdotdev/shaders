@@ -18,10 +18,8 @@ export default function RadialWipeScene({
       <MeshGradient />
       <RadialWipe
         center={[params.centerX, params.centerY]}
-        dissolve={params.dissolve}
-        pixelSize={params.pixelSize}
+        feather={params.feather}
         progress={params.progress}
-        tuning={params.tuning}
       />
       {children}
     </ShaderScene>

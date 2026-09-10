@@ -14,6 +14,10 @@ export type { ConicGradientProps } from './conic-gradient/conic-gradient.js';
 export { Dither } from './dither/dither.js';
 export type { DitherProps } from './dither/dither.js';
 
+export { Dissolve } from './dissolve/dissolve.js';
+export type { DissolveProps } from './dissolve/dissolve.js';
+export type { DissolveTuning } from './dissolve/shader.js';
+
 export { DotField } from './dot-field/dot-field.js';
 export type { DotFieldProps } from './dot-field/dot-field.js';
 
@@ -44,7 +48,6 @@ export type { RadialGradientProps } from './radial-gradient/radial-gradient.js';
 
 export { RadialWipe } from './radial-wipe/radial-wipe.js';
 export type { RadialWipeProps } from './radial-wipe/radial-wipe.js';
-export type { RadialWipeTuning } from './radial-wipe/shader.js';
 
 export { SimplexNoise } from './simplex-noise/simplex-noise.js';
 export type { SimplexNoiseProps } from './simplex-noise/simplex-noise.js';

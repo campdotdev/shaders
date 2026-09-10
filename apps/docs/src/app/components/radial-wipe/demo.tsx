@@ -35,7 +35,7 @@ function RadialWipeDemo() {
 
   return (
     <DemoPoster
-      alt="Radial Wipe shader preview: a gradient half revealed from the bottom center by a ragged front"
+      alt="Radial Wipe shader preview: a gradient half revealed from the bottom center by a feathered front"
       src="/posters/radial-wipe.jpg"
     >
       <RadialWipeScene params={params}>
@@ -52,25 +52,7 @@ function RadialWipeControls() {
         <SliderInput label="Progress" max={1} min={0} path="progress" step={0.01} />
         <SliderInput label="Center X" max={1} min={0} path="centerX" step={0.01} />
         <SliderInput label="Center Y" max={1} min={0} path="centerY" step={0.01} />
-        <SliderInput label="Dissolve" max={1} min={0} path="dissolve" step={0.01} />
-        <SliderInput label="Pixel size" max={32} min={1} path="pixelSize" step={1} />
-      </Section>
-      <Section title="Tuning (dev)">
-        <SliderInput
-          label="Fade width"
-          max={0.3}
-          min={0.005}
-          path="tuning.fadeWidth"
-          step={0.005}
-        />
-        <SliderInput label="Jitter" max={0.5} min={0} path="tuning.jitter" step={0.01} />
-        <SliderInput
-          label="Noise frequency"
-          max={8}
-          min={0.5}
-          path="tuning.noiseFrequency"
-          step={0.25}
-        />
+        <SliderInput label="Feather" max={1} min={0} path="feather" step={0.01} />
       </Section>
     </ControlPanel>
   );

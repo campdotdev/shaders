@@ -11,6 +11,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { AuroraIsland } from './aurora/demo';
 import { BlobsIsland } from './blobs/demo';
 import { ConicGradientIsland } from './conic-gradient/demo';
+import { DissolveIsland } from './dissolve/demo';
 import { DitherIsland } from './dither/demo';
 import { DotFieldIsland } from './dot-field/demo';
 import { FractalNoiseIsland } from './fractal-noise/demo';
@@ -114,6 +115,30 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
       </>
     ),
   },
+  dissolve: {
+    Island: DissolveIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <Dissolve progress={0.5} pixelSize={4} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        <p>
+          Dissolve is a post-process layer: stack it after any components inside a{' '}
+          <code>&lt;ShaderScene&gt;</code> and drive <code>progress</code> from 0 to 1 to show them
+          block by block. Hidden blocks are transparent, so the page shows through.
+        </p>
+        <p>
+          It reads the alpha beneath it. Stacked after a feathered Radial Wipe, at{' '}
+          <code>progress</code> 1, it turns the wipe&apos;s soft edge into a ragged one, with the
+          wipe&apos;s <code>feather</code> setting how wide the ragged band is and{' '}
+          <code>pixelSize</code> its grain. A soft-edged source such as Blobs gets the same
+          treatment, which is the point of stacking a Dissolve over it.
+        </p>
+      </>
+    ),
+  },
   'dot-field': {
     Island: DotFieldIsland,
     usageSnippet: `<ShaderScene>
@@ -206,14 +231,14 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     copySiblings: ['<MeshGradient />'],
     usageSnippet: `<ShaderScene>
   <MeshGradient />
-  <RadialWipe progress={0.5} center={[0.5, 1]} dissolve={0.25} />
+  <RadialWipe progress={0.5} center={[0.5, 1]} feather={0.15} />
 </ShaderScene>`,
     usageNotes: (
       <>
         Radial Wipe is a post-process layer: stack it after any components inside a{' '}
         <code>&lt;ShaderScene&gt;</code> and drive <code>progress</code> from 0 to 1 to reveal them
-        from <code>center</code>. At <code>dissolve</code> 0 the front is a clean ring, at 1 it is a
-        noise dissolve with no direction. Hidden areas are transparent, so the page shows through.
+        from <code>center</code>. <code>feather</code> softens the front. Hidden areas are
+        transparent, so the page shows through. Stack a Dissolve after it to grain the soft edge.
       </>
     ),
   },

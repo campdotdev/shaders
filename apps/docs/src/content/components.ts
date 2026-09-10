@@ -38,6 +38,11 @@ export const COMPONENTS = {
       'Retro ordered dithering: pixelates the scene into chunky cells and posterizes its colors. Stacks on top of any base component inside <ShaderScene>.',
     category: 'retro-glitch',
   },
+  dissolve: {
+    description:
+      'Turns the scene into grain, shown block by block as progress rises. Stacked after a feathered wipe, it grains the soft edge into a ragged one. Stacks on top of any base component inside <ShaderScene>.',
+    category: 'transitions',
+  },
   'dot-field': {
     description:
       'Tiled dot field with center-anchored ripple displacement. The architecturally-validating Shaders component.',
@@ -80,7 +85,7 @@ export const COMPONENTS = {
   },
   'radial-wipe': {
     description:
-      'Reveals or hides the scene from a point. One dial runs the front from a clean radial wipe to a noise dissolve, in blocks of a chosen size. Stacks on top of any base component inside <ShaderScene>.',
+      'Reveals or hides the scene from a point with a feathered edge. Stack a Dissolve after it to grain that edge. Stacks on top of any base component inside <ShaderScene>.',
     category: 'transitions',
   },
   'simplex-noise': {
