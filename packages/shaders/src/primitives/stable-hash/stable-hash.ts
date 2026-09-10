@@ -6,20 +6,6 @@ import type { ShaderNodeObject } from 'three/tsl';
 import { Fn, min, uint } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
-// The shape three's Fn returns at runtime once it has a layout. @types/three
-// 0.170 declares Fn as a plain function and omits setLayout, which
-// three.webgpu.js defines on every Fn (grep `fn.setLayout`), so the cast
-// below is the typings lagging the runtime. Remove it, and this interface,
-// when a three types bump adds setLayout.
-interface LayoutFn<Args extends unknown[], Result> {
-  (...args: Args): Result;
-  setLayout(layout: {
-    name: string;
-    type: string;
-    inputs: Array<{ name: string; type: string }>;
-  }): LayoutFn<Args, Result>;
-}
-
 // ---------------------------------------------------------------
 // Why this exists (MAT-92)
 // ---------------------------------------------------------------
@@ -53,7 +39,7 @@ interface LayoutFn<Args extends unknown[], Result> {
 // nesting. LedWall nests six levels and took 19 seconds to type. With the
 // layout, a call site's type is read from the layout and the walk stops
 // there. Measured 2026-09-09: first frame went from about 20 seconds to
-// about 2.
+// about 3.
 const pcgHashFn = Fn(([seed]: [ShaderNodeObject<Node>]) => {
   // PCG (permuted congruential generator), from pcg-random.org via
   // shadertoy XlGcRh — the exact algorithm three's hash() implements.
@@ -75,6 +61,20 @@ const pcgHashFn = Fn(([seed]: [ShaderNodeObject<Node>]) => {
   // every input bit.
   return word.shiftRight(uint(22)).bitXor(word);
 });
+
+// The shape three's Fn returns at runtime once it has a layout. @types/three
+// 0.170 declares Fn as a plain function and omits setLayout, which
+// three.webgpu.js defines on every Fn (grep `fn.setLayout`), so the cast
+// below is the typings lagging the runtime. Remove it, and this interface,
+// when a three types bump adds setLayout.
+interface LayoutFn<Args extends unknown[], Result> {
+  (...args: Args): Result;
+  setLayout(layout: {
+    name: string;
+    type: string;
+    inputs: Array<{ name: string; type: string }>;
+  }): LayoutFn<Args, Result>;
+}
 
 const pcgHash =
   // eslint-disable-next-line @typescript-eslint/no-unsafe-type-assertion -- @types/three 0.170 omits setLayout, which three.webgpu.js defines on every Fn; the cast papers over that typings gap, not our own code, and should go once a types bump adds it
