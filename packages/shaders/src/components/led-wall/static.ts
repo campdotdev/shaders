@@ -1,6 +1,7 @@
 // The render-on-demand vote for the LED wall, kept as a pure function so it
 // has a unit test. The wall may tell the scene to stop drawing only when
-// nothing on it can change between frames.
+// no flicker, no swell, and no live signal can change a pixel between
+// frames.
 import {
   type AnimatableProp,
   isSignal,
@@ -9,20 +10,15 @@ import {
 export interface LedWallStaticInputs {
   flicker: AnimatableProp<number>;
   progress: AnimatableProp<number>;
-  spotlight: AnimatableProp<readonly [number, number]>;
-  spotlightIntensity: AnimatableProp<number>;
+  focus: AnimatableProp<readonly [number, number]>;
+  swell: AnimatableProp<number>;
 }
 
-export function isLedWallStatic({
-  flicker,
-  progress,
-  spotlight,
-  spotlightIntensity,
-}: LedWallStaticInputs): boolean {
+export function isLedWallStatic({ flicker, progress, focus, swell }: LedWallStaticInputs): boolean {
   // A signal is live by definition, whatever it reads right now: the vote
   // is cast at render time and a signal changes between renders.
-  if (isSignal(flicker) || isSignal(progress) || isSignal(spotlight)) return false;
-  if (isSignal(spotlightIntensity)) return false;
+  if (isSignal(flicker) || isSignal(progress) || isSignal(focus)) return false;
+  if (isSignal(swell)) return false;
 
-  return flicker === 0 && spotlightIntensity === 0;
+  return flicker === 0 && swell === 0;
 }

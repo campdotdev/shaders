@@ -10,8 +10,8 @@ export interface LedWallParams {
   waviness: number;
   flicker: number;
   speed: number;
-  spotlightRadius: number;
-  spotlightIntensity: number;
+  focusRadius: number;
+  swell: number;
   tuning: LedWallTuning;
 }
 
@@ -25,14 +25,13 @@ export const INITIAL: LedWallParams = {
   waviness: 0.25,
   flicker: 0.3,
   speed: 2.4,
-  spotlightRadius: 0.3,
-  spotlightIntensity: 0.6,
+  focusRadius: 0.3,
+  swell: 0.6,
   tuning: {
     fadeWidth: 0.08,
     jitter: 0.12,
     warpAmount: 0.6,
     warpFrequency: 2.5,
     variance: 0.5,
-    swell: 0.6,
   },
 };

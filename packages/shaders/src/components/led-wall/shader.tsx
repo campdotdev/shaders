@@ -87,22 +87,23 @@ export interface LedWallShaderProps {
    */
   speed: AnimatableProp<number>;
   /**
-   * Where the spotlight sits, 0..1 across the canvas in the same frame as
-   * `center`. Feed it a cursor signal to follow the pointer. Accepts a
-   * static value or an animation signal.
+   * The point the dots swell toward, 0..1 across the canvas with `[0, 0]`
+   * at the top-left corner. Feed it a cursor signal to follow the pointer.
+   * Accepts a static value or an animation signal.
    */
-  spotlight: AnimatableProp<readonly [number, number]>;
+  focus: AnimatableProp<readonly [number, number]>;
   /**
-   * Reach of the spotlight from its position, in canvas units where 1 is
-   * the canvas height. Accepts a static value or an animation signal.
+   * Reach of the swell from the focus, in canvas units where 1 is the
+   * canvas height. Accepts a static value or an animation signal.
    */
-  spotlightRadius: AnimatableProp<number>;
+  focusRadius: AnimatableProp<number>;
   /**
-   * Strength of the spotlight. 0 turns it off, 1 lifts the dots under it to
-   * full brightness and full swell. Accepts a static value or an animation
-   * signal.
+   * How much a dot grows at the focus, as a fraction of its edge. 0 turns
+   * the swell off, 1 doubles the edge at the focus, and the cell caps it so
+   * a dot never touches its neighbour. Accepts a static value or an
+   * animation signal.
    */
-  spotlightIntensity: AnimatableProp<number>;
+  swell: AnimatableProp<number>;
   /** TEMPORARY tuning rig. Removed at the defaults gate. */
   tuning?: Partial<LedWallTuning>;
 }
@@ -121,8 +122,6 @@ export interface LedWallTuning {
   warpFrequency: number;
   /** Spread of the per-dot static brightness. 0 makes every dot equal, 0.5 lets a dot sit as low as half. */
   variance: number;
-  /** How much a dot grows under a full spotlight, as a fraction of its half-edge. */
-  swell: number;
 }
 
 export const DEFAULT_TUNING: LedWallTuning = {
@@ -131,7 +130,6 @@ export const DEFAULT_TUNING: LedWallTuning = {
   warpAmount: 0.6,
   warpFrequency: 2.5,
   variance: 0.5,
-  swell: 0.6,
 };
 
 // ---------------------------------------------
@@ -152,9 +150,9 @@ export function LedWallShader({
   waviness,
   flicker,
   speed,
-  spotlight,
-  spotlightRadius,
-  spotlightIntensity,
+  focus,
+  focusRadius,
+  swell,
   tuning,
 }: LedWallShaderProps) {
   // The dials live in uniforms: values the CPU can update each frame without
@@ -171,13 +169,13 @@ export function LedWallShader({
   // already scaled for reduced motion), so a speed change shifts the tempo
   // without snapping every dot to a new point in its breath.
   const phaseUniform = useAnimatableSpeed(speed);
-  // center and spotlight are already screen-style pairs, [0, 0] at the
+  // center and focus are already screen-style pairs, [0, 0] at the
   // top-left, the same frame the pass's uv() reads, so neither needs
   // conversion.
   const centerUniform = useAnimatablePoint(center);
-  const spotlightUniform = useAnimatablePoint(spotlight);
-  const spotlightRadiusUniform = useAnimatableUniform(spotlightRadius);
-  const spotlightIntensityUniform = useAnimatableUniform(spotlightIntensity);
+  const focusUniform = useAnimatablePoint(focus);
+  const focusRadiusUniform = useAnimatableUniform(focusRadius);
+  const swellUniform = useAnimatableUniform(swell);
 
   // Tuning rig uniforms. TEMPORARY.
   const resolvedTuning = { ...DEFAULT_TUNING, ...tuning };
@@ -186,7 +184,6 @@ export function LedWallShader({
   const warpAmountUniform = useMemo(() => uniform(DEFAULT_TUNING.warpAmount), []);
   const warpFrequencyUniform = useMemo(() => uniform(DEFAULT_TUNING.warpFrequency), []);
   const varianceUniform = useMemo(() => uniform(DEFAULT_TUNING.variance), []);
-  const swellUniform = useMemo(() => uniform(DEFAULT_TUNING.swell), []);
 
   useEffect(() => {
     fadeWidthUniform.value = resolvedTuning.fadeWidth;
@@ -194,13 +191,12 @@ export function LedWallShader({
     warpAmountUniform.value = resolvedTuning.warpAmount;
     warpFrequencyUniform.value = resolvedTuning.warpFrequency;
     varianceUniform.value = resolvedTuning.variance;
-    swellUniform.value = resolvedTuning.swell;
     shaderContext?.scheduler.requestRender();
   });
 
   // The render-on-demand vote: the scene may stop drawing only when nothing
   // on the wall can change between frames.
-  useStaticSceneHint(isLedWallStatic({ flicker, progress, spotlight, spotlightIntensity }));
+  useStaticSceneHint(isLedWallStatic({ flicker, progress, focus, swell }));
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
@@ -387,30 +383,29 @@ export function LedWallShader({
       const brightness = staticLevel.mul(flickerTerm);
 
       // ---------------------------------------------
-      // The spotlight: brighten and swell near a point
+      // The swell: dots grow toward a point
       // ---------------------------------------------
-      // Aspect-corrected distance from the spotlight, then a reversed
-      // smoothstep so the term is 1 at the point and 0 past the radius,
-      // scaled by intensity and capped at 1. Brightness mixes toward full
-      // under it; the dot's half-edge grows by swell times the same term.
-      const toSpot = cellCenterUv.sub(spotlightUniform);
-      const spotDistance = length(vec2(toSpot.x.mul(aspectUniform), toSpot.y));
-      const spot = smoothstep(spotlightRadiusUniform, float(0), spotDistance)
-        .mul(spotlightIntensityUniform)
-        .min(1);
-      const litBrightness = mix(brightness, float(1), spot);
+      // The cell's center in the pass's screen frame, so it compares with
+      // the focus uniform directly. Evaluated per CELL, not per pixel, so a
+      // dot grows as one piece. Then the aspect-corrected distance from the
+      // focus, and a reversed smoothstep so the term is 1 at the focus and
+      // 0 past the radius. The dot's half-edge below grows by swell times
+      // that term.
+      const toFocus = cellCenterUv.sub(focusUniform);
+      const focusDistance = length(vec2(toFocus.x.mul(aspectUniform), toFocus.y));
+      const nearFocus = smoothstep(focusRadiusUniform, float(0), focusDistance);
 
       // The dot's half-edge in cell units. dotSize in device pixels over the
       // cell pitch gives the edge as a fraction of the cell; half of it is
-      // the distance from the center to the rim. The spotlight then grows
-      // that by up to swell's fraction, at full spot strength. min(0.5)
-      // comes last so a dot never crosses into the next cell, whether it
-      // got there from a large dotSize or from a strong spotlight.
+      // the distance from the center to the rim. The focus then grows that
+      // by up to swell's fraction, at the focus. min(0.5) comes last so a
+      // dot never crosses into the next cell, whether it got there from a
+      // large dotSize or from a strong swell.
       const halfEdge = dotSizeUniform
         .mul(dprUniform)
         .div(cellPx)
         .mul(0.5)
-        .mul(spot.mul(swellUniform).add(1))
+        .mul(nearFocus.mul(swellUniform).add(1))
         .min(0.5);
 
       // Signed distance to the square's rim: the larger of the two axis
@@ -433,7 +428,7 @@ export function LedWallShader({
       // factor is the dot's brightness, so the static level and the flicker
       // only ever apply to lit dots. In the gaps it is bleed: 0 leaves alpha
       // 0 so the page shows through, 1 leaves the scene untouched.
-      const factor = mix(bleedUniform, litBrightness, dotMask).mul(reveal);
+      const factor = mix(bleedUniform, brightness, dotMask).mul(reveal);
 
       return vec4(vec3(input.rgb).mul(factor), input.a.mul(factor));
     },
@@ -446,9 +441,9 @@ export function LedWallShader({
       flickerUniform,
       phaseUniform,
       centerUniform,
-      spotlightUniform,
-      spotlightRadiusUniform,
-      spotlightIntensityUniform,
+      focusUniform,
+      focusRadiusUniform,
+      swellUniform,
       aspectUniform,
       dprUniform,
       fadeWidthUniform,
@@ -456,7 +451,6 @@ export function LedWallShader({
       warpAmountUniform,
       warpFrequencyUniform,
       varianceUniform,
-      swellUniform,
     ],
   );
 

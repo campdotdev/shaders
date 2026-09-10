@@ -7,7 +7,7 @@ import { LedWall, MeshGradient, ShaderScene, useCursor } from '@camp-dev/shaders
 import { INITIAL, type LedWallParams } from './params';
 
 /**
- * The wall with the pointer on its spotlight. useCursor reads the scene's
+ * The wall with the pointer as its focus. useCursor reads the scene's
  * canvas from context, so this has to render inside the ShaderScene.
  */
 function CursorLedWall({ params }: { params: LedWallParams }) {
@@ -19,12 +19,12 @@ function CursorLedWall({ params }: { params: LedWallParams }) {
       center={[params.centerX, params.centerY]}
       dotSize={params.dotSize}
       flicker={params.flicker}
+      focus={cursor}
+      focusRadius={params.focusRadius}
       progress={params.progress}
       spacing={params.spacing}
       speed={params.speed}
-      spotlight={cursor}
-      spotlightIntensity={params.spotlightIntensity}
-      spotlightRadius={params.spotlightRadius}
+      swell={params.swell}
       tuning={params.tuning}
       waviness={params.waviness}
     />
