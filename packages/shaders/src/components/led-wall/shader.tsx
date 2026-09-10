@@ -141,6 +141,15 @@ export const DEFAULT_TUNING: LedWallTuning = {
 // rim actually crosses.
 const RIM_SOFTNESS_PX = 0.7;
 
+// The brightness dials are applied in a gamma-encoded approximation of
+// display space rather than in the linear light the pass composes in. In
+// linear light a factor of 0.7 reads as about 0.85 on screen, so the
+// flicker dial did nothing visible until 0.7. Raising the factor to this
+// power before it multiplies the pixel makes the flicker and the variance
+// read evenly to the eye. Dither quantizes with the same constant for the
+// same reason.
+const GAMMA = 2.2;
+
 export function LedWallShader({
   spacing,
   dotSize,
@@ -382,6 +391,12 @@ export function LedWallShader({
       const flickerTerm = breath.mul(flickerUniform).oneMinus();
       const brightness = staticLevel.mul(flickerTerm);
 
+      // max(0) first: a wide-gamut input can carry a negative channel and
+      // pow() of a negative breaks WGSL const-eval. brightness itself is a
+      // product of 0..1 terms, so the guard is for safety, not for a case
+      // that occurs.
+      const displayBrightness = brightness.max(0).pow(GAMMA);
+
       // ---------------------------------------------
       // The swell: dots grow toward a point
       // ---------------------------------------------
@@ -425,10 +440,11 @@ export function LedWallShader({
       // Compose. The scene texture is premultiplied by construction (the
       // scene blends over a transparent clear), so scaling rgb and alpha by
       // the same factor is the correct way to dim it. Inside the dot the
-      // factor is the dot's brightness, so the static level and the flicker
-      // only ever apply to lit dots. In the gaps it is bleed: 0 leaves alpha
-      // 0 so the page shows through, 1 leaves the scene untouched.
-      const factor = mix(bleedUniform, brightness, dotMask).mul(reveal);
+      // factor is the dot's brightness in display space, so the static
+      // level and the flicker only ever apply to lit dots. In the gaps it
+      // is bleed: 0 leaves alpha 0 so the page shows through, 1 leaves the
+      // scene untouched.
+      const factor = mix(bleedUniform, displayBrightness, dotMask).mul(reveal);
 
       return vec4(vec3(input.rgb).mul(factor), input.a.mul(factor));
     },
