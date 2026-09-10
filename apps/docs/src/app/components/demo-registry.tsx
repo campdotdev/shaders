@@ -172,7 +172,7 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     copySiblings: ['<MeshGradient />'],
     usageSnippet: `<ShaderScene>
   <MeshGradient />
-  <LedWall spacing={5} dotSize={2} />
+  <LedWall spacing={8} dotSize={4} />
 </ShaderScene>`,
     usageNotes: (
       <>

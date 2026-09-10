@@ -11,12 +11,12 @@ import { LedWallShader } from './shader.js';
 
 export interface LedWallProps {
   /**
-   * Cell pitch in CSS pixels. Defaults to 5. Accepts a static value or an
+   * Cell pitch in CSS pixels. Defaults to 8. Accepts a static value or an
    * animation signal.
    */
   spacing?: AnimatableProp<number>;
   /**
-   * Edge of the square dot in CSS pixels. Defaults to 2. Accepts a static
+   * Edge of the square dot in CSS pixels. Defaults to 4. Accepts a static
    * value or an animation signal.
    */
   dotSize?: AnimatableProp<number>;
@@ -30,7 +30,7 @@ export interface LedWallProps {
   /**
    * How deep each dot's brightness breathes over time, on its own phase and
    * tempo. 0 holds every dot still, 1 takes each dot all the way to dark at
-   * the bottom of every breath. Defaults to 0.3. Accepts a static value or
+   * the bottom of every breath. Defaults to 0.5. Accepts a static value or
    * an animation signal.
    */
   flicker?: AnimatableProp<number>;
@@ -49,14 +49,14 @@ export interface LedWallProps {
   focus?: AnimatableProp<readonly [number, number]>;
   /**
    * Reach of the swell from the focus, in canvas units where 1 is the
-   * canvas height. Defaults to 0.3. Accepts a static value or an animation
+   * canvas height. Defaults to 0.6. Accepts a static value or an animation
    * signal.
    */
   focusRadius?: AnimatableProp<number>;
   /**
    * How much a dot grows at the focus, as a fraction of its edge. 0 turns
    * the swell off, 1 doubles the edge at the focus, and the cell caps it so
-   * a dot never touches its neighbour. Defaults to 0. Accepts a static
+   * a dot never touches its neighbour. Defaults to 0.85. Accepts a static
    * value or an animation signal.
    */
   swell?: AnimatableProp<number>;
@@ -65,14 +65,14 @@ export interface LedWallProps {
 }
 
 export function LedWall({
-  spacing = 5,
-  dotSize = 2,
+  spacing = 8,
+  dotSize = 4,
   bleed = 0,
-  flicker = 0.3,
+  flicker = 0.5,
   speed = 2.4,
   focus = [0.5, 0.5],
-  focusRadius = 0.3,
-  swell = 0,
+  focusRadius = 0.6,
+  swell = 0.85,
   tuning,
 }: LedWallProps) {
   return (

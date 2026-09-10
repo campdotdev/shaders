@@ -12,13 +12,13 @@ export interface LedWallParams {
 }
 
 export const INITIAL: LedWallParams = {
-  spacing: 5,
-  dotSize: 2,
+  spacing: 8,
+  dotSize: 4,
   bleed: 0,
-  flicker: 0.3,
+  flicker: 0.5,
   speed: 2.4,
-  focusRadius: 0.3,
-  swell: 0.6,
+  focusRadius: 0.6,
+  swell: 0.85,
   tuning: {
     variance: 0.5,
   },
