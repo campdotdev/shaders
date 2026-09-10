@@ -171,11 +171,11 @@ export function LedWallShader({
   // already scaled for reduced motion), so a speed change shifts the tempo
   // without snapping every dot to a new point in its breath.
   const phaseUniform = useAnimatableSpeed(speed);
-  // screenOrigin converts the prop's screen-style pair (y down, [0, 0]
-  // top-left, like CSS) into uv space, where v grows upward, so the reveal
-  // starts where the page author pointed.
-  const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
-  const spotlightUniform = useAnimatablePoint(spotlight, { screenOrigin: true });
+  // center and spotlight are already screen-style pairs, [0, 0] at the
+  // top-left, the same frame the pass's uv() reads, so neither needs
+  // conversion.
+  const centerUniform = useAnimatablePoint(center);
+  const spotlightUniform = useAnimatablePoint(spotlight);
   const spotlightRadiusUniform = useAnimatableUniform(spotlightRadius);
   const spotlightIntensityUniform = useAnimatableUniform(spotlightIntensity);
 
@@ -263,18 +263,16 @@ export function LedWallShader({
   // The color pass can only restyle each pixel; giving a whole cell ONE
   // scene color means resampling the scene at one shared point per cell.
   // This warp runs where the scene texture is sampled. The coordinate is
-  // uv space, v growing upward, so the y flip anchors the grid to the
-  // top-left corner the way the color pass below does. Without matching
-  // anchors the sampled cells and the drawn dots drift apart by a fraction
-  // of a cell whenever the canvas height is not a multiple of the pitch.
+  // the same screen-oriented uv the color pass reads, (0, 0) at the
+  // top-left, so the grid anchors there in both passes and the sampled
+  // cells and the drawn dots never drift apart.
   useBasePassUv(
     (coordinate) => {
       const cellPx = spacingUniform.mul(dprUniform).max(1);
-      const pixel = vec2(coordinate.x, coordinate.y.oneMinus()).mul(screenSize);
+      const pixel = coordinate.mul(screenSize);
       const snapped = floor(pixel.div(cellPx)).add(0.5).mul(cellPx);
-      const snappedUv = snapped.div(screenSize);
 
-      return vec2(snappedUv.x, snappedUv.y.oneMinus());
+      return snapped.div(screenSize);
     },
     [spacingUniform, dprUniform],
   );
@@ -287,11 +285,15 @@ export function LedWallShader({
   // replacement.
   usePostProcessPass(
     (input) => {
-      // Which cell is this pixel in, and where inside it? Same top-left
-      // anchoring as the snap above. cellLocal runs -0.5..0.5 across the
-      // cell with 0 at its center.
+      // Which cell is this pixel in, and where inside it? uv() in a
+      // post-process pass is screen-oriented: (0, 0) is the top-left corner
+      // and y grows downward, the same frame as CSS and as the cursor
+      // input. That is the opposite of a mesh's uv(), where v grows upward,
+      // which is why this file never flips y and never passes screenOrigin
+      // to useAnimatablePoint, unlike DotField. Vignette is the model.
+      // cellLocal runs -0.5..0.5 across the cell with 0 at its center.
       const cellPx = spacingUniform.mul(dprUniform).max(1);
-      const pixel = vec2(uv().x, uv().y.oneMinus()).mul(screenSize);
+      const pixel = uv().mul(screenSize);
       const cellCoord = pixel.div(cellPx);
       const cellIndex = floor(cellCoord);
       const cellLocal = cellCoord.sub(cellIndex).sub(0.5);
@@ -320,14 +322,11 @@ export function LedWallShader({
       // ---------------------------------------------
       // The reveal: distance from center, jittered and warped
       // ---------------------------------------------
-      // The cell's center in uv space (v up), so it compares with the
-      // center uniform in the same frame. Evaluated per CELL, not per pixel,
-      // so a dot pops in as one piece.
+      // The cell's center in the pass's screen frame, so it compares with
+      // the center uniform directly. Evaluated per CELL, not per pixel, so
+      // a dot pops in as one piece.
       const cellCenterPx = cellIndex.add(0.5).mul(cellPx);
-      const cellCenterUv = vec2(
-        cellCenterPx.x.div(screenSize.x),
-        cellCenterPx.y.div(screenSize.y).oneMinus(),
-      );
+      const cellCenterUv = cellCenterPx.div(screenSize);
 
       // Aspect-corrected distance from center. The far corner then measures
       // 1 wherever the center sits: the farthest corner from a point in the
