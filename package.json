@@ -20,6 +20,7 @@
     "dev:editor": "turbo run dev --filter=@shaders/editor",
     "build:editor": "turbo run build --filter=@shaders/editor",
     "preview:editor": "turbo run preview --filter=@shaders/editor",
+    "dev:map": "turbo run dev --filter=@shaders/map",
     "test:visual": "turbo run test:visual",
     "test:visual:update": "turbo run test:visual:update",
     "snap": "bash scripts/snap.sh",
