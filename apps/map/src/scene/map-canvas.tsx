@@ -1,11 +1,15 @@
 // The r3f canvas with everything the map needs before any data arrives: the
 // isometric camera, pan-and-zoom controls, two lights, and a ground grid.
-// Scene objects render as children. The grid is centered on a fixed point for
-// now; Task 3 replaces that with the bounds of the neighborhoods.
+// Scene objects render as children. The grid is sized and centered from the
+// neighborhoods' data bounds rather than a fixed point.
 import type { ReactNode } from 'react';
 
 import { MapControls, OrthographicCamera } from '@react-three/drei';
 import { Canvas } from '@react-three/fiber';
+
+import { NEIGHBORHOODS } from '@/data';
+
+import { gridBounds } from './layout';
 
 // ---- Camera placement ------------------------------------------------------
 
@@ -15,11 +19,13 @@ import { Canvas } from '@react-three/fiber';
 // its view line. Equal offsets along x, y, and z put it on the diagonal, the
 // true isometric angle, where all three axes foreshorten equally.
 const CAMERA_DISTANCE = 30;
-const GRID_CENTER: readonly [x: number, z: number] = [9, 5.5];
-const GRID_SIZE = 24;
+/** Ground grid runs this many cells past the outermost neighborhood on each side. */
+const GRID_MARGIN = 2;
+const bounds = gridBounds(NEIGHBORHOODS);
+const gridSize = Math.max(bounds.width, bounds.depth) + GRID_MARGIN * 2;
 
 export function MapCanvas({ children }: { children: ReactNode }) {
-  const [centerX, centerZ] = GRID_CENTER;
+  const [centerX, centerZ] = bounds.center;
 
   return (
     <Canvas dpr={[1, 2]}>
@@ -46,7 +52,7 @@ export function MapCanvas({ children }: { children: ReactNode }) {
       <ambientLight intensity={0.7} />
       <directionalLight intensity={1.4} position={[centerX + 8, 20, centerZ + 4]} />
       <gridHelper
-        args={[GRID_SIZE, GRID_SIZE, '#1f2430', '#161a23']}
+        args={[gridSize, gridSize, '#1f2430', '#161a23']}
         position={[centerX, -0.01, centerZ]}
       />
       {children}
