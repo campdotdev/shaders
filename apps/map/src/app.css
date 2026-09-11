@@ -163,3 +163,97 @@ body,
 .segments button[aria-current='step'] {
   background: var(--accent);
 }
+
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+}
+
+.tabs button {
+  flex: 1;
+  padding: 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tabs button[aria-selected='true'] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.prose {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+}
+
+.prose p {
+  margin: 0 0 12px;
+  line-height: 1.55;
+}
+
+.steps {
+  margin: 0;
+  padding: 12px 0;
+  list-style: none;
+}
+
+.step > button {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 20px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  text-align: left;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.step.current > button {
+  color: var(--text);
+}
+
+.step-number {
+  flex: 0 0 18px;
+  height: 18px;
+  border-radius: 9px;
+  background: var(--border);
+  font-size: 11px;
+  line-height: 18px;
+  text-align: center;
+}
+
+.step.current .step-number {
+  background: var(--accent);
+  color: var(--bg);
+}
+
+.step-files {
+  display: none;
+  margin: 0 0 8px;
+  padding: 0 20px 0 48px;
+  list-style: none;
+}
+
+.step.current .step-files {
+  display: block;
+}
+
+.file-link {
+  font-size: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  color: var(--muted);
+  word-break: break-all;
+  text-decoration: none;
+}
+
+.file-link:hover {
+  color: var(--text);
+  text-decoration: underline;
+}
