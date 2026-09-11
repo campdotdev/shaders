@@ -89,3 +89,19 @@ body,
 .muted {
   color: var(--muted);
 }
+
+.caption {
+  position: absolute;
+  left: 50%;
+  bottom: 72px;
+  transform: translateX(-50%);
+  margin: 0;
+  max-width: 60ch;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: rgb(11 13 18 / 0.8);
+  border: 1px solid var(--border);
+  text-align: center;
+  line-height: 1.45;
+  pointer-events: none;
+}

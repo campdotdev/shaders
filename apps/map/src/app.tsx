@@ -4,6 +4,7 @@
 import { Panel } from '@/panel/panel';
 import { MapCanvas } from '@/scene/map-canvas';
 import { MapScene } from '@/scene/map-scene';
+import { Caption } from '@/transport/caption';
 
 export function App() {
   return (
@@ -12,6 +13,7 @@ export function App() {
         <MapCanvas>
           <MapScene />
         </MapCanvas>
+        <Caption />
       </div>
       <Panel />
     </div>
