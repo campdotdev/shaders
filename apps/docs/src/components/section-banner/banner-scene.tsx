@@ -7,7 +7,18 @@
  * never reads the shader demoed below it. banner-shader.tsx owns the
  * client-only import and the visual-test skip; this file is the scene.
  */
-import { type ColorStop, LedWall, RadialGradient, ShaderScene, useCursor } from '@camp-dev/shaders';
+import { useEffect, useRef, useState } from 'react';
+
+import {
+  type ColorStop,
+  Dissolve,
+  LedWall,
+  RadialGradient,
+  RadialWipe,
+  ShaderScene,
+  useCursor,
+} from '@camp-dev/shaders';
+import { animate, useMotionValue } from 'motion/react';
 
 // ----------------------------------------------------------------------------
 // The mock's geometry
@@ -99,6 +110,20 @@ const BANNER_FLICKER = 0.7;
 const BANNER_SPEED = 1.8;
 
 /**
+ * Cell pitch of the wall in CSS pixels. LedWall's own default, written out
+ * because the dissolve's block size has to match it: both grids anchor at
+ * the top-left with the same pixel-ratio math, so when the two sizes agree
+ * each dot winks in as one piece instead of arriving pixel by pixel.
+ */
+const DOT_SPACING = 8;
+
+/**
+ * Softness of the wipe's front, 0 for a hard edge and 1 for a fade across
+ * the whole radius. It sets the width of the ragged band the dissolve grains.
+ */
+const BANNER_FEATHER = 0.35;
+
+/**
  * Where the wall's focus sits before the pointer first moves: one canvas
  * height below the bottom edge, in the same 0..1 frame as `focus`. The
  * cursor input otherwise seeds at the canvas center, which would swell a
@@ -124,23 +149,100 @@ function BannerWall() {
   const cursor = useCursor({ initial: FOCUS_PARKED });
 
   return (
-    <LedWall bleed={BANNER_BLEED} flicker={BANNER_FLICKER} focus={cursor} speed={BANNER_SPEED} />
+    <LedWall
+      bleed={BANNER_BLEED}
+      flicker={BANNER_FLICKER}
+      focus={cursor}
+      spacing={DOT_SPACING}
+      speed={BANNER_SPEED}
+    />
   );
 }
 
+// ----------------------------------------------------------------------------
+// The reveal
+// ----------------------------------------------------------------------------
+
+/** The reveal's length in seconds and its curve as a cubic bezier. */
+interface RevealTokens {
+  seconds: number;
+  ease: [number, number, number, number];
+}
+
 /**
- * Two layers in mount order: the glow, then the wall screening it, breathing
- * and swelling toward the pointer.
+ * The reveal's length and curve come from the site's motion tokens, read off
+ * the root element the way every CSS transition reads them: --duration-xl
+ * for the length and --ease-out for the curve. Under Reduce Motion the
+ * duration token is 0ms, so the reveal lands at once with no media query
+ * here. The fallbacks cover only a token that fails to parse.
+ */
+function readRevealTokens(): RevealTokens {
+  const styles = getComputedStyle(document.documentElement);
+  const milliseconds = Number.parseFloat(styles.getPropertyValue('--duration-xl'));
+  const curve = styles
+    .getPropertyValue('--ease-out')
+    .match(/-?\d*\.?\d+/g)
+    ?.map(Number);
+
+  return {
+    seconds: Number.isFinite(milliseconds) ? milliseconds / 1000 : 1,
+    ease:
+      curve?.length === 4
+        ? [curve[0] ?? 0, curve[1] ?? 0, curve[2] ?? 0, curve[3] ?? 1]
+        : [0.32, 0.72, 0, 1],
+  };
+}
+
+/**
+ * Four layers in mount order: the glow, the wipe and the dissolve that
+ * reveal it, then the wall screening whatever is visible. The wipe and the
+ * dissolve run BEFORE the wall so dots arrive with the wash between them,
+ * where putting the wall first would reveal a finished dot field and grain
+ * every dot's rim. The dissolve holds at its default progress of 1 while
+ * only the wipe animates: two masks on one progress would multiply, and the
+ * wipe's interior would fill in patchily. Held at 1, the dissolve reads the
+ * wipe's feathered alpha and grains exactly that band, nothing else.
  */
 export default function BannerScene() {
+  // The reveal: a motion value from 0 to 1 that RadialWipe reads as an
+  // animation signal. It starts on the scene's first painted frame rather
+  // than on mount, because the shader takes seconds to compile and a reveal
+  // started at mount would be over before anything was on screen.
+  const progress = useMotionValue(0);
+  const controlsRef = useRef<ReturnType<typeof animate> | null>(null);
+  // RadialWipe treats any signal as live and votes the scene animated for as
+  // long as it holds one, because it cannot tell a motion value has stopped.
+  // Once the reveal is done, this flag swaps in the literal 1 and withdraws
+  // that vote. With flicker on the wall votes animated anyway, so it buys
+  // nothing today; it is what would let the banner idle at flicker 0.
+  const [revealed, setRevealed] = useState(false);
+
+  const startReveal = () => {
+    const { seconds, ease } = readRevealTokens();
+
+    if (seconds === 0) {
+      progress.set(1);
+      setRevealed(true);
+
+      return;
+    }
+
+    controlsRef.current = animate(progress, 1, { duration: seconds, ease });
+    void controlsRef.current.then(() => setRevealed(true));
+  };
+
+  useEffect(() => () => controlsRef.current?.stop(), []);
+
   return (
-    <ShaderScene>
+    <ShaderScene onFirstPaint={startReveal}>
       <RadialGradient
         center={ORIGIN}
         radius={GLOW_RADIUS}
         stops={LIME_STOPS}
         stretch={GLOW_STRETCH}
       />
+      <RadialWipe center={ORIGIN} feather={BANNER_FEATHER} progress={revealed ? 1 : progress} />
+      <Dissolve pixelSize={DOT_SPACING} />
       <BannerWall />
     </ShaderScene>
   );
