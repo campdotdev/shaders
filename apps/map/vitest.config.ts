@@ -1,10 +1,11 @@
+// Vitest config for the map app. Tests run in the `node` environment because
+// the timeline, layout, and data tests never touch the GPU or the DOM. The
+// `@` alias is redeclared here, matching vite.config.ts, because Vitest
+// doesn't read tsconfig `paths`.
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
-  // Vitest doesn't read tsconfig `paths`, so the `@/` alias every cross-folder
-  // import uses has to be declared here too, or the unit tests resolve nothing
-  // outside their own directory.
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url)),
