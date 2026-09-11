@@ -105,3 +105,61 @@ body,
   line-height: 1.45;
   pointer-events: none;
 }
+
+.transport {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgb(18 21 29 / 0.92);
+  border: 1px solid var(--border);
+}
+
+.transport select,
+.transport > button {
+  height: 30px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+.transport > button:hover {
+  border-color: var(--muted);
+}
+
+.segments {
+  display: flex;
+  flex: 1;
+  gap: 4px;
+  margin: 0 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.segments li {
+  flex: 1;
+}
+
+.segments button {
+  display: block;
+  width: 100%;
+  height: 8px;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: var(--border);
+  cursor: pointer;
+}
+
+.segments button[aria-current='step'] {
+  background: var(--accent);
+}
