@@ -178,8 +178,7 @@
      opacity and color and keeps running under Reduce Motion, so a popup that
      scales in becomes a popup that fades in. Everything user-facing stays under
      300ms; the lg step is for surfaces that enter the screen, such as a toast
-     or drawer, and xl for the one section reveal, which crosses the whole
-     viewport once per entry. The easing names say when to use each: ease-out for anything
+     or drawer. The easing names say when to use each: ease-out for anything
      entering or exiting, ease-in-out for things that move while on screen,
      ease-hover for color and opacity on hover, and linear only for constant
      motion. Sources and reasoning are in docs/development/animation.md. */
@@ -187,7 +186,6 @@
   --duration-sm: 150ms; /* panels, popups, button press */
   --duration-md: 250ms; /* larger reveals */
   --duration-lg: 400ms; /* toasts and drawers only */
-  --duration-xl: 1000ms; /* section reveals, once per entry */
   --fade-xs: 100ms; /* hover color and opacity */
   --fade-sm: 150ms; /* the opacity half of a popup or panel */
   --fade-md: 250ms;
@@ -228,6 +226,5 @@
     --duration-sm: 0ms;
     --duration-md: 0ms;
     --duration-lg: 0ms;
-    --duration-xl: 0ms;
   }
 }

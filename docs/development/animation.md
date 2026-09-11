@@ -81,7 +81,6 @@ Naming follows the file's existing shapes: t-shirt sizes as in `--radius-xl` and
 --duration-sm: 150ms; /* panels, popups, button press */
 --duration-md: 250ms; /* larger reveals, still under the 300ms ceiling */
 --duration-lg: 400ms; /* toasts and drawers only */
---duration-xl: 1000ms; /* section reveals, once per entry */
 
 /* The same steps again for opacity and color. Reduce Motion zeroes the
    --duration-* family and leaves this one alone. */
@@ -107,7 +106,6 @@ Where each value comes from:
 | `--duration-sm` | 150ms | Base UI's panel `height 150ms ease-out` and popup `150ms` ([Base UI, Accordion](https://base-ui.com/react/components/accordion), [Animation handbook](https://base-ui.com/react/handbook/animation)). Emil's `150ms` button press ([The Easing Blueprint](https://animations.dev/learn/animation-theory/the-easing-blueprint)). Material `duration-short3`. |
 | `--duration-md` | 250ms | Base UI's keyframe example `250ms` ([Animation handbook](https://base-ui.com/react/handbook/animation)). Material `duration-medium1`. Sits under Emil's 300ms ceiling ([Great animations](https://emilkowal.ski/ui/great-animations)). |
 | `--duration-lg` | 400ms | Sonner's toast enter `400ms` ([Sonner styles.css](https://raw.githubusercontent.com/emilkowalski/sonner/main/src/styles.css)). Material `duration-medium4`. |
-| `--duration-xl` | 1000ms | Material `duration-extra-long4`, the top of its scale, under its rule that "duration should increase as the area/traversal of an animation increases" ([Material Android motion guide](https://github.com/material-components/material-components-android/blob/master/docs/theming/Motion.md)). The Components banner reveal crosses the full viewport width and plays once per entry into the section, so it sits above the toast step. Nothing else uses it. |
 | `--ease-out` | `cubic-bezier(0.32, 0.72, 0, 1)` | Vaul's curve, "closely matches the one used in iOS" ([Building a drawer component](https://emilkowal.ski/ui/building-a-drawer-component), [Vaul constants.ts](https://raw.githubusercontent.com/emilkowalski/vaul/main/src/constants.ts)). Chosen over the keyword because "the accelerations of the built-in ones are not strong enough" ([The Easing Blueprint](https://animations.dev/learn/animation-theory/the-easing-blueprint)). Material's `easing-emphasized-decelerate`, `cubic-bezier(0.05, 0.7, 0.1, 1)`, is the alternative if the site wants a more pronounced settle. |
 | `--ease-in-out` | `cubic-bezier(0.59, 0.02, 0.39, 1)` | The curve the free lesson's on-screen movement demo runs ([The Easing Blueprint](https://animations.dev/learn/animation-theory/the-easing-blueprint), page markup). Material's `easing-standard`, `cubic-bezier(0.2, 0, 0, 1)`, is the alternative with a published name. |
 | `--ease-hover` | `ease` | "I use this one mostly for hover effects that transition color, background-color, opacity" ([The Easing Blueprint](https://animations.dev/learn/animation-theory/the-easing-blueprint)). Spec value `cubic-bezier(0.25, 0.1, 0.25, 1)` ([CSS Easing Functions Level 2](https://www.w3.org/TR/css-easing-2/)). |
@@ -126,7 +124,6 @@ Put the override next to the tokens, so every consumer inherits it and no compon
     --duration-sm: 0ms;
     --duration-md: 0ms;
     --duration-lg: 0ms;
-    --duration-xl: 0ms;
   }
 }
 ```
