@@ -1,0 +1,45 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0d12;
+  --panel: #12151d;
+  --border: #232838;
+  --text: #e8ebf2;
+  --muted: #8b93a7;
+  --accent: #ffd166;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    sans-serif;
+  font-size: 14px;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  height: 100%;
+}
+
+.stage {
+  position: relative;
+  min-width: 0;
+}
+
+.stage canvas {
+  display: block;
+}
+
+.panel {
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+  overflow-y: auto;
+}
