@@ -145,15 +145,21 @@ export function createOutputStage(
     // already applied tone mapping and the output transfer (renderOutput
     // above), so the renderer's own pass of both is switched off for this
     // one draw and restored after, or the canvas would be tone-mapped and
-    // encoded twice.
+    // encoded twice. The restore runs in a finally block so a draw that
+    // throws (a lost device, say) cannot leave both switched off, where the
+    // next rebuildOutputNode would capture them and bake the wrong settings
+    // into the quad's material for every frame after.
     render() {
       const { toneMapping, outputColorSpace } = renderer;
 
       renderer.toneMapping = NoToneMapping;
       renderer.outputColorSpace = LinearSRGBColorSpace;
-      outputQuad.render(renderer);
-      renderer.toneMapping = toneMapping;
-      renderer.outputColorSpace = outputColorSpace;
+      try {
+        outputQuad.render(renderer);
+      } finally {
+        renderer.toneMapping = toneMapping;
+        renderer.outputColorSpace = outputColorSpace;
+      }
     },
 
     dispose() {

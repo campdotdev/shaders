@@ -26,6 +26,22 @@ describe('createOutputStage', () => {
     expect(renderer.outputColorSpace).toBe('srgb');
   });
 
+  // The draw switches tone mapping and the output color space off for one
+  // quad. A throw inside it must not leave them off, or the next rebuild
+  // would bake the wrong settings into the quad's material.
+  it('restores the renderer settings when the draw throws', () => {
+    const renderer = makeRenderer();
+    const stage = createOutputStage(renderer, new Scene(), new OrthographicCamera());
+
+    vi.mocked(renderer.render).mockImplementationOnce(() => {
+      throw new Error('device lost');
+    });
+
+    expect(() => stage.render()).toThrow('device lost');
+    expect(renderer.toneMapping).toBe(3);
+    expect(renderer.outputColorSpace).toBe('srgb');
+  });
+
   // three 0.170's PostProcessing shares one quad and one material across
   // every instance, which is why this module exists.
   it('gives every stage its own quad and material', () => {
