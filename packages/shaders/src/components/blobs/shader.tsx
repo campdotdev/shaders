@@ -16,7 +16,7 @@ import type { AnimatableProp } from '../../react/hooks/animatable-signal/animata
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
+import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color.js';
@@ -155,31 +155,9 @@ export function BlobsShader({
   // ---------------------------------------------
   // Track the canvas aspect ratio
   // ---------------------------------------------
-  // Blobs must stay round on any canvas shape. The uniform starts from the
-  // current canvas size (16:9 fallback while the canvas is collapsed and
-  // reports 0), then follows every resize.
-  const resize = useResize();
-  const [initialWidth, initialHeight] = resize.get();
-  const aspectNode = useMemo(
-    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
-
-    if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
-
-    return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) {
-        aspectNode.value = updatedWidth / updatedHeight;
-        // At speed 0 the scene is hinted static, so without this poke a
-        // resize would update the uniform and never repaint.
-        shaderContext?.scheduler.requestRender();
-      }
-    });
-  }, [shaderContext, resize, aspectNode]);
+  // Blobs must stay round on any canvas shape. useAspectUniform keeps the
+  // ratio current across resizes.
+  const aspectNode = useAspectUniform();
 
   // ---------------------------------------------
   // Build the material and mount the mesh

@@ -16,7 +16,7 @@ import type { AnimatableProp } from '../../react/hooks/animatable-signal/animata
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
+import { type ResizeValue, useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { parseColor } from '../shared/color.js';
 
@@ -200,15 +200,21 @@ export function DotFieldShader({
   const resVec = useMemo(() => new Vector2(1920, 1080), []);
   const resUniform = useMemo(() => uniform(resVec), [resVec]);
 
+  // Each write is followed by a scheduler poke: a bare write into the
+  // Vector2 repaints nothing on a static scene, the trap useAspectUniform
+  // exists for. The zero guard skips a collapsed canvas.
   useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
+    const scheduler = shaderContext?.scheduler;
+    const write = ([width, height]: ResizeValue) => {
+      if (width <= 0 || height <= 0) return;
+      resVec.set(width, height);
+      scheduler?.requestRender();
+    };
 
-    if (canvasWidth > 0 && canvasHeight > 0) resVec.set(canvasWidth, canvasHeight);
+    write(resize.get());
 
-    return resize.on('change', ([updatedWidth, updatedHeight]) =>
-      resVec.set(updatedWidth, updatedHeight),
-    );
-  }, [resize, resVec]);
+    return resize.on('change', write);
+  }, [shaderContext, resize, resVec]);
 
   // ---------------------------------------------
   // Build the material and mount the mesh

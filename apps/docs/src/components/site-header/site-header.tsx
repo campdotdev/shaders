@@ -3,7 +3,8 @@
  * Docs, Examples, and a GitHub link on the right, one 56px row with no
  * divider. The root layout renders it once above every route. On the
  * components routes the SectionBanner sits directly under it, and the two
- * together make the 200px header block the mock draws.
+ * together make the 200px header block the mock draws, and the banner's
+ * shader reaches up behind this row to fill that block.
  */
 import Link from 'next/link';
 
@@ -17,7 +18,7 @@ const REPO_URL = 'https://github.com/campdotdev/shaders';
 
 export function SiteHeader() {
   return (
-    <header className="site-gutter" data-pagefind-ignore="all">
+    <header className={`site-gutter ${styles.header}`} data-pagefind-ignore="all">
       <div className={`site-container ${styles.row}`}>
         <Link aria-label="Shaders home" className={styles.logo} href="/">
           <LogoMark />
