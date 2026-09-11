@@ -100,10 +100,13 @@ export function RadialWipeShader({ progress, center, feather }: RadialWipeShader
       const band = featherUniform.max(MIN_FEATHER);
       const threshold = progressUniform.mul(band.add(1));
 
-      // The front itself: a smoothstep with its edges REVERSED (high to
-      // low), which flips the ramp so it returns 1 once the distance sits a
-      // feather under the threshold, 0 above it, and an S-curve in between.
-      const reveal = smoothstep(threshold, threshold.sub(band), distance);
+      // The front itself: an S-curve that rises from 0 one feather under
+      // the threshold to 1 at it, flipped with oneMinus so the reveal is 1
+      // once the distance sits a feather under the threshold and 0 above
+      // it. The edges stay ascending, because GLSL leaves smoothstep
+      // undefined when the first edge is not below the second, and the
+      // Hermite curve is symmetric, so the flip costs nothing.
+      const reveal = smoothstep(threshold.sub(band), threshold, distance).oneMinus();
 
       // Compose. The scene texture is premultiplied by construction (the
       // scene blends over a transparent clear), so scaling rgb and alpha by

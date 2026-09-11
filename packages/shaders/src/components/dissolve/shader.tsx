@@ -176,11 +176,14 @@ export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
       const target = progressUniform.mul(input.a);
       const threshold = target.mul(1 + FADE_WIDTH);
 
-      // The front itself: a smoothstep with its edges REVERSED (high to
-      // low), which flips the ramp so it returns 1 once the value sits a
-      // fade-width under the threshold, 0 above it, and an S-curve in
-      // between. That band is the pop-in.
-      const reveal = smoothstep(threshold, threshold.sub(FADE_WIDTH), value);
+      // The front itself: an S-curve that rises from 0 one fade-width under
+      // the threshold to 1 at it, flipped with oneMinus so the reveal is 1
+      // once the value sits a fade-width under the threshold and 0 above
+      // it. That band is the pop-in. The edges stay ascending, because GLSL
+      // leaves smoothstep undefined when the first edge is not below the
+      // second, and the Hermite curve is symmetric, so the flip costs
+      // nothing.
+      const reveal = smoothstep(threshold.sub(FADE_WIDTH), threshold, value).oneMinus();
 
       // Compose. A shown block is shown at full strength, not at the soft
       // alpha it arrived with: the scene texture is premultiplied, so
