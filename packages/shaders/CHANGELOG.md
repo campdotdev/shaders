@@ -1,5 +1,16 @@
 # @camp-dev/shaders
 
+## 0.20.0
+
+### Minor Changes
+
+- ef14a4a: Add three Effects. LedWall screens the scene beneath it into a grid of square LED dots, with a per-dot breath, a bleed dial for the gaps, and a focus point the dots swell toward. RadialWipe reveals the scene from a center with a feathered front driven by a progress value. Dissolve grains whatever alpha it sits over into blocks, so it pairs with any wipe or soft-edged source.
+
+### Patch Changes
+
+- ef14a4a: Fix aspect-corrected components drawing at a 16:9 ratio on a static scene until the first resize. Every component that keeps circles round or grids square on a wide canvas now reads the ratio through one hook that requests a frame when the canvas size arrives. DotField's resolution and the pixel-ratio uniforms on Dither, Dissolve, and LedWall request a frame the same way.
+- ef14a4a: Fix two ShaderScenes on one page drawing each other's output. three 0.170's PostProcessing shares a single full-screen quad and material across every instance, so whichever scene updated last was what every canvas drew. Each scene now owns its output quad and material.
+
 ## 0.19.0
 
 ### Minor Changes

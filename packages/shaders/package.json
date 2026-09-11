@@ -1,6 +1,6 @@
 {
   "name": "@camp-dev/shaders",
-  "version": "0.19.0",
+  "version": "0.20.0",
   "description": "React shader components on WebGPU and Three.js TSL: Tier 1 components, ShaderScene, hooks, and the TSL primitives they build on.",
   "keywords": [
     "background",
