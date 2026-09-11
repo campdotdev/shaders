@@ -16,18 +16,18 @@ import { useSyncExternalStore } from 'react';
 
 import { DemoPoster } from '@/components/DemoPoster';
 
+import { BANNER_HEIGHT, BANNER_WIDTH } from './banner-geometry';
 import styles from './section-banner.module.css';
 
 const BannerScene = dynamic(() => import('./banner-scene'), { ssr: false });
 
 /**
- * The CSS size the poster was captured at: the mock's width by the 200px
- * header block. The wall is pixel-sized, so the poster shows at exactly this
- * size, centered and cropped, and its dot pitch matches the live wall. Past
- * 864px either side of center the glow has already reached page black, so a
- * wider viewport shows the page past the poster's edges with no seam.
+ * The CSS size the poster was captured at, which is also the box the live
+ * scene renders in, so the poster fills it exactly and its dot grid is the
+ * live wall's. The wall is pixel-sized, so DemoPoster's pixel-locked mode
+ * shows the image at this size rather than cover-scaling it.
  */
-const POSTER_SIZE: readonly [number, number] = [1728, 200];
+const POSTER_SIZE: readonly [number, number] = [BANNER_WIDTH, BANNER_HEIGHT];
 
 // The flag never changes for the life of a page, so the store has nothing
 // to subscribe to; the hook still wants a subscribe function.
@@ -50,13 +50,19 @@ function useIsVisualTest(): boolean {
 // Owns its `.scene` positioning rather than taking a className: without the
 // absolute wrapper, ShaderScene's own absolutely positioned canvas would
 // resolve against the band and paint over the title instead of behind it.
+// The box's size comes from banner-geometry.ts rather than the stylesheet,
+// so the one pair of numbers reaches the scene, the box, and the poster.
 export function BannerShader() {
   const isVisualTest = useIsVisualTest();
 
   if (isVisualTest) return null;
 
   return (
-    <div aria-hidden className={styles.scene}>
+    <div
+      aria-hidden
+      className={styles.scene}
+      style={{ width: BANNER_WIDTH, height: BANNER_HEIGHT }}
+    >
       <DemoPoster alt="" pixelSize={POSTER_SIZE} src="/posters/banner.jpg">
         <BannerScene />
       </DemoPoster>

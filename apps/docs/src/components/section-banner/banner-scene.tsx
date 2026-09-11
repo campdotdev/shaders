@@ -10,31 +10,22 @@
  */
 import { type ColorStop, LedWall, RadialGradient, ShaderScene, useCursor } from '@camp-dev/shaders';
 
+import { BANNER_HEIGHT, BANNER_WIDTH } from './banner-geometry';
+
 // ----------------------------------------------------------------------------
 // The mock's geometry
 // ----------------------------------------------------------------------------
 
-/**
- * The viewport width the mock was drawn at, which every pixel figure below
- * assumes. It is also the width the banner poster is captured at, so the
- * poster and the live scene agree exactly at this width.
- */
-const MOCK_WIDTH = 1728;
-
-/**
- * The header block's height in CSS pixels: the 56px nav row plus the 144px
- * band, spacing-14 and spacing-36 in the two CSS modules. The scene covers
- * the whole block, reaching up behind the nav, so this is the canvas height.
- */
-const HEADER_HEIGHT = 200;
+// The canvas is always BANNER_WIDTH by BANNER_HEIGHT (banner-geometry.ts),
+// so every pixel figure below is exact at every window width.
 
 /**
  * The mock's glow is a half-ellipse centered on the block's bottom edge,
  * half the viewport wide and as tall as the block, so its top just touches
  * the top of the nav. These are its two semi-axes in CSS pixels.
  */
-const GLOW_HALF_WIDTH = MOCK_WIDTH / 2;
-const GLOW_HEIGHT = HEADER_HEIGHT;
+const GLOW_HALF_WIDTH = BANNER_WIDTH / 2;
+const GLOW_HEIGHT = BANNER_HEIGHT;
 
 /** Where the glow starts: the bottom center of the block, in 0..1 canvas units. */
 const ORIGIN = [0.5, 1] as const;
@@ -52,13 +43,11 @@ const GLOW_STRETCH = GLOW_HALF_WIDTH / GLOW_HEIGHT;
  * canvas corners. The shader measures distance in canvas heights and divides
  * by the half-diagonal in those units, and `stretch` leaves the vertical
  * reach alone, so the ramp ends at the top of the block when radius is one
- * canvas height divided by the half-diagonal of a 1728 by 200 canvas: about
- * 0.23. Exact at the mock's width. A wider viewport has a longer
- * half-diagonal, which shrinks the glow a little, and a narrower one grows
- * it.
+ * canvas height divided by the half-diagonal of the 1728 by 200 canvas: about
+ * 0.23. The canvas is always that size, so the figure is exact everywhere.
  */
-const HALF_DIAGONAL = Math.hypot(MOCK_WIDTH / HEADER_HEIGHT / 2, 0.5);
-const GLOW_RADIUS = GLOW_HEIGHT / HEADER_HEIGHT / HALF_DIAGONAL;
+const HALF_DIAGONAL = Math.hypot(BANNER_WIDTH / BANNER_HEIGHT / 2, 0.5);
+const GLOW_RADIUS = GLOW_HEIGHT / BANNER_HEIGHT / HALF_DIAGONAL;
 
 // ----------------------------------------------------------------------------
 // The mock's colors

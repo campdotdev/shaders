@@ -24,15 +24,19 @@
 }
 
 /* The shader layer: the glow and its dots, behind the title. The box starts
-   one nav row above the band, so the canvas covers the mock's whole 200px
+   one nav row above the band, so the scene covers the mock's whole 200px
    header block and the glow shows through the nav, which has no background
-   and lifts itself above this layer (site-header.module.css). ShaderScene
-   positions its own canvas absolutely inside this box. pointer-events: none
-   keeps the canvas from swallowing text selection on the title. If the
-   renderer fails, this box stays empty and the header is bare. */
+   and lifts itself above this layer (site-header.module.css). The box is a
+   fixed size, centered: banner-shader.tsx sets its width and height from
+   banner-geometry.ts, which says why the size is fixed. ShaderScene
+   positions its own canvas absolutely inside it. pointer-events: none keeps
+   the canvas from swallowing text selection on the title. If the renderer
+   fails, the poster stays up. */
 .scene {
   position: absolute;
-  inset: calc(-1 * var(--spacing-14)) 0 0;
+  top: calc(-1 * var(--spacing-14));
+  left: 50%;
+  transform: translateX(-50%);
   z-index: -1;
   pointer-events: none;
 }
