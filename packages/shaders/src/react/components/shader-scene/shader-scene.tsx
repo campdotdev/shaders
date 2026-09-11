@@ -9,11 +9,11 @@
 // composition is stacking children, painting into this one scene.
 import { type CSSProperties, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 
-import { OrthographicCamera, Scene } from 'three';
+import { LinearSRGBColorSpace, NoToneMapping, OrthographicCamera, Scene } from 'three';
 import type { ShaderNodeObject } from 'three/tsl';
 import { pass, passTexture, renderOutput, uv, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
-import { PostProcessing } from 'three/webgpu';
+import { NodeMaterial, QuadMesh } from 'three/webgpu';
 
 import {
   createIntersectionWatcher,
@@ -113,11 +113,19 @@ export function ShaderScene({
         const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
 
         camera.position.z = 1;
-        const postProcessing = new PostProcessing(renderer.three);
+        // The output stage: one full-screen quad whose material runs the
+        // post-process chain and writes the canvas. This is what three's
+        // PostProcessing class does, minus its one flaw for us: in three
+        // 0.170 it keeps a SINGLE quad and material at module level, shared by
+        // every instance, so two scenes on one page overwrite each other's
+        // output and both canvases draw whichever scene updated last (the
+        // shared-quad gotcha in AGENTS.md). Owning the quad per scene is the
+        // whole fix. A three bump that gives PostProcessing a quad per
+        // instance could swap this back.
+        const outputMaterial = new NodeMaterial();
 
-        // Take ownership of the output color transform so we can dither in
-        // display-encoded space (see rebuildOutputNode below).
-        postProcessing.outputColorTransform = false;
+        outputMaterial.name = 'ShaderScene output';
+        const outputQuad = new QuadMesh(outputMaterial);
         const scheduler = new FrameScheduler();
 
         // The post-process chain: base pass first (the children's meshes
@@ -160,12 +168,19 @@ export function ShaderScene({
           );
 
           // renderOutput applies tone mapping + the working->output color-space
-          // transfer (it reads both from the context three sets because
-          // outputColorTransform is false), so dither runs last, in
-          // display-encoded space, right before 8-bit quantization. This breaks
-          // up gradient banding uniformly across every component in the scene.
-          postProcessing.outputNode = dither(renderOutput(composed));
-          postProcessing.needsUpdate = true;
+          // transfer, reading both from the context set here (the renderer's
+          // own settings, captured the way three's PostProcessing captures
+          // them), so dither runs last, in display-encoded space, right before
+          // 8-bit quantization. This breaks up gradient banding uniformly
+          // across every component in the scene. needsUpdate is what makes the
+          // renderer recompile the quad's program on its next draw.
+          const { toneMapping, outputColorSpace } = renderer.three;
+
+          outputMaterial.fragmentNode = dither(renderOutput(composed)).context({
+            toneMapping,
+            outputColorSpace,
+          });
+          outputMaterial.needsUpdate = true;
         };
 
         rebuildOutputNode(); // initial: just basePass, no overlays
@@ -201,6 +216,23 @@ export function ShaderScene({
         // state flip by one rAF so the just-submitted frame composites before the
         // poster is removed.
         let firstPaintSignaled = false;
+
+        // Draw the output quad the way PostProcessing.render does: the quad's
+        // material already applied tone mapping and the output transfer
+        // (renderOutput above), so the renderer's own pass of both is
+        // switched off for this one draw and restored after, or the canvas
+        // would be tone-mapped and encoded twice.
+        const renderOutputQuad = () => {
+          const three = renderer.three;
+          const { toneMapping, outputColorSpace } = three;
+
+          three.toneMapping = NoToneMapping;
+          three.outputColorSpace = LinearSRGBColorSpace;
+          outputQuad.render(three);
+          three.toneMapping = toneMapping;
+          three.outputColorSpace = outputColorSpace;
+        };
+
         const renderFrame = () => {
           const hasContent = scene.children.length > 0 || overlays.size > 0;
 
@@ -218,7 +250,7 @@ export function ShaderScene({
             resetRendererClock(renderer.three);
             scheduler.resetPhases();
           }
-          postProcessing.render();
+          renderOutputQuad();
 
           if (!firstPaintSignaled && hasContent) {
             firstPaintSignaled = true;
@@ -271,6 +303,7 @@ export function ShaderScene({
           intersection.dispose();
           resizeObserver.disconnect();
           scheduler.dispose();
+          outputMaterial.dispose();
           renderer.dispose();
         };
 
