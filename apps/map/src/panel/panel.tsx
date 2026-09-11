@@ -47,9 +47,13 @@ export function Panel() {
           </>
         )}
       </header>
+      {/* The ids below link each tab to the panel it controls, so assistive
+          tech can announce which tab owns the content that follows it. */}
       <div className="tabs" role="tablist">
         <button
+          aria-controls="tabpanel-prose"
           aria-selected={tab === 'what'}
+          id="tab-what"
           onClick={() => {
             setTab('what');
           }}
@@ -59,7 +63,9 @@ export function Panel() {
           What it does
         </button>
         <button
+          aria-controls="tabpanel-prose"
           aria-selected={tab === 'how'}
+          id="tab-how"
           onClick={() => {
             setTab('how');
           }}
@@ -69,7 +75,12 @@ export function Panel() {
           How it&apos;s built
         </button>
       </div>
-      <section className="prose" role="tabpanel">
+      <section
+        aria-labelledby={tab === 'what' ? 'tab-what' : 'tab-how'}
+        className="prose"
+        id="tabpanel-prose"
+        role="tabpanel"
+      >
         {paragraphs.map((paragraph) => (
           <p key={paragraph}>{paragraph}</p>
         ))}
