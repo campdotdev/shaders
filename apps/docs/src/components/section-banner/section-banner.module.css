@@ -6,11 +6,17 @@
 
 /* Full-bleed so the shader spans the viewport. Positioned and isolated so
    the shader's canvas can sit behind the title as its own layer, absolutely
-   positioned from this box via .scene below. No overflow clip, because the
-   scene deliberately reaches above the band. */
+   positioned from this box via .scene below. The scene box is a fixed
+   1728px wide (banner-geometry.ts), so on any narrower viewport it reaches
+   past the page's right edge, and an absolutely positioned box that does so
+   still widens the page's scrollable area. Clipping the x axis stops that
+   without making this a scroll container. Only the x axis: the scene
+   deliberately reaches above the band, and `clip` is the one overflow value
+   that leaves the other axis visible instead of forcing it to auto. */
 .banner {
   position: relative;
   isolation: isolate;
+  overflow-x: clip;
 }
 
 /* The title block: 144px tall with the title at its bottom, 32px up, on the
