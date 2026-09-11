@@ -141,8 +141,9 @@ export function LedWallShader({
   const swellUniform = useAnimatableUniform(swell);
 
   // The render-on-demand vote: the scene may stop drawing only when nothing
-  // on the wall can change between frames.
-  useStaticSceneHint(isLedWallStatic({ flicker, focus, swell }));
+  // on the wall can change between frames. static.ts says why the swell's
+  // strength does not count and why speed does.
+  useStaticSceneHint(isLedWallStatic({ flicker, focus, speed, swell }));
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
