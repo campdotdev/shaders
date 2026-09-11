@@ -1,3 +1,6 @@
+// Covers the playback store in store.ts: starting position, advancing the
+// clock while playing, publishing on step change, speed scaling, stepping
+// forward and back with wraparound, and looping at the end of the flow.
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { FLOWS } from '@/data/flows';

@@ -1,3 +1,6 @@
+// Covers the cell-to-world math in layout.ts: centering cells, plates, and
+// boxes, the hop's ease and lift, and the grid bounds computed from a set of
+// neighborhoods.
 import { describe, expect, it } from 'vitest';
 
 import type { Module, Neighborhood } from '@/data/types';

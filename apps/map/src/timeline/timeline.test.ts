@@ -1,3 +1,6 @@
+// Covers the pure scheduling math in timeline.ts: building a step schedule
+// from durations, wrapping a clock position into range, and locating which
+// step and progress a given position falls on.
 import { describe, expect, it } from 'vitest';
 
 import type { Flow } from '@/data/types';

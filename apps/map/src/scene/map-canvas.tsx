@@ -51,9 +51,11 @@ export function MapCanvas({ children }: { children: ReactNode }) {
           the whole isometric look. */}
       <ambientLight intensity={0.7} />
       <directionalLight intensity={1.4} position={[centerX + 8, 20, centerZ + 4]} />
+      {/* Anchored at the origin, not the bounds center, so its lines land on
+          cell edges whatever the bounds' parity. */}
       <gridHelper
         args={[gridSize, gridSize, '#1f2430', '#161a23']}
-        position={[centerX, -0.01, centerZ]}
+        position={[gridSize / 2 - GRID_MARGIN, -0.01, gridSize / 2 - GRID_MARGIN]}
       />
       {children}
     </Canvas>
