@@ -7,7 +7,7 @@
  * never reads the shader demoed below it. banner-shader.tsx owns the
  * client-only import and the visual-test skip; this file is the scene.
  */
-import { type ColorStop, LedWall, RadialGradient, ShaderScene } from '@camp-dev/shaders';
+import { type ColorStop, LedWall, RadialGradient, ShaderScene, useCursor } from '@camp-dev/shaders';
 
 // ----------------------------------------------------------------------------
 // The mock's geometry
@@ -98,14 +98,39 @@ const BANNER_FLICKER = 0.7;
  */
 const BANNER_SPEED = 1.8;
 
+/**
+ * Where the wall's focus sits before the pointer first moves: one canvas
+ * height below the bottom edge, in the same 0..1 frame as `focus`. The
+ * cursor input otherwise seeds at the canvas center, which would swell a
+ * cluster of dots under the middle of the header on every load, reading as
+ * a highlight for a pointer that is not there. The first real pointer move
+ * brings the focus in from below.
+ */
+const FOCUS_PARKED: readonly [number, number] = [0.5, 2];
+
 // ----------------------------------------------------------------------------
 // The scene
 // ----------------------------------------------------------------------------
 
 /**
- * Two layers in mount order: the glow, then the wall screening it. The wall
- * breathes but does not swell toward the pointer yet, so the header is the
- * mock's geometry and colors rendered as living dots.
+ * The wall with the pointer as its focus. useCursor reads the scene's canvas
+ * from context, so this has to render inside the ShaderScene. The input
+ * listens on the window and normalizes against the canvas, so a pointer
+ * anywhere on the page steers the focus, and one far below the header lands
+ * well outside the swell's reach and moves no dot. Swell strength and reach
+ * are LedWall's own tuned defaults.
+ */
+function BannerWall() {
+  const cursor = useCursor({ initial: FOCUS_PARKED });
+
+  return (
+    <LedWall bleed={BANNER_BLEED} flicker={BANNER_FLICKER} focus={cursor} speed={BANNER_SPEED} />
+  );
+}
+
+/**
+ * Two layers in mount order: the glow, then the wall screening it, breathing
+ * and swelling toward the pointer.
  */
 export default function BannerScene() {
   return (
@@ -116,7 +141,7 @@ export default function BannerScene() {
         stops={LIME_STOPS}
         stretch={GLOW_STRETCH}
       />
-      <LedWall bleed={BANNER_BLEED} flicker={BANNER_FLICKER} speed={BANNER_SPEED} swell={0} />
+      <BannerWall />
     </ShaderScene>
   );
 }
