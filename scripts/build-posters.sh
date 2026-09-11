@@ -47,7 +47,10 @@ for pair in \
   "dither:jpg" \
   "voronoi:jpg" \
   "fractal-noise:jpg" \
-  "blobs:jpg"; do
+  "blobs:jpg" \
+  "led-wall:jpg:#0b0f0d" \
+  "radial-wipe:jpg:#0b0f0d" \
+  "dissolve:jpg:#0b0f0d"; do
   IFS=':' read -r name format background size <<< "$pair"
   width="$WIDTH"
   height="$HEIGHT"
