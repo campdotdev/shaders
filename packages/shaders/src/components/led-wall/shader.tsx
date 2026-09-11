@@ -275,14 +275,17 @@ export function LedWallShader({
       // The cell's center in the pass's screen frame, so it compares with
       // the focus uniform directly. Evaluated per CELL, not per pixel, so a
       // dot grows as one piece. Then the aspect-corrected distance from the
-      // focus, and a reversed smoothstep so the term is 1 at the focus and
-      // 0 past the radius. The dot's half-edge below grows by swell times
-      // that term.
+      // focus, and a smoothstep from 0 out to the radius, flipped with
+      // oneMinus so the term is 1 at the focus and 0 past the radius. The
+      // edges have to ascend: GLSL ES leaves smoothstep undefined when the
+      // first edge is not below the second, and the WebGL2 fallback is what
+      // headless Playwright and CI render on. The dot's half-edge below
+      // grows by swell times that term.
       const cellCenterPx = cellIndex.add(0.5).mul(cellPx);
       const cellCenterUv = cellCenterPx.div(screenSize);
       const toFocus = cellCenterUv.sub(focusUniform);
       const focusDistance = length(vec2(toFocus.x.mul(aspectUniform), toFocus.y));
-      const nearFocus = smoothstep(focusRadiusUniform, float(0), focusDistance);
+      const nearFocus = smoothstep(float(0), focusRadiusUniform, focusDistance).oneMinus();
 
       // The dot's half-edge in cell units. dotSize in device pixels over the
       // cell pitch gives the edge as a fraction of the cell; half of it is
@@ -303,13 +306,13 @@ export function LedWallShader({
       // shape a square rather than length()'s circle.
       const squareDistance = max(abs(cellLocal.x), abs(cellLocal.y)).sub(halfEdge);
 
-      // Reversed smoothstep again, as at the swell above: pixels deeper
-      // than one rim-width inside get 1, pixels past it outside get 0, and
-      // the band across the rim fades smoothly. The width is in device
-      // pixels converted into cell units, so it stays sub-pixel at any
-      // pitch.
+      // The same ascending smoothstep and oneMinus flip as at the swell
+      // above: pixels deeper than one rim-width inside get 1, pixels past
+      // it outside get 0, and the band across the rim fades smoothly. The
+      // width is in device pixels converted into cell units, so it stays
+      // sub-pixel at any pitch.
       const rim = float(RIM_SOFTNESS_PX).div(cellPx);
-      const dotMask = smoothstep(rim, rim.negate(), squareDistance);
+      const dotMask = smoothstep(rim.negate(), rim, squareDistance).oneMinus();
 
       // Compose. The scene texture is premultiplied by construction (the
       // scene blends over a transparent clear), so scaling rgb and alpha by
