@@ -18,6 +18,10 @@ function exists(repoRelativePath: string): boolean {
 }
 
 describe('map data', () => {
+  it('has at least one flow', () => {
+    expect(FLOWS.length).toBeGreaterThan(0);
+  });
+
   it('uses each neighborhood id once', () => {
     const ids = NEIGHBORHOODS.map((neighborhood) => neighborhood.id);
 
