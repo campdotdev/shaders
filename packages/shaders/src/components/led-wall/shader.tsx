@@ -103,6 +103,14 @@ const RIM_SOFTNESS_PX = 0.7;
 // Chosen by eye.
 const VARIANCE = 0.5;
 
+// Smallest reach the swell's smoothstep may use, in canvas units. The
+// smoothstep runs from 0 out to focusRadius, and both GLSL ES and WGSL
+// need that upper edge strictly above the lower one: GLSL ES leaves the
+// result undefined otherwise, and WGSL divides by their difference. A
+// focusRadius of 0 or below therefore clamps to this, which reaches no
+// cell center in practice, so it reads as the swell switched off.
+const MIN_FOCUS_RADIUS = 1e-4;
+
 // The brightness dials are applied in a gamma-encoded approximation of
 // display space rather than in the linear light the pass composes in. In
 // linear light a factor of 0.7 reads as about 0.85 on screen, so the
@@ -279,13 +287,18 @@ export function LedWallShader({
       // oneMinus so the term is 1 at the focus and 0 past the radius. The
       // edges have to ascend: GLSL ES leaves smoothstep undefined when the
       // first edge is not below the second, and the WebGL2 fallback is what
-      // headless Playwright and CI render on. The dot's half-edge below
-      // grows by swell times that term.
+      // headless Playwright and CI render on, which is also why the radius
+      // is clamped to MIN_FOCUS_RADIUS. The dot's half-edge below grows by
+      // swell times that term.
       const cellCenterPx = cellIndex.add(0.5).mul(cellPx);
       const cellCenterUv = cellCenterPx.div(screenSize);
       const toFocus = cellCenterUv.sub(focusUniform);
       const focusDistance = length(vec2(toFocus.x.mul(aspectUniform), toFocus.y));
-      const nearFocus = smoothstep(float(0), focusRadiusUniform, focusDistance).oneMinus();
+      const nearFocus = smoothstep(
+        float(0),
+        focusRadiusUniform.max(MIN_FOCUS_RADIUS),
+        focusDistance,
+      ).oneMinus();
 
       // The dot's half-edge in cell units. dotSize in device pixels over the
       // cell pitch gives the edge as a fraction of the cell; half of it is
