@@ -9,26 +9,16 @@
 // composition is stacking children, painting into this one scene.
 import { type CSSProperties, type ReactNode, useContext, useEffect, useRef, useState } from 'react';
 
-import { LinearSRGBColorSpace, NoToneMapping, OrthographicCamera, Scene } from 'three';
-import type { ShaderNodeObject } from 'three/tsl';
-import { pass, passTexture, renderOutput, uv, vec4 } from 'three/tsl';
-import type { Node } from 'three/webgpu';
-import { NodeMaterial, QuadMesh } from 'three/webgpu';
+import { OrthographicCamera, Scene } from 'three';
 
 import {
-  createIntersectionWatcher,
+  createOutputStage,
+  createPauseWatcher,
   createRenderer,
-  createVisibilityWatcher,
-  dither,
   FrameScheduler,
   resetRendererClock,
 } from '../../../engine.js';
-import {
-  type PostProcessTransform,
-  ShaderContext,
-  type ShaderContextValue,
-  type UvTransform,
-} from '../../context/shader-context.js';
+import { ShaderContext, type ShaderContextValue } from '../../context/shader-context.js';
 import { ShadersError } from '../../errors/shaders-error.js';
 import {
   type GamutPreference,
@@ -113,101 +103,12 @@ export function ShaderScene({
         const camera = new OrthographicCamera(-1, 1, 1, -1, 0.1, 10);
 
         camera.position.z = 1;
-        // The output stage: one full-screen quad whose material runs the
-        // post-process chain and writes the canvas. This is what three's
-        // PostProcessing class does, minus its one flaw for us: in three
-        // 0.170 it keeps a SINGLE quad and material at module level, shared by
-        // every instance, so two scenes on one page overwrite each other's
-        // output and both canvases draw whichever scene updated last (the
-        // shared-quad gotcha in AGENTS.md). Owning the quad per scene is the
-        // whole fix. A three bump that gives PostProcessing a quad per
-        // instance could swap this back.
-        const outputMaterial = new NodeMaterial();
-
-        outputMaterial.name = 'ShaderScene output';
-        const outputQuad = new QuadMesh(outputMaterial);
+        // The output stage owns the base pass, the post-process chain the
+        // overlays register with, and the full-screen quad that writes the
+        // canvas. output-stage.ts says why it is ours rather than three's
+        // PostProcessing.
+        const outputStage = createOutputStage(renderer.three, scene, camera);
         const scheduler = new FrameScheduler();
-
-        // The post-process chain: base pass first (the children's meshes
-        // rendered to a texture), then each registered overlay transform in
-        // MOUNT ORDER — a Map iterates in insertion order, so <Grain> after
-        // <Vignette> grains the vignetted image. UV transforms warp where
-        // the base pass texture is sampled (e.g. <Dither>'s pixel snap) and
-        // compose in mount order too.
-        const overlays = new Map<symbol, PostProcessTransform>();
-        const uvTransforms = new Map<symbol, UvTransform>();
-
-        const scenePass = pass(scene, camera);
-
-        const rebuildOutputNode = () => {
-          // With no UV transforms the pass node samples itself at the screen
-          // coordinate as before. With any registered, resample its texture
-          // at the warped coordinate — uv() here is the output quad's 0..1
-          // screen position.
-          // passTexture wraps the pass's color texture in a sampleable
-          // TextureNode (getTextureNode's typing is too loose to chain .uv
-          // from); its setup() still builds the pass itself, so the scene
-          // renders even though only its texture appears in the graph.
-          const scenePassTexture = passTexture(scenePass, scenePass.getTexture('output'));
-          const basePassNode =
-            uvTransforms.size === 0
-              ? vec4(scenePass)
-              : vec4(
-                  scenePassTexture.uv(
-                    Array.from(uvTransforms.values()).reduce<ShaderNodeObject<Node>>(
-                      (coordinate, transform) => transform(coordinate),
-                      uv(),
-                    ),
-                  ),
-                );
-
-          // Overlays (Grain, Vignette, ...) compose in linear working space.
-          const composed = Array.from(overlays.values()).reduce(
-            (currentPipeline, transform) => transform(currentPipeline),
-            basePassNode,
-          );
-
-          // renderOutput applies tone mapping + the working->output color-space
-          // transfer, reading both from the context set here (the renderer's
-          // own settings, captured the way three's PostProcessing captures
-          // them), so dither runs last, in display-encoded space, right before
-          // 8-bit quantization. This breaks up gradient banding uniformly
-          // across every component in the scene. needsUpdate is what makes the
-          // renderer recompile the quad's program on its next draw.
-          const { toneMapping, outputColorSpace } = renderer.three;
-
-          outputMaterial.fragmentNode = dither(renderOutput(composed)).context({
-            toneMapping,
-            outputColorSpace,
-          });
-          outputMaterial.needsUpdate = true;
-        };
-
-        rebuildOutputNode(); // initial: just basePass, no overlays
-
-        const registerOverlay = (transform: PostProcessTransform): (() => void) => {
-          const key = Symbol('overlay');
-
-          overlays.set(key, transform);
-          rebuildOutputNode();
-
-          return () => {
-            overlays.delete(key);
-            rebuildOutputNode();
-          };
-        };
-
-        const registerBaseUvTransform = (transform: UvTransform): (() => void) => {
-          const key = Symbol('uv-transform');
-
-          uvTransforms.set(key, transform);
-          rebuildOutputNode();
-
-          return () => {
-            uvTransforms.delete(key);
-            rebuildOutputNode();
-          };
-        };
 
         // Signal "first paint" only once the scene actually has something to
         // draw (a base shader mesh, or at least an overlay pass) — the scheduler
@@ -217,24 +118,8 @@ export function ShaderScene({
         // poster is removed.
         let firstPaintSignaled = false;
 
-        // Draw the output quad the way PostProcessing.render does: the quad's
-        // material already applied tone mapping and the output transfer
-        // (renderOutput above), so the renderer's own pass of both is
-        // switched off for this one draw and restored after, or the canvas
-        // would be tone-mapped and encoded twice.
-        const renderOutputQuad = () => {
-          const three = renderer.three;
-          const { toneMapping, outputColorSpace } = three;
-
-          three.toneMapping = NoToneMapping;
-          three.outputColorSpace = LinearSRGBColorSpace;
-          outputQuad.render(three);
-          three.toneMapping = toneMapping;
-          three.outputColorSpace = outputColorSpace;
-        };
-
         const renderFrame = () => {
-          const hasContent = scene.children.length > 0 || overlays.size > 0;
+          const hasContent = scene.children.length > 0 || outputStage.hasOverlays();
 
           // On the frame that first has something to draw, rewind BOTH time
           // sources BEFORE rendering so the frame the user first sees (once
@@ -250,7 +135,7 @@ export function ShaderScene({
             resetRendererClock(renderer.three);
             scheduler.resetPhases();
           }
-          renderOutputQuad();
+          outputStage.render();
 
           if (!firstPaintSignaled && hasContent) {
             firstPaintSignaled = true;
@@ -267,20 +152,8 @@ export function ShaderScene({
         scheduler.add(renderFrame);
         scheduler.start();
 
-        const visibility = createVisibilityWatcher();
-        const intersection = createIntersectionWatcher(canvas);
-
-        const updatePauseState = () => {
-          const shouldRun = visibility.isVisible() && intersection.isInView();
-
-          if (shouldRun) scheduler.resume();
-          else scheduler.pause();
-        };
-
-        updatePauseState();
-
-        const unsubVisibility = visibility.subscribe(updatePauseState);
-        const unsubIntersection = intersection.subscribe(updatePauseState);
+        // Park the loop while the tab is hidden or the canvas is out of view.
+        const pauseWatcher = createPauseWatcher(canvas, scheduler);
 
         // Track the canvas's actual box size, not just window 'resize'. The
         // canvas commonly gets its real size from layout AFTER renderer init
@@ -297,13 +170,10 @@ export function ShaderScene({
         resizeObserver.observe(canvas);
 
         cleanup = () => {
-          unsubVisibility();
-          unsubIntersection();
-          visibility.dispose();
-          intersection.dispose();
+          pauseWatcher.dispose();
           resizeObserver.disconnect();
           scheduler.dispose();
-          outputMaterial.dispose();
+          outputStage.dispose();
           renderer.dispose();
         };
 
@@ -314,8 +184,8 @@ export function ShaderScene({
           scene,
           camera,
           scheduler,
-          registerOverlay,
-          registerBaseUvTransform,
+          registerOverlay: outputStage.registerOverlay,
+          registerBaseUvTransform: outputStage.registerBaseUvTransform,
         });
       } catch (caughtError) {
         if (cancelled) return;
