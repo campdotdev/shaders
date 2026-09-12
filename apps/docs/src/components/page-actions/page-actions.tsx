@@ -135,12 +135,16 @@ export function PageActions({ componentName, siblings, markdownUrl }: PageAction
               {/* Each row is its own action and runs on click; the left
                   half of the button always means Copy React, so the menu
                   does not repeat it. The view row is a link, so it opens
-                  the file the way any link opens a file. */}
+                  the file the way any link opens a file. It also closes the
+                  menu on click, because a link item leaves the menu open by
+                  default, expecting the navigation to unmount it, and this
+                  page stays behind the new tab. */}
               <Menu.Item className={styles.row} disabled={markdown === null} onClick={copyMarkdown}>
                 Copy as markdown
               </Menu.Item>
               <Menu.LinkItem
                 className={styles.row}
+                closeOnClick
                 href={markdownUrl}
                 rel="noopener"
                 target="_blank"
