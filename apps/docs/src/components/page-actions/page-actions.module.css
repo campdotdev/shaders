@@ -67,7 +67,7 @@
   }
 
   .copy:hover .copyGlyph,
-  .more:hover svg {
+  .more:hover .chevronGlyph {
     color: var(--fg);
   }
 }
@@ -97,13 +97,15 @@
 /* ---- The copied swap ---- */
 
 /* The glyph is a 16px box with both icons laid over each other, and a
-   successful copy swaps one for the other: the copy glyph fades and shrinks
-   a touch as the check fades in and grows to full size, in lime, the same
-   lime the picker's copy button turns. The two run together so the swap
+   successful copy swaps one for the other: the resting glyph fades and
+   shrinks a touch as the check fades in and grows to full size, in lime, the
+   same lime the picker's copy button turns. The two run together so the swap
    reads as one glyph changing rather than one leaving and another arriving.
    The check starts at 0.9 and not 0, so it reads as already almost there;
    opacity rides a fade token and the scale a duration token, so Reduce
-   Motion keeps the crossfade and drops the growth. */
+   Motion keeps the crossfade and drops the growth. Both cells make the
+   swap: the copy half for Copy React, and the chevron for a markdown copy,
+   whose menu has closed by the time the write lands. */
 .glyph {
   position: relative;
   flex: none;
@@ -112,6 +114,7 @@
 }
 
 .copyGlyph,
+.chevronGlyph,
 .checkGlyph {
   position: absolute;
   inset: 0;
@@ -120,18 +123,21 @@
     transform var(--duration-sm) var(--ease-out);
 }
 
-.copy .checkGlyph {
+.copy .checkGlyph,
+.more .checkGlyph {
   opacity: 0;
   transform: scale(0.9);
   color: var(--accent);
 }
 
-.copy[data-copied] .copyGlyph {
+.copy[data-copied] .copyGlyph,
+.more[data-copied] .chevronGlyph {
   opacity: 0;
   transform: scale(0.9);
 }
 
-.copy[data-copied] .checkGlyph {
+.copy[data-copied] .checkGlyph,
+.more[data-copied] .checkGlyph {
   opacity: 1;
   transform: scale(1);
 }
@@ -147,7 +153,7 @@
   white-space: nowrap;
 }
 
-/* The chevron cell: a 32px square behind a hairline, with the glyph
+/* The chevron cell: a 32px square behind a hairline, with the glyph box
    centered. The rule is drawn as a left border so the cell and its divider
    are one box, and it stops 1px short of the top and bottom as in the mock
    because the box's own border already covers those pixels. */
