@@ -6,7 +6,8 @@
  * chevron cell on the right that opens a menu of further actions. Copy
  * React copies the demo's current props as JSX. The menu's two rows read
  * the page's markdown export (app/md/[...slug]/route.ts): "Copy as
- * markdown" copies it and "View as markdown" opens it in a new tab. The
+ * markdown" copies it, with the chevron showing the check, and "View as
+ * markdown" opens it in a new tab. The
  * shared components/[slug] template renders it beside the title and
  * description, inside the CopySourceProvider that the demo island publishes
  * its control store into (controls/context.tsx).
@@ -122,8 +123,20 @@ export function PageActions({ componentName, siblings, markdownUrl }: PageAction
           if (open) prefetchMarkdown();
         }}
       >
-        <Menu.Trigger aria-label="More copy options" className={styles.more}>
-          <ChevronDownIcon />
+        {/* The chevron cell doubles as the markdown copy's confirmation. The
+            menu closes on the row's click, so the check lands on the button
+            the user opened it from, in the same swap the Copy React half
+            makes, and the Copy React check stays dark because it means
+            React. */}
+        <Menu.Trigger
+          aria-label="More copy options"
+          className={styles.more}
+          data-copied={markdownCopy.status === 'copied' || undefined}
+        >
+          <span aria-hidden="true" className={styles.glyph}>
+            <ChevronDownIcon className={styles.chevronGlyph} />
+            <CheckIcon className={styles.checkGlyph} />
+          </span>
         </Menu.Trigger>
         <Menu.Portal>
           {/* Anchored to the whole box rather than the chevron, so the

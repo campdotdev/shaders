@@ -36,19 +36,24 @@ test('the rows point at the page export and copy it', async ({ page }) => {
   expect(copied).toContain('| Prop | Type | Default | Description |');
 });
 
-test('a markdown copy does not light up the Copy React button', async ({ page }) => {
+test('a markdown copy lights the chevron, not the Copy React button', async ({ page }) => {
   await page.goto('/components/aurora');
   await page.waitForLoadState('networkidle');
 
-  await page.getByRole('button', { name: 'More copy options' }).click();
+  const trigger = page.getByRole('button', { name: 'More copy options' });
+
+  await trigger.click();
 
   // Wait for the row to enable, or a disabled row ignores the click and the
-  // assertion below passes without a copy having happened.
+  // assertions below pass without a copy having happened.
   const copy = page.getByRole('menuitem', { name: 'Copy as markdown' });
 
   await expect(copy).not.toHaveAttribute('aria-disabled', 'true');
   await copy.click();
 
+  // The menu has closed, so the confirmation lands on the chevron the user
+  // just clicked. The Copy React half stays dark: its check means React.
+  await expect(trigger).toHaveAttribute('data-copied', 'true');
   await expect(page.getByRole('button', { name: 'Copy React' })).not.toHaveAttribute(
     'data-copied',
     'true',
