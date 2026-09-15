@@ -1,16 +1,18 @@
 'use client';
 
 /**
- * The Components banner's shader: the Figma mock's lime glow, drawn by
- * RadialGradient and screened into a grid of LED dots by LedWall. It is one
- * fixed scene, the same on the index and on every component page, and it
- * never reads the shader demoed below it. banner-shader.tsx owns the
- * client-only import, the poster that stands in until this scene paints,
- * and the visual-test skip; this file is the scene.
+ * The Components banner's shader: the Figma mock's faint lime wash, drawn by
+ * RadialGradient, under a still grid of small gray dots from DotField, with
+ * Dither over both so every dot breaks into a few Bayer cells and the wash
+ * into speckle. It is one fixed scene, the same on the index and on every
+ * component page, and it never reads the shader demoed below it.
+ * banner-shader.tsx owns the client-only import, the poster that stands in
+ * until this scene paints, and the visual-test skip; this file is the scene.
  */
-import { type ColorStop, LedWall, RadialGradient, ShaderScene, useCursor } from '@camp-dev/shaders';
+import { type ColorStop, Dither, DotField, RadialGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { BANNER_HEIGHT, BANNER_WIDTH } from './banner-geometry';
+import { BANNER_TUNING, type BannerTuning } from './banner-tuning';
 
 // ----------------------------------------------------------------------------
 // The mock's geometry
@@ -54,91 +56,64 @@ const GLOW_RADIUS = GLOW_HEIGHT / BANNER_HEIGHT / HALF_DIAGONAL;
 // ----------------------------------------------------------------------------
 
 /**
- * The glow's ramp: the palette's lime 600 and 700, an off-palette dark
- * green, then the page black. The mock draws its ellipse in lime 400 at
- * 7.5% opacity, which reads as a faint wash rather than a lime fill. The
- * dots sample this base directly and take its color at full strength, so
- * the ramp starts two palette steps darker than the mock's to land the
- * dots near the same brightness. Move every stop one step to tune. Hex
- * rather than the CSS custom properties, because a shader prop goes
- * through parseColorString and never sees the cascade.
+ * The page background, and the wash's last stop. Hex rather than the CSS
+ * custom property, because a shader prop goes through parseColorString and
+ * never sees the cascade.
  */
-const LIME_STOPS: ColorStop[] = [
-  { color: '#3a4a00', position: 0 },
-  { color: '#2f3c00', position: 0.33 },
-  { color: '#1d2507', position: 0.66 },
-  { color: '#0b0f0d', position: 1 },
-];
+const PAGE_BLACK = '#0b0f0d';
 
-/**
- * How much of the glow shows between the dots, 0 for transparent gaps and 1
- * for the base untouched. The mock's 7.5%, so the wash between the dots
- * matches it while the dots themselves stay full strength.
- */
-const BANNER_BLEED = 0.075;
-
-/**
- * How dark each dot goes at the bottom of its breath, 0 for still and 1
- * for fully dark. Above LedWall's own default so the breathing reads at a
- * glance.
- */
-const BANNER_FLICKER = 0.7;
-
-/**
- * Tempo of the breath. LedWall's 1 is roughly one breath every six seconds,
- * and each dot retunes itself between 0.8 and 1.2 times the dial, so 1.8
- * is a breath every three seconds or so. Below the component's default of
- * 2.4, so the header breathes rather than shimmers.
- */
-const BANNER_SPEED = 1.8;
-
-/**
- * Where the wall's focus sits before the pointer first moves: one canvas
- * height below the bottom edge, in the same 0..1 frame as `focus`. The
- * cursor input otherwise seeds at the canvas center, which would swell a
- * cluster of dots under the middle of the header on every load, reading as
- * a highlight for a pointer that is not there. The first real pointer move
- * brings the focus in from below.
- */
-const FOCUS_PARKED: readonly [number, number] = [0.5, 2];
+// ----------------------------------------------------------------------------
+// How the dots become marks
+// ----------------------------------------------------------------------------
+// Dither samples the finished scene once per cell, at the cell's center, so
+// a dot smaller than a few cells reaches it as a handful of flat gray cells.
+// Each of those cells then rounds to a quantization step on its own: the
+// dot's gray, scaled by the step count, plus the cell's slot in the Bayer
+// tile, floored. A cell lights when that sum crosses 1, so the tile's
+// highest slots light first and a darker gray lights fewer of them. Bayer
+// 4x4's five highest slots are the corners and center of a 3 by 3 window,
+// an x, whose center sits 1.5 cells across and 2.5 cells down from the
+// tile's top-left corner. Two alignments have to hold for every dot to draw
+// that same x. `spacing` must be a multiple of the tile edge, the matrix
+// size times `pixelSize`, so every dot meets the tile at one phase. And
+// that phase must put the dot's center on the window's center: DotField
+// anchors its grid at the canvas center and Dither anchors its tiles at the
+// canvas corner, so the phase is set by the canvas size alone, half the
+// width and half the height taken modulo the tile edge.
 
 // ----------------------------------------------------------------------------
 // The scene
 // ----------------------------------------------------------------------------
 
 /**
- * The wall with the pointer as its focus. useCursor reads the scene's canvas
- * from context, so this has to render inside the ShaderScene. The input
- * listens on the window and normalizes against the canvas, so a pointer
- * anywhere on the page steers the focus, and one far below the header lands
- * well outside the swell's reach and moves no dot. Swell strength and reach
- * are LedWall's own tuned defaults.
+ * Three layers in mount order: the wash, the dot grid over it with the
+ * ripple off so the grid never moves, then Dither carving both into cells.
+ * Nothing here animates and RadialGradient at speed 0 votes the scene
+ * static, so it parks after one frame. The poster in banner-shader.tsx is
+ * captured from this scene, so the live scene takes over from it unchanged.
  */
-function BannerWall() {
-  const cursor = useCursor({ initial: FOCUS_PARKED });
+export default function BannerScene({ tuning = BANNER_TUNING }: { tuning?: BannerTuning }) {
+  const stops: ColorStop[] = [
+    { color: tuning.glowColor, position: 0 },
+    { color: PAGE_BLACK, position: 1 },
+  ];
 
-  return (
-    <LedWall bleed={BANNER_BLEED} flicker={BANNER_FLICKER} focus={cursor} speed={BANNER_SPEED} />
-  );
-}
-
-/**
- * Two layers in mount order: the glow, then the wall screening it, breathing
- * and swelling toward the pointer. The poster in banner-shader.tsx is
- * captured from this scene at its first frame, and ShaderScene rewinds the
- * clock and the breath phases on that frame, so the live wall takes over
- * from the poster in the same pose.
- */
-export default function BannerScene() {
   return (
     <ShaderScene>
-      <RadialGradient
-        center={ORIGIN}
-        radius={GLOW_RADIUS}
-        stops={LIME_STOPS}
-        stretch={GLOW_STRETCH}
+      <RadialGradient center={ORIGIN} radius={GLOW_RADIUS} stops={stops} stretch={GLOW_STRETCH} />
+      <DotField
+        amplitude={0}
+        color={tuning.dotColor}
+        dotSize={tuning.dotSize}
+        spacing={tuning.spacing}
+        speed={0}
       />
-      <BannerWall />
+      <Dither
+        levels={tuning.levels}
+        pattern={tuning.pattern}
+        pixelSize={tuning.pixelSize}
+        spread={tuning.spread}
+      />
     </ShaderScene>
   );
 }
