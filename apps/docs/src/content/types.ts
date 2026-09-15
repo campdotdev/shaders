@@ -39,7 +39,7 @@ export interface DocsSearchDocument {
 
 /** Which sidebar a top-level nav group belongs to. Each docs layout renders
  * only its own section's groups, so a component page shows the component
- * tiers and nothing else. */
+ * categories and nothing else. */
 export type SidebarSection = 'components' | 'docs';
 
 export type NavItem =

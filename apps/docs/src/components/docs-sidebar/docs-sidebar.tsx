@@ -5,13 +5,16 @@
  * current page's row highlighted in lime. It renders whatever tree the docs
  * shell hands it: on a component page the top level is the taxonomy's
  * category groups, and on a guide it is the section's groups, which may
- * nest one level (Frameworks holds React). A client component because the
- * active row comes from the pathname and because a row click has to pin the
- * sidebar before the page changes.
+ * nest one level (Frameworks holds React). One Group component draws both
+ * levels, and whether the tree nests at all reaches the stylesheet as a data
+ * attribute, since the gap between groups and the size of the top header are
+ * all the two sidebars differ by. A client component because the active row
+ * comes from the pathname and because a row click has to pin the sidebar
+ * before the page changes.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type MouseEvent, useRef } from 'react';
+import { type MouseEvent, useId, useRef } from 'react';
 
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types';
@@ -22,6 +25,8 @@ type RowClickHandler = (event: MouseEvent<HTMLAnchorElement>) => void;
 
 interface GroupProps {
   group: ResolvedNavGroup;
+  /** Which heading this group's label is: h2 at the top, h3 inside a group. */
+  level: 2 | 3;
   /** Every row's click handler, the sidebar pin. */
   onRowClick: RowClickHandler;
   pathname: string;
@@ -30,6 +35,13 @@ interface GroupProps {
 export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
+
+  // A tree that nests is spaced and sized differently from a flat one: its
+  // top-level headers are larger and stand further apart, so that a parent
+  // reads as the parent of the groups under it. The components tree is flat
+  // and the MDX docs tree nests, but the sidebar checks the tree rather than
+  // the section so the docs shell never has to hand down a look.
+  const nests = tree.some((group) => group.items.some((item) => 'items' in item));
 
   // The sidebar is sticky under a header and banner that scroll away, so a
   // reader reaches its lower groups by scrolling the window until the nav
@@ -60,9 +72,15 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   return (
     <nav aria-label="Docs" className={styles.sidebar} data-pagefind-ignore="all" ref={navRef}>
       <ScrollArea>
-        <div className={styles.tree}>
+        <div className={styles.tree} data-nests={nests || undefined}>
           {tree.map((group) => (
-            <Tier group={group} key={group.label} onRowClick={pinSidebar} pathname={pathname} />
+            <Group
+              group={group}
+              key={group.label}
+              level={2}
+              onRowClick={pinSidebar}
+              pathname={pathname}
+            />
           ))}
         </div>
       </ScrollArea>
@@ -70,37 +88,43 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   );
 }
 
-// A top-level group: a 16px header over its rows or nested groups.
-// A tier whose items are rows rather than groups, such as Guides on the
-// MDX pages, renders those rows directly under its header.
-function Tier({ group, onRowClick, pathname }: GroupProps) {
-  return (
-    <section className={styles.tier}>
-      <h2 className={styles.tierHeader}>{group.label}</h2>
-      <div className={styles.groups}>
-        <Items items={group.items} onRowClick={onRowClick} pathname={pathname} />
-      </div>
-    </section>
-  );
-}
+// The mock's "group" at either depth: a header over its rows, over its
+// nested groups, or over both. A plain div rather than a section, because
+// section is for content that belongs in the document's outline and this is
+// a grouping of links inside a nav; seven of them would also become seven
+// landmarks the day one gained a label. The heading stays, so heading
+// navigation still steps through the nav, and its id labels the list below
+// it: a screen reader then says "Gradients, list, 4 items" rather than
+// reading an unlabelled list.
+function Group({ group, level, onRowClick, pathname }: GroupProps) {
+  const headingId = useId();
+  const Heading = level === 2 ? 'h2' : 'h3';
 
-// A nested group: the mock's "group", a 14px header over its rows.
-function Group({ group, onRowClick, pathname }: GroupProps) {
   return (
-    <section className={styles.group}>
-      <h3 className={styles.groupHeader}>{group.label}</h3>
-      <Items items={group.items} onRowClick={onRowClick} pathname={pathname} />
-    </section>
+    <div className={styles.group}>
+      <Heading className={styles.groupHeader} id={headingId}>
+        {group.label}
+      </Heading>
+      <Items
+        headingId={headingId}
+        items={group.items}
+        onRowClick={onRowClick}
+        pathname={pathname}
+      />
+    </div>
   );
 }
 
 // Consecutive rows share one list so their 2px gap is the list's, and a
 // group between them breaks the list rather than nesting inside it.
 function Items({
+  headingId,
   items,
   onRowClick,
   pathname,
 }: {
+  /** The id of the header above these items, which labels each list. */
+  headingId: string;
   items: Array<ResolvedNavGroup | ResolvedNavItem>;
   onRowClick: RowClickHandler;
   pathname: string;
@@ -117,7 +141,7 @@ function Items({
 
   return blocks.map((block) =>
     Array.isArray(block) ? (
-      <ul className={styles.list} key={block[0]?.url}>
+      <ul aria-labelledby={headingId} className={styles.list} key={block[0]?.url}>
         {block.map((item) => (
           <li key={item.url}>
             {/* scroll={false} keeps the window where pinSidebar put it. */}
@@ -134,7 +158,16 @@ function Items({
         ))}
       </ul>
     ) : (
-      <Group group={block} key={block.label} onRowClick={onRowClick} pathname={pathname} />
+      // A nested group's header is an h3. No tree nests deeper than this:
+      // the components tree is flat and the only nesting in nav.config.ts is
+      // Frameworks over React.
+      <Group
+        group={block}
+        key={block.label}
+        level={3}
+        onRowClick={onRowClick}
+        pathname={pathname}
+      />
     ),
   );
 }

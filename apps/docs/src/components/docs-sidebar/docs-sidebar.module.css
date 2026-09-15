@@ -1,8 +1,9 @@
 /* Docs sidebar after the Figma mock. The aside is 2xs wide with a 16px
    inset all round, which puts its text on the same 48px line as the logo
-   and the banner title. Tiers stack with a 16px gap, groups inside a tier
-   with 8px, and rows with 2px. Every header and row shares one 36px box:
-   12px on the left, 8px elsewhere, 6px corners. */
+   and the banner title. Groups stack with an 8px gap, a group's header sits
+   2px above its rows, and rows are 2px apart. Every row and every 14px
+   header shares one 36px box: 12px on the left, 8px elsewhere, 6px corners.
+   A tree that nests is the one exception, and it is marked [data-nests]. */
 
 /* Sticky so the sidebar stays put while a long page scrolls. The shell's
    grid gives it the 2xs column, and the 100vh cap flows into the ScrollArea
@@ -14,37 +15,28 @@
   max-height: 100vh;
 }
 
-/* The tree itself: tiers stacked with a 16px gap, on the mock's aside
-   inset. The scroll bar overlays the right-hand inset. */
+/* The tree itself: groups stacked 8px apart, on the mock's aside inset. The
+   scroll bar overlays the right-hand inset. */
 .tree {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-4);
+  gap: var(--spacing-2);
   padding: var(--spacing-4);
 }
 
-.tier,
-.group,
-.groups {
+/* A tree whose groups hold groups, which today is the MDX docs sidebar and
+   its Frameworks over React. Its top level needs the room and the weight to
+   read as a parent, so the gap doubles and its top-level headers step up a
+   size. The components tree is flat and takes neither. */
+.tree[data-nests] {
+  gap: var(--spacing-4);
+}
+
+/* A group: its header, then its rows 2px below. */
+.group {
   display: flex;
   flex-direction: column;
-}
-
-.groups {
-  gap: var(--spacing-2);
-}
-
-.group {
   gap: var(--spacing-0-5);
-}
-
-/* Tier header: 16px semibold white on a 24px line, so the box is 40px. */
-.tierHeader {
-  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-6);
-  color: var(--fg);
 }
 
 /* Group header: 14px semibold white on a 20px line, the same 36px box as
@@ -55,6 +47,13 @@
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-5);
   color: var(--fg);
+}
+
+/* The top header of a nesting tree: 16px on a 24px line, so a 40px box. The
+   child selector keeps it off the nested headers, which stay at 14px. */
+.tree[data-nests] > .group > .groupHeader {
+  font-size: var(--font-size-base);
+  line-height: var(--leading-6);
 }
 
 .list {

@@ -12,8 +12,9 @@ export const NAV: NavGroup[] = [
       { kind: 'link', label: 'Palette', url: '/palette' },
     ],
   },
-  // The mock's components sidebar is the taxonomy tiers and nothing else,
-  // so there is no Overview row: the index is reachable from the header.
+  // The mock's components sidebar is the taxonomy categories and nothing
+  // else, so there is no Overview row: the index is reachable from the
+  // header.
   {
     label: 'Components',
     sidebar: 'components',
