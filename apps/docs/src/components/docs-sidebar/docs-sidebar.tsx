@@ -7,13 +7,15 @@
  * category groups, and on a guide it is the section's groups, which may
  * nest one level (Frameworks holds React). One Group component draws both
  * levels, and whether the tree nests at all reaches the stylesheet as a data
- * attribute, since the size of the top header is all the two sidebars differ
- * by. A client component because the active row comes from the pathname and
- * because a row click has to pin the sidebar before the page changes.
+ * attribute, which keys the top header's size off it and nothing else. A
+ * client component because the active row comes from the pathname, because
+ * a row click has to pin the sidebar before the page changes, and because
+ * the sticky box's cap is a measurement: how far the nav sits below the
+ * viewport's top, taken on every scroll and resize.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type MouseEvent, useId, useRef } from 'react';
+import { type MouseEvent, useEffect, useId, useRef } from 'react';
 
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types';
@@ -41,6 +43,40 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   // tree rather than the section, so the docs shell never has to hand down a
   // look. nav.test.ts pins both halves of that at the data level.
   const nests = tree.some((group) => group.items.some((item) => 'items' in item));
+
+  // The nav is sticky under a header and banner that scroll away, so until
+  // it pins its top sits some way down the viewport, and a 100vh box would
+  // hang that far below the fold. The scroll viewport is contained (see the
+  // stylesheet), so the page never scrolls to pin the nav while the wheel is
+  // over the tree, and that hidden tail would be unreachable. This measures
+  // the distance from the viewport's top to the nav's on every scroll and
+  // resize and hands it to the cap, so the box always ends at the fold: 200px
+  // short of 100vh at the top of a component page, exactly 100vh once
+  // pinned. The window scroll pinSidebar makes fires this too. One effect
+  // owns add and remove, so Strict Mode's double mount is safe.
+  useEffect(() => {
+    const nav = navRef.current;
+
+    if (!nav) return;
+
+    // An expression rather than a declaration: a declaration hoists above
+    // the null check, so TypeScript would not carry the narrowing into it.
+    const measureOffset = () => {
+      const offset = Math.max(0, nav.getBoundingClientRect().top);
+
+      nav.style.setProperty('--sidebar-offset', `${offset}px`);
+    };
+
+    measureOffset();
+    window.addEventListener('scroll', measureOffset, { passive: true });
+    window.addEventListener('resize', measureOffset);
+
+    return () => {
+      window.removeEventListener('scroll', measureOffset);
+      window.removeEventListener('resize', measureOffset);
+      nav.style.removeProperty('--sidebar-offset');
+    };
+  }, []);
 
   // The sidebar is sticky under a header and banner that scroll away, so a
   // reader reaches its lower groups by scrolling the window until the nav

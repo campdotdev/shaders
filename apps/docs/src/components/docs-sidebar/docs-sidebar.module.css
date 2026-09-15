@@ -5,16 +5,25 @@
    header shares one 36px box: 12px of padding on the left and 8px
    elsewhere. Only the rows round their corners, because only they take a
    fill. A tree that nests differs in exactly one thing, the size of its top
-   headers, and it is marked [data-nests]. */
+   headers, and it is marked [data-nests]. The whole aside is sticky and
+   capped at the height the reader can see, which the component measures
+   rather than the stylesheet assuming; the .sidebar rule explains why. */
 
 /* Sticky so the sidebar stays put while a long page scrolls. The shell's
-   grid gives it the 2xs column, and the 100vh cap flows into the ScrollArea
-   inside, which scrolls the tree once it outgrows the viewport. */
+   grid gives it the 2xs column, and the cap flows into the ScrollArea
+   inside, which scrolls the tree once it outgrows the box. The cap is the
+   visible height rather than the viewport's: until the nav pins, its top
+   sits below the header and banner, and a plain 100vh box would hang that
+   far under the fold, where the contained viewport below could never scroll
+   it into view. The component measures that distance on every scroll and
+   resize and writes it to --sidebar-offset, so the box ends at the fold
+   before the pin and is exactly 100vh after it. The fallback keeps the full
+   100vh until the first measurement lands. */
 .sidebar {
   position: sticky;
   top: 0;
   align-self: start;
-  max-height: 100vh;
+  max-height: calc(100vh - var(--sidebar-offset, 0px));
 }
 
 /* The element that scrolls, inside the ScrollArea. Contained so that a
