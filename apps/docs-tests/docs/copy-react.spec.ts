@@ -86,10 +86,8 @@ test('the menu lines up with the button box', async ({ page }) => {
   expect(shaderRight).toBe(boxRight);
 
   // The left half of the button is Copy React, so the menu holds only the
-  // markdown rows, both disabled until the export ships.
+  // markdown rows. What the rows do is covered by markdown-export.spec.ts.
   const rows = page.getByRole('menuitem');
 
   await expect(rows).toHaveText(['Copy as markdown', 'View as markdown']);
-  await expect(rows.first()).toHaveAttribute('aria-disabled', 'true');
-  await expect(rows.last()).toHaveAttribute('aria-disabled', 'true');
 });

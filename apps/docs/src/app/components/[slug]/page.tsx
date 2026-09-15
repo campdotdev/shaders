@@ -98,7 +98,11 @@ export default async function ComponentPage({ params }: PageProps) {
               <h1 className={styles.title}>{record.label}</h1>
               <p className={styles.description}>{record.description}</p>
             </div>
-            <PageActions componentName={record.componentName} siblings={entry.copySiblings} />
+            <PageActions
+              componentName={record.componentName}
+              markdownUrl={`/md${record.url}.md`}
+              siblings={entry.copySiblings}
+            />
           </header>
           <Island />
         </div>
