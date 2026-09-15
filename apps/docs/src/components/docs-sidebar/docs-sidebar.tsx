@@ -1,12 +1,13 @@
 'use client';
 
 /**
- * The docs sidebar after the Figma mock: tier headers over group headers
- * over rows, with the current page's row highlighted in lime. It renders
- * whatever tree the docs shell hands it, so on a component page the top
- * level is the taxonomy tiers and on a guide it is the section's groups.
- * A client component because the active row comes from the pathname and
- * because a row click has to pin the sidebar before the page changes.
+ * The docs sidebar after the Figma mock: group headers over rows, with the
+ * current page's row highlighted in lime. It renders whatever tree the docs
+ * shell hands it: on a component page the top level is the taxonomy's
+ * category groups, and on a guide it is the section's groups, which may
+ * nest one level (Frameworks holds React). A client component because the
+ * active row comes from the pathname and because a row click has to pin the
+ * sidebar before the page changes.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -69,7 +70,7 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   );
 }
 
-// A top-level group: the mock's "category", a 16px header over its groups.
+// A top-level group: a 16px header over its rows or nested groups.
 // A tier whose items are rows rather than groups, such as Guides on the
 // MDX pages, renders those rows directly under its header.
 function Tier({ group, onRowClick, pathname }: GroupProps) {
