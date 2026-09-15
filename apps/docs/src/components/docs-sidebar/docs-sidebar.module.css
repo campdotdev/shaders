@@ -1,9 +1,11 @@
 /* Docs sidebar after the Figma mock. The aside is 2xs wide with a 16px
    inset all round, which puts its text on the same 48px line as the logo
-   and the banner title. Groups stack with an 8px gap, a group's header sits
+   and the banner title. Groups stack with a 16px gap, a group's header sits
    2px above its rows, and rows are 2px apart. Every row and every 14px
-   header shares one 36px box: 12px on the left, 8px elsewhere, 6px corners.
-   A tree that nests is the one exception, and it is marked [data-nests]. */
+   header shares one 36px box: 12px of padding on the left and 8px
+   elsewhere. Only the rows round their corners, because only they take a
+   fill. A tree that nests differs in exactly one thing, the size of its top
+   headers, and it is marked [data-nests]. */
 
 /* Sticky so the sidebar stays put while a long page scrolls. The shell's
    grid gives it the 2xs column, and the 100vh cap flows into the ScrollArea
@@ -15,21 +17,25 @@
   max-height: 100vh;
 }
 
-/* The tree itself: groups stacked 8px apart, on the mock's aside inset. The
-   scroll bar overlays the right-hand inset. */
+/* The element that scrolls, inside the ScrollArea. Contained so that a
+   gesture which reaches the end of the tree stops there: the components tree
+   is over 1000px tall, so it outgrows the 100vh cap above on most screens,
+   and the browser would otherwise hand the rest of the gesture to a page
+   metres long. A reader who flicks the sidebar and watches the page leave
+   cannot tell that from a sidebar that will not scroll. Opted into here
+   rather than in the shared ScrollArea, which code blocks, search, and the
+   table of contents also use. */
+.viewport {
+  overscroll-behavior: contain;
+}
+
+/* The tree itself: groups stacked 16px apart, on the mock's aside inset.
+   The scroll bar overlays the right-hand inset. */
 .tree {
   display: flex;
   flex-direction: column;
-  gap: var(--spacing-2);
-  padding: var(--spacing-4);
-}
-
-/* A tree whose groups hold groups, which today is the MDX docs sidebar and
-   its Frameworks over React. Its top level needs the room and the weight to
-   read as a parent, so the gap doubles and its top-level headers step up a
-   size. The components tree is flat and takes neither. */
-.tree[data-nests] {
   gap: var(--spacing-4);
+  padding: var(--spacing-4);
 }
 
 /* A group: its header, then its rows 2px below. */
@@ -49,8 +55,12 @@
   color: var(--fg);
 }
 
-/* The top header of a nesting tree: 16px on a 24px line, so a 40px box. The
-   child selector keeps it off the nested headers, which stay at 14px. */
+/* The only thing a nesting tree does differently, which today means the MDX
+   docs sidebar and its Frameworks over React: its top-level headers step up
+   to 16px on a 24px line, a 40px box, so that a parent reads as the parent
+   of the groups under it. The child combinator keeps the step off the nested
+   headers, which stay at 14px. The components tree is flat and takes none of
+   it. */
 .tree[data-nests] > .group > .groupHeader {
   font-size: var(--font-size-base);
   line-height: var(--leading-6);

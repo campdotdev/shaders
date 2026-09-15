@@ -58,4 +58,17 @@ describe('getDocsSidebarTree', () => {
       }
     }
   });
+
+  // The sidebar gives a tree that nests two header sizes, so that a parent
+  // reads as the parent of the groups under it, and a flat tree one size. It
+  // decides by looking for a group inside a group, which is exactly what
+  // this asserts. Flattening Frameworks in nav.config.ts would otherwise
+  // drop that distinction with nothing to say so.
+  it('gives the components tree no nesting and the docs tree one level of it', async () => {
+    const nests = (tree: ResolvedNavGroup[]) =>
+      tree.some((group) => group.items.some((item) => 'items' in item));
+
+    expect(nests(await getDocsSidebarTree('components'))).toBe(false);
+    expect(nests(await getDocsSidebarTree('docs')), 'Frameworks holds React').toBe(true);
+  });
 });

@@ -7,10 +7,9 @@
  * category groups, and on a guide it is the section's groups, which may
  * nest one level (Frameworks holds React). One Group component draws both
  * levels, and whether the tree nests at all reaches the stylesheet as a data
- * attribute, since the gap between groups and the size of the top header are
- * all the two sidebars differ by. A client component because the active row
- * comes from the pathname and because a row click has to pin the sidebar
- * before the page changes.
+ * attribute, since the size of the top header is all the two sidebars differ
+ * by. A client component because the active row comes from the pathname and
+ * because a row click has to pin the sidebar before the page changes.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -36,11 +35,11 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
   const pathname = usePathname();
   const navRef = useRef<HTMLElement>(null);
 
-  // A tree that nests is spaced and sized differently from a flat one: its
-  // top-level headers are larger and stand further apart, so that a parent
-  // reads as the parent of the groups under it. The components tree is flat
-  // and the MDX docs tree nests, but the sidebar checks the tree rather than
-  // the section so the docs shell never has to hand down a look.
+  // A tree that nests takes a larger top-level header than a flat one, so
+  // that a parent reads as the parent of the groups under it. The components
+  // tree is flat and the MDX docs tree nests, but the sidebar checks the
+  // tree rather than the section, so the docs shell never has to hand down a
+  // look. nav.test.ts pins both halves of that at the data level.
   const nests = tree.some((group) => group.items.some((item) => 'items' in item));
 
   // The sidebar is sticky under a header and banner that scroll away, so a
@@ -71,7 +70,7 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
 
   return (
     <nav aria-label="Docs" className={styles.sidebar} data-pagefind-ignore="all" ref={navRef}>
-      <ScrollArea>
+      <ScrollArea viewportClassName={styles.viewport}>
         <div className={styles.tree} data-nests={nests || undefined}>
           {tree.map((group) => (
             <Group
