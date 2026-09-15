@@ -82,9 +82,21 @@ export interface DotFieldShaderProps {
 // the arms are as wide as the mark and the x closes into a square.
 const CROSS_ARM_THICKNESS = 0.317;
 
+// Width of the anti-aliasing band across a mark's edge, in device pixels,
+// on each side of the rim. Measured in pixels rather than as a fraction of
+// the cell, so a mark on a tight grid stays as smooth as one on a wide
+// grid: a fraction of a 6px cell is no band at all, and every device pixel
+// then samples the mark hard in-or-out, which drew different pixel patterns
+// on marks that sat at different sub-pixel positions. Wider softens every
+// edge into a blur; narrower stair-steps it. 0.7 is under one pixel, so
+// the band touches only the pixels the rim actually crosses. Same figure as
+// LedWall's rim.
+const RIM_SOFTNESS_PX = 0.7;
+
 function buildDotFieldMaterial(
   shape: DotShape,
   spacingUniform: TSLNode,
+  dprUniform: TSLNode,
   dotSizeUniform: TSLNode,
   phaseUniform: TSLNode,
   amplitudeUniform: TSLNode,
@@ -172,12 +184,18 @@ function buildDotFieldMaterial(
       ? signedDistanceFieldCross(displacedLocal, ...crossArms(halfSize))
       : signedDistanceFieldCircle(displacedLocal, halfSize);
 
-  // smoothstep with its edges REVERSED (high to low) flips the ramp: pixels
-  // deeper than 0.01 inside the rim get 1, pixels past 0.01 outside get 0,
-  // and the 0.02-cell band across the rim fades smoothly — that band is the
-  // anti-aliasing that keeps mark edges from stair-stepping.
-  const antialiasWidth = 0.01;
-  const dotMask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
+  // The band converted into cell units, the sdf's units: a cell is
+  // `spacing` CSS pixels, or `spacing` times the pixel ratio device pixels,
+  // so dividing the band by that is its width as a fraction of a cell.
+  const cellDevicePixels = zeroScalar.add(spacingUniform).mul(dprUniform);
+  const antialiasWidth = zeroScalar.add(RIM_SOFTNESS_PX).div(cellDevicePixels);
+
+  // smoothstep ramps from 0 at the inner edge to 1 at the outer edge of
+  // the band, so oneMinus flips it: pixels deeper inside the rim than the
+  // band get 1, pixels further outside get 0, and the band across the rim
+  // fades smoothly — that fade is the anti-aliasing that keeps mark edges
+  // from stair-stepping.
+  const dotMask = smoothstep(antialiasWidth.negate(), antialiasWidth, sdf).oneMinus();
 
   const material = new MeshBasicNodeMaterial();
 
@@ -253,21 +271,35 @@ export function DotFieldShader({
   const resVec = useMemo(() => new Vector2(1920, 1080), []);
   const resUniform = useMemo(() => uniform(resVec), [resVec]);
 
+  // The device pixels per CSS pixel, so the anti-aliasing band can be sized
+  // in device pixels. The renderer's own ratio (which respects any maxDPR
+  // clamp) is the truth once it exists, and the resize signal's reading
+  // stands in until then. Created once and written into below, so the
+  // material effect can depend on the stable wrapper.
+  const dprUniform = useMemo(
+    () => uniform(resize.get()[2] || 1),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
+  );
+
   // Each write is followed by a scheduler poke: a bare write into the
-  // Vector2 repaints nothing on a static scene, the trap useAspectUniform
-  // exists for. The zero guard skips a collapsed canvas.
+  // Vector2 or the ratio repaints nothing on a static scene, the trap
+  // useAspectUniform exists for. The zero guard skips a collapsed canvas.
   useEffect(() => {
     const scheduler = shaderContext?.scheduler;
-    const write = ([width, height]: ResizeValue) => {
-      if (width <= 0 || height <= 0) return;
-      resVec.set(width, height);
+    const write = ([width, height, dpr]: ResizeValue) => {
+      const rendererRatio = shaderContext?.renderer.three.getPixelRatio();
+
+      dprUniform.value =
+        rendererRatio !== undefined && rendererRatio > 0 ? rendererRatio : dpr || 1;
+      if (width > 0 && height > 0) resVec.set(width, height);
       scheduler?.requestRender();
     };
 
     write(resize.get());
 
     return resize.on('change', write);
-  }, [shaderContext, resize, resVec]);
+  }, [shaderContext, resize, resVec, dprUniform]);
 
   // ---------------------------------------------
   // Build the material and mount the mesh
@@ -281,6 +313,7 @@ export function DotFieldShader({
     const material = buildDotFieldMaterial(
       shape,
       spacingUniform,
+      dprUniform,
       dotSizeUniform,
       phaseUniform,
       amplitudeUniform,
@@ -312,6 +345,7 @@ export function DotFieldShader({
     shape,
     parsedColor,
     spacingUniform,
+    dprUniform,
     dotSizeUniform,
     phaseUniform,
     amplitudeUniform,
