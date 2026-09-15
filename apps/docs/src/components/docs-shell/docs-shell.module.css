@@ -8,8 +8,11 @@
 }
 
 /* min-width: 0 lets a wide code block scroll inside the column instead of
-   forcing the grid wider. */
+   forcing the grid wider. The column is the `docs-main` size container: the
+   demo grid and the page TOC query its width rather than the viewport's, so
+   they stack at one width whatever sits beside the column. */
 .main {
+  container: docs-main / inline-size;
   min-width: 0;
   padding-left: var(--spacing-10);
 }

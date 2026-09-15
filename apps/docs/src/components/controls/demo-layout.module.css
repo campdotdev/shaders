@@ -78,7 +78,12 @@
   opacity: 1;
 }
 
-@media (max-width: 1024px) {
+/* Under 40rem of the main column the shader would sit beside a 288px panel
+   in a column too narrow for both, so the grid stacks the controls under
+   the shader and the column stops being sticky. 40rem of the column is a
+   1032px viewport with the sidebar up, the width the grid stacked at before
+   it queried the column. The page TOC hides on the same query. */
+@container docs-main (width < 40rem) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }

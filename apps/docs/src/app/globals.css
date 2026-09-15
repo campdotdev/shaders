@@ -172,6 +172,21 @@ a:hover {
   text-decoration: underline;
 }
 
+/* ---- Containers ---- */
+
+/* The site's width rules are container queries, not media queries, and they
+   query one of two named containers. `site` wraps the header and main in
+   layout.tsx, so its content box is the viewport width and
+   `@container site (width < 40rem)` means a viewport under 640px. It is a
+   wrapper rather than <body> because Base UI portals render into <body>: a
+   fixed popup inside a size container is a question that never comes up
+   when the popup sits outside it. The second container, `docs-main`, is the
+   docs shell's main column (docs-shell.module.css); the demo grid and the
+   page TOC query it so they stack together. */
+.site {
+  container: site / inline-size;
+}
+
 /* ---- Page layout ---- */
 
 /* The mock builds every page in three levels. A full-bleed parent carries

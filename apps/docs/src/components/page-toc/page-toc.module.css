@@ -199,14 +199,12 @@
   white-space: nowrap;
 }
 
-/* At 1024px and below, the demo grid's own breakpoint, the grid stacks the
-   controls under the shader, so its bottom edge is no longer a fixed
-   distance from the shader's center and the dock's arithmetic no longer
-   holds. The narrow layout is SHA-126's to design, so the TOC stays off
-   until then. The query has to match .layout's in demo-layout.module.css
-   exactly, inclusive edge included, or a viewport at the boundary gets a
-   stacked grid with the TOC still showing. */
-@media (max-width: 1024px) {
+/* Once the demo grid stacks the controls under the shader, the grid's
+   bottom edge is no longer a fixed distance from the shader's center and
+   the dock's arithmetic no longer holds, so the TOC goes. This is the demo
+   grid's own query in demo-layout.module.css, on the same container at the
+   same width, so the two can only ever change together. */
+@container docs-main (width < 40rem) {
   .dock {
     display: none;
   }
