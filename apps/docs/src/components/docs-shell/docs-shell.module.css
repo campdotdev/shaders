@@ -9,11 +9,35 @@
 
 /* min-width: 0 lets a wide code block scroll inside the column instead of
    forcing the grid wider. The column is the `docs-main` size container: the
-   demo grid and the page TOC query its width rather than the viewport's, so
-   the grid stacks and the TOC hides at one width whatever sits beside the
-   column. */
+   demo grid, the page TOC, and the inset below query its width rather than
+   the viewport's, so they all change at one width whatever sits beside the
+   column. It carries no padding of its own, because a query cannot restyle
+   its own container and the inset has to be able to answer one. */
 .main {
   container: docs-main / inline-size;
   min-width: 0;
+}
+
+/* The mock's 40px inset between the sidebar and the content, and the gutter
+   the floating TOC's lines hang in. An inline-size container in its own
+   right: the TOC dock places its lines through 100cqw, and without this it
+   would measure the padding-less column above and put the lines' copy of
+   --shader-center about 13px off the dock's. The named query below skips
+   this container and still reaches .main. */
+.content {
+  container-type: inline-size;
   padding-left: var(--spacing-10);
+}
+
+/* Under 53.5rem of the column the demo grid stacks its controls under the
+   shader (demo-layout.module.css) and the TOC lines go (page-toc.module.css),
+   so the gutter they hung in has nothing left in it and the inset goes with
+   them: the shader, the controls, and every heading move 40px left to the
+   sidebar's edge together. The sidebar's own 16px inset keeps a breath
+   between its highlighted row and the content. The MDX guides share this
+   shell and lose the inset at the same width. */
+@container docs-main (width < 53.5rem) {
+  .content {
+    padding-left: 0;
+  }
 }

@@ -4,8 +4,9 @@
  * globals.css defines. The two docs layouts (components and the MDX
  * content) each render it with their own section, and the sidebar shows
  * only that section's groups. Column widths follow the Figma mock: a
- * 2xs sidebar with no gap, then a main column that insets its own content
- * by 40px.
+ * 2xs sidebar with no gap, then a main column that insets its content by
+ * 40px, an inset the stylesheet drops once the column is narrow enough to
+ * stack the demo.
  */
 import type { ReactNode } from 'react';
 
@@ -28,7 +29,9 @@ export async function DocsShell({ section, children }: DocsShellProps) {
     <div className="site-gutter">
       <div className={`site-container ${styles.shell}`}>
         <DocsSidebar tree={tree} />
-        <div className={styles.main}>{children}</div>
+        <div className={styles.main}>
+          <div className={styles.content}>{children}</div>
+        </div>
       </div>
     </div>
   );

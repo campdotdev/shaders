@@ -32,10 +32,12 @@
      --shader-center come out the same width. Neither custom property is
      registered, so the 100cqw inside them resolves wherever each is used:
      the lines' copy measures this block, and this one measures the nearest
-     container above it, the docs shell's main column. This block is a plain
-     block box filling that column, so the two agree. Until the column
-     became a container this one measured the viewport instead, which is
-     wider, and the lines pinned about 100px below the middle.
+     container above it, the docs shell's inset wrapper (.content in
+     docs-shell.module.css), which is a container for exactly this reason.
+     This block is a plain block box filling that wrapper, so the two agree.
+     Before the docs shell was a container this one measured the viewport
+     instead, which is wider, and the lines pinned about 100px below the
+     middle.
      Whether the pin is reached at load is a question of height. On a
      viewport whose middle already sits below the shader's center, sticky
      holds the block here from the first paint and the lines rest a little
@@ -54,10 +56,10 @@
 /* ---- The lines ---- */
 
 /* One button drawn as a stack of rules, hung off the dock's left edge into
-   the 40px gutter the docs shell pads main with, so it sits flush against
-   the sidebar. The box is the mock's: 24px wide, 4px of vertical padding,
-   and the rules 12px apart. translateY(-50%) centers the stack on the
-   shader's center whatever the section count. */
+   the 40px gutter the docs shell insets its content by, so it sits flush
+   against the sidebar. The box is the mock's: 24px wide, 4px of vertical
+   padding, and the rules 12px apart. translateY(-50%) centers the stack on
+   the shader's center whatever the section count. */
 .trigger {
   position: absolute;
   top: calc(-1 * var(--shader-center));
@@ -220,7 +222,7 @@
    same width. Nothing ties the two literals together, so an edit to one
    still has to be copied here, but as written they flip at one width and no
    window can catch a stacked grid with the TOC still showing. */
-@container docs-main (width < 40rem) {
+@container docs-main (width < 53.5rem) {
   .dock {
     display: none;
   }

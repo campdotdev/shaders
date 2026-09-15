@@ -4,7 +4,7 @@
  * The two-column frame every component demo page uses: shader on the left in
  * a column capped at 4xl, controls on the right in a sticky 2xs column that
  * scrolls on its own once the panel outgrows the shader, and stacks below
- * the shader once the main column is under 40rem. The column is the site's
+ * the shader once the main column is under 53.5rem. The column is the site's
  * shared ScrollArea, and a fade over the column's bottom edge says there are
  * more controls below, keyed off the overflow state Base UI stamps on the
  * scroll area's root, so there is no measuring here. The shader child keeps

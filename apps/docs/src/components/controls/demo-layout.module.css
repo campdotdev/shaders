@@ -4,8 +4,8 @@
    move the visual baselines; only the shader wrapper's own aspect can. */
 
 /* Shader column at 4xl and the control panel at 2xs, the mock's widths.
-   The horizontal inset comes from the docs shell's main column, so the grid
-   pads only vertically. */
+   The horizontal inset comes from the docs shell, so the grid pads only
+   vertically. */
 .layout {
   /* What the shader column resolves to: the 4xl cap, or whatever is left
      after the controls column and the gap. Mirrors the grid's track sizing
@@ -78,13 +78,15 @@
   opacity: 1;
 }
 
-/* Under 40rem of the main column the shader would sit beside a 288px panel
-   in a column too narrow for both, so the grid stacks the controls under
-   the shader and the column stops being sticky. 40rem of the column is
-   about a 1032px viewport with the sidebar up, where the media query this
-   replaced stacked at 1024, so a window between the two now stacks where it
-   did not before. The page TOC hides on the same query. */
-@container docs-main (width < 40rem) {
+/* The grid stacks the controls under the shader once the shader track would
+   fall below the lg container, 512px. The docs shell's 40px inset counts in
+   the column because the shell drops it on this same query, so the floor is
+   512 shader + 16 gap + 288 panel + 40 inset = 856px, 53.5rem of the
+   column, about a 1208px viewport with the sidebar up. Stacked, the
+   controls column stops being sticky and its height caps come off. The page
+   TOC hides on the same query. Playwright's 1280px viewport leaves a 928px
+   column, so the visual suites still see two columns. */
+@container docs-main (width < 53.5rem) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
   }
