@@ -80,9 +80,10 @@
 
 /* Under 40rem of the main column the shader would sit beside a 288px panel
    in a column too narrow for both, so the grid stacks the controls under
-   the shader and the column stops being sticky. 40rem of the column is a
-   1032px viewport with the sidebar up, the width the grid stacked at before
-   it queried the column. The page TOC hides on the same query. */
+   the shader and the column stops being sticky. 40rem of the column is
+   about a 1032px viewport with the sidebar up, where the media query this
+   replaced stacked at 1024, so a window between the two now stacks where it
+   did not before. The page TOC hides on the same query. */
 @container docs-main (width < 40rem) {
   .layout {
     grid-template-columns: minmax(0, 1fr);

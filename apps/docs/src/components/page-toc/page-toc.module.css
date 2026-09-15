@@ -27,10 +27,22 @@
 
   position: sticky;
   /* The pin: this block stops --shader-center below the viewport's middle,
-     which puts the lines exactly at the middle. On a viewport tall enough
-     that its middle is already below the shader's center at load (past
-     about 1200px), sticky pushes the block down to the pin instead and the
-     lines rest a little under the shader's center. */
+     which puts the lines exactly at the middle, because they hang above the
+     block by that same distance. The two cancel only because both copies of
+     --shader-center come out the same width. Neither custom property is
+     registered, so the 100cqw inside them resolves wherever each is used:
+     the lines' copy measures this block, and this one measures the nearest
+     container above it, the docs shell's main column. This block is a plain
+     block box filling that column, so the two agree. Until the column
+     became a container this one measured the viewport instead, which is
+     wider, and the lines pinned about 100px below the middle.
+     Whether the pin is reached at load is a question of height. On a
+     viewport whose middle already sits below the shader's center, sticky
+     holds the block here from the first paint and the lines rest a little
+     under that center instead. The crossover is twice the distance from the
+     top of the page to that center, so it moves with the window's width and
+     with whatever the page stacks above the grid; at a 1280px-wide window
+     it is around 1400px tall. */
   top: calc(50vh + var(--shader-center));
   z-index: 1;
   height: 0;
@@ -201,9 +213,11 @@
 
 /* Once the demo grid stacks the controls under the shader, the grid's
    bottom edge is no longer a fixed distance from the shader's center and
-   the dock's arithmetic no longer holds, so the TOC goes. This is the demo
-   grid's own query in demo-layout.module.css, on the same container at the
-   same width, so the two can only ever change together. */
+   the dock's arithmetic no longer holds, so the TOC goes. This repeats the
+   grid's own query from demo-layout.module.css, the same container at the
+   same width. Nothing ties the two literals together, so an edit to one
+   still has to be copied here, but as written they flip at one width and no
+   window can catch a stacked grid with the TOC still showing. */
 @container docs-main (width < 40rem) {
   .dock {
     display: none;
