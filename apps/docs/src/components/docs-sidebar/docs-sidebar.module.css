@@ -28,12 +28,13 @@
 
 /* The element that scrolls, inside the ScrollArea. Contained so that a
    gesture which reaches the end of the tree stops there: the components tree
-   is over 1000px tall, so it outgrows the 100vh cap above on most screens,
-   and the browser would otherwise hand the rest of the gesture to a page
-   metres long. A reader who flicks the sidebar and watches the page leave
-   cannot tell that from a sidebar that will not scroll. Opted into here
-   rather than in the shared ScrollArea, which code blocks, search, and the
-   table of contents also use. */
+   is over 1000px tall, and .sidebar above caps this box at the height the
+   reader can see, so on most screens the tree overflows and the browser
+   would otherwise hand the rest of the gesture to a page metres long. A
+   reader who flicks the sidebar and watches the page leave cannot tell that
+   from a sidebar that will not scroll. Opted into here rather than in the
+   shared ScrollArea, which code blocks, search, and the table of contents
+   also use. */
 .viewport {
   overscroll-behavior: contain;
 }
