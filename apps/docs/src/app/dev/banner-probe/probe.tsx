@@ -57,8 +57,8 @@ function ProbeControls() {
         <ColorInput label="Glow color" path="glowColor" />
       </Section>
       <Section title="Marks">
-        <SliderInput label="Spacing" max={64} min={8} path="spacing" step={1} />
-        <SliderInput label="Size" max={16} min={1} path="dotSize" step={0.1} />
+        <SliderInput label="Spacing" max={40} min={2} path="spacing" step={0.1} />
+        <SliderInput label="Size" max={8} min={0.5} path="dotSize" step={0.1} />
         <ColorInput label="Color" path="dotColor" />
       </Section>
     </ControlPanel>
