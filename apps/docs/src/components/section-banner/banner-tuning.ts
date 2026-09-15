@@ -17,13 +17,16 @@ export interface BannerTuning {
   dotColor: string;
 }
 
-// The pitch and size are the Figma pattern's at 1x: five marks across 32
-// pixels, so a 6.4 pitch, and the pattern's SVG export, which measures 6.34
-// wide on a grid of about 20, is that pattern at roughly 3x, so the marks
-// are about 2 wide. The colors are read off the mock by eye.
+// The mock's pattern at 1x is five marks across 32 pixels, a 6.4 pitch, and
+// its SVG export, which measures 6.34 wide on a grid of about 20, is that
+// pattern at roughly 3x, so the marks are about 2 wide. The pitch is
+// rounded to 6 so it is a whole number of device pixels at 1x and 2x, which
+// puts every mark at the same sub-pixel position and so draws every mark
+// the same, and the size is nudged up so the arms are at least one device
+// pixel thick on a 2x display. The colors are read off the mock by eye.
 export const BANNER_TUNING: BannerTuning = {
   glowColor: 'oklch(0.22 0.04 130)',
-  spacing: 6.4,
-  dotSize: 2,
-  dotColor: 'oklch(0.38 0.02 155)',
+  spacing: 6,
+  dotSize: 2.5,
+  dotColor: 'oklch(0.26 0.02 155)',
 };
