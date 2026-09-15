@@ -12,7 +12,6 @@
 import { type ColorStop, DotField, RadialGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { BANNER_HEIGHT, BANNER_WIDTH } from './banner-geometry';
-import { BANNER_TUNING, type BannerTuning } from './banner-tuning';
 
 // ----------------------------------------------------------------------------
 // The mock's geometry
@@ -55,39 +54,79 @@ const GLOW_RADIUS = GLOW_HEIGHT / BANNER_HEIGHT / HALF_DIAGONAL;
 // The mock's colors
 // ----------------------------------------------------------------------------
 
+// Every color here is a literal rather than a CSS custom property, because a
+// shader prop goes through parseColorString and never sees the cascade.
+
 /**
- * The page background, and the wash's last stop. Hex rather than the CSS
- * custom property, because a shader prop goes through parseColorString and
- * never sees the cascade.
+ * The wash: the mock's lime glow at its center, fading to the page black.
+ * Two stops, since nothing samples the wash for brightness — the marks carry
+ * their own color and the gaps between them show this untouched.
  */
-const PAGE_BLACK = '#0b0f0d';
+const GLOW_STOPS: ColorStop[] = [
+  { color: 'oklch(0.22 0.04 130)', position: 0 },
+  { color: '#0b0f0d', position: 1 },
+];
+
+/**
+ * The marks' flat color, read off the mock by eye. It is what stands in for
+ * an opacity dial, which DotField has no equivalent of: a near-black green
+ * over a near-black wash reads as the mock's faint texture, and lifting the
+ * lightness is what brings the grid forward.
+ */
+const MARK_COLOR = 'oklch(0.26 0.02 155)';
+
+// ----------------------------------------------------------------------------
+// The mock's grid
+// ----------------------------------------------------------------------------
+
+/**
+ * Mark pitch in CSS pixels. The mock's pattern is five marks across 32
+ * pixels, a 6.4 pitch, rounded here to a whole number for a reason worth
+ * keeping: a mark's arms are under a pixel thick, so where a mark falls
+ * between device pixels decides which pixels it touches. At 6.4 the pitch is
+ * 12.8 device pixels on a 2x display, so consecutive marks land at five
+ * different sub-pixel positions and each one drew a different pattern — one
+ * looked like an H, the next like an x. A whole-pixel pitch puts every mark
+ * at the same position on both 1x and 2x, so they all draw alike. The grid
+ * is anchored at the canvas center, 864 by 100, both whole, so the alignment
+ * holds on every display.
+ */
+const MARK_SPACING = 6;
+
+/**
+ * Mark width in CSS pixels, tip to tip. The mock's SVG export measures 6.34
+ * wide on a grid of about 20, which is the pattern at roughly 3x, so a mark
+ * is about 2 at 1x. Nudged up from there so the arms, which are 0.317 of
+ * this, clear one device pixel on a 2x display.
+ */
+const MARK_SIZE = 2.5;
 
 // ----------------------------------------------------------------------------
 // The scene
 // ----------------------------------------------------------------------------
 
 /**
- * Two layers in mount order: the wash, then the grid of x marks over it
- * with the ripple off so the grid never moves. Nothing here animates and
+ * Two layers in mount order: the wash, then the grid of x marks over it with
+ * the ripple off so the grid never moves. Nothing here animates and
  * RadialGradient at speed 0 votes the scene static, so it parks after one
- * frame. The poster in banner-shader.tsx is captured from this scene, so
- * the live scene takes over from it unchanged.
+ * frame. The poster in banner-shader.tsx is captured from this scene, so the
+ * live scene takes over from it unchanged.
  */
-export default function BannerScene({ tuning = BANNER_TUNING }: { tuning?: BannerTuning }) {
-  const stops: ColorStop[] = [
-    { color: tuning.glowColor, position: 0 },
-    { color: PAGE_BLACK, position: 1 },
-  ];
-
+export default function BannerScene() {
   return (
     <ShaderScene>
-      <RadialGradient center={ORIGIN} radius={GLOW_RADIUS} stops={stops} stretch={GLOW_STRETCH} />
+      <RadialGradient
+        center={ORIGIN}
+        radius={GLOW_RADIUS}
+        stops={GLOW_STOPS}
+        stretch={GLOW_STRETCH}
+      />
       <DotField
         amplitude={0}
-        color={tuning.dotColor}
-        dotSize={tuning.dotSize}
+        color={MARK_COLOR}
+        dotSize={MARK_SIZE}
         shape="cross"
-        spacing={tuning.spacing}
+        spacing={MARK_SPACING}
         speed={0}
       />
     </ShaderScene>

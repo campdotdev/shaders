@@ -23,9 +23,9 @@ const BannerScene = dynamic(() => import('./banner-scene'), { ssr: false });
 
 /**
  * The CSS size the poster was captured at, which is also the box the live
- * scene renders in, so the poster fills it exactly and its dot grid is the
- * live wall's. The wall is pixel-sized, so DemoPoster's pixel-locked mode
- * shows the image at this size rather than cover-scaling it.
+ * scene renders in, so the poster fills it exactly and its grid of marks is
+ * the live scene's. The grid is pixel-sized, so DemoPoster's pixel-locked
+ * mode shows the image at this size rather than cover-scaling it.
  */
 const POSTER_SIZE: readonly [number, number] = [BANNER_WIDTH, BANNER_HEIGHT];
 

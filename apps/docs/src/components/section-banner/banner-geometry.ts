@@ -6,12 +6,15 @@
  * the two CSS modules.
  *
  * Fixing the canvas at this size, centered, is what keeps the poster and the
- * live wall on one dot grid. The wall anchors its cells at its canvas's left
- * edge, so a canvas that spanned the viewport would put its grid a different
- * fraction of a cell from the poster's at every window width, and every dot
- * would jump at the handoff. Past 864px either side of center the glow has
- * already reached page black, so a wider viewport shows the page past the
- * box with no seam.
+ * live scene on one grid of marks. DotField anchors its cells at its
+ * canvas's center, so the grid's position comes from half the canvas size,
+ * and a mark's arms are under a device pixel thick. A canvas that spanned
+ * the viewport would put that half on a whole pixel at some window widths
+ * and a half pixel at others, so the live grid would land a half pixel off
+ * the poster's and the whole field would shift at the handoff. Both figures
+ * here are even, so it never does. Past 864px either side of center the glow
+ * has already reached page black, so a wider viewport shows the page past
+ * the box with no seam.
  */
 export const BANNER_WIDTH = 1728;
 export const BANNER_HEIGHT = 200;

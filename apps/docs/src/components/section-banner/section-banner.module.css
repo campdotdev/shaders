@@ -1,8 +1,8 @@
 /* Section banner after the Figma mock: a 144px band that puts the title at
    its bottom-left, 32px up from the bottom and on the same 32-plus-16 inset
-   the site navigation uses, over a lime glow screened into LED dots
-   (banner-shader.tsx). The band is the page gutter and the inner block is
-   the 9xl container, both from globals.css. */
+   the site navigation uses, over a faint lime wash under a still grid of
+   small x marks (banner-shader.tsx). The band is the page gutter and the
+   inner block is the 9xl container, both from globals.css. */
 
 /* Full-bleed so the shader spans the viewport. Positioned and isolated so
    the shader's canvas can sit behind the title as its own layer, absolutely
@@ -29,7 +29,7 @@
   padding: var(--spacing-8) var(--spacing-4);
 }
 
-/* The shader layer: the glow and its dots, behind the title. The box starts
+/* The shader layer: the wash and its marks, behind the title. The box starts
    one nav row above the band, so the scene covers the mock's whole 200px
    header block and the glow shows through the nav, which has no background
    and lifts itself above this layer (site-header.module.css). The box is a
