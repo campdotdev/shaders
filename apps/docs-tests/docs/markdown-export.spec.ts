@@ -29,9 +29,11 @@ test('the rows point at the page export and copy it', async ({ page }) => {
   await expect(copy).not.toHaveAttribute('aria-disabled', 'true');
   await copy.click();
 
+  await expect
+    .poll(() => page.evaluate(() => navigator.clipboard.readText()))
+    .toMatch(/^# Aurora\n/);
   const copied = await page.evaluate(() => navigator.clipboard.readText());
 
-  expect(copied.startsWith('# Aurora\n')).toBe(true);
   expect(copied).toContain("import { Aurora, ShaderScene } from '@camp-dev/shaders'");
   expect(copied).toContain('| Prop | Type | Default | Description |');
 });
