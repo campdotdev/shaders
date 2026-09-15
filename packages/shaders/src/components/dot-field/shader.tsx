@@ -8,10 +8,17 @@
 // the canvas resolution to convert between pixels and cell units.
 import { useEffect, useMemo } from 'react';
 
+import type { ShaderNodeObject } from 'three/tsl';
 import { exp, length, round, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
-import { displace, signedDistanceFieldCircle, type TSLNode } from '../../engine.js';
+import {
+  displace,
+  signedDistanceFieldCircle,
+  signedDistanceFieldCross,
+  type TSLNode,
+} from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
@@ -20,10 +27,21 @@ import { type ResizeValue, useResize } from '../../react/hooks/use-resize/use-re
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { parseColor } from '../shared/color.js';
 
+/** The marks the field can draw at each grid point. */
+export type DotShape = 'circle' | 'cross';
+
 export interface DotFieldShaderProps {
+  /**
+   * The mark drawn at each grid point. `'circle'` is a disk and `'cross'` is
+   * an x with flat-ended arms. `dotSize` is the mark's overall size for both.
+   */
+  shape: DotShape;
   /** Grid cell size in pixels. Accepts a static value or an animation signal. */
   spacing: AnimatableProp<number>;
-  /** Dot diameter in pixels. Accepts a static value or an animation signal. */
+  /**
+   * Mark size in pixels: the diameter of a circle, or the width of a cross
+   * from tip to tip. Accepts a static value or an animation signal.
+   */
   dotSize: AnimatableProp<number>;
   /** Dot color — hex, `oklch()`, or `oklab()`. */
   color: string;
@@ -55,7 +73,17 @@ export interface DotFieldShaderProps {
   center: AnimatableProp<readonly [number, number]>;
 }
 
+// ---------------------------------------------
+// Constants
+// ---------------------------------------------
+// How thick a cross's arms are, as a fraction of `dotSize`. Measured from
+// the Figma pattern the Components banner is drawn after: arms 2.01 units
+// thick on a mark 6.34 units tip to tip. Higher makes a bolder x, and at 1
+// the arms are as wide as the mark and the x closes into a square.
+const CROSS_ARM_THICKNESS = 0.317;
+
 function buildDotFieldMaterial(
+  shape: DotShape,
   spacingUniform: TSLNode,
   dotSizeUniform: TSLNode,
   phaseUniform: TSLNode,
@@ -124,22 +152,30 @@ function buildDotFieldMaterial(
   const offset = dirFromCenter.mul(wave).mul(amplitudeUniform).mul(falloff);
   const displacedLocal = displace(cellLocal, offset.mul(-1));
 
-  // Dot radius converted from pixels into cell units (one cell = `spacing`
-  // pixels): dotSize / (spacing * 2) — the /2 means `dotSize` lands on
-  // screen as the dot's diameter. zeroScalar is another lift-the-uniform
-  // trick: starting the chain from a plain node keeps the scalar uniforms in
-  // argument position.
+  // ---------------------------------------------
+  // The mark: a circle or an x, sized by dotSize
+  // ---------------------------------------------
+  // Half the mark's size converted from pixels into cell units (one cell =
+  // `spacing` pixels): dotSize / (spacing * 2). For a circle that is its
+  // radius, so `dotSize` lands on screen as the diameter; for a cross it is
+  // half the bounding box, so `dotSize` lands as the width tip to tip.
+  // zeroScalar is another lift-the-uniform trick: starting the chain from a
+  // plain node keeps the scalar uniforms in argument position.
   const zeroScalar = vec2(0).x;
-  const radius = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
+  const halfSize = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
 
-  // Signed distance to the dot's edge: negative inside the circle, positive
-  // outside, zero exactly on the rim.
-  const sdf = signedDistanceFieldCircle(displacedLocal, radius);
+  // Signed distance to the mark's edge: negative inside, positive outside,
+  // zero exactly on the rim. The shape is baked into the compiled shader,
+  // so choosing here costs nothing per pixel.
+  const sdf =
+    shape === 'cross'
+      ? signedDistanceFieldCross(displacedLocal, ...crossArms(halfSize))
+      : signedDistanceFieldCircle(displacedLocal, halfSize);
 
   // smoothstep with its edges REVERSED (high to low) flips the ramp: pixels
   // deeper than 0.01 inside the rim get 1, pixels past 0.01 outside get 0,
   // and the 0.02-cell band across the rim fades smoothly — that band is the
-  // anti-aliasing that keeps dot edges from stair-stepping.
+  // anti-aliasing that keeps mark edges from stair-stepping.
   const antialiasWidth = 0.01;
   const dotMask = smoothstep(antialiasWidth, -antialiasWidth, sdf);
 
@@ -158,7 +194,24 @@ function buildDotFieldMaterial(
   return material;
 }
 
+/**
+ * The cross's two arm measures from half its bounding box, both in cell
+ * units. The arms are rotated 45 degrees, so the tip's outer corner sits at
+ * (armHalfLength + armHalfThickness) along a diagonal, and that reaches the
+ * box's edge when the sum is halfSize times sqrt(2). The thickness comes
+ * straight from the fraction, and the length is what the sum leaves over.
+ */
+function crossArms(
+  halfSize: ShaderNodeObject<Node>,
+): [ShaderNodeObject<Node>, ShaderNodeObject<Node>] {
+  const armHalfThickness = halfSize.mul(CROSS_ARM_THICKNESS);
+  const armHalfLength = halfSize.mul(Math.SQRT2).sub(armHalfThickness);
+
+  return [armHalfLength, armHalfThickness];
+}
+
 export function DotFieldShader({
+  shape,
   spacing,
   dotSize,
   color,
@@ -221,11 +274,12 @@ export function DotFieldShader({
   // ---------------------------------------------
   // The 2x2 plane exactly fills ShaderScene's camera view. All the dial
   // uniforms are stable references, so in practice this runs once per mount
-  // and again only when the color string changes.
+  // and again only when the color string or the shape changes.
   useEffect(() => {
     if (!shaderContext) return;
 
     const material = buildDotFieldMaterial(
+      shape,
       spacingUniform,
       dotSizeUniform,
       phaseUniform,
@@ -255,6 +309,7 @@ export function DotFieldShader({
     };
   }, [
     shaderContext,
+    shape,
     parsedColor,
     spacingUniform,
     dotSizeUniform,

@@ -6,17 +6,26 @@
 // Render it inside a <ShaderScene>; the gaps between dots are transparent,
 // so it can sit over other layers.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
-import { DotFieldShader } from './shader.js';
+import { DotFieldShader, type DotShape } from './shader.js';
+
+export type { DotShape } from './shader.js';
 
 export interface DotFieldProps {
+  /**
+   * The mark drawn at each grid point. `'circle'` is a disk and `'cross'` is
+   * an x with flat-ended arms. `dotSize` is the mark's overall size for both,
+   * so the two swap without retuning the grid. Defaults to `'circle'`.
+   */
+  shape?: DotShape;
   /**
    * Grid cell size in pixels. Defaults to 30. Accepts a static value or an
    * animation signal.
    */
   spacing?: AnimatableProp<number>;
   /**
-   * Dot diameter in pixels. Defaults to 3. Accepts a static value or an
-   * animation signal.
+   * Mark size in pixels: the diameter of a circle, or the width of a cross
+   * from tip to tip. Defaults to 3. Accepts a static value or an animation
+   * signal.
    */
   dotSize?: AnimatableProp<number>;
   /** Dot color — hex, `oklch()`, or `oklab()`. Defaults to `'#8B918C'`. */
@@ -52,6 +61,7 @@ export interface DotFieldProps {
 }
 
 export function DotField({
+  shape = 'circle',
   spacing = 30,
   dotSize = 3,
   color = '#8B918C',
@@ -68,6 +78,7 @@ export function DotField({
       color={color}
       decay={decay}
       dotSize={dotSize}
+      shape={shape}
       spacing={spacing}
       speed={speed}
       wavelength={wavelength}

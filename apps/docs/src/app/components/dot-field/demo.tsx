@@ -16,6 +16,7 @@ import {
   createControlStore,
   DemoLayout,
   Section,
+  SelectInput,
   SliderInput,
   useSnapshot,
 } from '@/components/controls';
@@ -26,6 +27,11 @@ import styles from './demo.module.css';
 import { INITIAL, type Params } from './params';
 
 const DotFieldScene = dynamic(() => import('./scene'), { ssr: false });
+
+const SHAPE_OPTIONS = [
+  { label: 'Circle', value: 'circle' },
+  { label: 'Cross', value: 'cross' },
+] as const;
 
 function DotFieldDemo() {
   const params = useSnapshot<Params>();
@@ -53,8 +59,9 @@ function DotFieldControls() {
         <SliderInput label="Decay" max={5} min={0} path="decay" step={0.05} />
       </Section>
       <Section title="Grid">
+        <SelectInput label="Shape" options={SHAPE_OPTIONS} path="shape" />
         <SliderInput label="Spacing" max={80} min={8} path="spacing" step={1} />
-        <SliderInput label="Dot size" max={8} min={1} path="dotSize" step={0.5} />
+        <SliderInput label="Dot size" max={12} min={1} path="dotSize" step={0.5} />
         <SliderInput label="Center x" max={1} min={0} path="center.0" step={0.01} />
         <SliderInput label="Center y" max={1} min={0} path="center.1" step={0.01} />
       </Section>

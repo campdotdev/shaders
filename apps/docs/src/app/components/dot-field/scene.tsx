@@ -21,6 +21,7 @@ export default function DotFieldScene({
         color={params.color}
         decay={params.decay}
         dotSize={params.dotSize}
+        shape={params.shape}
         spacing={params.spacing}
         speed={params.speed}
         wavelength={params.wavelength}
