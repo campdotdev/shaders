@@ -18,7 +18,7 @@ export { Dither } from './dither/dither.js';
 export type { DitherProps } from './dither/dither.js';
 
 export { DotField } from './dot-field/dot-field.js';
-export type { DotFieldProps } from './dot-field/dot-field.js';
+export type { DotFieldProps, DotShape } from './dot-field/dot-field.js';
 
 export { FractalNoise } from './fractal-noise/fractal-noise.js';
 export type { FractalNoiseProps } from './fractal-noise/fractal-noise.js';

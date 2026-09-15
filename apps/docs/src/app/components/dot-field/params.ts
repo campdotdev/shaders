@@ -1,6 +1,9 @@
+import type { DotShape } from '@camp-dev/shaders';
+
 import { paletteOklch } from '../../../lib/palette';
 
 export interface Params {
+  shape: DotShape;
   color: string;
   spacing: number;
   dotSize: number;
@@ -12,6 +15,7 @@ export interface Params {
 }
 
 export const INITIAL: Params = {
+  shape: 'circle',
   color: paletteOklch.gray[8],
   spacing: 30,
   dotSize: 3,
