@@ -5,42 +5,23 @@
 // server (the three/webgpu gotcha). At the defaults gate this file, the
 // prop, and the probe go, and the landed values become named constants in
 // banner-scene.tsx.
-import type { DitherPattern } from '@camp-dev/shaders';
 
 export interface BannerTuning {
   /** The wash's center color. The ramp runs from here out to the page black. */
   glowColor: string;
-  /** Dot pitch in CSS pixels. Keep it a multiple of the Bayer tile, see banner-scene.tsx. */
+  /** Mark pitch in CSS pixels. */
   spacing: number;
-  /** Dot diameter in CSS pixels, before Dither carves it into cells. */
+  /** Mark width in CSS pixels, tip to tip. */
   dotSize: number;
-  /**
-   * The dot's flat color. Under Dither this sets HOW MANY of a dot's cells
-   * light up, not how bright they are: a cell lights when the color clears
-   * that cell's Bayer threshold, so a darker gray lights fewer cells.
-   */
+  /** The mark's flat color. */
   dotColor: string;
-  /** Dither cell edge in CSS pixels. */
-  pixelSize: number;
-  /**
-   * Quantization steps per channel. This is what sets the lit cells'
-   * brightness: at 2 they are white, at 4 the first step up from black is a
-   * third gray, at 6 a fifth.
-   */
-  levels: number;
-  /** Strength of the Bayer push, 1 for classic ordered dithering. */
-  spread: number;
-  /** The threshold map. Bayer 4x4 is the one whose highest five cells form an x. */
-  pattern: DitherPattern;
 }
 
+// The pitch and size are the Figma pattern's at 1x: marks 6.34 wide on a
+// grid of about 20. The colors are read off the mock by eye.
 export const BANNER_TUNING: BannerTuning = {
   glowColor: 'oklch(0.22 0.04 130)',
-  spacing: 24,
-  dotSize: 6,
-  dotColor: 'oklch(0.2 0 0)',
-  pixelSize: 2,
-  levels: 4,
-  spread: 1,
-  pattern: 'bayer-4x4',
+  spacing: 20,
+  dotSize: 6.3,
+  dotColor: 'oklch(0.38 0.02 155)',
 };

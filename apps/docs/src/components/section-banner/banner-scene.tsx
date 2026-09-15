@@ -2,14 +2,14 @@
 
 /**
  * The Components banner's shader: the Figma mock's faint lime wash, drawn by
- * RadialGradient, under a still grid of small gray dots from DotField, with
- * Dither over both so every dot breaks into a few Bayer cells and the wash
- * into speckle. It is one fixed scene, the same on the index and on every
- * component page, and it never reads the shader demoed below it.
- * banner-shader.tsx owns the client-only import, the poster that stands in
- * until this scene paints, and the visual-test skip; this file is the scene.
+ * RadialGradient, under the mock's still grid of small x marks, drawn by
+ * DotField with its cross shape. It is one fixed scene, the same on the
+ * index and on every component page, and it never reads the shader demoed
+ * below it. banner-shader.tsx owns the client-only import, the poster that
+ * stands in until this scene paints, and the visual-test skip; this file is
+ * the scene.
  */
-import { type ColorStop, Dither, DotField, RadialGradient, ShaderScene } from '@camp-dev/shaders';
+import { type ColorStop, DotField, RadialGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { BANNER_HEIGHT, BANNER_WIDTH } from './banner-geometry';
 import { BANNER_TUNING, type BannerTuning } from './banner-tuning';
@@ -63,34 +63,15 @@ const GLOW_RADIUS = GLOW_HEIGHT / BANNER_HEIGHT / HALF_DIAGONAL;
 const PAGE_BLACK = '#0b0f0d';
 
 // ----------------------------------------------------------------------------
-// How the dots become marks
-// ----------------------------------------------------------------------------
-// Dither samples the finished scene once per cell, at the cell's center, so
-// a dot smaller than a few cells reaches it as a handful of flat gray cells.
-// Each of those cells then rounds to a quantization step on its own: the
-// dot's gray, scaled by the step count, plus the cell's slot in the Bayer
-// tile, floored. A cell lights when that sum crosses 1, so the tile's
-// highest slots light first and a darker gray lights fewer of them. Bayer
-// 4x4's five highest slots are the corners and center of a 3 by 3 window,
-// an x, whose center sits 1.5 cells across and 2.5 cells down from the
-// tile's top-left corner. Two alignments have to hold for every dot to draw
-// that same x. `spacing` must be a multiple of the tile edge, the matrix
-// size times `pixelSize`, so every dot meets the tile at one phase. And
-// that phase must put the dot's center on the window's center: DotField
-// anchors its grid at the canvas center and Dither anchors its tiles at the
-// canvas corner, so the phase is set by the canvas size alone, half the
-// width and half the height taken modulo the tile edge.
-
-// ----------------------------------------------------------------------------
 // The scene
 // ----------------------------------------------------------------------------
 
 /**
- * Three layers in mount order: the wash, the dot grid over it with the
- * ripple off so the grid never moves, then Dither carving both into cells.
- * Nothing here animates and RadialGradient at speed 0 votes the scene
- * static, so it parks after one frame. The poster in banner-shader.tsx is
- * captured from this scene, so the live scene takes over from it unchanged.
+ * Two layers in mount order: the wash, then the grid of x marks over it
+ * with the ripple off so the grid never moves. Nothing here animates and
+ * RadialGradient at speed 0 votes the scene static, so it parks after one
+ * frame. The poster in banner-shader.tsx is captured from this scene, so
+ * the live scene takes over from it unchanged.
  */
 export default function BannerScene({ tuning = BANNER_TUNING }: { tuning?: BannerTuning }) {
   const stops: ColorStop[] = [
@@ -105,14 +86,9 @@ export default function BannerScene({ tuning = BANNER_TUNING }: { tuning?: Banne
         amplitude={0}
         color={tuning.dotColor}
         dotSize={tuning.dotSize}
+        shape="cross"
         spacing={tuning.spacing}
         speed={0}
-      />
-      <Dither
-        levels={tuning.levels}
-        pattern={tuning.pattern}
-        pixelSize={tuning.pixelSize}
-        spread={tuning.spread}
       />
     </ShaderScene>
   );
