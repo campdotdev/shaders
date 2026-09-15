@@ -40,9 +40,11 @@
      viewport whose middle already sits below the shader's center, sticky
      holds the block here from the first paint and the lines rest a little
      under that center instead. The crossover is twice the distance from the
-     top of the page to that center, so it moves with the window's width and
-     with whatever the page stacks above the grid; at a 1280px-wide window
-     it is around 1400px tall. */
+     top of the page to that center: the site header and the section banner,
+     the breadcrumbs, the page title and its description, the grid's own top
+     padding, and half the shader's height. So it differs by component, a
+     description that wraps to another line pushing the grid down, and by
+     window width, the shader's height following --stage-width. */
   top: calc(50vh + var(--shader-center));
   z-index: 1;
   height: 0;
