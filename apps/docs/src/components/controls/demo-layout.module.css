@@ -45,11 +45,11 @@
    itself has. Deliberately no overscroll-behavior: contain. The cap above
    is the shader's height or the viewport's, never the panel's own content,
    so at ordinary widths the panel really does overflow, and the range it
-   has is spent in one flick. Contain it and every tick after that flick is swallowed by a panel
-   that has stopped moving, so the page will not scroll on until the pointer
-   leaves the panel. The reader's pointer crosses this column on the way
-   down the page; it is not a region they came to scroll. The docs sidebar
-   is the opposite case and does contain its overscroll
+   has is spent in one flick. Contain it and every tick after that flick is
+   swallowed by a panel that has stopped moving, so the page will not scroll
+   on until the pointer leaves the panel. The reader's pointer crosses this
+   column on the way down the page; it is not a region they came to scroll.
+   The docs sidebar is the opposite case and does contain its overscroll
    (docs-sidebar.module.css): a tall tree behind a measured cap, which the
    reader scrolls on purpose. */
 .viewport {
@@ -98,13 +98,13 @@
    controls column stops being sticky and its cap changes rather than coming
    off: 384px, the cap the nav dropdown's open box takes
    (docs-nav-dropdown.module.css), so the two capped boxes on a narrow page
-   are the same height and the reader sees the shader with the
-   top of the panel under it rather than a panel that pushes the Usage
-   section a screen down. The cap reaches the element that scrolls through
-   max-height: inherit on the scroll area's root and viewport
-   (scroll-area.module.css), the chain the sticky column uses too. The page
-   TOC hides on the same query. Playwright's 1280px viewport leaves a 928px
-   column, so the visual suites still see two columns. */
+   are the same height and the reader sees the shader with the top of the
+   panel under it rather than a panel that pushes the Usage section a screen
+   down. The cap reaches the element that scrolls through max-height:
+   inherit on the scroll area's root and viewport (scroll-area.module.css),
+   the chain the sticky column uses too. The page TOC hides on the same
+   query. Playwright's 1280px viewport leaves a 928px column, so the visual
+   suites still see two columns. */
 @container docs-main (width < 53.5rem) {
   .layout {
     grid-template-columns: minmax(0, 1fr);

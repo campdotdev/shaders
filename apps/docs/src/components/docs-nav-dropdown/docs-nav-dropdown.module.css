@@ -116,17 +116,15 @@
   max-height: calc(var(--container-sm) - var(--spacing-4) * 2 - var(--leading-5));
 }
 
-/* Reaching the end of a 332px tree inside a page metres long otherwise hands
-   the rest of the gesture to the page, which reads as the panel refusing to
-   scroll. Contain keeps the gesture here, as it does in the docs sidebar
-   (docs-sidebar.module.css). The control panel deliberately does not
-   contain (demo-layout.module.css): it stands beside the shader and the
-   pointer crosses it on the way down the page, where this is a menu the
-   reader opened and is reading, so keeping the gesture inside it is what
-   they expect. */
-.viewport {
-  overscroll-behavior: contain;
-}
+/* No rule for the element that scrolls, and no overscroll-behavior:
+   contain on it, deliberately. The box caps at 384px, which the components
+   tree runs well past, so the range in here is spent in a flick, and
+   containing it would swallow every tick after that: the control panel's
+   bug in a smaller box (demo-layout.module.css). Reaching either end hands
+   the gesture to the page instead, so a reader who opens the menu, picks
+   nothing, and keeps scrolling is never stuck. The docs sidebar
+   (docs-sidebar.module.css) is the one scroll region on the site that still
+   contains its overscroll. */
 
 /* The control panel's fade (demo-layout.module.css), one over each edge:
    64px of the box's own color fading in over the rows, telling the reader

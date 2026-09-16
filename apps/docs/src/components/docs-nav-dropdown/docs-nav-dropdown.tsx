@@ -116,7 +116,6 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
                 <div aria-hidden="true" className={styles.fadeBottom} />
               </>
             }
-            viewportClassName={styles.viewport}
             viewportRef={viewportRef}
           >
             <nav
