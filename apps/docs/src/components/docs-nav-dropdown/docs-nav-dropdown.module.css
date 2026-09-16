@@ -118,8 +118,12 @@
 
 /* Reaching the end of a 332px tree inside a page metres long otherwise hands
    the rest of the gesture to the page, which reads as the panel refusing to
-   scroll. Contain keeps the gesture here. The control panel's viewport does
-   the same, and so does the docs sidebar. */
+   scroll. Contain keeps the gesture here, as it does in the docs sidebar
+   (docs-sidebar.module.css). The control panel deliberately does not
+   contain (demo-layout.module.css): it stands beside the shader and the
+   pointer crosses it on the way down the page, where this is a menu the
+   reader opened and is reading, so keeping the gesture inside it is what
+   they expect. */
 .viewport {
   overscroll-behavior: contain;
 }
