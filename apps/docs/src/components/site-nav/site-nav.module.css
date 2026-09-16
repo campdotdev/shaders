@@ -1,0 +1,189 @@
+/* The narrow-viewport site navigation after the Figma mock: the hamburger
+   in the header row, and the full-screen overlay it opens. The overlay is
+   portaled to <body>, outside the site container, so nothing in here can
+   query it: the popup carries the phone gutter itself, which is safe
+   because the trigger only shows under 40rem. */
+
+/* ---- The trigger ---- */
+
+/* A 36px box around the 24px glyph, the header's logo box, hidden until
+   the header's link row hides on the same query (site-header.module.css). */
+.trigger {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-9);
+  height: var(--spacing-9);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--fg);
+  border: 0;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+}
+
+@container site (width < 40rem) {
+  .trigger {
+    display: inline-flex;
+  }
+}
+
+.trigger:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+}
+
+/* ---- The overlay ---- */
+
+/* The mock's backdrop: the page black at 90% over the page blurred behind
+   it. It fades on the larger step, since it covers the whole screen, and
+   opacity is a fade token so it still fades under Reduce Motion. 100dvh so
+   the iOS toolbars cannot leave a strip uncovered. The blur is the one
+   value here not on a token: it is a filter radius, not a size. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  min-height: 100dvh;
+  background: var(--black-a90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity var(--fade-md) var(--ease-out);
+}
+
+.backdrop[data-starting-style],
+.backdrop[data-ending-style] {
+  opacity: 0;
+}
+
+/* The popup is the whole viewport, transparent, on the phone gutter. It
+   fades in and rises 8px: opacity on the fade token and the rise on the
+   duration token, so Reduce Motion keeps the fade and drops the travel.
+   The exit runs on the smaller step, because leaving should be quicker
+   than arriving. */
+.popup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  padding: 0 var(--spacing-4);
+  outline: none;
+  transition:
+    opacity var(--fade-md) var(--ease-out),
+    transform var(--duration-md) var(--ease-out);
+}
+
+.popup[data-starting-style],
+.popup[data-ending-style] {
+  opacity: 0;
+  transform: translateY(var(--spacing-2));
+}
+
+.popup[data-ending-style] {
+  transition-duration: var(--fade-sm), var(--duration-sm);
+}
+
+/* ---- The bar ---- */
+
+/* The header row again, 56px with the logo box at the left, so the mark
+   does not move when the nav opens over it. */
+.bar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  height: var(--spacing-14);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-9);
+  height: var(--spacing-9);
+  color: var(--accent);
+  border-radius: var(--radius-md);
+}
+
+/* "Close" in 14px with the 24px X 6px after it, the mock's pairing. */
+.close {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--fg);
+  border: 0;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  cursor: pointer;
+}
+
+/* ---- The links ---- */
+
+/* Docs and Examples right-aligned in 30px semibold on a 36px line, 12px
+   apart for the mock's 48px pitch, 24px under the bar. */
+.links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
+}
+
+.link {
+  color: var(--fg);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-9);
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* The GitHub mark at the bottom right, 24px up from the edge. */
+.social {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-bottom: var(--spacing-6);
+}
+
+.iconLink {
+  display: inline-flex;
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the lime would then stick on the tapped link. */
+@media (hover: hover) and (pointer: fine) {
+  .link:hover,
+  .iconLink:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+}
+
+.logo:focus-visible,
+.close:focus-visible,
+.link:focus-visible,
+.iconLink:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+  border-radius: var(--radius-sm);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

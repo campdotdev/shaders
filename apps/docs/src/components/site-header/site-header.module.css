@@ -39,6 +39,20 @@
   gap: var(--spacing-6);
 }
 
+/* Under 40rem of the site the link row and search give way to the
+   hamburger, which site-nav.module.css shows on the same query, and the
+   row drops its 16px inset: the phone gutter is 16px in total, and
+   globals.css puts all of it on .site-gutter. */
+@container site (width < 40rem) {
+  .actions {
+    display: none;
+  }
+
+  .row {
+    padding: 0;
+  }
+}
+
 .nav {
   display: flex;
   align-items: center;
