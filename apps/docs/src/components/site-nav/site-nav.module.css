@@ -1,8 +1,9 @@
 /* The narrow-viewport site navigation after the Figma mock: the hamburger
-   in the header row, and the full-screen overlay it opens. The overlay is
-   portaled to <body>, outside the site container, so nothing in here can
-   query it: the popup carries the phone gutter itself, which is safe
-   because the trigger only shows under 40rem. Nothing here needs a z-index
+   in the header row, and the overlay it opens, which blurs the page from
+   the bottom of that row down and leaves the real header sharp above it.
+   The overlay is portaled to <body>, outside the site container, so nothing
+   in here can query it: the popup carries the phone gutter itself, which is
+   safe because the trigger only shows under 40rem. Nothing here needs a z-index
    either. The header lifts itself to z-index 1 over the banner's shader,
    but .site sets container-type: inline-size, whose layout containment
    makes it a stacking context, so that 1 cannot escape it. The portal's
@@ -39,22 +40,36 @@
   outline-offset: var(--border-width-2);
 }
 
+/* While the nav is open the overlay's X lands on this glyph, and neither
+   button has a background, so the hamburger would show through behind it.
+   Base UI stamps data-popup-open on a dialog trigger; the Collapsible in
+   docs-nav-dropdown uses data-panel-open, so the names differ per component.
+   visibility rather than display keeps the button in the flex row, so
+   hiding the glyph cannot change the row's layout. */
+.trigger[data-popup-open] {
+  visibility: hidden;
+}
+
 /* ---- The overlay ---- */
 
 /* The mock's backdrop: the page black at 90% over the page blurred behind
-   it. It fades on the larger step, since it covers the whole screen, and
-   opacity is a fade token so it still fades under Reduce Motion. The blur
-   is the one value in this rule not on a token: it is a filter radius, not
-   a size.
+   it. It starts 56px down, the height of the header row, so that row alone
+   stays sharp and the real header reads through the overlay while the
+   banner and everything under it blur. It fades on the larger step, since
+   it covers the rest of the screen, and opacity is a fade token so it still
+   fades under Reduce Motion.
 
-   Both this and the popup floor at 100dvh, and for the same reason: the
-   viewport a fixed element sizes against does not grow as a mobile browser
-   retracts its toolbars, so inset: 0 on its own can leave a strip
-   uncovered. 100dvh tracks the viewport that is actually showing. */
+   The floor carries the same guard the popup's does, offset by the row a
+   top of 56px costs it: the viewport a fixed element sizes against does not
+   grow as a mobile browser retracts its toolbars, so bottom: 0 on its own
+   can leave a strip uncovered at the bottom. 100dvh tracks the viewport
+   that is actually showing. Two values in this rule are off the token
+   scale, and neither is a size: a viewport unit, and the 12px blur, which
+   is a filter radius. */
 .backdrop {
   position: fixed;
-  inset: 0;
-  min-height: 100dvh;
+  inset: var(--spacing-14) 0 0;
+  min-height: calc(100dvh - var(--spacing-14));
   background: var(--black-a90);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -105,35 +120,30 @@
 
 /* ---- The bar ---- */
 
-/* The header row again, 56px with the logo box at the left, and the popup's
-   16px gutter matches the header's, so with the page at the top the mark
-   does not move when the nav opens over it. */
+/* The header's row again, 56px on the same 16px gutter, but holding only
+   the close control: the strip above the backdrop is unblurred, so the real
+   header's logo shows through on the left and this draws nothing there.
+   Matching the row's height and gutter is what lines the X up with the
+   hamburger it covers; the last 6px of that is on .close below. */
 .bar {
   display: flex;
   flex: none;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   height: var(--spacing-14);
   pointer-events: auto;
 }
 
-.logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--spacing-9);
-  height: var(--spacing-9);
-  color: var(--accent);
-  border-radius: var(--radius-md);
-}
-
-/* "Close" in 14px with the 24px X 6px after it, the mock's pairing. */
+/* "Close" in 14px with the 24px X 6px after it, the mock's pairing. The
+   same 6px again on the right, because the trigger centres its 24px glyph
+   in a 36px box and that leaves exactly 6px between glyph and gutter:
+   without it the X would land 6px right of the hamburger it replaces. */
 .close {
   display: inline-flex;
   align-items: center;
   gap: var(--spacing-1-5);
   margin: 0;
-  padding: 0;
+  padding: 0 var(--spacing-1-5) 0 0;
   background: transparent;
   color: var(--fg);
   border: 0;
@@ -191,7 +201,6 @@
   }
 }
 
-.logo:focus-visible,
 .close:focus-visible,
 .link:focus-visible,
 .iconLink:focus-visible {

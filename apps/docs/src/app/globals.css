@@ -190,12 +190,15 @@ a:hover {
 /* ---- Page layout ---- */
 
 /* The mock builds every page in three levels. A full-bleed parent carries
-   the 32px gutter and any edge-to-edge background such as the banner glow.
-   A 9xl container inside it caps and centers the content: 32 plus 1664 plus
-   32 is exactly the 1728px artboard. Each child then owns its own inset and
-   its own vertical rhythm, which is 16px for the nav row and the banner
-   title, and the sidebar's own padding in the shell. The container carries
-   no padding of its own because the shell's sidebar sits flush at its edge. */
+   the page gutter and any edge-to-edge background such as the banner glow:
+   32px on a wide viewport, and 16px under 40rem, per the rule beneath this
+   one. A 9xl container inside it caps and centers the content: 32 plus 1664
+   plus 32 is exactly the 1728px artboard. Each child then owns its own
+   inset and its own vertical rhythm, which on a wide viewport is 16px for
+   the nav row and the banner title, and the sidebar's own padding in the
+   shell. The nav row drops its 16px under 40rem, so the gutter is the whole
+   inset there. The container carries no padding of its own because the
+   shell's sidebar sits flush at its edge. */
 .site-gutter {
   padding-inline: var(--spacing-8);
 }
