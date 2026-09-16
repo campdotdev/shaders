@@ -3,13 +3,15 @@
 /**
  * The site navigation on a narrow viewport, after the Figma mock: a
  * hamburger at the right of the header row that opens a full-screen overlay
- * over the blurred page, carrying its own row of the logo and a close
- * control on the header's geometry, Docs and Examples right-aligned in
- * large type under it, and the GitHub link at the bottom. The header
- * renders this beside its link row and CSS shows one or the other at 40rem
- * of the site container. A Base UI Dialog rather than a Drawer: the overlay
- * fades in over the page, nothing slides from an edge or is swiped away,
- * and Dialog brings the focus trap, scroll lock, Escape, and close button.
+ * over the blurred page, with Docs and Examples right-aligned in large type
+ * under the header row and the GitHub link at the bottom. The real header
+ * paints above the overlay (site-header.module.css lifts it to z-index 1),
+ * so the overlay carries no row of its own: the header's trigger is the
+ * Close control while the nav is open. The header renders this beside its
+ * link row and CSS shows one or the other at 40rem of the site container. A
+ * Base UI Dialog rather than a Drawer: the overlay fades in over the page,
+ * nothing slides from an edge or is swiped away, and Dialog brings the
+ * focus trap, scroll lock, Escape, and outside-press dismissal.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -19,7 +21,6 @@ import { Dialog } from '@base-ui/react/dialog';
 
 import { CloseIcon } from '@/components/icons/close';
 import { GitHubIcon } from '@/components/icons/github';
-import { LogoMark } from '@/components/icons/logo-mark';
 import { MenuIcon } from '@/components/icons/menu';
 import { REPO_URL, SITE_LINKS } from '@/components/site-header/links';
 
@@ -27,7 +28,7 @@ import styles from './site-nav.module.css';
 
 export function SiteNav() {
   const pathname = usePathname();
-  const closeRef = useRef<HTMLButtonElement>(null);
+  const popupRef = useRef<HTMLDivElement>(null);
 
   // The pathname the nav was opened on, or null while closed. `open` is
   // derived from it, and the reset below clears it the moment the pathname
@@ -47,24 +48,34 @@ export function SiteNav() {
 
   return (
     <Dialog.Root onOpenChange={(next) => setOpenedOn(next ? pathname : null)} open={open}>
-      <Dialog.Trigger aria-label="Open site navigation" className={styles.trigger}>
-        <MenuIcon />
+      {/* One control for both states: the hamburger while closed, and
+          "Close" beside an X on the same 24px box while open, when a second
+          press closes. Three things make that work. The header paints above
+          the overlay, so the trigger stays under the pointer. Base UI's
+          useClick toggles on a repeated press of an open trigger. And its
+          useDismiss counts a press within the trigger as the dialog's own,
+          never an outside press, so the press is not also a dismissal.
+          While the nav is open Base UI's markOthers puts aria-hidden on
+          everything outside the popup, this trigger included, so the
+          open-state name backs the visual label only; the sr-only Close at
+          the end of the popup is what a screen reader actually uses. */}
+      <Dialog.Trigger
+        aria-label={open ? 'Close site navigation' : 'Open site navigation'}
+        className={styles.trigger}
+      >
+        <span className={styles.label}>Close</span>
+        <span className={styles.glyph}>
+          <MenuIcon className={styles.menuGlyph} />
+          <CloseIcon className={styles.closeGlyph} />
+        </span>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className={styles.backdrop} />
-        {/* Focus lands on Close, so Escape and Enter both dismiss at once
-            and a screen reader hears where it is. */}
-        <Dialog.Popup className={styles.popup} initialFocus={closeRef}>
+        {/* Focus lands on the popup itself, Base UI's full-screen pattern:
+            a pointer open paints no focus ring on Docs, and a screen reader
+            hears the dialog's title. */}
+        <Dialog.Popup className={styles.popup} initialFocus={popupRef} ref={popupRef}>
           <Dialog.Title className={styles.srOnly}>Site navigation</Dialog.Title>
-          <div className={styles.bar}>
-            <Link aria-label="Shaders home" className={styles.logo} href="/" onClick={close}>
-              <LogoMark />
-            </Link>
-            <Dialog.Close className={styles.close} ref={closeRef}>
-              Close
-              <CloseIcon />
-            </Dialog.Close>
-          </div>
           <nav aria-label="Site" className={styles.links}>
             {SITE_LINKS.map((link) => (
               <Link className={styles.link} href={link.href} key={link.href} onClick={close}>
@@ -83,6 +94,16 @@ export function SiteNav() {
               <GitHubIcon />
             </a>
           </div>
+          {/* The close for assistive tech. The header's trigger is
+              aria-hidden and outside the focus trap while the nav is open,
+              so a screen reader user, including VoiceOver on a phone with no
+              Escape key, would otherwise have no close. tabIndex -1 keeps a
+              sighted keyboard user from tabbing onto an invisible control;
+              their path is Escape or the trigger. A screen reader's virtual
+              cursor still reaches it. */}
+          <Dialog.Close className={styles.srOnly} tabIndex={-1}>
+            Close
+          </Dialog.Close>
         </Dialog.Popup>
       </Dialog.Portal>
     </Dialog.Root>

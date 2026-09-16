@@ -2,29 +2,44 @@
    in the header row, and the full-screen overlay it opens over the blurred
    page. The overlay is portaled to <body>, outside the site container, so
    nothing in here can query it: the popup carries the phone gutter itself,
-   which is safe because the trigger only shows under 40rem. Nothing here
-   needs a z-index either. The header lifts itself to z-index 1 over the
-   banner's shader, but .site sets container-type: inline-size, whose layout
-   containment makes it a stacking context, so that 1 cannot escape it. The
-   portal's div is a sibling after .site in <body>, so the overlay paints
-   over the whole page on tree order alone. */
+   which is safe because the trigger only shows under 40rem.
+
+   Stacking: the portal's div is a sibling after .site in <body>, so the
+   overlay paints over the page on tree order, and the header paints over
+   the overlay, because .header is position: relative; z-index: 1
+   (site-header.module.css) and nothing in the portal has a z-index. .site
+   establishes no stacking context: its container-type: inline-size applies
+   style and inline-size containment only, and neither makes one, so the
+   header's 1 competes at the root and wins. The nav depends on that order,
+   because the header's trigger is the Close while the nav is open, and
+   nothing here needs a z-index of its own. */
 
 /* ---- The trigger ---- */
 
-/* A 36px box around the 24px glyph, the header's logo box, hidden until
-   the header's link row hides on the same query (site-header.module.css). */
+/* The header's one control for the nav: the hamburger while closed, and
+   "Close" beside an X while open, because the header paints above the
+   overlay and this button stays under the pointer in both states. It is an
+   inline-flex row 36px tall with 6px each side, so closed it is the 36px box
+   around a 24px glyph that the header's logo has, and open it grows to fit
+   the 14px label and the 6px gap while the glyph keeps its place: this is
+   the last item of the header's space-between row, so growth can only go
+   left, and the glyph's right edge stays 6px in from the gutter. Hidden
+   until the header's link row hides on the same query
+   (site-header.module.css). */
 .trigger {
   display: none;
   align-items: center;
-  justify-content: center;
-  width: var(--spacing-9);
+  gap: var(--spacing-1-5);
   height: var(--spacing-9);
   margin: 0;
-  padding: 0;
+  padding: 0 var(--spacing-1-5);
   background: transparent;
   color: var(--fg);
   border: 0;
   border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
   cursor: pointer;
 }
 
@@ -39,23 +54,61 @@
   outline-offset: var(--border-width-2);
 }
 
-/* While the nav is open the overlay's X lands on this glyph. The backdrop
-   between them is --black-a90, so a tenth of what is behind it still comes
-   through, blurred, and an unhidden hamburger would ghost under the X.
-   Base UI stamps data-popup-open on a dialog trigger; the Collapsible in
-   docs-nav-dropdown uses data-panel-open, so the names differ per component.
-   visibility rather than display keeps the button in the flex row, so
-   hiding the glyph cannot change the row's layout. */
-.trigger[data-popup-open] {
-  visibility: hidden;
+/* The label exists only in the open state: display rather than opacity, so
+   the closed trigger is exactly the 36px box with no invisible text
+   widening it. It comes before the glyph in DOM order, so it sits to the
+   glyph's left. Base UI stamps data-popup-open on a dialog trigger; the
+   Collapsible in docs-nav-dropdown uses data-panel-open, so the names
+   differ per component. */
+.label {
+  display: none;
+}
+
+.trigger[data-popup-open] .label {
+  display: block;
+}
+
+/* Both glyphs share one 24px box and crossfade on data-popup-open, the way
+   page-actions.module.css swaps its copy glyph for the check: opacity on
+   the fade token, so Reduce Motion keeps it, and no scale, since the two
+   marks are the same size. This crossfade is a placeholder. A hamburger-
+   to-X animation authored in Figma Motion will replace it on this same
+   element, so the structure stays a flat pair of stacked icons for it to
+   take over. */
+.glyph {
+  position: relative;
+  flex: none;
+  width: var(--spacing-6);
+  height: var(--spacing-6);
+}
+
+.menuGlyph,
+.closeGlyph {
+  position: absolute;
+  inset: 0;
+  transition: opacity var(--fade-sm) var(--ease-out);
+}
+
+.closeGlyph {
+  opacity: 0;
+}
+
+.trigger[data-popup-open] .menuGlyph {
+  opacity: 0;
+}
+
+.trigger[data-popup-open] .closeGlyph {
+  opacity: 1;
 }
 
 /* ---- The overlay ---- */
 
 /* The mock's backdrop: the page black at 90% over the page blurred behind
-   it, edge to edge, so nothing of the page below stays sharp. It fades on
-   the larger step, since it covers the whole screen, and opacity is a fade
-   token so it still fades under Reduce Motion.
+   it, edge to edge. The header row is the one thing that stays sharp,
+   because it paints above this (see the file-top comment); the banner
+   behind that row blurs like everything else. It fades on the larger step,
+   since it covers the whole screen, and opacity is a fade token so it still
+   fades under Reduce Motion.
 
    It floors at 100dvh, the guard the popup carries too: the viewport a
    fixed element sizes against does not grow as a mobile browser retracts
@@ -78,27 +131,30 @@
   opacity: 0;
 }
 
-/* The popup is the whole viewport, transparent, on the phone gutter. It
-   fades in and rises 8px: opacity on the fade token and the rise on the
-   duration token, so Reduce Motion keeps the fade and drops the travel.
-   The exit runs on the smaller step, because leaving should be quicker
-   than arriving.
+/* The popup is the whole viewport, transparent, on the phone gutter. Its
+   56px top padding is the header row's height, so its content starts under
+   the row the real header keeps drawing on top, and nothing in here sits at
+   the row's height. It fades in and rises 8px: opacity on the fade token
+   and the rise on the duration token, so Reduce Motion keeps the fade and
+   drops the travel. The exit runs on the smaller step, because leaving
+   should be quicker than arriving.
 
-   It covers the viewport, but only its controls are hit-testable: .logo,
-   .close, .link, and .iconLink each take pointer events back, and a press
-   on any other pixel of the overlay reaches the backdrop instead, which is
-   what Base UI dismisses on. The rows in between deliberately do not take
-   them back, because a flex item in this column stretches to the full
-   content width, so a row would swallow presses either side of its
-   controls, including the whole span between the logo and the X. Escape
-   never hit-tests, so the keyboard path does not depend on any of this. */
+   It covers the viewport, but only its controls are hit-testable: .link and
+   .iconLink each take pointer events back, and a press on any other pixel
+   of the overlay reaches the backdrop instead, which is what Base UI
+   dismisses on. The rows in between deliberately do not take them back,
+   because a flex item in this column stretches to the full content width,
+   so a row would swallow presses either side of its controls. The sr-only
+   Close inherits the none, which is right for a control nothing points at.
+   Escape never hit-tests, so the keyboard path does not depend on any of
+   this. */
 .popup {
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
-  padding: 0 var(--spacing-4);
+  padding: var(--spacing-14) var(--spacing-4) 0;
   outline: none;
   pointer-events: none;
   transition:
@@ -116,59 +172,10 @@
   transition-duration: var(--fade-sm), var(--duration-sm);
 }
 
-/* ---- The bar ---- */
-
-/* The overlay's own header row: 56px with the logo mark at the left and the
-   close control at the right, on the popup's 16px gutter. The height and
-   gutter are the header row's, so the mark keeps its place and the X lands
-   on the hamburger as the overlay opens over them. The X owes its last 6px
-   to .close below. The mock's nav frame insets its mark to 24px rather than
-   16px; the header's figure is the one followed here, because these two
-   marks sit one on top of the other and any difference reads as a jump. */
-.bar {
-  display: flex;
-  flex: none;
-  align-items: center;
-  justify-content: space-between;
-  height: var(--spacing-14);
-}
-
-.logo {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--spacing-9);
-  height: var(--spacing-9);
-  color: var(--accent);
-  border-radius: var(--radius-md);
-  pointer-events: auto;
-}
-
-/* "Close" in 14px with the 24px X 6px after it, the mock's pairing. The
-   same 6px again on the right, because the trigger centres its 24px glyph
-   in a 36px box and that leaves exactly 6px between glyph and gutter:
-   without it the X would land 6px right of the hamburger it replaces. */
-.close {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-1-5);
-  margin: 0;
-  padding: 0 var(--spacing-1-5) 0 0;
-  background: transparent;
-  color: var(--fg);
-  border: 0;
-  border-radius: var(--radius-sm);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-5);
-  cursor: pointer;
-  pointer-events: auto;
-}
-
 /* ---- The links ---- */
 
 /* Docs and Examples right-aligned in 30px semibold on a 36px line, 12px
-   apart for the mock's 48px pitch, 24px under the bar. */
+   apart for the mock's 48px pitch, 24px under the header row. */
 .links {
   display: flex;
   flex-direction: column;
@@ -212,8 +219,6 @@
   }
 }
 
-.logo:focus-visible,
-.close:focus-visible,
 .link:focus-visible,
 .iconLink:focus-visible {
   outline: var(--border-width-2) solid var(--accent);

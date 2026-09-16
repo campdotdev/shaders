@@ -9,7 +9,11 @@
 /* The header has no background: on the components routes the banner's
    shader reaches up behind it. That shader is a positioned layer painted
    after this element in tree order, so the header lifts itself above it, or
-   the dots would sit on top of the links. */
+   the dots would sit on top of the links. The same z-index is also what
+   keeps the header, and its hamburger, above the site nav's overlay while
+   the nav is open: nothing in that portal has a z-index, and the hamburger
+   is the nav's Close (site-nav.module.css), so a change here breaks the
+   nav's close. */
 .header {
   position: relative;
   z-index: 1;
