@@ -52,3 +52,22 @@
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-10);
 }
+
+/* The phone band: 112px tall with the title still at its bottom, 24px up,
+   and no inset of its own, because the gutter carries the whole 16px there
+   (globals.css). The title steps down to 30px on a 36px line, so its line
+   box starts 52px below the band's top. The height includes the padding
+   here too, so the band measures 112, not 160. The scene box behind it is
+   unchanged: it stays the fixed box banner-geometry.ts sizes, which is why
+   it now reaches 32px past the shorter band. */
+@container site (width < 40rem) {
+  .inner {
+    height: var(--spacing-28);
+    padding: var(--spacing-6) 0;
+  }
+
+  .title {
+    font-size: var(--font-size-3xl);
+    line-height: var(--leading-9);
+  }
+}

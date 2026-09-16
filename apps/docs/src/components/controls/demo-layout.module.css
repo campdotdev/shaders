@@ -106,10 +106,12 @@
    inherit on the scroll area's root and viewport (scroll-area.module.css),
    the chain the sticky column uses too. The page TOC hides on the same
    query. Playwright's 1280px viewport leaves a 928px column, so the visual
-   suites still see two columns. */
+   suites still see two columns. The gap closes to 12px with the stack,
+   which is the mock's gap between the shader and the panel under it. */
 @container docs-main (width < 53.5rem) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--spacing-3);
   }
 
   .controls {

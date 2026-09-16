@@ -2,11 +2,12 @@
    order: breadcrumbs and header above the demo, Usage and API Reference
    below it, then prev/next pagination. */
 
-/* The docs shell's main column insets everything by 40px, and the demo grid
-   (.demo-layout in globals.css) caps its shader column at 4xl. The
-   breadcrumbs, header, and prose sections take the same cap so everything
-   shares one left edge and one width. Margin rather than padding, so the cap
-   measures the content box regardless of box-sizing. */
+/* The docs shell insets the page by 40px until the main column falls under
+   53.5rem, where the inset drops (.content in docs-shell.module.css), and
+   the demo grid (.layout in controls/demo-layout.module.css) caps its shader
+   column at 4xl. The breadcrumbs, header, and prose sections take the same
+   cap so everything shares one left edge and one width. Margin rather than
+   padding, so the cap measures the content box regardless of box-sizing. */
 
 /* The mock's breadcrumb row sits 16px below the top of the page and 24px
    above the title, which with the row's own 32px puts the title at 72px. */
@@ -132,4 +133,19 @@
 
 .chevronNext {
   transform: rotate(-90deg);
+}
+
+/* The phone layout has no breadcrumb row: the dropdown above the title
+   already names the page. The title steps down to 24px on a 32px line, the
+   mock's text box; the header keeps its 24px above, which with the row gone
+   puts the title 24px under the dropdown, where the mock draws it. */
+@container site (width < 40rem) {
+  .breadcrumbs {
+    display: none;
+  }
+
+  .title {
+    font-size: var(--font-size-2xl);
+    line-height: var(--leading-8);
+  }
 }

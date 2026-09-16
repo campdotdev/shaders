@@ -1,0 +1,42 @@
+/* The MDX page: the article beside its "On this page" list. The prose has
+   no design of its own yet (SHA-134); this file only holds the layout that
+   used to be inline, plus the width rules, so the page stops scrolling
+   sideways on a phone. */
+
+/* Article in the remaining width, the list in a 208px column, 40px apart.
+   min-width: 0 on the article lets a wide code block scroll inside it
+   instead of forcing the grid wider. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--spacing-52);
+  gap: var(--spacing-10);
+  align-items: start;
+}
+
+.article {
+  min-width: 0;
+}
+
+.breadcrumbs {
+  margin-bottom: var(--spacing-6);
+}
+
+/* Under 48rem of the main column the list's 208px would come out of an
+   article already narrow, so the list goes and the article takes the width. */
+@container docs-main (width < 48rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aside {
+    display: none;
+  }
+}
+
+/* The phone layout has no breadcrumb row: the dropdown above the article
+   already names the page. */
+@container site (width < 40rem) {
+  .breadcrumbs {
+    display: none;
+  }
+}

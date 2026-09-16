@@ -3,7 +3,9 @@
  * it renders in, and the poster that stands in for it. The width is the
  * viewport width the Figma mock was drawn at, and the height is the header
  * block: the 56px nav row plus the 144px band, spacing-14 and spacing-36 in
- * the two CSS modules.
+ * the two CSS modules. Under 40rem the band drops to 112px and this box does
+ * not, because it keeps its size for the reason below, so there it reaches
+ * 32px past the bottom of the band.
  *
  * Fixing the canvas at this size, centered, is what keeps the poster and the
  * live wall on one dot grid. The wall anchors its cells at its canvas's left
