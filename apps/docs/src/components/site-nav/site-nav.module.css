@@ -11,10 +11,13 @@
    rule this depends on: the root stacking context holds only site chrome
    at a positive z-index, and a component that uses z-index inside itself
    isolates its own root (isolation: isolate), or its numbers reach the
-   root and draw over this nav. The docs nav dropdown and the control
-   panel's scroll area are the two that do (docs-nav-dropdown.module.css,
-   demo-layout.module.css), and the shared scroll area isolates itself for
-   its bar (scroll-area.module.css). .site establishes no stacking context:
+   root and draw over this nav. The docs nav dropdown and the shared
+   scroll area are the two that isolate for this nav
+   (docs-nav-dropdown.module.css, scroll-area.module.css); .banner and
+   [data-shader-demo] isolate for their own layers; and page-toc's .dock
+   reaches the root without isolating, safe only because it is display:
+   none under 53.5rem of the docs column, which every viewport this nav
+   opens on is under. .site establishes no stacking context:
    its container-type: inline-size applies style and inline-size
    containment only, and neither makes one, so the header's 1 competes at
    the root and wins. That holds from Chrome 129, Firefox 133, and Safari
@@ -80,37 +83,41 @@
   display: block;
 }
 
-/* Both glyphs share one 24px box and crossfade on data-popup-open, the way
-   page-actions.module.css swaps its copy glyph for the check: opacity on
-   the fade token, so Reduce Motion keeps it, and no scale, since the two
-   marks are the same size. This crossfade is a placeholder. A hamburger-
-   to-X animation authored in Figma Motion will replace it on this same
-   element, so the structure stays a flat pair of stacked icons for it to
-   take over. */
+/* The glyph: the 24 squares of menu-toggle.tsx, each moved from its bar to
+   its cell in the X by a transition on transform, keyed off the trigger's
+   data-popup-open. A transition rather than keyframes is the state
+   management: open starts the move, close plays it back from wherever the
+   squares are, and a press mid-flight reverses without a jump. The deltas
+   come in as --dx and --dy in user units, and px on an SVG element's CSS
+   transform is user units at this 24-unit viewBox, so each square lands on
+   the grid. The box stays 24px, so the X sits where the hamburger was.
+
+   Two speeds, the export's shape. In Figma Motion the middle row reaches
+   the centre at 37ms (1.85% of a 2s timeline) and the outer rows at 200ms
+   (10%), all on cubic-bezier(0, 0, 0, 1), so the middle snaps in first and
+   the diagonals fold over it. Here that is --duration-xs (100ms) for the
+   middle row and --duration-sm (150ms) for the outer two, both on
+   --ease-out; the raw values are one edit each, on the two transition
+   rules below. Under Reduce Motion the duration tokens are 0ms, so the
+   squares jump between the two states with no media query of their own.
+   The attribute selectors are scoped under .trigger because CSS Modules
+   leaves them unscoped. */
 .glyph {
-  position: relative;
   flex: none;
   width: var(--spacing-6);
   height: var(--spacing-6);
 }
 
-.menuGlyph,
-.closeGlyph {
-  position: absolute;
-  inset: 0;
-  transition: opacity var(--fade-sm) var(--ease-out);
+.trigger [data-menu-square] {
+  transition: transform var(--duration-sm) var(--ease-out);
 }
 
-.closeGlyph {
-  opacity: 0;
+.trigger [data-menu-square='snap'] {
+  transition-duration: var(--duration-xs);
 }
 
-.trigger[data-popup-open] .menuGlyph {
-  opacity: 0;
-}
-
-.trigger[data-popup-open] .closeGlyph {
-  opacity: 1;
+.trigger[data-popup-open] [data-menu-square] {
+  transform: translate(calc(var(--dx) * 1px), calc(var(--dy) * 1px));
 }
 
 /* ---- The overlay ---- */

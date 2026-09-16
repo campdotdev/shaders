@@ -33,21 +33,13 @@
   max-height: min(calc(var(--stage-width) * 2 / 3), calc(100vh - var(--spacing-12)));
 }
 
-/* The scroll area root, the element the fade positions against. The cap
-   reaches it through max-height: inherit in the shared ScrollArea's styles
-   (scroll-area.module.css), and the bar comes from there too. It isolates
-   because the panel's title row (controls.module.css), the fade below, and
-   the bar each carry a z-index, and once the column stops being sticky
-   under 53.5rem there is no stacking context between them and the root.
-   The site nav paints above the page at the root, and its overlay is
-   z-index: auto, so any component z-index that escapes to the root draws
-   over the nav; isolation keeps this panel's numbers its own. While the
-   column is sticky it is already a stacking context, so this changes
-   nothing there. The shared root isolates itself as well, for its bar;
-   this declaration stands so the panel does not depend on that one. */
-.scroller {
-  isolation: isolate;
-}
+/* No rule of its own for the scroll area root, the element the fade
+   positions against: the cap reaches it through max-height: inherit in the
+   shared ScrollArea's styles (scroll-area.module.css), and the bar comes
+   from there too, as does the isolation that keeps the panel's title row
+   (controls.module.css), the fade below, and the bar under the site nav's
+   overlay once the column stops being sticky under 53.5rem. The class
+   stays on the root because the fade rule below names it. */
 
 /* The element that scrolls. It carries the panel's corner radius so the
    panel's sticky title row, which sits at this element's top edge once the

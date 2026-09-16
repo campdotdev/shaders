@@ -19,9 +19,8 @@ import { useRef, useState } from 'react';
 
 import { Dialog } from '@base-ui/react/dialog';
 
-import { CloseIcon } from '@/components/icons/close';
 import { GitHubIcon } from '@/components/icons/github';
-import { MenuIcon } from '@/components/icons/menu';
+import { MenuToggleIcon } from '@/components/icons/menu-toggle';
 import { REPO_URL, SITE_LINKS } from '@/components/site-header/links';
 
 import styles from './site-nav.module.css';
@@ -64,10 +63,7 @@ export function SiteNav() {
         className={styles.trigger}
       >
         <span className={styles.label}>Close</span>
-        <span className={styles.glyph}>
-          <MenuIcon className={styles.menuGlyph} />
-          <CloseIcon className={styles.closeGlyph} />
-        </span>
+        <MenuToggleIcon className={styles.glyph} />
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className={styles.backdrop} />
