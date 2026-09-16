@@ -7,12 +7,13 @@
 
 /* Hidden on a wide viewport, where the sidebar shows the same tree. The
    shell renders both and this query is the only switch, so the two can
-   never both show or both hide. 24px below the banner, the mock's gap. */
+   never both show or both hide. 24px below the banner, the mock's gap.
+   Positioned so the hairline overlay below can cover it. */
 .root {
+  position: relative;
   display: none;
   margin-top: var(--spacing-6);
   background: var(--gray-900);
-  border: var(--border-width-1) solid var(--white-a5);
   border-radius: var(--radius-xl);
 }
 
@@ -20,6 +21,20 @@
   .root {
     display: block;
   }
+}
+
+/* The mock's hairline, drawn by an overlay rather than a border so the box
+   keeps the mock's drawn height: 52px closed, 384px open. The same trick
+   [data-shader-demo] uses in globals.css. Above the fades, so the line
+   still shows through the bottom reveal. */
+.root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: inherit;
+  pointer-events: none;
 }
 
 /* The label row: the current page's name in 14px semibold on a 20px line
@@ -87,10 +102,16 @@
   height: 0;
 }
 
-/* The scroll region: the box's sm cap less the 52px label row above it. The
-   ScrollArea's root and viewport inherit this (scroll-area.module.css), so
-   the tree scrolls once it is taller than the box has room for and a short
-   tree takes only its own height. */
+/* Exits run faster than entrances, so the close takes the panel step. */
+.panel[data-ending-style] {
+  transition-duration: var(--duration-sm);
+}
+
+/* The scroll region: the box's sm cap less the 52px label row above it,
+   so the open box draws at the mock's 384px. The ScrollArea's root and
+   viewport inherit this (scroll-area.module.css), so the tree scrolls once
+   it is taller than the box has room for and a short tree takes only its
+   own height. */
 .body {
   max-height: calc(var(--container-sm) - var(--spacing-4) * 2 - var(--leading-5));
 }
@@ -103,17 +124,18 @@
   overscroll-behavior: contain;
 }
 
-/* The mock's reveals: 16px of the box's own color fading over each edge,
-   telling the reader there are rows past it. Base UI sets data-overflow-y-
-   start and data-overflow-y-end on the root while there is something to
-   scroll to on that side, so each fade shows only when it means something. */
+/* The control panel's fade (demo-layout.module.css), one over each edge:
+   64px of the box's own color fading in over the rows, telling the reader
+   there are more past that edge. Base UI sets data-overflow-y-start and
+   data-overflow-y-end on the root while there is something to scroll to on
+   that side, so each fade shows only when it means something. */
 .fadeTop,
 .fadeBottom {
   position: absolute;
   right: 0;
   left: 0;
   z-index: 1;
-  height: var(--spacing-4);
+  height: var(--spacing-16);
   opacity: 0;
   pointer-events: none;
   transition: opacity var(--fade-sm) var(--ease-out);
@@ -121,13 +143,25 @@
 
 .fadeTop {
   top: 0;
-  background: linear-gradient(to bottom, var(--bg-muted), transparent);
+  background: linear-gradient(
+    to bottom,
+    var(--bg-muted) 0%,
+    color-mix(in srgb, var(--bg-muted) 80%, transparent) 39%,
+    transparent 100%
+  );
 }
 
+/* The bottom fade's corners match the box's radius so the gradient stays
+   inside its outline. */
 .fadeBottom {
   bottom: 0;
   border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-  background: linear-gradient(to top, var(--bg-muted), transparent);
+  background: linear-gradient(
+    to top,
+    var(--bg-muted) 0%,
+    color-mix(in srgb, var(--bg-muted) 80%, transparent) 39%,
+    transparent 100%
+  );
 }
 
 .scroller[data-overflow-y-start] .fadeTop,
@@ -137,9 +171,9 @@
 
 /* ---- The tree ---- */
 
-/* Groups 16px apart on the box's 16px inset, with no top padding: each
-   group header carries its own 16px above the text, so the first header's
-   text sits 16px under the label row, at the mock's y=68. */
+/* The tree on the box's 16px inset with no top padding, so the first
+   group's rule sits at 52px, straight under the label row. Groups are 16px
+   apart, and that gap is the air above each rule. */
 .tree {
   display: flex;
   flex-direction: column;
@@ -147,16 +181,25 @@
   padding: 0 var(--spacing-4) var(--spacing-4);
 }
 
+/* A group opens the way the control panel's sections do: a hairline rule,
+   12px of air, then a 24px header row. The tree's 16px gap sits above the
+   rule, so group to group reads as 16, rule, 12, the mock's rhythm, and the
+   first rule sits at 52px, straight under the label row. Mirrors .section in
+   controls.module.css, including the 1px the border adds over the mock's
+   inside stroke. */
 .group {
   display: flex;
   flex-direction: column;
+  gap: var(--spacing-2);
+  padding-top: var(--spacing-3);
+  border-top: var(--border-width-1) solid var(--white-a5);
 }
 
-/* A group header: 12px semibold in the mock's gray-50 on a 16px line, 16px
-   above the text and 12px below it, which puts the first row 44px under the
-   group's top edge as in the mock. */
+/* The 24px header row with its 12px text centred, as .sectionHeader draws. */
 .groupHeader {
-  padding: var(--spacing-4) 0 var(--spacing-3);
+  display: flex;
+  align-items: center;
+  height: var(--spacing-6);
   font-size: var(--font-size-xs);
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-4);
@@ -183,7 +226,7 @@
   padding: var(--spacing-1) 0;
   font-size: var(--font-size-xs);
   line-height: var(--leading-4);
-  color: var(--gray-200);
+  color: var(--fg-muted);
   text-decoration: none;
   transition: color var(--fade-xs) var(--ease-hover);
 }

@@ -11,7 +11,7 @@
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useId, useState } from 'react';
+import { type RefObject, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { Collapsible } from '@base-ui/react/collapsible';
 
@@ -56,6 +56,34 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
   const open = openedOn === pathname;
   const close = () => setOpenedOn(null);
 
+  // The element that scrolls, and the current page's row inside it.
+  const viewportRef = useRef<HTMLDivElement>(null);
+  const currentRowRef = useRef<HTMLAnchorElement>(null);
+
+  // On open, put the current page's row in the middle of the scroll region,
+  // the way the sidebar keeps its place. A layout effect on `open` because
+  // Base UI's Panel renders its DOM in the same render that hands it
+  // open=true (shouldRender in useCollapsiblePanel.js includes `open`), so
+  // by the time this runs the commit has attached both refs, and a write
+  // here lands before the frame paints. A callback ref on the row would
+  // only be needed if the panel mounted a tick later. The write goes to the
+  // viewport's scrollTop rather than scrollIntoView, which would also
+  // scroll the window to bring the row into view; the window must not
+  // move. Nothing to do on a page with no row, such as the components
+  // index, and on a tree shorter than the cap the viewport clamps the
+  // write to zero.
+  useLayoutEffect(() => {
+    const viewport = viewportRef.current;
+    const row = currentRowRef.current;
+
+    if (!open || !viewport || !row) return;
+
+    const rowTop =
+      row.getBoundingClientRect().top - viewport.getBoundingClientRect().top + viewport.scrollTop;
+
+    viewport.scrollTop = rowTop - (viewport.clientHeight - row.offsetHeight) / 2;
+  }, [open]);
+
   return (
     <Collapsible.Root
       className={styles.root}
@@ -81,10 +109,12 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
               </>
             }
             viewportClassName={styles.viewport}
+            viewportRef={viewportRef}
           >
             <nav aria-label="Docs menu" className={styles.tree} data-pagefind-ignore="all">
               {tree.map((group) => (
                 <Group
+                  currentRowRef={currentRowRef}
                   group={group}
                   key={group.label}
                   level={2}
@@ -105,6 +135,8 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
 // ----------------------------------------------------------------------------
 
 interface GroupProps {
+  /** Attached to the current page's row, which the open effect scrolls to. */
+  currentRowRef: RefObject<HTMLAnchorElement | null>;
   group: ResolvedNavGroup;
   /** Which heading this group's label is: h2 at the top, h3 inside a group. */
   level: 2 | 3;
@@ -122,7 +154,7 @@ interface GroupProps {
 // in the document's outline. aria-labelledby ties the list to its heading,
 // so a screen reader announces "Gradients, list, 4 items" instead of an
 // unlabelled list. Mirrors the docs sidebar.
-function Group({ group, level, onRowClick, pathname }: GroupProps) {
+function Group({ currentRowRef, group, level, onRowClick, pathname }: GroupProps) {
   const headingId = useId();
   const Heading = level === 2 ? 'h2' : 'h3';
 
@@ -135,7 +167,13 @@ function Group({ group, level, onRowClick, pathname }: GroupProps) {
         {group.items.map((item) =>
           'items' in item ? (
             <li key={item.label}>
-              <Group group={item} level={3} onRowClick={onRowClick} pathname={pathname} />
+              <Group
+                currentRowRef={currentRowRef}
+                group={item}
+                level={3}
+                onRowClick={onRowClick}
+                pathname={pathname}
+              />
             </li>
           ) : (
             <li key={item.url}>
@@ -144,6 +182,7 @@ function Group({ group, level, onRowClick, pathname }: GroupProps) {
                 className={styles.row}
                 href={item.url}
                 onClick={onRowClick}
+                ref={item.url === pathname ? currentRowRef : undefined}
               >
                 {item.label}
               </Link>
