@@ -61,7 +61,12 @@
    sets data-overflow-y-end on the root while there is something left to
    scroll to, so a short panel keeps its last row at full strength. The
    corners match the panel's radius so the gradient stays inside its
-   outline. */
+   outline. The md fade step on ease-in-out, not the sm step on ease-out:
+   sm is the opacity half of a popup arriving or leaving, and this gradient
+   never arrives. It stays where it is and changes strength as the reader
+   scrolls, which is the job ease-in-out is named for in the token set. The
+   lg step would lag the scroll, because the state flips with the scroll
+   position. */
 .fade {
   position: absolute;
   right: 0;
@@ -78,7 +83,7 @@
   );
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--fade-sm) var(--ease-out);
+  transition: opacity var(--fade-md) var(--ease-in-out);
 }
 
 .scroller[data-overflow-y-end] .fade {

@@ -84,6 +84,14 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
     viewport.scrollTop = rowTop - (viewport.clientHeight - row.offsetHeight) / 2;
   }, [open]);
 
+  // A tree whose groups hold groups takes larger top-level headers, so that
+  // a parent reads as the parent of the groups under it. Read off the tree
+  // rather than handed down as a look, the way the sidebar does it. The
+  // `|| undefined` is what drops the attribute on a flat tree: React writes
+  // a literal false out as data-nests="false", and [data-nests] matches any
+  // value, that string included.
+  const nests = tree.some((group) => group.items.some((item) => 'items' in item));
+
   return (
     <Collapsible.Root
       className={styles.root}
@@ -111,7 +119,12 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
             viewportClassName={styles.viewport}
             viewportRef={viewportRef}
           >
-            <nav aria-label="Docs menu" className={styles.tree} data-pagefind-ignore="all">
+            <nav
+              aria-label="Docs menu"
+              className={styles.tree}
+              data-nests={nests || undefined}
+              data-pagefind-ignore="all"
+            >
               {tree.map((group) => (
                 <Group
                   currentRowRef={currentRowRef}
