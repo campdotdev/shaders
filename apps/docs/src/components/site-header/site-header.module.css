@@ -12,8 +12,8 @@
    the dots would sit on top of the links. The same z-index is also what
    keeps the header, and its hamburger, above the site nav's overlay while
    the nav is open: nothing in that portal has a z-index, and the hamburger
-   is the nav's Close (site-nav.module.css), so a change here breaks the
-   nav's close. */
+   is the nav's visible Close (site-nav.module.css), so a change here breaks
+   that close. Escape, a backdrop press, and the sr-only Close survive it. */
 .header {
   position: relative;
   z-index: 1;

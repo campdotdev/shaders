@@ -71,9 +71,10 @@ export function SiteNav() {
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className={styles.backdrop} />
-        {/* Focus lands on the popup itself, Base UI's full-screen pattern:
-            a pointer open paints no focus ring on Docs, and a screen reader
-            hears the dialog's title. */}
+        {/* Focus goes to the popup itself on every open, so a pointer open
+            paints no focus ring on Docs and a screen reader hears the
+            dialog's title. Base UI's default does that for touch opens
+            only and otherwise focuses the first tabbable link. */}
         <Dialog.Popup className={styles.popup} initialFocus={popupRef} ref={popupRef}>
           <Dialog.Title className={styles.srOnly}>Site navigation</Dialog.Title>
           <nav aria-label="Site" className={styles.links}>

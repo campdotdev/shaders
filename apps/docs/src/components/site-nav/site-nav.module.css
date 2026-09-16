@@ -7,12 +7,24 @@
    Stacking: the portal's div is a sibling after .site in <body>, so the
    overlay paints over the page on tree order, and the header paints over
    the overlay, because .header is position: relative; z-index: 1
-   (site-header.module.css) and nothing in the portal has a z-index. .site
-   establishes no stacking context: its container-type: inline-size applies
-   style and inline-size containment only, and neither makes one, so the
-   header's 1 competes at the root and wins. The nav depends on that order,
-   because the header's trigger is the Close while the nav is open, and
-   nothing here needs a z-index of its own. */
+   (site-header.module.css) and nothing in the portal has a z-index. The
+   rule this depends on: the root stacking context holds only site chrome
+   at a positive z-index, and a component that uses z-index inside itself
+   isolates its own root (isolation: isolate), or its numbers reach the
+   root and draw over this nav. The docs nav dropdown and the control
+   panel's scroll area are the two that do (docs-nav-dropdown.module.css,
+   demo-layout.module.css), and the shared scroll area isolates itself for
+   its bar (scroll-area.module.css). .site establishes no stacking context:
+   its container-type: inline-size applies style and inline-size
+   containment only, and neither makes one, so the header's 1 competes at
+   the root and wins. That holds from Chrome 129, Firefox 133, and Safari
+   18.4, where container-type stopped applying layout containment
+   (browser-compat-data, container-type.weak_containment). Before those,
+   .site is a stacking context, the overlay covers the header, and the
+   closes are a backdrop press, Escape, and the sr-only Close button. The
+   nav depends on the order above, because the header's trigger is the
+   visible Close while the nav is open, and nothing here needs a z-index of
+   its own. */
 
 /* ---- The trigger ---- */
 
@@ -104,9 +116,9 @@
 /* ---- The overlay ---- */
 
 /* The mock's backdrop: the page black at 90% over the page blurred behind
-   it, edge to edge. The header row is the one thing that stays sharp,
-   because it paints above this (see the file-top comment); the banner
-   behind that row blurs like everything else. It fades on the larger step,
+   it, edge to edge. The header row stays sharp because it is the one thing
+   painted above this backdrop, per the file-top note; the banner behind
+   that row blurs like everything else. It fades on the larger step,
    since it covers the whole screen, and opacity is a fade token so it still
    fades under Reduce Motion.
 
@@ -133,8 +145,10 @@
 
 /* The popup is the whole viewport, transparent, on the phone gutter. Its
    56px top padding is the header row's height, so its content starts under
-   the row the real header keeps drawing on top, and nothing in here sits at
-   the row's height. It fades in and rises 8px: opacity on the fade token
+   the row the real header keeps drawing on top, and nothing rendered in
+   here sits at the row's height: the sr-only title and Close have boxes
+   there by their -1px margin, clipped to nothing. It fades in and rises
+   8px: opacity on the fade token
    and the rise on the duration token, so Reduce Motion keeps the fade and
    drops the travel. The exit runs on the smaller step, because leaving
    should be quicker than arriving.
@@ -226,12 +240,16 @@
   border-radius: var(--radius-sm);
 }
 
+/* border: 0 because the Close is a <button>, whose user-agent border would
+   otherwise grow the 1px box to the border sum. Clipped either way; this
+   keeps the box the size the rule says. */
 .srOnly {
   position: absolute;
   width: 1px;
   height: 1px;
   padding: 0;
   margin: -1px;
+  border: 0;
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;

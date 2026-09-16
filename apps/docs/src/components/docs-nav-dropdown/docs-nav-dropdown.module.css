@@ -8,9 +8,15 @@
 /* Hidden on a wide viewport, where the sidebar shows the same tree. The
    shell renders both and this query is the only switch, so the two can
    never both show or both hide. 24px below the banner, the mock's gap.
-   Positioned so the hairline overlay below can cover it. */
+   Positioned so the hairline overlay below can cover it, and isolated
+   because that overlay and the two fades carry z-indexes: the site nav
+   paints above the page at the root, and its overlay is z-index: auto, so
+   any component z-index that escapes to the root draws over the nav, which
+   is how this hairline showed crisp through the blurred overlay. Isolation
+   keeps this component's numbers its own. */
 .root {
   position: relative;
+  isolation: isolate;
   display: none;
   margin-top: var(--spacing-6);
   background: var(--gray-900);

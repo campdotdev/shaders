@@ -182,7 +182,10 @@ a:hover {
    fixed popup inside a size container is a question that never comes up
    when the popup sits outside it. The second container, `docs-main`, is the
    docs shell's main column (docs-shell.module.css); the demo grid and the
-   page TOC query it, so the grid stacks and the TOC hides at one width. */
+   page TOC query it, so the grid stacks and the TOC hides at one width.
+   `.site` is not a stacking context, because container-type applies no
+   layout containment, and the site nav's overlay depends on it staying
+   that way (site-nav.module.css). */
 .site {
   container: site / inline-size;
 }
