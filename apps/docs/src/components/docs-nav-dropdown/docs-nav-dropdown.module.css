@@ -116,15 +116,15 @@
   max-height: calc(var(--container-sm) - var(--spacing-4) * 2 - var(--leading-5));
 }
 
-/* No rule for the element that scrolls, and no overscroll-behavior:
-   contain on it, deliberately. The box caps at 384px, which the components
-   tree runs well past, so the range in here is spent in a flick, and
-   containing it would swallow every tick after that: the control panel's
-   bug in a smaller box (demo-layout.module.css). Reaching either end hands
-   the gesture to the page instead, so a reader who opens the menu, picks
-   nothing, and keeps scrolling is never stuck. The docs sidebar
-   (docs-sidebar.module.css) is the one scroll region on the site that still
-   contains its overscroll. */
+/* No rule of its own for the element that scrolls, and no
+   overscroll-behavior: contain on it, deliberately. The box caps at 384px,
+   which the components tree runs well past, so the range in here is spent
+   in a flick, and containing it would swallow every tick after that: the
+   control panel's bug in a smaller scroll region (demo-layout.module.css).
+   Reaching either end hands the gesture to the page instead, so a reader
+   who opens the menu, picks nothing, and keeps scrolling is never stuck.
+   The docs sidebar (docs-sidebar.module.css) is the one scroll region on
+   the site that still contains its overscroll. */
 
 /* The control panel's fade (demo-layout.module.css), one over each edge:
    64px of the box's own color fading in over the rows, telling the reader

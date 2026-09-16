@@ -43,7 +43,13 @@
    reader who flicks the sidebar and watches the page leave cannot tell that
    from a sidebar that will not scroll. Opted into here rather than in the
    shared ScrollArea, which code blocks, search, and the table of contents
-   also use. */
+   also use. It is the last overscroll-behavior: contain in the docs app:
+   the demo control panel (demo-layout.module.css) and the nav dropdown
+   (docs-nav-dropdown.module.css) both deliberately dropped theirs, and each
+   says why in its own comment. The sidebar keeps it because it shows only
+   above 48rem of the site container, where the reader usually has a pointer
+   and a trapped gesture costs no more than moving it off the tree; the same
+   trap on a phone would leave them on a page that will not scroll. */
 .viewport {
   overscroll-behavior: contain;
 }
