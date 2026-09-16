@@ -2,15 +2,14 @@
 
 /**
  * The site navigation on a narrow viewport, after the Figma mock: a
- * hamburger at the right of the header row that blurs the page below the
- * row and opens Docs and Examples right-aligned in large type under it,
- * with the GitHub link at the bottom. The header row itself stays sharp and
- * keeps its own logo, so the overlay draws nothing there but the close
- * control, which lands on the hamburger it replaces. The header renders
- * this beside its link row and CSS shows one or the other at 40rem of the
- * site container. A Base UI Dialog rather than a Drawer: the overlay fades
- * in over the page, nothing slides from an edge or is swiped away, and
- * Dialog brings the focus trap, scroll lock, Escape, and close button.
+ * hamburger at the right of the header row that opens a full-screen overlay
+ * over the blurred page, carrying its own row of the logo and a close
+ * control on the header's geometry, Docs and Examples right-aligned in
+ * large type under it, and the GitHub link at the bottom. The header
+ * renders this beside its link row and CSS shows one or the other at 40rem
+ * of the site container. A Base UI Dialog rather than a Drawer: the overlay
+ * fades in over the page, nothing slides from an edge or is swiped away,
+ * and Dialog brings the focus trap, scroll lock, Escape, and close button.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -20,6 +19,7 @@ import { Dialog } from '@base-ui/react/dialog';
 
 import { CloseIcon } from '@/components/icons/close';
 import { GitHubIcon } from '@/components/icons/github';
+import { LogoMark } from '@/components/icons/logo-mark';
 import { MenuIcon } from '@/components/icons/menu';
 import { REPO_URL, SITE_LINKS } from '@/components/site-header/links';
 
@@ -57,6 +57,9 @@ export function SiteNav() {
         <Dialog.Popup className={styles.popup} initialFocus={closeRef}>
           <Dialog.Title className={styles.srOnly}>Site navigation</Dialog.Title>
           <div className={styles.bar}>
+            <Link aria-label="Shaders home" className={styles.logo} href="/" onClick={close}>
+              <LogoMark />
+            </Link>
             <Dialog.Close className={styles.close} ref={closeRef}>
               Close
               <CloseIcon />

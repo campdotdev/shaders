@@ -1,14 +1,13 @@
 /* The narrow-viewport site navigation after the Figma mock: the hamburger
-   in the header row, and the overlay it opens, which blurs the page from
-   the bottom of that row down and leaves the real header sharp above it.
-   The overlay is portaled to <body>, outside the site container, so nothing
-   in here can query it: the popup carries the phone gutter itself, which is
-   safe because the trigger only shows under 40rem. Nothing here needs a z-index
-   either. The header lifts itself to z-index 1 over the banner's shader,
-   but .site sets container-type: inline-size, whose layout containment
-   makes it a stacking context, so that 1 cannot escape it. The portal's
-   div is a sibling after .site in <body>, so the overlay paints over the
-   whole page on tree order alone. */
+   in the header row, and the full-screen overlay it opens over the blurred
+   page. The overlay is portaled to <body>, outside the site container, so
+   nothing in here can query it: the popup carries the phone gutter itself,
+   which is safe because the trigger only shows under 40rem. Nothing here
+   needs a z-index either. The header lifts itself to z-index 1 over the
+   banner's shader, but .site sets container-type: inline-size, whose layout
+   containment makes it a stacking context, so that 1 cannot escape it. The
+   portal's div is a sibling after .site in <body>, so the overlay paints
+   over the whole page on tree order alone. */
 
 /* ---- The trigger ---- */
 
@@ -40,8 +39,9 @@
   outline-offset: var(--border-width-2);
 }
 
-/* While the nav is open the overlay's X lands on this glyph, and neither
-   button has a background, so the hamburger would show through behind it.
+/* While the nav is open the overlay's X lands on this glyph. The backdrop
+   between them is --black-a90, so a tenth of what is behind it still comes
+   through, blurred, and an unhidden hamburger would ghost under the X.
    Base UI stamps data-popup-open on a dialog trigger; the Collapsible in
    docs-nav-dropdown uses data-panel-open, so the names differ per component.
    visibility rather than display keeps the button in the flex row, so
@@ -53,23 +53,20 @@
 /* ---- The overlay ---- */
 
 /* The mock's backdrop: the page black at 90% over the page blurred behind
-   it. It starts 56px down, the height of the header row, so that strip
-   stays sharp and the real header reads through the overlay, and everything
-   below the strip blurs. It fades on the larger step, since it covers the
-   rest of the screen, and opacity is a fade token so it still fades under
-   Reduce Motion.
+   it, edge to edge, so nothing of the page below stays sharp. It fades on
+   the larger step, since it covers the whole screen, and opacity is a fade
+   token so it still fades under Reduce Motion.
 
-   The floor carries the same guard the popup's does, offset by the row a
-   top of 56px costs it: the viewport a fixed element sizes against does not
-   grow as a mobile browser retracts its toolbars, so bottom: 0 on its own
-   can leave a strip uncovered at the bottom. 100dvh tracks the viewport
-   that is actually showing. Neither it nor the 12px blur is on the token
-   scale, because neither is a size: one is a viewport unit, the other a
-   filter radius. */
+   It floors at 100dvh, the guard the popup carries too: the viewport a
+   fixed element sizes against does not grow as a mobile browser retracts
+   its toolbars, so inset: 0 on its own can leave a strip uncovered at the
+   bottom, and 100dvh tracks the viewport that is actually showing. Neither
+   it nor the 12px blur is on the token scale, because neither is a size:
+   one is a viewport unit, the other a filter radius. */
 .backdrop {
   position: fixed;
-  inset: var(--spacing-14) 0 0;
-  min-height: calc(100dvh - var(--spacing-14));
+  inset: 0;
+  min-height: 100dvh;
   background: var(--black-a90);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -87,13 +84,13 @@
    The exit runs on the smaller step, because leaving should be quicker
    than arriving.
 
-   It covers the viewport, but only its controls are hit-testable: .close,
-   .link, and .iconLink each take pointer events back, and a press on any
-   other pixel of the overlay reaches the backdrop instead, which is what
-   Base UI dismisses on. The rows in between deliberately do not take them
-   back, because a flex item in this column stretches to the full content
-   width, so a row would swallow presses either side of its control,
-   including the band where the real header's logo shows through. Escape
+   It covers the viewport, but only its controls are hit-testable: .logo,
+   .close, .link, and .iconLink each take pointer events back, and a press
+   on any other pixel of the overlay reaches the backdrop instead, which is
+   what Base UI dismisses on. The rows in between deliberately do not take
+   them back, because a flex item in this column stretches to the full
+   content width, so a row would swallow presses either side of its
+   controls, including the whole span between the logo and the X. Escape
    never hit-tests, so the keyboard path does not depend on any of this. */
 .popup {
   position: fixed;
@@ -121,17 +118,30 @@
 
 /* ---- The bar ---- */
 
-/* The header's row again, 56px on the same 16px gutter, but holding only
-   the close control: the strip above the backdrop is unblurred, so the real
-   header's logo shows through on the left and this draws nothing there.
-   Matching the row's height and gutter is what lines the X up with the
-   hamburger it covers; the last 6px of that is on .close below. */
+/* The overlay's own header row: 56px with the logo mark at the left and the
+   close control at the right, on the popup's 16px gutter. The height and
+   gutter are the header row's, so the mark keeps its place and the X lands
+   on the hamburger as the overlay opens over them. The X owes its last 6px
+   to .close below. The mock's nav frame insets its mark to 24px rather than
+   16px; the header's figure is the one followed here, because these two
+   marks sit one on top of the other and any difference reads as a jump. */
 .bar {
   display: flex;
   flex: none;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   height: var(--spacing-14);
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--spacing-9);
+  height: var(--spacing-9);
+  color: var(--accent);
+  border-radius: var(--radius-md);
+  pointer-events: auto;
 }
 
 /* "Close" in 14px with the 24px X 6px after it, the mock's pairing. The
@@ -202,6 +212,7 @@
   }
 }
 
+.logo:focus-visible,
 .close:focus-visible,
 .link:focus-visible,
 .iconLink:focus-visible {
