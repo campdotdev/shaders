@@ -53,19 +53,19 @@
 /* ---- The overlay ---- */
 
 /* The mock's backdrop: the page black at 90% over the page blurred behind
-   it. It starts 56px down, the height of the header row, so that row alone
-   stays sharp and the real header reads through the overlay while the
-   banner and everything under it blur. It fades on the larger step, since
-   it covers the rest of the screen, and opacity is a fade token so it still
-   fades under Reduce Motion.
+   it. It starts 56px down, the height of the header row, so that strip
+   stays sharp and the real header reads through the overlay, and everything
+   below the strip blurs. It fades on the larger step, since it covers the
+   rest of the screen, and opacity is a fade token so it still fades under
+   Reduce Motion.
 
    The floor carries the same guard the popup's does, offset by the row a
    top of 56px costs it: the viewport a fixed element sizes against does not
    grow as a mobile browser retracts its toolbars, so bottom: 0 on its own
    can leave a strip uncovered at the bottom. 100dvh tracks the viewport
-   that is actually showing. Two values in this rule are off the token
-   scale, and neither is a size: a viewport unit, and the 12px blur, which
-   is a filter radius. */
+   that is actually showing. Neither it nor the 12px blur is on the token
+   scale, because neither is a size: one is a viewport unit, the other a
+   filter radius. */
 .backdrop {
   position: fixed;
   inset: var(--spacing-14) 0 0;
@@ -87,13 +87,14 @@
    The exit runs on the smaller step, because leaving should be quicker
    than arriving.
 
-   It covers the viewport, but only the three rows below it hold anything,
-   so the rest of it stays transparent to pointers and each of those rows
-   takes pointer events back. Without that, every press in the overlay would
-   land on the popup, and Base UI dismisses only on a press whose target is
-   the backdrop element itself, so a tap on the blurred page would do
-   nothing. Escape never hit-tests and the close button sits in the first of
-   those rows, so neither path depends on this. */
+   It covers the viewport, but only its controls are hit-testable: .close,
+   .link, and .iconLink each take pointer events back, and a press on any
+   other pixel of the overlay reaches the backdrop instead, which is what
+   Base UI dismisses on. The rows in between deliberately do not take them
+   back, because a flex item in this column stretches to the full content
+   width, so a row would swallow presses either side of its control,
+   including the band where the real header's logo shows through. Escape
+   never hit-tests, so the keyboard path does not depend on any of this. */
 .popup {
   position: fixed;
   inset: 0;
@@ -131,7 +132,6 @@
   align-items: center;
   justify-content: flex-end;
   height: var(--spacing-14);
-  pointer-events: auto;
 }
 
 /* "Close" in 14px with the 24px X 6px after it, the mock's pairing. The
@@ -152,6 +152,7 @@
   font-size: var(--font-size-sm);
   line-height: var(--leading-5);
   cursor: pointer;
+  pointer-events: auto;
 }
 
 /* ---- The links ---- */
@@ -164,7 +165,6 @@
   align-items: flex-end;
   gap: var(--spacing-3);
   margin-top: var(--spacing-6);
-  pointer-events: auto;
 }
 
 .link {
@@ -173,6 +173,7 @@
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-9);
   transition: color var(--fade-xs) var(--ease-hover);
+  pointer-events: auto;
 }
 
 /* The GitHub mark at the bottom right, 24px up from the edge. */
@@ -181,7 +182,6 @@
   justify-content: flex-end;
   margin-top: auto;
   padding-bottom: var(--spacing-6);
-  pointer-events: auto;
 }
 
 .iconLink {
@@ -189,6 +189,7 @@
   color: var(--fg);
   border-radius: var(--radius-sm);
   transition: color var(--fade-xs) var(--ease-hover);
+  pointer-events: auto;
 }
 
 /* Hover styles are gated to pointing devices: a touch tap fires :hover too,
