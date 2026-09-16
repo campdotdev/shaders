@@ -1,8 +1,10 @@
 /* Site navigation after the Figma mock: one 56px row, logo mark at the left
    edge, links at the right, no divider underneath. The header element is the
-   page gutter and the row is the 9xl container (both in globals.css), so the
-   32px comes from the gutter and the 16px here, and the banner title below
-   lines up because it nests the same way. */
+   page gutter and the row is the 9xl container (both in globals.css), so on
+   a wide viewport the 32px comes from the gutter and the 16px here, and the
+   banner title below lines up because it nests the same way. Under 40rem the
+   gutter is 16px and this row's inset drops to 0, so the mark sits 16px from
+   the edge. */
 
 /* The header has no background: on the components routes the banner's
    shader reaches up behind it. That shader is a positioned layer painted

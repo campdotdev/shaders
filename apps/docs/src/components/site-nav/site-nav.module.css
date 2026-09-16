@@ -2,7 +2,12 @@
    in the header row, and the full-screen overlay it opens. The overlay is
    portaled to <body>, outside the site container, so nothing in here can
    query it: the popup carries the phone gutter itself, which is safe
-   because the trigger only shows under 40rem. */
+   because the trigger only shows under 40rem. Nothing here needs a z-index
+   either. The header lifts itself to z-index 1 over the banner's shader,
+   but .site sets container-type: inline-size, whose layout containment
+   makes it a stacking context, so that 1 cannot escape it. The portal's
+   div is a sibling after .site in <body>, so the overlay paints over the
+   whole page on tree order alone. */
 
 /* ---- The trigger ---- */
 
@@ -38,9 +43,14 @@
 
 /* The mock's backdrop: the page black at 90% over the page blurred behind
    it. It fades on the larger step, since it covers the whole screen, and
-   opacity is a fade token so it still fades under Reduce Motion. 100dvh so
-   the iOS toolbars cannot leave a strip uncovered. The blur is the one
-   value here not on a token: it is a filter radius, not a size. */
+   opacity is a fade token so it still fades under Reduce Motion. The blur
+   is the one value in this rule not on a token: it is a filter radius, not
+   a size.
+
+   Both this and the popup floor at 100dvh, and for the same reason: the
+   viewport a fixed element sizes against does not grow as a mobile browser
+   retracts its toolbars, so inset: 0 on its own can leave a strip
+   uncovered. 100dvh tracks the viewport that is actually showing. */
 .backdrop {
   position: fixed;
   inset: 0;
@@ -60,15 +70,24 @@
    fades in and rises 8px: opacity on the fade token and the rise on the
    duration token, so Reduce Motion keeps the fade and drops the travel.
    The exit runs on the smaller step, because leaving should be quicker
-   than arriving. */
+   than arriving.
+
+   It covers the viewport, but only the three rows below it hold anything,
+   so the rest of it stays transparent to pointers and each of those rows
+   takes pointer events back. Without that, every press in the overlay would
+   land on the popup, and Base UI dismisses only on a press whose target is
+   the backdrop element itself, so a tap on the blurred page would do
+   nothing. Escape never hit-tests and the close button sits in the first of
+   those rows, so neither path depends on this. */
 .popup {
   position: fixed;
   inset: 0;
   display: flex;
   flex-direction: column;
-  height: 100dvh;
+  min-height: 100dvh;
   padding: 0 var(--spacing-4);
   outline: none;
+  pointer-events: none;
   transition:
     opacity var(--fade-md) var(--ease-out),
     transform var(--duration-md) var(--ease-out);
@@ -86,7 +105,8 @@
 
 /* ---- The bar ---- */
 
-/* The header row again, 56px with the logo box at the left, so the mark
+/* The header row again, 56px with the logo box at the left, and the popup's
+   16px gutter matches the header's, so with the page at the top the mark
    does not move when the nav opens over it. */
 .bar {
   display: flex;
@@ -94,6 +114,7 @@
   align-items: center;
   justify-content: space-between;
   height: var(--spacing-14);
+  pointer-events: auto;
 }
 
 .logo {
@@ -133,6 +154,7 @@
   align-items: flex-end;
   gap: var(--spacing-3);
   margin-top: var(--spacing-6);
+  pointer-events: auto;
 }
 
 .link {
@@ -149,6 +171,7 @@
   justify-content: flex-end;
   margin-top: auto;
   padding-bottom: var(--spacing-6);
+  pointer-events: auto;
 }
 
 .iconLink {

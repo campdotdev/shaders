@@ -35,7 +35,9 @@ export function SiteNav() {
   // or back and forward. Without the reset a stale value would reopen the
   // nav on returning to the page it was opened on. A link to the current
   // page changes nothing, so links also close on click. Setting state during
-  // render on a prop change is React's documented pattern for this.
+  // render when a render input has changed is React's documented pattern for
+  // this; React's page names props, but the pattern is about any input, and
+  // here it is the pathname the router hook returns.
   const [openedOn, setOpenedOn] = useState<string | null>(null);
 
   if (openedOn !== null && openedOn !== pathname) setOpenedOn(null);

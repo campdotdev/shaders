@@ -200,6 +200,17 @@ a:hover {
   padding-inline: var(--spacing-8);
 }
 
+/* The phone gutter is 16px in total, and it is all here: a child that nests
+   inside it drops its own inset on the same query rather than adding to it,
+   so content sits 16px from the edge as in the mock. The header row is the
+   first to do that (site-header.module.css); the banner and the shell's
+   main column follow. */
+@container site (width < 40rem) {
+  .site-gutter {
+    padding-inline: var(--spacing-4);
+  }
+}
+
 .site-container {
   max-width: var(--container-9xl);
   margin-inline: auto;
