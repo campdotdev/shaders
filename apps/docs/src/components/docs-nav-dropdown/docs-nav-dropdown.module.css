@@ -62,6 +62,12 @@
   transform: rotate(180deg);
 }
 
+/* While open the tree sits under the row, so its focus ring squares off at
+   the bottom rather than rounding in the middle of the box. */
+.trigger[data-panel-open] {
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
 /* ---- The panel ---- */
 
 /* Base UI measures the panel and exposes its height as a custom property,
@@ -82,15 +88,11 @@
 }
 
 /* The scroll region: the box's sm cap less the 52px label row above it. The
-   ScrollArea's root and viewport inherit this, so the tree scrolls once it
-   is taller than the box has room for and a short tree takes only its own
-   height. */
+   ScrollArea's root and viewport inherit this (scroll-area.module.css), so
+   the tree scrolls once it is taller than the box has room for and a short
+   tree takes only its own height. */
 .body {
   max-height: calc(var(--container-sm) - var(--spacing-4) * 2 - var(--leading-5));
-}
-
-.scroller {
-  max-height: inherit;
 }
 
 /* Reaching the end of a 332px tree inside a page metres long otherwise hands
@@ -136,8 +138,8 @@
 /* ---- The tree ---- */
 
 /* Groups 16px apart on the box's 16px inset, with no top padding: each
-   group header carries its own 16px above the text, so the first sits the
-   mock's 12px under the label row's padding. */
+   group header carries its own 16px above the text, so the first header's
+   text sits 16px under the label row, at the mock's y=68. */
 .tree {
   display: flex;
   flex-direction: column;
