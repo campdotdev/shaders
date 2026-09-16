@@ -35,7 +35,7 @@
 
 /* The scroll area root, which the fade positions against. The height cap
    and the bar itself come from the shared ScrollArea's own styles; this
-   class exists so the fade rule below and the mobile override can name it. */
+   class exists so the fade rule below can name it. */
 .scroller {
   max-height: inherit;
 }
@@ -43,10 +43,17 @@
 /* The element that scrolls. It carries the panel's corner radius so the
    panel's sticky title row, which sits at this element's top edge once the
    panel has scrolled, is clipped to the same rounded corners the panel
-   itself has. */
+   itself has. Deliberately no overscroll-behavior: contain. The cap above
+   is the shader's height or the viewport's, never the panel's own content,
+   so what this element has to scroll is whatever little the panel overflows
+   by, which at the 4xl stage is 0.67px of Aurora (SHA-129). Containing the
+   overscroll would swallow every wheel tick past that range and the reader
+   would have to move the pointer off the panel to carry on down the page.
+   The docs sidebar does contain its overscroll (docs-sidebar.module.css),
+   because it is a tall tree the reader deliberately scrolls behind a
+   measured cap. */
 .viewport {
   border-radius: var(--radius-xl);
-  overscroll-behavior: contain;
 }
 
 /* The mock's "reveal": 64px of the panel's own color fading upward over its
@@ -83,7 +90,14 @@
    the column because the shell drops it on this same query, so the floor is
    512 shader + 16 gap + 288 panel + 40 inset = 856px, 53.5rem of the
    column, about a 1208px viewport with the sidebar up. Stacked, the
-   controls column stops being sticky and its height caps come off. The page
+   controls column stops being sticky and its cap changes rather than coming
+   off: 384px, the cap the nav dropdown's open box takes
+   (docs-nav-dropdown.module.css), so the two capped scroll regions on a
+   narrow page are the same height and the reader sees the shader with the
+   top of the panel under it rather than a panel that pushes the Usage
+   section a screen down. The cap reaches the element that scrolls through
+   max-height: inherit on the scroll area's root and viewport
+   (scroll-area.module.css), the chain the sticky column uses too. The page
    TOC hides on the same query. Playwright's 1280px viewport leaves a 928px
    column, so the visual suites still see two columns. */
 @container docs-main (width < 53.5rem) {
@@ -93,11 +107,6 @@
 
   .controls {
     position: static;
-    max-height: none;
-  }
-
-  .scroller,
-  .viewport {
-    max-height: none;
+    max-height: var(--container-sm);
   }
 }
