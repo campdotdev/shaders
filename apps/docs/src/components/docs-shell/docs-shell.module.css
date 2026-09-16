@@ -41,3 +41,16 @@
     padding-left: 0;
   }
 }
+
+/* Under 48rem of the site the sidebar column goes (the sidebar hides itself
+   in docs-sidebar.module.css on the same query) and main takes the whole
+   width. The content's 40px inset is already gone by then: it drops under
+   53.5rem of the column (the rule on .content above), and a column under
+   48rem of the site is at most 704px. 48rem rather than the phone layout's
+   40rem because between 640px and 768px a 288px aside leaves the content
+   248px to 376px wide. */
+@container site (width < 48rem) {
+  .shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

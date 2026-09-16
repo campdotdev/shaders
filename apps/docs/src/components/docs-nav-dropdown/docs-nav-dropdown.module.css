@@ -1,0 +1,207 @@
+/* The narrow-viewport docs navigation after the Figma mock: a 52px boxed
+   row that opens downward into the sidebar's tree, capped at the sm
+   container (384px) and scrolling past that. The box is the panel family's
+   darkest gray with the hairline and 12px corners. */
+
+/* ---- The box ---- */
+
+/* Hidden on a wide viewport, where the sidebar shows the same tree. The
+   shell renders both and this query is the only switch, so the two can
+   never both show or both hide. 24px below the banner, the mock's gap. */
+.root {
+  display: none;
+  margin-top: var(--spacing-6);
+  background: var(--gray-900);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-xl);
+}
+
+@container site (width < 48rem) {
+  .root {
+    display: block;
+  }
+}
+
+/* The label row: the current page's name in 14px semibold on a 20px line
+   with 16px all round, which is the mock's 52px, and the chevron at the far
+   right. The focus ring runs inside the box so it follows the corners. */
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  width: 100%;
+  margin: 0;
+  padding: var(--spacing-4);
+  background: transparent;
+  color: var(--fg);
+  border: 0;
+  border-radius: var(--radius-xl);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-5);
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: calc(-1 * var(--border-width-2));
+}
+
+/* The chevron points down at rest and flips while the panel is open, on the
+   icon step. Base UI stamps data-panel-open on the trigger. */
+.chevron {
+  flex: none;
+  color: var(--gray-200);
+  transition: transform var(--duration-xs) var(--ease-out);
+}
+
+.trigger[data-panel-open] .chevron {
+  transform: rotate(180deg);
+}
+
+/* ---- The panel ---- */
+
+/* Base UI measures the panel and exposes its height as a custom property,
+   so open and close animate as a height change, the same deliberate
+   exception to transform-and-opacity the control panel's disclosures make
+   (docs/development/animation.md). The larger-reveal step, because the
+   panel can be 332px tall. Under Reduce Motion the duration token is zero
+   and the panel simply appears. */
+.panel {
+  height: var(--collapsible-panel-height);
+  overflow: hidden;
+  transition: height var(--duration-md) var(--ease-out);
+}
+
+.panel[data-starting-style],
+.panel[data-ending-style] {
+  height: 0;
+}
+
+/* The scroll region: the box's sm cap less the 52px label row above it. The
+   ScrollArea's root and viewport inherit this, so the tree scrolls once it
+   is taller than the box has room for and a short tree takes only its own
+   height. */
+.body {
+  max-height: calc(var(--container-sm) - var(--spacing-4) * 2 - var(--leading-5));
+}
+
+.scroller {
+  max-height: inherit;
+}
+
+/* Reaching the end of a 332px tree inside a page metres long otherwise hands
+   the rest of the gesture to the page, which reads as the panel refusing to
+   scroll. Contain keeps the gesture here. The control panel's viewport does
+   the same, and so does the docs sidebar. */
+.viewport {
+  overscroll-behavior: contain;
+}
+
+/* The mock's reveals: 16px of the box's own color fading over each edge,
+   telling the reader there are rows past it. Base UI sets data-overflow-y-
+   start and data-overflow-y-end on the root while there is something to
+   scroll to on that side, so each fade shows only when it means something. */
+.fadeTop,
+.fadeBottom {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  height: var(--spacing-4);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--fade-sm) var(--ease-out);
+}
+
+.fadeTop {
+  top: 0;
+  background: linear-gradient(to bottom, var(--bg-muted), transparent);
+}
+
+.fadeBottom {
+  bottom: 0;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: linear-gradient(to top, var(--bg-muted), transparent);
+}
+
+.scroller[data-overflow-y-start] .fadeTop,
+.scroller[data-overflow-y-end] .fadeBottom {
+  opacity: 1;
+}
+
+/* ---- The tree ---- */
+
+/* Groups 16px apart on the box's 16px inset, with no top padding: each
+   group header carries its own 16px above the text, so the first sits the
+   mock's 12px under the label row's padding. */
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: 0 var(--spacing-4) var(--spacing-4);
+}
+
+.group {
+  display: flex;
+  flex-direction: column;
+}
+
+/* A group header: 12px semibold in the mock's gray-50 on a 16px line, 16px
+   above the text and 12px below it, which puts the first row 44px under the
+   group's top edge as in the mock. */
+.groupHeader {
+  padding: var(--spacing-4) 0 var(--spacing-3);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-4);
+  color: var(--gray-50);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A row: 12px muted text on a 16px line, 8px from the next, the mock's
+   24px pitch. The row is a 16px line in a 24px hit box: 4px of padding
+   each side pulled back with a matching negative margin, so a finger gets
+   the WCAG minimum without the rhythm changing. The current page is lime.
+   The mock draws no hover, so hover lifts the text to full white. */
+.row {
+  display: block;
+  margin: calc(-1 * var(--spacing-1)) 0;
+  padding: var(--spacing-1) 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
+  color: var(--gray-200);
+  text-decoration: none;
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the lift would then stick on the tapped row. */
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    color: var(--fg);
+    text-decoration: none;
+  }
+}
+
+.row[aria-current='page'],
+.row[aria-current='page']:hover {
+  color: var(--accent);
+}
+
+.row:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+  border-radius: var(--radius-xs);
+}

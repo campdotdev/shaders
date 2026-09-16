@@ -26,6 +26,15 @@
   max-height: calc(100vh - var(--sidebar-offset, 0px));
 }
 
+/* Under 48rem of the site the shell drops the aside column and renders the
+   same tree as a dropdown in main (docs-nav-dropdown/), so the sidebar
+   hides on the shell's query. */
+@container site (width < 48rem) {
+  .sidebar {
+    display: none;
+  }
+}
+
 /* The element that scrolls, inside the ScrollArea. Contained so that a
    gesture which reaches the end of the tree stops there: the components tree
    is over 1000px tall, and .sidebar above caps this box at the height the
