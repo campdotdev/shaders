@@ -11,7 +11,9 @@ If either is missing, continue without comment. Do not flag the absence, and do 
 
 ## Check the spec before you write an ADR
 
-`docs/superpowers/specs/` holds one spec per feature, and each spec ends with an Appendix A recording its decision history. Read the relevant spec first. If Appendix A already answers the question, cite the spec instead of copying the answer into `docs/adr/`.
+`docs/superpowers/specs/` holds one spec per feature, and every spec records its decisions. Read the relevant spec first. If it already answers the question, cite the spec instead of copying the answer into `docs/adr/`.
+
+Two section names carry that history, because the convention changed. Every spec has a `## Decisions` section near the top. Specs written before 2026-09-12 also close with `## Appendix A: decision history`, which holds the longer reasoning. Check both.
 
 `docs/superpowers/` is gitignored, so it is absent on a fresh clone. When it is absent, `docs/adr/` is the only decision record available.
 
