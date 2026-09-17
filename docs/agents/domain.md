@@ -9,13 +9,16 @@ How the engineering skills consume this repo's domain documentation. The layout 
 
 If either is missing, continue without comment. Do not flag the absence, and do not propose creating either up front. The `domain-modeling` skill creates them when a term or a decision actually resolves. `grill-with-docs` and `improve-codebase-architecture` both reach it.
 
-## Check the spec before you write an ADR
+## Check the existing record before you write an ADR
 
-`docs/superpowers/specs/` holds one spec per feature, and every spec records its decisions. Read the relevant spec first. If it already answers the question, cite the spec instead of copying the answer into `docs/adr/`.
+Read the decisions already made before you record a new one. If the question is answered, cite the answer instead of copying it into `docs/adr/`.
 
-Two section names carry that history, because the convention changed. Every spec has a `## Decisions` section near the top. Specs written before 2026-09-12 also close with `## Appendix A: decision history`, which holds the longer reasoning. Check both.
+Two places hold that history:
 
-`docs/superpowers/` is gitignored, so it is absent on a fresh clone. When it is absent, `docs/adr/` is the only decision record available.
+- **Linear**, on the Shaders team, for anything specced since 2026-09-17. `to-spec` publishes the spec as an issue, so the decisions sit in the issue and its comments.
+- **`docs/superpowers/specs/`**, for features that predate the switch. Every file there has a `## Decisions` section near the top, and files written before 2026-09-12 also close with `## Appendix A: decision history`, which holds the longer reasoning. Check both sections.
+
+`docs/superpowers/` is frozen and gitignored, so it is absent on a fresh clone. When it is absent, Linear and `docs/adr/` are the only decision records available.
 
 ## File structure
 

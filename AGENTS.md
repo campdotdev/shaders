@@ -4,18 +4,20 @@ You are working on **Shaders**, a React shader component library built on WebGPU
 
 ## Where to find things
 
-| You need…                              | Read…                                                                                                         |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| Feature specs and implementation plans | `docs/superpowers/specs/`, `docs/superpowers/plans/`                                                           |
-| The decisions behind a feature         | That feature's spec: its `## Decisions` section, plus `## Appendix A: decision history` on specs written before 2026-09-12 |
+| You need…                                | Read…                                                                       |
+| ---------------------------------------- | --------------------------------------------------------------------------- |
+| The spec for current or future work      | Linear, on the Shaders team. `to-spec` publishes the spec as an issue        |
+| Durable architecture decisions           | `docs/adr/`, written by `domain-modeling` as decisions resolve               |
+| The domain vocabulary                    | `CONTEXT.md` at the repo root                                               |
+| Specs and plans from the superpowers era | `docs/superpowers/specs/`, `docs/superpowers/plans/`, frozen. See the note   |
 
-> **Note.** `docs/superpowers/` holds the specs and plans, and it is gitignored, so it exists only on machines it has been synced to. On a fresh clone those paths are absent. This file plus git history are the portable orientation.
+> **Note.** `docs/superpowers/` is gitignored, so it exists only on machines it has been synced to, and a fresh clone has none of it. It holds the specs and plans written while this project ran the superpowers skill set. **Nothing writes there now**: `to-spec` publishes to Linear instead. Two of its specs still cover work in flight, the codebase map and the responsive docs shell, so read it for those until they land. Treat everything else in it as history.
 >
-> This table used to name a foundational design spec, `2026-05-02-shaders-design.md`, as the place to read the whole design. That file is not in the synced set on this machine, where `docs/superpowers/specs/` holds per-feature specs only. Treat the per-feature specs plus this file as the design of record until it turns up.
+> An earlier version of this table named a foundational design spec, `2026-05-02-shaders-design.md`. That file is not in the synced set on this machine. Until it turns up, this file plus Linear plus git history are the design of record.
 
-Milestone history lives in git tags and `docs/superpowers/plans/`. Don't trust any hardcoded status table. Check the tags.
+Milestone history lives in git tags and in Linear. Don't trust any hardcoded status table. Check the tags.
 
-**Division of labor.** `docs/superpowers/` holds the artifacts for work in flight right now, the spec and plan being built against today. Linear is the only place for project management and tracking. Backlog, deferred threads, and status live there, never in this file and never in a spec.
+**Division of labor.** Linear is the source of truth for specs, tickets, backlog, and status. `to-spec` publishes a spec as a Linear issue, and `to-tickets` breaks it into sub-issues carrying native blocking edges, so new work produces no spec file. Decisions that outlive their ticket go to `docs/adr/`, and shared vocabulary goes to `CONTEXT.md`. None of it belongs in this file.
 
 ## Project shape (30-second version)
 
@@ -24,7 +26,7 @@ Milestone history lives in git tags and `docs/superpowers/plans/`. Don't trust a
 - **The editor app is layered by dependency direction**, not by file type. `src/editor/graph/` is the framework-free core, holding the node registry, graph model, param store, live TSL compiler, and code emitter. `src/editor/preset/` handles save, load, undo, and copy-paste, and is also React-free. `src/editor/state/` is the React Flow glue. `canvas/`, `params/`, and `panels/` are UI. Dependencies point one way, toward `graph/`. Siblings import each other as `./x` and everything else as `@/editor/<folder>/<file>`. `vitest.config.ts` has to declare that `@` alias itself, because Vitest doesn't read tsconfig `paths`.
 - **Two rendering modes**, with no auto-detection of `@react-three/fiber`. In Mode 1 every Tier 1 component is bare and requires an explicit `<ShaderScene>` wrap, and you compose by stacking children in one scene. In Mode 2 you call `useShaderMaterial` inside your own r3f `<Canvas>`.
 
-Read the relevant feature spec for architecture, public APIs, and the animation signal protocol. Its decisions live in `## Decisions`, and specs written before 2026-09-12 also close with `## Appendix A: decision history`. The component catalog is `apps/docs/src/content/components.ts` plus the folders under `packages/shaders/src/components/`, not a spec.
+For architecture, public APIs, and the animation signal protocol, read the Linear issue for the work in hand, or the superpowers-era spec if the feature predates the switch. A spec file's decisions live in `## Decisions`, and files written before 2026-09-12 also close with `## Appendix A: decision history`. The component catalog is `apps/docs/src/content/components.ts` plus the folders under `packages/shaders/src/components/`, not a spec.
 
 ## Git and PR workflow
 
