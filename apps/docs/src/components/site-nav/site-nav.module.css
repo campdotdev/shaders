@@ -213,8 +213,9 @@
    56px top padding is the header row's height, so its content starts under
    the row the real header keeps drawing on top, and nothing rendered in
    here sits at the row's height: the sr-only title and Close have boxes
-   there by their -1px margin, clipped to nothing. It fades in and rises
-   8px: opacity on the fade token
+   there by their -1px margin, clipped to nothing. It scrolls when text zoom
+   makes the controls taller than the viewport, so the GitHub link remains
+   reachable. It fades in and rises 8px: opacity on the fade token
    and the rise on the duration token, so Reduce Motion keeps the fade and
    drops the travel. The exit runs on the smaller step, because leaving
    should be quicker than arriving.
@@ -235,6 +236,7 @@
   flex-direction: column;
   min-height: 100dvh;
   padding: var(--spacing-14) var(--spacing-4) 0;
+  overflow-y: auto;
   outline: none;
   pointer-events: none;
   transition:

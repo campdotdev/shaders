@@ -11,7 +11,7 @@
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type RefObject, useId, useLayoutEffect, useRef, useState } from 'react';
+import { type MouseEvent, type RefObject, useId, useLayoutEffect, useRef, useState } from 'react';
 
 import { Collapsible } from '@base-ui/react/collapsible';
 
@@ -27,6 +27,8 @@ interface DocsNavDropdownProps {
   /** The trigger's text on a page the tree has no row for, such as the components index. */
   fallbackLabel: string;
 }
+
+type RowClickHandler = (event: MouseEvent<HTMLAnchorElement>) => void;
 
 // How far from the top or bottom edge, in px, still counts as reaching it
 // before the fade over that edge goes off. At the end edge it matches the
@@ -72,13 +74,20 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
   // is about any input, and here it is the pathname the router hook
   // returns. It needs no effect: React discards this render's output and
   // re-renders with the new state before anything reaches the DOM. A row
-  // for the current page changes nothing, so rows also close on click.
+  // for the current page changes nothing, so an in-place row click also
+  // closes the panel before the route changes. A modified click leaves the
+  // original tab and its panel alone.
   const [openedOn, setOpenedOn] = useState<string | null>(null);
 
   if (openedOn !== null && openedOn !== pathname) setOpenedOn(null);
 
   const open = openedOn === pathname;
-  const close = () => setOpenedOn(null);
+  const closeOnNavigate: RowClickHandler = (event) => {
+    const navigatesHere =
+      event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
+
+    if (navigatesHere) setOpenedOn(null);
+  };
 
   // The element that scrolls, the current page's row inside it, and the box
   // the fades hang off.
@@ -197,7 +206,7 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
                   group={group}
                   key={group.label}
                   level={2}
-                  onRowClick={close}
+                  onRowClick={closeOnNavigate}
                   pathname={pathname}
                 />
               ))}
@@ -219,7 +228,7 @@ interface GroupProps {
   group: ResolvedNavGroup;
   /** Which heading this group's label is: h2 at the top, h3 inside a group. */
   level: 2 | 3;
-  onRowClick: () => void;
+  onRowClick: RowClickHandler;
   pathname: string;
 }
 

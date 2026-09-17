@@ -66,6 +66,8 @@ test('the dropdown replaces the sidebar and closes on navigation', async ({ page
   const row = page.locator('nav[aria-label="Docs menu"] a', { hasText: 'Vignette' });
 
   await expect(row).toBeVisible();
+  await row.dispatchEvent('click', { metaKey: true });
+  await expect(trigger).toHaveAttribute('aria-expanded', 'true');
   await row.click();
   await expect(page).toHaveURL('/components/vignette');
   await expect(page.getByRole('button', { name: 'Vignette' })).toHaveAttribute(
