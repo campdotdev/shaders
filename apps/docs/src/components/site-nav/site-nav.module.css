@@ -91,11 +91,14 @@
    no before-change style and nothing to animate from. @starting-style
    gives it one, and allow-discrete lands the flip at the start going
    forward and at the end coming back, so the label is on screen for the
-   whole of each direction. The rule that a Base UI popup needs no
-   @starting-style is about Base UI's own enter and exit, where it holds
-   [data-starting-style] for the first frame; the popup below is that case.
-   This is not: data-popup-open is a plain attribute toggle on an element
-   that never unmounts, which is the native-<dialog> half of the same rule.
+   whole of each direction. docs/development/animation.md prescribes that
+   pair and carries the sources, under "Base UI enter and exit patterns":
+   reach for it only for a plain element the site toggles through
+   display: none, rather than one Base UI drives through its own enter and
+   exit. This span is the first kind, because data-popup-open is a plain
+   attribute toggle on an element that never unmounts. The popup at the
+   bottom of this file is the second, where Base UI holds
+   [data-starting-style] for the first frame and needs neither.
 
    display rides --fade-sm, not --duration-sm, which is the one place here
    that departs from the house split of movement on --duration-* and
@@ -108,9 +111,14 @@
    Both steps match the glyph's outer rows, so the two halves of the
    control finish together. That is why the exit is not the shorter step
    the popup takes: cohesion inside one control wins over the general rule
-   that leaving is quicker than arriving. Base UI stamps data-popup-open on
-   a dialog trigger; the Collapsible in docs-nav-dropdown uses
-   data-panel-open, so the names differ per component. */
+   that leaving is quicker than arriving. One coupling to know before
+   shortening the popup's exit: focus returns to this trigger only after
+   the popup unmounts, so while that exit and the display hold above are
+   both --fade-sm, restoration lands after the label's flip and the focus
+   ring never outlines the button's wider, empty box. Base UI stamps
+   data-popup-open on a dialog trigger; the Collapsible in
+   docs-nav-dropdown uses data-panel-open, so the names differ per
+   component. */
 .label {
   display: none;
   opacity: 0;
