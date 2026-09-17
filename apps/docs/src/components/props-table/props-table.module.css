@@ -74,6 +74,23 @@
     border-top-left-radius: 0;
     border-top-right-radius: 0;
   }
+
+  /* The hairlines between rows run the full width, so they cut straight
+     across the corners of the hovered fill. Drop the two that touch it: the
+     one above is the hovered row's own border-top, and the one below is the
+     next row's. Clearing the color rather than the border keeps the 1px in
+     the box, so the rows underneath don't jump as the pointer moves down
+     the table. */
+  .row:has(.trigger:hover) {
+    border-top-color: transparent;
+  }
+
+  /* Only while the row is collapsed. Open, the row's bottom edge is the
+     panel's, not the trigger's, so that hairline sits well clear of the
+     curve and is the ordinary divider between two rows. */
+  .row:has(.trigger:hover:not([data-panel-open])) + .row {
+    border-top-color: transparent;
+  }
 }
 
 .trigger:focus-visible {
