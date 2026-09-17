@@ -221,7 +221,18 @@
    grid's own query from demo-layout.module.css, the same container at the
    same width. Nothing ties the two literals together, so an edit to one
    still has to be copied here, but as written they flip at one width and no
-   window can catch a stacked grid with the TOC still showing. */
+   window can catch a stacked grid with the TOC still showing.
+
+   This rule also holds up a z-index that has no guard of its own. .dock
+   takes z-index: 1 without isolating, so that 1 lands in the root stacking
+   context, where the site nav's overlay sits at no z-index at all: nothing
+   in its portal sets one (site-nav.module.css). The dock would paint over
+   that overlay on the 1 alone, the way the site header's own z-index: 1 is
+   meant to, and it would come out over the header too, being later in tree
+   order at the same level. Neither happens today, only because the nav
+   opens under 40rem of the site, where this column is at most 608px and the
+   rule below has already hidden the dock. Widen this query, or give the
+   dock a narrow layout of its own, and both do. */
 @container docs-main (width < 53.5rem) {
   .dock {
     display: none;

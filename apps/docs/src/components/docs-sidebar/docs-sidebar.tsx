@@ -62,6 +62,23 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
     // An expression rather than a declaration: a declaration hoists above
     // the null check, so TypeScript would not carry the narrowing into it.
     const measureOffset = () => {
+      // Under 48rem of the site the sidebar is display: none and the
+      // dropdown in main carries the tree instead, but this component still
+      // mounts and this listener still runs. The cap means nothing while
+      // the box is off screen, so a hidden sidebar does none of the work
+      // below: the write invalidates style on the nav, and the next scroll
+      // event's getBoundingClientRect has to flush that style back out, so
+      // a phone pays for the pair through a whole momentum scroll to set a
+      // custom property no rule is reading. offsetParent is the test
+      // because on an element like this one it is null exactly when
+      // display: none applies, to it or to an ancestor. It cannot misfire
+      // on a rendered sidebar: the other way to null it is position: fixed,
+      // and .sidebar is sticky (docs-sidebar.module.css), which keeps a
+      // normal offsetParent. Coming back into range is a resize, and that
+      // listener measures again in the same frame, so the cap is right
+      // before the box paints.
+      if (nav.offsetParent === null) return;
+
       const offset = Math.max(0, nav.getBoundingClientRect().top);
 
       nav.style.setProperty('--sidebar-offset', `${offset}px`);

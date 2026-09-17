@@ -29,10 +29,16 @@ interface DocsNavDropdownProps {
 }
 
 // How far from the top or bottom edge, in px, still counts as reaching it
-// before Base UI clears the root's data-overflow-y-* attributes. Matches
-// the tree's bottom padding, the control panel's reasoning (DemoLayout.tsx):
-// an overflow that small clips nothing but padding, so the last row is
-// fully visible and a fade over it would only hide it.
+// before Base UI clears the root's data-overflow-y-* attributes. At the end
+// edge it matches the tree's bottom padding, the control panel's reasoning
+// (DemoLayout.tsx): an overflow that small clips nothing but padding, so the
+// last row is fully visible and a fade over it would only hide it. The start
+// edge has no padding to match, because .tree sets none. What fills the
+// first 13px there is the opening group's hairline rule and the 12px of air
+// above its header, so an overflow inside the threshold is rule and air
+// rather than a row. Both edges take one value because the box caps at
+// 384px, where a second constant would be another number to keep in step
+// without earning it.
 const FADE_THRESHOLD_PX = 16;
 
 export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
@@ -44,11 +50,12 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
   // or back and forward. Clearing it, rather than only comparing, is what
   // keeps a return from reopening it: leave Aurora by a body link and press
   // back, and the stored path is already null rather than Aurora again.
-  // Setting state during render when a prop has changed is React's
-  // documented pattern for resetting state on a change, and it needs no
-  // effect: React discards this render's output and re-renders with the
-  // new state before anything reaches the DOM. A row for the current page
-  // changes nothing, so rows also close on click.
+  // Setting state during render when a render input has changed is React's
+  // documented pattern for this; React's page names props, but the pattern
+  // is about any input, and here it is the pathname the router hook
+  // returns. It needs no effect: React discards this render's output and
+  // re-renders with the new state before anything reaches the DOM. A row
+  // for the current page changes nothing, so rows also close on click.
   const [openedOn, setOpenedOn] = useState<string | null>(null);
 
   if (openedOn !== null && openedOn !== pathname) setOpenedOn(null);
