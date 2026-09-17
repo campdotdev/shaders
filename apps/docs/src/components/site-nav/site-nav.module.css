@@ -38,15 +38,23 @@
    around a 24px glyph that the header's logo has, and open it grows to fit
    the 14px label and the 6px gap while the glyph keeps its place: this is
    the last item of the header's space-between row, so growth can only go
-   left, and the glyph's right edge stays 6px in from the gutter. Hidden
-   until the header's link row hides on the same query
-   (site-header.module.css). */
+   left.
+
+   The negative right margin cancels that 6px of right padding. The box is
+   36px because it is a touch target, but the ink has to line up with Docs,
+   Examples, and the GitHub mark, which all sit at the popup's 16px gutter,
+   so the button overhangs its own gutter by exactly the padding that
+   centres the glyph. Dropping the padding instead would shrink the box to
+   30px and leave the focus ring hugging the glyph on the right with 6px of
+   air on the left. Hidden until the header's link row hides on the same
+   query (site-header.module.css). */
 .trigger {
   display: none;
   align-items: center;
   gap: var(--spacing-1-5);
   height: var(--spacing-9);
   margin: 0;
+  margin-right: calc(-1 * var(--spacing-1-5));
   padding: 0 var(--spacing-1-5);
   background: transparent;
   color: var(--fg);
