@@ -212,56 +212,38 @@
 
 /* The table sizes to whatever column it's given (a sidebar layout, a
    narrow window), so the breakpoint is the table's own width, not the
-   viewport's. Below it, the three columns stack: the prop name keeps the
-   chevron on its line, and the default and type drop underneath with a
-   label standing in for the hidden header band. */
+   viewport's. Below it the table drops to the prop name alone: the band
+   keeps its Props label, a collapsed row is the name and the chevron, and
+   the default and the type wait in the panel, which labels the type and,
+   where the prop has one, the default. */
 .table {
   container-type: inline-size;
 }
 
 @container (width < 40rem) {
+  /* One column, so the band is the Props label over the prop names. The
+     other two headings would title columns that are no longer here. */
   .head {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .headDefault,
+  .headType {
     display: none;
   }
 
   .trigger {
     grid-template-columns: minmax(0, 1fr) auto;
-    row-gap: var(--spacing-2);
-  }
-
-  /* Auto-placement would push the chevron below the stacked default and
-     type rows; pin it beside the prop name instead. */
-  .chevron {
-    grid-area: 1 / 2;
   }
 
   .default,
   .type {
-    grid-column: 1 / -1;
+    display: none;
   }
 
-  .type code {
-    height: auto;
-    padding: var(--spacing-1-5) var(--spacing-2);
-    white-space: normal;
-    overflow-wrap: anywhere;
-  }
-
-  .default::before,
-  .type::before {
-    margin-right: var(--spacing-2);
-    color: var(--gray-200);
-    font-family: var(--font-sans);
-  }
-
-  .default::before {
-    content: 'Default';
-  }
-
-  .type::before {
-    content: 'Type';
-  }
-
+  /* The label column doesn't fit beside the content at this width, so each
+     label sits above its cell. The tighter gap ties a label to the cell
+     under it, and the margin before the next term keeps the pairs apart. */
   .details {
     grid-template-columns: minmax(0, 1fr);
     row-gap: var(--spacing-2);
