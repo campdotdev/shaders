@@ -163,9 +163,26 @@ The spec puts all of these at v2 or later, even where they'd be easy: image and 
 
 The docs site deploys to a platform the author chooses at deployment time. Don't recommend a specific hosting platform. Ask.
 
+## Agent skills
+
+Configuration the mattpocock skill set reads. Each file below is the source of truth for its topic, and this section is the index.
+
+### Issue tracker
+
+Linear, on the Shaders team, with the `SHA-` prefix, reached through the Linear MCP server. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five canonical roles keep their default names as Linear labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root, both created lazily. See `docs/agents/domain.md`.
+
 ## Agent-specific notes
 
 - **Claude Code.** `CLAUDE.md` imports this file. Machine-local session memory lives outside the repo and is NOT synced across machines, so this file is the portable source of truth. Keep it current when durable preferences or gotchas emerge.
-- **Skill-capable agents** are Claude Code, Codex, and OpenCode. This project leans on the superpowers skill set, including brainstorming, systematic-debugging, TDD, and writing-plans, so install it per your harness. For agents without skill support, the shader process and workflow rules above are the load-bearing subset, so follow them directly.
-- **Skills from the mattpocock set** run alongside superpowers, not instead of it: `grilling`, `research`, `prototype`, `codebase-design`, `improve-codebase-architecture`, and `wayfinder`. `wayfinder` and `improve-codebase-architecture` both call `domain-modeling`, which is deliberately NOT installed, because its `CONTEXT.md` and `docs/adr/` layout would duplicate the decision history that already lives in each spec's Appendix A. Both skills degrade to generic vocabulary without it, which is the intended trade. `wayfinder` reads `docs/agents/issue-tracker.md` for its Linear operations, and that file is hand-written here because the upstream set ships tracker templates only for GitHub, GitLab, and local markdown.
+- **Skill-capable agents** are Claude Code, Codex, and OpenCode. This project uses the mattpocock skill set. Install it with `npx skills@latest add mattpocock/skills -g`, take the `engineering` and `productivity` groups, and skip `in-progress` and `misc`. Then run `setup-matt-pocock-skills` once, which reads and writes the three files indexed under "Agent skills" above. For agents without skill support, the shader process and workflow rules above are the load-bearing subset, so follow them directly.
+- **The mattpocock set replaced superpowers on 2026-09-17**, rather than running alongside it. The two overlap and compete: superpowers ships its own TDD and systematic-debugging, and its `using-superpowers` block forces a skill check before every response, which routes work to those rather than to `tdd`, `diagnosing-bugs`, and the `ask-matt` router. Two process layers fighting over the same tasks is worse than either alone, so this is an either/or. Treat it as a trial. Superpowers is commented out in the author's global OpenCode config rather than deleted, so reverting is a one-line change.
+- **`domain-modeling` is now installed**, reversing the earlier decision to leave it out. The original worry stands: its `CONTEXT.md` and `docs/adr/` layout can duplicate the decision history already in each spec's Appendix A. `docs/agents/domain.md` carries the guard, which is to read the spec first and cite Appendix A instead of copying it. Revisit if the duplication shows up anyway. `wayfinder` reads `docs/agents/issue-tracker.md` for its Linear operations, and that file is hand-written here because the upstream set ships tracker templates only for GitHub, GitLab, and local markdown.
 - **Repo-local skills live in `.claude/skills/`**, so they arrive with the clone and need no install. `.agents/skills/` is a plain-copy mirror of the same folders for Codex, which reads that path; when you edit a skill, copy it to both, and `diff -rq .claude/skills .agents/skills` should print nothing. `react-doctor` scans React diagnostics, and its `pnpm exec react-doctor` command replaces the upstream `npx` call on purpose. `design-engineering` is the exception: it lives in `~/.claude/skills/` on the author's machine, not in the repo, because it sits on top of Emil Kowalski's animations.dev skill set, which is also local. Load it for any motion or interaction-polish work in the docs site. The animations.dev skills (`animate` and its companions) carry the theory, and `design-engineering` wins where they disagree, on tokens, reduced motion, and Base UI patterns. Its first question is whether the thing should animate at all, keyed to how often the user sees it, and its values are the motion tokens in `apps/docs/src/app/tokens.css`, whose sources are in `docs/development/animation.md`. `resolve-coderabbit-feedback` works a PR's CodeRabbit findings end to end: it collects them, proposes each fix for approval, applies and validates them, then commits, pushes, and resolves the threads it addressed. Use it rather than reading the comments by hand, because CodeRabbit hides its nitpicks and outside-diff findings in the review body, where a query for inline comments never sees them.

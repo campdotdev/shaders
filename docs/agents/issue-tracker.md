@@ -32,7 +32,7 @@ Call `get_issue` with the `SHA-` identifier, then `list_comments` for the discus
 
 Used by `/wayfinder`. The **map** is one issue, and its tickets are child issues of it.
 
-**Prerequisite.** The five labels wayfinder needs do not exist on this team yet. The Shaders team currently carries only `Improvement`, `Feature`, and `Bug`. Create `wayfinder:map`, `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, and `wayfinder:task` with `mcp__linear__create_issue_label` before charting a first map.
+**Labels.** The five labels wayfinder needs already exist on this team: `wayfinder:map`, `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, and `wayfinder:task`. Do not recreate them.
 
 - **Map**: one issue labelled `wayfinder:map`, holding the `## Destination`, `## Notes`, `## Decisions so far`, `## Not yet specified`, and `## Out of scope` sections. Create it with `save_issue`, passing `team: "Shaders"` and `labels: ["wayfinder:map"]`.
 - **Child ticket**: an issue created with `parentId` set to the map's identifier, which makes it a Linear sub-issue and renders under the map in Linear's own UI. Label it `wayfinder:<type>`, one of `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, or `wayfinder:task`.
