@@ -77,18 +77,61 @@
   outline-offset: var(--border-width-2);
 }
 
-/* The label exists only in the open state: display rather than opacity, so
-   the closed trigger is exactly the 36px box with no invisible text
-   widening it. It comes before the glyph in DOM order, so it sits to the
-   glyph's left. Base UI stamps data-popup-open on a dialog trigger; the
-   Collapsible in docs-nav-dropdown uses data-panel-open, so the names
-   differ per component. */
+/* The label exists only in the open state, and fades in rather than
+   snapping, so it and the glyph beside it land together. It stays
+   display: none rather than collapsing to zero width: taking the flex item
+   out is what collapses .trigger's 6px gap and leaves the closed button at
+   exactly 36px, where a zero-width label would keep that gap and then need
+   it moved onto the label to pay it back. It comes before the glyph in DOM
+   order, so it sits to the glyph's left, and it arrives from 4px to its
+   right: the button grows leftward, so the space opens on the glyph's left
+   and the label settles into it rather than appearing from nowhere.
+
+   display is a discrete property, so an element leaving display: none has
+   no before-change style and nothing to animate from. @starting-style
+   gives it one, and allow-discrete lands the flip at the start going
+   forward and at the end coming back, so the label is on screen for the
+   whole of each direction. The rule that a Base UI popup needs no
+   @starting-style is about Base UI's own enter and exit, where it holds
+   [data-starting-style] for the first frame; the popup below is that case.
+   This is not: data-popup-open is a plain attribute toggle on an element
+   that never unmounts, which is the native-<dialog> half of the same rule.
+
+   display rides --fade-sm, not --duration-sm, which is the one place here
+   that departs from the house split of movement on --duration-* and
+   opacity on --fade-*. display is neither. It gates what is on screen, so
+   it has to outlast whatever keeps the element visible, and that is the
+   fade. On a --duration-* token Reduce Motion would zero it and flip the
+   label to none the instant the nav closes, deleting the fade-out that
+   Reduce Motion keeps the fade tokens alive to preserve.
+
+   Both steps match the glyph's outer rows, so the two halves of the
+   control finish together. That is why the exit is not the shorter step
+   the popup takes: cohesion inside one control wins over the general rule
+   that leaving is quicker than arriving. Base UI stamps data-popup-open on
+   a dialog trigger; the Collapsible in docs-nav-dropdown uses
+   data-panel-open, so the names differ per component. */
 .label {
   display: none;
+  opacity: 0;
+  transform: translateX(var(--spacing-1));
+  transition:
+    opacity var(--fade-sm) var(--ease-out),
+    transform var(--duration-sm) var(--ease-out),
+    display var(--fade-sm) allow-discrete;
 }
 
 .trigger[data-popup-open] .label {
   display: block;
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .trigger[data-popup-open] .label {
+    opacity: 0;
+    transform: translateX(var(--spacing-1));
+  }
 }
 
 /* The glyph: the 24 squares of menu-toggle.tsx, each moved from its bar to
