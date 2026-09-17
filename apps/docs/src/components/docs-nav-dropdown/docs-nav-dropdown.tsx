@@ -29,17 +29,34 @@ interface DocsNavDropdownProps {
 }
 
 // How far from the top or bottom edge, in px, still counts as reaching it
-// before Base UI clears the root's data-overflow-y-* attributes. At the end
-// edge it matches the tree's bottom padding, the control panel's reasoning
-// (DemoLayout.tsx): an overflow that small clips nothing but padding, so the
-// last row is fully visible and a fade over it would only hide it. The start
-// edge has no padding to match, because .tree sets none. What fills the
-// first 13px there is the opening group's hairline rule and the 12px of air
-// above its header, so an overflow inside the threshold is rule and air
-// rather than a row. Both edges take one value because the box caps at
-// 384px, where a second constant would be another number to keep in step
-// without earning it.
+// before the fade over that edge goes off. At the end edge it matches the
+// tree's bottom padding, the control panel's reasoning (DemoLayout.tsx): an
+// overflow that small clips nothing but padding, so the last row is fully
+// visible and a fade over it would only hide it. The start edge has no
+// padding to match, because .tree sets none. What fills the first 13px there
+// is the opening group's hairline rule and the 12px of air above its header,
+// so an overflow inside the threshold is rule and air rather than a row.
+// Both edges take one value because the box caps at 384px, where a second
+// constant would be another number to keep in step without earning it.
 const FADE_THRESHOLD_PX = 16;
+
+// Which edge has rows past it, written straight onto the box the fades sit
+// under rather than held in React state. The panel has to open with its
+// fades already at the right strength, and a state update would only reach
+// the DOM a render later, once the opening panel has painted a frame
+// without them. Base UI stamps this same state on the ScrollArea root as
+// data-overflow-y-start and -end, but it measures in a microtask and routes
+// the result through React state, so those attributes are exactly that
+// later render. Hence measuring here rather than reading them.
+function syncFadeEdges(viewport: HTMLElement, body: HTMLElement) {
+  const maxScroll = viewport.scrollHeight - viewport.clientHeight;
+  const scrollable = maxScroll > 0;
+  const fromStart = viewport.scrollTop;
+  const fromEnd = maxScroll - fromStart;
+
+  body.toggleAttribute('data-fade-top', scrollable && fromStart > FADE_THRESHOLD_PX);
+  body.toggleAttribute('data-fade-bottom', scrollable && fromEnd > FADE_THRESHOLD_PX);
+}
 
 export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
   const pathname = usePathname();
@@ -63,32 +80,75 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
   const open = openedOn === pathname;
   const close = () => setOpenedOn(null);
 
-  // The element that scrolls, and the current page's row inside it.
+  // The element that scrolls, the current page's row inside it, and the box
+  // the fades hang off.
   const viewportRef = useRef<HTMLDivElement>(null);
   const currentRowRef = useRef<HTMLAnchorElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
 
-  // On open, put the current page's row in the middle of the scroll region,
-  // the way the sidebar keeps its place. A layout effect on `open` because
-  // Base UI's Panel renders its DOM in the same render that hands it
-  // open=true (shouldRender in useCollapsiblePanel.js includes `open`), so
-  // by the time this runs the commit has attached both refs, and a write
-  // here lands before the frame paints. A callback ref on the row would
-  // only be needed if the panel mounted a tick later. The write goes to the
-  // viewport's scrollTop rather than scrollIntoView, which would also
-  // scroll the window to bring the row into view; the window must not
-  // move. Nothing to do on a page with no row, such as the components
-  // index, and on a tree shorter than the cap the viewport clamps the
-  // write to zero.
+  // Everything the panel opens with, settled in one layout effect on `open`
+  // so that all of it lands before the opening panel paints a frame. A
+  // layout effect works here because Base UI's Panel renders its DOM in the
+  // same render that hands it open=true (shouldRender in
+  // useCollapsiblePanel.js includes `open`), so by the time this runs the
+  // commit has attached every ref. A callback ref on the row would only be
+  // needed if the panel mounted a tick later.
   useLayoutEffect(() => {
     const viewport = viewportRef.current;
+    const body = bodyRef.current;
+
+    if (!open || !viewport || !body) return;
+
+    // Put the current page's row in the middle of the scroll region, the way
+    // the sidebar keeps its place. The write goes to the viewport's
+    // scrollTop rather than scrollIntoView, which would also scroll the
+    // window to bring the row into view; the window must not move. Nothing
+    // to do on a page with no row, such as the components index, and on a
+    // tree shorter than the cap the viewport clamps the write to zero.
     const row = currentRowRef.current;
 
-    if (!open || !viewport || !row) return;
+    if (row) {
+      const rowTop =
+        row.getBoundingClientRect().top - viewport.getBoundingClientRect().top + viewport.scrollTop;
 
-    const rowTop =
-      row.getBoundingClientRect().top - viewport.getBoundingClientRect().top + viewport.scrollTop;
+      viewport.scrollTop = rowTop - (viewport.clientHeight - row.offsetHeight) / 2;
+    }
 
-    viewport.scrollTop = rowTop - (viewport.clientHeight - row.offsetHeight) / 2;
+    // The edges, measured from the scroll position the centring just settled
+    // on. The fades carry no transition at this point, because the CSS only
+    // gives them one under data-fades-animate, so the panel opens with each
+    // edge simply on or off. That gate is the whole trick. A transition does
+    // not run on an element's first style computation, but reading layout
+    // forces one, and both the row's box above and the scroll metrics inside
+    // this call do exactly that before anything is written. So the write
+    // below is already the element's second computation, and without the
+    // gate it would fade both edges in over the whole open.
+    syncFadeEdges(viewport, body);
+
+    // Arm the transition two frames out. One frame is measurably not enough:
+    // a callback scheduled from here still runs inside the current frame's
+    // rendering steps, so the gate lands in the same style recalculation as
+    // the opacity it is meant to exclude and the fade animates anyway. A
+    // frame later the opened state is painted and nothing is left to
+    // animate, so from here on only scrolling moves them.
+    let armFades = requestAnimationFrame(() => {
+      armFades = requestAnimationFrame(() => body.setAttribute('data-fades-animate', ''));
+    });
+
+    // Keep the edges honest for the rest of the open: scrolling moves the
+    // position, and a rotation reflows the rows into a different height.
+    // Both run the same measurement, so neither can leave a stale edge.
+    const syncEdges = () => syncFadeEdges(viewport, body);
+    const resizeObserver = new ResizeObserver(syncEdges);
+
+    viewport.addEventListener('scroll', syncEdges);
+    resizeObserver.observe(viewport);
+
+    return () => {
+      cancelAnimationFrame(armFades);
+      viewport.removeEventListener('scroll', syncEdges);
+      resizeObserver.disconnect();
+    };
   }, [open]);
 
   // A tree whose groups hold groups takes larger top-level headers, so that
@@ -112,11 +172,11 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
       <Collapsible.Panel className={styles.panel}>
         {/* The cap lives on this box and flows into the ScrollArea's root
             and viewport through max-height: inherit, the control panel's
-            pattern (DemoLayout.tsx). */}
-        <div className={styles.body}>
+            pattern (DemoLayout.tsx). It also carries the three fade
+            attributes the layout effect writes, which is why it takes a
+            ref. */}
+        <div className={styles.body} ref={bodyRef}>
           <ScrollArea
-            className={styles.scroller}
-            overflowEdgeThreshold={{ yStart: FADE_THRESHOLD_PX, yEnd: FADE_THRESHOLD_PX }}
             overlay={
               <>
                 <div aria-hidden="true" className={styles.fadeTop} />

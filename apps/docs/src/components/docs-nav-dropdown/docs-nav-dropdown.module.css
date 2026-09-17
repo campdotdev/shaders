@@ -117,13 +117,17 @@
    so the open box draws at the mock's 384px. The ScrollArea's root and
    viewport inherit this (scroll-area.module.css), so the tree scrolls once
    it is taller than the box has room for and a short tree takes only its
-   own height. */
+   own height. This box is also where the three data-fade-* attributes
+   below land, because it is the nearest element the component renders
+   itself and so the nearest one it can hold a ref to. */
 .body {
   max-height: calc(var(--container-sm) - var(--spacing-4) * 2 - var(--leading-5));
 }
 
-/* No rule of its own for the element that scrolls, and no
-   overscroll-behavior: contain on it, deliberately. The box caps at 384px,
+/* The element that scrolls takes no class from this file at all: nothing
+   here styles it, and the fade state it used to hang off now sits on .body
+   above. No overscroll-behavior: contain on it either, deliberately. The
+   box caps at 384px,
    which the components tree runs well past, so the range in here is spent
    in a flick, and containing it would swallow every tick after that: the
    control panel's bug in a smaller scroll region (demo-layout.module.css).
@@ -134,14 +138,9 @@
 
 /* The control panel's fade (demo-layout.module.css), one over each edge:
    64px of the box's own color fading in over the rows, telling the reader
-   there are more past that edge. Base UI sets data-overflow-y-start and
-   data-overflow-y-end on the root while there is something to scroll to on
-   that side, so each fade shows only when it means something. The md fade
-   step on ease-in-out, not the sm step on ease-out: sm is the opacity half
-   of a popup arriving or leaving, and this gradient never arrives. It stays
-   where it is and changes strength as the reader scrolls, which is the job
-   ease-in-out is named for in the token set. The lg step would lag the
-   scroll, because the state flips with the scroll position. */
+   there are more past that edge. data-fade-top and data-fade-bottom say
+   which edge has rows past it; docs-nav-dropdown.tsx measures the scroll
+   region and writes them, on open and on every scroll after. */
 .fadeTop,
 .fadeBottom {
   position: absolute;
@@ -151,7 +150,6 @@
   height: var(--spacing-16);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--fade-md) var(--ease-in-out);
 }
 
 .fadeTop {
@@ -177,9 +175,27 @@
   );
 }
 
-.scroller[data-overflow-y-start] .fadeTop,
-.scroller[data-overflow-y-end] .fadeBottom {
+.body[data-fade-top] .fadeTop,
+.body[data-fade-bottom] .fadeBottom {
   opacity: 1;
+}
+
+/* The fade only animates once data-fades-animate is on the box, which
+   docs-nav-dropdown.tsx adds two frames into the open. Until then the two
+   rules above land with no transition, so the panel opens with whichever
+   edges it opens with rather than fading them in over the reveal. After
+   that it is scrolling that turns an edge on or off, and it should look
+   like a fade rather than a switch.
+
+   The md fade step on ease-in-out, not the sm step on ease-out: sm is the
+   opacity half of a popup arriving or leaving, and this gradient never
+   arrives. It stays where it is and changes strength as the reader
+   scrolls, which is the job ease-in-out is named for in the token set. The
+   lg step would lag the scroll, because the state flips with the scroll
+   position. */
+.body[data-fades-animate] .fadeTop,
+.body[data-fades-animate] .fadeBottom {
+  transition: opacity var(--fade-md) var(--ease-in-out);
 }
 
 /* ---- The tree ---- */
