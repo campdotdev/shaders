@@ -1,6 +1,7 @@
 /* Page shell for the shared component page template, in the mock's section
    order: breadcrumbs and header above the demo, Usage and API Reference
-   below it, then prev/next pagination. */
+   below it, then prev/next pagination, whose own look lives in
+   components/pagination. */
 
 /* The docs shell insets the page by 40px until the main column falls under
    53.5rem, where the inset drops (.content in docs-shell.module.css), and
@@ -86,56 +87,6 @@
 
 .prose p:first-child {
   margin-top: 0;
-}
-
-.pagination {
-  display: flex;
-  justify-content: space-between;
-}
-
-/* Prev and next are the mock's 32px pill buttons: a 14px label with a 16px
-   chevron on the outer side, on a dark fill with no border. */
-.paginationLink {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  height: var(--spacing-8);
-  padding: 0 var(--spacing-2);
-  background: var(--gray-800);
-  color: var(--fg);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-5);
-}
-
-/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
-   and the lighter fill would then stick on the tapped button. */
-@media (hover: hover) and (pointer: fine) {
-  .paginationLink:hover {
-    background: var(--gray-700);
-    text-decoration: none;
-  }
-}
-
-.paginationLink:focus-visible {
-  outline: var(--border-width-2) solid var(--accent);
-  outline-offset: var(--border-width-2);
-}
-
-/* The glyph points down; a quarter turn each way gives the left and right
-   arrows, which on the 16-unit pixel grid match the mock's own exports
-   exactly. The mock draws them in the muted gray against the white label. */
-.chevronPrevious,
-.chevronNext {
-  color: var(--fg-muted);
-}
-
-.chevronPrevious {
-  transform: rotate(90deg);
-}
-
-.chevronNext {
-  transform: rotate(-90deg);
 }
 
 /* Breadcrumbs are desktop chrome, so they go at the first width where the

@@ -1,7 +1,8 @@
 /* The MDX page: the article beside its "On this page" list. The prose has
    no design of its own yet (SHA-134); this file only holds the layout that
-   used to be inline, plus the width rules, so the page stops scrolling
-   sideways on a phone. */
+   used to be inline, the width rules that stop the page scrolling sideways
+   on a phone, and where the prev/next nav sits — that nav's own look is
+   shared with the component pages, in components/pagination. */
 
 /* Article in the remaining width, the list in a 208px column, 40px apart.
    min-width: 0 on the article lets a wide code block scroll inside it
@@ -19,6 +20,15 @@
 
 .breadcrumbs {
   margin-bottom: var(--spacing-6);
+}
+
+/* The prev/next nav closes the article, so it wants more air above it than
+   the 16px `.prose > * + *` in globals.css gives every other block. The
+   module rule is unlayered and that one sits in @layer base, so this wins
+   without needing the specificity. A component page gets the same 48px from
+   its .sections gap. */
+.pagination {
+  margin-top: var(--spacing-12);
 }
 
 /* Breadcrumbs are desktop chrome, so they go at the first width where the

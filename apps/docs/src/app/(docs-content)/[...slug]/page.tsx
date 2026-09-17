@@ -6,8 +6,8 @@ import rehypeSlug from 'rehype-slug';
 import remarkGfm from 'remark-gfm';
 
 import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
-import { PrevNext } from '@/components/docs/PrevNext';
 import { TableOfContents } from '@/components/docs/TableOfContents';
+import { Pagination } from '@/components/pagination/pagination';
 import { mdxComponents } from '@/content/mdx';
 import { getDocsBreadcrumbs, getDocsPrevNext } from '@/content/nav';
 import { getDocsPage, getDocsStaticParams } from '@/content/source';
@@ -58,7 +58,7 @@ export default async function DocsPage({ params }: PageProps) {
           }}
           source={page.body}
         />
-        <PrevNext next={prevNext.next} prev={prevNext.prev} />
+        <Pagination className={styles.pagination} next={prevNext.next} prev={prevNext.prev} />
       </article>
       <aside className={styles.aside}>
         <TableOfContents headings={page.headings} />
