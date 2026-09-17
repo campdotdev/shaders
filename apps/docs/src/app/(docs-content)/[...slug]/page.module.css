@@ -21,6 +21,24 @@
   margin-bottom: var(--spacing-6);
 }
 
+/* Breadcrumbs are desktop chrome, so they go at the first width where the
+   site's layout starts to stack, which is 53.5rem of the main column, where
+   a component page's demo grid stacks (demo-layout.module.css). A guide has
+   no demo grid, and it takes that threshold anyway rather than its own
+   narrowing below, so one width answers for both page types. Orientation
+   passes to the sidebar, which is still up here, and then to the nav
+   dropdown that replaces it under 48rem of the site. Hiding the nav leaves
+   it in the DOM, so the page's opening h1 is still a second child for
+   `.prose > * + *` in globals.css and keeps that rule's 16px above it, where
+   a component page's header gives 24px in the same spot. Recorded rather
+   than matched: which of the two the narrow layout should take is a design
+   call nobody has made. */
+@container docs-main (width < 53.5rem) {
+  .breadcrumbs {
+    display: none;
+  }
+}
+
 /* Under 48rem of the main column the list's 208px would come out of an
    article already narrow, so the list goes and the article takes the width. */
 @container docs-main (width < 48rem) {
@@ -29,18 +47,6 @@
   }
 
   .aside {
-    display: none;
-  }
-}
-
-/* The phone layout has no breadcrumb row: the dropdown above the article
-   already names the page. Hiding the nav leaves it in the DOM, so the page's
-   opening h1 is still a second child for `.prose > * + *` in globals.css and
-   keeps that rule's 16px above it, where a component page's header gives 24px
-   in the same spot. Recorded rather than matched: which of the two the phone
-   layout should take is a design call nobody has made. */
-@container site (width < 40rem) {
-  .breadcrumbs {
     display: none;
   }
 }

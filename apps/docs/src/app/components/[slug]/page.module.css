@@ -11,8 +11,9 @@
 
 /* The mock's breadcrumb row sits 16px below the top of the page and 24px
    above the title, which with the row's own 32px puts the title at 72px.
-   That is the layout from 40rem up; under it the row goes and the header's
-   24px is the whole gap, in the phone block at the end of this file. */
+   That is the desktop layout; once the main column falls under 53.5rem the
+   row goes and the header's 24px is the whole gap, in the first block at
+   the end of this file. */
 .breadcrumbs {
   max-width: var(--container-4xl);
   margin: var(--spacing-4) 0 0;
@@ -137,15 +138,26 @@
   transform: rotate(-90deg);
 }
 
-/* The phone layout has no breadcrumb row: the dropdown above the title
-   already names the page. The title steps down to 24px on a 32px line, the
-   mock's text box; the header keeps its 24px above, which with the row gone
-   puts the title 24px under the dropdown, where the mock draws it. */
-@container site (width < 40rem) {
+/* Breadcrumbs are desktop chrome, so they go at the first width where the
+   layout starts to stack: the same query the demo grid stacks on and the
+   floating TOC hides on (demo-layout.module.css, page-toc.module.css), which
+   leaves the two pieces of chrome flanking the content going together.
+   Orientation passes to the sidebar, which is still up here, and then to the
+   nav dropdown that replaces it under 48rem of the site. Between those two
+   widths the page has neither row, so the header's 24px top margin is the
+   whole gap under the banner where the trail used to make it 72px. That
+   tightness is known, not missed. */
+@container docs-main (width < 53.5rem) {
   .breadcrumbs {
     display: none;
   }
+}
 
+/* The phone type scale: the title steps down to 24px on a 32px line, the
+   mock's text box. The breadcrumb row is long gone by this width, so the
+   header's 24px puts the title that far under the nav dropdown, where the
+   mock draws it. */
+@container site (width < 40rem) {
   .title {
     font-size: var(--font-size-2xl);
     line-height: var(--leading-8);
