@@ -4,12 +4,14 @@ You are working on **Shaders**, a React shader component library built on WebGPU
 
 ## Where to find things
 
-| You need…                              | Read…                                                |
-| -------------------------------------- | ---------------------------------------------------- |
-| The full design, what we're building and why | `docs/superpowers/specs/2026-05-02-shaders-design.md` |
-| Feature specs and implementation plans  | `docs/superpowers/specs/`, `docs/superpowers/plans/` |
+| You need…                              | Read…                                                                                                         |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| Feature specs and implementation plans | `docs/superpowers/specs/`, `docs/superpowers/plans/`                                                           |
+| The decisions behind a feature         | That feature's spec: its `## Decisions` section, plus `## Appendix A: decision history` on specs written before 2026-09-12 |
 
 > **Note.** `docs/superpowers/` holds the specs and plans, and it is gitignored, so it exists only on machines it has been synced to. On a fresh clone those paths are absent. This file plus git history are the portable orientation.
+>
+> This table used to name a foundational design spec, `2026-05-02-shaders-design.md`, as the place to read the whole design. That file is not in the synced set on this machine, where `docs/superpowers/specs/` holds per-feature specs only. Treat the per-feature specs plus this file as the design of record until it turns up.
 
 Milestone history lives in git tags and `docs/superpowers/plans/`. Don't trust any hardcoded status table. Check the tags.
 
@@ -18,11 +20,11 @@ Milestone history lives in git tags and `docs/superpowers/plans/`. Don't trust a
 ## Project shape (30-second version)
 
 - **Two-tier model.** Tier 1 is the polished components such as `<LinearGradient>`, which live under `packages/shaders/src/components/` and are imported from the package root. Tier 2 is the TSL primitives in the same package, such as `fractalNoise` and `voronoi`. They are exported because the editor's eject-to-code imports them by name, but they have no doc pages (SHA-136).
-- **Two packages.** `@camp-dev/shaders` is everything users import: the Tier 1 components, the React binding (`ShaderScene`, `useShaderMaterial`, and the hooks), and the framework-free engine (primitives, renderer, scheduler, inputs). `@camp-dev/shaders-cli` has one command, `poster`. Inside the package, `src/engine.ts` is the framework-free barrel. `src/react/` and `src/components/` import it rather than the root index, so dependencies run root to components to react to engine and never back. A `no-restricted-imports` block in the root `eslint.config.js`, scoped to `src/{primitives,runtime,inputs}/**` and `src/color.ts`, rejects React and anything under `src/react` or `src/components`. That rule is what keeps the engine extractable if a second framework binding ever becomes real. Two apps sit alongside the packages: `@shaders/docs` is the docs site, and `@shaders/editor` is the node editor from MAT-94. The editor is a React Flow canvas over the same Tier 2 primitives, with an eject-to-code emitter. A permanent parity gate pixel-compares that emitter's output against the live compiler.
+- **Two packages.** `@camp-dev/shaders` is everything users import: the Tier 1 components, the React binding (`ShaderScene`, `useShaderMaterial`, and the hooks), and the framework-free engine (primitives, renderer, scheduler, inputs). `@camp-dev/shaders-cli` has one command, `poster`. Inside the package, `src/engine.ts` is the framework-free barrel. `src/react/` and `src/components/` import it rather than the root index, so dependencies run root to components to react to engine and never back. A `no-restricted-imports` block in the root `eslint.config.js`, scoped to `src/{primitives,runtime,inputs}/**` and `src/color.ts`, rejects React and anything under `src/react` or `src/components`. That rule is what keeps the engine extractable if a second framework binding ever becomes real. Three apps sit alongside the packages: `@shaders/docs` is the docs site, `@shaders/editor` is the node editor from MAT-94, and `@shaders/docs-tests` is the Playwright harness that holds the visual-regression and a11y suites. The editor is a React Flow canvas over the same Tier 2 primitives, with an eject-to-code emitter. A permanent parity gate pixel-compares that emitter's output against the live compiler.
 - **The editor app is layered by dependency direction**, not by file type. `src/editor/graph/` is the framework-free core, holding the node registry, graph model, param store, live TSL compiler, and code emitter. `src/editor/preset/` handles save, load, undo, and copy-paste, and is also React-free. `src/editor/state/` is the React Flow glue. `canvas/`, `params/`, and `panels/` are UI. Dependencies point one way, toward `graph/`. Siblings import each other as `./x` and everything else as `@/editor/<folder>/<file>`. `vitest.config.ts` has to declare that `@` alias itself, because Vitest doesn't read tsconfig `paths`.
 - **Two rendering modes**, with no auto-detection of `@react-three/fiber`. In Mode 1 every Tier 1 component is bare and requires an explicit `<ShaderScene>` wrap, and you compose by stacking children in one scene. In Mode 2 you call `useShaderMaterial` inside your own r3f `<Canvas>`.
 
-Read the spec for architecture, public APIs, the component catalog, and the animation signal protocol. Decision history is in the spec's Appendix A.
+Read the relevant feature spec for architecture, public APIs, and the animation signal protocol. Its decisions live in `## Decisions`, and specs written before 2026-09-12 also close with `## Appendix A: decision history`. The component catalog is `apps/docs/src/content/components.ts` plus the folders under `packages/shaders/src/components/`, not a spec.
 
 ## Git and PR workflow
 
@@ -135,7 +137,7 @@ These rules exist because Shaders doubles as a shader-learning project for its a
 14. **Never rebuild a `NodeMaterial` on prop change. Push values through stable `uniform(...)` nodes.** Hold live values in a stable `Vector2` or `Vector3` via `useMemo([])`, wrap that in a stable `uniform(vec)`, and push the prop into `vec.set(...)` in a light effect. The material effect then depends only on stable references and runs once per mount. There are known exceptions. Every `colorRamp` consumer rebuilds on `colors` or `stops` because they pass literal stops, and that covers `LinearGradient`, `SimplexNoise`, `WaveLines`, and the ramp components since, including `Voronoi`. `colorRamp` itself now accepts node-driven stops, from MAT-86, where `position` takes `number | TSLNode` and `color` takes uniform nodes, and only stop COUNT stays structural. Live-driven ramps therefore re-mix on the GPU with no rebuild, and the node editor uses this. The registry components deliberately still bake literals. Migrate a component only when a feature actually drives its colors at 60Hz, never for symmetry. Measured 2026-08-01 on `wave-lines`, which has 16 baked colors and is the library's largest ramp, one rebuild per color-drag release is a brief but perceptible stutter. The demo panels' commit-on-release behavior, covered in the colors-commit-on-release gotcha, is what keeps that acceptable.
 15. **`useShaderMaterial(build)` rebuilds whenever `build`'s reference changes, by design.** Callers must memoize the build callback, or hoist it. A test asserts that rebuild, so don't remove the dep.
 16. **Arrays and tuples passed as props need a stable proxy in effect deps.** Stringify them, as in `colors.join('|')`, or route fixed-size tuples through a `Vector2` or `Vector3` uniform. See vignette's `center`. Never list raw arrays in a heavy effect's deps.
-17. **Output dithering is scene-wide, in display space.** `ShaderScene` builds `outputNode = dither(renderOutput(composed))` with `outputColorTransform = false`. Never add per-component `dither()` in a `colorNode`. It double-dithers and runs in linear space. The exported `dither()` primitive is for Mode 2 only. Gamut, like dither, is scene-level, so keep both off per-component panels.
+17. **Output dithering is scene-wide, in display space.** `createOutputStage` in `src/runtime/output-stage/` sets `outputMaterial.fragmentNode = dither(renderOutput(composed))`, with the output color transform off, and `ShaderScene` owns that stage. See gotcha 27 for why the stage exists. Never add per-component `dither()` in a `colorNode`. It double-dithers and runs in linear space. The exported `dither()` primitive is for Mode 2 only. Gamut, like dither, is scene-level, so keep both off per-component panels.
 18. **Light-emitting transparent layers need `material.premultipliedAlpha = true`.** Any component whose colorNode emits light-contribution rgb with coverage alpha, aurora-style, double-multiplies by alpha under default NormalBlending. Soft wisps dim quadratically as a result.
 19. **When the shader looks cropped, compressed, or zoomed, check `renderer.getSize()` against the canvas client size FIRST**, not uv or camera math. The renderer once stuck at the 300×150 canvas default, and a logical-size guard plus a ResizeObserver fixed it. Headless Playwright falls back to WebGL2 here, where `navigator.gpu` is truthy but device init fails.
 20. **Wide-gamut P3 output reaches into renderer internals**, because three 0.170 has no native WebGPU P3 path. We register the ColorSpaces addon through `ColorManagement.define` and manually re-`configure()` the `GPUCanvasContext` in `packages/shaders/src/runtime/create-renderer/gamut.ts`. A future Three.js version bump should delete the manual reconfigure. You can't pixel-assert P3 output in headless Playwright. `parseColorString` unit tests prove the decode, and you validate the widening by eye on a P3 display. The `hsl` and `hsv` color spaces clamp to sRGB first, because a negative-channel `pow()` breaks WGSL const-eval otherwise.
@@ -149,8 +151,10 @@ These rules exist because Shaders doubles as a shader-learning project for its a
 
 ## Color system (shipped)
 
-- **`colorSpace` prop** (the interpolation space) on the six components that blend two colors: `Aurora`, `LinearGradient`, `MeshGradient`, `SimplexNoise`, and `WaveLines` all go through `colorRamp`, and `Vignette` goes through `mixColor`. The default is `oklab` on all six. `DotField` and `Grain` don't take it, because they never compute a midpoint. The primitive defaults differ from each other: `colorRamp` defaults to `linear`, and `mixColor` defaults to `oklab`. It lives in `packages/shaders/src/primitives/color-space/`.
-- **`hueInterpolation` prop** on five of those six. `WaveLines` omits it and takes `colorRamp`'s default arc. Only the cylindrical spaces read it: `oklch`, `lch`, `hsl`, and `hsv`.
+- **`colorSpace` prop** (the interpolation space) on the eleven components that blend two colors: `Aurora`, `Blobs`, `ConicGradient`, `FractalNoise`, `LinearGradient`, `MeshGradient`, `RadialGradient`, `SimplexNoise`, `Vignette`, `Voronoi`, and `WaveLines`. Most reach it through `colorRamp`. `MeshGradient` and `Vignette` go through `mixColor` instead, and `Voronoi` uses both: `colorRamp` for the cell fill and `mixColor` for the border blend. The default is `oklab` on all eleven. Components that never compute a midpoint don't take it, which covers `DotField`, `Grain`, `Dissolve`, `Dither`, `GodRays`, `LedWall`, and `RadialWipe`. The primitive defaults differ from each other: `colorRamp` defaults to `linear`, and `mixColor` defaults to `oklab`. It lives in `packages/shaders/src/primitives/color-space/`.
+- **`hueInterpolation` prop** on ten of those eleven. `WaveLines` omits it and takes `colorRamp`'s default arc. Only the cylindrical spaces read it: `oklch`, `lch`, `hsl`, and `hsv`.
+
+  Regenerate both lists with `grep -rl colorSpace packages/shaders/src/components/*/` and the same for `hueInterpolation`. They have gone stale twice.
 - **`gamut` prop** on `<ShaderScene>`, typed `'auto' | 'srgb' | 'p3'` and defaulting to `auto`, which detects through `(color-gamut: p3)` and re-resolves on monitor change.
 - **Separate concerns.** `colorSpace` is the mixing math and `gamut` is the output framebuffer. Wide-gamut **input** is just the decode, where `oklch()` and `oklab()` strings go through `parseColor` to unclamped linear-sRGB, and it needs zero mixing props. Aurora is additive but still blends along a depth-indexed ramp, and that is why it takes `colorSpace`. Being additive is not the test. Computing a midpoint is.
 - **User-facing docs** live at `apps/docs/content/docs/guides/color.mdx`. Keep them in step when any of the above changes.
@@ -178,6 +182,23 @@ The five canonical roles keep their default names as Linear labels. See `docs/ag
 ### Domain docs
 
 Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root, both created lazily. See `docs/agents/domain.md`.
+
+### Code review surfaces
+
+Four reviewers run on a change, two locally before the push and two on the pull request. They answer different questions, so none of them replaces another.
+
+| When                                   | Reviewer                      | What it checks                                                     |
+| -------------------------------------- | ----------------------------- | ------------------------------------------------------------------ |
+| Uncommitted work, during the build     | `/ocr-delegate-review`        | Workspace mechanics, including untracked files, with per-file coverage |
+| After the commit, before the push      | `/code-review`                | The repo's documented standards, and the diff against its ticket   |
+| Wide or multi-commit branches          | `/ocr-delegate-review-branch` | Every file the branch touches, across all its commits              |
+| After the push                         | CodeRabbit and Macroscope     | The pull request, worked through `resolve-coderabbit-feedback`      |
+
+`implement` drives the first three in that order. The ordering is load-bearing: `/code-review` and `/ocr-delegate-review-branch` both resolve refs, so running either before the commit reviews the previous state and misses the work you just wrote.
+
+Open Code Review supplies deterministic file selection and a coverage checklist; the review itself is done by the agent, through the `open-code-review-delegate` skill. It carries no repo-local `rule.json`, so it reviews against its own defaults and is deliberately the generic mechanics pass. Repo conventions are `/code-review`'s job, because that skill reads this file.
+
+**Machine-local patches.** Two skills in `~/.agents/skills/` are edited away from upstream on the author's machine, and neither change syncs or survives `npx skills update`. `implement` adds the three review passes above and commits before reviewing rather than after. `code-review` no longer reads a bare `#<n>` as a ticket id, because squash merges put the GitHub PR number in the commit subject and those numbers collide with live `SHA-` issues, which silently resolved the wrong spec. Upstream originals are kept outside the repo alongside the install backup.
 
 ## Agent-specific notes
 
