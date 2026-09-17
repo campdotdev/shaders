@@ -34,7 +34,11 @@
 }
 
 /* The phone layout has no breadcrumb row: the dropdown above the article
-   already names the page. */
+   already names the page. Hiding the nav leaves it in the DOM, so the page's
+   opening h1 is still a second child for `.prose > * + *` in globals.css and
+   keeps that rule's 16px above it, where a component page's header gives 24px
+   in the same spot. Recorded rather than matched: which of the two the phone
+   layout should take is a design call nobody has made. */
 @container site (width < 40rem) {
   .breadcrumbs {
     display: none;

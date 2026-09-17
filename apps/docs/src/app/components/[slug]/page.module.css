@@ -10,7 +10,9 @@
    padding, so the cap measures the content box regardless of box-sizing. */
 
 /* The mock's breadcrumb row sits 16px below the top of the page and 24px
-   above the title, which with the row's own 32px puts the title at 72px. */
+   above the title, which with the row's own 32px puts the title at 72px.
+   That is the layout from 40rem up; under it the row goes and the header's
+   24px is the whole gap, in the phone block at the end of this file. */
 .breadcrumbs {
   max-width: var(--container-4xl);
   margin: var(--spacing-4) 0 0;
