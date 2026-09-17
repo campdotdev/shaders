@@ -15,7 +15,7 @@
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { Dialog } from '@base-ui/react/dialog';
 
@@ -41,6 +41,22 @@ export function SiteNav() {
   const [openedOn, setOpenedOn] = useState<string | null>(null);
 
   if (openedOn !== null && openedOn !== pathname) setOpenedOn(null);
+
+  // The trigger disappears at the same 40rem boundary where the desktop
+  // links return. Close the controlled dialog when the viewport crosses
+  // that boundary, or its portaled overlay would survive without a visible
+  // trigger. globals.css guarantees that the `site` container queried by
+  // the stylesheet is the viewport width, so this media query stays in step.
+  useEffect(() => {
+    const desktopLayout = window.matchMedia('(min-width: 40rem)');
+    const closeInDesktopLayout = (event: MediaQueryListEvent) => {
+      if (event.matches) setOpenedOn(null);
+    };
+
+    desktopLayout.addEventListener('change', closeInDesktopLayout);
+
+    return () => desktopLayout.removeEventListener('change', closeInDesktopLayout);
+  }, []);
 
   const open = openedOn === pathname;
   const close = () => setOpenedOn(null);

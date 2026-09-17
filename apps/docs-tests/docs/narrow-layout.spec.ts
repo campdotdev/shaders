@@ -135,6 +135,21 @@ test('a press beside the links dismisses the site nav', async ({ page }) => {
   await expect(dialog).toBeHidden();
 });
 
+test('widening past the site-nav breakpoint closes the dialog', async ({ page }) => {
+  await page.goto('/components/aurora');
+  await page.waitForLoadState('networkidle');
+
+  const dialog = page.getByRole('dialog', { name: 'Site navigation' });
+
+  await page.getByRole('button', { name: 'Open site navigation' }).click();
+  await expect(dialog).toBeVisible();
+
+  await page.setViewportSize({ width: 700, height: 844 });
+
+  await expect(dialog).toBeHidden();
+  await expect(page.locator('header nav[aria-label="Site"]')).toBeVisible();
+});
+
 /**
  * The two bands between this branch's three thresholds. Nothing else covers
  * them: the tests above run at 390px, and the a11y and visual suites run at
