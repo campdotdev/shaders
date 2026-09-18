@@ -66,8 +66,27 @@ test('the dropdown replaces the sidebar and closes on navigation', async ({ page
   const row = page.locator('nav[aria-label="Docs menu"] a', { hasText: 'Vignette' });
 
   await expect(row).toBeVisible();
-  await row.dispatchEvent('click', { metaKey: true });
+
+  // A modified click opens the row in a new tab and leaves this one where it
+  // is, so the panel has to stay open. Two things keep the probe portable.
+  // The modifier is ControlOrMeta, because Chromium gives a click the new-tab
+  // disposition only for the platform's own key, Meta on macOS and Control on
+  // Linux, and a click carrying the other one follows the href in place. And
+  // the click is real, because an untrusted event cannot open a tab: Chromium
+  // drops the activation instead of navigating, so a dispatched metaKey click
+  // passes on macOS whatever the handler does. Together they sent this test to
+  // Vignette in the Linux CI container while it passed locally (measured
+  // 2026-09-17). Waiting on the tab carries the other half of the assertion,
+  // since a missed disposition would navigate this page rather than open one.
+  const [newTab] = await Promise.all([
+    page.context().waitForEvent('page'),
+    row.click({ modifiers: ['ControlOrMeta'] }),
+  ]);
+
+  await newTab.close();
+  await expect(page).toHaveURL('/components/aurora');
   await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
   await row.click();
   await expect(page).toHaveURL('/components/vignette');
   await expect(page.getByRole('button', { name: 'Vignette' })).toHaveAttribute(
