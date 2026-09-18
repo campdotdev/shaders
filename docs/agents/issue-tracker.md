@@ -1,6 +1,6 @@
 # Issue tracker: Linear
 
-Issues for this repo are tracked in Linear, on the **Shaders** team, with the `SHA-` identifier prefix. The team was called Matter with a `MAT-` prefix until 2026-08-21, so older commit messages and AGENTS.md gotchas cite `MAT-` numbers for the same issues. The specs and plans for work in flight live in `docs/superpowers/`. Reach Linear through the Linear MCP server, not a CLI. There is no `linear` binary here, and the MCP tools are the only supported path.
+Issues for this repo are tracked in Linear, on the **Shaders** team, with the `SHA-` identifier prefix. The team was called Matter with a `MAT-` prefix until 2026-08-21, so older commit messages and AGENTS.md gotchas cite `MAT-` numbers for the same issues. Specs live here too: `to-spec` publishes one as an issue on this team. `docs/superpowers/` is frozen and holds only the superpowers-era specs and plans. Reach Linear through the Linear MCP server, not a CLI. There is no `linear` binary here, and the MCP tools are the only supported path.
 
 Skills from the mattpocock set look for this file. It is the hand-written Linear equivalent of the `issue-tracker-github.md` template that ships with `setup-matt-pocock-skills`, which covers only GitHub, GitLab, and local markdown.
 
@@ -11,12 +11,12 @@ Skills from the mattpocock set look for this file. It is the hand-written Linear
 - **List issues**: `mcp__linear__list_issues`, filtered by `team`, `state`, `assignee`, `label`, or `parentId`.
 - **Comment**: `mcp__linear__save_comment`.
 - **Read comments**: `mcp__linear__list_comments`.
-- **Apply labels**: `mcp__linear__save_issue` with `labels`. See the label trap below before you use it.
+- **Apply labels**: `mcp__linear__save_issue` with `addLabels`, which appends. See the label trap below before you reach for `labels`.
 - **Close**: `mcp__linear__save_issue` with `state: "Done"`, or `state: "Canceled"` when the work is being dropped rather than finished.
 
 ### Three traps
 
-1. **`labels` replaces the entire label set.** It is not additive. An issue carrying `Feature` that you save with `labels: ["wayfinder:map"]` loses `Feature`. Read the current labels with `get_issue` first, then pass the union. Omitting `labels` leaves them untouched, which is what you usually want.
+1. **`labels` replaces the entire label set.** It is not additive. An issue carrying `Feature` that you save with `labels: ["wayfinder:map"]` loses `Feature`. On an existing issue, pass `addLabels` to append and `removeLabels` to drop one. Omitting all three leaves the labels untouched, which is what you usually want.
 2. **`blocks` and `blockedBy` are append-only.** Saving them never removes an existing edge. Use `removeBlocks` and `removeBlockedBy` to drop one.
 3. **Linear has no open or closed flag.** It has workflow states with a type. On this team the states are `Backlog` (backlog), `Todo` (unstarted), `In Progress` (started), `In Review` (started), `Done` (completed), `Canceled` (canceled), and `Duplicate` (duplicate). Treat backlog, unstarted, and started as open. Treat completed, canceled, and duplicate as closed, so a `Duplicate` issue never surfaces as open work.
 
@@ -32,7 +32,7 @@ Call `get_issue` with the `SHA-` identifier, then `list_comments` for the discus
 
 Used by `/wayfinder`. The **map** is one issue, and its tickets are child issues of it.
 
-**Prerequisite.** The five labels wayfinder needs do not exist on this team yet. The Shaders team currently carries only `Improvement`, `Feature`, and `Bug`. Create `wayfinder:map`, `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, and `wayfinder:task` with `mcp__linear__create_issue_label` before charting a first map.
+**Labels.** The five labels wayfinder needs already exist on this team: `wayfinder:map`, `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, and `wayfinder:task`. Do not recreate them.
 
 - **Map**: one issue labelled `wayfinder:map`, holding the `## Destination`, `## Notes`, `## Decisions so far`, `## Not yet specified`, and `## Out of scope` sections. Create it with `save_issue`, passing `team: "Shaders"` and `labels: ["wayfinder:map"]`.
 - **Child ticket**: an issue created with `parentId` set to the map's identifier, which makes it a Linear sub-issue and renders under the map in Linear's own UI. Label it `wayfinder:<type>`, one of `wayfinder:research`, `wayfinder:prototype`, `wayfinder:grilling`, or `wayfinder:task`.
