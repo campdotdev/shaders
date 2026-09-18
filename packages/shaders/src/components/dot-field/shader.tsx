@@ -78,8 +78,10 @@ export interface DotFieldShaderProps {
 // ---------------------------------------------
 // How thick a cross's arms are, as a fraction of `dotSize`. Measured from
 // the Figma pattern the Components banner is drawn after: arms 2.01 units
-// thick on a mark 6.34 units tip to tip. Higher makes a bolder x, and at 1
-// the arms are as wide as the mark and the x closes into a square.
+// thick on a mark 6.34 units tip to tip. Higher makes a bolder x. At
+// 1 / sqrt(2), about 0.71, the arms are as long as they are thick and the
+// x closes into a diamond, a square tipped 45 degrees whose corners sit at
+// the mark's tips. Past that the arms are thicker than they are long.
 const CROSS_ARM_THICKNESS = 0.317;
 
 // Width of the anti-aliasing band across a mark's edge, in device pixels,
