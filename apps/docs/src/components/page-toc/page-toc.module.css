@@ -27,10 +27,26 @@
 
   position: sticky;
   /* The pin: this block stops --shader-center below the viewport's middle,
-     which puts the lines exactly at the middle. On a viewport tall enough
-     that its middle is already below the shader's center at load (past
-     about 1200px), sticky pushes the block down to the pin instead and the
-     lines rest a little under the shader's center. */
+     which puts the lines exactly at the middle, because they hang above the
+     block by that same distance. The two cancel only because both copies of
+     --shader-center come out the same width. Neither custom property is
+     registered, so the 100cqw inside them resolves wherever each is used:
+     the lines' copy measures this block, and this one measures the nearest
+     container above it, the docs shell's inset wrapper (.content in
+     docs-shell.module.css), which is a container for exactly this reason.
+     This block is a plain block box filling that wrapper, so the two agree.
+     Before the docs shell was a container this one measured the viewport
+     instead, which is wider, and the lines pinned about 100px below the
+     middle.
+     Whether the pin is reached at load is a question of height. On a
+     viewport whose middle already sits below the shader's center, sticky
+     holds the block here from the first paint and the lines rest a little
+     under that center instead. The crossover is twice the distance from the
+     top of the page to that center: the site header and the section banner,
+     the breadcrumbs, the page title and its description, the grid's own top
+     padding, and half the shader's height. So it differs by component, a
+     description that wraps to another line pushing the grid down, and by
+     window width, the shader's height following --stage-width. */
   top: calc(50vh + var(--shader-center));
   z-index: 1;
   height: 0;
@@ -40,10 +56,10 @@
 /* ---- The lines ---- */
 
 /* One button drawn as a stack of rules, hung off the dock's left edge into
-   the 40px gutter the docs shell pads main with, so it sits flush against
-   the sidebar. The box is the mock's: 24px wide, 4px of vertical padding,
-   and the rules 12px apart. translateY(-50%) centers the stack on the
-   shader's center whatever the section count. */
+   the 40px gutter the docs shell insets its content by, so it sits flush
+   against the sidebar. The box is the mock's: 24px wide, 4px of vertical
+   padding, and the rules 12px apart. translateY(-50%) centers the stack on
+   the shader's center whatever the section count. */
 .trigger {
   position: absolute;
   top: calc(-1 * var(--shader-center));
@@ -199,14 +215,25 @@
   white-space: nowrap;
 }
 
-/* At 1024px and below, the demo grid's own breakpoint, the grid stacks the
-   controls under the shader, so its bottom edge is no longer a fixed
-   distance from the shader's center and the dock's arithmetic no longer
-   holds. The narrow layout is SHA-126's to design, so the TOC stays off
-   until then. The query has to match .layout's in demo-layout.module.css
-   exactly, inclusive edge included, or a viewport at the boundary gets a
-   stacked grid with the TOC still showing. */
-@media (max-width: 1024px) {
+/* Once the demo grid stacks the controls under the shader, the grid's
+   bottom edge is no longer a fixed distance from the shader's center and
+   the dock's arithmetic no longer holds, so the TOC goes. This repeats the
+   grid's own query from demo-layout.module.css, the same container at the
+   same width. Nothing ties the two literals together, so an edit to one
+   still has to be copied here, but as written they flip at one width and no
+   window can catch a stacked grid with the TOC still showing.
+
+   This rule also holds up a z-index that has no guard of its own. .dock
+   takes z-index: 1 without isolating, so that 1 lands in the root stacking
+   context, where the site nav's overlay sits at no z-index at all: nothing
+   in its portal sets one (site-nav.module.css). The dock would paint over
+   that overlay on the 1 alone, the way the site header's own z-index: 1 is
+   meant to, and it would come out over the header too, being later in tree
+   order at the same level. Neither happens today, only because the nav
+   opens under 40rem of the site, where this column is at most 608px and the
+   rule below has already hidden the dock. Widen this query, or give the
+   dock a narrow layout of its own, and both do. */
+@container docs-main (width < 53.5rem) {
   .dock {
     display: none;
   }

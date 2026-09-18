@@ -10,6 +10,11 @@ import type { CategorySlug } from './taxonomy';
 export interface ComponentMeta {
   description: string;
   category: CategorySlug;
+  /**
+   * Sidebar and page label, when the prettified slug gets an acronym wrong.
+   * Absent for every component whose slug prettifies correctly.
+   */
+  label?: string;
 }
 
 export const COMPONENTS = {
@@ -27,6 +32,11 @@ export const COMPONENTS = {
     description:
       'A color ramp sweeping clockwise around a center point, with pinwheel repeats and rotation. Completes the CSS gradient trio with LinearGradient and RadialGradient.',
     category: 'gradients',
+  },
+  dissolve: {
+    description:
+      'Turns the scene into grain, shown block by block as progress rises. Stacked after a feathered wipe, it grains the soft edge into a ragged one. Stacks on top of any base component inside <ShaderScene>.',
+    category: 'transitions',
   },
   dither: {
     description:
@@ -53,6 +63,12 @@ export const COMPONENTS = {
       'Additive or subtractive film grain overlay. Stacks on top of any base component inside <ShaderScene>.',
     category: 'lens-film',
   },
+  'led-wall': {
+    description:
+      'Screens the scene into a wall of square LED dots, each lit with the color beneath it, with a per-dot flicker and a swell that follows the cursor. Stacks on top of any base component inside <ShaderScene>.',
+    category: 'retro-glitch',
+    label: 'LED Wall',
+  },
   'linear-gradient': {
     description: 'Animated linear gradient. The simplest, foundational Shaders component.',
     category: 'gradients',
@@ -66,6 +82,11 @@ export const COMPONENTS = {
     description:
       'A color ramp radiating from a point, with an elliptical shape control and repeating concentric rings. The radial counterpart to LinearGradient.',
     category: 'gradients',
+  },
+  'radial-wipe': {
+    description:
+      'Reveals or hides the scene from a point with a feathered edge. Stack a Dissolve after it to grain that edge. Stacks on top of any base component inside <ShaderScene>.',
+    category: 'transitions',
   },
   'simplex-noise': {
     description:

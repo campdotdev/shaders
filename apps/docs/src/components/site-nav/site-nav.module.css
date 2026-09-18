@@ -1,0 +1,324 @@
+/* The narrow-viewport site navigation after the Figma mock: the hamburger
+   in the header row, and the full-screen overlay it opens over the blurred
+   page. The overlay is portaled to <body>, outside the site container, so
+   nothing in here can query it: the popup carries the phone gutter itself,
+   which is safe because the trigger only shows under 40rem.
+
+   Stacking: the portal's div is a sibling after .site in <body>, so the
+   overlay paints over the page on tree order, and the header paints over
+   the overlay, because .header is position: relative; z-index: 1
+   (site-header.module.css) and nothing in the portal has a z-index. The
+   rule this depends on: the root stacking context holds only site chrome
+   at a positive z-index, and a component that uses z-index inside itself
+   isolates its own root (isolation: isolate), or its numbers reach the
+   root and draw over this nav. The docs nav dropdown and the shared
+   scroll area are the two that isolate for this nav
+   (docs-nav-dropdown.module.css, scroll-area.module.css); .banner and
+   [data-shader-demo] isolate for their own layers; and page-toc's .dock
+   reaches the root without isolating, safe only because it is display:
+   none under 53.5rem of the docs column, which every viewport this nav
+   opens on is under. .site establishes no stacking context:
+   its container-type: inline-size applies style and inline-size
+   containment only, and neither makes one, so the header's 1 competes at
+   the root and wins. That holds from Chrome 129, Firefox 133, and Safari
+   18.4, where container-type stopped applying layout containment
+   (browser-compat-data, container-type.weak_containment). Before those,
+   .site is a stacking context, the overlay covers the header, and the
+   closes are a backdrop press, Escape, and the sr-only Close button. The
+   nav depends on the order above, because the header's trigger is the
+   visible Close while the nav is open, and nothing here needs a z-index of
+   its own. */
+
+/* ---- The trigger ---- */
+
+/* The header's one control for the nav: the hamburger while closed, and
+   "Close" beside an X while open, because the header paints above the
+   overlay and this button stays under the pointer in both states. It is an
+   inline-flex row 36px tall with 6px each side, so closed it is the 36px box
+   around a 24px glyph that the header's logo has, and open it grows to fit
+   the 14px label and the 6px gap while the glyph keeps its place: this is
+   the last item of the header's space-between row, so growth can only go
+   left.
+
+   The negative right margin cancels that 6px of right padding. The box is
+   36px because it is a touch target, but the ink has to line up with Docs,
+   Examples, and the GitHub mark, which all sit at the popup's 16px gutter,
+   so the button overhangs its own gutter by exactly the padding that
+   centres the glyph. Dropping the padding instead would shrink the box to
+   30px and leave the focus ring hugging the glyph on the right with 6px of
+   air on the left. Hidden until the header's link row hides on the same
+   query (site-header.module.css). */
+.trigger {
+  display: none;
+  align-items: center;
+  gap: var(--spacing-1-5);
+  height: var(--spacing-9);
+  margin: 0;
+  margin-right: calc(-1 * var(--spacing-1-5));
+  padding: 0 var(--spacing-1-5);
+  background: transparent;
+  color: var(--fg);
+  border: 0;
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  cursor: pointer;
+}
+
+@container site (width < 40rem) {
+  .trigger {
+    display: inline-flex;
+  }
+}
+
+.trigger:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+}
+
+/* The label exists only in the open state, and fades in rather than
+   snapping, so it and the glyph beside it land together. It stays
+   display: none rather than collapsing to zero width: taking the flex item
+   out is what collapses .trigger's 6px gap and leaves the closed button at
+   exactly 36px, where a zero-width label would keep that gap and then need
+   it moved onto the label to pay it back. It comes before the glyph in DOM
+   order, so it sits to the glyph's left, and it arrives from 4px to its
+   right: the button grows leftward, so the space opens on the glyph's left
+   and the label settles into it rather than appearing from nowhere.
+
+   display is a discrete property, so an element leaving display: none has
+   no before-change style and nothing to animate from. @starting-style
+   gives it one, and allow-discrete lands the flip at the start going
+   forward and at the end coming back, so the label is on screen for the
+   whole of each direction. docs/development/animation.md prescribes that
+   pair and carries the sources, under "Base UI enter and exit patterns":
+   reach for it only for a plain element the site toggles through
+   display: none, rather than one Base UI drives through its own enter and
+   exit. This span is the first kind, because data-popup-open is a plain
+   attribute toggle on an element that never unmounts. The popup at the
+   bottom of this file is the second, where Base UI holds
+   [data-starting-style] for the first frame and needs neither.
+
+   display rides --fade-sm, not --duration-sm, which is the one place here
+   that departs from the house split of movement on --duration-* and
+   opacity on --fade-*. display is neither. It gates what is on screen, so
+   it has to outlast whatever keeps the element visible, and that is the
+   fade. On a --duration-* token Reduce Motion would zero it and flip the
+   label to none the instant the nav closes, deleting the fade-out that
+   Reduce Motion keeps the fade tokens alive to preserve.
+
+   Both steps match the glyph's outer rows, so the two halves of the
+   control finish together. That is why the exit is not the shorter step
+   the popup takes: cohesion inside one control wins over the general rule
+   that leaving is quicker than arriving. One coupling to know before
+   shortening the popup's exit: focus returns to this trigger only after
+   the popup unmounts, so while that exit and the display hold above are
+   both --fade-sm, restoration lands after the label's flip and the focus
+   ring never outlines the button's wider, empty box. Base UI stamps
+   data-popup-open on a dialog trigger; the Collapsible in
+   docs-nav-dropdown uses data-panel-open, so the names differ per
+   component. */
+.label {
+  display: none;
+  opacity: 0;
+  transform: translateX(var(--spacing-1));
+  transition:
+    opacity var(--fade-sm) var(--ease-out),
+    transform var(--duration-sm) var(--ease-out),
+    display var(--fade-sm) allow-discrete;
+}
+
+.trigger[data-popup-open] .label {
+  display: block;
+  opacity: 1;
+  transform: none;
+}
+
+@starting-style {
+  .trigger[data-popup-open] .label {
+    opacity: 0;
+    transform: translateX(var(--spacing-1));
+  }
+}
+
+/* The glyph: the 24 squares of menu-toggle.tsx, each moved from its bar to
+   its cell in the X by a transition on transform, keyed off the trigger's
+   data-popup-open. A transition rather than keyframes is the state
+   management: open starts the move, close plays it back from wherever the
+   squares are, and a press mid-flight reverses without a jump. The deltas
+   come in as --dx and --dy in user units, and px on an SVG element's CSS
+   transform is user units at this 24-unit viewBox, so each square lands on
+   the grid. The box stays 24px, so the X sits where the hamburger was.
+
+   Two speeds, the export's shape. In Figma Motion the middle row reaches
+   the centre at 37ms (1.85% of a 2s timeline) and the outer rows at 200ms
+   (10%), all on cubic-bezier(0, 0, 0, 1), so the middle snaps in first and
+   the diagonals fold over it. Here that is --duration-xs (100ms) for the
+   middle row and --duration-sm (150ms) for the outer two, both on
+   --ease-out; the raw values are one edit each, on the two transition
+   rules below. Under Reduce Motion the duration tokens are 0ms, so the
+   squares jump between the two states with no media query of their own.
+   The attribute selectors are scoped under .trigger because CSS Modules
+   leaves them unscoped. */
+.glyph {
+  flex: none;
+  width: var(--spacing-6);
+  height: var(--spacing-6);
+}
+
+.trigger [data-menu-square] {
+  transition: transform var(--duration-sm) var(--ease-out);
+}
+
+.trigger [data-menu-square='snap'] {
+  transition-duration: var(--duration-xs);
+}
+
+.trigger[data-popup-open] [data-menu-square] {
+  transform: translate(calc(var(--dx) * 1px), calc(var(--dy) * 1px));
+}
+
+/* ---- The overlay ---- */
+
+/* The mock's backdrop: the page black at 90% over the page blurred behind
+   it, edge to edge. The header row stays sharp because it is the one thing
+   painted above this backdrop, per the file-top note; the banner behind
+   that row blurs like everything else. It fades on the larger step,
+   since it covers the whole screen, and opacity is a fade token so it still
+   fades under Reduce Motion.
+
+   It floors at 100dvh, the guard the popup carries too: the viewport a
+   fixed element sizes against does not grow as a mobile browser retracts
+   its toolbars, so inset: 0 on its own can leave a strip uncovered at the
+   bottom, and 100dvh tracks the viewport that is actually showing. Neither
+   it nor the 12px blur is on the token scale, because neither is a size:
+   one is a viewport unit, the other a filter radius. */
+.backdrop {
+  position: fixed;
+  inset: 0;
+  min-height: 100dvh;
+  background: var(--black-a90);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  transition: opacity var(--fade-md) var(--ease-out);
+}
+
+.backdrop[data-starting-style],
+.backdrop[data-ending-style] {
+  opacity: 0;
+}
+
+/* The popup is the whole viewport, transparent, on the phone gutter. Its
+   56px top padding is the header row's height, so its content starts under
+   the row the real header keeps drawing on top, and nothing rendered in
+   here sits at the row's height: the sr-only title and Close have boxes
+   there by their -1px margin, clipped to nothing. It scrolls when text zoom
+   makes the controls taller than the viewport, so the GitHub link remains
+   reachable. It fades in and rises 8px: opacity on the fade token
+   and the rise on the duration token, so Reduce Motion keeps the fade and
+   drops the travel. The exit runs on the smaller step, because leaving
+   should be quicker than arriving.
+
+   It covers the viewport, but only its controls are hit-testable: .link and
+   .iconLink each take pointer events back, and a press on any other pixel
+   of the overlay reaches the backdrop instead, which is what Base UI
+   dismisses on. The rows in between deliberately do not take them back,
+   because a flex item in this column stretches to the full content width,
+   so a row would swallow presses either side of its controls. The sr-only
+   Close inherits the none, which is right for a control nothing points at.
+   Escape never hit-tests, so the keyboard path does not depend on any of
+   this. */
+.popup {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  padding: var(--spacing-14) var(--spacing-4) 0;
+  overflow-y: auto;
+  outline: none;
+  pointer-events: none;
+  transition:
+    opacity var(--fade-md) var(--ease-out),
+    transform var(--duration-md) var(--ease-out);
+}
+
+.popup[data-starting-style],
+.popup[data-ending-style] {
+  opacity: 0;
+  transform: translateY(var(--spacing-2));
+}
+
+.popup[data-ending-style] {
+  transition-duration: var(--fade-sm), var(--duration-sm);
+}
+
+/* ---- The links ---- */
+
+/* Docs and Examples right-aligned in 30px semibold on a 36px line, 12px
+   apart for the mock's 48px pitch, 24px under the header row. */
+.links {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-6);
+}
+
+.link {
+  color: var(--fg);
+  font-size: var(--font-size-3xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-9);
+  transition: color var(--fade-xs) var(--ease-hover);
+  pointer-events: auto;
+}
+
+/* The GitHub mark at the bottom right, 24px up from the edge. */
+.social {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: auto;
+  padding-bottom: var(--spacing-6);
+}
+
+.iconLink {
+  display: inline-flex;
+  color: var(--fg);
+  border-radius: var(--radius-sm);
+  transition: color var(--fade-xs) var(--ease-hover);
+  pointer-events: auto;
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the lime would then stick on the tapped link. */
+@media (hover: hover) and (pointer: fine) {
+  .link:hover,
+  .iconLink:hover {
+    color: var(--accent);
+    text-decoration: none;
+  }
+}
+
+.link:focus-visible,
+.iconLink:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+  border-radius: var(--radius-sm);
+}
+
+/* border: 0 because the Close is a <button>, whose user-agent border would
+   otherwise grow the 1px box to the border sum. Clipped either way; this
+   keeps the box the size the rule says. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

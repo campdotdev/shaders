@@ -30,6 +30,7 @@ export const CATEGORY_SLUGS = [
   'scenes',
   'lens-film',
   'retro-glitch',
+  'transitions',
 ] as const;
 
 export type CategorySlug = (typeof CATEGORY_SLUGS)[number];
@@ -41,6 +42,7 @@ export const CATEGORIES: Record<CategorySlug, { label: string; tier: TierSlug }>
   scenes: { label: 'Scenes', tier: 'sources' },
   'lens-film': { label: 'Lens & Film', tier: 'effects' },
   'retro-glitch': { label: 'Retro & Glitch', tier: 'effects' },
+  transitions: { label: 'Transitions', tier: 'effects' },
 };
 
 // ---- The tree ----

@@ -47,7 +47,10 @@ for pair in \
   "dither:jpg" \
   "voronoi:jpg" \
   "fractal-noise:jpg" \
-  "blobs:jpg"; do
+  "blobs:jpg" \
+  "led-wall:jpg:#0b0f0d" \
+  "radial-wipe:jpg:#0b0f0d" \
+  "dissolve:jpg:#0b0f0d"; do
   IFS=':' read -r name format background size <<< "$pair"
   width="$WIDTH"
   height="$HEIGHT"
@@ -68,5 +71,19 @@ for pair in \
   fi
   $CLI "${args[@]}"
 done
+
+# The Components banner is captured from its own scene at the mock's width,
+# 1728 by the 200px header block, and shown at that size, center-cropped, by
+# banner-shader.tsx. Past 864px either side of center the glow has already
+# reached page black, so a wider viewport shows the page past the poster's
+# edges with no seam.
+echo "==> banner (jpg, 1728x200)"
+$CLI \
+  --source apps/docs/src/components/section-banner/banner-scene.tsx \
+  --output "${OUT_DIR}/banner.jpg" \
+  --format jpg \
+  --width 1728 \
+  --height 200 \
+  --background "#0b0f0d"
 
 echo "All posters regenerated."

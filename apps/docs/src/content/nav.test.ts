@@ -38,3 +38,37 @@ describe('getDocsPrevNext', () => {
     expect(prev?.url.startsWith('/components')).toBe(false);
   });
 });
+
+// The components sidebar shows the taxonomy's category groups and nothing
+// above them (SHA-126). The tiers stay in the tree for prev and next paging,
+// which walks them in taxonomy.ts, so this checks the sidebar view alone.
+describe('getDocsSidebarTree', () => {
+  it('shows the components sidebar as category groups with no tier above them', async () => {
+    const tree = await getDocsSidebarTree('components');
+    const labels = tree.map((group) => group.label);
+
+    expect(labels).not.toContain('Sources');
+    expect(labels).not.toContain('Effects');
+    expect(labels).toContain('Gradients');
+    expect(labels).toContain('Lens & Film');
+
+    for (const group of tree) {
+      for (const item of group.items) {
+        expect(item, `${group.label} holds a nested group`).toHaveProperty('url');
+      }
+    }
+  });
+
+  // The sidebar gives a tree that nests two header sizes, so that a parent
+  // reads as the parent of the groups under it, and a flat tree one size. It
+  // decides by looking for a group inside a group, which is exactly what
+  // this asserts. Flattening Frameworks in nav.config.ts would otherwise
+  // drop that distinction with nothing to say so.
+  it('gives the components tree no nesting and the docs tree one level of it', async () => {
+    const nests = (tree: ResolvedNavGroup[]) =>
+      tree.some((group) => group.items.some((item) => 'items' in item));
+
+    expect(nests(await getDocsSidebarTree('components'))).toBe(false);
+    expect(nests(await getDocsSidebarTree('docs')), 'Frameworks holds React').toBe(true);
+  });
+});

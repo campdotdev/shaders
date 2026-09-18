@@ -22,7 +22,7 @@ import {
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
+import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { type Palette, parseColor } from '../shared/color.js';
 
@@ -102,7 +102,6 @@ export function MeshGradientShader({
   hueInterpolation,
 }: MeshGradientShaderProps) {
   const shaderContext = useShaderContext();
-  const resize = useResize();
 
   const [paletteA, paletteB] = palettes;
 
@@ -123,24 +122,8 @@ export function MeshGradientShader({
   const amplitudeUniform = useAnimatableUniform<number>(amplitude);
 
   // Canvas aspect ratio (width/height), used to un-stretch the rotation
-  // below. Starts from the current size (16:9 fallback while the canvas
-  // reports 0) and follows every resize.
-  const [initialWidth, initialHeight] = resize.get();
-  const aspectNode = useMemo(
-    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
-
-    if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
-
-    return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) aspectNode.value = updatedWidth / updatedHeight;
-    });
-  }, [resize, aspectNode]);
+  // below. useAspectUniform keeps it current across resizes.
+  const aspectNode = useAspectUniform();
 
   useEffect(() => {
     if (!shaderContext) return;

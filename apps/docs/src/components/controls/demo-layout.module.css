@@ -4,8 +4,8 @@
    move the visual baselines; only the shader wrapper's own aspect can. */
 
 /* Shader column at 4xl and the control panel at 2xs, the mock's widths.
-   The horizontal inset comes from the docs shell's main column, so the grid
-   pads only vertically. */
+   The horizontal inset comes from the docs shell, so the grid pads only
+   vertically. */
 .layout {
   /* What the shader column resolves to: the 4xl cap, or whatever is left
      after the controls column and the gap. Mirrors the grid's track sizing
@@ -33,20 +33,29 @@
   max-height: min(calc(var(--stage-width) * 2 / 3), calc(100vh - var(--spacing-12)));
 }
 
-/* The scroll area root, which the fade positions against. The height cap
-   and the bar itself come from the shared ScrollArea's own styles; this
-   class exists so the fade rule below and the mobile override can name it. */
-.scroller {
-  max-height: inherit;
-}
+/* No rule of its own for the scroll area root, the element the fade
+   positions against: the cap reaches it through max-height: inherit in the
+   shared ScrollArea's styles (scroll-area.module.css), and the bar comes
+   from there too, as does the isolation that keeps the panel's title row
+   (controls.module.css), the fade below, and the bar under the site nav's
+   overlay once the column stops being sticky under 53.5rem. The class
+   stays on the root because the fade rule below names it. */
 
 /* The element that scrolls. It carries the panel's corner radius so the
    panel's sticky title row, which sits at this element's top edge once the
    panel has scrolled, is clipped to the same rounded corners the panel
-   itself has. */
+   itself has. Deliberately no overscroll-behavior: contain. The cap above
+   is the shader's height or the viewport's, never the panel's own content,
+   so at ordinary widths the panel really does overflow, and the range it
+   has is spent in one flick. Contain it and every tick after that flick is
+   swallowed by a panel that has stopped moving, so the page will not scroll
+   on until the pointer leaves the panel. The reader's pointer crosses this
+   column on the way down the page; it is not a region they came to scroll.
+   The docs sidebar is the opposite case and does contain its overscroll
+   (docs-sidebar.module.css): a tall tree behind a measured cap, which the
+   reader scrolls on purpose. */
 .viewport {
   border-radius: var(--radius-xl);
-  overscroll-behavior: contain;
 }
 
 /* The mock's "reveal": 64px of the panel's own color fading upward over its
@@ -54,7 +63,12 @@
    sets data-overflow-y-end on the root while there is something left to
    scroll to, so a short panel keeps its last row at full strength. The
    corners match the panel's radius so the gradient stays inside its
-   outline. */
+   outline. The md fade step on ease-in-out, not the sm step on ease-out:
+   sm is the opacity half of a popup arriving or leaving, and this gradient
+   never arrives. It stays where it is and changes strength as the reader
+   scrolls, which is the job ease-in-out is named for in the token set. The
+   lg step would lag the scroll, because the state flips with the scroll
+   position. */
 .fade {
   position: absolute;
   right: 0;
@@ -71,25 +85,37 @@
   );
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--fade-sm) var(--ease-out);
+  transition: opacity var(--fade-md) var(--ease-in-out);
 }
 
 .scroller[data-overflow-y-end] .fade {
   opacity: 1;
 }
 
-@media (max-width: 1024px) {
+/* The grid stacks the controls under the shader once the shader track would
+   fall below the lg container, 512px. The docs shell's 40px inset counts in
+   the column because the shell drops it on this same query, so the floor is
+   512 shader + 16 gap + 288 panel + 40 inset = 856px, 53.5rem of the
+   column, about a 1208px viewport with the sidebar up. Stacked, the
+   controls column stops being sticky and its cap changes rather than coming
+   off: 384px, the cap the nav dropdown's open box takes
+   (docs-nav-dropdown.module.css), so the two capped boxes on a narrow page
+   are the same height and the reader sees the shader with the top of the
+   panel under it rather than a panel that pushes the Usage section a screen
+   down. The cap reaches the element that scrolls through max-height:
+   inherit on the scroll area's root and viewport (scroll-area.module.css),
+   the chain the sticky column uses too. The page TOC hides on the same
+   query. Playwright's 1280px viewport leaves a 928px column, so the visual
+   suites still see two columns. The gap closes to 12px with the stack,
+   which is the mock's gap between the shader and the panel under it. */
+@container docs-main (width < 53.5rem) {
   .layout {
     grid-template-columns: minmax(0, 1fr);
+    gap: var(--spacing-3);
   }
 
   .controls {
     position: static;
-    max-height: none;
-  }
-
-  .scroller,
-  .viewport {
-    max-height: none;
+    max-height: var(--container-sm);
   }
 }

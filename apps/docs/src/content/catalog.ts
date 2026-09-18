@@ -1,6 +1,7 @@
 import { cache } from 'react';
 
 import { COMPONENTS } from './components';
+import type { ComponentMeta } from './components';
 import { groupByTaxonomy } from './taxonomy';
 import type { CategorySlug, TaxonomyTier } from './taxonomy';
 
@@ -39,11 +40,11 @@ function pascalizeSlug(slug: string): string {
 export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogRecord[]> => {
   // COMPONENTS is written in whatever order made sense to its author; the
   // catalog (sidebar, components index, search) presents slugs alphabetically.
-  return Object.entries(COMPONENTS)
+  return (Object.entries(COMPONENTS) as Array<[string, ComponentMeta]>)
     .sort(([slugA], [slugB]) => slugA.localeCompare(slugB))
     .map(([slug, info], index) => ({
       url: `/components/${slug}`,
-      label: prettifySlug(slug),
+      label: info.label ?? prettifySlug(slug),
       componentName: pascalizeSlug(slug),
       description: info.description,
       category: info.category,

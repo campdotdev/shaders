@@ -6,7 +6,9 @@
 // const-evaluates the same literal at 64-bit precision, so the two backends
 // run different hashes. Uint-typed constants emit as integer literals
 // (747796405u), which are exact in both languages.
+import type { ShaderNodeObject } from 'three/tsl';
 import { float } from 'three/tsl';
+import type { Node } from 'three/webgpu';
 import { describe, expect, it } from 'vitest';
 
 import { stableHash, stableHashUint } from './stable-hash.js';
@@ -45,6 +47,25 @@ function collectNodes(root: GraphNode, visited = new Set<GraphNode>()): GraphNod
   return nodes;
 }
 
+// stableHashUint's PCG body now lives inside a laid-out Fn (see stable-hash.ts's
+// pcgHash), which is the fix the "lays out stableHashUint..." test below
+// protects: calling stableHashUint returns only a function-call node, and
+// its type comes from the layout instead of a walk into the body. One
+// consequence is that the PCG constants below are no longer reachable by
+// walking stableHashUint(seed) itself — they live inside the Fn's closure,
+// which three only invokes when it actually builds the layout. That
+// closure is pure TSL node-building code, no builder required, so reach it
+// directly to keep proving MAT-92's invariant: every PCG constant is a
+// uint-typed node, never float.
+function buildPcgBody(seed: ShaderNodeObject<Node>): GraphNode {
+  const proxied = stableHashUint(seed) as unknown as GraphNode;
+  const callNode = (proxied.self ?? proxied) as unknown as {
+    shaderNode: { jsFunc: (inputs: unknown[]) => GraphNode };
+  };
+
+  return callNode.shaderNode.jsFunc([seed]);
+}
+
 describe('stableHash', () => {
   it('returns a node', () => {
     expect(stableHash(float(1))).toBeDefined();
@@ -66,8 +87,8 @@ describe('stableHash', () => {
   });
 
   it('stableHashUint carries every PCG constant as a uint-typed node', () => {
-    const proxied = stableHashUint(float(1)) as unknown as GraphNode;
-    const nodes = collectNodes(proxied.self ?? proxied);
+    const outputNode = buildPcgBody(float(1));
+    const nodes = collectNodes(outputNode.self ?? outputNode);
     const found = new Set<number>();
 
     for (const node of nodes) {
@@ -81,6 +102,12 @@ describe('stableHash', () => {
   });
 
   it('carries every PCG constant as a uint-typed node, never float', () => {
+    // Walk stableHash's own composed graph, not the Fn's closure: the PCG
+    // body now builds behind stableHashUint's call node (see buildPcgBody's
+    // comment above), so this composed graph may not reach the PCG
+    // constants at all anymore — finding none is fine. What must never
+    // happen is a float-typed copy showing up here, which would
+    // reintroduce MAT-92's divergence.
     const proxied = stableHash(float(1)) as unknown as GraphNode;
     const nodes = collectNodes(proxied.self ?? proxied);
 
@@ -95,15 +122,30 @@ describe('stableHash', () => {
       }
     }
 
-    // All three constants must be present...
-    expect([...constantsFound.keys()].sort()).toEqual([...PCG_CONSTANTS].sort());
-
-    // ...and every occurrence must be typed uint. A single float-typed copy
-    // reintroduces the divergence.
     for (const [value, types] of constantsFound) {
       for (const type of types) {
         expect(type, `constant ${value} must be uint, got ${type}`).toBe('uint');
       }
     }
+  });
+
+  it('lays out stableHashUint so its type comes from the layout, not a walk into the PCG body', () => {
+    // Every Fn(...) call returns a ShaderCallNodeInternal, laid out or not
+    // — checking the constructor alone would still pass with the
+    // .setLayout() call deleted, and the 19-second regression back with
+    // it. What actually stops three's unmemoized getNodeType walk is the
+    // layout: ShaderCallNodeInternal.getNodeType reads shaderNode.nodeType
+    // (unset here), falls through to getOutputNode(), and it's call()'s
+    // `if (shaderNode.layout)` check that switches to the declared type
+    // instead of building the PCG body. Assert the layout is actually
+    // there, through the same `.shaderNode` reach buildPcgBody uses above.
+    const proxied = stableHashUint(float(1)) as unknown as GraphNode;
+    const raw = (proxied.self ?? proxied) as unknown as {
+      constructor: { name: string };
+      shaderNode: { layout: unknown };
+    };
+
+    expect(raw.constructor.name).toBe('ShaderCallNodeInternal');
+    expect(raw.shaderNode.layout).toMatchObject({ name: 'stableHashUint', type: 'uint' });
   });
 });

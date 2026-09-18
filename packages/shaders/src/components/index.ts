@@ -11,6 +11,9 @@ export type { BlobsProps } from './blobs/blobs.js';
 export { ConicGradient } from './conic-gradient/conic-gradient.js';
 export type { ConicGradientProps } from './conic-gradient/conic-gradient.js';
 
+export { Dissolve } from './dissolve/dissolve.js';
+export type { DissolveProps } from './dissolve/dissolve.js';
+
 export { Dither } from './dither/dither.js';
 export type { DitherProps } from './dither/dither.js';
 
@@ -29,6 +32,9 @@ export { Grain } from './grain/grain.js';
 export type { GrainProps } from './grain/grain.js';
 export type { GrainBlend } from './grain/shader.js';
 
+export { LedWall } from './led-wall/led-wall.js';
+export type { LedWallProps } from './led-wall/led-wall.js';
+
 export { LinearGradient } from './linear-gradient/linear-gradient.js';
 export type { LinearGradientProps } from './linear-gradient/linear-gradient.js';
 
@@ -37,6 +43,9 @@ export type { MeshGradientProps } from './mesh-gradient/mesh-gradient.js';
 
 export { RadialGradient } from './radial-gradient/radial-gradient.js';
 export type { RadialGradientProps } from './radial-gradient/radial-gradient.js';
+
+export { RadialWipe } from './radial-wipe/radial-wipe.js';
+export type { RadialWipeProps } from './radial-wipe/radial-wipe.js';
 
 export { SimplexNoise } from './simplex-noise/simplex-noise.js';
 export type { SimplexNoiseProps } from './simplex-noise/simplex-noise.js';

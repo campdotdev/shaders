@@ -94,4 +94,14 @@ export { createIntersectionWatcher } from './runtime/intersection/intersection.j
 export type { IntersectionWatcher } from './runtime/intersection/intersection.js';
 
 export { FrameScheduler } from './runtime/frame-scheduler/frame-scheduler.js';
+
+export { createOutputStage } from './runtime/output-stage/output-stage.js';
+export type {
+  OutputStage,
+  PostProcessTransform,
+  UvTransform,
+} from './runtime/output-stage/output-stage.js';
+
+export { createPauseWatcher } from './runtime/pause-watcher/pause-watcher.js';
+export type { PauseWatcher } from './runtime/pause-watcher/pause-watcher.js';
 export type { SchedulerTick, SchedulerClient } from './runtime/frame-scheduler/frame-scheduler.js';

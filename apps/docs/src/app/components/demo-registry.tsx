@@ -11,14 +11,17 @@ import type { ComponentType, ReactNode } from 'react';
 import { AuroraIsland } from './aurora/demo';
 import { BlobsIsland } from './blobs/demo';
 import { ConicGradientIsland } from './conic-gradient/demo';
+import { DissolveIsland } from './dissolve/demo';
 import { DitherIsland } from './dither/demo';
 import { DotFieldIsland } from './dot-field/demo';
 import { FractalNoiseIsland } from './fractal-noise/demo';
 import { GodRaysIsland } from './god-rays/demo';
 import { GrainIsland } from './grain/demo';
+import { LedWallIsland } from './led-wall/demo';
 import { LinearGradientIsland } from './linear-gradient/demo';
 import { MeshGradientIsland } from './mesh-gradient/demo';
 import { RadialGradientIsland } from './radial-gradient/demo';
+import { RadialWipeIsland } from './radial-wipe/demo';
 import { SimplexNoiseIsland } from './simplex-noise/demo';
 import { VignetteIsland } from './vignette/demo';
 import { VoronoiIsland } from './voronoi/demo';
@@ -84,6 +87,30 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     usageSnippet: `<ShaderScene>
   <ConicGradient />
 </ShaderScene>`,
+  },
+  dissolve: {
+    Island: DissolveIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <Dissolve progress={0.5} pixelSize={4} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        <p>
+          Dissolve is a post-process layer: stack it after any components inside a{' '}
+          <code>&lt;ShaderScene&gt;</code> and drive <code>progress</code> from 0 to 1 to show them
+          block by block. Hidden blocks are transparent, so the page shows through.
+        </p>
+        <p>
+          It reads the alpha beneath it. Stacked after a feathered Radial Wipe, at{' '}
+          <code>progress</code> 1, it turns the wipe&apos;s soft edge into a ragged one, with the
+          wipe&apos;s <code>feather</code> setting how wide the ragged band is and{' '}
+          <code>pixelSize</code> its grain. A soft-edged source such as Blobs gets the same
+          treatment, which is the point of stacking a Dissolve over it.
+        </p>
+      </>
+    ),
   },
   dither: {
     Island: DitherIsland,
@@ -165,6 +192,22 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
       </>
     ),
   },
+  'led-wall': {
+    Island: LedWallIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <LedWall spacing={8} dotSize={4} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        LED Wall is a post-process layer: stack it after any components inside a{' '}
+        <code>&lt;ShaderScene&gt;</code> and it screens the composed scene into a grid of square
+        dots, each lit with the scene color at its cell. The gaps are transparent unless{' '}
+        <code>bleed</code> lets the scene through.
+      </>
+    ),
+  },
   'linear-gradient': {
     Island: LinearGradientIsland,
     usageSnippet: `<ShaderScene>
@@ -182,6 +225,22 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     usageSnippet: `<ShaderScene>
   <RadialGradient />
 </ShaderScene>`,
+  },
+  'radial-wipe': {
+    Island: RadialWipeIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <RadialWipe progress={0.5} center={[0.5, 1]} feather={0.15} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        Radial Wipe is a post-process layer: stack it after any components inside a{' '}
+        <code>&lt;ShaderScene&gt;</code> and drive <code>progress</code> from 0 to 1 to reveal them
+        from <code>center</code>. <code>feather</code> softens the front. Hidden areas are
+        transparent, so the page shows through. Stack a Dissolve after it to grain the soft edge.
+      </>
+    ),
   },
   'simplex-noise': {
     Island: SimplexNoiseIsland,

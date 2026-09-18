@@ -1,17 +1,22 @@
 /* Section banner after the Figma mock: a 144px band that puts the title at
    its bottom-left, 32px up from the bottom and on the same 32-plus-16 inset
-   the site navigation uses, over a lime glow that fades in from the bottom
-   edge. The band is the page gutter and the inner block is the 9xl
-   container, both from globals.css. */
+   the site navigation uses, over a lime glow screened into LED dots
+   (banner-shader.tsx). The band is the page gutter and the inner block is
+   the 9xl container, both from globals.css. */
 
-/* Full-bleed so the glow spans the viewport. Positioned and isolated so the
-   glow can sit behind the title as its own layer. A future shader takes the
-   glow's place as one absolutely positioned child and nothing else has to
-   move. */
+/* Full-bleed so the shader spans the viewport. Positioned and isolated so
+   the shader's canvas can sit behind the title as its own layer, absolutely
+   positioned from this box via .scene below. The scene box is a fixed
+   1728px wide (banner-geometry.ts), so on any narrower viewport it reaches
+   past the page's right edge, and an absolutely positioned box that does so
+   still widens the page's scrollable area. Clipping the x axis stops that
+   without making this a scroll container. Only the x axis: the scene
+   deliberately reaches above the band, and `clip` is the one overflow value
+   that leaves the other axis visible instead of forcing it to auto. */
 .banner {
   position: relative;
   isolation: isolate;
-  overflow: hidden;
+  overflow-x: clip;
 }
 
 /* The title block: 144px tall with the title at its bottom, 32px up, on the
@@ -24,31 +29,57 @@
   padding: var(--spacing-8) var(--spacing-4);
 }
 
-/* The mock's glow is a half-ellipse centered on the bottom edge of the
-   whole 200px header block: 864px wide at 1728px, so half the width, and
-   200px tall. The band is only the bottom 144px of that block, so the
-   ellipse overshoots the top by 56px and gets clipped, which matches the
-   mock's rendering inside the band. Its 7.5% opacity is what keeps the lime
-   steps reading as a glow rather than a fill; the four lime stops are the
-   palette's 400, 500, and 700, then an off-palette dark green before black. */
-.banner::before {
-  content: '';
+/* The shader layer: the glow and its dots, behind the title. The box ends
+   at the band's bottom, the edge the design ends the dots at, and reaches up
+   by whatever its fixed height leaves over: exactly one nav row at the 144px
+   band, where 200px is the mock's whole header block, and 32px more than
+   that at the 112px phone band, where the excess goes above the top of the
+   page rather than down over it. Anchoring the bottom is what keeps the two
+   in step, because this box's height is fixed and the band's is not;
+   anchoring the top is what once ran the box 32px past the phone band, over
+   the gap under it and the nav dropdown's top 8px. Either way the glow
+   shows through the nav, which has no background and lifts itself above
+   this layer (site-header.module.css). `top: auto` is the initial value and
+   is spelled out because a `top` set alongside a definite height wins and
+   `bottom` is then ignored. The box is a fixed size, centered:
+   banner-shader.tsx sets its width and height from banner-geometry.ts,
+   which says why the size is fixed. ShaderScene positions its own canvas
+   absolutely inside it. pointer-events: none keeps the canvas from
+   swallowing text selection on the title. If the renderer fails, the poster
+   stays up. */
+.scene {
   position: absolute;
-  inset: 0;
+  top: auto;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: -1;
-  background: radial-gradient(
-    ellipse 50% 200px at 50% 100%,
-    var(--lime-400) 0%,
-    var(--lime-500) 33%,
-    var(--lime-700) 66%,
-    rgb(29 37 7) 83%,
-    var(--black) 100%
-  );
-  opacity: 0.075;
+  pointer-events: none;
 }
 
 .title {
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-10);
+}
+
+/* The phone band: 112px tall with the title still at its bottom, 24px up,
+   and no inset of its own, because the gutter carries the whole 16px there
+   (globals.css). The title steps down to 30px on a 36px line, so its line
+   box starts 52px below the band's top. The padding is the bottom 24px and
+   nothing else: the band's height is fixed and .inner is flex-end, so a top
+   padding would position nothing. The height includes the padding here too,
+   so the band measures 112, not 136. The scene box behind it keeps its
+   fixed size and comes up with the shorter band, because it hangs off the
+   band's bottom edge (.scene above). */
+@container site (width < 40rem) {
+  .inner {
+    height: var(--spacing-28);
+    padding: 0 0 var(--spacing-6);
+  }
+
+  .title {
+    font-size: var(--font-size-3xl);
+    line-height: var(--leading-9);
+  }
 }

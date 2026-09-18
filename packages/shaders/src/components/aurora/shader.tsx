@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
 import {
   cos,
@@ -16,7 +16,6 @@ import {
   type ShaderNodeObject,
   sin,
   smoothstep,
-  uniform,
   uv,
   vec2,
   vec3,
@@ -28,7 +27,7 @@ import { colorRamp, type ColorSpace, type HueInterpolation, type TSLNode } from 
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
+import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color.js';
 
@@ -167,7 +166,6 @@ export function AuroraShader({
   hueInterpolation,
 }: AuroraShaderProps) {
   const shaderContext = useShaderContext();
-  const resize = useResize();
 
   const intensityUniform = useAnimatableUniform<number>(intensity);
   // Speed is integrated on the CPU into a phase uniform (speed x delta per
@@ -183,24 +181,8 @@ export function AuroraShader({
   const stopsKey = colorStopsKey(stops);
 
   // Canvas aspect ratio (width/height), used to un-stretch the view ray on
-  // wide canvases. Starts from the current size (16:9 fallback while the
-  // canvas reports 0) and follows every resize.
-  const [initialWidth, initialHeight] = resize.get();
-  const aspectNode = useMemo(
-    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
-
-    if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
-
-    return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) aspectNode.value = updatedWidth / updatedHeight;
-    });
-  }, [resize, aspectNode]);
+  // wide canvases. useAspectUniform keeps it current across resizes.
+  const aspectNode = useAspectUniform();
 
   // ---------------------------------------------
   // Build the material and mount the mesh

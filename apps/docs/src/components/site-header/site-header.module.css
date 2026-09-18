@@ -1,8 +1,23 @@
 /* Site navigation after the Figma mock: one 56px row, logo mark at the left
    edge, links at the right, no divider underneath. The header element is the
-   page gutter and the row is the 9xl container (both in globals.css), so the
-   32px comes from the gutter and the 16px here, and the banner title below
-   lines up because it nests the same way. */
+   page gutter and the row is the 9xl container (both in globals.css), so on
+   a wide viewport the 32px comes from the gutter and the 16px here, and the
+   banner title below lines up because it nests the same way. Under 40rem the
+   gutter is 16px and this row's inset drops to 0, so the logo box sits 16px
+   from the edge. */
+
+/* The header has no background: on the components routes the banner's
+   shader reaches up behind it. That shader is a positioned layer painted
+   after this element in tree order, so the header lifts itself above it, or
+   the dots would sit on top of the links. The same z-index is also what
+   keeps the header, and its hamburger, above the site nav's overlay while
+   the nav is open: nothing in that portal has a z-index, and the hamburger
+   is the nav's visible Close (site-nav.module.css), so a change here breaks
+   that close. Escape, a backdrop press, and the sr-only Close survive it. */
+.header {
+  position: relative;
+  z-index: 1;
+}
 
 .row {
   display: flex;
@@ -28,6 +43,20 @@
   display: flex;
   align-items: center;
   gap: var(--spacing-6);
+}
+
+/* Under 40rem of the site the link row and search give way to the
+   hamburger, which site-nav.module.css shows on the same query, and the
+   row drops its 16px inset: the phone gutter is 16px in total, and
+   globals.css puts all of it on .site-gutter. */
+@container site (width < 40rem) {
+  .actions {
+    display: none;
+  }
+
+  .row {
+    padding: 0;
+  }
 }
 
 .nav {

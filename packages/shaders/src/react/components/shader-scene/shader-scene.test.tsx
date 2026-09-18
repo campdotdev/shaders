@@ -1,4 +1,5 @@
 import { render, waitFor } from '@testing-library/react';
+import type { QuadMesh } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type * as ShadersModule from '../../../engine.js';
@@ -41,6 +42,45 @@ describe('ShaderScene', () => {
     const { container } = render(<ShaderScene />);
 
     expect(container.querySelector('canvas')).toBeInTheDocument();
+  });
+
+  // three 0.170's PostProcessing shares one quad and one material across
+  // every instance, so two scenes on a page drew whichever output was set
+  // last. Each scene must draw its own quad with its own material.
+  it('gives every scene its own output quad and material', async () => {
+    const frames: FrameRequestCallback[] = [];
+
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+
+      return frames.length;
+    });
+    vi.mocked(createRenderer).mockClear();
+
+    render(
+      <>
+        <ShaderScene />
+        <ShaderScene />
+      </>,
+    );
+
+    await waitFor(() => expect(frames.length).toBeGreaterThanOrEqual(2));
+    for (const frame of frames.splice(0)) frame(16);
+
+    const renderers = await Promise.all(
+      vi.mocked(createRenderer).mock.results.map((result) => result.value),
+    );
+    const quads = renderers.map(
+      (gpuRenderer) => vi.mocked(gpuRenderer.three.render).mock.calls.at(-1)?.[0] as QuadMesh,
+    );
+
+    const [first, second] = quads;
+
+    expect(quads).toHaveLength(2);
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    expect(first).not.toBe(second);
+    expect(first?.material).not.toBe(second?.material);
   });
 
   it('signals painted=false to an enclosing poster boundary on teardown', async () => {

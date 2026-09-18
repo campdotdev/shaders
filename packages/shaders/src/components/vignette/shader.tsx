@@ -14,8 +14,8 @@ import type { ColorSpace, HueInterpolation } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { parseColor } from '../shared/color.js';
 
 export interface VignetteShaderProps {
@@ -99,27 +99,8 @@ export function VignetteShader({
   // Track the canvas aspect ratio
   // ---------------------------------------------
   // The distance math below needs width/height to keep the vignette
-  // circular. The uniform starts from the current canvas size (falling back
-  // to 16:9 when the canvas hasn't been laid out yet and reports 0), then an
-  // effect re-reads it on mount and follows every resize. The zero guards
-  // skip nonsense ratios while the canvas is collapsed.
-  const resize = useResize();
-  const [initialWidth, initialHeight] = resize.get();
-  const aspectNode = useMemo(
-    () => uniform(initialHeight > 0 ? initialWidth / initialHeight : 16 / 9),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const [canvasWidth, canvasHeight] = resize.get();
-
-    if (canvasWidth > 0 && canvasHeight > 0) aspectNode.value = canvasWidth / canvasHeight;
-
-    return resize.on('change', ([updatedWidth, updatedHeight]) => {
-      if (updatedWidth > 0 && updatedHeight > 0) aspectNode.value = updatedWidth / updatedHeight;
-    });
-  }, [resize, aspectNode]);
+  // circular. useAspectUniform keeps the ratio current across resizes.
+  const aspectNode = useAspectUniform();
 
   // ---------------------------------------------
   // The pass: distance -> mask -> blend

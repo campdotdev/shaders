@@ -62,9 +62,9 @@ async function resolveItem(
     }
     case 'taxonomy': {
       // Each tier becomes a group whose items are the leaf groups, so the
-      // sidebar renders tier headers over group headers over rows, and
-      // flatten() below gives MDX breadcrumbs the full trail if a component
-      // ever needs one.
+      // full tree keeps the tier level: flatten() below gives MDX
+      // breadcrumbs the full trail, and prev and next paging walks it.
+      // getDocsSidebarTree unwraps the tiers for the sidebar's own view.
       const tiers = await getComponentsTree();
 
       return tiers.map((tier) => ({
@@ -87,9 +87,11 @@ export const getDocsNavTree = cache(async (): Promise<ResolvedNavGroup[]> => {
 });
 
 /**
- * The groups one sidebar shows. The components sidebar unwraps its single
- * group so the taxonomy tiers render as the top-level headers, as in the
- * mock; the other sections show their groups as they are.
+ * The groups one sidebar shows. The docs sections show their groups as they
+ * are. The components sidebar shows the taxonomy's category groups and
+ * nothing above them: the Components group wraps the tiers and each tier
+ * wraps its categories, so it unwraps twice. The tiers stay in the full
+ * tree, where prev and next paging and the MDX breadcrumbs still walk them.
  */
 export const getDocsSidebarTree = cache(
   async (section: SidebarSection): Promise<ResolvedNavGroup[]> => {
@@ -97,7 +99,9 @@ export const getDocsSidebarTree = cache(
 
     if (section !== 'components') return groups;
 
-    return groups.flatMap((group) => group.items.filter(isResolvedGroup));
+    return groups
+      .flatMap((group) => group.items.filter(isResolvedGroup))
+      .flatMap((tier) => tier.items.filter(isResolvedGroup));
   },
 );
 
