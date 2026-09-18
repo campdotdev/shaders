@@ -18,7 +18,7 @@ import { usePathname } from 'next/navigation';
 import { type MouseEvent, useEffect, useId, useRef } from 'react';
 
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
-import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types';
+import type { ResolvedNavGroup } from '@/content/types';
 
 import styles from './docs-sidebar.module.css';
 
@@ -148,6 +148,13 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
 // navigation still steps through the nav, and its id labels the list below
 // it: a screen reader then says "Gradients, list, 4 items" rather than
 // reading an unlabelled list.
+//
+// One list holds everything the group contains, rows and nested groups
+// alike, so a nested group is an item of its parent's list rather than a
+// sibling of it and the Frameworks-over-React hierarchy reaches assistive
+// technology as a hierarchy. The 2px pitch between items is that one list's
+// gap, whichever kind of item sits either side of it. Mirrors
+// DocsNavDropdown, which draws the same tree.
 function Group({ group, level, onRowClick, pathname }: GroupProps) {
   const headingId = useId();
   const Heading = level === 2 ? 'h2' : 'h3';
@@ -157,69 +164,31 @@ function Group({ group, level, onRowClick, pathname }: GroupProps) {
       <Heading className={styles.groupHeader} id={headingId}>
         {group.label}
       </Heading>
-      <Items
-        headingId={headingId}
-        items={group.items}
-        onRowClick={onRowClick}
-        pathname={pathname}
-      />
-    </div>
-  );
-}
-
-// Consecutive rows share one list so their 2px gap is the list's, and a
-// group between them breaks the list rather than nesting inside it.
-function Items({
-  headingId,
-  items,
-  onRowClick,
-  pathname,
-}: {
-  /** The id of the header above these items, which labels each list. */
-  headingId: string;
-  items: Array<ResolvedNavGroup | ResolvedNavItem>;
-  onRowClick: RowClickHandler;
-  pathname: string;
-}) {
-  const blocks: Array<ResolvedNavGroup | ResolvedNavItem[]> = [];
-
-  for (const item of items) {
-    const last = blocks[blocks.length - 1];
-
-    if ('items' in item) blocks.push(item);
-    else if (Array.isArray(last)) last.push(item);
-    else blocks.push([item]);
-  }
-
-  return blocks.map((block) =>
-    Array.isArray(block) ? (
-      <ul aria-labelledby={headingId} className={styles.list} key={block[0]?.url}>
-        {block.map((item) => (
-          <li key={item.url}>
-            {/* scroll={false} keeps the window where pinSidebar put it. */}
-            <Link
-              aria-current={item.url === pathname ? 'page' : undefined}
-              className={styles.row}
-              href={item.url}
-              onClick={onRowClick}
-              scroll={false}
-            >
-              {item.label}
-            </Link>
-          </li>
-        ))}
+      <ul aria-labelledby={headingId} className={styles.list}>
+        {group.items.map((item) =>
+          'items' in item ? (
+            // A nested group's header is an h3. No tree nests deeper than
+            // this: the components tree is flat and the only nesting in
+            // nav.config.ts is Frameworks over React.
+            <li key={item.label}>
+              <Group group={item} level={3} onRowClick={onRowClick} pathname={pathname} />
+            </li>
+          ) : (
+            <li key={item.url}>
+              {/* scroll={false} keeps the window where pinSidebar put it. */}
+              <Link
+                aria-current={item.url === pathname ? 'page' : undefined}
+                className={styles.row}
+                href={item.url}
+                onClick={onRowClick}
+                scroll={false}
+              >
+                {item.label}
+              </Link>
+            </li>
+          ),
+        )}
       </ul>
-    ) : (
-      // A nested group's header is an h3. No tree nests deeper than this:
-      // the components tree is flat and the only nesting in nav.config.ts is
-      // Frameworks over React.
-      <Group
-        group={block}
-        key={block.label}
-        level={3}
-        onRowClick={onRowClick}
-        pathname={pathname}
-      />
-    ),
+    </div>
   );
 }
