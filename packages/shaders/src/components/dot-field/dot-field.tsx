@@ -6,17 +6,23 @@
 // Render it inside a <ShaderScene>; the gaps between dots are transparent,
 // so it can sit over other layers.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
-import { DotFieldShader, type DotShape } from './shader.js';
+import type { DotShape } from './marks.js';
+import { DotFieldShader } from './shader.js';
 
-export type { DotShape } from './shader.js';
+export type { DotShape } from './marks.js';
 
 export interface DotFieldProps {
   /**
-   * The mark drawn at each grid point. `'circle'` is a disk and `'cross'` is
-   * an x with flat-ended arms. `dotSize` is the mark's overall size for both,
-   * so the two swap without retuning the grid. Defaults to `'circle'`.
+   * The mark at each grid point, or a list of marks the field scatters
+   * across the grid. `'circle'` is a disk and `'cross'` is an x with
+   * flat-ended arms, and `dotSize` is the mark's overall size for both, so
+   * the two swap without retuning the grid. With a list, each cell draws one
+   * entry, chosen by a hash of its cell index, so the pick holds still from
+   * frame to frame. A mark listed more than once is drawn that many times as
+   * often: `['circle', 'cross', 'cross']` draws about two crosses per
+   * circle. A change rebuilds the shader. Defaults to `'circle'`.
    */
-  shape?: DotShape;
+  shape?: DotShape | readonly DotShape[];
   /**
    * Grid cell size in pixels. Defaults to 30. Accepts a static value or an
    * animation signal.

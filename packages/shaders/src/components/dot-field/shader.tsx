@@ -9,7 +9,22 @@
 import { useEffect, useMemo } from 'react';
 
 import type { ShaderNodeObject } from 'three/tsl';
-import { exp, length, round, sin, smoothstep, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import {
+  exp,
+  float,
+  length,
+  modInt,
+  round,
+  select,
+  sin,
+  smoothstep,
+  uint,
+  uniform,
+  uv,
+  vec2,
+  vec3,
+  vec4,
+} from 'three/tsl';
 import type { Node } from 'three/webgpu';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
@@ -17,6 +32,7 @@ import {
   displace,
   signedDistanceFieldCircle,
   signedDistanceFieldCross,
+  stableHashUint,
   type TSLNode,
 } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
@@ -26,16 +42,21 @@ import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/u
 import { type ResizeValue, useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { parseColor } from '../shared/color.js';
+import { type DotShape, resolveMarkEntries } from './marks.js';
 
-/** The marks the field can draw at each grid point. */
-export type DotShape = 'circle' | 'cross';
+export type { DotShape } from './marks.js';
 
 export interface DotFieldShaderProps {
   /**
-   * The mark drawn at each grid point. `'circle'` is a disk and `'cross'` is
-   * an x with flat-ended arms. `dotSize` is the mark's overall size for both.
+   * The mark at each grid point, or a list of marks the field scatters
+   * across the grid. `'circle'` is a disk and `'cross'` is an x with
+   * flat-ended arms, and `dotSize` is the mark's overall size for both. With
+   * a list, each cell draws one entry, chosen by a hash of its cell index,
+   * so the pick holds still from frame to frame. A mark listed more than
+   * once is drawn that many times as often: `['circle', 'cross', 'cross']`
+   * draws about two crosses per circle. A change rebuilds the shader.
    */
-  shape: DotShape;
+  shape: DotShape | readonly DotShape[];
   /** Grid cell size in pixels. Accepts a static value or an animation signal. */
   spacing: AnimatableProp<number>;
   /**
@@ -95,12 +116,27 @@ const CROSS_ARM_THICKNESS = 0.317;
 // figure as LedWall's rim.
 const RIM_SOFTNESS_PX = 0.7;
 
+// Shifts a cell index positive before it is hashed. The grid is anchored
+// to the canvas center, so half the cells have a negative index, and
+// stableHashUint converts its seed to u32, where a negative float is
+// backend-defined. 2^20 absorbs indices down to about a million cells
+// left of or below center, which even at a 1px spacing is a canvas two
+// million pixels wide, and a shifted index stays an exact float, since
+// f32 holds every integer below 2^24. Voronoi and metaballs use 512 for
+// the same job, because their cell counts are bounded by a scale prop;
+// here spacing has no floor, so the margin is wider.
+const HASH_DOMAIN_OFFSET = 2 ** 20;
+
 // Everything the material bakes in or reads from a uniform, named so a call
 // site reads as a record rather than a positional list: the uniforms are
 // all typed alike, and a swapped pair of them would typecheck fine while
 // drawing garbage.
 interface DotFieldMaterialInputs {
-  shape: DotShape;
+  /**
+   * The marks to scatter, in order. One entry is the plain single-mark
+   * field, and none draws nothing.
+   */
+  entries: readonly DotShape[];
   spacingUniform: TSLNode;
   dprUniform: TSLNode;
   dotSizeUniform: TSLNode;
@@ -115,7 +151,7 @@ interface DotFieldMaterialInputs {
 }
 
 function buildDotFieldMaterial({
-  shape,
+  entries,
   spacingUniform,
   dprUniform,
   dotSizeUniform,
@@ -197,26 +233,33 @@ function buildDotFieldMaterial({
   const zeroScalar = vec2(0).x;
   const halfSize = zeroScalar.add(dotSizeUniform).div(zeroScalar.add(spacingUniform).mul(2));
 
-  // Signed distance to the mark's edge: negative inside, positive outside,
-  // zero exactly on the rim. The shape is baked into the compiled shader,
-  // so choosing here costs nothing per pixel.
-  const sdf =
-    shape === 'cross'
-      ? signedDistanceFieldCross(displacedLocal, ...crossArms(halfSize))
-      : signedDistanceFieldCircle(displacedLocal, halfSize);
-
   // The band converted into cell units, the sdf's units: a cell is
   // `spacing` CSS pixels, or `spacing` times the pixel ratio device pixels,
   // so dividing the band by that is its width as a fraction of a cell.
   const cellDevicePixels = zeroScalar.add(spacingUniform).mul(dprUniform);
   const antialiasWidth = zeroScalar.add(RIM_SOFTNESS_PX).div(cellDevicePixels);
 
-  // smoothstep ramps from 0 at the inner edge to 1 at the outer edge of
-  // the band, so oneMinus flips it: pixels deeper inside the rim than the
-  // band get 1, pixels further outside get 0, and the band across the rim
-  // fades smoothly — that fade is the anti-aliasing that keeps mark edges
-  // from stair-stepping.
-  const dotMask = smoothstep(antialiasWidth.negate(), antialiasWidth, sdf).oneMinus();
+  // Coverage of one built-in mark at this pixel. Signed distance to the
+  // mark's edge is negative inside, positive outside, zero exactly on the
+  // rim, and the shape is baked into the compiled shader, so choosing it
+  // here costs nothing per pixel. smoothstep ramps from 0 at the inner edge
+  // to 1 at the outer edge of the band, so oneMinus flips it: pixels deeper
+  // inside the rim than the band get 1, pixels further outside get 0, and
+  // the band across the rim fades smoothly — that fade is the anti-aliasing
+  // that keeps mark edges from stair-stepping.
+  const markMask = (shape: DotShape): TSLNode => {
+    const sdf =
+      shape === 'cross'
+        ? signedDistanceFieldCross(displacedLocal, ...crossArms(halfSize))
+        : signedDistanceFieldCircle(displacedLocal, halfSize);
+
+    return smoothstep(antialiasWidth.negate(), antialiasWidth, sdf).oneMinus();
+  };
+
+  // ---------------------------------------------
+  // The pick: which entry this cell draws
+  // ---------------------------------------------
+  const dotMask = pickMarkMask(entries, cellIndex, markMask);
 
   const material = new MeshBasicNodeMaterial();
 
@@ -249,6 +292,69 @@ function crossArms(
   return [armHalfLength, armHalfThickness];
 }
 
+/**
+ * The coverage this pixel's cell draws, given the entry list. One entry is
+ * the plain field: its mask and nothing else, so the compiled shader is the
+ * same graph it was before lists existed. No entries draws nothing. Two or
+ * more hash the cell index into a pick and select that entry's mask.
+ */
+function pickMarkMask(
+  entries: readonly DotShape[],
+  cellIndex: ShaderNodeObject<Node>,
+  markMask: (shape: DotShape) => TSLNode,
+): TSLNode {
+  const lastEntry = entries[entries.length - 1];
+
+  if (lastEntry === undefined) return float(0);
+  if (entries.length === 1) return markMask(lastEntry);
+
+  // One mask per distinct mark, shared by every entry that names it. Two
+  // 'cross' entries evaluate the cross distance once, and only the pick
+  // below decides which cells draw it.
+  const maskByShape = new Map<DotShape, TSLNode>();
+  const maskFor = (shape: DotShape): TSLNode => {
+    const cached = maskByShape.get(shape);
+
+    if (cached !== undefined) return cached;
+
+    const mask = markMask(shape);
+
+    maskByShape.set(shape, mask);
+
+    return mask;
+  };
+
+  // The per-cell pick. Shift the index positive, hash the row, add the
+  // column, hash the sum: LedWall's seed, one u32 word per cell, chained
+  // in u32 the whole way so both backends agree on it (the seeded-randomness
+  // gotcha). The modulo, also in u32, turns that word into an index into the
+  // list. A good hash spreads its words evenly, so every index is equally
+  // likely, and an entry listed twice therefore owns two indices and is
+  // picked twice as often. That is the whole weighting mechanism. toVar
+  // stores the pick in a GPU variable so the chain below reads it back
+  // rather than re-running the hash once per entry.
+  const shifted = cellIndex.add(HASH_DOMAIN_OFFSET);
+  const cellSeed = stableHashUint(shifted.x.toUint().add(stableHashUint(shifted.y.toUint())));
+  const pick = modInt(cellSeed, uint(entries.length)).toVar();
+
+  // Select by the pick, wrapping outward from the last entry: it is the
+  // innermost fallback, and each earlier entry adds one select around what
+  // is already there. Every level references the pick once, its own mask
+  // once, and the level inside it once, so the graph grows linearly with
+  // the entry count. The exponential-select gotcha is about a running
+  // accumulator that references ITSELF twice per step, which this chain
+  // never does.
+  let mask = maskFor(lastEntry);
+
+  for (let index = entries.length - 2; index >= 0; index -= 1) {
+    const entry = entries[index];
+
+    if (entry !== undefined) mask = select(pick.equal(uint(index)), maskFor(entry), mask);
+  }
+
+  return mask;
+}
+
 export function DotFieldShader({
   shape,
   spacing,
@@ -262,6 +368,14 @@ export function DotFieldShader({
 }: DotFieldShaderProps) {
   const shaderContext = useShaderContext();
   const resize = useResize();
+
+  // The shape prop flattened to the entry list the builder bakes in, plus a
+  // string key that stands in for it in the material effect's deps: an
+  // inline array literal in JSX is a new reference on every parent render,
+  // so depending on the array itself would rebuild the shader each time
+  // the parent rendered (the AGENTS.md gotcha on array props in effect
+  // deps). Cheap enough to redo per render.
+  const { entries, key: shapeKey } = resolveMarkEntries(shape);
 
   // The animated dials live in uniforms (values the CPU can update each
   // frame without rebuilding the shader), tracking either a static number or
@@ -328,12 +442,12 @@ export function DotFieldShader({
   // ---------------------------------------------
   // The 2x2 plane exactly fills ShaderScene's camera view. All the dial
   // uniforms are stable references, so in practice this runs once per mount
-  // and again only when the color string or the shape changes.
+  // and again only when the color string or the mark list changes.
   useEffect(() => {
     if (!shaderContext) return;
 
     const material = buildDotFieldMaterial({
-      shape,
+      entries,
       spacingUniform,
       dprUniform,
       dotSizeUniform,
@@ -362,9 +476,12 @@ export function DotFieldShader({
         /* same */
       }
     };
+    // shapeKey stands in for entries: the two come from one call, and the
+    // key changes exactly when the list's contents do.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     shaderContext,
-    shape,
+    shapeKey,
     parsedColor,
     spacingUniform,
     dprUniform,
