@@ -11,12 +11,12 @@ Skills from the mattpocock set look for this file. It is the hand-written Linear
 - **List issues**: `mcp__linear__list_issues`, filtered by `team`, `state`, `assignee`, `label`, or `parentId`.
 - **Comment**: `mcp__linear__save_comment`.
 - **Read comments**: `mcp__linear__list_comments`.
-- **Apply labels**: `mcp__linear__save_issue` with `labels`. See the label trap below before you use it.
+- **Apply labels**: `mcp__linear__save_issue` with `addLabels`, which appends. See the label trap below before you reach for `labels`.
 - **Close**: `mcp__linear__save_issue` with `state: "Done"`, or `state: "Canceled"` when the work is being dropped rather than finished.
 
 ### Three traps
 
-1. **`labels` replaces the entire label set.** It is not additive. An issue carrying `Feature` that you save with `labels: ["wayfinder:map"]` loses `Feature`. Read the current labels with `get_issue` first, then pass the union. Omitting `labels` leaves them untouched, which is what you usually want.
+1. **`labels` replaces the entire label set.** It is not additive. An issue carrying `Feature` that you save with `labels: ["wayfinder:map"]` loses `Feature`. On an existing issue, pass `addLabels` to append and `removeLabels` to drop one. Omitting all three leaves the labels untouched, which is what you usually want.
 2. **`blocks` and `blockedBy` are append-only.** Saving them never removes an existing edge. Use `removeBlocks` and `removeBlockedBy` to drop one.
 3. **Linear has no open or closed flag.** It has workflow states with a type. On this team the states are `Backlog` (backlog), `Todo` (unstarted), `In Progress` (started), `In Review` (started), `Done` (completed), `Canceled` (canceled), and `Duplicate` (duplicate). Treat backlog, unstarted, and started as open. Treat completed, canceled, and duplicate as closed, so a `Duplicate` issue never surfaces as open work.
 

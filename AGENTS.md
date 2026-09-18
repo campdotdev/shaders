@@ -187,7 +187,7 @@ Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root, both crea
 
 ### Code review surfaces
 
-Four reviewers run on a change, two locally before the push and two on the pull request. They answer different questions, so none of them replaces another.
+Four reviewers run on every change, two locally before the push and two on the pull request. A fifth, `/ocr-delegate-review-branch`, joins the local set on wide or multi-commit branches. They answer different questions, so none of them replaces another.
 
 | When                                   | Reviewer                      | What it checks                                                     |
 | -------------------------------------- | ----------------------------- | ------------------------------------------------------------------ |
@@ -196,7 +196,7 @@ Four reviewers run on a change, two locally before the push and two on the pull 
 | Wide or multi-commit branches          | `/ocr-delegate-review-branch` | Every file the branch touches, across all its commits              |
 | After the push                         | CodeRabbit and Macroscope     | The pull request, worked through `resolve-coderabbit-feedback`      |
 
-`implement` drives the first three in that order. The ordering is load-bearing: `/code-review` and `/ocr-delegate-review-branch` both resolve refs, so running either before the commit reviews the previous state and misses the work you just wrote.
+`implement` drives the three local reviewers in that order. The ordering is load-bearing: `/code-review` and `/ocr-delegate-review-branch` both resolve refs, so running either before the commit reviews the previous state and misses the work you just wrote.
 
 Open Code Review supplies deterministic file selection and a coverage checklist; the review itself is done by the agent, through the `open-code-review-delegate` skill. It carries no repo-local `rule.json`, so it reviews against its own defaults and is deliberately the generic mechanics pass. Repo conventions are `/code-review`'s job, because that skill reads this file.
 
