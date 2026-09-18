@@ -95,19 +95,38 @@ const CROSS_ARM_THICKNESS = 0.317;
 // figure as LedWall's rim.
 const RIM_SOFTNESS_PX = 0.7;
 
-function buildDotFieldMaterial(
-  shape: DotShape,
-  spacingUniform: TSLNode,
-  dprUniform: TSLNode,
-  dotSizeUniform: TSLNode,
-  phaseUniform: TSLNode,
-  amplitudeUniform: TSLNode,
-  wavelengthUniform: TSLNode,
-  decayUniform: TSLNode,
-  centerUniform: TSLNode,
-  resUniform: TSLNode,
-  color: readonly [number, number, number],
-): MeshBasicNodeMaterial {
+// Everything the material bakes in or reads from a uniform, named so a call
+// site reads as a record rather than a positional list: the uniforms are
+// all typed alike, and a swapped pair of them would typecheck fine while
+// drawing garbage.
+interface DotFieldMaterialInputs {
+  shape: DotShape;
+  spacingUniform: TSLNode;
+  dprUniform: TSLNode;
+  dotSizeUniform: TSLNode;
+  phaseUniform: TSLNode;
+  amplitudeUniform: TSLNode;
+  wavelengthUniform: TSLNode;
+  decayUniform: TSLNode;
+  centerUniform: TSLNode;
+  resUniform: TSLNode;
+  /** Linear rgb, already decoded from the color string. */
+  color: readonly [number, number, number];
+}
+
+function buildDotFieldMaterial({
+  shape,
+  spacingUniform,
+  dprUniform,
+  dotSizeUniform,
+  phaseUniform,
+  amplitudeUniform,
+  wavelengthUniform,
+  decayUniform,
+  centerUniform,
+  resUniform,
+  color,
+}: DotFieldMaterialInputs): MeshBasicNodeMaterial {
   const [redChannel, greenChannel, blueChannel] = color;
 
   // ---------------------------------------------
@@ -313,7 +332,7 @@ export function DotFieldShader({
   useEffect(() => {
     if (!shaderContext) return;
 
-    const material = buildDotFieldMaterial(
+    const material = buildDotFieldMaterial({
       shape,
       spacingUniform,
       dprUniform,
@@ -324,8 +343,8 @@ export function DotFieldShader({
       decayUniform,
       centerUniform,
       resUniform,
-      parsedColor,
-    );
+      color: parsedColor,
+    });
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
     shaderContext.scene.add(mesh);
