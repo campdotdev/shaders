@@ -91,8 +91,8 @@ const CROSS_ARM_THICKNESS = 0.317;
 // then samples the mark hard in-or-out, which drew different pixel patterns
 // on marks that sat at different sub-pixel positions. Wider softens every
 // edge into a blur; narrower stair-steps it. 0.7 is under one pixel, so
-// the band touches only the pixels the rim actually crosses. Same figure as
-// LedWall's rim.
+// the fade stays within about a pixel of the rim on either side. Same
+// figure as LedWall's rim.
 const RIM_SOFTNESS_PX = 0.7;
 
 function buildDotFieldMaterial(
@@ -258,7 +258,8 @@ export function DotFieldShader({
 
   // Decoded to linear rgb once per color string. The channels get baked into
   // the compiled shader as constants, which is why a color change is one of
-  // the two things (with a context change) that rebuilds the material below.
+  // the three things (with a context or shape change) that rebuild the
+  // material below.
   const parsedColor = useMemo(() => parseColor(color), [color]);
 
   // screenOrigin converts the prop's screen-style coordinates (y grows
