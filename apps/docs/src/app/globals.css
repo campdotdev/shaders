@@ -172,17 +172,62 @@ a:hover {
   text-decoration: underline;
 }
 
+/* ---- Containers ---- */
+
+/* The site's width rules are container queries, not media queries, and they
+   query one of two named containers. `site` wraps the header and main in
+   layout.tsx, so its content box is the viewport width and
+   `@container site (width < 40rem)` means a viewport under 640px. It is a
+   wrapper rather than <body> because Base UI portals render into <body>: a
+   fixed popup inside a size container is a question that never comes up
+   when the popup sits outside it. The second container, `docs-main`, is the
+   docs shell's main column (docs-shell.module.css). Five rules change at
+   53.5rem of that column, so the page narrows in one step: the demo grid
+   stacks (demo-layout.module.css), the page TOC hides
+   (page-toc.module.css), the column's 40px inset drops
+   (docs-shell.module.css), and the breadcrumbs go on both page types
+   (app/components/[slug]/page.module.css and
+   app/(docs-content)/[...slug]/page.module.css). That second page module
+   holds the one query at another width: under 48rem of the column a guide
+   drops its on-page list.
+
+   `.site` is not a stacking context, because container-type applies no
+   layout containment, and the site nav's overlay depends on it staying
+   that way (site-nav.module.css). */
+.site {
+  container: site / inline-size;
+}
+
 /* ---- Page layout ---- */
 
 /* The mock builds every page in three levels. A full-bleed parent carries
-   the 32px gutter and any edge-to-edge background such as the banner glow.
-   A 9xl container inside it caps and centers the content: 32 plus 1664 plus
-   32 is exactly the 1728px artboard. Each child then owns its own inset and
-   its own vertical rhythm, which is 16px for the nav row and the banner
-   title, and the sidebar's own padding in the shell. The container carries
-   no padding of its own because the shell's sidebar sits flush at its edge. */
+   the page gutter and any edge-to-edge background such as the banner glow:
+   32px on a wide viewport, and 16px under 40rem, per the rule beneath this
+   one. A 9xl container inside it caps and centers the content: 32 plus 1664
+   plus 32 is exactly the 1728px artboard. Each child then owns its own
+   inset and its own vertical rhythm, which on a wide viewport is 16px for
+   the nav row and the banner title, the sidebar's own padding in the shell,
+   and 40px of left inset on the shell's main column, which the content
+   wrapper carries (.content in docs-shell.module.css). The nav row drops
+   its 16px under 40rem, so the gutter is the whole inset there. The
+   container carries no padding of its own because the shell's sidebar sits
+   flush at its edge. */
 .site-gutter {
   padding-inline: var(--spacing-8);
+}
+
+/* The phone gutter is 16px in total, and it is all here: a child that nests
+   inside it drops its own inset on the same query rather than adding to it,
+   so content sits 16px from the edge as in the mock. The header row is the
+   first to do that (site-header.module.css), and the banner's inner box
+   follows (section-banner.module.css). The shell's main column needs no
+   rule here: its 40px inset drops on its own query, under 53.5rem of the
+   column rather than 40rem of the site, and at this width that column is at
+   most 608px, so the inset went long before. */
+@container site (width < 40rem) {
+  .site-gutter {
+    padding-inline: var(--spacing-4);
+  }
 }
 
 .site-container {

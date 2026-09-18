@@ -13,15 +13,14 @@
  * the headings.
  */
 import type { Metadata } from 'next';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
 import { CodeBlock } from '@/components/code-block/code-block';
 import { CopySourceProvider } from '@/components/controls';
-import { ChevronDownIcon } from '@/components/icons/chevron-down';
 import { PageActions } from '@/components/page-actions/page-actions';
 import { PageToc, type PageTocSection } from '@/components/page-toc/page-toc';
+import { Pagination } from '@/components/pagination/pagination';
 import { PropsTable } from '@/components/props-table/props-table';
 import { getComponentsCatalog, getComponentsTree } from '@/content/catalog';
 import { getComponentProps } from '@/content/props';
@@ -124,24 +123,7 @@ export default async function ComponentPage({ params }: PageProps) {
           <p className={styles.prose}>Customize the shader with the following props.</p>
           <PropsTable rows={await getComponentProps(slug)} />
         </section>
-        <nav aria-label="Component pages" className={styles.pagination}>
-          {previous ? (
-            <Link className={styles.paginationLink} href={previous.url}>
-              <ChevronDownIcon className={styles.chevronPrevious} />
-              {previous.label}
-            </Link>
-          ) : (
-            <span />
-          )}
-          {next ? (
-            <Link className={styles.paginationLink} href={next.url}>
-              {next.label}
-              <ChevronDownIcon className={styles.chevronNext} />
-            </Link>
-          ) : (
-            <span />
-          )}
-        </nav>
+        <Pagination next={next} prev={previous} />
       </div>
     </main>
   );

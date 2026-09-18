@@ -10,7 +10,7 @@
  * scroll state on the root as data attributes, which is what the fade and
  * any overlay a consumer adds key off.
  */
-import type { ReactNode } from 'react';
+import type { ReactNode, Ref } from 'react';
 
 import { ScrollArea as BaseScrollArea } from '@base-ui/react/scroll-area';
 
@@ -23,6 +23,8 @@ interface ScrollAreaProps {
   className?: string;
   /** Class for the viewport, the element that actually scrolls. */
   viewportClassName?: string;
+  /** Ref to the viewport, for a consumer that needs to set its scroll position. */
+  viewportRef?: Ref<HTMLDivElement>;
   /**
    * Passed through to Base UI: how far from an edge, in px, still counts
    * as reaching it before the root's data-overflow-* attributes clear.
@@ -40,6 +42,7 @@ export function ScrollArea({
   orientation = 'vertical',
   className,
   viewportClassName,
+  viewportRef,
   overflowEdgeThreshold,
   overlay,
   children,
@@ -49,7 +52,10 @@ export function ScrollArea({
       className={join(styles.root, className)}
       overflowEdgeThreshold={overflowEdgeThreshold}
     >
-      <BaseScrollArea.Viewport className={join(styles.viewport, viewportClassName)}>
+      <BaseScrollArea.Viewport
+        className={join(styles.viewport, viewportClassName)}
+        ref={viewportRef}
+      >
         <BaseScrollArea.Content>{children}</BaseScrollArea.Content>
       </BaseScrollArea.Viewport>
       <BaseScrollArea.Scrollbar

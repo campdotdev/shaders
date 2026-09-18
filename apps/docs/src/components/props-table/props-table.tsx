@@ -23,8 +23,8 @@ export function PropsTable({ rows }: PropsTableProps) {
     <Accordion.Root className={styles.table} hiddenUntilFound multiple>
       <div aria-hidden="true" className={styles.head}>
         <span>Props</span>
-        <span>Default</span>
-        <span>Type</span>
+        <span className={styles.headDefault}>Default</span>
+        <span className={styles.headType}>Type</span>
       </div>
       {rows.map((row) => (
         <Accordion.Item className={styles.row} key={row.name} value={row.name}>

@@ -1,21 +1,61 @@
 /* Docs sidebar after the Figma mock. The aside is 2xs wide with a 16px
    inset all round, which puts its text on the same 48px line as the logo
-   and the banner title. Tiers stack with a 16px gap, groups inside a tier
-   with 8px, and rows with 2px. Every header and row shares one 36px box:
-   12px on the left, 8px elsewhere, 6px corners. */
+   and the banner title. Groups stack with a 16px gap, a group's header sits
+   2px above its rows, and rows are 2px apart. Every row and every 14px
+   header shares one 36px box: 12px of padding on the left and 8px
+   elsewhere. Only the rows round their corners, because only they take a
+   fill. A tree that nests differs in exactly one thing, the size of its top
+   headers, and it is marked [data-nests]. The whole aside is sticky and
+   capped at the height the reader can see, which the component measures
+   rather than the stylesheet assuming; the .sidebar rule explains why. */
 
 /* Sticky so the sidebar stays put while a long page scrolls. The shell's
-   grid gives it the 2xs column, and the 100vh cap flows into the ScrollArea
-   inside, which scrolls the tree once it outgrows the viewport. */
+   grid gives it the 2xs column, and the cap flows into the ScrollArea
+   inside, which scrolls the tree once it outgrows the box. The cap is the
+   visible height rather than the viewport's: until the nav pins, its top
+   sits below the header and banner, and a plain 100vh box would hang that
+   far under the fold, where the contained viewport below could never scroll
+   it into view. The component measures that distance on every scroll and
+   resize and writes it to --sidebar-offset, so the box ends at the fold
+   before the pin and is exactly 100vh after it. The fallback keeps the full
+   100vh until the first measurement lands. */
 .sidebar {
   position: sticky;
   top: 0;
   align-self: start;
-  max-height: 100vh;
+  max-height: calc(100vh - var(--sidebar-offset, 0px));
 }
 
-/* The tree itself: tiers stacked with a 16px gap, on the mock's aside
-   inset. The scroll bar overlays the right-hand inset. */
+/* Under 48rem of the site the shell drops the aside column and renders the
+   same tree as a dropdown in main (docs-nav-dropdown/), so the sidebar
+   hides on the shell's query. */
+@container site (width < 48rem) {
+  .sidebar {
+    display: none;
+  }
+}
+
+/* The element that scrolls, inside the ScrollArea. Contained so that a
+   gesture which reaches the end of the tree stops there: the components tree
+   is over 1000px tall, and .sidebar above caps this box at the height the
+   reader can see, so on most screens the tree overflows and the browser
+   would otherwise hand the rest of the gesture to a page metres long. A
+   reader who flicks the sidebar and watches the page leave cannot tell that
+   from a sidebar that will not scroll. Opted into here rather than in the
+   shared ScrollArea, which code blocks, search, and the table of contents
+   also use. It is the last overscroll-behavior: contain in the docs app:
+   the demo control panel (demo-layout.module.css) and the nav dropdown
+   (docs-nav-dropdown.module.css) both deliberately dropped theirs, and each
+   says why in its own comment. The sidebar keeps it because it shows only
+   above 48rem of the site container, where the reader usually has a pointer
+   and a trapped gesture costs no more than moving it off the tree; the same
+   trap on a phone would leave them on a page that will not scroll. */
+.viewport {
+  overscroll-behavior: contain;
+}
+
+/* The tree itself: groups stacked 16px apart, on the mock's aside inset.
+   The scroll bar overlays the right-hand inset. */
 .tree {
   display: flex;
   flex-direction: column;
@@ -23,28 +63,11 @@
   padding: var(--spacing-4);
 }
 
-.tier,
-.group,
-.groups {
+/* A group: its header, then its rows 2px below. */
+.group {
   display: flex;
   flex-direction: column;
-}
-
-.groups {
-  gap: var(--spacing-2);
-}
-
-.group {
   gap: var(--spacing-0-5);
-}
-
-/* Tier header: 16px semibold white on a 24px line, so the box is 40px. */
-.tierHeader {
-  padding: var(--spacing-2) var(--spacing-2) var(--spacing-2) var(--spacing-3);
-  font-size: var(--font-size-base);
-  font-weight: var(--font-weight-semibold);
-  line-height: var(--leading-6);
-  color: var(--fg);
 }
 
 /* Group header: 14px semibold white on a 20px line, the same 36px box as
@@ -55,6 +78,17 @@
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-5);
   color: var(--fg);
+}
+
+/* The only thing a nesting tree does differently, which today means the MDX
+   docs sidebar and its Frameworks over React: its top-level headers step up
+   to 16px on a 24px line, a 40px box, so that a parent reads as the parent
+   of the groups under it. The child combinator keeps the step off the nested
+   headers, which stay at 14px. The components tree is flat and takes none of
+   it. */
+.tree[data-nests] > .group > .groupHeader {
+  font-size: var(--font-size-base);
+  line-height: var(--leading-6);
 }
 
 .list {

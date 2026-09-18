@@ -1,0 +1,78 @@
+/* The foot-of-page prev and next nav. The buttons restate the box of
+   .textButton in controls/controls.module.css — the page header's Copy
+   React button — because the mock draws them as the same box: 32px tall,
+   8px of padding each side, an 8px gap to a 16px glyph, a hairline over the
+   muted fill, and 14px text on a 20px line. The two files keep their own
+   copies rather than sharing one class, since a control panel and a paging
+   nav are unrelated features; change the box in one and look at the other. */
+
+/* Previous against the left edge, next against the right. */
+.pagination {
+  display: flex;
+  justify-content: space-between;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  height: var(--spacing-8);
+  padding: 0 var(--spacing-2);
+  background: var(--bg-muted);
+  color: var(--gray-50);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-md);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  transition:
+    color var(--fade-xs) var(--ease-hover),
+    background-color var(--fade-xs) var(--ease-hover),
+    transform var(--duration-sm) var(--ease-out);
+}
+
+/* The mock draws the glyph a step darker than the label, and brings it up
+   to the label's color on hover. */
+.link svg {
+  color: var(--gray-200);
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* The site underlines a link on hover (globals.css); these read as buttons,
+   so they do not. Ungated, because a touch tap fires :hover as well. */
+.link:hover {
+  text-decoration: none;
+}
+
+/* The fill and text lift is gated to pointing devices: after a tap, :hover
+   sticks on the button until the next tap lands elsewhere. */
+@media (hover: hover) and (pointer: fine) {
+  .link:hover {
+    background: var(--white-a5);
+    color: var(--fg);
+  }
+
+  .link:hover svg {
+    color: var(--fg);
+  }
+}
+
+/* Outside the hover gate, so a touch press is felt too. */
+.link:active {
+  transform: scale(0.97);
+}
+
+.link:focus-visible {
+  outline: var(--border-width-1) solid var(--accent);
+  outline-offset: var(--border-width-1);
+}
+
+/* The glyph points down; a quarter turn each way gives the left and right
+   arrows, which on the 16-unit pixel grid match the mock's own exports
+   exactly. */
+.chevronPrevious {
+  transform: rotate(90deg);
+}
+
+.chevronNext {
+  transform: rotate(-90deg);
+}
