@@ -33,8 +33,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html className={`${plexMono.variable} ${ppMori.variable}`} lang="en">
       <body>
-        <SiteHeader />
-        <main>{children}</main>
+        {/* The `site` size container; globals.css declares it and explains
+            why the site's width rules query named containers rather than
+            the viewport. Base UI portals render into <body>, outside it on
+            purpose. */}
+        <div className="site">
+          <SiteHeader />
+          <main>{children}</main>
+        </div>
       </body>
     </html>
   );

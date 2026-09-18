@@ -1,0 +1,62 @@
+/* The MDX page: the article beside its "On this page" list. The prose has
+   no design of its own yet (SHA-134); this file only holds the layout that
+   used to be inline, the width rules that stop the page scrolling sideways
+   on a phone, and where the prev/next nav sits — that nav's own look is
+   shared with the component pages, in components/pagination. */
+
+/* Article in the remaining width, the list in a 208px column, 40px apart.
+   min-width: 0 on the article lets a wide code block scroll inside it
+   instead of forcing the grid wider. */
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) var(--spacing-52);
+  gap: var(--spacing-10);
+  align-items: start;
+}
+
+.article {
+  min-width: 0;
+}
+
+.breadcrumbs {
+  margin-bottom: var(--spacing-6);
+}
+
+/* The prev/next nav closes the article, so it wants more air above it than
+   the 16px `.prose > * + *` in globals.css gives every other block. The
+   module rule is unlayered and that one sits in @layer base, so this wins
+   without needing the specificity. A component page gets the same 48px from
+   its .sections gap. */
+.pagination {
+  margin-top: var(--spacing-12);
+}
+
+/* Breadcrumbs are desktop chrome, so they go at the first width where the
+   site's layout starts to stack, which is 53.5rem of the main column, where
+   a component page's demo grid stacks (demo-layout.module.css). A guide has
+   no demo grid, and it takes that threshold anyway rather than its own
+   narrowing below, so one width answers for both page types. Orientation
+   passes to the sidebar, which is still up here, and then to the nav
+   dropdown that replaces it under 48rem of the site. Hiding the nav leaves
+   it in the DOM, so the page's opening h1 is still a second child for
+   `.prose > * + *` in globals.css and keeps that rule's 16px above it, where
+   a component page's header gives 24px in the same spot. Recorded rather
+   than matched: which of the two the narrow layout should take is a design
+   call nobody has made. */
+@container docs-main (width < 53.5rem) {
+  .breadcrumbs {
+    display: none;
+  }
+}
+
+/* Under 48rem of the main column the list's 208px would come out of an
+   article already narrow, so the list goes and the article takes the width. */
+@container docs-main (width < 48rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .aside {
+    display: none;
+  }
+}

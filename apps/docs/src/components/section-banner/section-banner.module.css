@@ -29,18 +29,28 @@
   padding: var(--spacing-8) var(--spacing-4);
 }
 
-/* The shader layer: the glow and its dots, behind the title. The box starts
-   one nav row above the band, so the scene covers the mock's whole 200px
-   header block and the glow shows through the nav, which has no background
-   and lifts itself above this layer (site-header.module.css). The box is a
-   fixed size, centered: banner-shader.tsx sets its width and height from
-   banner-geometry.ts, which says why the size is fixed. ShaderScene
-   positions its own canvas absolutely inside it. pointer-events: none keeps
-   the canvas from swallowing text selection on the title. If the renderer
-   fails, the poster stays up. */
+/* The shader layer: the glow and its dots, behind the title. The box ends
+   at the band's bottom, the edge the design ends the dots at, and reaches up
+   by whatever its fixed height leaves over: exactly one nav row at the 144px
+   band, where 200px is the mock's whole header block, and 32px more than
+   that at the 112px phone band, where the excess goes above the top of the
+   page rather than down over it. Anchoring the bottom is what keeps the two
+   in step, because this box's height is fixed and the band's is not;
+   anchoring the top is what once ran the box 32px past the phone band, over
+   the gap under it and the nav dropdown's top 8px. Either way the glow
+   shows through the nav, which has no background and lifts itself above
+   this layer (site-header.module.css). `top: auto` is the initial value and
+   is spelled out because a `top` set alongside a definite height wins and
+   `bottom` is then ignored. The box is a fixed size, centered:
+   banner-shader.tsx sets its width and height from banner-geometry.ts,
+   which says why the size is fixed. ShaderScene positions its own canvas
+   absolutely inside it. pointer-events: none keeps the canvas from
+   swallowing text selection on the title. If the renderer fails, the poster
+   stays up. */
 .scene {
   position: absolute;
-  top: calc(-1 * var(--spacing-14));
+  top: auto;
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
   z-index: -1;
@@ -51,4 +61,25 @@
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-10);
+}
+
+/* The phone band: 112px tall with the title still at its bottom, 24px up,
+   and no inset of its own, because the gutter carries the whole 16px there
+   (globals.css). The title steps down to 30px on a 36px line, so its line
+   box starts 52px below the band's top. The padding is the bottom 24px and
+   nothing else: the band's height is fixed and .inner is flex-end, so a top
+   padding would position nothing. The height includes the padding here too,
+   so the band measures 112, not 136. The scene box behind it keeps its
+   fixed size and comes up with the shorter band, because it hangs off the
+   band's bottom edge (.scene above). */
+@container site (width < 40rem) {
+  .inner {
+    height: var(--spacing-28);
+    padding: 0 0 var(--spacing-6);
+  }
+
+  .title {
+    font-size: var(--font-size-3xl);
+    line-height: var(--leading-9);
+  }
 }

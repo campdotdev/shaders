@@ -21,7 +21,7 @@
 /* The title row stays put while the controls scroll under it. It bleeds
    into the panel's padding so it covers the panel edge to edge, carries the
    rule the first group would otherwise draw, and is dark glass: 90% of the
-   panel's gray with the scrolled controls blurred behind it. The scroller
+   panel's gray with the scrolled controls blurred behind it. The viewport
    (demo-layout.module.css) has the panel's corner radius, which is what
    clips this row's corners once the panel's own top has scrolled away. */
 .titleRow {

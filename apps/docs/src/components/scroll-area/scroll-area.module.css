@@ -6,9 +6,15 @@
 
 /* The root is what the bar and any overlay position against. max-height
    flows down from the parent through inherit rather than being set here, so
-   a sticky column caps the scroll region without measuring it. */
+   a sticky column caps the scroll region without measuring it. It isolates
+   because the bar below carries a z-index: the site nav paints above the
+   page at the root, and its overlay is z-index: auto, so any component
+   z-index that escapes to the root draws over the nav, and a bar took a
+   press through the overlay even at opacity 0. Isolation keeps this
+   component's numbers its own, in every consumer. */
 .root {
   position: relative;
+  isolation: isolate;
   max-height: inherit;
 }
 

@@ -1,0 +1,302 @@
+/* The narrow-viewport docs navigation after the Figma mock: a 52px boxed
+   row that opens downward into the sidebar's tree, capped at the sm
+   container (384px) and scrolling past that. The box is the panel family's
+   darkest gray with the hairline and 12px corners. */
+
+/* ---- The box ---- */
+
+/* Hidden on a wide viewport, where the sidebar shows the same tree. The
+   shell renders both and this query is the only switch, so the two can
+   never both show or both hide. 24px below the banner, the mock's gap.
+   Positioned so the hairline overlay below can cover it, and isolated
+   because that overlay and the two fades carry z-indexes: the site nav
+   paints above the page at the root, and its overlay is z-index: auto, so
+   any component z-index that escapes to the root draws over the nav, which
+   is how this hairline showed crisp through the blurred overlay. Isolation
+   keeps this component's numbers its own. */
+.root {
+  position: relative;
+  isolation: isolate;
+  display: none;
+  margin-top: var(--spacing-6);
+  background: var(--gray-900);
+  border-radius: var(--radius-xl);
+}
+
+@container site (width < 48rem) {
+  .root {
+    display: block;
+  }
+}
+
+/* The mock's hairline, drawn by an overlay rather than a border so the box
+   keeps the mock's drawn height: 52px closed, 384px open. The same trick
+   [data-shader-demo] uses in globals.css. Above the fades, so the line
+   still shows through the bottom reveal. */
+.root::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* The label row: the current page's name in 14px semibold on a 20px line
+   with 16px all round, which is the mock's 52px, and the chevron at the far
+   right. The focus ring runs inside the box so it follows the corners. */
+.trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--spacing-4);
+  width: 100%;
+  margin: 0;
+  padding: var(--spacing-4);
+  background: transparent;
+  color: var(--fg);
+  border: 0;
+  border-radius: var(--radius-xl);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-5);
+  text-align: left;
+  cursor: pointer;
+}
+
+.trigger:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: calc(-1 * var(--border-width-2));
+}
+
+/* The chevron points down at rest and flips while the panel is open, on the
+   icon step. Base UI stamps data-panel-open on the trigger. */
+.chevron {
+  flex: none;
+  color: var(--gray-200);
+  transition: transform var(--duration-xs) var(--ease-out);
+}
+
+.trigger[data-panel-open] .chevron {
+  transform: rotate(180deg);
+}
+
+/* While open the tree sits under the row, so its focus ring squares off at
+   the bottom rather than rounding in the middle of the box. */
+.trigger[data-panel-open] {
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+}
+
+/* ---- The panel ---- */
+
+/* Base UI measures the panel and exposes its height as a custom property,
+   so open and close animate as a height change, the same deliberate
+   exception to transform-and-opacity the control panel's disclosures make
+   (docs/development/animation.md). The larger-reveal step, because the
+   panel can be 332px tall. Under Reduce Motion the duration token is zero
+   and the panel simply appears. */
+.panel {
+  height: var(--collapsible-panel-height);
+  overflow: hidden;
+  transition: height var(--duration-md) var(--ease-out);
+}
+
+.panel[data-starting-style],
+.panel[data-ending-style] {
+  height: 0;
+}
+
+/* Exits run faster than entrances, so the close takes the panel step. */
+.panel[data-ending-style] {
+  transition-duration: var(--duration-sm);
+}
+
+/* The scroll region: the box's sm cap less the 52px label row above it,
+   so the open box draws at the mock's 384px. The ScrollArea's root and
+   viewport inherit this (scroll-area.module.css), so the tree scrolls once
+   it is taller than the box has room for and a short tree takes only its
+   own height. This box is also where the three data-fade-* attributes
+   below land, because it is the nearest element the component renders
+   itself and so the nearest one it can hold a ref to. */
+.body {
+  max-height: calc(var(--container-sm) - var(--spacing-4) * 2 - var(--leading-5));
+}
+
+/* The element that scrolls takes no class from this file at all: nothing
+   here styles it, and the fade state it used to hang off now sits on .body
+   above. No overscroll-behavior: contain on it either, deliberately. The
+   box caps at 384px,
+   which the components tree runs well past, so the range in here is spent
+   in a flick, and containing it would swallow every tick after that: the
+   control panel's bug in a smaller scroll region (demo-layout.module.css).
+   Reaching either end hands the gesture to the page instead, so a reader
+   who opens the menu, picks nothing, and keeps scrolling is never stuck.
+   The docs sidebar (docs-sidebar.module.css) is the one scroll region on
+   the site that still contains its overscroll. */
+
+/* The control panel's fade (demo-layout.module.css), one over each edge:
+   64px of the box's own color fading in over the rows, telling the reader
+   there are more past that edge. data-fade-top and data-fade-bottom say
+   which edge has rows past it; docs-nav-dropdown.tsx measures the scroll
+   region and writes them, on open and on every scroll after. */
+.fadeTop,
+.fadeBottom {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  height: var(--spacing-16);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.fadeTop {
+  top: 0;
+  background: linear-gradient(
+    to bottom,
+    var(--bg-muted) 0%,
+    color-mix(in srgb, var(--bg-muted) 80%, transparent) 39%,
+    transparent 100%
+  );
+}
+
+/* The bottom fade's corners match the box's radius so the gradient stays
+   inside its outline. */
+.fadeBottom {
+  bottom: 0;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  background: linear-gradient(
+    to top,
+    var(--bg-muted) 0%,
+    color-mix(in srgb, var(--bg-muted) 80%, transparent) 39%,
+    transparent 100%
+  );
+}
+
+.body[data-fade-top] .fadeTop,
+.body[data-fade-bottom] .fadeBottom {
+  opacity: 1;
+}
+
+/* The fade only animates once data-fades-animate is on the box, which
+   docs-nav-dropdown.tsx adds two frames into the open. Until then the two
+   rules above land with no transition, so the panel opens with whichever
+   edges it opens with rather than fading them in over the reveal. After
+   that it is scrolling that turns an edge on or off, and it should look
+   like a fade rather than a switch.
+
+   The md fade step on ease-in-out, not the sm step on ease-out: sm is the
+   opacity half of a popup arriving or leaving, and this gradient never
+   arrives. It stays where it is and changes strength as the reader
+   scrolls, which is the job ease-in-out is named for in the token set. The
+   lg step would lag the scroll, because the state flips with the scroll
+   position. */
+.body[data-fades-animate] .fadeTop,
+.body[data-fades-animate] .fadeBottom {
+  transition: opacity var(--fade-md) var(--ease-in-out);
+}
+
+/* ---- The tree ---- */
+
+/* The tree on the box's 16px inset with no top padding, so the first
+   group's rule sits at 52px, straight under the label row. Groups are 16px
+   apart, and that gap is the air above each rule. */
+.tree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: 0 var(--spacing-4) var(--spacing-4);
+}
+
+/* A group opens the way the control panel's sections do: a hairline rule,
+   12px of air, then a 24px header row. The tree's 16px gap sits above the
+   rule, so group to group reads as 16, rule, 12, the mock's rhythm, and the
+   first rule sits at 52px, straight under the label row. Mirrors .section in
+   controls.module.css, including the 1px the border adds over the mock's
+   inside stroke. */
+.group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  padding-top: var(--spacing-3);
+  border-top: var(--border-width-1) solid var(--white-a5);
+}
+
+/* The 24px header row with its 12px text centred, as .sectionHeader draws. */
+.groupHeader {
+  display: flex;
+  align-items: center;
+  height: var(--spacing-6);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-4);
+  color: var(--gray-50);
+}
+
+/* A tree whose groups hold groups, which today means the MDX docs tree and
+   its Frameworks over React. Its top-level headers step up to 14px so that a
+   parent reads as a parent, and the 20px line still clears the 24px header
+   row. The child combinator keeps the step off the nested headers, which
+   stay at 12px. The components tree is flat and takes neither this nor the
+   rule removal below. */
+.tree[data-nests] > .group > .groupHeader {
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}
+
+/* A group inside a group drops its rule and its 12px of air: the parent's
+   header is already its heading, and a full-width hairline 8px under that
+   header reads tighter than anything else in the box. Rules stay between
+   top-level groups, so the line above Reference still separates it from
+   Frameworks. Mirrors .disclosureContents .section in controls.module.css. */
+.group .group {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A row: 12px muted text on a 16px line, 8px from the next, the mock's
+   24px pitch. The row is a 16px line in a 24px hit box: 4px of padding
+   each side pulled back with a matching negative margin, so a finger gets
+   the WCAG minimum without the rhythm changing. The current page is lime.
+   The mock draws no hover, so hover lifts the text to full white. */
+.row {
+  display: block;
+  margin: calc(-1 * var(--spacing-1)) 0;
+  padding: var(--spacing-1) 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the lift would then stick on the tapped row. */
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    color: var(--fg);
+    text-decoration: none;
+  }
+}
+
+.row[aria-current='page'],
+.row[aria-current='page']:hover {
+  color: var(--accent);
+}
+
+.row:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+  border-radius: var(--radius-xs);
+}

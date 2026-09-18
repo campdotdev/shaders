@@ -40,9 +40,9 @@ export function ColorInput({ path, label }: ColorInputProps) {
   // a screen reader can tell the triggers apart.
   const name = inRow ? `${label} for ${trail.join(' > ')}` : label;
 
-  // The picker hangs off the whole row rather than the swatch, so its left
-  // edge lines up with the row's name and its width spans the row's name,
-  // swatch, value, and position. Outside a list the field itself is the row.
+  // The picker hangs off the whole row rather than the swatch, so its width
+  // spans the row's controls rather than the 24px swatch alone. Outside a
+  // list the field itself is the row.
   const fieldRef = useRef<HTMLDivElement>(null);
   const anchor = () => fieldRef.current?.closest('[data-list-row]') ?? fieldRef.current;
 
@@ -56,7 +56,17 @@ export function ColorInput({ path, label }: ColorInputProps) {
           <span className={styles.swatchValue}>{stored}</span>
         </Popover.Trigger>
         <Popover.Portal>
-          <Popover.Positioner align="start" anchor={anchor} sideOffset={4}>
+          {/* Aligned to the row's end, not its start, because the end is the
+              edge that holds still relative to the swatch. Both .listRow and
+              .field give their label flex: 1 (controls.module.css), so the
+              label absorbs every spare pixel and the swatch, value, position,
+              and remove controls stay packed against the row's right edge.
+              The row's left edge is the one that moves, because the row is
+              254px wide in the 2xs column and around 714px once the grid
+              stacks and the panel goes full-bleed. A start-aligned popup
+              followed it out to the row's name, hundreds of pixels from the
+              swatch the reader clicked. */}
+          <Popover.Positioner align="end" anchor={anchor} sideOffset={4}>
             <Popover.Popup className={styles.colorPopup}>
               <ColorPopoverContents label={name} path={path} />
             </Popover.Popup>
