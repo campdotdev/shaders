@@ -59,6 +59,7 @@ export type { MetaballsOptions, MetaballsResult } from './primitives/metaballs/m
 export { quantize } from './primitives/quantize/quantize.js';
 
 export { signedDistanceFieldCircle } from './primitives/sdf-circle/sdf-circle.js';
+export { signedDistanceFieldCross } from './primitives/sdf-cross/sdf-cross.js';
 
 export { displace } from './primitives/displace/displace.js';
 

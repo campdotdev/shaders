@@ -7,6 +7,21 @@ Skills from the mattpocock set look for this file. It is the hand-written Linear
 ## Conventions
 
 - **Create an issue**: `mcp__linear__save_issue` with `team: "Shaders"` and a `title`. Omit `id` when creating. Pass the body as `description` in Markdown, with literal newlines rather than escape sequences.
+- **Fold the body into a collapsible.** A spec or ticket carries far more text than a human scanning the issue needs. A long description also pushes the sub-issue list and the relations off screen. Open the description with one to three sentences a human reads first. Put everything else inside a Linear collapsible titled `Context for AI`, fenced with `>>>`:
+
+  ```markdown
+  One to three sentences a human reads first.
+
+  >>> Context for AI
+
+  ## Problem Statement
+
+  ...
+
+  >>>
+  ```
+
+  Headings, lists, code fences, and issue mentions survive inside the fold, and `get_issue` returns the full body, so a model loses nothing. `+++ Context for AI` parses too, but Linear serializes it to `>>>`, so write `>>>`. Keep the summary outside the fold, because `list_issues` truncates descriptions and a folded body with nothing above it reads as an empty issue in list previews. SHA-145 and its sub-issues use this layout.
 - **Read an issue**: `mcp__linear__get_issue` with the identifier, such as `SHA-104`. Pass `includeRelations: true` whenever blocking edges matter, because relations are omitted by default.
 - **List issues**: `mcp__linear__list_issues`, filtered by `team`, `state`, `assignee`, `label`, or `parentId`.
 - **Comment**: `mcp__linear__save_comment`.
