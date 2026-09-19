@@ -1,5 +1,23 @@
 # @camp-dev/shaders
 
+## 0.20.0
+
+### Minor Changes
+
+- d53d261: Add a `shape` prop to DotField. `'circle'` is the disk it has always drawn and `'cross'` is an x with flat-ended arms, sized by `dotSize` from tip to tip. The x is a new engine primitive, `signedDistanceFieldCross`, the union of two rectangles turned 45 degrees.
+
+  `shape` also takes a custom mark as inline SVG markup: `{ svg: '<svg viewBox="0 0 24 24">…</svg>' }`. The browser decodes the markup once into a 128px tile, and the shader reads the tile's alpha at each grid point, so any fill in the markup is ignored and the mark takes `color`. The `viewBox` scales to fit `dotSize` on its longer side. Custom cells draw nothing on the first frame and appear once the decode lands, while built-in marks draw at once. A non-square `viewBox` keeps its aspect and sits centered, and `width` and `height` stand in when there is no `viewBox`. Markup with no usable box, or that the browser cannot decode, warns once in the console and leaves its cells empty; nothing throws. The markup type is exported as `SvgMarkup`.
+
+  `shape` also takes a readonly array of marks, mixing built-in names and `{ svg }` objects freely. Each cell draws one entry, picked by a stable hash of its cell index, so the pick holds still from frame to frame and matches on WebGPU and on the WebGL2 fallback. A mark listed more than once is drawn that many times as often: `['cross', { svg: star }, { svg: star }]` draws about two stars per cross. Every custom entry in the array shares one padded texture, decoded once.
+
+- ef14a4a: Add three Effects. LedWall screens the scene beneath it into a grid of square LED dots, with a per-dot breath, a bleed dial for the gaps, and a focus point the dots swell toward. RadialWipe reveals the scene from a center with a feathered front driven by a progress value. Dissolve grains whatever alpha it sits over into blocks, so it pairs with any wipe or soft-edged source.
+
+### Patch Changes
+
+- ef14a4a: Fix aspect-corrected components drawing at a 16:9 ratio on a static scene until the first resize. Every component that keeps circles round or grids square on a wide canvas now reads the ratio through one hook that requests a frame when the canvas size arrives. DotField's resolution and the pixel-ratio uniforms on Dither, Dissolve, and LedWall request a frame the same way.
+- d53d261: Fix DotField marks on tight grids drawing a different pixel pattern at every grid point. The anti-aliasing band across a mark's edge is now measured in device pixels rather than as a fraction of the cell, so a 2px mark on a 6px grid gets the same soft rim a 3px mark on a 30px grid always had.
+- ef14a4a: Fix two ShaderScenes on one page drawing each other's output. three 0.170's PostProcessing shares a single full-screen quad and material across every instance, so whichever scene updated last was what every canvas drew. Each scene now owns its output quad and material.
+
 ## 0.19.0
 
 ### Minor Changes
