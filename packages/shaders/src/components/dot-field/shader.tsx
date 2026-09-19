@@ -2,22 +2,28 @@
 
 // The dot field's GPU half. The trick that makes a "grid of dots" cheap: no
 // dot is ever drawn as an object. Instead every pixel figures out which grid
-// cell it lives in, how far it sits from that cell's (ripple-displaced) dot
-// center, and shades itself dot-colored or transparent based on that
-// distance. All sizing props are in real pixels, so the shader also tracks
-// the canvas resolution to convert between pixels and cell units.
+// cell it lives in, where it sits relative to that cell's (ripple-displaced)
+// dot center, and shades itself dot-colored or transparent from there: by
+// distance to the edge for a built-in mark, or by a read from a decoded
+// texture for a custom SVG mark. All sizing props are in real pixels, so
+// the shader also tracks the canvas resolution to convert between pixels
+// and cell units.
 import { useEffect, useMemo } from 'react';
 
 import type { ShaderNodeObject } from 'three/tsl';
 import {
+  abs,
   exp,
   float,
   length,
+  max,
   modInt,
   round,
   select,
   sin,
   smoothstep,
+  step,
+  texture,
   uint,
   uniform,
   uv,
@@ -25,7 +31,7 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import type { Node } from 'three/webgpu';
+import type { Node, TextureNode } from 'three/webgpu';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import {
@@ -35,6 +41,12 @@ import {
   stableHashUint,
   type TSLNode,
 } from '../../engine.js';
+import { decodeMarkAtlas, getMarkAtlasPlaceholder } from '../../primitives/mark-atlas/atlas.js';
+import {
+  type MarkTile,
+  type MarkTilePlan,
+  planMarkTiles,
+} from '../../primitives/mark-atlas/plan.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
@@ -50,18 +62,22 @@ export interface DotFieldShaderProps {
   /**
    * The mark at each grid point, or a list of marks the field scatters
    * across the grid. `'circle'` is a disk and `'cross'` is an x with
-   * flat-ended arms, and `dotSize` is the mark's overall size for both. With
-   * a list, each cell draws one entry, chosen by a hash of its cell index,
-   * so the pick holds still from frame to frame. A mark listed more than
-   * once is drawn that many times as often: `['circle', 'cross', 'cross']`
-   * draws about two crosses per circle. A change rebuilds the shader.
+   * flat-ended arms, and `{ svg }` is a custom mark from inline SVG markup,
+   * scaled so its `viewBox` fits `dotSize` on its longer side. Only the
+   * markup's alpha is read, so its fills are ignored and every mark takes
+   * `color`. `dotSize` is the mark's overall size in every case. With a
+   * list, each cell draws one entry, chosen by a hash of its cell index, so
+   * the pick holds still from frame to frame. A mark listed more than once
+   * is drawn that many times as often: `['circle', 'cross', 'cross']` draws
+   * about two crosses per circle. A change rebuilds the shader.
    */
   shape: DotShape | readonly DotShape[];
   /** Grid cell size in pixels. Accepts a static value or an animation signal. */
   spacing: AnimatableProp<number>;
   /**
-   * Mark size in pixels: the diameter of a circle, or the width of a cross
-   * from tip to tip. Accepts a static value or an animation signal.
+   * Mark size in pixels: the diameter of a circle, the width of a cross
+   * from tip to tip, or the longer side of a custom mark's `viewBox`.
+   * Accepts a static value or an animation signal.
    */
   dotSize: AnimatableProp<number>;
   /** Dot color — hex, `oklch()`, or `oklab()`. */
@@ -137,6 +153,17 @@ interface DotFieldMaterialInputs {
    * field, and none draws nothing.
    */
   entries: readonly DotShape[];
+  /**
+   * Where each custom mark sits in the atlas. Baked in with the entries:
+   * the rectangles are compile-time constants in the shader.
+   */
+  plan: MarkTilePlan;
+  /**
+   * The atlas as a texture node. Stable for the mount, and the component
+   * swaps the texture behind it when a decode lands, so the node is a
+   * uniform in all but name.
+   */
+  atlasNode: ShaderNodeObject<TextureNode>;
   spacingUniform: TSLNode;
   dprUniform: TSLNode;
   dotSizeUniform: TSLNode;
@@ -152,6 +179,8 @@ interface DotFieldMaterialInputs {
 
 function buildDotFieldMaterial({
   entries,
+  plan,
+  atlasNode,
   spacingUniform,
   dprUniform,
   dotSizeUniform,
@@ -222,7 +251,7 @@ function buildDotFieldMaterial({
   const displacedLocal = displace(cellLocal, offset.mul(-1));
 
   // ---------------------------------------------
-  // The mark: a circle or an x, sized by dotSize
+  // The mark: a circle, an x, or a custom SVG, sized by dotSize
   // ---------------------------------------------
   // Half the mark's size converted from pixels into cell units (one cell =
   // `spacing` pixels): dotSize / (spacing * 2). For a circle that is its
@@ -247,7 +276,7 @@ function buildDotFieldMaterial({
   // inside the rim than the band get 1, pixels further outside get 0, and
   // the band across the rim fades smoothly — that fade is the anti-aliasing
   // that keeps mark edges from stair-stepping.
-  const markMask = (shape: DotShape): TSLNode => {
+  const builtInMask = (shape: 'circle' | 'cross'): TSLNode => {
     const sdf =
       shape === 'cross'
         ? signedDistanceFieldCross(displacedLocal, ...crossArms(halfSize))
@@ -255,6 +284,57 @@ function buildDotFieldMaterial({
 
     return smoothstep(antialiasWidth.negate(), antialiasWidth, sdf).oneMinus();
   };
+
+  // Coverage of one custom mark: read from the atlas instead of computed
+  // from a distance. The mark's box is `dotSize` wide in pixels, which is
+  // 2 * halfSize in cell units, so dividing the displaced point by that and
+  // adding 0.5 gives the point's position across the box, 0..1 on each
+  // axis with (0, 0) at the bottom-left corner. From there the point is
+  // mapped into the tile's rectangle in the atlas, in device pixels from
+  // the atlas's top-left, and divided by the atlas size to get the 0..1
+  // texture coordinate the sampler wants. The y flip is because uv space
+  // grows upward while canvas rows count downward: the top of the box is
+  // the top of the rectangle, which is its smallest y. The read returns the
+  // canvas's rgba at that coordinate, and only the alpha is kept: a filled
+  // pixel of the SVG is 1, a blank one is 0, and the browser's rasterizer
+  // plus the texture filter fade the edge between them, which is the
+  // anti-aliasing a custom mark gets in place of the smoothstep. Outside
+  // the box the mapping would land in a neighboring tile, so the read is
+  // gated to the box: the farthest a coordinate is from the box's center
+  // on either axis is over 0.5 exactly when it is outside, and step turns
+  // that into a 0-or-1 factor. A multiply rather than select on purpose:
+  // select compiles to a real if/else, and a texture read inside a branch
+  // that only some pixels take gets undefined derivatives, which the
+  // sampler uses to choose the mip level. That drew a different level per
+  // 2x2 pixel quad along the box edge, seen as flashing box outlines.
+  // Reading every pixel and multiplying keeps the read in straight-line
+  // code, where the derivatives are the true ones. The box side is held
+  // off zero by an epsilon so a `dotSize` of 0, which an animation signal
+  // can pass through, divides to a finite point far outside the box and
+  // gates to nothing, rather than to NaN, which the gate cannot catch.
+  const customMask = (tile: MarkTile | null): TSLNode => {
+    if (tile === null) return float(0);
+
+    const { rect } = tile;
+    const boxPoint = displacedLocal.div(halfSize.mul(2).max(1e-6)).add(0.5);
+    const atlasUv = vec2(
+      boxPoint.x.mul(rect.width).add(rect.x),
+      boxPoint.y.oneMinus().mul(rect.height).add(rect.y),
+    ).div(vec2(plan.width, plan.height));
+    const alpha = atlasNode.uv(atlasUv).a;
+    const fromBoxCenter = abs(boxPoint.sub(0.5));
+    const insideBox = step(max(fromBoxCenter.x, fromBoxCenter.y), 0.5);
+
+    return alpha.mul(insideBox);
+  };
+
+  // The custom entries were planned in order, so the plan's tiles line up
+  // with them by markup, and a markup with no usable box has no tile.
+  const tileByMarkup = new Map(plan.tiles.map((tile) => [tile.markup, tile]));
+  const markMask = (shape: DotShape): TSLNode =>
+    typeof shape === 'string'
+      ? builtInMask(shape)
+      : customMask(tileByMarkup.get(shape.svg) ?? null);
 
   // ---------------------------------------------
   // The pick: which entry this cell draws
@@ -310,16 +390,19 @@ function pickMarkMask(
 
   // One mask per distinct mark, shared by every entry that names it. Two
   // 'cross' entries evaluate the cross distance once, and only the pick
-  // below decides which cells draw it.
-  const maskByShape = new Map<DotShape, TSLNode>();
+  // below decides which cells draw it. Keyed by the mark's content, so two
+  // custom entries with the same markup share a mask whatever objects
+  // carry it.
+  const maskByShape = new Map<string, TSLNode>();
   const maskFor = (shape: DotShape): TSLNode => {
-    const cached = maskByShape.get(shape);
+    const shapeKey = typeof shape === 'string' ? shape : `svg:${shape.svg}`;
+    const cached = maskByShape.get(shapeKey);
 
     if (cached !== undefined) return cached;
 
     const mask = markMask(shape);
 
-    maskByShape.set(shape, mask);
+    maskByShape.set(shapeKey, mask);
 
     return mask;
   };
@@ -376,6 +459,65 @@ export function DotFieldShader({
   // the parent rendered (the AGENTS.md gotcha on array props in effect
   // deps). Cheap enough to redo per render.
   const { entries, key: shapeKey } = resolveMarkEntries(shape);
+
+  // The atlas layout for the custom entries, redone only when the list
+  // changes. Keyed on shapeKey rather than entries for the same reason the
+  // material effect is, so a parent re-render leaves it alone.
+  const plan = useMemo(
+    () => planMarkTiles(entries.flatMap((entry) => (typeof entry === 'string' ? [] : [entry.svg]))),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [shapeKey],
+  );
+
+  // The texture node the shader samples custom marks from. Made once per
+  // mount around the shared transparent placeholder, so the material can
+  // depend on it like a uniform; the decode effect below swaps the
+  // texture behind it. The swap, not a resize: three creates the GPU
+  // image for an ordinary texture once and never grows it, so a bigger
+  // image on the same texture would be uploaded into the one-pixel slot.
+  const atlasNode = useMemo(() => texture(getMarkAtlasPlaceholder()), []);
+
+  // The decode, once per distinct list per mount. Nothing here runs per
+  // frame or per resize, and a change to the markup lands as a new
+  // shapeKey, which cancels the decode in flight, decodes again, and
+  // rebuilds the material below with the new plan. The atlas a run
+  // installs is its own to dispose, so the cleanup puts the placeholder
+  // back first, and a decode that resolves after its cleanup ran disposes
+  // its result instead of installing it. The poke after the swap is the
+  // bare-uniform-write gotcha: a static field has parked its frame loop by
+  // the time the browser finishes, so without it the triangles would sit
+  // decoded on the GPU and unseen until something else asked for a frame.
+  useEffect(() => {
+    if (plan.tiles.length === 0) return;
+
+    let cancelled = false;
+
+    decodeMarkAtlas(plan)
+      .then((atlas) => {
+        if (cancelled) {
+          atlas.dispose();
+
+          return;
+        }
+
+        atlasNode.value = atlas;
+        shaderContext?.scheduler.requestRender();
+      })
+      .catch(() => {
+        // A mark the browser cannot decode leaves its cells on the
+        // placeholder. The warning for it is the next ticket's.
+      });
+
+    return () => {
+      cancelled = true;
+
+      const installed = atlasNode.value;
+
+      atlasNode.value = getMarkAtlasPlaceholder();
+      if (installed !== getMarkAtlasPlaceholder()) installed.dispose();
+      shaderContext?.scheduler.requestRender();
+    };
+  }, [plan, atlasNode, shaderContext]);
 
   // The animated dials live in uniforms (values the CPU can update each
   // frame without rebuilding the shader), tracking either a static number or
@@ -441,13 +583,17 @@ export function DotFieldShader({
   // Build the material and mount the mesh
   // ---------------------------------------------
   // The 2x2 plane exactly fills ShaderScene's camera view. All the dial
-  // uniforms are stable references, so in practice this runs once per mount
-  // and again only when the color string or the mark list changes.
+  // uniforms and the atlas node are stable references, so in practice this
+  // runs once per mount and again only when the color string or the mark
+  // list changes. A decode landing is not a rebuild: it swaps the texture
+  // behind the node the compiled shader already reads.
   useEffect(() => {
     if (!shaderContext) return;
 
     const material = buildDotFieldMaterial({
       entries,
+      plan,
+      atlasNode,
       spacingUniform,
       dprUniform,
       dotSizeUniform,
@@ -477,11 +623,14 @@ export function DotFieldShader({
       }
     };
     // shapeKey stands in for entries: the two come from one call, and the
-    // key changes exactly when the list's contents do.
+    // key changes exactly when the list's contents do. plan is keyed on it
+    // too, so listing both is one rebuild, not two.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     shaderContext,
     shapeKey,
+    plan,
+    atlasNode,
     parsedColor,
     spacingUniform,
     dprUniform,

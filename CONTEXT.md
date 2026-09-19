@@ -7,7 +7,7 @@ A React shader component library on WebGPU and Three.js TSL. This glossary holds
 ### Pattern components
 
 **Mark**:
-The single figure drawn at each grid point of a pattern component such as DotField. A mark is defined by a signed distance from its own edge, so anti-aliasing, sizing, and ripple displacement work the same for every mark.
+The single figure drawn at each grid point of a pattern component such as DotField. Every mark is a coverage at a cell-local point, computed from a signed distance for a built-in mark or read from a decoded tile for a custom mark, so sizing and ripple displacement work the same for every mark.
 _Avoid_: Glyph, symbol, icon, dot (except inside shipped identifiers such as `DotField` and `dotSize`)
 
 **Built-in mark**:

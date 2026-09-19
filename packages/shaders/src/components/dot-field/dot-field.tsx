@@ -9,16 +9,19 @@ import type { AnimatableProp } from '../../react/hooks/animatable-signal/animata
 import type { DotShape } from './marks.js';
 import { DotFieldShader } from './shader.js';
 
-export type { DotShape } from './marks.js';
+export type { DotShape, SvgMarkup } from './marks.js';
 
 export interface DotFieldProps {
   /**
    * The mark at each grid point, or a list of marks the field scatters
    * across the grid. `'circle'` is a disk and `'cross'` is an x with
-   * flat-ended arms, and `dotSize` is the mark's overall size for both, so
-   * the two swap without retuning the grid. With a list, each cell draws one
-   * entry, chosen by a hash of its cell index, so the pick holds still from
-   * frame to frame. A mark listed more than once is drawn that many times as
+   * flat-ended arms, and `{ svg }` is a custom mark from inline SVG markup,
+   * scaled so its `viewBox` fits `dotSize` on its longer side. Only the
+   * markup's alpha is read, so its fills are ignored and every mark takes
+   * `color`. `dotSize` is the mark's overall size in every case, so marks
+   * swap without retuning the grid. With a list, each cell draws one entry,
+   * chosen by a hash of its cell index, so the pick holds still from frame
+   * to frame. A mark listed more than once is drawn that many times as
    * often: `['circle', 'cross', 'cross']` draws about two crosses per
    * circle. A change rebuilds the shader. Defaults to `'circle'`.
    */
@@ -29,9 +32,9 @@ export interface DotFieldProps {
    */
   spacing?: AnimatableProp<number>;
   /**
-   * Mark size in pixels: the diameter of a circle, or the width of a cross
-   * from tip to tip. Defaults to 3. Accepts a static value or an animation
-   * signal.
+   * Mark size in pixels: the diameter of a circle, the width of a cross
+   * from tip to tip, or the longer side of a custom mark's `viewBox`.
+   * Defaults to 3. Accepts a static value or an animation signal.
    */
   dotSize?: AnimatableProp<number>;
   /** Dot color — hex, `oklch()`, or `oklab()`. Defaults to `'#8B918C'`. */
