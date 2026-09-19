@@ -5,7 +5,7 @@
 // already needs a renderer, which cannot run on the server either.
 import { CanvasTexture, DataTexture, type Texture } from 'three';
 
-import type { MarkTilePlan } from './plan.js';
+import type { MarkBox, MarkTilePlan, SvgMarkup } from './plan.js';
 
 // ---------------------------------------------
 // The placeholder
@@ -32,13 +32,22 @@ export function getMarkAtlasPlaceholder(): Texture {
 // ---------------------------------------------
 // The decode
 // ---------------------------------------------
+export interface MarkAtlasDecode {
+  /** The atlas, with every tile that decoded drawn in and the rest left transparent. */
+  atlas: CanvasTexture;
+  /** The markup of each tile the browser could not decode, in plan order. */
+  failed: readonly SvgMarkup[];
+}
+
 /**
  * Draws every tile in the plan into one canvas and wraps it as a texture.
- * Resolves once the browser has rasterized all of them, which is a few
- * milliseconds after mount. The caller swaps the result in for the
- * placeholder, so a texture that resolves after its field unmounted is
- * disposed rather than used. Rejects when the browser cannot decode a
- * mark; what a rejection does to the field is the next ticket's.
+ * Resolves once the browser has tried every tile, which is a few
+ * milliseconds after mount. A tile the browser cannot decode is reported
+ * in `failed` and its rectangle stays transparent, so its cells draw
+ * nothing while the other marks render; the promise itself rejects only
+ * when the canvas cannot be made at all. The caller swaps the result in
+ * for the placeholder, so a texture that resolves after its field
+ * unmounted is disposed rather than used.
  *
  * The texture keeps three's defaults, which generate mipmaps: a pyramid
  * of half-size copies of the atlas, each averaging a 2x2 block of the one
@@ -48,7 +57,7 @@ export function getMarkAtlasPlaceholder(): Texture {
  * moved. The plan's tile padding exists so those averaged copies do not
  * blend neighboring marks together.
  */
-export async function decodeMarkAtlas(plan: MarkTilePlan): Promise<CanvasTexture> {
+export async function decodeMarkAtlas(plan: MarkTilePlan): Promise<MarkAtlasDecode> {
   const canvas = document.createElement('canvas');
 
   canvas.width = plan.width;
@@ -58,11 +67,17 @@ export async function decodeMarkAtlas(plan: MarkTilePlan): Promise<CanvasTexture
 
   if (context === null) throw new Error('DotField: could not get a 2d canvas context');
 
-  await Promise.all(
-    plan.tiles.map(async ({ markup, rect }) => {
-      const image = await loadSvgImage(markup, rect.width, rect.height);
+  const failed: SvgMarkup[] = [];
 
-      context.drawImage(image, rect.x, rect.y, rect.width, rect.height);
+  await Promise.all(
+    plan.tiles.map(async ({ markup, box, rect }) => {
+      try {
+        const image = await loadSvgImage(markup, box, rect.width, rect.height);
+
+        context.drawImage(image, rect.x, rect.y, rect.width, rect.height);
+      } catch {
+        failed.push(markup);
+      }
     }),
   );
 
@@ -74,25 +89,34 @@ export async function decodeMarkAtlas(plan: MarkTilePlan): Promise<CanvasTexture
   // row on both backends, and a v of 0 reads it.
   atlas.flipY = false;
 
-  return atlas;
+  return { atlas, failed };
 }
 
 /**
  * Rasterizes one SVG through an image element at the size its tile
  * rectangle has. The root element's width and height are set to that size
  * first, because an SVG with only a viewBox has no intrinsic size, and
- * Firefox draws such an image to a canvas at zero size. A blob URL, not a
- * data URL, so the markup is not re-encoded, and the URL is released once
- * the image has decoded.
+ * Firefox draws such an image to a canvas at zero size. An SVG with no
+ * viewBox gets one spanning the box the plan read from its width and
+ * height, because without a viewBox the browser keeps the drawing at its
+ * own units inside the resized image rather than scaling it to fill. A
+ * blob URL, not a data URL, so the markup is not re-encoded, and the URL
+ * is released once the image has decoded. Malformed markup parses to a
+ * document whose root is a parse error, and the browser then refuses to
+ * decode the image, so the rejection surfaces here rather than as a throw.
  */
 async function loadSvgImage(
   markup: string,
+  box: MarkBox,
   width: number,
   height: number,
 ): Promise<HTMLImageElement> {
   const svgDocument = new DOMParser().parseFromString(markup, 'image/svg+xml');
   const root = svgDocument.documentElement;
 
+  if (!root.hasAttribute('viewBox')) {
+    root.setAttribute('viewBox', `0 0 ${box.width} ${box.height}`);
+  }
   root.setAttribute('width', String(width));
   root.setAttribute('height', String(height));
 
@@ -108,4 +132,29 @@ async function loadSvgImage(
   }
 
   return image;
+}
+
+// ---------------------------------------------
+// Warning once
+// ---------------------------------------------
+// A bad asset should say so in the console once, not once per frame, per
+// mount, or per Strict Mode effect replay. Keyed on the message, so the
+// same problem with the same markup warns once per page load.
+const warned = new Set<string>();
+
+export function warnMarkOnce(message: string): void {
+  if (warned.has(message)) return;
+
+  warned.add(message);
+  console.warn(message);
+}
+
+/**
+ * A short, single-line excerpt of the markup for a warning, so the reader
+ * can tell which mark is meant without the whole string in the console.
+ */
+export function describeMarkup(markup: SvgMarkup): string {
+  const flat = markup.replace(/\s+/g, ' ').trim();
+
+  return flat.length > 80 ? `${flat.slice(0, 77)}...` : flat;
 }

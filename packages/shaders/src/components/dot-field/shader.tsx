@@ -42,7 +42,12 @@ import {
   stableHashUint,
   type TSLNode,
 } from '../../engine.js';
-import { decodeMarkAtlas, getMarkAtlasPlaceholder } from '../../primitives/mark-atlas/atlas.js';
+import {
+  decodeMarkAtlas,
+  describeMarkup,
+  getMarkAtlasPlaceholder,
+  warnMarkOnce,
+} from '../../primitives/mark-atlas/atlas.js';
 import {
   MARK_TILE_MAX_MIP_LEVEL,
   MARK_TILE_PADDING,
@@ -295,15 +300,21 @@ function buildDotFieldMaterial({
   // 2 * halfSize in cell units, so dividing the displaced point by that and
   // adding 0.5 gives the point's position across the box, 0..1 on each
   // axis with (0, 0) at the bottom-left corner. From there the point is
-  // mapped into the tile's rectangle in the atlas, in device pixels from
-  // the atlas's top-left, and divided by the atlas size to get the 0..1
-  // texture coordinate the sampler wants. The y flip is because uv space
-  // grows upward while canvas rows count downward: the top of the box is
-  // the top of the rectangle, which is its smallest y. The read returns the
-  // canvas's rgba at that coordinate, and only the alpha is kept: a filled
-  // pixel of the SVG is 1, a blank one is 0, and the browser's rasterizer
-  // plus the texture filter fade the edge between them, which is the
-  // anti-aliasing a custom mark gets in place of the smoothstep.
+  // mapped into the tile's frame in the atlas, the inner square the plan
+  // fitted and centered the mark's own box in, in device pixels from the
+  // atlas's top-left, and divided by the atlas size to get the 0..1
+  // texture coordinate the sampler wants. Mapping onto the frame rather
+  // than the mark's rectangle is what keeps a non-square mark at its
+  // aspect: a 2:1 mark fills the frame's width and the middle half of its
+  // height, so on screen it is `dotSize` wide, half that tall, and
+  // centered, with the frame's transparent margin above and below. The y
+  // flip is because uv space grows upward while canvas rows count
+  // downward: the top of the box is the top of the frame, which is its
+  // smallest y. The read returns the canvas's rgba at that coordinate, and
+  // only the alpha is kept: a filled pixel of the SVG is 1, a blank one is
+  // 0, and the browser's rasterizer plus the texture filter fade the edge
+  // between them, which is the anti-aliasing a custom mark gets in place
+  // of the smoothstep.
   //
   // The mip level is chosen here rather than left to the GPU. A mipmap is
   // a pyramid of half-size copies of the atlas, and the sampler normally
@@ -339,11 +350,11 @@ function buildDotFieldMaterial({
   const customMask = (tile: MarkTile | null): TSLNode => {
     if (tile === null) return float(0);
 
-    const { rect } = tile;
+    const { frame } = tile;
     const boxPoint = displacedLocal.div(halfSize.mul(2).max(1e-6)).add(0.5);
     const atlasUv = vec2(
-      boxPoint.x.mul(rect.width).add(rect.x),
-      boxPoint.y.oneMinus().mul(rect.height).add(rect.y),
+      boxPoint.x.mul(frame.width).add(frame.x),
+      boxPoint.y.oneMinus().mul(frame.height).add(frame.y),
     ).div(vec2(plan.width, plan.height));
     // A read node with this tile's coordinate and the clamped level. Its
     // texture argument is only a placeholder for construction: pointing
@@ -521,13 +532,35 @@ export function DotFieldShader({
   // bare-uniform-write gotcha: a static field has parked its frame loop by
   // the time the browser finishes, so without it the triangles would sit
   // decoded on the GPU and unseen until something else asked for a frame.
+  //
+  // Bad markup never throws. The plan states which entries it rejected
+  // and why, and the decode reports which tiles the browser refused, and
+  // each gets one console warning naming the mark; its cells stay on the
+  // transparent placeholder while the rest of the field renders.
   useEffect(() => {
+    for (const { markup, reason } of plan.rejections) {
+      const problem =
+        reason === 'no-svg-element'
+          ? 'has no <svg> element'
+          : 'has no usable box: it needs a viewBox, or a width and height in plain numbers or px';
+
+      warnMarkOnce(
+        `DotField: a custom mark ${problem}, so its cells draw nothing. Markup: ${describeMarkup(markup)}`,
+      );
+    }
+
     if (plan.tiles.length === 0) return;
 
     let cancelled = false;
 
     decodeMarkAtlas(plan)
-      .then((atlas) => {
+      .then(({ atlas, failed }) => {
+        for (const markup of failed) {
+          warnMarkOnce(
+            `DotField: the browser could not decode a custom mark's SVG, so its cells draw nothing. Markup: ${describeMarkup(markup)}`,
+          );
+        }
+
         if (cancelled) {
           atlas.dispose();
 
@@ -537,9 +570,10 @@ export function DotFieldShader({
         atlasNode.value = atlas;
         shaderContext?.scheduler.requestRender();
       })
-      .catch(() => {
-        // A mark the browser cannot decode leaves its cells on the
-        // placeholder. The warning for it is the next ticket's.
+      .catch((error: unknown) => {
+        warnMarkOnce(
+          `DotField: could not build the custom mark atlas, so custom cells draw nothing. ${String(error)}`,
+        );
       });
 
     return () => {
