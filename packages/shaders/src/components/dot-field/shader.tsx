@@ -310,8 +310,11 @@ function buildDotFieldMaterial({
   // Reading every pixel and multiplying keeps the read in straight-line
   // code, where the derivatives are the true ones. The box side is held
   // off zero by an epsilon so a `dotSize` of 0, which an animation signal
-  // can pass through, divides to a finite point far outside the box and
-  // gates to nothing, rather than to NaN, which the gate cannot catch.
+  // can pass through, divides to a finite point rather than NaN, which the
+  // gate could not catch. Every pixel off the cell's exact center then
+  // lands far outside the box and gates to 0; a pixel sitting exactly on
+  // it reads the mark's center texel, much as a built-in mark at size 0
+  // still shades its center pixel through the anti-aliasing band.
   const customMask = (tile: MarkTile | null): TSLNode => {
     if (tile === null) return float(0);
 

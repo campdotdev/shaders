@@ -1,13 +1,11 @@
 'use client';
 
 // Custom-mark probe for DotField: a triangle passed as inline SVG, drawn at
-// every grid point. Two scenes on one page. The top one ripples and stacks
-// a white triangle field over a red circle field at the same settings, so
-// the triangle must stay centered in its circle on every frame if the two
-// ride the wave alike. The bottom one has amplitude 0, so its frame loop
-// parks after one flush and the triangles only show if the decode's own
-// repaint request lands. The markup carries a magenta fill on purpose:
-// only its alpha is read, so the marks must come out white.
+// every grid point. The top scene ripples a white triangle field over a red
+// circle field at the same settings, so the triangle must stay centered in
+// its circle if the two ride the wave alike. The bottom scene has amplitude
+// 0, so its frame loop parks and the triangles only show if the decode's
+// own repaint lands. The magenta fill is deliberate: only alpha is read.
 import { DotField, ShaderScene } from '@camp-dev/shaders';
 
 const TRIANGLE =

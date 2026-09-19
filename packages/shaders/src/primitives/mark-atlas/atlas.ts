@@ -39,6 +39,14 @@ export function getMarkAtlasPlaceholder(): Texture {
  * placeholder, so a texture that resolves after its field unmounted is
  * disposed rather than used. Rejects when the browser cannot decode a
  * mark; what a rejection does to the field is the next ticket's.
+ *
+ * The texture keeps three's defaults, which generate mipmaps: a pyramid
+ * of half-size copies of the atlas, each averaging a 2x2 block of the one
+ * above, that the GPU samples from when a mark is drawn smaller than its
+ * tile. Without them a 128px tile drawn at a 3px `dotSize` would pick one
+ * texel in forty per screen pixel, and the mark would sparkle as it
+ * moved. The plan's tile padding exists so those averaged copies do not
+ * blend neighboring marks together.
  */
 export async function decodeMarkAtlas(plan: MarkTilePlan): Promise<CanvasTexture> {
   const canvas = document.createElement('canvas');

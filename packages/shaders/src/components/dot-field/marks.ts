@@ -10,7 +10,17 @@ export type { SvgMarkup } from '../../primitives/mark-atlas/plan.js';
  * The marks the field can draw at each grid point: a built-in name, or a
  * custom mark as inline SVG markup.
  */
-export type DotShape = 'circle' | 'cross' | { svg: SvgMarkup };
+export type DotShape =
+  | 'circle'
+  | 'cross'
+  | {
+      /**
+       * The custom mark's markup: the full `<svg>` element as text with
+       * its `viewBox`, which scales to fit `dotSize`. Only its alpha is
+       * read, so the mark takes the field's `color` whatever fill it has.
+       */
+      svg: SvgMarkup;
+    };
 
 export interface MarkEntries {
   /** The marks in the order given, repeats kept. */
