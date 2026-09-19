@@ -317,20 +317,22 @@ function buildDotFieldMaterial({
   // keeps every read from blending in a neighboring mark, which the
   // padding comment in plan.ts works through; a mark smaller than that
   // level's texel count is minified from it and shimmers a little as it
-  // moves, rather than picking up its neighbors. The device-pixel size is
-  // held off zero by an epsilon so a `dotSize` of 0, which an animation
-  // signal can pass through, gives a finite level and a finite point
-  // rather than NaN.
+  // moves, rather than picking up its neighbors.
   //
   // Outside the box the mapping would land in a neighboring tile, so the
   // read is gated to the box: the farthest a coordinate is from the box's
   // center on either axis is over 0.5 exactly when it is outside, and step
   // turns that into a 0-or-1 factor. A multiply rather than select, so the
-  // read stays in straight-line code with no branch around it. Every pixel
-  // off the cell's exact center at size 0 lands far outside the box and
-  // gates to 0; a pixel sitting exactly on it reads the mark's center
-  // texel, much as a built-in mark at size 0 still shades its center pixel
-  // through the anti-aliasing band.
+  // read stays in straight-line code with no branch around it.
+  //
+  // A `dotSize` of 0, which an animation signal can pass through, would
+  // divide by zero twice, and each division gets its own epsilon: the
+  // device-pixel size under the log2, so the level is finite and clamps
+  // to the deepest one, and the box side in cell units under the point,
+  // so the point is finite. Every pixel off the cell's exact center then
+  // lands far outside the box and gates to 0; a pixel sitting exactly on
+  // it reads the mark's center texel, much as a built-in mark at size 0
+  // still shades its center pixel through the anti-aliasing band.
   const inner = MARK_TILE_SIZE - MARK_TILE_PADDING * 2;
   const boxDevicePixels = zeroScalar.add(dotSizeUniform).mul(dprUniform).max(1e-6);
   const atlasLevel = log2(float(inner).div(boxDevicePixels)).clamp(0, MARK_TILE_MAX_MIP_LEVEL);
