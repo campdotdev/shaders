@@ -20,6 +20,8 @@ const NO_BOX = '<svg><rect width="10" height="10"/></svg>';
 const DATA_SIZED = '<svg data-width="24" data-height="24"><rect width="24" height="24"/></svg>';
 const BAD_VIEW_BOX =
   '<svg viewBox="bad" width="24" height="24"><rect width="24" height="24"/></svg>';
+const QUOTED_TAG_END =
+  '<svg aria-label="a > b" viewBox="0 0 24 24"><rect width="24" height="24"/></svg>';
 const NOT_SVG = '<div>not an svg</div>';
 
 // The inner square a box is fitted into, once the mip gutter is taken off
@@ -38,6 +40,12 @@ describe('planMarkTiles', () => {
 
   it('accepts a comma-separated, single-quoted viewBox', () => {
     expect(planMarkTiles([COMMA_BOX]).entries[0]).toMatchObject({ box: { width: 16, height: 16 } });
+  });
+
+  it('reads past tag delimiters inside quoted root attributes', () => {
+    expect(planMarkTiles([QUOTED_TAG_END]).entries[0]).toMatchObject({
+      box: { width: 24, height: 24 },
+    });
   });
 
   it('falls back to width and height when there is no viewBox, with or without px', () => {

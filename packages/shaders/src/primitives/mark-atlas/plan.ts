@@ -173,9 +173,11 @@ export function planMarkTiles(markups: readonly SvgMarkup[]): MarkTilePlan {
 // ---------------------------------------------
 // Reading the box
 // ---------------------------------------------
-// The root `<svg>` element's opening tag, up to its first `>`, which is
-// where its attributes are. Case-insensitive because SVG served as HTML is.
-const SVG_OPEN_TAG = /<svg\b[^>]*>/i;
+// The root `<svg>` element's opening tag, up to its first unquoted `>`,
+// which is where its attributes are. A quoted attribute may contain `>`
+// without ending the tag, so each quoted value is consumed as one unit.
+// Case-insensitive because SVG served as HTML is.
+const SVG_OPEN_TAG = /<svg\b(?:[^>"']|"[^"]*"|'[^']*')*>/i;
 
 // Each attribute is matched as a whole name: the lookbehind refuses a
 // letter, digit, or hyphen before it, so `data-width` is not `width`.
