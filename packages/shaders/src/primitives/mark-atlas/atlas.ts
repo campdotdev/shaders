@@ -67,19 +67,22 @@ export async function decodeMarkAtlas(plan: MarkTilePlan): Promise<MarkAtlasDeco
 
   if (context === null) throw new Error('DotField: could not get a 2d canvas context');
 
-  const failed: SvgMarkup[] = [];
-
-  await Promise.all(
-    plan.tiles.map(async ({ markup, box, rect }) => {
+  // One result per tile, in tile order whatever order the browser finishes
+  // them in, so `failed` lists them in plan order.
+  const outcomes = await Promise.all(
+    plan.tiles.map(async ({ markup, box, rect }): Promise<SvgMarkup | null> => {
       try {
         const image = await loadSvgImage(markup, box, rect.width, rect.height);
 
         context.drawImage(image, rect.x, rect.y, rect.width, rect.height);
+
+        return null;
       } catch {
-        failed.push(markup);
+        return markup;
       }
     }),
   );
+  const failed = outcomes.filter((markup): markup is SvgMarkup => markup !== null);
 
   const atlas = new CanvasTexture(canvas);
 
@@ -138,14 +141,16 @@ async function loadSvgImage(
 // Warning once
 // ---------------------------------------------
 // A bad asset should say so in the console once, not once per frame, per
-// mount, or per Strict Mode effect replay. Keyed on the message, so the
-// same problem with the same markup warns once per page load.
+// mount, or per Strict Mode effect replay. Keyed on the problem and the
+// whole markup rather than on the message, whose excerpt is truncated, so
+// two different bad marks that share an opening never hide each other,
+// and the same mark with the same problem warns once per page load.
 const warned = new Set<string>();
 
-export function warnMarkOnce(message: string): void {
-  if (warned.has(message)) return;
+export function warnMarkOnce(key: string, message: string): void {
+  if (warned.has(key)) return;
 
-  warned.add(message);
+  warned.add(key);
   console.warn(message);
 }
 

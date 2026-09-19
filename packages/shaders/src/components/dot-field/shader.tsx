@@ -535,8 +535,10 @@ export function DotFieldShader({
   //
   // Bad markup never throws. The plan states which entries it rejected
   // and why, and the decode reports which tiles the browser refused, and
-  // each gets one console warning naming the mark; its cells stay on the
-  // transparent placeholder while the rest of the field renders.
+  // each gets one console warning naming the mark. A rejected entry has no
+  // tile, so its mask is a constant zero; a tile the browser refused is
+  // left transparent in the atlas, so its reads come back zero. Either
+  // way those cells draw nothing while the rest of the field renders.
   useEffect(() => {
     for (const { markup, reason } of plan.rejections) {
       const problem =
@@ -545,6 +547,7 @@ export function DotFieldShader({
           : 'has no usable box: it needs a viewBox, or a width and height in plain numbers or px';
 
       warnMarkOnce(
+        `${reason}:${markup}`,
         `DotField: a custom mark ${problem}, so its cells draw nothing. Markup: ${describeMarkup(markup)}`,
       );
     }
@@ -557,6 +560,7 @@ export function DotFieldShader({
       .then(({ atlas, failed }) => {
         for (const markup of failed) {
           warnMarkOnce(
+            `decode-failed:${markup}`,
             `DotField: the browser could not decode a custom mark's SVG, so its cells draw nothing. Markup: ${describeMarkup(markup)}`,
           );
         }
@@ -572,6 +576,7 @@ export function DotFieldShader({
       })
       .catch((error: unknown) => {
         warnMarkOnce(
+          'atlas-failed',
           `DotField: could not build the custom mark atlas, so custom cells draw nothing. ${String(error)}`,
         );
       });
@@ -676,6 +681,10 @@ export function DotFieldShader({
     const mesh = new Mesh(new PlaneGeometry(2, 2), material);
 
     shaderContext.scene.add(mesh);
+    // A rebuild on a parked scene would otherwise sit unseen until some
+    // other input asked for a frame, the same trap as a bare uniform write:
+    // a shape or color change on a static field must show at once.
+    shaderContext.scheduler.requestRender();
 
     return () => {
       shaderContext.scene.remove(mesh);

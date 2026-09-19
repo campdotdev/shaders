@@ -17,6 +17,9 @@ const SIZED = '<svg width="24" height="24"><rect width="24" height="24"/></svg>'
 const SIZED_PX = '<svg width="32px" height="16px"><rect width="32" height="16"/></svg>';
 const SIZED_EM = '<svg width="2em" height="2em"><rect width="2" height="2"/></svg>';
 const NO_BOX = '<svg><rect width="10" height="10"/></svg>';
+const DATA_SIZED = '<svg data-width="24" data-height="24"><rect width="24" height="24"/></svg>';
+const BAD_VIEW_BOX =
+  '<svg viewBox="bad" width="24" height="24"><rect width="24" height="24"/></svg>';
 const NOT_SVG = '<div>not an svg</div>';
 
 // The inner square a box is fitted into, once the mip gutter is taken off
@@ -151,6 +154,14 @@ describe('planMarkTiles', () => {
     expect(plan.entries[2]).toEqual({ markup: SIZED_EM, reason: 'no-box' });
     expect(plan.tiles).toHaveLength(1);
     expect(plan.entries[1]).toMatchObject({ column: 0, row: 0 });
+  });
+
+  it('does not read data-width as width, and does not fall back past a viewBox that is present but unreadable', () => {
+    const plan = planMarkTiles([DATA_SIZED, BAD_VIEW_BOX]);
+
+    expect(plan.entries[0]).toEqual({ markup: DATA_SIZED, reason: 'no-box' });
+    expect(plan.entries[1]).toEqual({ markup: BAD_VIEW_BOX, reason: 'no-box' });
+    expect(plan.tiles).toHaveLength(0);
   });
 
   it('rejects markup with no svg element, with its own reason', () => {

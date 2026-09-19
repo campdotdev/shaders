@@ -177,30 +177,37 @@ export function planMarkTiles(markups: readonly SvgMarkup[]): MarkTilePlan {
 // where its attributes are. Case-insensitive because SVG served as HTML is.
 const SVG_OPEN_TAG = /<svg\b[^>]*>/i;
 
+// Each attribute is matched as a whole name: the lookbehind refuses a
+// letter, digit, or hyphen before it, so `data-width` is not `width`.
+// Whether a viewBox is present at all is checked separately from whether
+// it parses, because a viewBox that is there but unreadable must not fall
+// back to width and height: the decode hands an existing viewBox to the
+// browser unchanged, so the two halves have to agree on which box is
+// meant.
+const HAS_VIEW_BOX = /(?<![\w-])viewBox\s*=/;
+
 // `viewBox="min-x min-y width height"`, with either quote and with spaces
 // or commas between the numbers, both of which SVG allows. Only the last
-// two numbers are the size; the origin is where the drawing starts, and
-// the decode hands the whole viewBox to the browser unchanged.
+// two numbers are the size; the origin is where the drawing starts.
 const VIEW_BOX_ATTRIBUTE =
-  /\bviewBox\s*=\s*(["'])\s*[-+\d.eE]+[\s,]+[-+\d.eE]+[\s,]+([-+\d.eE]+)[\s,]+([-+\d.eE]+)\s*\1/;
+  /(?<![\w-])viewBox\s*=\s*(["'])\s*[-+\d.eE]+[\s,]+[-+\d.eE]+[\s,]+([-+\d.eE]+)[\s,]+([-+\d.eE]+)\s*\1/;
 
-// `width="24"` or `width="24px"`. Any other unit, such as em or %, has no
-// fixed meaning outside a document, so it does not count as a box.
-const WIDTH_ATTRIBUTE = /\bwidth\s*=\s*(["'])\s*([-+\d.eE]+)(?:px)?\s*\1/;
-const HEIGHT_ATTRIBUTE = /\bheight\s*=\s*(["'])\s*([-+\d.eE]+)(?:px)?\s*\1/;
+// `width="24"` or `width="24px"`. Those are the two forms supported as a
+// box; a value in any other unit, such as em, %, or cm, is not read.
+const WIDTH_ATTRIBUTE = /(?<![\w-])width\s*=\s*(["'])\s*([-+\d.eE]+)(?:px)?\s*\1/;
+const HEIGHT_ATTRIBUTE = /(?<![\w-])height\s*=\s*(["'])\s*([-+\d.eE]+)(?:px)?\s*\1/;
 
 /**
  * The mark's box from its `viewBox`, or from `width` and `height` when
- * there is no `viewBox`, or the reason there is neither.
+ * there is no `viewBox` at all, or the reason there is neither.
  */
 function readMarkBox(markup: SvgMarkup): { box: MarkBox } | { reason: MarkRejectionReason } {
   const openTag = SVG_OPEN_TAG.exec(markup)?.[0];
 
   if (openTag === undefined) return { reason: 'no-svg-element' };
 
-  const viewBox = VIEW_BOX_ATTRIBUTE.exec(openTag);
-  const box = viewBox
-    ? toBox(viewBox[2], viewBox[3])
+  const box = HAS_VIEW_BOX.test(openTag)
+    ? toBox(VIEW_BOX_ATTRIBUTE.exec(openTag)?.[2], VIEW_BOX_ATTRIBUTE.exec(openTag)?.[3])
     : toBox(WIDTH_ATTRIBUTE.exec(openTag)?.[2], HEIGHT_ATTRIBUTE.exec(openTag)?.[2]);
 
   return box === null ? { reason: 'no-box' } : { box };
