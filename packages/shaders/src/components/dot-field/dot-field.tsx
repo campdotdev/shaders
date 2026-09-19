@@ -21,9 +21,11 @@ export interface DotFieldProps {
    * `color`. `dotSize` is the mark's overall size in every case, so marks
    * swap without retuning the grid. With a list, each cell draws one entry,
    * chosen by a hash of its cell index, so the pick holds still from frame
-   * to frame. A mark listed more than once is drawn that many times as
-   * often: `['circle', 'cross', 'cross']` draws about two crosses per
-   * circle. A change rebuilds the shader. Defaults to `'circle'`.
+   * to frame, and names and `{ svg }` objects mix freely. A mark listed
+   * more than once is drawn that many times as often:
+   * `['cross', { svg: star }, { svg: star }]` is a confetti of crosses and
+   * about twice as many stars. A change rebuilds the shader. Defaults to
+   * `'circle'`.
    */
   shape?: DotShape | readonly DotShape[];
   /**

@@ -53,6 +53,19 @@ describe('planMarkTiles', () => {
     });
   });
 
+  it('keeps neighboring rectangles two gutters apart, so mip levels do not bleed between marks', () => {
+    const plan = planMarkTiles([TRIANGLE, SQUARE]);
+    const [left, right] = plan.entries;
+
+    if (!left || !right) throw new Error('both marks should have tiles');
+
+    // Both boxes are square, so each rectangle fills its tile's inner
+    // square, and the gap between them is exactly the two gutters.
+    expect(right.rect.x - (left.rect.x + left.rect.width)).toBe(MARK_TILE_PADDING * 2);
+    expect(left.rect.x).toBe(MARK_TILE_PADDING);
+    expect(plan.width - (right.rect.x + right.rect.width)).toBe(MARK_TILE_PADDING);
+  });
+
   it('gives identical markup one tile, so a repeated entry decodes once', () => {
     const plan = planMarkTiles([TRIANGLE, SQUARE, TRIANGLE]);
 
