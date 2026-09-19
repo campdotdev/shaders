@@ -19,19 +19,34 @@ export type SvgMarkup = string;
 // size and sampled from there at whatever `dotSize` asks for. Raising it
 // keeps a large mark crisp for longer at the cost of atlas memory, which
 // grows with the square of it; lowering it saves memory and softens a mark
-// sooner. A mark drawn larger than the tile is magnified from it, so its
-// edge softens past 128 device pixels on screen.
+// sooner. The mark fills the tile inside its gutter, 96 device pixels for
+// the values below, and a mark drawn larger than that on screen is
+// magnified from it, so its edge softens past 96 device pixels.
 export const MARK_TILE_SIZE = 128;
 
 // The transparent gutter on each side of a tile, in device pixels. The
 // atlas is sampled with mipmaps, where each level averages a 2x2 block of
 // the level above into one texel, so at level n a texel covers 2^n device
-// pixels of the tile. A texel that straddled two tiles would blend one
-// mark's edge into its neighbor. With this gutter on both sides, neighbor
-// rectangles sit two gutters apart, so no texel straddles them down to
-// level 4, where a texel is 16 pixels wide and the mark on screen is
-// about 8 device pixels. Below that a mark is a smudge either way.
-export const MARK_TILE_PADDING = 8;
+// pixels of the tile. The sampler blends the texel under the sample point
+// with its neighbors, reaching half a texel each way, and a sample near a
+// mark's edge would pull in the next tile's edge texel where the neighbor
+// mark sits. With this gutter, a sample anywhere inside a mark's rectangle
+// stays at least a gutter from the tile boundary, so no blend reaches a
+// neighbor at any level whose half-texel is within the gutter: that is
+// every level up to MARK_TILE_MAX_MIP_LEVEL, and the shader clamps its
+// reads there. Wider protects deeper levels at the cost of mark
+// resolution, since the mark fills what the gutter leaves.
+export const MARK_TILE_PADDING = 16;
+
+// The deepest mip level a read may use: the one whose half-texel equals
+// the gutter, so the sampler's blend never crosses into a neighbor. At
+// this level a texel is 2 * padding device pixels wide, and the inner
+// square holds (tile - 2 * padding) / (2 * padding) texels, three for the
+// values above, which is about the size in device pixels below which a
+// mark is minified from this level rather than a finer one and starts to
+// shimmer as it moves. 16 gives level 5, which covers the default dotSize
+// of 3 on a 1x display exactly.
+export const MARK_TILE_MAX_MIP_LEVEL = Math.log2(MARK_TILE_PADDING * 2);
 
 /** The mark's own coordinate box, in the units its markup uses. */
 export interface MarkBox {

@@ -16,6 +16,7 @@ import {
   exp,
   float,
   length,
+  log2,
   max,
   modInt,
   round,
@@ -43,6 +44,9 @@ import {
 } from '../../engine.js';
 import { decodeMarkAtlas, getMarkAtlasPlaceholder } from '../../primitives/mark-atlas/atlas.js';
 import {
+  MARK_TILE_MAX_MIP_LEVEL,
+  MARK_TILE_PADDING,
+  MARK_TILE_SIZE,
   type MarkTile,
   type MarkTilePlan,
   planMarkTiles,
@@ -299,23 +303,37 @@ function buildDotFieldMaterial({
   // canvas's rgba at that coordinate, and only the alpha is kept: a filled
   // pixel of the SVG is 1, a blank one is 0, and the browser's rasterizer
   // plus the texture filter fade the edge between them, which is the
-  // anti-aliasing a custom mark gets in place of the smoothstep. Outside
-  // the box the mapping would land in a neighboring tile, so the read is
-  // gated to the box: the farthest a coordinate is from the box's center
-  // on either axis is over 0.5 exactly when it is outside, and step turns
-  // that into a 0-or-1 factor. A multiply rather than select on purpose:
-  // select compiles to a real if/else, and a texture read inside a branch
-  // that only some pixels take gets undefined derivatives, which the
-  // sampler uses to choose the mip level. That drew a different level per
-  // 2x2 pixel quad along the box edge, seen as flashing box outlines.
-  // Reading every pixel and multiplying keeps the read in straight-line
-  // code, where the derivatives are the true ones. The box side is held
-  // off zero by an epsilon so a `dotSize` of 0, which an animation signal
-  // can pass through, divides to a finite point rather than NaN, which the
-  // gate could not catch. Every pixel off the cell's exact center then
-  // lands far outside the box and gates to 0; a pixel sitting exactly on
-  // it reads the mark's center texel, much as a built-in mark at size 0
-  // still shades its center pixel through the anti-aliasing band.
+  // anti-aliasing a custom mark gets in place of the smoothstep.
+  //
+  // The mip level is chosen here rather than left to the GPU. A mipmap is
+  // a pyramid of half-size copies of the atlas, and the sampler normally
+  // picks the copy whose texels are about one screen pixel wide from how
+  // fast the texture coordinate changes between neighboring pixels. That
+  // guess is what a 2x2 pixel quad straddling a branch gets wrong, and it
+  // has no way to know the atlas's gutter. Here the ratio is known: the
+  // mark's rectangle is `inner` device pixels wide in the atlas and
+  // `dotSize` times the pixel ratio on screen, and their log2 is the level
+  // where one texel covers one pixel. Clamping it at the gutter's level
+  // keeps every read from blending in a neighboring mark, which the
+  // padding comment in plan.ts works through; a mark smaller than that
+  // level's texel count is minified from it and shimmers a little as it
+  // moves, rather than picking up its neighbors. The device-pixel size is
+  // held off zero by an epsilon so a `dotSize` of 0, which an animation
+  // signal can pass through, gives a finite level and a finite point
+  // rather than NaN.
+  //
+  // Outside the box the mapping would land in a neighboring tile, so the
+  // read is gated to the box: the farthest a coordinate is from the box's
+  // center on either axis is over 0.5 exactly when it is outside, and step
+  // turns that into a 0-or-1 factor. A multiply rather than select, so the
+  // read stays in straight-line code with no branch around it. Every pixel
+  // off the cell's exact center at size 0 lands far outside the box and
+  // gates to 0; a pixel sitting exactly on it reads the mark's center
+  // texel, much as a built-in mark at size 0 still shades its center pixel
+  // through the anti-aliasing band.
+  const inner = MARK_TILE_SIZE - MARK_TILE_PADDING * 2;
+  const boxDevicePixels = zeroScalar.add(dotSizeUniform).mul(dprUniform).max(1e-6);
+  const atlasLevel = log2(float(inner).div(boxDevicePixels)).clamp(0, MARK_TILE_MAX_MIP_LEVEL);
   const customMask = (tile: MarkTile | null): TSLNode => {
     if (tile === null) return float(0);
 
@@ -325,7 +343,17 @@ function buildDotFieldMaterial({
       boxPoint.x.mul(rect.width).add(rect.x),
       boxPoint.y.oneMinus().mul(rect.height).add(rect.y),
     ).div(vec2(plan.width, plan.height));
-    const alpha = atlasNode.uv(atlasUv).a;
+    // A read node with this tile's coordinate and the clamped level. Its
+    // texture argument is only a placeholder for construction: pointing
+    // its referenceNode at the shared atlas node makes it read whatever
+    // texture that node holds, which is how three's own uv() and level()
+    // chains share one texture, and it is what lets the decode swap the
+    // atlas in behind every tile's read at once.
+    const read = texture(getMarkAtlasPlaceholder(), atlasUv, atlasLevel);
+
+    read.referenceNode = atlasNode;
+
+    const alpha = read.a;
     const fromBoxCenter = abs(boxPoint.sub(0.5));
     const insideBox = step(max(fromBoxCenter.x, fromBoxCenter.y), 0.5);
 

@@ -6,9 +6,10 @@
 // its circle if the two ride the wave alike. The bottom scene is confetti:
 // a cross, a star, and two triangles in one array, at amplitude 0 so its
 // frame loop parks and the custom marks only show if the decode's own
-// repaint lands. Small `dotSize` there so the atlas is read through its
-// mip levels, where a missing gutter would show as a sliver of a
-// neighbor. The magenta fill is deliberate: only alpha is read.
+// repaint lands. `dotSize` 4 there puts the atlas reads at the deepest
+// mip level the shader allows on a 2x display, where a missing gutter or
+// a level past the clamp would show as a sliver of a neighbor. The
+// magenta fill is deliberate: only alpha is read.
 import { DotField, ShaderScene } from '@camp-dev/shaders';
 
 const TRIANGLE =
@@ -33,7 +34,7 @@ export default function ProbeScene() {
       </div>
       <div style={{ position: 'relative', height: '50%' }}>
         <ShaderScene>
-          <DotField amplitude={0} color="#FFFFFF" dotSize={8} shape={CONFETTI} spacing={24} />
+          <DotField amplitude={0} color="#FFFFFF" dotSize={4} shape={CONFETTI} spacing={20} />
         </ShaderScene>
       </div>
     </div>

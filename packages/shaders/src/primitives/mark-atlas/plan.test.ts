@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { MARK_TILE_PADDING, MARK_TILE_SIZE, planMarkTiles } from './plan.js';
+import {
+  MARK_TILE_MAX_MIP_LEVEL,
+  MARK_TILE_PADDING,
+  MARK_TILE_SIZE,
+  planMarkTiles,
+} from './plan.js';
 
 const TRIANGLE =
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2 22 22H2z"/></svg>';
@@ -53,7 +58,7 @@ describe('planMarkTiles', () => {
     });
   });
 
-  it('keeps neighboring rectangles two gutters apart, so mip levels do not bleed between marks', () => {
+  it('keeps neighboring rectangles two gutters apart', () => {
     const plan = planMarkTiles([TRIANGLE, SQUARE]);
     const [left, right] = plan.entries;
 
@@ -64,6 +69,13 @@ describe('planMarkTiles', () => {
     expect(right.rect.x - (left.rect.x + left.rect.width)).toBe(MARK_TILE_PADDING * 2);
     expect(left.rect.x).toBe(MARK_TILE_PADDING);
     expect(plan.width - (right.rect.x + right.rect.width)).toBe(MARK_TILE_PADDING);
+  });
+
+  it('caps the mip level at the one whose half-texel is the gutter', () => {
+    // The shader clamps its reads here; the gutter is what makes that level
+    // safe, so the two must move together.
+    expect(2 ** MARK_TILE_MAX_MIP_LEVEL).toBe(MARK_TILE_PADDING * 2);
+    expect(Number.isInteger(MARK_TILE_MAX_MIP_LEVEL)).toBe(true);
   });
 
   it('gives identical markup one tile, so a repeated entry decodes once', () => {
