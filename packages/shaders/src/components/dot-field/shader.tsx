@@ -165,7 +165,7 @@ interface DotFieldMaterialInputs {
   entries: readonly DotShape[];
   /**
    * Where each custom mark sits in the atlas. Baked in with the entries:
-   * the rectangles are compile-time constants in the shader.
+   * the tile frames are compile-time constants in the shader.
    */
   plan: MarkTilePlan;
   /**
@@ -322,9 +322,9 @@ function buildDotFieldMaterial({
   // fast the texture coordinate changes between neighboring pixels. That
   // guess is what a 2x2 pixel quad straddling a branch gets wrong, and it
   // has no way to know the atlas's gutter. Here the ratio is known: the
-  // mark's rectangle is `inner` device pixels wide in the atlas and
-  // `dotSize` times the pixel ratio on screen, and their log2 is the level
-  // where one texel covers one pixel. Clamping it at the gutter's level
+  // tile's frame is `inner` device pixels wide in the atlas and `dotSize`
+  // times the pixel ratio on screen, and their log2 is the level where one
+  // texel covers one pixel. Clamping it at the gutter's level
   // keeps every read from blending in a neighboring mark, which the
   // padding comment in plan.ts works through; a mark smaller than that
   // level's texel count is minified from it and shimmers a little as it

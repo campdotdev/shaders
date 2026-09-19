@@ -52,8 +52,8 @@ export interface MarkAtlasDecode {
  * The texture keeps three's defaults, which generate mipmaps: a pyramid
  * of half-size copies of the atlas, each averaging a 2x2 block of the one
  * above, that the GPU samples from when a mark is drawn smaller than its
- * tile. Without them a 128px tile drawn at a 3px `dotSize` would pick one
- * texel in forty per screen pixel, and the mark would sparkle as it
+ * tile. Without them a 96px mark drawn at a 3px `dotSize` would pick one
+ * texel in thirty-two per screen pixel, and the mark would sparkle as it
  * moved. The plan's tile padding exists so those averaged copies do not
  * blend neighboring marks together.
  */

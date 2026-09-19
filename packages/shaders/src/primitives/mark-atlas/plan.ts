@@ -206,8 +206,9 @@ function readMarkBox(markup: SvgMarkup): { box: MarkBox } | { reason: MarkReject
 
   if (openTag === undefined) return { reason: 'no-svg-element' };
 
+  const viewBox = VIEW_BOX_ATTRIBUTE.exec(openTag);
   const box = HAS_VIEW_BOX.test(openTag)
-    ? toBox(VIEW_BOX_ATTRIBUTE.exec(openTag)?.[2], VIEW_BOX_ATTRIBUTE.exec(openTag)?.[3])
+    ? toBox(viewBox?.[2], viewBox?.[3])
     : toBox(WIDTH_ATTRIBUTE.exec(openTag)?.[2], HEIGHT_ATTRIBUTE.exec(openTag)?.[2]);
 
   return box === null ? { reason: 'no-box' } : { box };
