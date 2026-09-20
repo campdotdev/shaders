@@ -290,10 +290,13 @@
 }
 
 /* A row is the mock's card: the faint white fill with 8px corners and 16px
-   of padding, brighter while highlighted. The highlight is the one index
-   both the arrow keys and pointer enter move, so aria-selected is its
-   source of truth here as well as for a screen reader. */
+   of padding, brighter while highlighted. The 64px scroll margin matches
+   the edge fades, so scrollIntoView keeps a keyboard-selected row out from
+   under either gradient. The highlight is the one index both the arrow keys
+   and pointer enter move, so aria-selected is its source of truth here as
+   well as for a screen reader. */
 .row {
+  scroll-margin-block: var(--spacing-16);
   padding: var(--spacing-4);
   background: var(--white-a5);
   border-radius: var(--radius-lg);

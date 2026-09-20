@@ -82,6 +82,44 @@ test.describe('the search results', () => {
     await expect(fadeStart).toHaveCSS('opacity', '1');
     await expect(fadeEnd).toHaveCSS('opacity', '0');
   });
+
+  test('keeps the keyboard-selected result clear of visible fades', async ({ page }) => {
+    await page.goto('/components/aurora');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: 'Open search' }).click();
+    const input = page.getByRole('combobox', { name: 'Search query' });
+
+    await input.fill('shader');
+
+    const panel = page.getByRole('dialog', { name: 'Search', exact: true });
+    const options = panel.getByRole('option');
+    const selectedOption = panel.locator('[role="option"][aria-selected="true"]');
+    const scrollArea = panel.locator('div[class*="search_resultsScroller"]');
+    const fadeStart = scrollArea.locator('[data-scroll-fade="start"]');
+    const fadeEnd = scrollArea.locator('[data-scroll-fade="end"]');
+
+    await expect(options.first()).toBeVisible();
+    expect(await options.count()).toBeGreaterThan(8);
+
+    for (let index = 0; index < 7; index += 1) await input.press('ArrowDown');
+
+    await expect(fadeEnd).toHaveCSS('opacity', '1');
+
+    let selectedBox = (await selectedOption.boundingBox())!;
+    const endFadeBox = (await fadeEnd.boundingBox())!;
+
+    expect(selectedBox.y + selectedBox.height).toBeLessThanOrEqual(endFadeBox.y + 1);
+
+    for (let index = 0; index < 3; index += 1) await input.press('ArrowUp');
+
+    await expect(fadeStart).toHaveCSS('opacity', '1');
+
+    selectedBox = (await selectedOption.boundingBox())!;
+    const startFadeBox = (await fadeStart.boundingBox())!;
+
+    expect(selectedBox.y).toBeGreaterThanOrEqual(startFadeBox.y + startFadeBox.height - 1);
+  });
 });
 
 test.describe('the nav dropdown', () => {
