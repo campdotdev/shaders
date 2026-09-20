@@ -1,13 +1,10 @@
 'use client';
 
 /**
- * The docs search after the Figma mock (SHA-155): the search trigger, a
- * "Cmd+k" box in the header's nav row, and the search panel it opens, a
- * card over the blurred page with the query input and the result list. The
- * panel is a Base UI Dialog, the primitive the site nav uses, which brings
- * the focus trap, scroll lock, Escape, outside-press dismissal, and focus
- * restoration to the trigger. The backend behind it is use-search-backend.ts,
- * untouched by the restyle. Names follow CONTEXT.md: trigger and panel.
+ * The docs search after the Figma mock (SHA-155): the search trigger in the
+ * header and the search panel it opens over the blurred page. Base UI Dialog
+ * owns modal behavior; use-search-backend.ts owns Pagefind and its fallback.
+ * Names follow CONTEXT.md: trigger and panel.
  */
 import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -171,14 +168,15 @@ export function Search() {
               types before it is ready. */}
           <div role="status">
             {loading && <p className={styles.message}>Loading results…</p>}
-            {unavailable && (
+            {unavailable && hasQuery && (
               <p className={styles.message}>
                 Search index unavailable. Build the docs to generate the Pagefind index.
               </p>
             )}
-            {backendState === 'ready' && queryState === 'ready' && results.length === 0 && (
-              <p className={styles.message}>No results found.</p>
-            )}
+            {hasQuery &&
+              backendState === 'ready' &&
+              queryState === 'ready' &&
+              results.length === 0 && <p className={styles.message}>No results found.</p>}
           </div>
           {/* The rows scroll inside the shared ScrollArea under the cap in
               search.module.css; the list keeps the listbox role so it still

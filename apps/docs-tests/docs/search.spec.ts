@@ -14,6 +14,10 @@ const trigger = (page: Page) => page.getByRole('button', { name: 'Open search' }
 const panel = (page: Page) => page.getByRole('dialog', { name: 'Search', exact: true });
 const input = (page: Page) => page.getByRole('combobox', { name: 'Search query' });
 
+// ---------------------------------------------
+// Opening and querying
+// ---------------------------------------------
+
 test('the trigger opens the panel with the input focused and nothing listed', async ({ page }) => {
   await page.goto('/components/aurora');
   await page.waitForLoadState('networkidle');
@@ -32,10 +36,19 @@ test('the trigger opens the panel with the input focused and nothing listed', as
 test('typing lists results from the index, and Enter opens the highlighted one', async ({
   page,
 }) => {
+  // If Pagefind fails to load or initialize, search normally falls back to
+  // this endpoint. Blocking it here makes visible rows proof that the built
+  // Pagefind index, rather than the fallback document, answered the query.
+  await page.route('**/api/search', (route) => route.abort());
   await page.goto('/components/aurora');
   await page.waitForLoadState('networkidle');
 
+  const pagefindLoaded = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/pagefind/pagefind.js',
+  );
+
   await trigger(page).click();
+  expect((await pagefindLoaded).ok()).toBe(true);
   await input(page).fill('vignette');
 
   const rows = panel(page).getByRole('option');
@@ -69,6 +82,24 @@ test('typing lists results from the index, and Enter opens the highlighted one',
   expect(highlightedText).toContain(heading!.trim());
 });
 
+test('clearing a completed query returns to the input-only state', async ({ page }) => {
+  await page.goto('/components/aurora');
+  await page.waitForLoadState('networkidle');
+
+  await trigger(page).click();
+  await input(page).fill('vignette');
+  await expect(panel(page).getByRole('option').first()).toBeVisible();
+
+  await input(page).clear();
+
+  await expect(panel(page).getByRole('option')).toHaveCount(0);
+  await expect(panel(page).getByRole('status')).toBeEmpty();
+});
+
+// ---------------------------------------------
+// Navigation
+// ---------------------------------------------
+
 test('a click on a row opens it', async ({ page }) => {
   await page.goto('/components/aurora');
   await page.waitForLoadState('networkidle');
@@ -92,6 +123,10 @@ test('a click on a row opens it', async ({ page }) => {
   expect(heading).toBeTruthy();
   expect(rowText).toContain(heading!.trim());
 });
+
+// ---------------------------------------------
+// Dismissal and focus restoration
+// ---------------------------------------------
 
 test('the shortcut toggles the panel, and every close returns focus to the trigger', async ({
   page,
@@ -133,6 +168,10 @@ test('the shortcut toggles the panel, and every close returns focus to the trigg
   await expect(panel(page)).toBeHidden();
   await expect(trigger(page)).toBeFocused();
 });
+
+// ---------------------------------------------
+// Accessibility and layout
+// ---------------------------------------------
 
 // The panel opens in a portal the a11y suite never opens, so its axe pass
 // lives here, with rows showing so the combobox, listbox, and options are

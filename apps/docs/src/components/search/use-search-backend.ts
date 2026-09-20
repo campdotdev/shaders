@@ -1,10 +1,7 @@
 /**
- * The data half of the docs search: a backend stood up lazily the first
- * time the search panel opens, and re-queried as the reader types. Pagefind
- * is the primary backend, from the index `pagefind --site out` writes next
- * to the static export, and the JSON endpoint at /api/search, the search
- * document generator's output, is the fallback for a server with no index.
- * search.tsx consumes { backendState, results } and nothing else.
+ * The data half of the docs search. It loads Pagefind lazily when the panel
+ * first opens, falls back to /api/search when no index exists, and exposes
+ * backend state, query state, and results to search.tsx.
  */
 import { useEffect, useRef, useState } from 'react';
 

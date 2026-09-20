@@ -1,12 +1,10 @@
-/* The backdrop under the site's two full-page overlays, the site nav and
-   the search panel: the page black at 90% over the page blurred behind it,
-   edge to edge. One rule, so one edit changes both (SHA-155). Each overlay
-   renders Base UI's Dialog.Backdrop with this class and adds a class of its
-   own only for what differs: the search panel lifts its backdrop above the
-   header (search.module.css), and the site nav must not, because the
-   header is that nav's visible Close (site-nav.module.css).
+/* The backdrop shared by the site nav and the search panel. Both render a
+   Base UI Dialog.Backdrop with this class, then use their own module for
+   differences such as the search panel's higher stacking level. */
 
-   It fades on the larger step, since it covers the whole screen, and
+/* ---- The backdrop ---- */
+
+/* It fades on the larger step, since it covers the whole screen, and
    opacity is a fade token so it still fades under Reduce Motion. Base UI
    holds data-starting-style for the first frame and data-ending-style
    through the exit, so the one transition carries both directions and a
@@ -18,7 +16,10 @@
    that is actually showing. Neither it nor the 12px blur is on the token
    scale, because neither is a size: one is a viewport unit, the other a
    filter radius. The search mock draws a 6px blur; 12 wins so the two
-   overlays stay one rule and the site nav does not change. */
+   overlays stay one rule and the site nav does not change. The search
+   panel lifts its backdrop above the header (search.module.css), while the
+   site nav keeps the header above it because that header holds its visible
+   Close (site-nav.module.css). */
 .backdrop {
   position: fixed;
   inset: 0;
