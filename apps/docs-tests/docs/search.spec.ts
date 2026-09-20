@@ -133,6 +133,51 @@ test('editing a completed query does not announce a transient empty state', asyn
   expect(announcements).not.toContain('No results found.');
 });
 
+test('repeating a query after reopening loads before exposing results', async ({ page }) => {
+  await page.goto('/components/aurora');
+  await page.waitForLoadState('networkidle');
+
+  await trigger(page).click();
+  await input(page).fill('vignette');
+  await expect(panel(page).getByRole('option').first()).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(panel(page)).toBeHidden();
+
+  await trigger(page).click();
+  await expect(panel(page)).toBeVisible();
+  await expect(input(page)).toHaveValue('');
+
+  await panel(page).evaluate((element) => {
+    const events: string[] = [];
+
+    element.setAttribute('data-search-events', '[]');
+    new MutationObserver((records) => {
+      for (const record of records) {
+        for (const changedNode of record.addedNodes) {
+          if (!(changedNode instanceof Element)) continue;
+
+          if (changedNode.textContent?.includes('Loading results')) events.push('loading');
+          if (
+            changedNode.matches('[role="option"]') ||
+            changedNode.querySelector('[role="option"]')
+          ) {
+            events.push('option');
+          }
+        }
+      }
+      element.setAttribute('data-search-events', JSON.stringify(events));
+    }).observe(element, { childList: true, subtree: true });
+  });
+
+  await input(page).fill('vignette');
+  await expect(panel(page).getByRole('option').first()).toBeVisible();
+
+  const events = JSON.parse((await panel(page).getAttribute('data-search-events')) ?? '[]');
+
+  expect(events).toContain('loading');
+  expect(events.indexOf('loading')).toBeLessThan(events.indexOf('option'));
+});
+
 // ---------------------------------------------
 // Navigation
 // ---------------------------------------------

@@ -170,9 +170,9 @@ export function useSearchBackend(open: boolean, query: string) {
   // Re-query on every keystroke once the backend is ready. Results and status
   // carry the query that produced them, so old rows and messages disappear
   // immediately when the reader types again rather than staying actionable
-  // while the next request runs. Nothing clears on close: the panel fades
-  // out over the rows it was showing, and the component resets the query once
-  // that exit has finished, which empties the list before the next open.
+  // while the next request runs. Nothing clears when close starts: the panel
+  // fades out over the rows it was showing, then resetSearch clears them once
+  // that exit has finished.
   useEffect(() => {
     if (!open || query.trim() === '' || backendState !== 'ready' || !backendRef.current) return;
     const backend = backendRef.current;
@@ -201,5 +201,10 @@ export function useSearchBackend(open: boolean, query: string) {
       ? 'loading'
       : queryStatus.state;
 
-  return { backendState, queryState, results };
+  const resetSearch = () => {
+    setResultSet({ query: '', items: NO_RESULTS });
+    setQueryStatus({ query: '', state: 'idle' });
+  };
+
+  return { backendState, queryState, resetSearch, results };
 }

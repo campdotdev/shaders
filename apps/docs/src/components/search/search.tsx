@@ -22,7 +22,7 @@ export function Search() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const { backendState, queryState, results } = useSearchBackend(open, query);
+  const { backendState, queryState, resetSearch, results } = useSearchBackend(open, query);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -59,6 +59,7 @@ export function Search() {
     if (isOpen) return;
     setQuery('');
     setSelectedIndex(0);
+    resetSearch();
   };
 
   const navigate = useCallback(
