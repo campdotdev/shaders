@@ -110,10 +110,17 @@ test('editing a completed query does not announce a transient empty state', asyn
     const announcements: string[] = [];
 
     element.setAttribute('data-announcements', '[]');
-    new MutationObserver(() => {
-      const announcement = element.textContent?.trim();
+    new MutationObserver((records) => {
+      for (const record of records) {
+        const changedNodes =
+          record.type === 'characterData' ? [record.target] : Array.from(record.addedNodes);
 
-      if (announcement) announcements.push(announcement);
+        for (const changedNode of changedNodes) {
+          const announcement = changedNode.textContent?.trim();
+
+          if (announcement) announcements.push(announcement);
+        }
+      }
       element.setAttribute('data-announcements', JSON.stringify(announcements));
     }).observe(element, { childList: true, characterData: true, subtree: true });
   });
