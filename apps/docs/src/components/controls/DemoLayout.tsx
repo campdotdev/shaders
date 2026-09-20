@@ -5,11 +5,15 @@
  * a column capped at 4xl, controls on the right in a sticky 2xs column that
  * scrolls on its own once the panel outgrows the shader. Once the main column
  * is under 53.5rem the controls stack below the shader, capped at sm tall and
- * still scrolling. The column is the site's shared ScrollArea, and a fade
- * over the column's bottom edge says there are more controls below, keyed
- * off the overflow state Base UI stamps on the scroll area's root, so there
- * is no measuring here. The shader child keeps its own [data-shader-demo]
- * wrapper, which is what the Playwright visual suite sizes against.
+ * still scrolling. The column is the site's shared ScrollArea with both
+ * edge fades on, keyed off the overflow state Base UI stamps on the scroll
+ * area's root, so there is no measuring here. The bottom one says there
+ * are more controls below. The top one sits under the panel's sticky title
+ * row (demo-layout.module.css sets the inset) and says the rows scrolling
+ * under that row continue above it: the row is dark glass, so without the
+ * fade the first visible control clipped hard against its rule. The shader
+ * child keeps its own [data-shader-demo] wrapper, which is what the
+ * Playwright visual suite sizes against.
  */
 import type { ReactNode } from 'react';
 
@@ -26,7 +30,13 @@ import styles from './demo-layout.module.css';
 // Base UI resolves a scroll range of 1px or less toward the start and a
 // Retina display snaps the offset to half a pixel, so the end never
 // registers. Whole scroll extents are what the reveal is for.
-const FADE_THRESHOLD_PX = 16;
+const FADE_END_THRESHOLD_PX = 16;
+
+// The same margin for the top edge, matching the first group's 12px of air
+// between the title row's rule and its own header (controls.module.css):
+// a scroll that small tucks nothing but that air under the title row, so
+// the header is still whole and the fade would only dim it.
+const FADE_START_THRESHOLD_PX = 12;
 
 export function DemoLayout({ controls, children }: { controls: ReactNode; children: ReactNode }) {
   return (
@@ -35,8 +45,8 @@ export function DemoLayout({ controls, children }: { controls: ReactNode; childr
       <aside className={styles.controls}>
         <ScrollArea
           className={styles.scroller}
-          overflowEdgeThreshold={{ yEnd: FADE_THRESHOLD_PX }}
-          overlay={<div aria-hidden="true" className={styles.fade} />}
+          edgeFades="both"
+          overflowEdgeThreshold={{ yStart: FADE_START_THRESHOLD_PX, yEnd: FADE_END_THRESHOLD_PX }}
           viewportClassName={styles.viewport}
         >
           {controls}

@@ -1,10 +1,10 @@
 /* The shared scroll container's look: the root and viewport take whatever
-   height cap their parent has, and the bar is the control panel's thin one.
-   Base UI positions the bar absolutely against the root and sizes the thumb
-   itself, so this file only decides how thick the bar is, where it sits,
-   and when it shows. */
+   height cap their parent has, the bar is the control panel's thin one, and
+   the optional edge fades are its reveal, drawn here once for every region
+   that scrolls behind a cap. Base UI positions the bar and sizes the thumb,
+   so this file decides only how the bar and the fades look and when they show. */
 
-/* The root is what the bar and any overlay position against. max-height
+/* The root is what the bar and the edge fades position against. max-height
    flows down from the parent through inherit rather than being set here, so
    a sticky column caps the scroll region without measuring it. It isolates
    because the bar below carries a z-index: the site nav paints above the
@@ -56,4 +56,96 @@
   height: 100%;
   background: var(--gray-600);
   border-radius: var(--radius-full);
+}
+
+/* ---- Edge fades ---- */
+
+/* The mock's "reveal": 64px of the region's own color fading in over an
+   edge, telling the reader there is more past it. The component draws one
+   at each edge when a consumer asks for them, and six custom properties
+   are the consumer's whole say in how they look and behave. Set them on
+   the root through className, or on any ancestor; every one inherits down
+   to the fades.
+
+   --scroll-fade-color is the color the fade starts from. It has to be the
+   color behind the region, or the fade paints a wrong-colored band over the
+   rows. The default is the page background, which is what sits behind the
+   docs sidebar; the control panel and the nav dropdown draw on --bg-muted
+   boxes and say so.
+
+   --scroll-fade-radius rounds the bottom fade's lower corners so the
+   gradient stays inside a rounded box's outline. Square by default.
+
+   --scroll-fade-start-inset pushes the top fade down from the root's top
+   edge, for a region with a sticky header inside its viewport. The fades
+   sit outside the viewport and paint over everything in it, the header
+   included, so without the inset the gradient would wash over the header
+   rather than the rows under it. The control panel sets it to its title
+   row's height (demo-layout.module.css). Zero by default.
+
+   --scroll-fade-start and --scroll-fade-end are the fades' opacities, 0 or
+   1. The rules at the end of this section set them from Base UI's overflow
+   state, which is what every consumer wants except one: the nav dropdown
+   opens with its tree already scrolled to the current row, and Base UI's
+   attributes land a frame after that, so it measures the edges itself and
+   sets these two on an ancestor (docs-nav-dropdown.module.css). The
+   properties are the seam that lets it borrow everything else.
+
+   Opacity transitions on the md fade step with ease-in-out, not the sm step
+   on ease-out: sm is the opacity half of a popup arriving or leaving, and
+   this gradient never arrives. It stays where it is and changes strength as
+   the reader scrolls, which is the job ease-in-out is named for in the token
+   set. The lg step would lag the scroll, because the state flips with the
+   scroll position. --scroll-fade-duration lets a consumer zero the step for
+   a moment; the dropdown does, so its panel opens with each edge already
+   on or off rather than fading in over the open. Reduced motion needs
+   nothing here: tokens.css keeps the --fade-* family and zeroes only
+   --duration-*, and an opacity change is what a reduced-motion reader is
+   meant to keep. */
+.fade {
+  position: absolute;
+  right: 0;
+  left: 0;
+  z-index: 1;
+  height: var(--spacing-16);
+  pointer-events: none;
+  /* One gradient for both edges, solid at the edge it sits on and clear
+     64px in; each edge below sets only the direction it runs. */
+  background: linear-gradient(
+    var(--_fade-direction),
+    var(--scroll-fade-color, var(--bg)) 0%,
+    color-mix(in srgb, var(--scroll-fade-color, var(--bg)) 80%, transparent) 39%,
+    transparent 100%
+  );
+  transition: opacity var(--scroll-fade-duration, var(--fade-md)) var(--ease-in-out);
+}
+
+.fadeStart {
+  --_fade-direction: to bottom;
+
+  top: var(--scroll-fade-start-inset, 0);
+  opacity: var(--scroll-fade-start, 0);
+}
+
+.fadeEnd {
+  --_fade-direction: to top;
+
+  bottom: 0;
+  border-radius: 0 0 var(--scroll-fade-radius, 0) var(--scroll-fade-radius, 0);
+  opacity: var(--scroll-fade-end, 0);
+}
+
+/* Base UI sets data-overflow-y-start on the root while the reader has
+   scrolled away from the top, and data-overflow-y-end while there is
+   something left to scroll to, so a region short enough not to scroll gets
+   neither and keeps both edges at full strength. The overflowEdgeThreshold
+   prop decides how close to an edge still counts as reaching it. Keyed off
+   the edgeFades attribute as well, so a consumer that switches the fades
+   itself ("manual") is left alone. */
+.root[data-edge-fades='both'][data-overflow-y-start] {
+  --scroll-fade-start: 1;
+}
+
+.root[data-edge-fades='both'][data-overflow-y-end] {
+  --scroll-fade-end: 1;
 }

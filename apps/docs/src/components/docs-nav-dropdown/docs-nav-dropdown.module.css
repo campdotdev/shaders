@@ -119,8 +119,15 @@
    it is taller than the box has room for and a short tree takes only its
    own height. This box is also where the three data-fade-* attributes
    below land, because it is the nearest element the component renders
-   itself and so the nearest one it can hold a ref to. */
+   itself and so the nearest one it can hold a ref to. The two fade
+   properties are the look of the ScrollArea's edge fades
+   (scroll-area.module.css): they start from the box's own color, since the
+   box is what sits behind the rows, and the bottom one's corners match
+   the box's radius so the gradient stays inside its outline. */
 .body {
+  --scroll-fade-color: var(--bg-muted);
+  --scroll-fade-radius: var(--radius-xl);
+
   max-height: calc(var(--container-sm) - var(--spacing-4) * 2 - var(--leading-5));
 }
 
@@ -136,66 +143,30 @@
    The docs sidebar (docs-sidebar.module.css) is the one scroll region on
    the site that still contains its overscroll. */
 
-/* The control panel's fade (demo-layout.module.css), one over each edge:
-   64px of the box's own color fading in over the rows, telling the reader
-   there are more past that edge. data-fade-top and data-fade-bottom say
-   which edge has rows past it; docs-nav-dropdown.tsx measures the scroll
-   region and writes them, on open and on every scroll after. */
-.fadeTop,
-.fadeBottom {
-  position: absolute;
-  right: 0;
-  left: 0;
-  z-index: 1;
-  height: var(--spacing-16);
-  opacity: 0;
-  pointer-events: none;
+/* The ScrollArea draws the two edge fades (scroll-area.module.css), one
+   over each edge: 64px of the box's own color fading in over the rows,
+   telling the reader there are more past that edge. This box switches
+   them, through the opacity properties the fades inherit, rather than
+   letting Base UI's overflow state do it: data-fade-top and data-fade-bottom
+   say which edge has rows past it, and docs-nav-dropdown.tsx measures the
+   scroll region and writes them, on open and on every scroll after, for the
+   timing reason on syncFadeEdges. */
+.body[data-fade-top] {
+  --scroll-fade-start: 1;
 }
 
-.fadeTop {
-  top: 0;
-  background: linear-gradient(
-    to bottom,
-    var(--bg-muted) 0%,
-    color-mix(in srgb, var(--bg-muted) 80%, transparent) 39%,
-    transparent 100%
-  );
+.body[data-fade-bottom] {
+  --scroll-fade-end: 1;
 }
 
-/* The bottom fade's corners match the box's radius so the gradient stays
-   inside its outline. */
-.fadeBottom {
-  bottom: 0;
-  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
-  background: linear-gradient(
-    to top,
-    var(--bg-muted) 0%,
-    color-mix(in srgb, var(--bg-muted) 80%, transparent) 39%,
-    transparent 100%
-  );
-}
-
-.body[data-fade-top] .fadeTop,
-.body[data-fade-bottom] .fadeBottom {
-  opacity: 1;
-}
-
-/* The fade only animates once data-fades-animate is on the box, which
-   docs-nav-dropdown.tsx adds two frames into the open. Until then the two
-   rules above land with no transition, so the panel opens with whichever
-   edges it opens with rather than fading them in over the reveal. After
-   that it is scrolling that turns an edge on or off, and it should look
-   like a fade rather than a switch.
-
-   The md fade step on ease-in-out, not the sm step on ease-out: sm is the
-   opacity half of a popup arriving or leaving, and this gradient never
-   arrives. It stays where it is and changes strength as the reader
-   scrolls, which is the job ease-in-out is named for in the token set. The
-   lg step would lag the scroll, because the state flips with the scroll
-   position. */
-.body[data-fades-animate] .fadeTop,
-.body[data-fades-animate] .fadeBottom {
-  transition: opacity var(--fade-md) var(--ease-in-out);
+/* The fades only animate once data-fades-animate is on the box, which
+   docs-nav-dropdown.tsx adds two frames into the open. Until then their
+   step is zero, so the panel opens with whichever edges it opens with
+   rather than fading them in over the reveal. After that it is scrolling
+   that turns an edge on or off, and it should look like a fade rather than
+   a switch, on the step and easing the ScrollArea gives every reveal. */
+.body:not([data-fades-animate]) {
+  --scroll-fade-duration: 0s;
 }
 
 /* ---- The tree ---- */

@@ -7,7 +7,14 @@
    fill. A tree that nests differs in exactly one thing, the size of its top
    headers, and it is marked [data-nests]. The whole aside is sticky and
    capped at the height the reader can see, which the component measures
-   rather than the stylesheet assuming; the .sidebar rule explains why. */
+   rather than the stylesheet assuming; the .sidebar rule explains why. The
+   fades over the tree's edges come from the shared ScrollArea
+   (scroll-area.module.css) and take no rule here: the sidebar sets no
+   background, so the fades start from the page's, which is their default.
+   Once tried as a mask-image on the viewport instead, so the tree would fade
+   into whatever sat behind it, and dropped (SHA-154): nothing but the page
+   sits behind it, and a mask cost a second reveal mechanism plus a repaint
+   on every edge flip for a case the site does not have. */
 
 /* Sticky so the sidebar stays put while a long page scrolls. The shell's
    grid gives it the 2xs column, and the cap flows into the ScrollArea

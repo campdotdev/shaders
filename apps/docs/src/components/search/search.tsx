@@ -17,6 +17,15 @@ import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import styles from './search.module.css';
 import { useSearchBackend } from './use-search-backend';
 
+// How far from either edge of the results, in px, still counts as reaching
+// it before the fade over that edge goes off. The top matches the list's
+// 8px of top padding, the sidebar's reasoning (docs-sidebar.tsx): a scroll
+// that small tucks nothing but padding under the edge, so the first row is
+// still whole and a fade would only dim it. The list has no bottom padding,
+// so the bottom allows 1px, enough to absorb the fraction of a pixel a 50vh
+// cap can leave over an integer list without ever hiding a visible sliver.
+const FADE_THRESHOLD_PX = { yStart: 8, yEnd: 1 };
+
 export function Search() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -27,6 +36,9 @@ export function Search() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  // Which input last moved the highlight. The scroll effect below reads it
+  // to scroll for the arrow keys and leave a pointer hover alone.
+  const selectionSourceRef = useRef<'keyboard' | 'pointer'>('keyboard');
 
   // ---------------------------------------------
   // Opening and closing
@@ -93,9 +105,11 @@ export function Search() {
 
     if (event.key === 'ArrowDown') {
       event.preventDefault();
+      selectionSourceRef.current = 'keyboard';
       setSelectedIndex((index) => Math.min(index + 1, Math.max(0, results.length - 1)));
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
+      selectionSourceRef.current = 'keyboard';
       setSelectedIndex((index) => Math.max(0, index - 1));
     } else if (event.key === 'Enter') {
       const target = results[selectedIndex];
@@ -108,11 +122,16 @@ export function Search() {
   };
 
   // Keeps the highlighted row in view as the arrow keys walk a list longer
-  // than the results cap.
+  // than the results cap. The rows carry a scroll margin the height of the
+  // edge fades (search.module.css), so a keyboard-selected row lands clear
+  // of either gradient. Only the keyboard gets that: a pointer hovering a
+  // row under a fade would otherwise scroll the list, slide a different row
+  // under the pointer, and hover that one too, so the list jumps while the
+  // reader is trying to click.
   useEffect(() => {
     const list = listRef.current;
 
-    if (!list) return;
+    if (!list || selectionSourceRef.current === 'pointer') return;
     const selected = list.children[selectedIndex];
 
     if (selected instanceof HTMLElement) selected.scrollIntoView({ block: 'nearest' });
@@ -218,9 +237,15 @@ export function Search() {
               results.length === 0 && <p className={styles.message}>No results found.</p>}
           </div>
           {/* The rows scroll inside the shared ScrollArea under the cap in
-              search.module.css; the list keeps the listbox role so it still
-              contains only options. */}
-          <ScrollArea viewportClassName={styles.resultsViewport}>
+              search.module.css, with both edge fades on so a row clipped by
+              the cap reads as clipped rather than as the last result. The
+              list keeps the listbox role so it still contains only options. */}
+          <ScrollArea
+            className={styles.resultsScroller}
+            edgeFades="both"
+            overflowEdgeThreshold={FADE_THRESHOLD_PX}
+            viewportClassName={styles.resultsViewport}
+          >
             <ul className={styles.results} id="search-results" ref={listRef} role="listbox">
               {results.map((result, resultIndex) => (
                 <li
@@ -229,7 +254,10 @@ export function Search() {
                   id={`search-result-${resultIndex}`}
                   key={result.url}
                   onClick={() => navigate(result.url)}
-                  onMouseEnter={() => setSelectedIndex(resultIndex)}
+                  onMouseEnter={() => {
+                    selectionSourceRef.current = 'pointer';
+                    setSelectedIndex(resultIndex);
+                  }}
                   role="option"
                 >
                   <div className={styles.title}>{result.title}</div>
