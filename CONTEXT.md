@@ -17,3 +17,13 @@ _Avoid_: Preset shape, default shape
 **Custom mark**:
 A mark the caller supplies as inline SVG markup. Only its coverage is read, so it takes the field's color like any other mark.
 _Avoid_: Custom shape, user shape, icon
+
+### Docs site
+
+**Search trigger**:
+The button in the site header that opens the search panel and focuses its input. It is not an input itself.
+_Avoid_: Search bar, search box, search input (for the header control)
+
+**Search panel**:
+The dialog the search trigger opens, holding the query input and the result list over the blurred page.
+_Avoid_: Search modal, search dialog, command palette

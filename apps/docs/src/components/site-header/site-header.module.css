@@ -13,7 +13,10 @@
    keeps the header, and its hamburger, above the site nav's overlay while
    the nav is open: nothing in that portal has a z-index, and the hamburger
    is the nav's visible Close (site-nav.module.css), so a change here breaks
-   that close. Escape, a backdrop press, and the sr-only Close survive it. */
+   that close. Escape, a backdrop press, and the sr-only Close survive it.
+   The search panel is the one overlay that sits above this row on purpose,
+   at z-index 2 (search.module.css), so the header blurs under it with the
+   rest of the page. */
 .header {
   position: relative;
   z-index: 1;

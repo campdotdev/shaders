@@ -9,7 +9,8 @@
    the overlay, because .header is position: relative; z-index: 1
    (site-header.module.css) and nothing in the portal has a z-index. The
    rule this depends on: the root stacking context holds only site chrome
-   at a positive z-index, and a component that uses z-index inside itself
+   at a positive z-index (the header at 1, and the search panel with its
+   backdrop at 2, search.module.css), and a component that uses z-index inside itself
    isolates its own root (isolation: isolate), or its numbers reach the
    root and draw over this nav. The docs nav dropdown and the shared
    scroll area are the two that isolate for this nav
@@ -181,33 +182,14 @@
 
 /* ---- The overlay ---- */
 
-/* The mock's backdrop: the page black at 90% over the page blurred behind
-   it, edge to edge. The header row stays sharp because it is the one thing
-   painted above this backdrop, per the file-top note; the banner behind
-   that row blurs like everything else. It fades on the larger step,
-   since it covers the whole screen, and opacity is a fade token so it still
-   fades under Reduce Motion.
-
-   It floors at 100dvh, the guard the popup carries too: the viewport a
-   fixed element sizes against does not grow as a mobile browser retracts
-   its toolbars, so inset: 0 on its own can leave a strip uncovered at the
-   bottom, and 100dvh tracks the viewport that is actually showing. Neither
-   it nor the 12px blur is on the token scale, because neither is a size:
-   one is a viewport unit, the other a filter radius. */
-.backdrop {
-  position: fixed;
-  inset: 0;
-  min-height: 100dvh;
-  background: var(--black-a90);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  transition: opacity var(--fade-md) var(--ease-out);
-}
-
-.backdrop[data-starting-style],
-.backdrop[data-ending-style] {
-  opacity: 0;
-}
+/* The backdrop is the rule this nav shares with the search panel,
+   overlay-backdrop.module.css: the page black at 90% over the page blurred
+   behind it, edge to edge, floored at 100dvh, the guard the popup below
+   carries too. The header row stays sharp because it is the one thing
+   painted above that backdrop, per the file-top note; the banner behind
+   the row blurs like everything else. The search panel lifts its own
+   backdrop above the header instead, so the two overlays differ only in
+   that one z-index, which each carries in its own module. */
 
 /* The popup is the whole viewport, transparent, on the phone gutter. Its
    56px top padding is the header row's height, so its content starts under

@@ -21,6 +21,7 @@ import { Dialog } from '@base-ui/react/dialog';
 
 import { GitHubIcon } from '@/components/icons/github';
 import { MenuToggleIcon } from '@/components/icons/menu-toggle';
+import backdropStyles from '@/components/overlay-backdrop/overlay-backdrop.module.css';
 import { REPO_URL, SITE_LINKS } from '@/components/site-header/links';
 
 import styles from './site-nav.module.css';
@@ -82,7 +83,10 @@ export function SiteNav() {
         <MenuToggleIcon className={styles.glyph} />
       </Dialog.Trigger>
       <Dialog.Portal>
-        <Dialog.Backdrop className={styles.backdrop} />
+        {/* The backdrop is the rule shared with the search panel
+            (overlay-backdrop.module.css). This nav adds nothing to it: the
+            header has to keep painting above it, per the module's note. */}
+        <Dialog.Backdrop className={backdropStyles.backdrop} />
         {/* Focus goes to the popup itself on every open, so a pointer open
             paints no focus ring on Docs and a screen reader hears the
             dialog's title. Base UI's default does that for touch opens

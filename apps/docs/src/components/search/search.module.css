@@ -1,0 +1,336 @@
+/* The docs search after the Figma mock (SHA-155): the search trigger in the
+   header's nav row, and the search panel it opens over the blurred page.
+   The panel is a Base UI Dialog portaled to <body>, so it sets its own type
+   and carries its own gutter, and its backdrop is the rule it shares with
+   the site nav (overlay-backdrop.module.css). Names follow CONTEXT.md: the
+   header control is the trigger and the dialog is the panel. */
+
+/* ---- The trigger ---- */
+
+/* The mock's box, which is the Copy React button's box
+   (page-actions.module.css): 32px tall, the darkest gray, a hairline, 6px
+   corners. The keyboard hint sits 8px in from the left and the label 16px
+   in from the right, 16px apart, so the box is as wide as its two texts.
+   The press scales it to 0.98 rather than the site's usual 0.97 for
+   the reason that button gives: the box is wide, and 2% of it is the same
+   pixel of give. Focus is that button's 1px lime ring. Hidden under 40rem
+   with the header's link row, which site-header.module.css hides as one
+   block, so no query here. */
+.trigger {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: var(--spacing-4);
+  height: var(--spacing-8);
+  margin: 0;
+  padding: 0 var(--spacing-4) 0 var(--spacing-2);
+  background: var(--gray-900);
+  color: var(--gray-50);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  cursor: pointer;
+  transition:
+    color var(--fade-xs) var(--ease-hover),
+    background-color var(--fade-xs) var(--ease-hover),
+    transform var(--duration-sm) var(--ease-out);
+}
+
+.trigger:active {
+  transform: scale(0.98);
+}
+
+/* The hover is the Copy React button's: its faint white fill over the dark
+   gray, with the label and the hint stepped up to white. That button lays
+   white-a5 over its gray-900 box; this box is its own background, so the
+   same color is mixed rather than layered, which keeps the box opaque over
+   the banner's shader on the components routes. Gated to pointing devices,
+   because a touch tap fires :hover too and the fill would stick. */
+@media (hover: hover) and (pointer: fine) {
+  .trigger:hover {
+    background: color-mix(in srgb, var(--gray-900), var(--white) 5%);
+    color: var(--fg);
+  }
+
+  .trigger:hover .hint {
+    color: var(--fg);
+  }
+}
+
+.trigger:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* The keyboard hint: the literal "Cmd+k" in 12px mono on the faint white
+   box with 4px corners, 8px each side on a 20px line. No platform
+   detection: the listener takes Ctrl+k too, and the label stays one
+   string. */
+.hint {
+  padding: 0 var(--spacing-2);
+  background: var(--white-a5);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-5);
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* ---- The backdrop and the panel ---- */
+
+/* Both sit above the header. The header holds z-index: 1 at the root so
+   it, and its hamburger, paint over the site nav's overlay
+   (site-header.module.css); the mock blurs the header under the search
+   panel, so this one rule lifts the backdrop and the panel past it. That
+   is within the convention site-nav.module.css documents: only site chrome
+   takes a positive z-index at the root, and the panel is site chrome. */
+.backdrop,
+.panel {
+  z-index: 2;
+}
+
+/* The panel: the 2xl container wide, capped at the viewport minus the site
+   gutter on each side, centered, with its top edge at 200px. That is the
+   height of the header block on the components routes, the 56px row plus
+   the 144px banner, and it is not on the spacing scale, so it is the rem
+   value below. Fixed, so its top never moves as the results change
+   height. The darkest gray with the hairline, 24px corners, and 16px of
+   padding; the 8px between the things inside is carried by each of them,
+   so a fresh panel with nothing under the input row is the row and the
+   padding alone.
+
+   It fades and scales in from 95% at its center, and leaves quicker than
+   it arrives: in on the md steps, out on the sm steps. One transition
+   carries both directions through Base UI's starting and ending
+   attributes, so a rapid reopen retargets instead of restarting. Opacity
+   rides a fade token and the scale a duration token, so Reduce Motion
+   keeps the fade and drops the scale with no media query here
+   (tokens.css). */
+.panel {
+  position: fixed;
+  top: 12.5rem; /* 200px */
+  right: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: min(var(--container-2xl), calc(100% - 2 * var(--spacing-8)));
+  margin-inline: auto;
+  padding: var(--spacing-4);
+  background: var(--gray-900);
+  color: var(--fg);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-3xl);
+  outline: none;
+  transform-origin: center;
+  transition:
+    opacity var(--fade-md) var(--ease-out),
+    transform var(--duration-md) var(--ease-out);
+}
+
+/* The phone gutter is 16px (globals.css). The panel is portaled outside the
+   `site` container, so this is a media query on the viewport, which
+   globals.css guarantees is that container's width. The trigger is hidden
+   here (SHA-126 decision 9); the shortcut still opens the panel, and it
+   has to fit. */
+@media (width < 40rem) {
+  .panel {
+    width: calc(100% - 2 * var(--spacing-4));
+  }
+}
+
+/* A hardware keyboard can open the panel on a phone in landscape. Below
+   32rem of viewport height the normal 200px top edge would leave too little
+   room for a result, so the panel moves to the phone gutter. This is a fit
+   fallback, not a page-dependent position: every route still gets the same
+   top edge at a given viewport. */
+@media (height < 32rem) {
+  .panel {
+    top: var(--spacing-4);
+  }
+}
+
+.panel[data-starting-style],
+.panel[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+.panel[data-ending-style] {
+  transition-duration: var(--fade-sm), var(--duration-sm);
+}
+
+/* ---- The input row ---- */
+
+/* The faint white fill with 8px corners and 20px by 12px of padding: the
+   input's 24px line and the 28px esc hint beside it make the mock's 52px
+   row. The input is bare, transparent with no border, and draws no focus
+   ring: it takes focus on every open, and a ring on every open would be
+   noise where the caret already says where focus is. */
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-3);
+  padding: var(--spacing-3) var(--spacing-5);
+  background: var(--white-a5);
+  border-radius: var(--radius-lg);
+}
+
+.input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  background: transparent;
+  color: var(--fg);
+  border: 0;
+  outline: none;
+  font: inherit;
+  font-size: var(--font-size-base);
+  line-height: var(--leading-6);
+}
+
+.input::placeholder {
+  color: var(--fg-muted);
+}
+
+/* The esc hint is the panel's close control: "esc" in 14px mono on the
+   faint white box with 6px corners and 4px by 12px of padding. A real
+   button, so it works by pointer and gives a screen reader a close that
+   needs no Escape key; its name is "Close search" and the visible text is
+   the key that does the same. */
+.close {
+  flex: none;
+  margin: 0;
+  padding: var(--spacing-1) var(--spacing-3);
+  background: var(--white-a5);
+  color: var(--gray-50);
+  border: 0;
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  cursor: pointer;
+  transition:
+    color var(--fade-xs) var(--ease-hover),
+    background-color var(--fade-xs) var(--ease-hover);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .close:hover {
+    background: var(--white-a10);
+    color: var(--fg);
+  }
+}
+
+.close:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
+/* ---- The status line ---- */
+
+/* Loading, unavailable, and no results each render as one 14px line in the
+   mock's lighter gray, flush with the panel's padding and no box, 10px
+   under the input row (Figma 796:1408). The status region around it is
+   always in the tree and empty most of the time, so a screen reader
+   announces the line when it lands; the region takes no space of its own,
+   so an empty one leaves the fresh panel as the input alone. */
+.message {
+  margin-top: var(--spacing-2-5);
+  color: var(--gray-200);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}
+
+/* ---- The results ---- */
+
+/* The list scrolls inside the shared ScrollArea under a cap: half the
+   viewport, as before, or what is left under the panel when the viewport
+   is short, so the panel never runs past the bottom edge. The 20.25rem is
+   the sum above and below the list: the 200px top, 16px of panel padding,
+   the 52px input row, the 8px under it, 16px of padding below, and a 32px
+   gutter's worth of air to the edge, 324px in all. Two classes on purpose:
+   the ScrollArea's own viewport rule sets max-height to inherit, and at
+   equal specificity that module rule loads later and would win. */
+.panel .resultsViewport {
+  max-height: min(50vh, calc(100dvh - 20.25rem));
+}
+
+@media (height < 32rem) {
+  .panel .resultsViewport {
+    max-height: min(50vh, calc(100dvh - 9.75rem));
+  }
+}
+
+/* The rows, 8px apart. The list carries its 8px top gap itself and only
+   while it has rows, so an empty list adds nothing to the fresh panel.
+   Nothing here transitions: results have to keep up with typing, and the
+   highlight with the arrow keys and the pointer, so both change at once. */
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.results:not(:empty) {
+  padding-top: var(--spacing-2);
+}
+
+/* A row is the mock's card: the faint white fill with 8px corners and 16px
+   of padding, brighter while highlighted. The highlight is the one index
+   both the arrow keys and pointer enter move, so aria-selected is its
+   source of truth here as well as for a screen reader. */
+.row {
+  padding: var(--spacing-4);
+  background: var(--white-a5);
+  border-radius: var(--radius-lg);
+  cursor: pointer;
+}
+
+.row[aria-selected='true'] {
+  background: var(--white-a20);
+}
+
+/* The title in 16px semibold white on a 24px line, over the excerpt in
+   14px muted gray on a 20px line, clamped to two lines so one long match
+   cannot push the rows under it off screen. Pagefind wraps the matched
+   words in <mark>, which a browser paints yellow; here they read as plain
+   white text so the row stays on the dark palette. */
+.title {
+  color: var(--fg);
+  font-size: var(--font-size-base);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-6);
+}
+
+.excerpt {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}
+
+.excerpt mark {
+  background: none;
+  color: var(--fg);
+}
+
+/* The dialog's name for assistive tech. border: 0 is not needed on an h2,
+   but the rule is the site-nav one so the two read the same. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
