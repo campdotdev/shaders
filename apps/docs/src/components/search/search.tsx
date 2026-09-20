@@ -17,6 +17,15 @@ import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import styles from './search.module.css';
 import { useSearchBackend } from './use-search-backend';
 
+// How far from either edge of the results, in px, still counts as reaching
+// it before the fade over that edge goes off. The top matches the list's
+// 8px of top padding, the sidebar's reasoning (docs-sidebar.tsx): a scroll
+// that small tucks nothing but padding under the edge, so the first row is
+// still whole and a fade would only dim it. The list has no bottom padding,
+// so the bottom allows 1px, enough to absorb the fraction of a pixel a 50vh
+// cap can leave over an integer list without ever hiding a visible sliver.
+const FADE_THRESHOLD_PX = { yStart: 8, yEnd: 1 };
+
 export function Search() {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -218,9 +227,15 @@ export function Search() {
               results.length === 0 && <p className={styles.message}>No results found.</p>}
           </div>
           {/* The rows scroll inside the shared ScrollArea under the cap in
-              search.module.css; the list keeps the listbox role so it still
-              contains only options. */}
-          <ScrollArea viewportClassName={styles.resultsViewport}>
+              search.module.css, with both edge fades on so a row clipped by
+              the cap reads as clipped rather than as the last result. The
+              list keeps the listbox role so it still contains only options. */}
+          <ScrollArea
+            className={styles.resultsScroller}
+            edgeFades="both"
+            overflowEdgeThreshold={FADE_THRESHOLD_PX}
+            viewportClassName={styles.resultsViewport}
+          >
             <ul className={styles.results} id="search-results" ref={listRef} role="listbox">
               {results.map((result, resultIndex) => (
                 <li

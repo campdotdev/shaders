@@ -242,6 +242,18 @@
 
 /* ---- The results ---- */
 
+/* The scroll area root, which the shared ScrollArea's two edge fades
+   position against (scroll-area.module.css). They start from the panel's
+   own color, since the panel is what sits behind the rows, and need no
+   corner radius: the list ends inside the panel's 16px of padding, so the
+   bottom fade runs into flat panel color and never meets the panel's
+   corners. Nothing pushes the top fade down, either. The input row sits
+   outside the scroll area, so the fade starts right under it and covers
+   only rows. */
+.resultsScroller {
+  --scroll-fade-color: var(--gray-900);
+}
+
 /* The list scrolls inside the shared ScrollArea under a cap: half the
    viewport, as before, or what is left under the panel when the viewport
    is short, so the panel never runs past the bottom edge. The 20.25rem is
