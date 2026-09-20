@@ -96,6 +96,36 @@ test('clearing a completed query returns to the input-only state', async ({ page
   await expect(panel(page).getByRole('status')).toBeEmpty();
 });
 
+test('editing a completed query does not announce a transient empty state', async ({ page }) => {
+  await page.goto('/components/aurora');
+  await page.waitForLoadState('networkidle');
+
+  await trigger(page).click();
+  await input(page).fill('vignette');
+  await expect(panel(page).getByRole('option').first()).toBeVisible();
+
+  const status = panel(page).getByRole('status');
+
+  await status.evaluate((element) => {
+    const announcements: string[] = [];
+
+    element.setAttribute('data-announcements', '[]');
+    new MutationObserver(() => {
+      const announcement = element.textContent?.trim();
+
+      if (announcement) announcements.push(announcement);
+      element.setAttribute('data-announcements', JSON.stringify(announcements));
+    }).observe(element, { childList: true, characterData: true, subtree: true });
+  });
+
+  await input(page).fill('aurora');
+  await expect(panel(page).getByRole('option').first()).toBeVisible();
+
+  const announcements = JSON.parse((await status.getAttribute('data-announcements')) ?? '[]');
+
+  expect(announcements).not.toContain('No results found.');
+});
+
 // ---------------------------------------------
 // Navigation
 // ---------------------------------------------

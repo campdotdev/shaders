@@ -138,9 +138,10 @@ export function useSearchBackend(open: boolean, query: string) {
     items: NO_RESULTS,
   });
   const [backendState, setBackendState] = useState<'loading' | 'ready' | 'unavailable'>('loading');
-  const [queryState, setQueryState] = useState<'idle' | 'loading' | 'ready' | 'unavailable'>(
-    'idle',
-  );
+  const [queryStatus, setQueryStatus] = useState<{
+    query: string;
+    state: 'idle' | 'loading' | 'ready' | 'unavailable';
+  }>({ query: '', state: 'idle' });
   const backendRef = useRef<SearchBackend | null>(null);
 
   // One-time lazy init of the search backend, deliberately in an effect: the
@@ -166,26 +167,26 @@ export function useSearchBackend(open: boolean, query: string) {
     };
   }, [open]);
 
-  // Re-query on every keystroke once the backend is ready. Results carry
-  // the query that produced them, so the old rows disappear immediately
-  // when the reader types again rather than staying actionable while the
-  // next request runs. Nothing clears on close: the panel fades out over
-  // the rows it was showing, and the component resets the query once that
-  // exit has finished, which is what empties the list before the next open.
+  // Re-query on every keystroke once the backend is ready. Results and status
+  // carry the query that produced them, so old rows and messages disappear
+  // immediately when the reader types again rather than staying actionable
+  // while the next request runs. Nothing clears on close: the panel fades
+  // out over the rows it was showing, and the component resets the query once
+  // that exit has finished, which empties the list before the next open.
   useEffect(() => {
     if (!open || query.trim() === '' || backendState !== 'ready' || !backendRef.current) return;
     const backend = backendRef.current;
     let cancelled = false;
 
-    setQueryState('loading');
+    setQueryStatus({ query, state: 'loading' });
     void backend(query).then(
       (searchResults) => {
         if (cancelled) return;
         setResultSet({ query, items: searchResults });
-        setQueryState('ready');
+        setQueryStatus({ query, state: 'ready' });
       },
       () => {
-        if (!cancelled) setQueryState('unavailable');
+        if (!cancelled) setQueryStatus({ query, state: 'unavailable' });
       },
     );
 
@@ -195,6 +196,10 @@ export function useSearchBackend(open: boolean, query: string) {
   }, [open, query, backendState]);
 
   const results = query.trim() !== '' && resultSet.query === query ? resultSet.items : NO_RESULTS;
+  const queryState =
+    query.trim() !== '' && backendState === 'ready' && queryStatus.query !== query
+      ? 'loading'
+      : queryStatus.state;
 
   return { backendState, queryState, results };
 }
