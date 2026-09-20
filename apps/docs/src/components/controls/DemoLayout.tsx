@@ -5,11 +5,13 @@
  * a column capped at 4xl, controls on the right in a sticky 2xs column that
  * scrolls on its own once the panel outgrows the shader. Once the main column
  * is under 53.5rem the controls stack below the shader, capped at sm tall and
- * still scrolling. The column is the site's shared ScrollArea, and a fade
- * over the column's bottom edge says there are more controls below, keyed
- * off the overflow state Base UI stamps on the scroll area's root, so there
- * is no measuring here. The shader child keeps its own [data-shader-demo]
- * wrapper, which is what the Playwright visual suite sizes against.
+ * still scrolling. The column is the site's shared ScrollArea with its
+ * bottom edge fade on, which says there are more controls below, keyed off
+ * the overflow state Base UI stamps on the scroll area's root, so there is
+ * no measuring here. Only the bottom: the panel's title row is sticky at
+ * the top edge and already covers it. The shader child keeps its own
+ * [data-shader-demo] wrapper, which is what the Playwright visual suite
+ * sizes against.
  */
 import type { ReactNode } from 'react';
 
@@ -35,8 +37,8 @@ export function DemoLayout({ controls, children }: { controls: ReactNode; childr
       <aside className={styles.controls}>
         <ScrollArea
           className={styles.scroller}
+          edgeFades="end"
           overflowEdgeThreshold={{ yEnd: FADE_THRESHOLD_PX }}
-          overlay={<div aria-hidden="true" className={styles.fade} />}
           viewportClassName={styles.viewport}
         >
           {controls}

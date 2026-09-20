@@ -124,14 +124,15 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
     }
 
     // The edges, measured from the scroll position the centring just settled
-    // on. The fades carry no transition at this point, because the CSS only
-    // gives them one under data-fades-animate, so the panel opens with each
-    // edge simply on or off. That gate is the whole trick. A transition does
-    // not run on an element's first style computation, but reading layout
-    // forces one, and both the row's box above and the scroll metrics inside
-    // this call do exactly that before anything is written. So the write
-    // below is already the element's second computation, and without the
-    // gate it would fade both edges in over the whole open.
+    // on. The fades have a zero-length transition at this point, because
+    // the stylesheet only lets them have their step under data-fades-animate,
+    // so the panel opens with each edge simply on or off. That gate is the
+    // whole trick. A transition does not run on an element's first style
+    // computation, but reading layout forces one, and both the row's box
+    // above and the scroll metrics inside this call do exactly that before
+    // anything is written. So the write below is already the element's
+    // second computation, and without the gate it would fade both edges in
+    // over the whole open.
     syncFadeEdges(viewport, body);
 
     // Arm the transition two frames out. One frame is measurably not enough:
@@ -183,17 +184,10 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
             and viewport through max-height: inherit, the control panel's
             pattern (DemoLayout.tsx). It also carries the three fade
             attributes the layout effect writes, which is why it takes a
-            ref. */}
+            ref. The ScrollArea draws the fades; "manual" leaves switching
+            them to this box, for the reason on syncFadeEdges. */}
         <div className={styles.body} ref={bodyRef}>
-          <ScrollArea
-            overlay={
-              <>
-                <div aria-hidden="true" className={styles.fadeTop} />
-                <div aria-hidden="true" className={styles.fadeBottom} />
-              </>
-            }
-            viewportRef={viewportRef}
-          >
+          <ScrollArea edgeFades="manual" viewportRef={viewportRef}>
             <nav
               aria-label="Docs menu"
               className={styles.tree}

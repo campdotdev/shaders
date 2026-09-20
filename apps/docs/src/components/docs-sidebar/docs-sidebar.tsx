@@ -11,7 +11,9 @@
  * client component because the active row comes from the pathname, because
  * a row click has to pin the sidebar before the page changes, and because
  * the sticky box's cap is a measurement: how far the nav sits below the
- * viewport's top, taken on every scroll and resize.
+ * viewport's top, taken on every scroll and resize. The tree scrolls inside
+ * the shared ScrollArea with both of its edge fades on, so a row clipped by
+ * the cap reads as clipped rather than as the last row.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -23,6 +25,14 @@ import type { ResolvedNavGroup } from '@/content/types';
 import styles from './docs-sidebar.module.css';
 
 type RowClickHandler = (event: MouseEvent<HTMLAnchorElement>) => void;
+
+// How far from either edge, in px, still counts as reaching it before the
+// fade over that edge goes off. Matches the tree's padding, the control
+// panel's reasoning (DemoLayout.tsx): an overflow that small clips nothing
+// but padding, so the row at that edge is fully visible and a fade over it
+// would only hide it. One value for both edges because .tree pads both by
+// the same 16px.
+const FADE_THRESHOLD_PX = 16;
 
 interface GroupProps {
   group: ResolvedNavGroup;
@@ -123,7 +133,11 @@ export function DocsSidebar({ tree }: { tree: ResolvedNavGroup[] }) {
 
   return (
     <nav aria-label="Docs" className={styles.sidebar} data-pagefind-ignore="all" ref={navRef}>
-      <ScrollArea viewportClassName={styles.viewport}>
+      <ScrollArea
+        edgeFades="both"
+        overflowEdgeThreshold={FADE_THRESHOLD_PX}
+        viewportClassName={styles.viewport}
+      >
         <div className={styles.tree} data-nests={nests || undefined}>
           {tree.map((group) => (
             <Group
