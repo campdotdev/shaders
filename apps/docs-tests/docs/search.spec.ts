@@ -169,6 +169,25 @@ test('the shortcut toggles the panel, and every close returns focus to the trigg
   await expect(trigger(page)).toBeFocused();
 });
 
+test('a shortcut-opened panel restores focus to a visible control on a narrow viewport', async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto('/getting-started');
+  await page.waitForLoadState('networkidle');
+
+  const homeLink = page.getByRole('link', { name: 'Shaders home' });
+
+  await homeLink.focus();
+  await page.keyboard.press('ControlOrMeta+k');
+  await expect(panel(page)).toBeVisible();
+  await expect(input(page)).toBeFocused();
+  await page.keyboard.press('Escape');
+
+  await expect(panel(page)).toBeHidden();
+  await expect(homeLink).toBeFocused();
+});
+
 // ---------------------------------------------
 // Accessibility and layout
 // ---------------------------------------------

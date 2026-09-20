@@ -120,12 +120,19 @@ export function Search() {
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className={`${backdropStyles.backdrop} ${styles.backdrop}`} />
-        {/* The input takes focus on every open, a shortcut open included,
-            and focus goes back to the trigger on every close, a shortcut
-            close included. Base UI's defaults would focus the popup itself
-            on a touch open and return focus to whatever had it before a
-            shortcut open, which is the page body. */}
-        <Dialog.Popup className={styles.panel} finalFocus={triggerRef} initialFocus={inputRef}>
+        {/* The input takes focus on every open, a shortcut open included. On
+            close, the visible desktop trigger wins. Under 40rem that trigger
+            is display:none, so null asks Base UI to restore the element it
+            captured before the programmatic shortcut open instead. */}
+        <Dialog.Popup
+          className={styles.panel}
+          finalFocus={() =>
+            triggerRef.current && triggerRef.current.getClientRects().length > 0
+              ? triggerRef.current
+              : null
+          }
+          initialFocus={inputRef}
+        >
           <Dialog.Title className={styles.srOnly}>Search</Dialog.Title>
           <div className={styles.inputRow}>
             <input
