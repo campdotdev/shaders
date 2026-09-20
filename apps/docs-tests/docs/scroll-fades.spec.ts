@@ -120,6 +120,40 @@ test.describe('the search results', () => {
 
     expect(selectedBox.y).toBeGreaterThanOrEqual(startFadeBox.y + startFadeBox.height - 1);
   });
+
+  test('leaves the list still when the pointer hovers a row under a fade', async ({ page }) => {
+    await page.goto('/components/aurora');
+    await page.waitForLoadState('networkidle');
+
+    await page.getByRole('button', { name: 'Open search' }).click();
+    await page.getByRole('combobox', { name: 'Search query' }).fill('shader');
+
+    const panel = page.getByRole('dialog', { name: 'Search', exact: true });
+    const selectedOption = panel.locator('[role="option"][aria-selected="true"]');
+    const scrollArea = panel.locator('div[class*="search_resultsScroller"]');
+    const viewport = scrollArea.locator(':scope > div').first();
+    const fadeEnd = scrollArea.locator('[data-scroll-fade="end"]');
+
+    await expect(panel.getByRole('option').first()).toBeVisible();
+    await expect(fadeEnd).toHaveCSS('opacity', '1');
+
+    // A point halfway into the bottom fade, where the row under it is the
+    // one a keyboard selection would scroll clear of the gradient.
+    const fadeBox = (await fadeEnd.boundingBox())!;
+    const pointerX = fadeBox.x + fadeBox.width / 2;
+    const pointerY = fadeBox.y + fadeBox.height / 2;
+    const scrollTopBefore = await viewport.evaluate((element) => element.scrollTop);
+
+    await page.mouse.move(pointerX, pointerY);
+
+    // The hover highlights the row under the pointer and moves nothing.
+    const selectedBox = (await selectedOption.boundingBox())!;
+
+    expect(pointerY).toBeGreaterThanOrEqual(selectedBox.y);
+    expect(pointerY).toBeLessThanOrEqual(selectedBox.y + selectedBox.height);
+    await page.waitForTimeout(200);
+    expect(await viewport.evaluate((element) => element.scrollTop)).toBe(scrollTopBefore);
+  });
 });
 
 test.describe('the nav dropdown', () => {

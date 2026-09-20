@@ -36,6 +36,9 @@ export function Search() {
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
+  // Which input last moved the highlight. The scroll effect below reads it
+  // to scroll for the arrow keys and leave a pointer hover alone.
+  const selectionSourceRef = useRef<'keyboard' | 'pointer'>('keyboard');
 
   // ---------------------------------------------
   // Opening and closing
@@ -102,9 +105,11 @@ export function Search() {
 
     if (event.key === 'ArrowDown') {
       event.preventDefault();
+      selectionSourceRef.current = 'keyboard';
       setSelectedIndex((index) => Math.min(index + 1, Math.max(0, results.length - 1)));
     } else if (event.key === 'ArrowUp') {
       event.preventDefault();
+      selectionSourceRef.current = 'keyboard';
       setSelectedIndex((index) => Math.max(0, index - 1));
     } else if (event.key === 'Enter') {
       const target = results[selectedIndex];
@@ -117,11 +122,16 @@ export function Search() {
   };
 
   // Keeps the highlighted row in view as the arrow keys walk a list longer
-  // than the results cap.
+  // than the results cap. The rows carry a scroll margin the height of the
+  // edge fades (search.module.css), so a keyboard-selected row lands clear
+  // of either gradient. Only the keyboard gets that: a pointer hovering a
+  // row under a fade would otherwise scroll the list, slide a different row
+  // under the pointer, and hover that one too, so the list jumps while the
+  // reader is trying to click.
   useEffect(() => {
     const list = listRef.current;
 
-    if (!list) return;
+    if (!list || selectionSourceRef.current === 'pointer') return;
     const selected = list.children[selectedIndex];
 
     if (selected instanceof HTMLElement) selected.scrollIntoView({ block: 'nearest' });
@@ -244,7 +254,10 @@ export function Search() {
                   id={`search-result-${resultIndex}`}
                   key={result.url}
                   onClick={() => navigate(result.url)}
-                  onMouseEnter={() => setSelectedIndex(resultIndex)}
+                  onMouseEnter={() => {
+                    selectionSourceRef.current = 'pointer';
+                    setSelectedIndex(resultIndex);
+                  }}
                   role="option"
                 >
                   <div className={styles.title}>{result.title}</div>
