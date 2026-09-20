@@ -23,6 +23,7 @@ export function Search() {
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { backendState, queryState, resetSearch, results } = useSearchBackend(open, query);
+  const focusBeforeOpenRef = useRef<HTMLElement | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -40,14 +41,22 @@ export function Search() {
     const onKey = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
         event.preventDefault();
-        setOpen((isOpen) => !isOpen);
+        if (!open) {
+          const focusedElement = document.activeElement;
+
+          focusBeforeOpenRef.current =
+            focusedElement instanceof HTMLElement && focusedElement !== document.body
+              ? focusedElement
+              : null;
+        }
+        setOpen(!open);
       }
     };
 
     window.addEventListener('keydown', onKey);
 
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [open]);
 
   // A fresh panel is the input alone, so the query and the highlight reset
   // between opens. That happens after the exit has finished rather than
@@ -115,23 +124,45 @@ export function Search() {
 
   return (
     <Dialog.Root onOpenChange={setOpen} onOpenChangeComplete={resetAfterClose} open={open}>
-      <Dialog.Trigger aria-label="Open search" className={styles.trigger} ref={triggerRef}>
+      <Dialog.Trigger
+        aria-label="Open search"
+        className={styles.trigger}
+        onPointerDown={() => {
+          const focusedElement = document.activeElement;
+
+          focusBeforeOpenRef.current =
+            focusedElement instanceof HTMLElement && focusedElement !== document.body
+              ? focusedElement
+              : null;
+        }}
+        ref={triggerRef}
+      >
         <kbd className={styles.hint}>Cmd+k</kbd>
         <span>Search...</span>
       </Dialog.Trigger>
       <Dialog.Portal>
         <Dialog.Backdrop className={`${backdropStyles.backdrop} ${styles.backdrop}`} />
         {/* The input takes focus on every open, a shortcut open included. On
-            close, the visible desktop trigger wins. Under 40rem that trigger
-            is display:none, so null asks Base UI to restore the element it
-            captured before the programmatic shortcut open instead. */}
+            close, the visible desktop trigger wins. If it became hidden while
+            the panel was open, focus returns to the visible control that had
+            it before the trigger or shortcut opened. */}
         <Dialog.Popup
           className={styles.panel}
-          finalFocus={() =>
-            triggerRef.current && triggerRef.current.getClientRects().length > 0
-              ? triggerRef.current
-              : null
-          }
+          finalFocus={() => {
+            const triggerElement = triggerRef.current;
+
+            if (triggerElement && triggerElement.getClientRects().length > 0) {
+              return triggerElement;
+            }
+
+            const focusBeforeOpen = focusBeforeOpenRef.current;
+
+            return focusBeforeOpen !== null &&
+              focusBeforeOpen.isConnected &&
+              focusBeforeOpen.getClientRects().length > 0
+              ? focusBeforeOpen
+              : null;
+          }}
           initialFocus={inputRef}
         >
           <Dialog.Title className={styles.srOnly}>Search</Dialog.Title>

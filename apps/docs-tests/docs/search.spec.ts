@@ -270,6 +270,26 @@ test('a shortcut-opened panel restores focus to a visible control on a narrow vi
   await expect(homeLink).toBeFocused();
 });
 
+test('a trigger-opened panel restores visible focus after the viewport narrows', async ({
+  page,
+}) => {
+  await page.goto('/getting-started');
+  await page.waitForLoadState('networkidle');
+
+  const homeLink = page.getByRole('link', { name: 'Shaders home' });
+
+  await homeLink.focus();
+  await trigger(page).click();
+  await expect(panel(page)).toBeVisible();
+  await expect(input(page)).toBeFocused();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.keyboard.press('Escape');
+
+  await expect(panel(page)).toBeHidden();
+  await expect(homeLink).toBeFocused();
+});
+
 // ---------------------------------------------
 // Accessibility and layout
 // ---------------------------------------------
