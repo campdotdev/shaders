@@ -35,16 +35,24 @@
 
 /* The scroll area root. The cap reaches it through max-height: inherit in
    the shared ScrollArea's styles (scroll-area.module.css), and the bar, the
-   bottom edge fade, and the isolation that keeps the panel's title row
-   (controls.module.css), that fade, and the bar under the site nav's
+   two edge fades, and the isolation that keeps the panel's title row
+   (controls.module.css), those fades, and the bar under the site nav's
    overlay once the column stops being sticky under 53.5rem all come from
-   there too. What this rule adds is the fade's look: it starts from the
-   panel's own color, since the panel is what sits behind the rows, and its
-   corners match the panel's radius so the gradient stays inside its
-   outline. */
+   there too. What this rule adds is the fades' look and where the top one
+   sits. They start from the panel's own color, since the panel is what
+   sits behind the rows, and the bottom one's corners match the panel's
+   radius so the gradient stays inside its outline. The top one is pushed
+   down by the title row's height, so it starts at the row's rule and fades
+   the controls scrolling under it rather than painting over the row
+   itself. The height is the row's box written out (16px of padding above
+   and below the 32px Reset button, then the 1px rule), because the row
+   sets no height of its own and a custom property set on .titleRow cannot
+   reach this ancestor. Keep it in step with .titleRow's padding, the
+   button's height, and its border. */
 .scroller {
   --scroll-fade-color: var(--bg-muted);
   --scroll-fade-radius: var(--radius-xl);
+  --scroll-fade-start-inset: calc(2 * var(--spacing-4) + var(--spacing-8) + var(--border-width-1));
 }
 
 /* The element that scrolls. It carries the panel's corner radius so the

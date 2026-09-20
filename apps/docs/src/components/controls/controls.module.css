@@ -23,7 +23,10 @@
    rule the first group would otherwise draw, and is dark glass: 90% of the
    panel's gray with the scrolled controls blurred behind it. The viewport
    (demo-layout.module.css) has the panel's corner radius, which is what
-   clips this row's corners once the panel's own top has scrolled away. */
+   clips this row's corners once the panel's own top has scrolled away. The
+   scroll area's top fade starts at this row's rule, at an inset the demo
+   layout writes out from this row's padding, the button's height, and the
+   border below, so a change to any of those goes there too. */
 .titleRow {
   position: sticky;
   top: 0;

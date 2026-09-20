@@ -2,10 +2,11 @@ import { expect, test } from '@playwright/test';
 
 /**
  * The shared ScrollArea's edge fades in its two other consumers: the demo
- * page's control panel, which fades only its bottom edge off Base UI's
- * overflow state, and the narrow-viewport nav dropdown, which draws the
- * same fades but switches them from its own measurement. The sidebar's
- * fades are covered in sidebar-scroll.spec.ts.
+ * page's control panel, which fades both edges off Base UI's overflow state
+ * with the top fade tucked under its sticky title row, and the
+ * narrow-viewport nav dropdown, which draws the same fades but switches
+ * them from its own measurement. The sidebar's fades are covered in
+ * sidebar-scroll.spec.ts.
  */
 
 test.describe('the control panel', () => {
@@ -13,20 +14,45 @@ test.describe('the control panel', () => {
   // rows overflow it.
   test.use({ viewport: { width: 1280, height: 720 } });
 
-  test('fades its bottom edge until the last control is in view', async ({ page }) => {
+  test('fades whichever edge has controls past it', async ({ page }) => {
     await page.goto('/components/wave-lines');
     await page.waitForLoadState('networkidle');
 
     const scrollArea = page.locator('main aside > div');
     const viewport = scrollArea.locator(':scope > div').first();
+    const fadeStart = scrollArea.locator('[data-scroll-fade="start"]');
     const fadeEnd = scrollArea.locator('[data-scroll-fade="end"]');
 
-    await expect(scrollArea.locator('[data-scroll-fade="start"]')).toHaveCount(0);
+    await expect(fadeStart).toHaveCSS('opacity', '0');
     await expect(fadeEnd).toHaveCSS('opacity', '1');
 
     await viewport.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
 
+    await expect(fadeStart).toHaveCSS('opacity', '1');
     await expect(fadeEnd).toHaveCSS('opacity', '0');
+  });
+
+  test('starts its top fade under the sticky title row', async ({ page }) => {
+    await page.goto('/components/wave-lines');
+    await page.waitForLoadState('networkidle');
+
+    const scrollArea = page.locator('main aside > div');
+    const viewport = scrollArea.locator(':scope > div').first();
+    const fadeStart = scrollArea.locator('[data-scroll-fade="start"]');
+    const titleRow = page
+      .getByRole('group', { name: 'Shader controls' })
+      .locator(':scope > div')
+      .first();
+
+    await viewport.evaluate((element) => element.scrollTo({ top: element.scrollHeight }));
+    await expect(fadeStart).toHaveCSS('opacity', '1');
+
+    // The fade's top edge meets the row's bottom edge, so the gradient
+    // covers the controls under the row and none of the row itself.
+    const rowBox = (await titleRow.boundingBox())!;
+    const fadeBox = (await fadeStart.boundingBox())!;
+
+    expect(fadeBox.y).toBeCloseTo(rowBox.y + rowBox.height, 0);
   });
 });
 

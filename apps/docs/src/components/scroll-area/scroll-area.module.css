@@ -62,7 +62,7 @@
 
 /* The mock's "reveal": 64px of the region's own color fading in over an
    edge, telling the reader there is more past it. The component draws one
-   at each edge when a consumer asks for them, and five custom properties
+   at each edge when a consumer asks for them, and six custom properties
    are the consumer's whole say in how they look and behave. Set them on
    the root through className, or on any ancestor; every one inherits down
    to the fades.
@@ -75,6 +75,13 @@
 
    --scroll-fade-radius rounds the bottom fade's lower corners so the
    gradient stays inside a rounded box's outline. Square by default.
+
+   --scroll-fade-start-inset pushes the top fade down from the root's top
+   edge, for a region with a sticky header inside its viewport. The fades
+   sit outside the viewport and paint over everything in it, the header
+   included, so without the inset the gradient would wash over the header
+   rather than the rows under it. The control panel sets it to its title
+   row's height (demo-layout.module.css). Zero by default.
 
    --scroll-fade-start and --scroll-fade-end are the fades' opacities, 0 or
    1. The rules at the end of this section set them from Base UI's overflow
@@ -116,7 +123,7 @@
 .fadeStart {
   --_fade-direction: to bottom;
 
-  top: 0;
+  top: var(--scroll-fade-start-inset, 0);
   opacity: var(--scroll-fade-start, 0);
 }
 
@@ -139,7 +146,6 @@
   --scroll-fade-start: 1;
 }
 
-.root[data-edge-fades='both'][data-overflow-y-end],
-.root[data-edge-fades='end'][data-overflow-y-end] {
+.root[data-edge-fades='both'][data-overflow-y-end] {
   --scroll-fade-end: 1;
 }

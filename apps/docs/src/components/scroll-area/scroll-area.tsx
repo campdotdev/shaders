@@ -41,13 +41,13 @@ interface ScrollAreaProps {
   overflowEdgeThreshold?: number | Partial<Record<'xStart' | 'xEnd' | 'yStart' | 'yEnd', number>>;
   /**
    * Draws a fade over each edge that has content past it, for a vertical
-   * region behind a height cap. 'both' fades the top and the bottom and
-   * 'end' only the bottom, for a region whose top edge something else
-   * already covers, both keyed off Base UI's overflow state. 'manual' draws
-   * both and leaves the switching to the consumer, through the
-   * --scroll-fade-start and --scroll-fade-end properties. Off by default.
+   * region behind a height cap. 'both' switches each fade off Base UI's
+   * overflow state. 'manual' draws the same two and leaves the switching to
+   * the consumer, through the --scroll-fade-start and --scroll-fade-end
+   * properties. A region with a sticky header pushes the top fade below it
+   * through --scroll-fade-start-inset. Off by default.
    */
-  edgeFades?: 'both' | 'end' | 'manual';
+  edgeFades?: 'both' | 'manual';
   children: ReactNode;
 }
 
@@ -82,19 +82,19 @@ export function ScrollArea({
           the content without scrolling with it. Decorative, so hidden from
           assistive technology. The data attribute is for the browser tests,
           which read each fade's opacity. */}
-      {edgeFades !== undefined && edgeFades !== 'end' && (
-        <div
-          aria-hidden="true"
-          className={join(styles.fade, styles.fadeStart)}
-          data-scroll-fade="start"
-        />
-      )}
       {edgeFades !== undefined && (
-        <div
-          aria-hidden="true"
-          className={join(styles.fade, styles.fadeEnd)}
-          data-scroll-fade="end"
-        />
+        <>
+          <div
+            aria-hidden="true"
+            className={join(styles.fade, styles.fadeStart)}
+            data-scroll-fade="start"
+          />
+          <div
+            aria-hidden="true"
+            className={join(styles.fade, styles.fadeEnd)}
+            data-scroll-fade="end"
+          />
+        </>
       )}
     </BaseScrollArea.Root>
   );
