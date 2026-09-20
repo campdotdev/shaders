@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 import { GitHubIcon } from '@/components/icons/github';
 import { LogoMark } from '@/components/icons/logo-mark';
-import { SearchBar } from '@/components/SearchBar';
+import { Search } from '@/components/search/search';
 import { SiteNav } from '@/components/site-nav/site-nav';
 
 import { REPO_URL, SITE_LINKS } from './links';
@@ -26,9 +26,10 @@ export function SiteHeader() {
           <LogoMark />
         </Link>
         <div className={styles.actions}>
-          {/* Search is not in the mock. It stays here, ahead of the nav, until
-              SHA-120 designs its place in the header. */}
-          <SearchBar />
+          {/* The search trigger sits first in the nav row, where the mock
+              draws it (SHA-155). It has no place on a phone yet, so it hides
+              with the rest of this block under 40rem. */}
+          <Search />
           <nav aria-label="Site" className={styles.nav}>
             {SITE_LINKS.map((link) => (
               <Link className={styles.link} href={link.href} key={link.href}>

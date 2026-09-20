@@ -108,10 +108,12 @@ test('the hamburger opens the site nav, and Escape and a link close it', async (
   await expect(dialog).toBeVisible();
   // The header stays on top of the overlay and its trigger toggles. It is
   // aria-hidden while the nav is open, so a role query cannot see it; a CSS
-  // locator on the header's dialog trigger can. (Gate 4 revision: there is no
-  // Close inside the row any more, only the visually hidden one for AT.)
+  // locator on its label can. (Gate 4 revision: there is no Close inside the
+  // row any more, only the visually hidden one for AT.) The label rather
+  // than aria-haspopup, because the search trigger in the same header is a
+  // dialog trigger too (SHA-155), hidden at this width but in the tree.
   await expect(dialog.getByRole('button', { name: 'Close' })).toHaveAttribute('tabindex', '-1');
-  await page.locator('header button[aria-haspopup="dialog"]').click();
+  await page.locator('header button[aria-label="Close site navigation"]').click();
   await expect(dialog).toBeHidden();
 
   await open.click();
