@@ -250,6 +250,32 @@ describe('settling', () => {
     field.step(1 / 60, movingStroke);
     expect(field.atRest).toBe(false);
   });
+
+  // Repeated strokes can hold more energy than one stroke. The settle model
+  // must carry that accumulation past the last stroke rather than restart the
+  // same one-stroke window every frame.
+  it('takes longer to settle after strokes accumulate', () => {
+    const settleFramesAfter = (strokeFrames: number) => {
+      const field = createWaveField(makeRenderer(), 1280, 720);
+
+      for (let frame = 0; frame < strokeFrames; frame += 1) {
+        field.step(1 / 60, movingStroke);
+      }
+
+      let settleFrames = 0;
+
+      while (!field.atRest && settleFrames < 1000) {
+        field.step(1 / 60);
+        settleFrames += 1;
+      }
+
+      expect(field.atRest).toBe(true);
+
+      return settleFrames;
+    };
+
+    expect(settleFramesAfter(60)).toBeGreaterThan(settleFramesAfter(1));
+  });
 });
 
 describe('lost device', () => {

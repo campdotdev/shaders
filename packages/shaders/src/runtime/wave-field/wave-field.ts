@@ -122,8 +122,7 @@ const MAX_SUBSTEPS_PER_FRAME = 4;
  * How much velocity survives each substep, 0..1. This is what makes a ring
  * fade. Measured on the exact update with a dent the size of a brisk
  * stroke: 0.985 takes the peak below one 8-bit step of that dent in about
- * 370 substeps, which is where SETTLE_SECONDS comes from. Closer to 1 rings
- * for longer; lower dies faster.
+ * 370 substeps. Closer to 1 rings for longer; lower dies faster.
  */
 const DAMPING = 0.985;
 
@@ -133,17 +132,6 @@ const DAMPING = 0.985;
  * show in the output.
  */
 const SETTLE_AMPLITUDE = 1 / 256;
-
-/**
- * Seconds the field keeps stepping after its last stroke before it clears.
- * Derived, not tuned: the number of substeps in which DAMPING alone shrinks
- * an amplitude to SETTLE_AMPLITUDE, about 3 s at these constants. The
- * damping acts on velocity, not height, so this is a model rather than an
- * exact bound, but a 2D dent measured on the real update settled within 1%
- * of it. Energy is never read back from the GPU, so this clock is the whole
- * "is it still" test.
- */
-const SETTLE_SECONDS = (Math.log(SETTLE_AMPLITUDE) / Math.log(DAMPING)) * SUBSTEP_SECONDS;
 
 // ----------------------------------------------------------------------------
 // Strokes
@@ -439,10 +427,14 @@ export function createWaveField(
   // Frame time not yet spent on a substep. Frames shorter than a substep
   // bank their time here so two half-substep frames still make one step.
   let carry = 0;
-  // Simulated seconds left before the field counts as flat. 0 is at rest.
-  let settleRemaining = 0;
+  // A CPU-side model of the wave activity, because reading energy back from
+  // the GPU would stall the frame. Strokes add their capped push and each
+  // fixed substep applies the same damping as the simulation. A fresh stroke
+  // starts at one maximum push, which preserves the measured single-stroke
+  // settle window of about three seconds.
+  let settleActivity = 0;
 
-  // Release both targets and forget the clocks. Nothing recreates the
+  // Release both targets and forget the simulation state. Nothing recreates the
   // targets but resize, so from every other caller this is the field going
   // inert for good: `texture` reads null and each later call is a no-op.
   // The consumer renders as identity from there; it owns the one
@@ -452,7 +444,7 @@ export function createWaveField(
     write?.dispose();
     read = null;
     write = null;
-    settleRemaining = 0;
+    settleActivity = 0;
     carry = 0;
   };
 
@@ -489,16 +481,15 @@ export function createWaveField(
       if (stamp) drawPass(stampMaterial);
       for (let index = 0; index < substeps; index += 1) {
         drawPass(stepMaterial);
-        settleRemaining -= SUBSTEP_SECONDS;
+        settleActivity *= DAMPING;
       }
-      // Zero both targets once the settle window has run out. What is left
-      // in them is below one 8-bit step, but a stale texel would still be
-      // the seed of the next stroke's ring, and a fresh field has to start
-      // flat. Two clear draws with the swap between them cover both.
-      if (settleRemaining <= 0) {
+      // Zero both targets once the model falls below one 8-bit step. A stale
+      // texel would still seed the next stroke's ring, and a fresh field has
+      // to start flat. Two clear draws with the swap between them cover both.
+      if (settleActivity <= SETTLE_AMPLITUDE) {
         drawPass(clearMaterial);
         drawPass(clearMaterial);
-        settleRemaining = 0;
+        settleActivity = 0;
         carry = 0;
       }
     } catch {
@@ -527,10 +518,12 @@ export function createWaveField(
         // is in uv space with its origin at the bottom-left, so y flips.
         uniforms.strokeFrom.value.set(stroke.from[0], 1 - stroke.from[1]);
         uniforms.strokeTo.value.set(stroke.to[0], 1 - stroke.to[1]);
-        uniforms.strokePush.value = Math.min(strength * INJECTION_STRENGTH, MAX_INJECTION);
-        settleRemaining = SETTLE_SECONDS;
+        const strokePush = Math.min(strength * INJECTION_STRENGTH, MAX_INJECTION);
+
+        uniforms.strokePush.value = strokePush;
+        settleActivity = Math.max(MAX_INJECTION, settleActivity + strokePush);
       }
-      if (settleRemaining <= 0) {
+      if (settleActivity <= SETTLE_AMPLITUDE) {
         carry = 0;
 
         return;
@@ -551,7 +544,7 @@ export function createWaveField(
     },
 
     get atRest() {
-      return settleRemaining <= 0;
+      return settleActivity <= SETTLE_AMPLITUDE;
     },
 
     // A fresh target is zero-filled, so a resize is also a reset: the field
