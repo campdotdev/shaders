@@ -52,9 +52,8 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
       ...opts,
       element: resolvedElement,
       onMove: () => {
-        const startedIdleFlush = scheduler?.requestRender() ?? false;
-
-        if (!cursorBurstActive && startedIdleFlush) wakeTickPending = true;
+        if (!cursorBurstActive && scheduler?.idle === true) wakeTickPending = true;
+        scheduler?.requestRender();
         cursorBurstActive = true;
         onMoveRef.current?.();
       },

@@ -183,6 +183,41 @@ describe('useCursor inside a ShaderScene', () => {
     expect(result.current.get()[0]).toBeCloseTo(expected, 6);
     expect(result.current.get()[0]).toBeGreaterThan(0.99);
   });
+
+  it('caps the first cursor tick when another idle flush is already queued', () => {
+    const frames = captureFrames();
+
+    setViewport(1000);
+
+    const scheduler = new FrameScheduler();
+
+    scheduler.start();
+
+    let now = 0;
+    const runFrameAfter = (deltaMilliseconds: number) => {
+      const frame = frames.shift();
+
+      now += deltaMilliseconds;
+      act(() => frame?.(now));
+    };
+
+    const { result } = renderHook(() => useCursor({ smoothing: 0.9 }), {
+      wrapper: makeSceneWrapper(scheduler),
+    });
+
+    scheduler.setIdle(true);
+    runFrameAfter(1000 / 60);
+    expect(frames).toHaveLength(0);
+
+    scheduler.requestRender();
+    act(() => {
+      fireMoveOnWindow(1000, 1000);
+    });
+
+    runFrameAfter(5000);
+
+    expect(result.current.get()[0]).toBeCloseTo(0.595, 6);
+  });
 });
 
 describe('useCursor outside a ShaderScene (Mode 2)', () => {
