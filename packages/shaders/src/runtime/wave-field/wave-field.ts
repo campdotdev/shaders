@@ -119,12 +119,20 @@ const SUBSTEP_SECONDS = 1 / 120;
 const MAX_SUBSTEPS_PER_FRAME = 4;
 
 /**
- * How much velocity survives each substep, 0..1. This is what makes a ring
- * fade. Measured on the exact update with a dent the size of a brisk
- * stroke: 0.985 takes the peak below one 8-bit step of that dent in about
- * 370 substeps. Closer to 1 rings for longer; lower dies faster.
+ * How much velocity survives each substep, 0..1. Height now carries most of
+ * the damping so a uniform offset can decay; keeping velocity near 1 leaves
+ * the travelling ring's combined decay close to the original update. Lower
+ * values stop the ring sooner.
  */
-const DAMPING = 0.985;
+const VELOCITY_DAMPING = 0.999;
+
+/**
+ * How much height survives each substep, 0..1. This removes the permanent
+ * mean offset that a one-sided stroke would otherwise leave behind. 0.985
+ * takes a flat offset below one 8-bit step in about 370 substeps. Closer to
+ * 1 takes longer to return to level; lower flattens the field sooner.
+ */
+const HEIGHT_DAMPING = 0.985;
 
 /**
  * The amplitude, as a fraction of the injected height, below which the
@@ -139,28 +147,32 @@ const SETTLE_AMPLITUDE = 1 / 256;
 
 /**
  * How hard a stroke pushes the water, from how fast the pointer moved: the
- * segment's length in canvas units over the frame's `delta`, times the
- * presence gate. A still pointer or an absent one gives 0, which the step
- * treats as no stroke at all.
+ * segment's length in canvas-height units over the frame's `delta`, times
+ * the presence gate. Scaling x by the width-to-height aspect makes equal
+ * pixel distances equal in every direction. A still or absent pointer gives
+ * 0, which the step treats as no stroke at all.
  */
 export function strokeStrength(
   from: readonly [number, number],
   to: readonly [number, number],
   delta: number,
   presence: number,
+  aspect: number,
 ): number {
   if (delta <= 0 || presence <= 0) return 0;
-  const speed = Math.hypot(to[0] - from[0], to[1] - from[1]) / delta;
+  const horizontal = (to[0] - from[0]) * aspect;
+  const vertical = to[1] - from[1];
+  const speed = Math.hypot(horizontal, vertical) / delta;
 
   return speed * presence;
 }
 
 /**
- * Height pushed into the water per unit of stroke strength. A brisk drag
- * runs at about 10 canvas widths per second, so 0.02 dents the surface by
- * 0.2. Higher makes every drag a bigger wave.
+ * Height pushed per canvas height of pointer travel. At 60Hz, a brisk drag
+ * at 10 canvas heights per second travels one sixth of the height and dents
+ * the surface by 0.2. Higher makes every drag a bigger wave.
  */
-const INJECTION_STRENGTH = 0.02;
+const INJECTION_PER_CANVAS_HEIGHT = 1.2;
 
 /**
  * The deepest dent one stroke may make, in height units. A flick across the
@@ -168,6 +180,17 @@ const INJECTION_STRENGTH = 0.02;
  * seconds to die down.
  */
 const MAX_INJECTION = 1;
+
+/**
+ * Turns speed into this frame's height push. Multiplying by elapsed time
+ * integrates the rate over the frame, so splitting one path across more
+ * frames does not make the path stronger.
+ */
+export function strokePushForFrame(strength: number, delta: number): number {
+  if (strength <= 0 || delta <= 0) return 0;
+
+  return Math.min(strength * delta * INJECTION_PER_CANVAS_HEIGHT, MAX_INJECTION);
+}
 
 /**
  * Half-width of the stroke's stamp, in canvas heights (1 is the full
@@ -306,12 +329,14 @@ function buildStepNode({ previous, texelWidth, texelHeight }: FieldUniforms) {
   const laplacian = left.add(right).add(below).add(above).sub(height.mul(4));
 
   // The wave equation, in two integrations. Velocity gains the curvature
-  // times the stiffness (a dip accelerates up, a crest down), then loses a
-  // fraction to damping so every ring eventually dies. Height then moves by
-  // the new velocity. Using the updated velocity for the height step is
-  // what keeps the scheme from gaining energy over thousands of substeps.
-  const nextVelocity = velocity.add(laplacian.mul(WAVE_STIFFNESS)).mul(DAMPING);
-  const nextHeight = height.add(nextVelocity);
+  // times the stiffness (a dip accelerates up, a crest down), then keeps most
+  // of its value so the ring travels. Height moves by that new velocity and
+  // then loses a small fraction. That height loss makes even a perfectly
+  // flat offset return to zero; its Laplacian would otherwise stay zero and
+  // leave the offset forever. The two retention factors together keep the
+  // travelling wave's decay close to the original velocity-only damping.
+  const nextVelocity = velocity.add(laplacian.mul(WAVE_STIFFNESS)).mul(VELOCITY_DAMPING);
+  const nextHeight = height.add(nextVelocity).mul(HEIGHT_DAMPING);
 
   return vec4(nextHeight, nextVelocity, float(0), float(1));
 }
@@ -429,9 +454,9 @@ export function createWaveField(
   let carry = 0;
   // A CPU-side model of the wave activity, because reading energy back from
   // the GPU would stall the frame. Strokes add their capped push and each
-  // fixed substep applies the same damping as the simulation. A fresh stroke
-  // starts at one maximum push, which preserves the measured single-stroke
-  // settle window of about three seconds.
+  // fixed substep applies the same height damping as the simulation. A fresh
+  // stroke starts at one maximum push, which preserves the measured
+  // single-stroke settle window of about three seconds.
   let settleActivity = 0;
 
   // Release both targets and forget the simulation state. Nothing recreates the
@@ -481,7 +506,7 @@ export function createWaveField(
       if (stamp) drawPass(stampMaterial);
       for (let index = 0; index < substeps; index += 1) {
         drawPass(stepMaterial);
-        settleActivity *= DAMPING;
+        settleActivity *= HEIGHT_DAMPING;
       }
       // Zero both targets once the model falls below one 8-bit step. A stale
       // texel would still seed the next stroke's ring, and a fresh field has
@@ -509,8 +534,11 @@ export function createWaveField(
 
       if (scaledDelta <= 0) return;
 
-      // Speed reads the raw delta: the pointer moved that far in real time.
-      const strength = stroke ? strokeStrength(stroke.from, stroke.to, delta, stroke.presence) : 0;
+      // Speed reads the raw delta and the live field aspect: the pointer moved
+      // that far in real time and physical distance, not reduced-motion time.
+      const strength = stroke
+        ? strokeStrength(stroke.from, stroke.to, delta, stroke.presence, uniforms.aspect.value)
+        : 0;
       const stamp = strength > 0 && stroke !== undefined;
 
       if (stamp) {
@@ -518,10 +546,10 @@ export function createWaveField(
         // is in uv space with its origin at the bottom-left, so y flips.
         uniforms.strokeFrom.value.set(stroke.from[0], 1 - stroke.from[1]);
         uniforms.strokeTo.value.set(stroke.to[0], 1 - stroke.to[1]);
-        const strokePush = Math.min(strength * INJECTION_STRENGTH, MAX_INJECTION);
+        const push = strokePushForFrame(strength, delta);
 
-        uniforms.strokePush.value = strokePush;
-        settleActivity = Math.max(MAX_INJECTION, settleActivity + strokePush);
+        uniforms.strokePush.value = push;
+        settleActivity = Math.max(MAX_INJECTION, settleActivity + push);
       }
       if (settleActivity <= SETTLE_AMPLITUDE) {
         carry = 0;

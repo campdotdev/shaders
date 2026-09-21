@@ -7,7 +7,7 @@ import type { WebGPURenderer } from 'three/webgpu';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setReducedMotionPolicy } from '../reduced-motion/reduced-motion.js';
-import { createWaveField, strokeStrength } from './wave-field.js';
+import { createWaveField, strokePushForFrame, strokeStrength } from './wave-field.js';
 
 // The field only asks the renderer to bind a target and draw one quad into
 // it, and reads the backend to find out whether half-float targets can be
@@ -168,15 +168,34 @@ describe('step', () => {
 describe('strokeStrength', () => {
   // A fifth of the canvas in one 60Hz frame is 12 canvas widths per second.
   it('scales with pointer speed and the presence gate', () => {
-    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 1 / 60, 1)).toBeCloseTo(12);
-    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 1 / 60, 0.5)).toBeCloseTo(6);
-    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 1 / 30, 1)).toBeCloseTo(6);
+    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 1 / 60, 1, 1)).toBeCloseTo(12);
+    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 1 / 60, 0.5, 1)).toBeCloseTo(6);
+    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 1 / 30, 1, 1)).toBeCloseTo(6);
   });
 
   it('is 0 for a still pointer, an absent one, or a zero delta', () => {
-    expect(strokeStrength([0.3, 0.3], [0.3, 0.3], 1 / 60, 1)).toBe(0);
-    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 1 / 60, 0)).toBe(0);
-    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 0, 1)).toBe(0);
+    expect(strokeStrength([0.3, 0.3], [0.3, 0.3], 1 / 60, 1, 1)).toBe(0);
+    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 1 / 60, 0, 1)).toBe(0);
+    expect(strokeStrength([0.2, 0.5], [0.4, 0.5], 0, 1, 1)).toBe(0);
+  });
+
+  it('gives equal physical movement equal strength on a wide canvas', () => {
+    const aspect = 16 / 9;
+    const horizontal = strokeStrength([0.2, 0.5], [0.3, 0.5], 1 / 60, 1, aspect);
+    const vertical = strokeStrength([0.2, 0.5], [0.2, 0.5 + 0.1 * aspect], 1 / 60, 1, aspect);
+
+    expect(horizontal).toBeCloseTo(vertical);
+  });
+});
+
+describe('strokePushForFrame', () => {
+  it('integrates the same pointer speed to the same push across frame rates', () => {
+    const speed = 2;
+    const pushAt60Hz = strokePushForFrame(speed, 1 / 60) * 60;
+    const pushAt144Hz = strokePushForFrame(speed, 1 / 144) * 144;
+
+    expect(pushAt60Hz).toBeCloseTo(pushAt144Hz);
+    expect(strokePushForFrame(10, 1 / 60)).toBeCloseTo(0.2);
   });
 });
 
