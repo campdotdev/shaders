@@ -57,8 +57,15 @@ test.describe('the control panel', () => {
 });
 
 test.describe('the search results', () => {
+  // A static guide, not a component page. The demo page's two scenes hold
+  // CI's software-rendered main thread for most of a second per frame, and
+  // the seven ArrowDowns below cost about a minute at that rate. The
+  // reasoning is in search.spec.ts (SHA-163). The list overflows its cap
+  // from any route, because the cap is a share of the viewport.
+  const SEARCH_PAGE = '/getting-started';
+
   test('fade whichever edge has results past it', async ({ page }) => {
-    await page.goto('/components/aurora');
+    await page.goto(SEARCH_PAGE);
     await page.waitForLoadState('networkidle');
 
     await page.getByRole('button', { name: 'Open search' }).click();
@@ -84,7 +91,7 @@ test.describe('the search results', () => {
   });
 
   test('keeps the keyboard-selected result clear of visible fades', async ({ page }) => {
-    await page.goto('/components/aurora');
+    await page.goto(SEARCH_PAGE);
     await page.waitForLoadState('networkidle');
 
     await page.getByRole('button', { name: 'Open search' }).click();
@@ -122,7 +129,7 @@ test.describe('the search results', () => {
   });
 
   test('leaves the list still when the pointer hovers a row under a fade', async ({ page }) => {
-    await page.goto('/components/aurora');
+    await page.goto(SEARCH_PAGE);
     await page.waitForLoadState('networkidle');
 
     await page.getByRole('button', { name: 'Open search' }).click();
