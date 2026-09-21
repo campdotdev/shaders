@@ -231,8 +231,9 @@ describe('injection', () => {
 
 describe('settling', () => {
   // Energy is never read back, so the settle window is a clock: the time
-  // the damping constant takes to shrink the last push below one 8-bit
-  // step, about 3 s. At 60Hz that is roughly 180 frames of two substeps.
+  // the combined height and velocity damping takes to shrink the last push
+  // below one 8-bit step, about 5.75 s. At 60Hz that is roughly 345 frames
+  // of two substeps.
   it('steps through the settle window, then clears both targets and rests', () => {
     const renderer = makeRenderer();
     const field = createWaveField(renderer, 1280, 720);
@@ -245,8 +246,8 @@ describe('settling', () => {
       frames += 1;
     }
 
-    expect(frames).toBeGreaterThan(170);
-    expect(frames).toBeLessThan(200);
+    expect(frames).toBeGreaterThan(330);
+    expect(frames).toBeLessThan(360);
     // One stamp, two substeps per frame, and one clear draw into each target.
     expect(renderer.render).toHaveBeenCalledTimes(1 + 2 * frames + 2);
 

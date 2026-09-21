@@ -135,6 +135,15 @@ const VELOCITY_DAMPING = 0.999;
 const HEIGHT_DAMPING = 0.985;
 
 /**
+ * How much a travelling wave's amplitude survives each substep. Its height
+ * and velocity exchange energy as it oscillates, so its amplitude decays by
+ * the geometric mean of their two retention factors rather than by height
+ * damping alone. The settle clock uses this slower rate so it cannot clear a
+ * ring that is still visible.
+ */
+const WAVE_AMPLITUDE_DAMPING = Math.sqrt(HEIGHT_DAMPING * VELOCITY_DAMPING);
+
+/**
  * The amplitude, as a fraction of the injected height, below which the
  * field counts as flat. 1/256 is one 8-bit step, so what is left could not
  * show in the output.
@@ -454,9 +463,9 @@ export function createWaveField(
   let carry = 0;
   // A CPU-side model of the wave activity, because reading energy back from
   // the GPU would stall the frame. Strokes add their capped push and each
-  // fixed substep applies the same height damping as the simulation. A fresh
-  // stroke starts at one maximum push, which preserves the measured
-  // single-stroke settle window of about three seconds.
+  // fixed substep applies the travelling wave's combined amplitude damping.
+  // A fresh stroke starts at one maximum push, so the field cannot clear
+  // until that whole push has fallen below the visible threshold.
   let settleActivity = 0;
 
   // Release both targets and forget the simulation state. Nothing recreates the
@@ -506,7 +515,7 @@ export function createWaveField(
       if (stamp) drawPass(stampMaterial);
       for (let index = 0; index < substeps; index += 1) {
         drawPass(stepMaterial);
-        settleActivity *= HEIGHT_DAMPING;
+        settleActivity *= WAVE_AMPLITUDE_DAMPING;
       }
       // Zero both targets once the model falls below one 8-bit step. A stale
       // texel would still seed the next stroke's ring, and a fresh field has
