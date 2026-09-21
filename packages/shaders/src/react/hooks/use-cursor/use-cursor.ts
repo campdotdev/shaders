@@ -33,7 +33,22 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     // matter where the canvas sits on the page.
     const canvas = shaderContext?.renderer.three.domElement;
     const resolvedElement = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined);
-    const newCursorInput = new CursorInput({ ...opts, element: resolvedElement });
+    const scheduler = shaderContext?.scheduler;
+
+    // Waking the scene is the cursor's job. The scene renders on demand, and
+    // a static scene parks its frame loop, which is also the only thing that
+    // ticks this input, so a pointer move would otherwise land a new target
+    // that nothing ever smooths toward or draws. Asking for one frame on the
+    // move breaks that loop; the tick handler below keeps the frames coming
+    // until the smoothing settles.
+    const newCursorInput = new CursorInput({
+      ...opts,
+      element: resolvedElement,
+      onMove: () => {
+        opts.onMove?.();
+        scheduler?.requestRender();
+      },
+    });
 
     setInput(newCursorInput);
 
@@ -41,11 +56,18 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     // scene's frame scheduler; outside one (Mode 2), run a private rAF loop.
     let detach: (() => void) | null = null;
 
-    if (shaderContext?.scheduler) {
-      const schedulerTickHandler = ({ delta }: { delta: number }) => newCursorInput.tick(delta);
+    if (scheduler) {
+      // Each tick that moves the position asks for one more frame. The scene
+      // adds its render client before any child hook, so a frame draws the
+      // value from the previous tick: the frame requested by the tick that
+      // lands on the target is the one that draws it. A tick that moves
+      // nothing asks for nothing, and an otherwise static scene parks.
+      const schedulerTickHandler = ({ delta }: { delta: number }) => {
+        if (newCursorInput.tick(delta)) scheduler.requestRender();
+      };
 
-      shaderContext.scheduler.add(schedulerTickHandler);
-      detach = () => shaderContext.scheduler.remove(schedulerTickHandler);
+      scheduler.add(schedulerTickHandler);
+      detach = () => scheduler.remove(schedulerTickHandler);
     } else {
       let animationFrameId: number | null = null;
       let lastNow = performance.now();
