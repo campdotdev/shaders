@@ -175,7 +175,8 @@ describe('setIdle (render-on-demand)', () => {
     tickFrame(16);
     expect(client).toHaveBeenCalledTimes(1);
 
-    scheduler.requestRender();
+    expect(scheduler.requestRender()).toBe(true);
+    expect(scheduler.requestRender()).toBe(false);
     tickFrame(32);
     expect(client).toHaveBeenCalledTimes(2);
     tickFrame(48); // back to idle

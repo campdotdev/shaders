@@ -150,7 +150,7 @@ export function LedWallShader({
 
   // The render-on-demand vote: the scene may stop drawing only when nothing
   // on the wall can change between frames. static.ts says why the swell's
-  // strength does not count and why speed does.
+  // strength and a cursor-driven focus do not count and why speed does.
   useStaticSceneHint(isLedWallStatic({ flicker, focus, speed, swell }));
 
   // ---------------------------------------------

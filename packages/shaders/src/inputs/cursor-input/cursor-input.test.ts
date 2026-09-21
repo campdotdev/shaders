@@ -121,4 +121,75 @@ describe('CursorInput', () => {
     expect(cursor.get()).toEqual([0.5, 0.5]);
     cursor.dispose();
   });
+
+  it('reports from tick whether the position changed', () => {
+    const cursor = new CursorInput({ smoothing: 0 });
+
+    expect(cursor.tick(0.016)).toBe(false);
+
+    simulateMouseAt(500, 500);
+    expect(cursor.tick(0.016)).toBe(true);
+    expect(cursor.tick(0.016)).toBe(false);
+    cursor.dispose();
+  });
+
+  it('lands exactly on the target once the gap is under a device pixel, then settles', () => {
+    // smoothing 0.5 closes half the remaining gap per 60fps frame, so a gap
+    // of 1 canvas unit is 2^-14, under the settle threshold, on the 14th
+    // tick. Exact float equality would take about 53 more.
+    const cursor = new CursorInput({ smoothing: 0.5, initial: [0, 0] });
+
+    simulateMouseAt(1000, 1000);
+
+    let ticksUntilSettled = 0;
+
+    while (cursor.tick(1 / 60) && ticksUntilSettled < 60) ticksUntilSettled += 1;
+
+    expect(ticksUntilSettled).toBeLessThanOrEqual(15);
+    expect(cursor.get()).toEqual([1, 1]);
+    expect(cursor.tick(1 / 60)).toBe(false);
+    cursor.dispose();
+  });
+
+  it('caps the first tick after a parked stretch, so the glide survives a wake', () => {
+    // smoothing 0.5 over one 30fps frame closes 1 - 0.5^2 = 75% of the gap.
+    // A five second delta, which is what the scheduler reports on the first
+    // tick after the scene parks, would close all of it and snap.
+    const cursor = new CursorInput({ smoothing: 0.5, initial: [0, 0] });
+
+    simulateMouseAt(1000, 1000);
+    cursor.tick(5, true);
+
+    expect(cursor.get()[0]).toBeCloseTo(0.75, 6);
+    expect(cursor.get()[1]).toBeCloseTo(0.75, 6);
+    cursor.dispose();
+  });
+
+  it('uses the full delta for an ordinary slow frame', () => {
+    const cursor = new CursorInput({ smoothing: 0.9, initial: [0, 0] });
+
+    simulateMouseAt(1000, 1000);
+    cursor.tick(0.8);
+
+    const expected = 1 - Math.pow(0.9, 0.8 * 60);
+
+    expect(cursor.get()[0]).toBeCloseTo(expected, 6);
+    expect(cursor.get()[1]).toBeCloseTo(expected, 6);
+    cursor.dispose();
+  });
+
+  it('calls onMove for each pointer move and not after dispose', () => {
+    const onMove = vi.fn();
+    const cursor = new CursorInput({ onMove });
+
+    simulateMouseAt(100, 100);
+    simulateMouseAt(200, 200);
+
+    expect(onMove).toHaveBeenCalledTimes(2);
+
+    cursor.dispose();
+    simulateMouseAt(300, 300);
+
+    expect(onMove).toHaveBeenCalledTimes(2);
+  });
 });

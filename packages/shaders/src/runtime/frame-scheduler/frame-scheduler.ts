@@ -155,11 +155,19 @@ export class FrameScheduler {
     }
   }
 
-  /** Force a single tick while idle. Useful for prop-change invalidation. */
-  requestRender(): void {
-    if (!this.idle) return;
+  /**
+   * Force a single tick while idle. Useful for prop-change invalidation.
+   * Returns true when this request starts a new idle flush rather than
+   * extending one that is already queued.
+   */
+  requestRender(): boolean {
+    if (!this.idle) return false;
+    const startedIdleFlush = !this.flushPending;
+
     this.flushPending = true;
     this.maybeQueue();
+
+    return startedIdleFlush;
   }
 
   private onBecameIdle(): void {

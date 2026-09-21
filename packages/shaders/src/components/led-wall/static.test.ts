@@ -17,7 +17,9 @@ const still = { flicker: 0, focus: [0.5, 0.5] as const, speed: 2.4, swell: 0.85 
 // change between frames. Only the breath moves on its own, and it needs
 // both a flicker depth and a speed; the swell reads static inputs, so it
 // draws the same dots every frame however strong it is. A live signal on
-// any of the four counts as motion whatever it reads right now.
+// flicker, speed, or swell counts as motion whatever it reads right now.
+// The focus is the exception: a cursor signal wakes the scene itself when
+// the pointer moves, so a still pointer must be allowed to let it park.
 describe('isLedWallStatic', () => {
   it('is static when the flicker depth is 0, whatever the swell', () => {
     expect(isLedWallStatic(still)).toBe(true);
@@ -32,8 +34,12 @@ describe('isLedWallStatic', () => {
     expect(isLedWallStatic({ ...still, flicker: 0.3 })).toBe(false);
   });
 
-  it('is live when the focus position or swell is a signal', () => {
-    expect(isLedWallStatic({ ...still, focus: pointSignal })).toBe(false);
+  it('treats the focus as static whether it is a tuple or a signal', () => {
+    expect(isLedWallStatic({ ...still, focus: [0.2, 0.8] as const })).toBe(true);
+    expect(isLedWallStatic({ ...still, focus: pointSignal })).toBe(true);
+  });
+
+  it('is live when the swell is a signal', () => {
     expect(isLedWallStatic({ ...still, swell: numberSignal })).toBe(false);
   });
 
