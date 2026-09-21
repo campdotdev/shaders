@@ -516,10 +516,11 @@ export function createWaveField(
         drawPass(stepMaterial);
         settleActivity *= WAVE_AMPLITUDE_DAMPING;
       }
-      // Zero both targets once the model falls below one 8-bit step. A stale
-      // texel would still seed the next stroke's ring, and a fresh field has
-      // to start flat. Two clear draws with the swap between them cover both.
-      if (settleActivity <= SETTLE_AMPLITUDE) {
+      // Zero both targets once an unstamped frame finds the model below one
+      // 8-bit step. Waiting one frame lets small stroke segments accumulate
+      // instead of clearing each one on a high-refresh display. A stale texel
+      // would still seed the next stroke's ring, so two draws cover both.
+      if (!stamp && settleActivity <= SETTLE_AMPLITUDE) {
         drawPass(clearMaterial);
         drawPass(clearMaterial);
         settleActivity = 0;
@@ -559,7 +560,7 @@ export function createWaveField(
         uniforms.strokePush.value = push;
         settleActivity += push;
       }
-      if (!stamp && settleActivity <= SETTLE_AMPLITUDE) {
+      if (!stamp && settleActivity === 0) {
         carry = 0;
 
         return;
@@ -570,7 +571,9 @@ export function createWaveField(
 
       carry -= substeps * SUBSTEP_SECONDS;
 
-      if (stamp || substeps > 0) runPasses(stamp, substeps);
+      if (stamp || substeps > 0 || settleActivity <= SETTLE_AMPLITUDE) {
+        runPasses(stamp, substeps);
+      }
     },
 
     get texture() {
@@ -580,7 +583,7 @@ export function createWaveField(
     },
 
     get atRest() {
-      return settleActivity <= SETTLE_AMPLITUDE;
+      return settleActivity === 0;
     },
 
     // A fresh target is zero-filled, so a resize is also a reset: the field

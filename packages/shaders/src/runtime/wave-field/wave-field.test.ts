@@ -261,7 +261,7 @@ describe('settling', () => {
     expect(field.atRest).toBe(true);
   });
 
-  it('clears subpixel jitter in its own frame instead of using the maximum settle window', () => {
+  it('clears subpixel jitter on the next unstamped frame', () => {
     const renderer = makeRenderer();
     const field = createWaveField(renderer, 1280, 720);
     const onePixelStroke = {
@@ -272,12 +272,37 @@ describe('settling', () => {
 
     field.step(1 / 60, onePixelStroke);
 
-    // The stamp and two substeps run, then one clear pass resets each target.
-    expect(renderer.render).toHaveBeenCalledTimes(1 + 2 + 2);
-    expect(field.atRest).toBe(true);
+    // The stamp and two substeps run, but the field waits one frame in case
+    // another small segment follows and adds to this one.
+    expect(renderer.render).toHaveBeenCalledTimes(1 + 2);
+    expect(field.atRest).toBe(false);
 
     field.step(1 / 60);
-    expect(renderer.render).toHaveBeenCalledTimes(1 + 2 + 2);
+    expect(renderer.render).toHaveBeenCalledTimes(1 + 2 + 2 + 2);
+    expect(field.atRest).toBe(true);
+  });
+
+  it('accumulates sub-threshold stroke segments across high-refresh frames', () => {
+    const renderer = makeRenderer();
+    const field = createWaveField(renderer, 1280, 720);
+    const frameRate = 144;
+    let pointerY = 0.3;
+
+    for (let frame = 0; frame < 2; frame += 1) {
+      const nextY = pointerY + 0.3 / frameRate;
+
+      field.step(1 / frameRate, {
+        from: [0.5, pointerY],
+        to: [0.5, nextY],
+        presence: 1,
+      });
+      pointerY = nextY;
+    }
+
+    // Two 0.0025 pushes combine above the 1/256 settle threshold. The first
+    // frame stamps only; the second stamps and spends one fixed substep.
+    expect(renderer.render).toHaveBeenCalledTimes(3);
+    expect(field.atRest).toBe(false);
   });
 
   it('wakes again from a new stroke after resting', () => {
