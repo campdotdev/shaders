@@ -1,0 +1,40 @@
+# Reviews trusted contributors' pull requests with lgtmaybe and OpenRouter.
+# PR code is read through GitHub's API and is never checked out or executed.
+name: lgtmaybe
+
+on:
+  pull_request_target:
+  issue_comment:
+    types: [created]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    # Automatic reviews and paid slash commands are limited to trusted users.
+    if: >-
+      (github.event_name == 'pull_request_target' &&
+       contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)) ||
+      (github.event.issue.pull_request &&
+       contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) &&
+       (contains(github.event.comment.body, '/review') ||
+        contains(github.event.comment.body, '/improve') ||
+        contains(github.event.comment.body, '/ask') ||
+        contains(github.event.comment.body, '/describe') ||
+        contains(github.event.comment.body, '/diagram')))
+    # Job-level concurrency prevents rejected comments from cancelling reviews.
+    concurrency:
+      group: lgtmaybe-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event_name }}
+      cancel-in-progress: true
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - uses: MattJColes/lgtmaybe@32bbe286f13030438503036a1ed8d2e88d80a0e6 # v2.8.5
+        with:
+          provider: openrouter
+          model: anthropic/claude-sonnet-4-6
+          api_key: ${{ secrets.OPENROUTER_API_KEY }}
+          image: ghcr.io/mattjcoles/lgtmaybe@sha256:425d644f1ec2adb73e942bfac47ebac796991fbb37d57fbf81cbeab51adaa545
