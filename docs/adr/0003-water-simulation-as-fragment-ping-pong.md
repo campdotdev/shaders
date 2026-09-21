@@ -1,9 +1,11 @@
-# The cursor ripple's water simulation is a fragment-shader ping-pong, not a compute shader
+# The planned cursor ripple water simulation uses fragment-shader ping-pong, not a compute shader
 
-CursorRipple (SHA-138) simulates a water surface as a height field that persists between frames. WebGPU offers a compute shader for this, which is the natural tool for a simulation, but the runtime falls back to WebGL2 whenever WebGPU device init fails, and that is the path headless Chromium takes, so every Playwright visual test and every CI run executes it. WebGL2 has no compute. We run the simulation as a full-screen fragment pass that reads the previous frame's height-and-velocity texture and writes the next one into a second render target, swapping the two each frame. The math is the same on both backends, and for a quarter-resolution 2D field the cost difference is not measurable.
+Status: Planned under SHA-138. Neither the simulation runtime nor the CursorRipple Effect is implemented.
 
-## Consequences
+CursorRipple will simulate a water surface as a height field that persists between frames. WebGPU offers a compute shader for this, but the renderer falls back to WebGL2 when WebGPU device initialization fails. Headless Chromium takes that fallback path, so every Playwright visual test and CI run must support WebGL2. Because WebGL2 has no compute, the simulation will use a full-screen fragment pass. The pass will read the previous frame's height-and-velocity texture, write the next state to a second render target, and swap the targets after each frame. Both backends will use the same math. SHA-138 must measure the cost of the quarter-resolution 2D field during implementation.
 
-- The field lives in a framework-free runtime module next to the output stage, built on render targets with half-float textures. It is the first feedback loop in the codebase.
-- The WebGL2 path needs the float-render-target extension. Where it or the device is missing, CursorRipple renders as identity rather than throwing or substituting a different effect.
+## Planned consequences
+
+- The field will live in a framework-free runtime module next to the output stage. It will use render targets with half-float textures and become the first feedback loop in the codebase.
+- The WebGL2 path will need the float-render-target extension. If the extension or graphics device is unavailable, CursorRipple will render as identity rather than throw or substitute a different effect.
 - A compute path can be added later behind a backend check if a heavier simulation ever needs it, without changing the Effect's public props.
