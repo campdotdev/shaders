@@ -231,14 +231,16 @@ describe('injection', () => {
 
 describe('settling', () => {
   // Energy is never read back, so the settle window is a clock: the time
-  // the combined height and velocity damping takes to shrink the last push
+  // the combined height and velocity damping takes to shrink a maximum push
   // below one 8-bit step, about 5.75 s. At 60Hz that is roughly 345 frames
-  // of two substeps.
+  // of two substeps. This stroke crosses enough of the wide canvas to hit the
+  // one-unit injection cap.
   it('steps through the settle window, then clears both targets and rests', () => {
     const renderer = makeRenderer();
     const field = createWaveField(renderer, 1280, 720);
+    const maximumStroke = { from: [0.1, 0.5], to: [0.9, 0.5], presence: 1 } as const;
 
-    field.step(1 / 60, movingStroke);
+    field.step(1 / 60, maximumStroke);
     let frames = 1;
 
     while (!field.atRest && frames < 1000) {
@@ -257,6 +259,25 @@ describe('settling', () => {
     field.step(1 / 60);
     expect(renderer.render).toHaveBeenCalledTimes(drawsAtRest);
     expect(field.atRest).toBe(true);
+  });
+
+  it('clears subpixel jitter in its own frame instead of using the maximum settle window', () => {
+    const renderer = makeRenderer();
+    const field = createWaveField(renderer, 1280, 720);
+    const onePixelStroke = {
+      from: [0.5, 0.5],
+      to: [0.5, 0.5 + 1 / 720],
+      presence: 1,
+    } as const;
+
+    field.step(1 / 60, onePixelStroke);
+
+    // The stamp and two substeps run, then one clear pass resets each target.
+    expect(renderer.render).toHaveBeenCalledTimes(1 + 2 + 2);
+    expect(field.atRest).toBe(true);
+
+    field.step(1 / 60);
+    expect(renderer.render).toHaveBeenCalledTimes(1 + 2 + 2);
   });
 
   it('wakes again from a new stroke after resting', () => {

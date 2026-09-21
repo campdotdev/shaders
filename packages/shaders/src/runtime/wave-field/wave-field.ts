@@ -464,8 +464,7 @@ export function createWaveField(
   // A CPU-side model of the wave activity, because reading energy back from
   // the GPU would stall the frame. Strokes add their capped push and each
   // fixed substep applies the travelling wave's combined amplitude damping.
-  // A fresh stroke starts at one maximum push, so the field cannot clear
-  // until that whole push has fallen below the visible threshold.
+  // Small strokes therefore settle sooner than a maximum-strength stroke.
   let settleActivity = 0;
 
   // Release both targets and forget the simulation state. Nothing recreates the
@@ -558,9 +557,9 @@ export function createWaveField(
         const push = strokePushForFrame(strength, delta);
 
         uniforms.strokePush.value = push;
-        settleActivity = Math.max(MAX_INJECTION, settleActivity + push);
+        settleActivity += push;
       }
-      if (settleActivity <= SETTLE_AMPLITUDE) {
+      if (!stamp && settleActivity <= SETTLE_AMPLITUDE) {
         carry = 0;
 
         return;
