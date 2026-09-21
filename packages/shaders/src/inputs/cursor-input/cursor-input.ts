@@ -40,13 +40,27 @@ export interface CursorInputOptions {
 type ChangeListener = (value: Vector2) => void;
 
 /**
- * Gap below which the smoothed position snaps onto its target, in canvas
- * units where 1 is the canvas width or height. 1e-4 is under one device
- * pixel on any canvas narrower than 10,000 pixels, so the snap is never
- * visible. Raising it settles sooner but can be seen as a final hop on a
- * large canvas; lowering it draws more invisible frames before idling.
+ * Gap below which the smoothed position snaps onto its target, per axis, in
+ * canvas units where 1 is the canvas width on x and the canvas height on y.
+ * 1e-4 is under one device pixel on any canvas smaller than 10,000 pixels on
+ * both sides, so the snap is not visible there. Raising it settles sooner
+ * but can be seen as a final hop on a large canvas; lowering it draws more
+ * invisible frames before idling.
  */
 const SETTLE_THRESHOLD = 1e-4;
+
+/**
+ * Longest stretch of time one tick may smooth across, in seconds. Real
+ * frames run 16 to 33ms, so a tick under the cap is left alone. The host
+ * reports the whole gap since its last frame, and a scene that parked
+ * while the pointer was still, or a tab that was hidden, hands the first
+ * tick after waking a delta of seconds. Smoothing across that would close
+ * the entire gap at once and the cursor would snap to the pointer instead
+ * of gliding. Capping at one 30fps frame makes the wake tick an ordinary
+ * frame. Raising the cap shortens the glide after a wake; lowering it below
+ * a real frame would slow every glide on a 30fps display.
+ */
+const MAX_TICK_DELTA = 1 / 30;
 
 /**
  * Smoothed pointer tracker emitting a normalized (0..1) Vec2 position.
@@ -121,9 +135,10 @@ export class CursorInput {
 
   /**
    * Advance the smoothing one tick. Called by the host scheduler; not
-   * typically called directly except in tests. Returns true when the
-   * position changed this tick, so the host knows whether to draw another
-   * frame, and false once the smoothing has settled on the target.
+   * typically called directly except in tests. Returns true when it notified
+   * listeners this tick, because the position moved or a pointer move landed
+   * a new target, so the host knows to draw another frame. Returns false
+   * once the smoothing has settled on the target and nothing new arrived.
    */
   tick(delta: number): boolean {
     if (this.disposed) return false;
@@ -132,7 +147,8 @@ export class CursorInput {
     // gap closes per real second whether the display runs 30, 60, or 144 fps
     // — a plain `lerp(value, target, 0.1)` per frame would chase faster on
     // faster screens.
-    const factor = this.smoothing === 0 ? 1 : 1 - Math.pow(this.smoothing, delta * 60);
+    const frames = Math.min(delta, MAX_TICK_DELTA) * 60;
+    const factor = this.smoothing === 0 ? 1 : 1 - Math.pow(this.smoothing, frames);
     const prev0 = this.value[0];
     const prev1 = this.value[1];
     const [target0, target1] = this.target;

@@ -20,7 +20,11 @@ import {
 
 export interface LedWallStaticInputs {
   flicker: AnimatableProp<number>;
-  /** Accepted so the call site mirrors the wall's dials; it never counts. */
+  /**
+   * Never read. It stays in the inputs so the unit test can state, in the
+   * predicate's own terms, that a signal focus votes static (SHA-139). Drop
+   * it if that test ever moves to the component level.
+   */
   focus: AnimatableProp<readonly [number, number]>;
   speed: AnimatableProp<number>;
   swell: AnimatableProp<number>;

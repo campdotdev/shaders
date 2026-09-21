@@ -19,6 +19,26 @@ const fireMoveOnWindow = (clientX: number, clientY: number) => {
   window.dispatchEvent(new MouseEvent('mousemove', { clientX, clientY, bubbles: true }));
 };
 
+// Capture frame requests so a test can run frames by hand. A queued frame
+// means a loop is awake; an empty queue means it has parked.
+const captureFrames = () => {
+  const frames: FrameRequestCallback[] = [];
+
+  vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => {
+    frames.push(frame);
+
+    return frames.length;
+  });
+
+  return frames;
+};
+
+// A square viewport, so a move to (size, size) lands the target at [1, 1].
+const setViewport = (size: number) => {
+  Object.defineProperty(window, 'innerWidth', { value: size, configurable: true });
+  Object.defineProperty(window, 'innerHeight', { value: size, configurable: true });
+};
+
 // A scene with a real scheduler and no canvas, so the input normalizes
 // against the viewport the way the Mode 2 tests do. The scheduler is the
 // only part of the context useCursor reads for idle and wake.
@@ -58,18 +78,9 @@ describe('useCursor inside a ShaderScene', () => {
   });
 
   it('keeps the scene drawing after a move until the smoothing settles, then lets it park', () => {
-    // Capture the scheduler's frame requests so the test can run frames by
-    // hand. A queued frame means the scene is awake; an empty queue means it
-    // has parked.
-    const frames: FrameRequestCallback[] = [];
+    const frames = captureFrames();
 
-    vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => {
-      frames.push(frame);
-
-      return frames.length;
-    });
-    Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true });
-    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true });
+    setViewport(1000);
 
     const scheduler = new FrameScheduler();
 
@@ -117,15 +128,9 @@ describe('useCursor inside a ShaderScene', () => {
 
 describe('useCursor outside a ShaderScene (Mode 2)', () => {
   it('still smooths on its own frame loop after a move', () => {
-    const frames: FrameRequestCallback[] = [];
+    const frames = captureFrames();
 
-    vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => {
-      frames.push(frame);
-
-      return frames.length;
-    });
-    Object.defineProperty(window, 'innerWidth', { value: 1000, configurable: true });
-    Object.defineProperty(window, 'innerHeight', { value: 1000, configurable: true });
+    setViewport(1000);
 
     const { result } = renderHook(() => useCursor({ smoothing: 0 }));
 

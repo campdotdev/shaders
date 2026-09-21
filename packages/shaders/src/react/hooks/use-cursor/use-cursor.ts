@@ -57,11 +57,11 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     let detach: (() => void) | null = null;
 
     if (scheduler) {
-      // Each tick that moves the position asks for one more frame. The scene
+      // Each tick that notifies listeners asks for one more frame. The scene
       // adds its render client before any child hook, so a frame draws the
       // value from the previous tick: the frame requested by the tick that
-      // lands on the target is the one that draws it. A tick that moves
-      // nothing asks for nothing, and an otherwise static scene parks.
+      // lands on the target is the one that draws it. A settled tick asks
+      // for nothing, and an otherwise static scene parks.
       const schedulerTickHandler = ({ delta }: { delta: number }) => {
         if (newCursorInput.tick(delta)) scheduler.requestRender();
       };

@@ -151,6 +151,20 @@ describe('CursorInput', () => {
     cursor.dispose();
   });
 
+  it('treats one long tick after a parked stretch as a single frame, so the glide survives a wake', () => {
+    // smoothing 0.5 over one 30fps frame closes 1 - 0.5^2 = 75% of the gap.
+    // A five second delta, which is what the scheduler reports on the first
+    // tick after the scene parks, would close all of it and snap.
+    const cursor = new CursorInput({ smoothing: 0.5, initial: [0, 0] });
+
+    simulateMouseAt(1000, 1000);
+    cursor.tick(5);
+
+    expect(cursor.get()[0]).toBeCloseTo(0.75, 6);
+    expect(cursor.get()[1]).toBeCloseTo(0.75, 6);
+    cursor.dispose();
+  });
+
   it('calls onMove for each pointer move and not after dispose', () => {
     const onMove = vi.fn();
     const cursor = new CursorInput({ onMove });
