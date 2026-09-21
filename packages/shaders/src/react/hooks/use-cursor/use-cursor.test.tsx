@@ -124,6 +124,45 @@ describe('useCursor inside a ShaderScene', () => {
     expect(framesDrawn).toBeGreaterThan(1);
     expect(framesDrawn).toBeLessThanOrEqual(20);
   });
+
+  it('caps only the first tick after waking a parked scene', () => {
+    const frames = captureFrames();
+
+    setViewport(1000);
+
+    const scheduler = new FrameScheduler();
+
+    scheduler.start();
+
+    let now = 0;
+    const runFrameAfter = (deltaMilliseconds: number) => {
+      const frame = frames.shift();
+
+      now += deltaMilliseconds;
+      act(() => frame?.(now));
+    };
+
+    const { result } = renderHook(() => useCursor({ smoothing: 0.9 }), {
+      wrapper: makeSceneWrapper(scheduler),
+    });
+
+    scheduler.setIdle(true);
+    runFrameAfter(1000 / 60);
+    expect(frames).toHaveLength(0);
+
+    act(() => {
+      fireMoveOnWindow(1000, 1000);
+    });
+
+    runFrameAfter(5000);
+    expect(result.current.get()[0]).toBeCloseTo(0.595, 6);
+
+    runFrameAfter(800);
+    const expected = 1 - (1 - 0.595) * Math.pow(0.9, 0.8 * 60);
+
+    expect(result.current.get()[0]).toBeCloseTo(expected, 6);
+    expect(result.current.get()[0]).toBeGreaterThan(0.99);
+  });
 });
 
 describe('useCursor outside a ShaderScene (Mode 2)', () => {

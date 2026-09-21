@@ -34,6 +34,7 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     const canvas = shaderContext?.renderer.three.domElement;
     const resolvedElement = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined);
     const scheduler = shaderContext?.scheduler;
+    let wakeTickPending = false;
 
     // Waking the scene is the cursor's job. The scene renders on demand, and
     // a static scene parks its frame loop, which is also the only thing that
@@ -45,8 +46,10 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
       ...opts,
       element: resolvedElement,
       onMove: () => {
+        const startedIdleFlush = scheduler?.requestRender() ?? false;
+
+        if (startedIdleFlush) wakeTickPending = true;
         opts.onMove?.();
-        scheduler?.requestRender();
       },
     });
 
@@ -63,7 +66,10 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
       // lands on the target is the one that draws it. A settled tick asks
       // for nothing, and an otherwise static scene parks.
       const schedulerTickHandler = ({ delta }: { delta: number }) => {
-        if (newCursorInput.tick(delta)) scheduler.requestRender();
+        const afterIdle = wakeTickPending;
+
+        wakeTickPending = false;
+        if (newCursorInput.tick(delta, afterIdle)) scheduler.requestRender();
       };
 
       scheduler.add(schedulerTickHandler);

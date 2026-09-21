@@ -50,17 +50,13 @@ type ChangeListener = (value: Vector2) => void;
 const SETTLE_THRESHOLD = 1e-4;
 
 /**
- * Longest stretch of time one tick may smooth across, in seconds. Real
- * frames run 16 to 33ms, so a tick under the cap is left alone. The host
- * reports the whole gap since its last frame, and a scene that parked
- * while the pointer was still, or a tab that was hidden, hands the first
- * tick after waking a delta of seconds. Smoothing across that would close
- * the entire gap at once and the cursor would snap to the pointer instead
- * of gliding. Capping at one 30fps frame makes the wake tick an ordinary
- * frame. Raising the cap shortens the glide after a wake; lowering it below
- * a real frame would slow every glide on a 30fps display.
+ * Longest stretch of time a wake tick may smooth across, in seconds. The
+ * host reports the whole gap since its last frame after a parked scene
+ * wakes. Smoothing across that gap would snap the cursor to the pointer.
+ * Capping the marked wake tick at one 30fps frame preserves the glide while
+ * ordinary slow frames still use their full delta.
  */
-const MAX_TICK_DELTA = 1 / 30;
+const MAX_WAKE_TICK_DELTA = 1 / 30;
 
 /**
  * Smoothed pointer tracker emitting a normalized (0..1) Vec2 position.
@@ -139,15 +135,17 @@ export class CursorInput {
    * listeners this tick, because the position moved or a pointer move landed
    * a new target, so the host knows to draw another frame. Returns false
    * once the smoothing has settled on the target and nothing new arrived.
+   * Set `afterIdle` only for the first tick after the host resumes from idle.
    */
-  tick(delta: number): boolean {
+  tick(delta: number, afterIdle = false): boolean {
     if (this.disposed) return false;
     // Frame-rate-independent smoothing: raising `smoothing` to the power of
     // elapsed frames-worth-of-time means the same fraction of the remaining
     // gap closes per real second whether the display runs 30, 60, or 144 fps
     // — a plain `lerp(value, target, 0.1)` per frame would chase faster on
     // faster screens.
-    const frames = Math.min(delta, MAX_TICK_DELTA) * 60;
+    const smoothingDelta = afterIdle ? Math.min(delta, MAX_WAKE_TICK_DELTA) : delta;
+    const frames = smoothingDelta * 60;
     const factor = this.smoothing === 0 ? 1 : 1 - Math.pow(this.smoothing, frames);
     const prev0 = this.value[0];
     const prev1 = this.value[1];
