@@ -8,7 +8,7 @@
 // on mount (mount → unmount → mount); splitting create and dispose across
 // separate effects lets that double-cycle leak a listener or kill a live
 // instance — collapsed into one effect, each cycle cleans up after itself.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { CursorInput, type CursorInputOptions, type Vector2 } from '../../../engine.js';
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
@@ -26,6 +26,11 @@ const STUB_SIGNAL: CursorSignal = {
 export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
   const shaderContext = useShaderContext();
   const [input, setInput] = useState<CursorInput | null>(null);
+  const onMoveRef = useRef(opts.onMove);
+
+  useEffect(() => {
+    onMoveRef.current = opts.onMove;
+  }, [opts.onMove]);
 
   useEffect(() => {
     // Default the coordinate frame to the scene's canvas, so (0,0)/(1,1) are
@@ -35,6 +40,7 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     const resolvedElement = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined);
     const scheduler = shaderContext?.scheduler;
     let wakeTickPending = false;
+    let cursorBurstActive = false;
 
     // Waking the scene is the cursor's job. The scene renders on demand, and
     // a static scene parks its frame loop, which is also the only thing that
@@ -48,8 +54,9 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
       onMove: () => {
         const startedIdleFlush = scheduler?.requestRender() ?? false;
 
-        if (startedIdleFlush) wakeTickPending = true;
-        opts.onMove?.();
+        if (!cursorBurstActive && startedIdleFlush) wakeTickPending = true;
+        cursorBurstActive = true;
+        onMoveRef.current?.();
       },
     });
 
@@ -69,7 +76,8 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
         const afterIdle = wakeTickPending;
 
         wakeTickPending = false;
-        if (newCursorInput.tick(delta, afterIdle)) scheduler.requestRender();
+        cursorBurstActive = newCursorInput.tick(delta, afterIdle);
+        if (cursorBurstActive) scheduler.requestRender();
       };
 
       scheduler.add(schedulerTickHandler);

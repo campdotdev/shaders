@@ -19,15 +19,15 @@ A value that changes over time and is not drawn, such as the cursor, scroll, or 
 _Avoid_: Cursor hook, entry point, scene-level field
 
 **Position prop**:
-A component prop that names a point on the canvas. A component's own center is `center`; a point that belongs to one reaction among the component's other dials is named after the reaction, such as `swellCenter`. It is a position, not a cursor: the cursor is one Input you can feed it, and the value `'cursor'` is shorthand for the scene's cursor.
+A component prop that names a point on the canvas. A component's own center is `center`; a point that belongs to one reaction among the component's other dials is named after the reaction, such as `swellCenter`. It is a position, not a cursor: the cursor is one Input you can feed it. The planned `'cursor'` shorthand will express that mapping without a hook.
 _Avoid_: Cursor prop, interactive prop, entry point, focus
 
 **Reaction**:
-A component's response that grows toward a point and needs the component's own internals, such as LedWall's swell. It is exposed as three props: the amount named for the reaction, where 0 turns it off, a `<reaction>Radius` in canvas units, and a `<reaction>Center` position prop.
+A component's response that grows toward a point and needs the component's own internals, such as LedWall's swell. The planned reaction API exposes three props: the amount named for the reaction, where 0 turns it off, a `<reaction>Radius` in canvas units, and a `<reaction>Center` position prop.
 _Avoid_: Interaction, cursor ability, hover effect
 
 **Cursor effect**:
-An Effect driven by the cursor Input that works over any scene with no help from the components beneath it, such as CursorSpotlight or CursorRipple.
+An Effect driven by the cursor Input that works over any scene with no help from the components beneath it. CursorSpotlight and CursorRipple are planned examples.
 _Avoid_: Interactive shader, cursor component, drop-in
 
 ### Pattern components

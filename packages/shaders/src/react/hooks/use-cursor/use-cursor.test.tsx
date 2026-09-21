@@ -43,19 +43,13 @@ const setViewport = (size: number) => {
 // against the viewport the way the Mode 2 tests do. The scheduler is the
 // only part of the context useCursor reads for idle and wake.
 const makeSceneWrapper = (scheduler: FrameScheduler) => {
+  const shaderContext = {
+    scheduler,
+    renderer: { three: { domElement: null } },
+  } as unknown as React.ContextType<typeof ShaderContext>;
+
   function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <ShaderContext.Provider
-        value={
-          {
-            scheduler,
-            renderer: { three: { domElement: null } },
-          } as unknown as React.ContextType<typeof ShaderContext>
-        }
-      >
-        {children}
-      </ShaderContext.Provider>
-    );
+    return <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>;
   }
 
   return Wrapper;
@@ -75,6 +69,29 @@ describe('useCursor inside a ShaderScene', () => {
     });
 
     expect(requestRender).toHaveBeenCalledTimes(1);
+  });
+
+  it('calls the latest onMove callback without replacing the cursor input', () => {
+    const firstOnMove = vi.fn();
+    const secondOnMove = vi.fn();
+    const scheduler = new FrameScheduler();
+    const { result, rerender } = renderHook(({ onMove }) => useCursor({ onMove }), {
+      initialProps: { onMove: firstOnMove },
+      wrapper: makeSceneWrapper(scheduler),
+    });
+    const cursorInput = result.current;
+
+    act(() => {
+      fireMoveOnWindow(10, 10);
+    });
+    rerender({ onMove: secondOnMove });
+    act(() => {
+      fireMoveOnWindow(20, 20);
+    });
+
+    expect(result.current).toBe(cursorInput);
+    expect(firstOnMove).toHaveBeenCalledTimes(1);
+    expect(secondOnMove).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the scene drawing after a move until the smoothing settles, then lets it park', () => {
@@ -157,6 +174,9 @@ describe('useCursor inside a ShaderScene', () => {
     runFrameAfter(5000);
     expect(result.current.get()[0]).toBeCloseTo(0.595, 6);
 
+    act(() => {
+      fireMoveOnWindow(1000, 1000);
+    });
     runFrameAfter(800);
     const expected = 1 - (1 - 0.595) * Math.pow(0.9, 0.8 * 60);
 
