@@ -1,5 +1,16 @@
 # @shaders/editor
 
+## 0.0.2
+
+### Patch Changes
+
+- Updated dependencies [ef14a4a]
+- Updated dependencies [d53d261]
+- Updated dependencies [d53d261]
+- Updated dependencies [ef14a4a]
+- Updated dependencies [ef14a4a]
+  - @camp-dev/shaders@0.20.0
+
 ## 0.0.1
 
 ### Patch Changes
