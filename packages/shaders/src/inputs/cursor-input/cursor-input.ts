@@ -28,9 +28,35 @@ export interface CursorInputOptions {
   element?: {
     getBoundingClientRect(): { left: number; top: number; width: number; height: number };
   };
+  /**
+   * Called on every pointer move, as the new target lands and before any
+   * tick smooths toward it. The input itself only changes its position in
+   * `tick`, so a host that stops ticking while nothing moves needs this to
+   * know when to start again. `useCursor` uses it to wake an idle scene.
+   */
+  onMove?: () => void;
 }
 
 type ChangeListener = (value: Vector2) => void;
+
+/**
+ * Gap below which the smoothed position snaps onto its target, per axis, in
+ * canvas units where 1 is the canvas width on x and the canvas height on y.
+ * 1e-4 is under one device pixel on any canvas smaller than 10,000 pixels on
+ * both sides, so the snap is not visible there. Raising it settles sooner
+ * but can be seen as a final hop on a large canvas; lowering it draws more
+ * invisible frames before idling.
+ */
+const SETTLE_THRESHOLD = 1e-4;
+
+/**
+ * Longest stretch of time a wake tick may smooth across, in seconds. The
+ * host reports the whole gap since its last frame after a parked scene
+ * wakes. Smoothing across that gap would snap the cursor to the pointer.
+ * Capping the marked wake tick at one 30fps frame preserves the glide while
+ * ordinary slow frames still use their full delta.
+ */
+const MAX_WAKE_TICK_DELTA = 1 / 30;
 
 /**
  * Smoothed pointer tracker emitting a normalized (0..1) Vec2 position.
@@ -49,7 +75,7 @@ export class CursorInput {
   private disposed = false;
 
   constructor(opts: CursorInputOptions = {}) {
-    const { smoothing = 0.1, initial = [0.5, 0.5], target, element } = opts;
+    const { smoothing = 0.1, initial = [0.5, 0.5], target, element, onMove } = opts;
 
     this.smoothing = clamp01(smoothing);
     this.value = [initial[0], initial[1]];
@@ -85,6 +111,7 @@ export class CursorInput {
         this.target = [mouseEvent.clientX / viewportWidth, mouseEvent.clientY / viewportHeight];
       }
       this.targetDirty = true;
+      onMove?.();
     };
 
     this.eventTarget.addEventListener('mousemove', this.handleMouseMove);
@@ -104,29 +131,51 @@ export class CursorInput {
 
   /**
    * Advance the smoothing one tick. Called by the host scheduler; not
-   * typically called directly except in tests.
+   * typically called directly except in tests. Returns true when it notified
+   * listeners this tick, because the position moved or a pointer move landed
+   * a new target, so the host knows to draw another frame. Returns false
+   * once the smoothing has settled on the target and nothing new arrived.
+   * Set `afterIdle` only for the first tick after the host resumes from idle.
    */
-  tick(delta: number): void {
-    if (this.disposed) return;
+  tick(delta: number, afterIdle = false): boolean {
+    if (this.disposed) return false;
     // Frame-rate-independent smoothing: raising `smoothing` to the power of
     // elapsed frames-worth-of-time means the same fraction of the remaining
     // gap closes per real second whether the display runs 30, 60, or 144 fps
     // — a plain `lerp(value, target, 0.1)` per frame would chase faster on
     // faster screens.
-    const factor = this.smoothing === 0 ? 1 : 1 - Math.pow(this.smoothing, delta * 60);
+    const smoothingDelta = afterIdle ? Math.min(delta, MAX_WAKE_TICK_DELTA) : delta;
+    const frames = smoothingDelta * 60;
+    const factor = this.smoothing === 0 ? 1 : 1 - Math.pow(this.smoothing, frames);
     const prev0 = this.value[0];
     const prev1 = this.value[1];
-    const next0 = lerp(prev0, this.target[0], factor);
-    const next1 = lerp(prev1, this.target[1], factor);
+    const [target0, target1] = this.target;
+    let next0 = lerp(prev0, target0, factor);
+    let next1 = lerp(prev1, target1, factor);
+
+    // The lerp only ever closes a fraction of the gap, so on its own it
+    // reaches the target when the gap drops below float precision: quick at
+    // smoothing 0.1, but many seconds of invisible sub-pixel steps at 0.9.
+    // Once the gap is under a device pixel, land on the target exactly so
+    // the next tick reports settled and the host can stop drawing.
+    if (
+      Math.abs(target0 - next0) < SETTLE_THRESHOLD &&
+      Math.abs(target1 - next1) < SETTLE_THRESHOLD
+    ) {
+      next0 = target0;
+      next1 = target1;
+    }
     const moved = next0 !== prev0 || next1 !== prev1;
 
-    if (moved || this.targetDirty) {
-      this.value = [next0, next1];
-      this.targetDirty = false;
-      const snapshot: Vector2 = [next0, next1];
+    if (!moved && !this.targetDirty) return false;
 
-      for (const listener of this.listeners) listener(snapshot);
-    }
+    this.value = [next0, next1];
+    this.targetDirty = false;
+    const snapshot: Vector2 = [next0, next1];
+
+    for (const listener of this.listeners) listener(snapshot);
+
+    return true;
   }
 
   /** Tear down listeners. */

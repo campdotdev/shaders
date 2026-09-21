@@ -4,6 +4,16 @@
 // through the whole document]. Scroll events are coalesced to at most one
 // notification per animation frame — scroll can fire far faster than the
 // display refreshes, and shaders can't use the extra samples anyway.
+//
+// This hook needs none of the idle-and-wake plumbing useCursor carries. The
+// signal emits from its own requestAnimationFrame, queued by the scroll
+// event, so it never waits on the scene's frame loop to notice a change,
+// and the consumer's uniform hook follows every write with
+// scheduler.requestRender(), which wakes a parked scene for the one frame
+// that draws the new value. A cursor input only changed inside the scene's
+// tick, which is why it needed an onMove hook to break out of a parked
+// loop. Scroll has no smoothing to settle either: each notification is the
+// final value.
 import { useEffect, useState } from 'react';
 
 import { createSignal } from '../../internal/create-signal.js';

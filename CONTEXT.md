@@ -4,6 +4,32 @@ A React shader component library on WebGPU and Three.js TSL. This glossary holds
 
 ## Language
 
+### Scene model
+
+**Source**:
+A component that draws its own image into a scene, such as MeshGradient or DotField. It is the thing an Effect acts on.
+_Avoid_: Base component, generator, layer
+
+**Effect**:
+A component that acts on the image beneath it in a scene rather than drawing its own, such as Grain, Dither, or LedWall. An Effect composes over any Source or Effect mounted before it.
+_Avoid_: Overlay, post-process pass, post-process layer, filter
+
+**Input**:
+A value that changes over time and is not drawn, such as the cursor, scroll, or canvas size. An Input is fed to a component as an animation signal.
+_Avoid_: Cursor hook, entry point, scene-level field
+
+**Position prop**:
+A component prop that names a point on the canvas. A component's own center is `center`; a point that belongs to one reaction among the component's other dials is named after the reaction, such as `swellCenter`. It is a position, not a cursor: the cursor is one Input you can feed it. The planned `'cursor'` shorthand will express that mapping without a hook.
+_Avoid_: Cursor prop, interactive prop, entry point, focus
+
+**Reaction**:
+A component's response that grows toward a point and needs the component's own internals, such as LedWall's swell. The planned reaction API exposes three props: the amount named for the reaction, where 0 turns it off, a `<reaction>Radius` in canvas units, and a `<reaction>Center` position prop.
+_Avoid_: Interaction, cursor ability, hover effect
+
+**Cursor effect**:
+An Effect driven by the cursor Input that works over any scene with no help from the components beneath it. CursorSpotlight and CursorRipple are planned examples.
+_Avoid_: Interactive shader, cursor component, drop-in
+
 ### Pattern components
 
 **Mark**:

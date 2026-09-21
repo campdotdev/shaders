@@ -8,7 +8,7 @@
 // on mount (mount → unmount → mount); splitting create and dispose across
 // separate effects lets that double-cycle leak a listener or kill a live
 // instance — collapsed into one effect, each cycle cleans up after itself.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import { CursorInput, type CursorInputOptions, type Vector2 } from '../../../engine.js';
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
@@ -26,6 +26,11 @@ const STUB_SIGNAL: CursorSignal = {
 export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
   const shaderContext = useShaderContext();
   const [input, setInput] = useState<CursorInput | null>(null);
+  const onMoveRef = useRef(opts.onMove);
+
+  useEffect(() => {
+    onMoveRef.current = opts.onMove;
+  }, [opts.onMove]);
 
   useEffect(() => {
     // Default the coordinate frame to the scene's canvas, so (0,0)/(1,1) are
@@ -33,7 +38,26 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     // matter where the canvas sits on the page.
     const canvas = shaderContext?.renderer.three.domElement;
     const resolvedElement = opts.element ?? (canvas instanceof HTMLElement ? canvas : undefined);
-    const newCursorInput = new CursorInput({ ...opts, element: resolvedElement });
+    const scheduler = shaderContext?.scheduler;
+    let wakeTickPending = false;
+    let cursorBurstActive = false;
+
+    // Waking the scene is the cursor's job. The scene renders on demand, and
+    // a static scene parks its frame loop, which is also the only thing that
+    // ticks this input, so a pointer move would otherwise land a new target
+    // that nothing ever smooths toward or draws. Asking for one frame on the
+    // move breaks that loop; the tick handler below keeps the frames coming
+    // until the smoothing settles.
+    const newCursorInput = new CursorInput({
+      ...opts,
+      element: resolvedElement,
+      onMove: () => {
+        if (!cursorBurstActive && scheduler?.idle === true) wakeTickPending = true;
+        scheduler?.requestRender();
+        cursorBurstActive = true;
+        onMoveRef.current?.();
+      },
+    });
 
     setInput(newCursorInput);
 
@@ -41,11 +65,22 @@ export function useCursor(opts: CursorInputOptions = {}): CursorSignal {
     // scene's frame scheduler; outside one (Mode 2), run a private rAF loop.
     let detach: (() => void) | null = null;
 
-    if (shaderContext?.scheduler) {
-      const schedulerTickHandler = ({ delta }: { delta: number }) => newCursorInput.tick(delta);
+    if (scheduler) {
+      // Each tick that notifies listeners asks for one more frame. The scene
+      // adds its render client before any child hook, so a frame draws the
+      // value from the previous tick: the frame requested by the tick that
+      // lands on the target is the one that draws it. A settled tick asks
+      // for nothing, and an otherwise static scene parks.
+      const schedulerTickHandler = ({ delta }: { delta: number }) => {
+        const afterIdle = wakeTickPending;
 
-      shaderContext.scheduler.add(schedulerTickHandler);
-      detach = () => shaderContext.scheduler.remove(schedulerTickHandler);
+        wakeTickPending = false;
+        cursorBurstActive = newCursorInput.tick(delta, afterIdle);
+        if (cursorBurstActive) scheduler.requestRender();
+      };
+
+      scheduler.add(schedulerTickHandler);
+      detach = () => scheduler.remove(schedulerTickHandler);
     } else {
       let animationFrameId: number | null = null;
       let lastNow = performance.now();
