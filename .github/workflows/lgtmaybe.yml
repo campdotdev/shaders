@@ -11,12 +11,6 @@ permissions:
   contents: read
   pull-requests: write
 
-# Keep a diagram comment from cancelling the review that created it while still
-# cancelling an outdated review when a new commit reaches the pull request.
-concurrency:
-  group: lgtmaybe-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event_name }}
-  cancel-in-progress: true
-
 jobs:
   review:
     # Automatic reviews and paid slash commands are limited to trusted users.
@@ -30,7 +24,12 @@ jobs:
         contains(github.event.comment.body, '/ask') ||
         contains(github.event.comment.body, '/describe') ||
         contains(github.event.comment.body, '/diagram')))
+    # Job-level concurrency prevents rejected comments from cancelling reviews.
+    concurrency:
+      group: lgtmaybe-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event_name }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
+    timeout-minutes: 75
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - uses: MattJColes/lgtmaybe@32bbe286f13030438503036a1ed8d2e88d80a0e6 # v2.8.5
