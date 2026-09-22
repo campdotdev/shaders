@@ -15,6 +15,7 @@ import {
   createOutputStage,
   createPauseWatcher,
   createRenderer,
+  CursorInput,
   FrameScheduler,
   resetRendererClock,
 } from '../../../engine.js';
@@ -169,9 +170,21 @@ export function ShaderScene({
 
         resizeObserver.observe(canvas);
 
+        // The scene's one pointer Input, normalized to this canvas, so every
+        // useCursor call inside reads the same pointer. Created on the first
+        // ask rather than here, so a scene with no cursor consumer never
+        // attaches a window listener, and disposed with the scene below.
+        let cursorInput: CursorInput | null = null;
+        const getCursorInput = () => {
+          cursorInput ??= new CursorInput({ element: canvas });
+
+          return cursorInput;
+        };
+
         cleanup = () => {
           pauseWatcher.dispose();
           resizeObserver.disconnect();
+          cursorInput?.dispose();
           scheduler.dispose();
           outputStage.dispose();
           renderer.dispose();
@@ -186,6 +199,7 @@ export function ShaderScene({
           scheduler,
           registerOverlay: outputStage.registerOverlay,
           registerBaseUvTransform: outputStage.registerBaseUvTransform,
+          getCursorInput,
         });
       } catch (caughtError) {
         if (cancelled) return;

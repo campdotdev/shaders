@@ -26,6 +26,9 @@ function makeCtx(): {
 
       return () => undefined;
     },
+    getCursorInput: () => {
+      throw new Error('not used by this hook');
+    },
   };
 
   return { ctx, registered };

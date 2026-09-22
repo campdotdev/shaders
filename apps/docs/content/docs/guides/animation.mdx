@@ -75,7 +75,7 @@ function Cursor() {
 }
 ```
 
-`useCursor()` must be called inside a `<ShaderScene>` so it can plumb to the canvas; it normalizes coordinates to the canvas bounding rect.
+`useCursor()` must be called inside a `<ShaderScene>` so it can plumb to the canvas; it normalizes coordinates to the canvas bounding rect. Every call in one scene reads the same pointer, and each smooths toward it at its own `smoothing`, so a slow swell and a tight spotlight never disagree about where the pointer is. The signal also carries `presence`, a second signal from 0 to 1 that eases in after the pointer enters the canvas and out after it leaves. Multiply an effect's strength by it to keep the effect invisible until the first move. Pass `enabled: false` to track nothing at all, or `element` to normalize against your own element instead of the canvas.
 
 ## Animating any uniform
 

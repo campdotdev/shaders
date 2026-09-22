@@ -11,8 +11,18 @@ function simulateMouseAt(x: number, y: number, size = 1000) {
     value: size,
     configurable: true,
   });
-  window.dispatchEvent(new MouseEvent('mousemove', { clientX: x, clientY: y }));
+  window.dispatchEvent(new PointerEvent('pointermove', { clientX: x, clientY: y }));
 }
+
+// A 400 by 300 element at viewport (100, 200), so a pointer at (300, 350)
+// is at its center and one at (600, 350) is past its right edge.
+const fakeElement = {
+  getBoundingClientRect: () => ({ left: 100, top: 200, width: 400, height: 300 }),
+};
+
+const firePointerMove = (clientX: number, clientY: number) => {
+  window.dispatchEvent(new PointerEvent('pointermove', { clientX, clientY }));
+};
 
 describe('CursorInput', () => {
   beforeEach(() => {
@@ -22,6 +32,48 @@ describe('CursorInput', () => {
 
   afterEach(() => {
     document.body.innerHTML = '';
+  });
+
+  describe('the shared raw target', () => {
+    it('follows a window pointermove, normalized to the element rect', () => {
+      const cursor = new CursorInput({ element: fakeElement });
+
+      expect(cursor.getTarget()).toBeNull();
+
+      firePointerMove(300, 350);
+
+      expect(cursor.getTarget()).toEqual([0.5, 0.5]);
+      cursor.dispose();
+    });
+
+    it('keeps following a pointer that runs past the element edge', () => {
+      const cursor = new CursorInput({ element: fakeElement });
+
+      firePointerMove(600, 350);
+
+      expect(cursor.getTarget()).toEqual([1.25, 0.5]);
+      cursor.dispose();
+    });
+
+    it('reports whether the pointer is inside the element rect, and nothing before the first move', () => {
+      const cursor = new CursorInput({ element: fakeElement });
+
+      expect(cursor.isInside()).toBe(false);
+
+      firePointerMove(300, 350);
+      expect(cursor.isInside()).toBe(true);
+
+      firePointerMove(600, 350);
+      expect(cursor.isInside()).toBe(false);
+
+      // The edge itself counts as inside on the near side and outside past
+      // the far side, matching a 0..1 canvas.
+      firePointerMove(100, 200);
+      expect(cursor.isInside()).toBe(true);
+      firePointerMove(500, 500);
+      expect(cursor.isInside()).toBe(false);
+      cursor.dispose();
+    });
   });
 
   it('starts at the configured initial position', () => {
@@ -43,7 +95,7 @@ describe('CursorInput', () => {
       configurable: true,
     });
 
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 500, clientY: 250 }));
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 500, clientY: 250 }));
     cursor.tick(1); // advance one full second; with smoothing 0, value snaps to target instantly
 
     expect(cursor.get()).toEqual([0.5, 0.5]);
@@ -62,7 +114,7 @@ describe('CursorInput', () => {
       configurable: true,
     });
 
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 1000, clientY: 1000 }));
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 1000, clientY: 1000 }));
 
     cursor.tick(0.016); // 16ms tick
     const after1 = cursor.get();
@@ -103,19 +155,11 @@ describe('CursorInput', () => {
   });
 
   it('normalizes against an element rect when `element` is supplied', () => {
-    // Element at viewport (100, 200) sized 400x300. Cursor at viewport (300, 350)
-    // is at element-relative (200, 150) → element-normalized (0.5, 0.5).
-    const fakeElement = {
-      getBoundingClientRect: () => ({
-        left: 100,
-        top: 200,
-        width: 400,
-        height: 300,
-      }),
-    };
+    // Cursor at viewport (300, 350) is at element-relative (200, 150), the
+    // center of the 400 by 300 fake element, so element-normalized (0.5, 0.5).
     const cursor = new CursorInput({ smoothing: 0, element: fakeElement });
 
-    window.dispatchEvent(new MouseEvent('mousemove', { clientX: 300, clientY: 350 }));
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 300, clientY: 350 }));
     cursor.tick(1);
 
     expect(cursor.get()).toEqual([0.5, 0.5]);
@@ -178,18 +222,39 @@ describe('CursorInput', () => {
     cursor.dispose();
   });
 
-  it('calls onMove for each pointer move and not after dispose', () => {
-    const onMove = vi.fn();
-    const cursor = new CursorInput({ onMove });
+  it('tells every move subscriber about each pointer move, and none after dispose', () => {
+    const firstSubscriber = vi.fn();
+    const secondSubscriber = vi.fn();
+    const cursor = new CursorInput();
 
+    cursor.onMove(firstSubscriber);
+    cursor.onMove(secondSubscriber);
     simulateMouseAt(100, 100);
     simulateMouseAt(200, 200);
 
-    expect(onMove).toHaveBeenCalledTimes(2);
+    expect(firstSubscriber).toHaveBeenCalledTimes(2);
+    expect(secondSubscriber).toHaveBeenCalledTimes(2);
 
     cursor.dispose();
     simulateMouseAt(300, 300);
 
-    expect(onMove).toHaveBeenCalledTimes(2);
+    expect(firstSubscriber).toHaveBeenCalledTimes(2);
+    expect(secondSubscriber).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops telling a move subscriber once it unsubscribes, leaving the others', () => {
+    const leaving = vi.fn();
+    const staying = vi.fn();
+    const cursor = new CursorInput();
+    const unsubscribe = cursor.onMove(leaving);
+
+    cursor.onMove(staying);
+    simulateMouseAt(100, 100);
+    unsubscribe();
+    simulateMouseAt(200, 200);
+
+    expect(leaving).toHaveBeenCalledTimes(1);
+    expect(staying).toHaveBeenCalledTimes(2);
+    cursor.dispose();
   });
 });
