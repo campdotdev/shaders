@@ -359,6 +359,12 @@ gh api graphql -f query='
 ' -f threadId="$THREAD_ID"
 ```
 
+### Confirm Codex Review resolution
+
+Codex findings use GitHub review threads. Reply and resolve with the mutations above. Do not post `@codex address that feedback`. That command starts another agent and does not close the thread.
+
+After handling the Codex findings, rerun the Step 3 GraphQL query. Inspect the threads whose first comment author is `chatgpt-codex-connector`. Every fixed or already-fixed Codex thread must return `isResolved: true`. Rejected Codex threads stay unresolved. If a fixed thread remains unresolved, retry the mutation. If the retry fails, report the thread ID and the GitHub error before restoring the starting state.
+
 A finding that exists only in a summary comment has no thread to resolve, so cover it in the summary instead.
 
 Restore the starting state if Step 2 changed it. Whether that is safe depends on the worktree, not on which step you reached, so check the tree first:
