@@ -6,15 +6,6 @@
 // ShaderScene stays readable and this part has its own test. ADR 0003 says
 // why it is a fragment pass rather than a compute shader.
 import {
-  ClampToEdgeWrapping,
-  HalfFloatType,
-  LinearFilter,
-  RenderTarget,
-  RGBAFormat,
-  type Texture,
-  Vector2,
-} from 'three';
-import {
   clamp,
   dot,
   float,
@@ -28,8 +19,18 @@ import {
   vec2,
   vec4,
 } from 'three/tsl';
-import type { WebGPURenderer } from 'three/webgpu';
-import { NodeMaterial, QuadMesh } from 'three/webgpu';
+import {
+  ClampToEdgeWrapping,
+  HalfFloatType,
+  LinearFilter,
+  NodeMaterial,
+  QuadMesh,
+  RenderTarget,
+  RGBAFormat,
+  type Texture,
+  Vector2,
+  type WebGPURenderer,
+} from 'three/webgpu';
 
 import { getReducedMotionTimeScale } from '../reduced-motion/reduced-motion.js';
 
@@ -135,20 +136,38 @@ const VELOCITY_DAMPING = 0.999;
 const HEIGHT_DAMPING = 0.985;
 
 /**
- * How much a travelling wave's amplitude survives each substep. Its height
- * and velocity exchange energy as it oscillates, so its amplitude decays by
- * the geometric mean of their two retention factors rather than by height
- * damping alone. The settle clock uses this slower rate so it cannot clear a
- * ring that is still visible.
- */
-const WAVE_AMPLITUDE_DAMPING = Math.sqrt(HEIGHT_DAMPING * VELOCITY_DAMPING);
-
-/**
- * The amplitude, as a fraction of the injected height, below which the
- * field counts as flat. 1/256 is one 8-bit step, so what is left could not
- * show in the output.
+ * The height amplitude below which the field counts as flat. 1/256 is one
+ * 8-bit step, so what is left could not show in the output.
  */
 const SETTLE_AMPLITUDE = 1 / 256;
+
+/**
+ * How much the slowest wave mode survives one substep on a clamped field.
+ * Clamping copies each edge texel beyond the edge, so the lowest nonuniform
+ * Laplacian mode has eigenvalue -4 sin^2(pi / 2N), where N is the longer
+ * edge. Applying the height/velocity update to that mode gives this 2x2
+ * system's larger eigenvalue. It approaches 1 as the field gets wider, so
+ * using the actual target size keeps the settle model conservative without
+ * making small fields wait for the 512-texel cap.
+ */
+export function slowestModeDamping(longEdge: number): number {
+  if (longEdge <= 1) return HEIGHT_DAMPING;
+
+  const laplacian = -4 * Math.sin(Math.PI / (2 * longEdge)) ** 2;
+  const velocityFromHeight = VELOCITY_DAMPING * WAVE_STIFFNESS * laplacian;
+  const heightFromHeight = HEIGHT_DAMPING * (1 + velocityFromHeight);
+  const trace = heightFromHeight + VELOCITY_DAMPING;
+  const determinant = HEIGHT_DAMPING * VELOCITY_DAMPING;
+  const discriminant = trace ** 2 - 4 * determinant;
+
+  if (discriminant <= 0) return Math.sqrt(determinant);
+
+  const root = Math.sqrt(discriminant);
+  const first = (trace + root) / 2;
+  const second = (trace - root) / 2;
+
+  return Math.max(HEIGHT_DAMPING, Math.abs(first), Math.abs(second));
+}
 
 // ----------------------------------------------------------------------------
 // Strokes
@@ -184,30 +203,27 @@ export function strokeStrength(
 const INJECTION_PER_CANVAS_HEIGHT = 1.2;
 
 /**
- * The deepest dent one stroke may make, in height units. A flick across the
- * whole canvas in one frame would otherwise push a wall of water that takes
- * seconds to die down.
- */
-const MAX_INJECTION = 1;
-
-/**
- * Turns speed into this frame's height push. Multiplying by elapsed time
- * integrates the rate over the frame, so splitting one path across more
- * frames does not make the path stronger.
- */
-export function strokePushForFrame(strength: number, delta: number): number {
-  if (strength <= 0 || delta <= 0) return 0;
-
-  return Math.min(strength * delta * INJECTION_PER_CANVAS_HEIGHT, MAX_INJECTION);
-}
-
-/**
  * Half-width of the stroke's stamp, in canvas heights (1 is the full
  * height). The stamp is a soft brush along the pointer's segment, so a fast
  * sweep lays down a continuous wake rather than a row of dots. Wider makes
  * broader, gentler rings.
  */
 const STROKE_RADIUS = 0.03;
+
+/**
+ * Turns speed into this frame's height push. Short segments integrate their
+ * travel directly. Once a segment is longer than the brush kernel's effective
+ * width, every interior texel should receive only that width's contribution;
+ * otherwise a low-refresh frame pushes the same swept texel harder than a
+ * high-refresh frame. Presence scales both the travel and that limit.
+ */
+export function strokePushForFrame(strength: number, delta: number, presence = 1): number {
+  if (strength <= 0 || delta <= 0 || presence <= 0) return 0;
+
+  const effectiveTravel = Math.min(strength * delta, STROKE_RADIUS * presence);
+
+  return effectiveTravel * INJECTION_PER_CANVAS_HEIGHT;
+}
 
 // ----------------------------------------------------------------------------
 // The wave equation
@@ -418,6 +434,7 @@ export function createWaveField(
   if (!supportsHalfFloatTargets(renderer) || isDeviceLost(renderer)) return inertField;
 
   const size = fieldSize(width, height);
+  let settleDamping = slowestModeDamping(Math.max(size.width, size.height));
   // Two targets: a pass reads `read` and writes `write`, then the two swap.
   // A pass cannot read the texture it is writing, so a feedback loop always
   // needs the pair. Both go null once the field is dropped.
@@ -514,7 +531,7 @@ export function createWaveField(
       if (stamp) drawPass(stampMaterial);
       for (let index = 0; index < substeps; index += 1) {
         drawPass(stepMaterial);
-        settleActivity *= WAVE_AMPLITUDE_DAMPING;
+        settleActivity *= settleDamping;
       }
       // Zero both targets once an unstamped frame finds the model below one
       // 8-bit step. Waiting one frame lets small stroke segments accumulate
@@ -555,7 +572,7 @@ export function createWaveField(
         // is in uv space with its origin at the bottom-left, so y flips.
         uniforms.strokeFrom.value.set(stroke.from[0], 1 - stroke.from[1]);
         uniforms.strokeTo.value.set(stroke.to[0], 1 - stroke.to[1]);
-        const push = strokePushForFrame(strength, delta);
+        const push = strokePushForFrame(strength, delta, stroke.presence);
 
         uniforms.strokePush.value = push;
         settleActivity += push;
@@ -598,6 +615,7 @@ export function createWaveField(
       uniforms.texelWidth.value = 1 / next.width;
       uniforms.texelHeight.value = 1 / next.height;
       uniforms.aspect.value = next.width / next.height;
+      settleDamping = slowestModeDamping(Math.max(next.width, next.height));
     },
 
     dispose() {

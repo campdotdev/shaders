@@ -30,10 +30,10 @@ const FRAMES = 30;
 // as a lighter band and a trough as a darker one.
 const FLAT_COLOR = [0.08, 0.12, 0.22] as const;
 
-// Height units to color units. The stroke dents the surface by about 0.36
-// and the spreading ring is a fraction of that, so 0.5 keeps a crest visible
+// Height units to color units. The stroke dents the surface by about 0.036
+// and the spreading ring is a fraction of that, so 5 keeps a crest visible
 // without clipping the trough to black.
-const HEIGHT_GAIN = 0.5;
+const HEIGHT_GAIN = 5;
 
 function WaveFieldProbe() {
   const shaderContext = useShaderContext();

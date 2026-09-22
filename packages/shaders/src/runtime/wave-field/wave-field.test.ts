@@ -2,12 +2,16 @@
 // asks the renderer to draw and when, never what the water looks like. The
 // look is the dev probe route and its visual spec (apps/docs-tests/visual/
 // wave-field.spec.ts). Modelled on the output-stage tests next door.
-import { HalfFloatType, type RenderTarget } from 'three';
-import type { WebGPURenderer } from 'three/webgpu';
+import { HalfFloatType, type RenderTarget, type WebGPURenderer } from 'three/webgpu';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { setReducedMotionPolicy } from '../reduced-motion/reduced-motion.js';
-import { createWaveField, strokePushForFrame, strokeStrength } from './wave-field.js';
+import {
+  createWaveField,
+  slowestModeDamping,
+  strokePushForFrame,
+  strokeStrength,
+} from './wave-field.js';
 
 // The field only asks the renderer to bind a target and draw one quad into
 // it, and reads the backend to find out whether half-float targets can be
@@ -189,13 +193,26 @@ describe('strokeStrength', () => {
 });
 
 describe('strokePushForFrame', () => {
-  it('integrates the same pointer speed to the same push across frame rates', () => {
-    const speed = 2;
+  it('integrates short segments to the same total push across frame rates', () => {
+    const speed = 1;
     const pushAt60Hz = strokePushForFrame(speed, 1 / 60) * 60;
     const pushAt144Hz = strokePushForFrame(speed, 1 / 144) * 144;
 
     expect(pushAt60Hz).toBeCloseTo(pushAt144Hz);
-    expect(strokePushForFrame(10, 1 / 60)).toBeCloseTo(0.2);
+  });
+
+  it('limits a swept segment to the brush width at every frame rate', () => {
+    const speed = 10;
+
+    expect(strokePushForFrame(speed, 1 / 60)).toBeCloseTo(strokePushForFrame(speed, 1 / 144));
+    expect(strokePushForFrame(speed, 1 / 60)).toBeCloseTo(0.036);
+    expect(strokePushForFrame(speed * 0.5, 1 / 60, 0.5)).toBeCloseTo(0.018);
+  });
+});
+
+describe('slowestModeDamping', () => {
+  it('tracks the lowest clamped-edge mode at the maximum field size', () => {
+    expect(slowestModeDamping(512)).toBeCloseTo(0.997849, 6);
   });
 });
 
@@ -231,13 +248,13 @@ describe('injection', () => {
 
 describe('settling', () => {
   // Energy is never read back, so the settle window is a clock: the time
-  // the combined height and velocity damping takes to shrink a maximum push
-  // below one 8-bit step, about 5.75 s. At 60Hz that is roughly 345 frames
-  // of two substeps. This stroke crosses enough of the wide canvas to hit the
-  // one-unit injection cap.
+  // the slowest clamped-edge mode takes to shrink a brush-width push below
+  // one 8-bit step. On the capped 512-texel edge that is about 8.6 s, or 516
+  // 60Hz frames of two substeps. This stroke crosses enough of the wide
+  // canvas to hit the brush-width injection limit.
   it('steps through the settle window, then clears both targets and rests', () => {
     const renderer = makeRenderer();
-    const field = createWaveField(renderer, 1280, 720);
+    const field = createWaveField(renderer, 4000, 2000);
     const maximumStroke = { from: [0.1, 0.5], to: [0.9, 0.5], presence: 1 } as const;
 
     field.step(1 / 60, maximumStroke);
@@ -248,8 +265,8 @@ describe('settling', () => {
       frames += 1;
     }
 
-    expect(frames).toBeGreaterThan(330);
-    expect(frames).toBeLessThan(360);
+    expect(frames).toBeGreaterThan(500);
+    expect(frames).toBeLessThan(530);
     // One stamp, two substeps per frame, and one clear draw into each target.
     expect(renderer.render).toHaveBeenCalledTimes(1 + 2 * frames + 2);
 
