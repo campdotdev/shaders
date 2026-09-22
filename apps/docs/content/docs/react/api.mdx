@@ -58,7 +58,7 @@ function Plane() {
 
 All three return signal-shaped objects compatible with [animation props](/guides/animation):
 
-- **`useCursor()`** → `CursorSignal` with `value` in `[0, 1]` normalized to the canvas bounding rect.
+- **`useCursor()`** → `CursorSignal` with `value` in `[0, 1]` normalized to the canvas bounding rect, plus a `presence` signal from 0 to 1 that eases in after the pointer enters the canvas and out after it leaves. Calls in one scene share one pointer input. Options: `smoothing`, `initial`, `enabled`, `element`.
 - **`useScroll()`** → `ScrollSignal` with normalized scroll progress for the page.
 - **`useResize()`** → `ResizeSignal` with current canvas dimensions in pixels.
 

@@ -3,6 +3,7 @@ import { createContext } from 'react';
 import type { Camera, Scene } from 'three';
 
 import type {
+  CursorInput,
   FrameScheduler,
   GpuRenderer,
   PostProcessTransform,
@@ -25,6 +26,13 @@ export interface ShaderContextValue {
   scheduler: FrameScheduler;
   registerOverlay: (transform: PostProcessTransform) => () => void;
   registerBaseUvTransform: (transform: UvTransform) => () => void;
+  /**
+   * The scene's one shared cursor input, normalized to its canvas. Created
+   * on the first call and disposed with the scene, so a scene nobody asks
+   * never attaches a pointer listener. Every useCursor call inside the
+   * scene reads this one input and smooths at its own rate.
+   */
+  getCursorInput: () => CursorInput;
 }
 
 export const ShaderContext = createContext<ShaderContextValue | null>(null);

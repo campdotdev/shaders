@@ -1,3 +1,14 @@
+// The pointer as a framework-free Input. It listens on the window for
+// pointermove, normalizes each move to an element's rect, and records the
+// raw target and whether the pointer is inside. It also carries its own
+// smoothed position, so it stands alone as an animation signal outside
+// React, and a ShaderScene owns one that every useCursor call reads raw.
+import { Smoother } from './smoother.js';
+
+// ----------------------------------------------------------------------------
+// Options and constants
+// ----------------------------------------------------------------------------
+
 export type Vector2 = readonly [number, number];
 
 export interface CursorInputOptions {
@@ -28,16 +39,10 @@ export interface CursorInputOptions {
   element?: {
     getBoundingClientRect(): { left: number; top: number; width: number; height: number };
   };
-  /**
-   * Called on every pointer move, as the new target lands and before any
-   * tick smooths toward it. The input itself only changes its position in
-   * `tick`, so a host that stops ticking while nothing moves needs this to
-   * know when to start again. `useCursor` uses it to wake an idle scene.
-   */
-  onMove?: () => void;
 }
 
 type ChangeListener = (value: Vector2) => void;
+type MoveListener = () => void;
 
 /**
  * Gap below which the smoothed position snaps onto its target, per axis, in
@@ -47,16 +52,11 @@ type ChangeListener = (value: Vector2) => void;
  * but can be seen as a final hop on a large canvas; lowering it draws more
  * invisible frames before idling.
  */
-const SETTLE_THRESHOLD = 1e-4;
+export const POSITION_SETTLE_THRESHOLD = 1e-4;
 
-/**
- * Longest stretch of time a wake tick may smooth across, in seconds. The
- * host reports the whole gap since its last frame after a parked scene
- * wakes. Smoothing across that gap would snap the cursor to the pointer.
- * Capping the marked wake tick at one 30fps frame preserves the glide while
- * ordinary slow frames still use their full delta.
- */
-const MAX_WAKE_TICK_DELTA = 1 / 30;
+// ----------------------------------------------------------------------------
+// The input: listen, normalize, smooth, dispose
+// ----------------------------------------------------------------------------
 
 /**
  * Smoothed pointer tracker emitting a normalized (0..1) Vec2 position.
@@ -64,42 +64,44 @@ const MAX_WAKE_TICK_DELTA = 1 / 30;
  * so it composes with Motion's `useTransform` and similar tools.
  */
 export class CursorInput {
-  private value: [number, number];
-  private target: [number, number];
+  private readonly position: Smoother;
+  private target: Vector2 | null = null;
   private targetDirty = false;
-  private readonly smoothing: number;
+  private inside = false;
   private readonly listeners = new Set<ChangeListener>();
+  private readonly moveListeners = new Set<MoveListener>();
   private readonly eventTarget: EventTarget;
   private readonly element: CursorInputOptions['element'];
-  private readonly handleMouseMove: (e: Event) => void;
+  private readonly handlePointerMove: (e: Event) => void;
   private disposed = false;
 
   constructor(opts: CursorInputOptions = {}) {
-    const { smoothing = 0.1, initial = [0.5, 0.5], target, element, onMove } = opts;
+    const { smoothing = 0.1, initial = [0.5, 0.5], target, element } = opts;
 
-    this.smoothing = clamp01(smoothing);
-    this.value = [initial[0], initial[1]];
-    this.target = [initial[0], initial[1]];
+    this.position = new Smoother(initial, {
+      smoothing,
+      settleThreshold: POSITION_SETTLE_THRESHOLD,
+    });
     this.eventTarget = target ?? (typeof window !== 'undefined' ? window : new EventTarget());
     this.element = element;
 
-    this.handleMouseMove = (e: Event) => {
+    this.handlePointerMove = (e: Event) => {
       if (!(e instanceof MouseEvent)) return;
-      const mouseEvent = e;
+      const pointerEvent = e;
 
       if (this.element) {
         // Normalize to 0..1 across the element's bounding rect. Reading the
         // rect on every move is fine — `getBoundingClientRect` is cheap and
-        // mousemove is already throttled to ~60Hz by the browser. The benefit
-        // is tracking the element's position even if it moved/scrolled since
-        // the last frame.
+        // pointermove is already throttled to ~60Hz by the browser. The
+        // benefit is tracking the element's position even if it moved or
+        // scrolled since the last frame.
         const elementRect = this.element.getBoundingClientRect();
         const elementWidth = elementRect.width || 1;
         const elementHeight = elementRect.height || 1;
 
         this.target = [
-          (mouseEvent.clientX - elementRect.left) / elementWidth,
-          (mouseEvent.clientY - elementRect.top) / elementHeight,
+          (pointerEvent.clientX - elementRect.left) / elementWidth,
+          (pointerEvent.clientY - elementRect.top) / elementHeight,
         ];
       } else {
         // Fallback: viewport-normalized. Used when no element is supplied —
@@ -108,18 +110,49 @@ export class CursorInput {
         const viewportWidth = (typeof window !== 'undefined' && window.innerWidth) || 1;
         const viewportHeight = (typeof window !== 'undefined' && window.innerHeight) || 1;
 
-        this.target = [mouseEvent.clientX / viewportWidth, mouseEvent.clientY / viewportHeight];
+        this.target = [pointerEvent.clientX / viewportWidth, pointerEvent.clientY / viewportHeight];
       }
+      // Inside means within the 0..1 frame on both axes: the near edges
+      // count, the far edges do not, the way a 0..1 canvas coordinate does.
+      const [targetX, targetY] = this.target;
+
+      this.inside = targetX >= 0 && targetX < 1 && targetY >= 0 && targetY < 1;
+      this.position.setTarget(this.target);
       this.targetDirty = true;
-      onMove?.();
+      for (const moveListener of this.moveListeners) moveListener();
     };
 
-    this.eventTarget.addEventListener('mousemove', this.handleMouseMove);
+    // pointermove rather than mousemove: it fires for mouse, touch, and pen
+    // alike, and every PointerEvent is a MouseEvent, so the normalization
+    // above reads the same clientX and clientY.
+    this.eventTarget.addEventListener('pointermove', this.handlePointerMove);
   }
 
   /** Current smoothed position. Implements AnimatableSignal protocol. */
   get(): Vector2 {
-    return this.value;
+    const [x, y] = this.position.get();
+
+    return [x ?? 0, y ?? 0];
+  }
+
+  /**
+   * The raw pointer position from the last move, before any smoothing, in
+   * the same 0..1 frame as `get()`. Null until the first move, because no
+   * pointer position is known yet. Consumers that run their own smoothing
+   * read this, and it keeps extrapolating past the edges once the pointer
+   * has left the element.
+   */
+  getTarget(): Vector2 | null {
+    return this.target;
+  }
+
+  /**
+   * Whether the last pointer move landed inside the element rect, or the
+   * viewport when there is no element. False until the first move, so an
+   * effect that multiplies by presence stays invisible on a fresh page.
+   */
+  isInside(): boolean {
+    return this.inside;
   }
 
   /** Subscribe to change events. Returns an unsubscribe function. */
@@ -127,6 +160,21 @@ export class CursorInput {
     this.listeners.add(changeListener);
 
     return () => this.listeners.delete(changeListener);
+  }
+
+  /**
+   * Subscribe to raw pointer moves. The listener runs as the new target
+   * lands, before any tick smooths toward it. The input itself only changes
+   * its position in `tick`, so a host that stops ticking while nothing moves
+   * needs this to know when to start again: `useCursor` uses it to wake an
+   * idle scene. Returns an unsubscribe function.
+   */
+  onMove(moveListener: MoveListener): () => void {
+    this.moveListeners.add(moveListener);
+
+    return () => {
+      this.moveListeners.delete(moveListener);
+    };
   }
 
   /**
@@ -139,39 +187,12 @@ export class CursorInput {
    */
   tick(delta: number, afterIdle = false): boolean {
     if (this.disposed) return false;
-    // Frame-rate-independent smoothing: raising `smoothing` to the power of
-    // elapsed frames-worth-of-time means the same fraction of the remaining
-    // gap closes per real second whether the display runs 30, 60, or 144 fps
-    // — a plain `lerp(value, target, 0.1)` per frame would chase faster on
-    // faster screens.
-    const smoothingDelta = afterIdle ? Math.min(delta, MAX_WAKE_TICK_DELTA) : delta;
-    const frames = smoothingDelta * 60;
-    const factor = this.smoothing === 0 ? 1 : 1 - Math.pow(this.smoothing, frames);
-    const prev0 = this.value[0];
-    const prev1 = this.value[1];
-    const [target0, target1] = this.target;
-    let next0 = lerp(prev0, target0, factor);
-    let next1 = lerp(prev1, target1, factor);
-
-    // The lerp only ever closes a fraction of the gap, so on its own it
-    // reaches the target when the gap drops below float precision: quick at
-    // smoothing 0.1, but many seconds of invisible sub-pixel steps at 0.9.
-    // Once the gap is under a device pixel, land on the target exactly so
-    // the next tick reports settled and the host can stop drawing.
-    if (
-      Math.abs(target0 - next0) < SETTLE_THRESHOLD &&
-      Math.abs(target1 - next1) < SETTLE_THRESHOLD
-    ) {
-      next0 = target0;
-      next1 = target1;
-    }
-    const moved = next0 !== prev0 || next1 !== prev1;
+    const moved = this.position.tick(delta, afterIdle);
 
     if (!moved && !this.targetDirty) return false;
 
-    this.value = [next0, next1];
     this.targetDirty = false;
-    const snapshot: Vector2 = [next0, next1];
+    const snapshot = this.get();
 
     for (const listener of this.listeners) listener(snapshot);
 
@@ -182,11 +203,8 @@ export class CursorInput {
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
-    this.eventTarget.removeEventListener('mousemove', this.handleMouseMove);
+    this.eventTarget.removeEventListener('pointermove', this.handlePointerMove);
     this.listeners.clear();
+    this.moveListeners.clear();
   }
 }
-
-const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
-const lerp = (startValue: number, endValue: number, blendFactor: number) =>
-  startValue + (endValue - startValue) * blendFactor;

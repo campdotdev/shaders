@@ -3,8 +3,9 @@ import type { QuadMesh } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type * as ShadersModule from '../../../engine.js';
-import { createRenderer } from '../../../engine.js';
+import { createRenderer, type CursorInput } from '../../../engine.js';
 import { ShadersError } from '../../errors/shaders-error.js';
+import { useShaderContext } from '../../hooks/use-shader-context/use-shader-context.js';
 import { PosterContext } from '../shader-poster/poster-context.js';
 import { ShaderScene } from './shader-scene.js';
 
@@ -179,6 +180,85 @@ describe('ShaderScene', () => {
     }).not.toThrow();
     await waitFor(() => expect(onError).toHaveBeenCalled());
     expect(queryByTestId('child')).not.toBeInTheDocument();
+  });
+
+  it('hands every child the same cursor input, and detaches it with the scene', async () => {
+    vi.spyOn(window, 'addEventListener');
+    vi.spyOn(window, 'removeEventListener');
+
+    const countPointerListeners = (spy: typeof window.addEventListener) =>
+      vi.mocked(spy).mock.calls.filter(([eventType]) => eventType === 'pointermove').length;
+    const inputs: CursorInput[] = [];
+
+    function Reader() {
+      const shaderContext = useShaderContext();
+
+      inputs.push(shaderContext!.getCursorInput(), shaderContext!.getCursorInput());
+
+      return null;
+    }
+
+    const { unmount } = render(
+      <ShaderScene>
+        <Reader />
+      </ShaderScene>,
+    );
+
+    await waitFor(() => expect(inputs.length).toBeGreaterThanOrEqual(2));
+
+    expect(new Set(inputs).size).toBe(1);
+    expect(countPointerListeners(window.addEventListener)).toBe(1);
+
+    unmount();
+
+    expect(countPointerListeners(window.removeEventListener)).toBe(1);
+  });
+
+  it('gives two scenes two cursor inputs, each normalized to its own canvas', async () => {
+    const inputs: CursorInput[] = [];
+
+    function Reader() {
+      const shaderContext = useShaderContext();
+
+      inputs.push(shaderContext!.getCursorInput());
+
+      return null;
+    }
+
+    const { container } = render(
+      <>
+        <ShaderScene>
+          <Reader />
+        </ShaderScene>
+        <ShaderScene>
+          <Reader />
+        </ShaderScene>
+      </>,
+    );
+
+    await waitFor(() => expect(inputs.length).toBeGreaterThanOrEqual(2));
+
+    const [first, second] = inputs;
+
+    expect(first).toBeDefined();
+    expect(first).not.toBe(second);
+
+    // Two 1000 by 1000 canvases stacked: the first at the top of the page,
+    // the second directly below. One pointer at (500, 1500) is below the
+    // first canvas and at the center of the second.
+    const canvases = container.querySelectorAll('canvas');
+
+    expect(canvases).toHaveLength(2);
+    canvases[0]!.getBoundingClientRect = () =>
+      ({ left: 0, top: 0, width: 1000, height: 1000 }) as DOMRect;
+    canvases[1]!.getBoundingClientRect = () =>
+      ({ left: 0, top: 1000, width: 1000, height: 1000 }) as DOMRect;
+    window.dispatchEvent(new PointerEvent('pointermove', { clientX: 500, clientY: 1500 }));
+
+    expect(first!.getTarget()).toEqual([0.5, 1.5]);
+    expect(first!.isInside()).toBe(false);
+    expect(second!.getTarget()).toEqual([0.5, 0.5]);
+    expect(second!.isInside()).toBe(true);
   });
 
   it('does not fire onError on successful init', async () => {
