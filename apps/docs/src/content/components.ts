@@ -33,6 +33,11 @@ export const COMPONENTS = {
       'A color ramp sweeping clockwise around a center point, with pinwheel repeats and rotation. Completes the CSS gradient trio with LinearGradient and RadialGradient.',
     category: 'gradients',
   },
+  'cursor-ripple': {
+    description:
+      'A water surface over the scene. Drag the pointer and it leaves a wake that spreads, catches light, and settles, bending the image beneath it. Stacks on top of any base component inside <ShaderScene>.',
+    category: 'cursor',
+  },
   dissolve: {
     description:
       'Turns the scene into grain, shown block by block as progress rises. Stacked after a feathered wipe, it grains the soft edge into a ragged one. Stacks on top of any base component inside <ShaderScene>.',

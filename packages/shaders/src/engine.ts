@@ -103,8 +103,12 @@ export type {
   UvTransform,
 } from './runtime/output-stage/output-stage.js';
 
-export { createWaveField } from './runtime/wave-field/wave-field.js';
-export type { WaveField, WaveFieldStroke } from './runtime/wave-field/wave-field.js';
+export { createWaveField, dampingForLifetime } from './runtime/wave-field/wave-field.js';
+export type {
+  WaveField,
+  WaveFieldStroke,
+  WaveFieldTuning,
+} from './runtime/wave-field/wave-field.js';
 
 export { createPauseWatcher } from './runtime/pause-watcher/pause-watcher.js';
 export type { PauseWatcher } from './runtime/pause-watcher/pause-watcher.js';
