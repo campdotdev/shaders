@@ -243,6 +243,29 @@ describe('CursorRipple with a live field', () => {
 });
 
 describe('CursorRipple and reduced motion mid-session', () => {
+  // The scene draws before the drive steps, so the tick that flattens the
+  // water has already drawn the rippled frame. The drive must ask for one
+  // more frame to show the flat one, then stop. decay 0 keeps the water
+  // awake past useCursor's own presence easing, so only the drive asks.
+  it('draws the flattened water once, then lets the scene park', () => {
+    const scene = makeScene(makeRenderer());
+
+    render(<CursorRipple decay={0} />, { wrapper: scene.Wrapper });
+    fireMoveOnWindow(100, 100);
+    scene.tick();
+    fireMoveOnWindow(300, 100);
+    for (let frame = 0; frame < 30; frame += 1) scene.tick();
+
+    setReducedMotionPolicy('paused');
+    scene.scheduler.requestRender.mockClear();
+    scene.tick();
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
+
+    scene.scheduler.requestRender.mockClear();
+    scene.tick();
+    expect(scene.scheduler.requestRender).not.toHaveBeenCalled();
+  });
+
   // Paused is identity even when it lands mid-drag: the water clears, and
   // the Effect stops asking for frames so the scene can park.
   it('clears and stops requesting frames when the policy switches to paused', () => {

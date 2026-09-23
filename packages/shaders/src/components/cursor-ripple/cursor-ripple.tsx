@@ -162,6 +162,12 @@ export function CursorRipple({
   // into fixed-length substeps. The scene renders on demand, so while the
   // field still holds energy this asks for another frame; once it settles
   // the request stops and an otherwise static scene parks.
+  //
+  // The scene's render client runs before this one, so a tick draws the
+  // water as the previous tick left it. The tick that brings the field to
+  // rest (clearing it, or flattening it when motion pauses) has already
+  // drawn the old frame, so it asks for exactly one more to show the flat
+  // water before the scene parks.
   useEffect(() => {
     if (!shaderContext || !field) return;
     const { scheduler } = shaderContext;
@@ -170,10 +176,13 @@ export function CursorRipple({
     const drive = ({ delta }: SchedulerTick) => {
       const current = cursor.get();
       const stroke = deriveStroke(previous, current, cursor.presence.get());
+      const wasAwake = !field.atRest;
 
       previous = current;
       field.step(delta, stroke);
-      if (!field.atRest) scheduler.requestRender();
+      const isAwake = !field.atRest;
+
+      if (wasAwake || isAwake) scheduler.requestRender();
     };
 
     scheduler.add(drive);
