@@ -1,0 +1,56 @@
+# Review settings for the lgtmaybe workflow (.github/workflows/lgtmaybe.yml).
+# The provider and model come from the workflow's inputs. On pull_request_target
+# this file is read from main, so a change here applies after it merges.
+
+# Let a lens read the files a finding depends on, not only the diff.
+mid_review_retrieval: true
+# One call per lens instead of four grouped calls.
+preset: full
+
+# The context-file budget is max_input_tokens / 8. AGENTS.md needs about 12k.
+max_input_tokens: 160000
+
+exclude_paths:
+  - '**/*-snapshots/**'
+  - 'pnpm-lock.yaml'
+
+directory_rules:
+  - instructions: |
+      Review against the repo guide below. Its gotchas describe bugs that have
+      shipped before. Flag a change that repeats one and name the gotcha.
+    context_files: [AGENTS.md]
+
+extra_lenses:
+  - id: render-lifecycle
+    title: Render and GPU lifecycle
+    instructions: |
+      The scene renders on demand and parks when every component is static.
+      Flag any write to a uniform's `.value`, a `Vector2`/`Vector3` `.set()`,
+      or a texture binding that is not followed by
+      `scheduler.requestRender()`, including writes in callbacks that run
+      after a frame has drawn (resize handlers, render-client callbacks).
+      Also flag GPU resources (render targets, textures, materials) that are
+      read after `dispose()`, or replaced without rebinding every node that
+      samples them, and a `NodeMaterial` rebuilt on a prop change that a
+      stable `uniform(...)` could carry.
+    example_diff: |
+      --- a/packages/shaders/src/components/example/shader.tsx
+      +++ b/packages/shaders/src/components/example/shader.tsx
+      @@ -40,2 +40,5 @@
+         useEffect(() => {
+      +    field.onResize(() => {
+      +      fieldTexture.value = field.texture;
+      +    });
+         }, [field]);
+    example_finding:
+      path: packages/shaders/src/components/example/shader.tsx
+      line: 42
+      severity: medium
+      title: Texture rebind never repaints a parked scene
+      body: >-
+        The resize callback swaps the texture after the frame has drawn and
+        requests no new frame, so a static scene keeps sampling the disposed
+        target until something else wakes it.
+      suggestion: |2-
+              fieldTexture.value = field.texture;
+              shaderContext?.scheduler.requestRender();
