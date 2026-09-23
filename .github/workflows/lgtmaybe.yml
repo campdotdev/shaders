@@ -12,18 +12,40 @@ permissions:
   pull-requests: write
 
 jobs:
-  review:
-    # Automatic reviews and paid slash commands are limited to trusted users.
+  authorize:
+    # Only PR events and slash-command comments on PRs reach the permission check.
     if: >-
-      (github.event_name == 'pull_request_target' &&
-       contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.pull_request.author_association)) ||
+      github.event_name == 'pull_request_target' ||
       (github.event.issue.pull_request &&
-       contains(fromJson('["OWNER", "MEMBER", "COLLABORATOR"]'), github.event.comment.author_association) &&
        (contains(github.event.comment.body, '/review') ||
         contains(github.event.comment.body, '/improve') ||
         contains(github.event.comment.body, '/ask') ||
         contains(github.event.comment.body, '/describe') ||
         contains(github.event.comment.body, '/diagram')))
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      allowed: ${{ steps.permission.outputs.allowed }}
+    steps:
+      # Automatic reviews and paid slash commands are limited to users with write
+      # access. author_association can't decide this: it reads CONTRIBUTOR for a
+      # private org member, so every automatic review was skipped.
+      - id: permission
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ACTOR: ${{ github.event.pull_request.user.login || github.event.comment.user.login }}
+        run: |
+          permission=$(gh api "repos/$GITHUB_REPOSITORY/collaborators/$ACTOR/permission" --jq .permission || echo none)
+          echo "$ACTOR has $permission access"
+          if [[ $permission == admin || $permission == write ]]; then
+            echo allowed=true >> "$GITHUB_OUTPUT"
+          fi
+
+  review:
+    needs: authorize
+    if: needs.authorize.outputs.allowed == 'true'
     # Job-level concurrency prevents rejected comments from cancelling reviews.
     concurrency:
       group: lgtmaybe-${{ github.event.pull_request.number || github.event.issue.number }}-${{ github.event_name }}
