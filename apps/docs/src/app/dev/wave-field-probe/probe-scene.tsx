@@ -15,7 +15,7 @@
 // color has nothing for refraction to bend, so what shows is shine alone,
 // which is the ticket's "wake over a flat color" check. The paired spec is
 // visual/cursor-ripple.spec.ts.
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useSyncExternalStore } from 'react';
 
 import {
   createWaveField,
@@ -90,6 +90,12 @@ function WaveFieldProbe() {
 const RIPPLE_REFRACTION = 0.1;
 const RIPPLE_SHINE = 0.4;
 
+// The probe URL is fixed for a capture. The server snapshot keeps hydration
+// consistent if this scene is ever rendered outside its client-only route.
+const subscribeToEffect = () => () => undefined;
+const getEffect = () => new URLSearchParams(window.location.search).get('effect');
+const getServerEffect = () => null;
+
 /** The flat single-color Source the ripple acts on. */
 function FlatSource() {
   const shaderContext = useShaderContext();
@@ -144,8 +150,7 @@ function CursorRippleProbe() {
 }
 
 export default function ProbeScene() {
-  // Read once on the client (this module never renders on the server).
-  const [effect] = useState(() => new URLSearchParams(window.location.search).get('effect'));
+  const effect = useSyncExternalStore(subscribeToEffect, getEffect, getServerEffect);
 
   return (
     // Fixed and stacked above the site header (z-index 1) and the search
