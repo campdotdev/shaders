@@ -57,6 +57,10 @@ jobs:
       - uses: MattJColes/lgtmaybe@32bbe286f13030438503036a1ed8d2e88d80a0e6 # v2.8.5
         with:
           provider: openrouter
-          model: anthropic/claude-sonnet-4-6
+          # Leads lgtmaybe's published benchmark on everyday and large diffs.
+          # Claude models there found the fewest issues.
+          model: qwen/qwen3.8-max
           api_key: ${{ secrets.OPENROUTER_API_KEY }}
+          # Per-call token and timing table in the log, while the config is new.
+          profile: true
           image: ghcr.io/mattjcoles/lgtmaybe@sha256:425d644f1ec2adb73e942bfac47ebac796991fbb37d57fbf81cbeab51adaa545
