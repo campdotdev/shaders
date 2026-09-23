@@ -11,6 +11,14 @@ export type { BlobsProps } from './blobs/blobs.js';
 export { ConicGradient } from './conic-gradient/conic-gradient.js';
 export type { ConicGradientProps } from './conic-gradient/conic-gradient.js';
 
+export { CursorRipple } from './cursor-ripple/cursor-ripple.js';
+export type { CursorRippleProps } from './cursor-ripple/cursor-ripple.js';
+// The shader half is public so a caller can mount it over a wave field it
+// drives itself. The docs' dev probe route does that with a hand-seeded
+// field, for a deterministic capture.
+export { CursorRippleShader } from './cursor-ripple/shader.js';
+export type { CursorRippleShaderProps } from './cursor-ripple/shader.js';
+
 export { Dissolve } from './dissolve/dissolve.js';
 export type { DissolveProps } from './dissolve/dissolve.js';
 

@@ -48,12 +48,36 @@ export interface WaveFieldStroke {
   presence: number;
 }
 
+/**
+ * The water's live parameters: the ones a consumer may change while the
+ * field runs. CursorRipple's `radius` drives the brush and its `decay`
+ * drives both dampings. Each starts at the named constant next to its
+ * definition below.
+ */
+export interface WaveFieldTuning {
+  /** Half-width of the brush, in canvas heights. See STROKE_RADIUS. */
+  strokeRadius: number;
+  /** Height kept per substep, 0..1. See HEIGHT_DAMPING and dampingForLifetime. */
+  heightDamping: number;
+  /**
+   * Velocity kept per substep, 0..1. See VELOCITY_DAMPING. Damp it along
+   * with height to make calm water settle as fast as it looks: height damped
+   * alone leaves a slow velocity mode that keeps the scene awake.
+   */
+  velocityDamping: number;
+}
+
 export interface WaveField {
   /**
    * Advance the water by one rendered frame of `delta` seconds, pushing the
    * stroke into it first when one is given.
    */
   step: (delta: number, stroke?: WaveFieldStroke) => void;
+  /**
+   * Change any live parameter. All are uniform-backed, so a change reaches
+   * the next pass with no rebuild and no reset.
+   */
+  tune: (next: Partial<WaveFieldTuning>) => void;
   /**
    * The most recently written height field, with height in R and velocity
    * in G, in uv space (bottom-left origin, so `texture(field.texture)`
@@ -65,6 +89,10 @@ export interface WaveField {
   readonly atRest: boolean;
   /** Match a new canvas size. Recreates both targets and loses the field. */
   resize: (width: number, height: number) => void;
+  /** Observe a target replacement before the next scene draw. */
+  onResize: (listener: () => void) => () => void;
+  /** Observe a lost device or failed draw that leaves the field inert. */
+  onInert: (listener: () => void) => () => void;
   /** Release both targets. The renderer stays the caller's to dispose. */
   dispose: () => void;
 }
@@ -136,6 +164,17 @@ const VELOCITY_DAMPING = 0.999;
 const HEIGHT_DAMPING = 0.985;
 
 /**
+ * The height-damping fraction that gives a dent a lifetime of `seconds`,
+ * the time it takes to shrink to 1/e (about 37%) of its size on a flat field.
+ * The fraction is applied once per substep, so this is the substep as a
+ * share of the lifetime, exponentiated. Consumers that expose a calmness
+ * dial in seconds go through here so they never need to know the substep.
+ */
+export function dampingForLifetime(seconds: number): number {
+  return Math.exp(-SUBSTEP_SECONDS / Math.max(seconds, SUBSTEP_SECONDS));
+}
+
+/**
  * The height amplitude below which the field counts as flat. 1/256 is one
  * 8-bit step, so what is left could not show in the output.
  */
@@ -150,14 +189,18 @@ const SETTLE_AMPLITUDE = 1 / 256;
  * using the actual target size keeps the settle model conservative without
  * making small fields wait for the 512-texel cap.
  */
-export function slowestModeDamping(longEdge: number): number {
-  if (longEdge <= 1) return HEIGHT_DAMPING;
+export function slowestModeDamping(
+  longEdge: number,
+  heightDamping = HEIGHT_DAMPING,
+  velocityDamping = VELOCITY_DAMPING,
+): number {
+  if (longEdge <= 1) return heightDamping;
 
   const laplacian = -4 * Math.sin(Math.PI / (2 * longEdge)) ** 2;
-  const velocityFromHeight = VELOCITY_DAMPING * WAVE_STIFFNESS * laplacian;
-  const heightFromHeight = HEIGHT_DAMPING * (1 + velocityFromHeight);
-  const trace = heightFromHeight + VELOCITY_DAMPING;
-  const determinant = HEIGHT_DAMPING * VELOCITY_DAMPING;
+  const velocityFromHeight = velocityDamping * WAVE_STIFFNESS * laplacian;
+  const heightFromHeight = heightDamping * (1 + velocityFromHeight);
+  const trace = heightFromHeight + velocityDamping;
+  const determinant = heightDamping * velocityDamping;
   const discriminant = trace ** 2 - 4 * determinant;
 
   if (discriminant <= 0) return Math.sqrt(determinant);
@@ -166,7 +209,7 @@ export function slowestModeDamping(longEdge: number): number {
   const first = (trace + root) / 2;
   const second = (trace - root) / 2;
 
-  return Math.max(HEIGHT_DAMPING, Math.abs(first), Math.abs(second));
+  return Math.max(heightDamping, Math.abs(first), Math.abs(second));
 }
 
 // ----------------------------------------------------------------------------
@@ -215,12 +258,18 @@ const STROKE_RADIUS = 0.03;
  * travel directly. Once a segment is longer than the brush kernel's effective
  * width, every interior texel should receive only that width's contribution;
  * otherwise a low-refresh frame pushes the same swept texel harder than a
- * high-refresh frame. Presence scales both the travel and that limit.
+ * high-refresh frame. Presence scales both the travel and that limit. The
+ * brush width is the field's live `strokeRadius`.
  */
-export function strokePushForFrame(strength: number, delta: number, presence = 1): number {
+export function strokePushForFrame(
+  strength: number,
+  delta: number,
+  presence = 1,
+  strokeRadius = STROKE_RADIUS,
+): number {
   if (strength <= 0 || delta <= 0 || presence <= 0) return 0;
 
-  const effectiveTravel = Math.min(strength * delta, STROKE_RADIUS * presence);
+  const effectiveTravel = Math.min(strength * delta, strokeRadius * presence);
 
   return effectiveTravel * INJECTION_PER_CANVAS_HEIGHT;
 }
@@ -323,6 +372,10 @@ interface FieldUniforms {
   strokeTo: ReturnType<typeof uniform<Vector2>>;
   /** Height the stroke pushes, already scaled and capped. */
   strokePush: ReturnType<typeof uniform<number>>;
+  /** The live parameters (WaveFieldTuning), written by `tune`. */
+  heightDamping: ReturnType<typeof uniform<number>>;
+  velocityDamping: ReturnType<typeof uniform<number>>;
+  strokeRadius: ReturnType<typeof uniform<number>>;
 }
 
 /**
@@ -332,7 +385,13 @@ interface FieldUniforms {
  * the texture it is drawing into, so the state lives in two targets that
  * trade roles.
  */
-function buildStepNode({ previous, texelWidth, texelHeight }: FieldUniforms) {
+function buildStepNode({
+  previous,
+  texelWidth,
+  texelHeight,
+  heightDamping,
+  velocityDamping,
+}: FieldUniforms) {
   // The quad's uv() is this texel's 0..1 position in the field.
   const here = uv();
 
@@ -360,8 +419,8 @@ function buildStepNode({ previous, texelWidth, texelHeight }: FieldUniforms) {
   // flat offset return to zero; its Laplacian would otherwise stay zero and
   // leave the offset forever. The two retention factors together keep the
   // travelling wave's decay close to the original velocity-only damping.
-  const nextVelocity = velocity.add(laplacian.mul(WAVE_STIFFNESS)).mul(VELOCITY_DAMPING);
-  const nextHeight = height.add(nextVelocity).mul(HEIGHT_DAMPING);
+  const nextVelocity = velocity.add(laplacian.mul(WAVE_STIFFNESS)).mul(velocityDamping);
+  const nextHeight = height.add(nextVelocity).mul(heightDamping);
 
   return vec4(nextHeight, nextVelocity, float(0), float(1));
 }
@@ -373,7 +432,14 @@ function buildStepNode({ previous, texelWidth, texelHeight }: FieldUniforms) {
  * step so a stroke lands once per frame whatever the frame rate, and a
  * frame too short for a substep still leaves its segment in the water.
  */
-function buildStampNode({ previous, aspect, strokeFrom, strokeTo, strokePush }: FieldUniforms) {
+function buildStampNode({
+  previous,
+  aspect,
+  strokeFrom,
+  strokeTo,
+  strokePush,
+  strokeRadius,
+}: FieldUniforms) {
   const here = uv();
   const state = previous.uv(here);
 
@@ -398,7 +464,7 @@ function buildStampNode({ previous, aspect, strokeFrom, strokeTo, strokePush }: 
 
   // A soft brush: full push at the segment, fading to nothing at the radius.
   // smoothstep needs its edges in rising order, so oneMinus() flips it.
-  const brush = oneMinus(smoothstep(0, STROKE_RADIUS, distance));
+  const brush = oneMinus(smoothstep(0, strokeRadius, distance));
 
   // The push presses the surface down. The step's crest then rebounds
   // through the neighbours, which is the ring.
@@ -418,9 +484,14 @@ const inertField: WaveField = {
   },
   texture: null,
   atRest: true,
+  tune: () => {
+    // Nothing to tune.
+  },
   resize: () => {
     // No targets to recreate.
   },
+  onResize: () => () => undefined,
+  onInert: () => () => undefined,
   dispose: () => {
     // Nothing was allocated.
   },
@@ -434,7 +505,9 @@ export function createWaveField(
   if (!supportsHalfFloatTargets(renderer) || isDeviceLost(renderer)) return inertField;
 
   const size = fieldSize(width, height);
-  let settleDamping = slowestModeDamping(Math.max(size.width, size.height));
+  // Kept so `tune` can re-derive the settle model without a resize.
+  let fieldLongEdge = Math.max(size.width, size.height);
+  let settleDamping = slowestModeDamping(fieldLongEdge);
   // Two targets: a pass reads `read` and writes `write`, then the two swap.
   // A pass cannot read the texture it is writing, so a feedback loop always
   // needs the pair. Both go null once the field is dropped.
@@ -452,7 +525,15 @@ export function createWaveField(
     strokeFrom: uniform(new Vector2()),
     strokeTo: uniform(new Vector2()),
     strokePush: uniform(0),
+    heightDamping: uniform(HEIGHT_DAMPING),
+    velocityDamping: uniform(VELOCITY_DAMPING),
+    strokeRadius: uniform(STROKE_RADIUS),
   };
+
+  // The settle model's per-substep decay for the field's current size and
+  // dampings. Re-derived whenever either changes.
+  const currentSettleDamping = () =>
+    slowestModeDamping(fieldLongEdge, uniforms.heightDamping.value, uniforms.velocityDamping.value);
 
   const stepMaterial = new NodeMaterial();
 
@@ -483,6 +564,8 @@ export function createWaveField(
   // fixed substep applies the travelling wave's combined amplitude damping.
   // Small strokes therefore settle sooner than a maximum-strength stroke.
   let settleActivity = 0;
+  const resizeListeners = new Set<() => void>();
+  const inertListeners = new Set<() => void>();
 
   // Release both targets and forget the simulation state. Nothing recreates the
   // targets but resize, so from every other caller this is the field going
@@ -498,11 +581,17 @@ export function createWaveField(
     carry = 0;
   };
 
+  const becomeInert = () => {
+    if (read === null) return;
+    dropField();
+    for (const listener of inertListeners) listener();
+  };
+
   // Whether the field still has targets. A lost device is noticed here, on
   // whichever call comes first, so `texture` goes null without waiting for
   // a step: three only flags the loss and turns later draws into no-ops.
   const alive = () => {
-    if (read !== null && isDeviceLost(renderer)) dropField();
+    if (read !== null && isDeviceLost(renderer)) becomeInert();
 
     return read !== null && write !== null;
   };
@@ -523,8 +612,9 @@ export function createWaveField(
   // in a finally block so a draw that throws (a lost device) cannot leave
   // the scene rendering into the field's target. The throw itself is
   // swallowed and the field dropped, so a scheduler client stepping it
-  // never breaks the scene's frame loop.
-  const runPasses = (stamp: boolean, substeps: number) => {
+  // never breaks the scene's frame loop. `flatten` clears the field whatever
+  // the settle model says.
+  const runPasses = (stamp: boolean, substeps: number, flatten = false) => {
     const previousTarget = renderer.getRenderTarget();
 
     try {
@@ -537,14 +627,14 @@ export function createWaveField(
       // 8-bit step. Waiting one frame lets small stroke segments accumulate
       // instead of clearing each one on a high-refresh display. A stale texel
       // would still seed the next stroke's ring, so two draws cover both.
-      if (!stamp && settleActivity <= SETTLE_AMPLITUDE) {
+      if (flatten || (!stamp && settleActivity <= SETTLE_AMPLITUDE)) {
         drawPass(clearMaterial);
         drawPass(clearMaterial);
         settleActivity = 0;
         carry = 0;
       }
     } catch {
-      dropField();
+      becomeInert();
     } finally {
       renderer.setRenderTarget(previousTarget);
     }
@@ -554,9 +644,19 @@ export function createWaveField(
     step(delta, stroke) {
       if (!alive()) return;
       // The shared reduced-motion factor scales the simulated time, so the
-      // "slow" policy makes the wave crawl and "paused" freezes the field:
-      // no substeps, and the stroke below never lands either.
-      const scaledDelta = delta * getReducedMotionTimeScale().value;
+      // "slow" policy makes the wave crawl. "Paused" (a factor of 0) takes
+      // no substeps and no stroke, and it flattens any water left from
+      // before the pause: frozen ripples would still show, and a field
+      // that never settles would keep its caller asking for frames.
+      const timeScale = getReducedMotionTimeScale().value;
+
+      if (timeScale <= 0) {
+        if (settleActivity > 0) runPasses(false, 0, true);
+
+        return;
+      }
+
+      const scaledDelta = delta * timeScale;
 
       if (scaledDelta <= 0) return;
 
@@ -572,7 +672,12 @@ export function createWaveField(
         // is in uv space with its origin at the bottom-left, so y flips.
         uniforms.strokeFrom.value.set(stroke.from[0], 1 - stroke.from[1]);
         uniforms.strokeTo.value.set(stroke.to[0], 1 - stroke.to[1]);
-        const push = strokePushForFrame(strength, delta, stroke.presence);
+        const push = strokePushForFrame(
+          strength,
+          delta,
+          stroke.presence,
+          uniforms.strokeRadius.value,
+        );
 
         uniforms.strokePush.value = push;
         settleActivity += push;
@@ -591,6 +696,16 @@ export function createWaveField(
       if (stamp || substeps > 0 || settleActivity <= SETTLE_AMPLITUDE) {
         runPasses(stamp, substeps);
       }
+    },
+
+    // Every value reaches the next pass through its uniform, and the step
+    // reads the brush radius back for the push cap. The dampings set how
+    // fast the slowest wave dies, so the settle model follows them.
+    tune({ strokeRadius, heightDamping, velocityDamping }) {
+      if (strokeRadius !== undefined) uniforms.strokeRadius.value = strokeRadius;
+      if (heightDamping !== undefined) uniforms.heightDamping.value = heightDamping;
+      if (velocityDamping !== undefined) uniforms.velocityDamping.value = velocityDamping;
+      settleDamping = currentSettleDamping();
     },
 
     get texture() {
@@ -615,11 +730,27 @@ export function createWaveField(
       uniforms.texelWidth.value = 1 / next.width;
       uniforms.texelHeight.value = 1 / next.height;
       uniforms.aspect.value = next.width / next.height;
-      settleDamping = slowestModeDamping(Math.max(next.width, next.height));
+      fieldLongEdge = Math.max(next.width, next.height);
+      settleDamping = currentSettleDamping();
+      for (const listener of resizeListeners) listener();
+    },
+
+    onResize(listener) {
+      resizeListeners.add(listener);
+
+      return () => resizeListeners.delete(listener);
+    },
+
+    onInert(listener) {
+      inertListeners.add(listener);
+
+      return () => inertListeners.delete(listener);
     },
 
     dispose() {
       dropField();
+      resizeListeners.clear();
+      inertListeners.clear();
       stepMaterial.dispose();
       stampMaterial.dispose();
       clearMaterial.dispose();

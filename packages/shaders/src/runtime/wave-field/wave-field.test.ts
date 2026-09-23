@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { setReducedMotionPolicy } from '../reduced-motion/reduced-motion.js';
 import {
   createWaveField,
+  dampingForLifetime,
   slowestModeDamping,
   strokePushForFrame,
   strokeStrength,
@@ -103,6 +104,22 @@ describe('createWaveField', () => {
 
     expect(field.texture).not.toBe(before);
     expect(field.texture?.image).toMatchObject({ width: 160, height: 90 });
+  });
+
+  it('notifies followers after replacing the targets, before the next draw', () => {
+    const field = createWaveField(makeRenderer(), 1280, 720);
+    const before = field.texture;
+    const observed: Array<typeof before> = [];
+    const unsubscribe = field.onResize(() => observed.push(field.texture));
+
+    field.resize(640, 360);
+
+    expect(observed).toEqual([field.texture]);
+    expect(observed[0]).not.toBe(before);
+    unsubscribe();
+    field.resize(320, 180);
+    expect(observed).toHaveLength(1);
+    field.dispose();
   });
 });
 
@@ -213,6 +230,67 @@ describe('strokePushForFrame', () => {
 describe('slowestModeDamping', () => {
   it('tracks the lowest clamped-edge mode at the maximum field size', () => {
     expect(slowestModeDamping(512)).toBeCloseTo(0.997849, 6);
+  });
+});
+
+describe('dampingForLifetime', () => {
+  // A lifetime is the time a dent takes to shrink to 1/e of its size, so
+  // one lifetime's worth of 1/120 s substeps multiplies height by 1/e.
+  it('shrinks a dent to 1/e over one lifetime of substeps', () => {
+    const seconds = 0.5;
+
+    expect(dampingForLifetime(seconds) ** (seconds * 120)).toBeCloseTo(Math.exp(-1), 6);
+  });
+
+  it('keeps more height per substep for a longer lifetime', () => {
+    expect(dampingForLifetime(5)).toBeGreaterThan(dampingForLifetime(0.05));
+  });
+});
+
+describe('tune', () => {
+  const settleFrames = (field: ReturnType<typeof createWaveField>) => {
+    field.step(1 / 60, movingStroke);
+    let frames = 0;
+
+    while (!field.atRest && frames < 2000) {
+      field.step(1 / 60);
+      frames += 1;
+    }
+
+    return frames;
+  };
+
+  // Stronger damping on both is calmer water, and the settle model follows
+  // it, so the scene idles sooner.
+  it('settles sooner after both dampings are lowered', () => {
+    const calm = createWaveField(makeRenderer(), 1280, 720);
+    const damping = dampingForLifetime(0.05);
+
+    calm.tune({ heightDamping: damping, velocityDamping: damping });
+
+    expect(settleFrames(calm)).toBeLessThan(
+      settleFrames(createWaveField(makeRenderer(), 1280, 720)),
+    );
+  });
+
+  it('draws nothing and changes nothing on its own', () => {
+    const renderer = makeRenderer();
+    const field = createWaveField(renderer, 1280, 720);
+    const before = field.texture;
+
+    field.tune({ strokeRadius: 0.1, heightDamping: 0.95, velocityDamping: 0.95 });
+
+    expect(renderer.render).not.toHaveBeenCalled();
+    expect(field.texture).toBe(before);
+    expect(field.atRest).toBe(true);
+  });
+
+  // The push cap is the brush width, so a wider brush lets a sweep push
+  // deeper.
+  it('widens the push cap with strokeRadius', () => {
+    expect(strokePushForFrame(10, 1 / 60, 1, 0.06)).toBeGreaterThan(
+      strokePushForFrame(10, 1 / 60, 1, 0.03),
+    );
   });
 });
 
@@ -362,6 +440,23 @@ describe('settling', () => {
 });
 
 describe('lost device', () => {
+  it('notifies once when the field becomes inert, but not when resized or disposed', () => {
+    const renderer = makeRenderer();
+    const field = createWaveField(renderer, 1280, 720);
+    const onInert = vi.fn();
+
+    field.onInert(onInert);
+    field.resize(640, 360);
+    expect(onInert).not.toHaveBeenCalled();
+
+    loseDevice(renderer);
+    field.step(1 / 60);
+    field.step(1 / 60);
+    expect(onInert).toHaveBeenCalledTimes(1);
+    field.dispose();
+    expect(onInert).toHaveBeenCalledTimes(1);
+  });
+
   // three's renderer turns every draw into a silent no-op once the device is
   // lost, and flags it on a private field. The field goes inert on either
   // signal: the flag, or a draw that throws.
@@ -395,6 +490,9 @@ describe('lost device', () => {
   it('goes inert when a draw throws, without rethrowing, and restores the bound target', () => {
     const renderer = makeRenderer();
     const field = createWaveField(renderer, 1280, 720);
+    const onInert = vi.fn();
+
+    field.onInert(onInert);
 
     vi.mocked(renderer.render).mockImplementationOnce(() => {
       throw new Error('device lost');
@@ -403,6 +501,7 @@ describe('lost device', () => {
     expect(() => field.step(1 / 60, movingStroke)).not.toThrow();
     expect(field.texture).toBeNull();
     expect(renderer.getRenderTarget()).toBeNull();
+    expect(onInert).toHaveBeenCalledTimes(1);
 
     field.step(1 / 60, movingStroke);
     expect(renderer.render).toHaveBeenCalledTimes(1);
@@ -445,6 +544,27 @@ describe('reduced motion', () => {
 
     expect(renderer.render).not.toHaveBeenCalled();
     expect(field.atRest).toBe(true);
+  });
+
+  // Switching to "paused" while water is moving must not freeze the ripple
+  // on screen: paused is identity. The field clears both targets once and
+  // reports at rest, so the caller stops asking for frames.
+  it('clears a moving field and rests when the factor drops to 0', () => {
+    const renderer = makeRenderer();
+    const field = createWaveField(renderer, 1280, 720);
+
+    field.step(1 / 60, movingStroke);
+    expect(field.atRest).toBe(false);
+    const drawsBeforePause = vi.mocked(renderer.render).mock.calls.length;
+
+    setReducedMotionPolicy('paused');
+    field.step(1 / 60);
+
+    expect(field.atRest).toBe(true);
+    expect(renderer.render).toHaveBeenCalledTimes(drawsBeforePause + 2);
+
+    field.step(1 / 60);
+    expect(renderer.render).toHaveBeenCalledTimes(drawsBeforePause + 2);
   });
 
   // "slow" is 0.3: four substeps of frame time become 1.2, so one runs,

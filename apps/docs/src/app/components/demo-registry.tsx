@@ -11,6 +11,7 @@ import type { ComponentType, ReactNode } from 'react';
 import { AuroraIsland } from './aurora/demo';
 import { BlobsIsland } from './blobs/demo';
 import { ConicGradientIsland } from './conic-gradient/demo';
+import { CursorRippleIsland } from './cursor-ripple/demo';
 import { DissolveIsland } from './dissolve/demo';
 import { DitherIsland } from './dither/demo';
 import { DotFieldIsland } from './dot-field/demo';
@@ -87,6 +88,23 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     usageSnippet: `<ShaderScene>
   <ConicGradient />
 </ShaderScene>`,
+  },
+  'cursor-ripple': {
+    Island: CursorRippleIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <CursorRipple />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        Cursor Ripple is a cursor effect: stack it after any components inside a{' '}
+        <code>&lt;ShaderScene&gt;</code> and dragging the pointer across the canvas leaves a wake
+        that spreads and settles. Its refraction bends the image the Sources beneath it drew, and
+        not the output of an Effect mounted before it. Mode 1 only: it needs the scene&apos;s output
+        stage.
+      </>
+    ),
   },
   dissolve: {
     Island: DissolveIsland,
