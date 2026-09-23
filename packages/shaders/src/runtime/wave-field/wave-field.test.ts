@@ -105,6 +105,22 @@ describe('createWaveField', () => {
     expect(field.texture).not.toBe(before);
     expect(field.texture?.image).toMatchObject({ width: 160, height: 90 });
   });
+
+  it('notifies followers after replacing the targets, before the next draw', () => {
+    const field = createWaveField(makeRenderer(), 1280, 720);
+    const before = field.texture;
+    const observed: Array<typeof before> = [];
+    const unsubscribe = field.onResize(() => observed.push(field.texture));
+
+    field.resize(640, 360);
+
+    expect(observed).toEqual([field.texture]);
+    expect(observed[0]).not.toBe(before);
+    unsubscribe();
+    field.resize(320, 180);
+    expect(observed).toHaveLength(1);
+    field.dispose();
+  });
 });
 
 // A stroke that moves with the pointer over the canvas. Every step test that

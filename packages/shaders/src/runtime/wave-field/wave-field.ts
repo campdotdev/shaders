@@ -89,6 +89,8 @@ export interface WaveField {
   readonly atRest: boolean;
   /** Match a new canvas size. Recreates both targets and loses the field. */
   resize: (width: number, height: number) => void;
+  /** Observe a target replacement before the next scene draw. */
+  onResize: (listener: () => void) => () => void;
   /** Release both targets. The renderer stays the caller's to dispose. */
   dispose: () => void;
 }
@@ -486,6 +488,7 @@ const inertField: WaveField = {
   resize: () => {
     // No targets to recreate.
   },
+  onResize: () => () => undefined,
   dispose: () => {
     // Nothing was allocated.
   },
@@ -558,6 +561,7 @@ export function createWaveField(
   // fixed substep applies the travelling wave's combined amplitude damping.
   // Small strokes therefore settle sooner than a maximum-strength stroke.
   let settleActivity = 0;
+  const resizeListeners = new Set<() => void>();
 
   // Release both targets and forget the simulation state. Nothing recreates the
   // targets but resize, so from every other caller this is the field going
@@ -718,10 +722,18 @@ export function createWaveField(
       uniforms.aspect.value = next.width / next.height;
       fieldLongEdge = Math.max(next.width, next.height);
       settleDamping = currentSettleDamping();
+      for (const listener of resizeListeners) listener();
+    },
+
+    onResize(listener) {
+      resizeListeners.add(listener);
+
+      return () => resizeListeners.delete(listener);
     },
 
     dispose() {
       dropField();
+      resizeListeners.clear();
       stepMaterial.dispose();
       stampMaterial.dispose();
       clearMaterial.dispose();

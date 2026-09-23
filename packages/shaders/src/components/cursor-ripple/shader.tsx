@@ -123,7 +123,8 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
   // Follow the field every frame: the wrapper steps it inside the scene's
   // scheduler tick, so this runs after that step (it is added later) and
   // the next frame's draw samples the freshest state. A resize recreates
-  // the field's targets at a new size, and the texel size follows.
+  // the targets between ticks, so bind the new texture and texel size
+  // synchronously before the queued resize frame draws.
   useEffect(() => {
     if (!shaderContext || fieldTexture === null) return;
 
@@ -141,8 +142,15 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
 
     follow();
     shaderContext.scheduler.add(follow);
+    const stopFollowingResizes = field.onResize(() => {
+      follow();
+      shaderContext.scheduler.requestRender();
+    });
 
-    return () => shaderContext.scheduler.remove(follow);
+    return () => {
+      stopFollowingResizes();
+      shaderContext.scheduler.remove(follow);
+    };
   }, [shaderContext, field, fieldTexture, texelWidth, texelHeight]);
 
   // ---------------------------------------------

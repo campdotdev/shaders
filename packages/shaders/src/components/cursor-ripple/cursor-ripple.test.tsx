@@ -4,7 +4,7 @@ import { render } from '@testing-library/react';
 import type { RenderTarget, WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CursorInput, setReducedMotionPolicy } from '../../engine.js';
+import { createWaveField, CursorInput, setReducedMotionPolicy } from '../../engine.js';
 import {
   type PostProcessTransform,
   ShaderContext,
@@ -13,6 +13,7 @@ import {
 } from '../../react/context/shader-context.js';
 import type { SchedulerClient } from '../../runtime/frame-scheduler/frame-scheduler.js';
 import { CursorRipple } from './cursor-ripple.js';
+import { CursorRippleShader } from './shader.js';
 
 // What the Effect asks of the scene, never what the water looks like. The
 // look is the demo page and the probe route's visual spec. A stub renderer
@@ -121,6 +122,24 @@ const fireMoveOnWindow = (clientX: number, clientY: number) => {
 };
 
 describe('CursorRipple with a live field', () => {
+  it('requests a redraw as soon as a resize replaces the field texture', () => {
+    const renderer = makeRenderer();
+    const scene = makeScene(renderer);
+    const field = createWaveField(renderer, 1280, 720);
+    const { unmount } = render(<CursorRippleShader field={field} refraction={0.1} shine={0.4} />, {
+      wrapper: scene.Wrapper,
+    });
+
+    scene.scheduler.requestRender.mockClear();
+    field.resize(640, 360);
+
+    // No scheduler tick has run: the resize notification itself must wake
+    // the parked scene rather than relying on the post-draw follower.
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
+    unmount();
+    field.dispose();
+  });
+
   it('registers one base-pass warp and one overlay, and unregisters both on unmount', () => {
     const scene = makeScene(makeRenderer());
     const { unmount } = render(<CursorRipple />, { wrapper: scene.Wrapper });
