@@ -598,8 +598,9 @@ export function createWaveField(
   // in a finally block so a draw that throws (a lost device) cannot leave
   // the scene rendering into the field's target. The throw itself is
   // swallowed and the field dropped, so a scheduler client stepping it
-  // never breaks the scene's frame loop.
-  const runPasses = (stamp: boolean, substeps: number) => {
+  // never breaks the scene's frame loop. `flatten` clears the field whatever
+  // the settle model says.
+  const runPasses = (stamp: boolean, substeps: number, flatten = false) => {
     const previousTarget = renderer.getRenderTarget();
 
     try {
@@ -612,7 +613,7 @@ export function createWaveField(
       // 8-bit step. Waiting one frame lets small stroke segments accumulate
       // instead of clearing each one on a high-refresh display. A stale texel
       // would still seed the next stroke's ring, so two draws cover both.
-      if (!stamp && settleActivity <= SETTLE_AMPLITUDE) {
+      if (flatten || (!stamp && settleActivity <= SETTLE_AMPLITUDE)) {
         drawPass(clearMaterial);
         drawPass(clearMaterial);
         settleActivity = 0;
@@ -629,9 +630,19 @@ export function createWaveField(
     step(delta, stroke) {
       if (!alive()) return;
       // The shared reduced-motion factor scales the simulated time, so the
-      // "slow" policy makes the wave crawl and "paused" freezes the field:
-      // no substeps, and the stroke below never lands either.
-      const scaledDelta = delta * getReducedMotionTimeScale().value;
+      // "slow" policy makes the wave crawl. "Paused" (a factor of 0) takes
+      // no substeps and no stroke, and it flattens any water left from
+      // before the pause: frozen ripples would still show, and a field
+      // that never settles would keep its caller asking for frames.
+      const timeScale = getReducedMotionTimeScale().value;
+
+      if (timeScale <= 0) {
+        if (settleActivity > 0) runPasses(false, 0, true);
+
+        return;
+      }
+
+      const scaledDelta = delta * timeScale;
 
       if (scaledDelta <= 0) return;
 

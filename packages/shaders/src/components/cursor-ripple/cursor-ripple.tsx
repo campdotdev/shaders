@@ -187,22 +187,22 @@ export function CursorRipple({
   // are memoized on the field so the subscriptions below survive re-renders.
   const writeRadius = useMemo(
     () =>
-      field
+      field && shaderContext
         ? (next: number) => {
             field.tune({ strokeRadius: next });
-            shaderContext?.scheduler.requestRender();
+            shaderContext.scheduler.requestRender();
           }
         : null,
     [field, shaderContext],
   );
   const writeDecay = useMemo(
     () =>
-      field
+      field && shaderContext
         ? (next: number) => {
             const damping = dampingForDecay(next);
 
             field.tune({ heightDamping: damping, velocityDamping: damping });
-            shaderContext?.scheduler.requestRender();
+            shaderContext.scheduler.requestRender();
           }
         : null,
     [field, shaderContext],

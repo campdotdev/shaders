@@ -28,9 +28,9 @@ describe('dampingForDecay', () => {
     expect(dampingForDecay(0.5)).toBeGreaterThan(dampingForDecay(1));
   });
 
-  // A 0.14 s lifetime, the feel found at the rig gate, sits near 0.78 on
-  // the dial, leaving headroom above the working default of 0.75.
-  it('puts a 0.14 s lifetime near 0.78 on the dial', () => {
-    expect(lifetimeForDecay(0.78)).toBeCloseTo(0.14, 1);
+  // The shipped default of 0.75 gives a ring about 0.16 s of life, with the
+  // top quarter of the dial left for tighter wakes.
+  it('gives the default decay a ring life of about 0.16 s', () => {
+    expect(lifetimeForDecay(0.75)).toBeCloseTo(0.158, 3);
   });
 });

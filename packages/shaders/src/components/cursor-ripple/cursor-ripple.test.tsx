@@ -242,6 +242,73 @@ describe('CursorRipple with a live field', () => {
   });
 });
 
+describe('CursorRipple and reduced motion mid-session', () => {
+  // Paused is identity even when it lands mid-drag: the water clears, and
+  // the Effect stops asking for frames so the scene can park.
+  it('clears and stops requesting frames when the policy switches to paused', () => {
+    const renderer = makeRenderer();
+    const scene = makeScene(renderer);
+
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    fireMoveOnWindow(100, 100);
+    scene.tick();
+    fireMoveOnWindow(300, 100);
+    scene.tick();
+    expect(scene.scheduler.requestRender).toHaveBeenCalled();
+
+    setReducedMotionPolicy('paused');
+    // The first paused tick flattens the water. useCursor's presence easing
+    // asks for frames of its own for about 15 frames, so let it land before
+    // checking that nothing keeps the scene awake.
+    for (let frame = 0; frame < 30; frame += 1) scene.tick();
+    const drawsWhilePaused = vi.mocked(renderer.render).mock.calls.length;
+
+    scene.scheduler.requestRender.mockClear();
+    scene.tick();
+
+    expect(scene.scheduler.requestRender).not.toHaveBeenCalled();
+    expect(renderer.render).toHaveBeenCalledTimes(drawsWhilePaused);
+  });
+
+  // "slow" scales the simulated time to 0.3, so the same drag and the same
+  // real time run fewer substeps than at full speed.
+  it('runs fewer substeps under the slow policy', () => {
+    const drawsFor = (policy: 'off' | 'slow') => {
+      setReducedMotionPolicy(policy);
+      const renderer = makeRenderer();
+      const scene = makeScene(renderer);
+      const { unmount } = render(<CursorRipple />, { wrapper: scene.Wrapper });
+
+      fireMoveOnWindow(100, 100);
+      scene.tick();
+      fireMoveOnWindow(300, 100);
+      for (let frame = 0; frame < 10; frame += 1) scene.tick();
+      unmount();
+
+      return vi.mocked(renderer.render).mock.calls.length;
+    };
+
+    expect(drawsFor('slow')).toBeLessThan(drawsFor('off'));
+  });
+});
+
+describe('CursorRipple props', () => {
+  // refraction and shine ride stable uniforms, so new values re-register
+  // neither the warp nor the overlay, and the output chain never rebuilds.
+  it('re-registers nothing when refraction or shine change', () => {
+    const scene = makeScene(makeRenderer());
+    const { rerender } = render(<CursorRipple refraction={0.1} shine={0.4} />, {
+      wrapper: scene.Wrapper,
+    });
+
+    rerender(<CursorRipple refraction={0.3} shine={0.9} />);
+
+    expect(scene.uvTransforms).toHaveLength(1);
+    expect(scene.overlays).toHaveLength(1);
+    expect(scene.unregisters).toEqual({ uv: 0, overlay: 0 });
+  });
+});
+
 describe('CursorRipple with an inert field', () => {
   // ADR 0003: without float render targets the Effect registers nothing,
   // renders as identity, never throws, and says so once in development.

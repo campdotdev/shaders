@@ -509,6 +509,27 @@ describe('reduced motion', () => {
     expect(field.atRest).toBe(true);
   });
 
+  // Switching to "paused" while water is moving must not freeze the ripple
+  // on screen: paused is identity. The field clears both targets once and
+  // reports at rest, so the caller stops asking for frames.
+  it('clears a moving field and rests when the factor drops to 0', () => {
+    const renderer = makeRenderer();
+    const field = createWaveField(renderer, 1280, 720);
+
+    field.step(1 / 60, movingStroke);
+    expect(field.atRest).toBe(false);
+    const drawsBeforePause = vi.mocked(renderer.render).mock.calls.length;
+
+    setReducedMotionPolicy('paused');
+    field.step(1 / 60);
+
+    expect(field.atRest).toBe(true);
+    expect(renderer.render).toHaveBeenCalledTimes(drawsBeforePause + 2);
+
+    field.step(1 / 60);
+    expect(renderer.render).toHaveBeenCalledTimes(drawsBeforePause + 2);
+  });
+
   // "slow" is 0.3: four substeps of frame time become 1.2, so one runs,
   // after the stroke's own stamp pass.
   it('scales the simulated time by the factor', () => {
