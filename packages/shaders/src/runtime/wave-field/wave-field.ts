@@ -91,6 +91,8 @@ export interface WaveField {
   resize: (width: number, height: number) => void;
   /** Observe a target replacement before the next scene draw. */
   onResize: (listener: () => void) => () => void;
+  /** Observe a lost device or failed draw that leaves the field inert. */
+  onInert: (listener: () => void) => () => void;
   /** Release both targets. The renderer stays the caller's to dispose. */
   dispose: () => void;
 }
@@ -489,6 +491,7 @@ const inertField: WaveField = {
     // No targets to recreate.
   },
   onResize: () => () => undefined,
+  onInert: () => () => undefined,
   dispose: () => {
     // Nothing was allocated.
   },
@@ -562,6 +565,7 @@ export function createWaveField(
   // Small strokes therefore settle sooner than a maximum-strength stroke.
   let settleActivity = 0;
   const resizeListeners = new Set<() => void>();
+  const inertListeners = new Set<() => void>();
 
   // Release both targets and forget the simulation state. Nothing recreates the
   // targets but resize, so from every other caller this is the field going
@@ -577,11 +581,17 @@ export function createWaveField(
     carry = 0;
   };
 
+  const becomeInert = () => {
+    if (read === null) return;
+    dropField();
+    for (const listener of inertListeners) listener();
+  };
+
   // Whether the field still has targets. A lost device is noticed here, on
   // whichever call comes first, so `texture` goes null without waiting for
   // a step: three only flags the loss and turns later draws into no-ops.
   const alive = () => {
-    if (read !== null && isDeviceLost(renderer)) dropField();
+    if (read !== null && isDeviceLost(renderer)) becomeInert();
 
     return read !== null && write !== null;
   };
@@ -624,7 +634,7 @@ export function createWaveField(
         carry = 0;
       }
     } catch {
-      dropField();
+      becomeInert();
     } finally {
       renderer.setRenderTarget(previousTarget);
     }
@@ -731,9 +741,16 @@ export function createWaveField(
       return () => resizeListeners.delete(listener);
     },
 
+    onInert(listener) {
+      inertListeners.add(listener);
+
+      return () => inertListeners.delete(listener);
+    },
+
     dispose() {
       dropField();
       resizeListeners.clear();
+      inertListeners.clear();
       stepMaterial.dispose();
       stampMaterial.dispose();
       clearMaterial.dispose();

@@ -148,9 +148,16 @@ export function CursorRipple({
     const created = createWaveField(renderer, size.width, size.height);
 
     if (created.texture === null) warnInertOnce();
+
+    const stopOnInert = created.onInert(() => {
+      warnInertOnce();
+      setField(null);
+    });
+
     setField(created);
 
     return () => {
+      stopOnInert();
       created.dispose();
       setField(null);
     };

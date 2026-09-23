@@ -440,6 +440,23 @@ describe('settling', () => {
 });
 
 describe('lost device', () => {
+  it('notifies once when the field becomes inert, but not when resized or disposed', () => {
+    const renderer = makeRenderer();
+    const field = createWaveField(renderer, 1280, 720);
+    const onInert = vi.fn();
+
+    field.onInert(onInert);
+    field.resize(640, 360);
+    expect(onInert).not.toHaveBeenCalled();
+
+    loseDevice(renderer);
+    field.step(1 / 60);
+    field.step(1 / 60);
+    expect(onInert).toHaveBeenCalledTimes(1);
+    field.dispose();
+    expect(onInert).toHaveBeenCalledTimes(1);
+  });
+
   // three's renderer turns every draw into a silent no-op once the device is
   // lost, and flags it on a private field. The field goes inert on either
   // signal: the flag, or a draw that throws.
@@ -473,6 +490,9 @@ describe('lost device', () => {
   it('goes inert when a draw throws, without rethrowing, and restores the bound target', () => {
     const renderer = makeRenderer();
     const field = createWaveField(renderer, 1280, 720);
+    const onInert = vi.fn();
+
+    field.onInert(onInert);
 
     vi.mocked(renderer.render).mockImplementationOnce(() => {
       throw new Error('device lost');
@@ -481,6 +501,7 @@ describe('lost device', () => {
     expect(() => field.step(1 / 60, movingStroke)).not.toThrow();
     expect(field.texture).toBeNull();
     expect(renderer.getRenderTarget()).toBeNull();
+    expect(onInert).toHaveBeenCalledTimes(1);
 
     field.step(1 / 60, movingStroke);
     expect(renderer.render).toHaveBeenCalledTimes(1);

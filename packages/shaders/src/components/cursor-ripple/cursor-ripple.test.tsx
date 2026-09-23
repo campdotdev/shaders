@@ -1,6 +1,6 @@
 import { type ReactNode, StrictMode } from 'react';
 
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import type { RenderTarget, WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -377,5 +377,19 @@ describe('CursorRipple with an inert field', () => {
     expect(renderer.render).not.toHaveBeenCalled();
     expect(console.warn).toHaveBeenCalledTimes(1);
     expect(vi.mocked(console.warn).mock.calls[0]?.[0]).toContain('[CursorRipple]');
+  });
+
+  it('unregisters the shader when a running field loses its device', () => {
+    const renderer = makeRenderer();
+    const scene = makeScene(renderer);
+
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    expect(scene.uvTransforms).toHaveLength(1);
+    expect(scene.overlays).toHaveLength(1);
+
+    (renderer as unknown as { _isDeviceLost: boolean })._isDeviceLost = true;
+    act(() => scene.tick());
+
+    expect(scene.unregisters).toEqual({ uv: 1, overlay: 1 });
   });
 });
