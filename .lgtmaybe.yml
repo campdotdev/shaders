@@ -9,6 +9,9 @@ preset: full
 
 # The context-file budget is max_input_tokens / 8. AGENTS.md needs about 12k.
 max_input_tokens: 160000
+# Qwen reasons before it answers, and reasoning counts against this ceiling.
+# At the 16,384 default, 6 of 10 lenses ran out before writing an answer.
+max_tokens: 49152
 
 exclude_paths:
   - '**/*-snapshots/**'
