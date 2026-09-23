@@ -24,6 +24,7 @@ import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-a
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
+import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { type Palette, parseColor } from '../shared/color.js';
 
 export interface MeshGradientShaderProps {
@@ -120,6 +121,14 @@ export function MeshGradientShader({
   const phaseUniform = useAnimatableSpeed(speed);
   const frequencyUniform = useAnimatableUniform<number>(frequency);
   const amplitudeUniform = useAnimatableUniform<number>(amplitude);
+
+  // The render-on-demand vote: always animated. The swirl below reads
+  // elapsedTime whatever `speed` and `cycleSpeed` are, so no prop value
+  // holds the image still. Without a vote, any static voter in the same
+  // scene (CursorRipple, a LinearGradient at speed 0) parked the scene and
+  // froze the gradient until something woke it. SHA-165 gates the swirl so
+  // a still configuration can vote static.
+  useStaticSceneHint(false);
 
   // Canvas aspect ratio (width/height), used to un-stretch the rotation
   // below. useAspectUniform keeps it current across resizes.
