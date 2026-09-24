@@ -61,8 +61,9 @@ export interface BlobsProps {
   shading?: AnimatableProp<number>;
   /**
    * Center of the roam region, 0..1 across the canvas; `[0.5, 0.5]` is the
-   * canvas middle. Defaults to `[0.5, 0.5]`. Pass `"cursor"` to follow the
-   * pointer. Accepts a static value or an animation signal.
+   * canvas middle and `[0, 0]` is the top-left corner. Defaults to
+   * `[0.5, 0.5]`. Pass `"cursor"` to follow the pointer. Accepts a static
+   * value or an animation signal.
    */
   center?: PositionProp;
   /**

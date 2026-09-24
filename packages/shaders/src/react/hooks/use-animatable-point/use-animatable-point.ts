@@ -7,7 +7,7 @@
 // incoming pairs into it. It also resolves the `'cursor'` shorthand every
 // position prop accepts, by reading the scene's shared cursor through
 // useCursor.
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import { uniform } from 'three/tsl';
 import { Vector2 } from 'three/webgpu';
@@ -46,7 +46,10 @@ export function useAnimatablePoint(
   const shaderContext = useShaderContext();
   const scheduler = shaderContext?.scheduler;
   const screenOrigin = options?.screenOrigin ?? false;
-  const cursorInitial = options?.cursorInitial ?? CANVAS_CENTER;
+  // Captured once, as the option promises. useCursor re-reads `initial`
+  // whenever its effect re-runs, such as on a switch to 'cursor', so a
+  // per-render value would move the start after mount.
+  const [cursorInitial] = useState(() => options?.cursorInitial ?? CANVAS_CENTER);
 
   // The `'cursor'` shorthand. Hooks cannot be called conditionally, so every
   // point calls useCursor, and `enabled` is what keeps it free: a tuple or a

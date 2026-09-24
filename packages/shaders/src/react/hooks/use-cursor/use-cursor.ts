@@ -264,5 +264,8 @@ export function useCursor(opts: CursorOptions = {}): CursorSignal {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shaderContext, enabled, element, target]);
 
-  return signal ?? stubSignal;
+  // The cleanup's setSignal(null) lands one render late, so the render that
+  // turns tracking off would still hand back the live signal's last position.
+  // Checking `enabled` here returns the stub from that render on.
+  return enabled ? (signal ?? stubSignal) : stubSignal;
 }

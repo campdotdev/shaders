@@ -330,6 +330,23 @@ describe('useAnimatablePoint', () => {
       scene.dispose();
     });
 
+    // cursorInitial is documented as read once, at mount. A later value must
+    // not move the start, even when the point switches to 'cursor' after it.
+    it('keeps the mount-time cursorInitial when the option changes later', () => {
+      const scene = makeScene();
+      const { result, rerender } = renderHook(
+        ({ v, cursorInitial }: { v: PositionProp; cursorInitial: readonly [number, number] }) =>
+          useAnimatablePoint(v, { cursorInitial }),
+        { wrapper: scene.Wrapper, initialProps: { v: [0.25, 0.75], cursorInitial: [0.5, 2] } },
+      );
+
+      rerender({ v: [0.25, 0.75], cursorInitial: [0.5, 3] });
+      rerender({ v: 'cursor', cursorInitial: [0.5, 3] });
+      settle();
+      expect(read(result.current).y).toBe(2);
+      scene.dispose();
+    });
+
     it('converts the cursor with screenOrigin like any other pair', () => {
       const scene = makeScene();
       const { result } = renderHook(() => useAnimatablePoint('cursor', { screenOrigin: true }), {

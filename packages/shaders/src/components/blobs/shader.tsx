@@ -82,8 +82,8 @@ export interface BlobsShaderProps {
   shading: AnimatableProp<number>;
   /**
    * Center of the roam region, 0..1 across the canvas; `[0.5, 0.5]` is the
-   * canvas middle. Pass `"cursor"` to follow the pointer. Accepts a static
-   * value or an animation signal.
+   * canvas middle and `[0, 0]` is the top-left corner. Pass `"cursor"` to
+   * follow the pointer. Accepts a static value or an animation signal.
    */
   center: PositionProp;
   /**
@@ -139,8 +139,12 @@ export function BlobsShader({
   const phaseUniform = useAnimatableSpeed(speed);
 
   // The center tuple rides a Vector2 uniform (vignette's pattern), so a new
-  // array with the same coordinates never rebuilds anything.
-  const centerUniform = useAnimatablePoint(center);
+  // array with the same coordinates never rebuilds anything. screenOrigin
+  // converts the prop's screen-style coordinates (y grows downward, [0, 0]
+  // top-left, like CSS and the cursor) into this mesh's uv space, where v
+  // grows upward. Without it, a `"cursor"` center would move the blobs down
+  // as the pointer moves up.
+  const centerUniform = useAnimatablePoint(center, { screenOrigin: true });
 
   // The seed rides a scalar uniform; the primitive hashes it into every
   // per-blob random stream, so consecutive seeds produce unrelated layouts.
