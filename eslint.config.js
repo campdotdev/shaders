@@ -23,9 +23,6 @@ export default defineConfig([
     'apps/docs/out/**',
     'apps/docs/.next/**',
     'apps/docs/next-env.d.ts',
-    'apps/editor/out/**',
-    'apps/editor/.next/**',
-    'apps/editor/next-env.d.ts',
     'packages/shaders-cli/src/test-fixtures/**',
   ]),
   {
@@ -59,7 +56,6 @@ export default defineConfig([
           allowDefaultProject: [
             'packages/shaders/*.config.{ts,mts,cts}',
             'apps/docs/vitest.config.ts',
-            'apps/editor/vitest.config.ts',
             'packages/*/posters/*.{ts,tsx}',
           ],
           defaultProject: 'tsconfig.eslint.json',

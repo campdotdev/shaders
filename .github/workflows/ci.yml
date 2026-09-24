@@ -43,10 +43,9 @@ jobs:
   # The visual job must render in the exact container snap.sh bakes the Linux
   # baselines in. A bare ubuntu runner ships a different font set, so fontconfig
   # resolves the `monospace` fallback to a different font (the image lands on
-  # WenQuanYi Zen Hei Mono) and every DOM baseline that contains text drifts —
-  # the editor card shots caught this. Resolve the image tag from the
-  # apps/docs-tests entry in the lockfile so a @playwright/test bump can never
-  # drift from the container version.
+  # WenQuanYi Zen Hei Mono) and every DOM baseline that contains text drifts.
+  # Resolve the image tag from the apps/docs-tests entry in the lockfile so a
+  # @playwright/test bump can never drift from the container version.
   playwright-version:
     name: Resolve Playwright container
     runs-on: ubuntu-latest
