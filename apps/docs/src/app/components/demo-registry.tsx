@@ -12,6 +12,7 @@ import { AuroraIsland } from './aurora/demo';
 import { BlobsIsland } from './blobs/demo';
 import { ConicGradientIsland } from './conic-gradient/demo';
 import { CursorRippleIsland } from './cursor-ripple/demo';
+import { CursorSpotlightIsland } from './cursor-spotlight/demo';
 import { DissolveIsland } from './dissolve/demo';
 import { DitherIsland } from './dither/demo';
 import { DotFieldIsland } from './dot-field/demo';
@@ -103,6 +104,23 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
         that spreads and settles. Its refraction bends the image the Sources beneath it drew, and
         not the output of an Effect mounted before it. Mode 1 only: it needs the scene&apos;s output
         stage.
+      </>
+    ),
+  },
+  'cursor-spotlight': {
+    Island: CursorSpotlightIsland,
+    copySiblings: ['<RadialGradient />'],
+    usageSnippet: `<ShaderScene>
+  <RadialGradient />
+  <CursorSpotlight />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        Cursor Spotlight is a cursor effect: stack it after any components inside a{' '}
+        <code>&lt;ShaderScene&gt;</code> and the area around the pointer brightens over whatever
+        they drew. It stays invisible until the pointer first moves over the canvas, fades out when
+        the pointer leaves, and lets the scene idle while the pointer is still. Mode 1 only: it
+        needs the scene&apos;s output stage.
       </>
     ),
   },
