@@ -27,8 +27,7 @@ export function Hero() {
 ```
 apps/
 ├── docs/           # @shaders/docs — Next.js docs site
-├── docs-tests/     # @shaders/docs-tests — Playwright visual and a11y suites
-└── editor/         # @shaders/editor — node editor over the same primitives
+└── docs-tests/     # @shaders/docs-tests — Playwright visual and a11y suites
 
 packages/
 ├── shaders/        # @camp-dev/shaders — components, React binding, TSL primitives, renderer
@@ -50,7 +49,6 @@ pnpm lint
 pnpm test        # Vitest across the workspace
 
 pnpm dev:docs    # docs site at http://localhost:3000
-pnpm dev:editor  # node editor at http://localhost:3005
 ```
 
 ## Releasing
