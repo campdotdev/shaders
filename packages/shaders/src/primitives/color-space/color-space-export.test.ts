@@ -1,15 +1,16 @@
-import { vec3 } from 'three/tsl';
 import { describe, expect, it } from 'vitest';
 
-// Import through the barrel deliberately: this test pins the PUBLIC export,
+// Import through the barrel deliberately: this test pins the PUBLIC surface,
 // via a relative path so it runs against src without a build.
-import { colorSpaces } from '../../index.js';
+import * as shaders from '../../index.js';
 
-describe('colorSpaces export', () => {
-  it('exposes oklab fromLinear/toLinear converters', () => {
-    const coords = colorSpaces.oklab.fromLinear(vec3(0.5, 0.2, 0.8));
+describe('color-space public surface', () => {
+  it('keeps the colorSpaces registry internal', () => {
+    expect(shaders).not.toHaveProperty('colorSpaces');
+  });
 
-    expect(coords).toBeDefined();
-    expect(colorSpaces.oklab.toLinear(coords)).toBeDefined();
+  it('still exports the primitives that blend through it', () => {
+    expect(shaders.colorRamp).toBeTypeOf('function');
+    expect(shaders.mixColor).toBeTypeOf('function');
   });
 });

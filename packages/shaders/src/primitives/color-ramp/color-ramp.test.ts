@@ -1,6 +1,7 @@
-import { uniform, uv, vec3 } from 'three/tsl';
-import { describe, expect, it } from 'vitest';
+import { uv, vec3 } from 'three/tsl';
+import { describe, expect, expectTypeOf, it } from 'vitest';
 
+import type { ColorRampStop } from './color-ramp.js';
 import { colorRamp } from './color-ramp.js';
 
 const stops = [
@@ -19,35 +20,10 @@ describe('colorRamp colorSpace', () => {
   });
 });
 
-describe('colorRamp node-driven stops', () => {
-  it('builds when positions are uniforms', () => {
-    const nodeStops = [
-      { color: vec3(1, 0, 0), position: uniform(0) },
-      { color: vec3(0, 1, 0), position: uniform(0.5) },
-      { color: vec3(0, 0, 1), position: uniform(1) },
-    ];
-
-    expect(colorRamp(uv().x, nodeStops)).toBeDefined();
-    expect(colorRamp(uv().x, nodeStops, 'oklab')).toBeDefined();
-    expect(colorRamp(uv().x, nodeStops, 'oklch')).toBeDefined();
-  });
-
-  it('builds when colors are node-valued (uniform channels)', () => {
-    const nodeColorStops = [
-      { color: vec3(uniform(1), uniform(0), uniform(0)), position: 0 },
-      { color: vec3(uniform(0), uniform(0), uniform(1)), position: 1 },
-    ];
-
-    expect(colorRamp(uv().x, nodeColorStops, 'oklab')).toBeDefined();
-  });
-
-  it('builds when literal and node positions mix', () => {
-    const mixedStops = [
-      { color: vec3(1, 0, 0), position: 0 },
-      { color: vec3(0, 0, 1), position: uniform(0.6) },
-      { color: vec3(1, 1, 1), position: 1 },
-    ];
-
-    expect(colorRamp(uv().x, mixedStops)).toBeDefined();
+describe('colorRamp stop positions', () => {
+  // Compile-time check: tsc fails this file if a position widens past a
+  // literal number. Positions are baked into the shader at build time.
+  it('takes literal numbers only', () => {
+    expectTypeOf<ColorRampStop['position']>().toEqualTypeOf<number>();
   });
 });

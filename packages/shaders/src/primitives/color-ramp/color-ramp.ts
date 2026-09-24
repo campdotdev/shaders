@@ -1,5 +1,5 @@
 import type { ShaderNodeObject } from 'three/tsl';
-import { clamp, div, greaterThan, max, select, step, sub, vec3 } from 'three/tsl';
+import { clamp, div, sub, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import { hueArcInterpolators } from '../color-space/hue.js';
@@ -20,13 +20,11 @@ import type { ColorSpace, HueInterpolation } from '../color-space/types.js';
 export type TSLNode = Node | ShaderNodeObject<Node>;
 
 export interface ColorRampStop {
-  /** Color expressed as a TSL node (typically `vec3(r,g,b)`), in linear-sRGB.
-      May be node-driven (e.g. `uniform(new Color(...))`) — the ramp then
-      re-mixes on the GPU without a rebuild when the value changes. */
+  /** Color expressed as a TSL node (typically `vec3(r,g,b)`), in linear-sRGB. */
   color: TSLNode;
-  /** Position 0..1 along the ramp — a literal number (baked into the shader)
-      or a float node (e.g. `uniform(0.5)`) for live-driven ramps. */
-  position: number | TSLNode;
+  /** Position along the ramp, from 0 at the start to 1 at the end. A literal
+      number, baked into the shader. */
+  position: number;
 }
 
 /**
@@ -43,9 +41,8 @@ export interface ColorRampStop {
  *
  * Falls back to the first/last stop's color outside the bracketing positions.
  *
- * Stops may be literal (numbers / literal vec3s — baked into the shader, the
- * default for every registry component) or node-driven (uniforms), in which
- * case the GPU re-mixes live and only the stop COUNT remains structural.
+ * Positions are baked into the shader, so moving a stop means rebuilding the
+ * material.
  */
 export function colorRamp(
   t: TSLNode,
@@ -76,30 +73,12 @@ export function colorRamp(
     if (previousStop === undefined || next === undefined) continue;
 
     const previousPosition = previousStop.position;
-    const nextPosition = next.position;
-    let localT: TSLNode;
+    const positionSpan = next.position - previousPosition;
 
-    if (typeof previousPosition === 'number' && typeof nextPosition === 'number') {
-      // Both positions are build-time literals: keep the original math, so
-      // every existing baked-ramp caller compiles the identical shader.
-      const positionSpan = nextPosition - previousPosition;
+    // A zero or negative span has nothing to blend across, so skip the stop.
+    if (positionSpan <= 0) continue;
 
-      if (positionSpan <= 0) continue;
-      localT = clamp(div(sub(t, previousPosition), positionSpan), 0, 1);
-    } else {
-      // A node-driven position: the span is only known on the GPU, so it
-      // can't be inspected (or skipped) at build time. Positive spans get
-      // ordinary localize-and-clamp; the floor only keeps that divide
-      // finite when stops coincide or cross, where the select discards it
-      // for a true hard step at the previous position — t below it holds
-      // the earlier stop, t at or above it takes the next (step() is 1
-      // when its second argument reaches the edge).
-      const span = sub(nextPosition, previousPosition);
-      const blended = clamp(div(sub(t, previousPosition), max(span, 1e-4)), 0, 1);
-
-      localT = select(greaterThan(span, 0), blended, step(previousPosition, t));
-    }
-
+    const localT = clamp(div(sub(t, previousPosition), positionSpan), 0, 1);
     const nextCoords = space.fromLinear(vec3(next.color));
 
     resultCoords = space.lerp(resultCoords, nextCoords, localT, hue);
