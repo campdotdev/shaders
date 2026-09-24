@@ -14,7 +14,18 @@ const TARGET_FRAME = 2;
 
 const QUERY_FLAG = 'visualTest';
 const REDUCED_MOTION_FLAG = 'reducedMotion';
+const POINTER_FLAG = 'pointer';
 const VALID_POLICIES: ReducedMotionPolicy[] = ['auto', 'off', 'slow', 'paused'];
+
+/**
+ * How long the scene keeps drawing after the spec's pointer move before the
+ * capture, in milliseconds. A cursor effect eases its position and presence
+ * toward the pointer and then lands exactly on both, so once settled the
+ * frame no longer depends on how many frames ran. The slowest consumer, the
+ * spotlight at 0.65 smoothing, lands on the pointer in about a third of a
+ * second; a full second leaves room for SwiftShader's slow frames on CI.
+ */
+const POINTER_SETTLE_MS = 1000;
 
 const isReducedMotionPolicy = (policyName: string): policyName is ReducedMotionPolicy =>
   (VALID_POLICIES as readonly string[]).includes(policyName);
@@ -22,6 +33,11 @@ const isReducedMotionPolicy = (policyName: string): policyName is ReducedMotionP
 declare global {
   interface Window {
     __shadersTestReady?: boolean;
+    /**
+     * Set under `?pointer=1` once the scene's cursor listeners are attached,
+     * so a spec knows its pointer move will be heard.
+     */
+    __shadersTestAwaitingPointer?: boolean;
   }
 }
 
@@ -43,8 +59,40 @@ function useVisualTestPause(): void {
 
     const releaseAnimated = ctx.scheduler.setIdle(false);
 
+    // Pointer mode, for cursor effects: the capture waits for the spec to
+    // move the pointer, then for the effect to settle on it. VisualTestPause
+    // loads through next/dynamic and mounts as the scene's last child, so
+    // any useCursor in the scene has already attached its window listener
+    // by the time the flag goes up.
+    const awaitPointer = params.get(POINTER_FLAG) === '1';
+    let pointerMovedAt: number | null = null;
+    const onPointerMove = () => {
+      pointerMovedAt ??= performance.now();
+    };
+
+    if (awaitPointer) {
+      window.addEventListener('pointermove', onPointerMove);
+      window.__shadersTestAwaitingPointer = true;
+    }
+
+    // ShaderScene's render client runs before any cursor hook in a tick, so
+    // a tick draws the cursor as the previous tick left it. The first tick
+    // past the settle time can therefore land the cursor after drawing the
+    // old one, so pointer mode waits for the next tick, whose render is the
+    // first guaranteed to show the landed cursor.
+    let settleTimeSeen = false;
+    const settled = (now: number) => {
+      if (!awaitPointer) return true;
+      if (pointerMovedAt === null || now - pointerMovedAt < POINTER_SETTLE_MS) return false;
+      const drawnSinceSettle = settleTimeSeen;
+
+      settleTimeSeen = true;
+
+      return drawnSinceSettle;
+    };
+
     let frame = 0;
-    const client = (_tick: SchedulerTick) => {
+    const client = ({ now }: SchedulerTick) => {
       frame += 1;
 
       if (frame === 1) {
@@ -59,7 +107,7 @@ function useVisualTestPause(): void {
         return;
       }
 
-      if (frame > TARGET_FRAME) {
+      if (frame > TARGET_FRAME && settled(now)) {
         ctx.scheduler.remove(client);
         ctx.scheduler.pause();
         window.__shadersTestReady = true;
@@ -70,6 +118,8 @@ function useVisualTestPause(): void {
 
     return () => {
       ctx.scheduler.remove(client);
+      window.removeEventListener('pointermove', onPointerMove);
+      if (awaitPointer) window.__shadersTestAwaitingPointer = false;
       releaseAnimated();
     };
   }, [ctx]);

@@ -27,7 +27,7 @@ A component's response that grows toward a point and needs the component's own i
 _Avoid_: Interaction, cursor ability, hover effect
 
 **Cursor effect**:
-An Effect driven by the cursor Input that works over any scene with no help from the components beneath it. CursorRipple is one. CursorSpotlight is planned.
+An Effect driven by the cursor Input that works over any scene with no help from the components beneath it. CursorSpotlight and CursorRipple are two.
 _Avoid_: Interactive shader, cursor component, drop-in
 
 ### Pattern components

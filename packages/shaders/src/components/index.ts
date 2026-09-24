@@ -19,6 +19,9 @@ export type { CursorRippleProps } from './cursor-ripple/cursor-ripple.js';
 export { CursorRippleShader } from './cursor-ripple/shader.js';
 export type { CursorRippleShaderProps } from './cursor-ripple/shader.js';
 
+export { CursorSpotlight } from './cursor-spotlight/cursor-spotlight.js';
+export type { CursorSpotlightProps } from './cursor-spotlight/cursor-spotlight.js';
+
 export { Dissolve } from './dissolve/dissolve.js';
 export type { DissolveProps } from './dissolve/dissolve.js';
 
