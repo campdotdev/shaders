@@ -55,6 +55,23 @@
   --scroll-fade-start-inset: calc(2 * var(--spacing-4) + var(--spacing-8) + var(--border-width-1));
 }
 
+/* The panel's hairline, drawn over the scroll area rather than as a border
+   on the panel, the same overlay the nav dropdown uses for the same kind of
+   box (docs-nav-dropdown.module.css). A border on the panel scrolls away
+   with it, sits under the edge fades, and lost its corners to the sticky
+   title row's square ones. A border on this root instead would add 2px to a
+   box whose max-height the viewport inherits, so the viewport would overflow
+   it. Above the fades so the line shows through them. */
+.scroller::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-xl);
+  pointer-events: none;
+}
+
 /* The element that scrolls. It carries the panel's corner radius so the
    panel's sticky title row, which sits at this element's top edge once the
    panel has scrolled, is clipped to the same rounded corners the panel
