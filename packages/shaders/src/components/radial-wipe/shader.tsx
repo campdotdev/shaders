@@ -11,6 +11,7 @@ import { length, max, smoothstep, uv, vec2, vec3, vec4 } from 'three/tsl';
 import {
   type AnimatableProp,
   isSignal,
+  type PositionProp,
 } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -26,11 +27,11 @@ export interface RadialWipeShaderProps {
    */
   progress: AnimatableProp<number>;
   /**
-   * Where the wipe starts, 0..1 across the canvas; `[0.5, 0.5]` is the
-   * middle and `[0, 0]` the top-left corner. Accepts a static value or an
-   * animation signal.
+   * Where the wipe starts, 0..1 across the canvas; `[0.5, 0.5]` is the middle
+   * and `[0, 0]` the top-left corner. Pass `"cursor"` to follow the pointer.
+   * Accepts a static value or an animation signal.
    */
-  center: AnimatableProp<readonly [number, number]>;
+  center: PositionProp;
   /**
    * Softness of the front, as a fraction of the distance from `center` to
    * the far corner. 0 is a hard edge, 1 feathers across the whole canvas.

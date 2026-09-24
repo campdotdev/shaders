@@ -5,7 +5,10 @@
 // post-process layer: stack it after other components inside a
 // <ShaderScene> and it screens everything beneath it into a grid of square
 // dots, each lit with the scene color at its cell's center.
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { LedWallShader } from './shader.js';
 
 export interface LedWallProps {
@@ -40,23 +43,24 @@ export interface LedWallProps {
    */
   speed?: AnimatableProp<number>;
   /**
-   * The point the dots swell toward, 0..1 across the canvas with `[0, 0]`
-   * at the top-left corner. Feed it a cursor signal to follow the pointer.
-   * Defaults to `[0.5, 0.5]`. Accepts a static value or an animation
+   * Center of the swell: the point the dots grow toward, 0..1 across the
+   * canvas with `[0, 0]` at the top-left corner. Defaults to `[0.5, 0.5]`.
+   * Pass `"cursor"` to follow the pointer, which parks the swell below the
+   * canvas until the first move. Accepts a static value or an animation
    * signal.
    */
-  focus?: AnimatableProp<readonly [number, number]>;
+  swellCenter?: PositionProp;
   /**
-   * Reach of the swell from the focus, in canvas units where 1 is the
+   * Reach of the swell from its center, in canvas units where 1 is the
    * canvas height. Defaults to 0.6. Accepts a static value or an animation
    * signal.
    */
-  focusRadius?: AnimatableProp<number>;
+  swellRadius?: AnimatableProp<number>;
   /**
-   * How much a dot grows at the focus, as a fraction of its edge. 0 turns
-   * the swell off, 1 doubles the edge at the focus, and the cell caps it so
-   * a dot never touches its neighbour. Defaults to 0.85. Accepts a static
-   * value or an animation signal.
+   * How much a dot grows at the swell center, as a fraction of its edge. 0
+   * turns the swell off, 1 doubles the edge at the center, and the cell caps
+   * it so a dot never touches its neighbour. Defaults to 0.85. Accepts a
+   * static value or an animation signal.
    */
   swell?: AnimatableProp<number>;
 }
@@ -67,8 +71,8 @@ export function LedWall({
   bleed = 0,
   flicker = 0.5,
   speed = 2.4,
-  focus = [0.5, 0.5],
-  focusRadius = 0.6,
+  swellCenter = [0.5, 0.5],
+  swellRadius = 0.6,
   swell = 0.85,
 }: LedWallProps) {
   return (
@@ -76,11 +80,11 @@ export function LedWall({
       bleed={bleed}
       dotSize={dotSize}
       flicker={flicker}
-      focus={focus}
-      focusRadius={focusRadius}
       spacing={spacing}
       speed={speed}
       swell={swell}
+      swellCenter={swellCenter}
+      swellRadius={swellRadius}
     />
   );
 }

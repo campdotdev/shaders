@@ -645,6 +645,23 @@ describe('useCursor', () => {
     expect(result.current.presence.get()).toBe(0);
   });
 
+  // The first render returns before the effect builds the live signal. A
+  // consumer that parks its point off-canvas must read the parked point
+  // then too, or it draws one pass at the canvas center.
+  it('reports its initial from the first render, and while disabled', () => {
+    const firstReads: Array<readonly [number, number]> = [];
+
+    renderHook(() => {
+      const cursor = useCursor({ initial: [0.5, 2] });
+
+      firstReads.push(cursor.get());
+    });
+    const { result } = renderHook(() => useCursor({ enabled: false, initial: [0.5, 2] }));
+
+    expect(firstReads[0]).toEqual([0.5, 2]);
+    expect(result.current.get()).toEqual([0.5, 2]);
+  });
+
   it('survives Strict Mode pseudo-unmount/remount cycle without throwing', () => {
     const { unmount } = renderHook(() => useCursor());
 

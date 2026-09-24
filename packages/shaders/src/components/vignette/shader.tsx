@@ -11,7 +11,10 @@ import { Vector3 } from 'three/webgpu';
 
 import { mixColor } from '../../engine.js';
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
@@ -32,10 +35,10 @@ export interface VignetteShaderProps {
   feather: AnimatableProp<number>;
   /**
    * Vignette center, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner. Accepts a static value or an animation
-   * signal.
+   * `[0, 0]` is the top-left corner. Pass `"cursor"` to follow the pointer.
+   * Accepts a static value or an animation signal.
    */
-  center: AnimatableProp<readonly [number, number]>;
+  center: PositionProp;
   /**
    * Normalized distance from `center` at which the vignette reaches full
    * strength. Smaller values close the vignette in sooner.

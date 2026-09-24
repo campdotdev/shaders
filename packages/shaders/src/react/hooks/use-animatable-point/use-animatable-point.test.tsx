@@ -1,12 +1,12 @@
 import type { ReactNode } from 'react';
 
-import { renderHook } from '@testing-library/react';
+import { act, renderHook } from '@testing-library/react';
 import type { Vector2 } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { FrameScheduler } from '../../../engine.js';
+import { CursorInput, FrameScheduler } from '../../../engine.js';
 import { ShaderContext } from '../../context/shader-context.js';
-import type { AnimatableSignal } from '../animatable-signal/animatable-signal.js';
+import type { AnimatableSignal, PositionProp } from '../animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from './use-animatable-point.js';
 
 const makeWrapper = (scheduler: FrameScheduler) => {
@@ -200,6 +200,194 @@ describe('useAnimatablePoint', () => {
 
       rerender({ v: [0.1, 0.2] as readonly [number, number] });
       expect(read(result.current).x).toBe(0.1);
+    });
+  });
+
+  // The 'cursor' shorthand resolves to the scene's shared cursor through
+  // useCursor. The fake scene mirrors what ShaderScene puts on the context:
+  // a real scheduler and a lazily created shared input over a 1000 by 1000
+  // canvas at the viewport origin, so a move to (250, 750) is [0.25, 0.75].
+  describe("the 'cursor' shorthand", () => {
+    const CANVAS_SIZE = 1000;
+    let frames: FrameRequestCallback[];
+
+    beforeEach(() => {
+      frames = [];
+      vi.stubGlobal('requestAnimationFrame', (frame: FrameRequestCallback) => {
+        frames.push(frame);
+
+        return frames.length;
+      });
+      vi.stubGlobal('cancelAnimationFrame', () => {});
+      vi.spyOn(window, 'addEventListener');
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+    });
+
+    const makeScene = () => {
+      const scheduler = new FrameScheduler();
+      let sharedInput: CursorInput | null = null;
+      const getCursorInput = vi.fn(() => {
+        sharedInput ??= new CursorInput({
+          element: {
+            getBoundingClientRect: () => ({
+              left: 0,
+              top: 0,
+              width: CANVAS_SIZE,
+              height: CANVAS_SIZE,
+            }),
+          },
+        });
+
+        return sharedInput;
+      });
+      const shaderContext = {
+        scheduler,
+        getCursorInput,
+        renderer: { three: { domElement: document.createElement('canvas') } },
+      } as unknown as React.ContextType<typeof ShaderContext>;
+
+      function Wrapper({ children }: { children: ReactNode }) {
+        return <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>;
+      }
+
+      // A static scene parks once the cursor's smoothing settles, which is
+      // what lets settle() below run frames until the queue drains.
+      scheduler.setIdle(true);
+      scheduler.start();
+
+      return { Wrapper, getCursorInput, dispose: () => sharedInput?.dispose() };
+    };
+
+    let now = 0;
+    const settle = () => {
+      while (frames.length > 0) {
+        const frame = frames.shift();
+
+        now += 1000 / 60;
+        act(() => frame?.(now));
+      }
+    };
+    const movePointer = (clientX: number, clientY: number) => {
+      act(() => {
+        window.dispatchEvent(new PointerEvent('pointermove', { clientX, clientY, bubbles: true }));
+      });
+      settle();
+    };
+    const countPointerListeners = () =>
+      vi
+        .mocked(window.addEventListener)
+        .mock.calls.filter(([eventType]) => eventType === 'pointermove').length;
+
+    it('follows the shared scene cursor', () => {
+      const scene = makeScene();
+      const { result } = renderHook(() => useAnimatablePoint('cursor'), {
+        wrapper: scene.Wrapper,
+      });
+
+      movePointer(250, 750);
+      expect(scene.getCursorInput).toHaveBeenCalled();
+      expect(read(result.current).x).toBeCloseTo(0.25, 3);
+      expect(read(result.current).y).toBeCloseTo(0.75, 3);
+      scene.dispose();
+    });
+
+    it('sits at the canvas center before the first move by default', () => {
+      const scene = makeScene();
+      const { result } = renderHook(() => useAnimatablePoint('cursor'), {
+        wrapper: scene.Wrapper,
+      });
+
+      settle();
+      expect(read(result.current).x).toBe(0.5);
+      expect(read(result.current).y).toBe(0.5);
+      scene.dispose();
+    });
+
+    // A component that wants the pointer's absence to read as "no
+    // reaction", such as LedWall's swell, parks the point off the canvas.
+    // The very first value has to be the parked one: a single frame drawn
+    // at the canvas center would flash the reaction there.
+    it('sits at cursorInitial before the first move, from the very first value', () => {
+      const scene = makeScene();
+      const seen: number[] = [];
+      const { result } = renderHook(
+        () => {
+          const node = useAnimatablePoint('cursor', { cursorInitial: [0.5, 2] });
+
+          seen.push(read(node).y);
+
+          return node;
+        },
+        { wrapper: scene.Wrapper },
+      );
+
+      settle();
+      expect(seen.every((y) => y === 2)).toBe(true);
+      expect(read(result.current).y).toBe(2);
+      scene.dispose();
+    });
+
+    it('converts the cursor with screenOrigin like any other pair', () => {
+      const scene = makeScene();
+      const { result } = renderHook(() => useAnimatablePoint('cursor', { screenOrigin: true }), {
+        wrapper: scene.Wrapper,
+      });
+
+      movePointer(250, 200);
+      expect(read(result.current).x).toBeCloseTo(0.25, 3);
+      expect(read(result.current).y).toBeCloseTo(0.8, 3);
+      scene.dispose();
+    });
+
+    it('attaches no pointer listener for a tuple or a signal', () => {
+      const scene = makeScene();
+      const { signal } = makeSignal<readonly [number, number]>([0.1, 0.2]);
+
+      renderHook(
+        () => {
+          useAnimatablePoint([0.25, 0.75]);
+          useAnimatablePoint(signal, { screenOrigin: true });
+        },
+        { wrapper: scene.Wrapper },
+      );
+
+      expect(scene.getCursorInput).not.toHaveBeenCalled();
+      expect(countPointerListeners()).toBe(0);
+    });
+
+    it('attaches no pointer listener for a tuple outside a ShaderScene', () => {
+      renderHook(() => useAnimatablePoint([0.25, 0.75]));
+
+      expect(countPointerListeners()).toBe(0);
+    });
+
+    it('keeps one uniform across tuple, cursor, and signal, and stops following when switched away', () => {
+      const scene = makeScene();
+      const { signal } = makeSignal<readonly [number, number]>([0.9, 0.1]);
+      const { result, rerender } = renderHook(
+        ({ v }: { v: PositionProp }) => useAnimatablePoint(v),
+        { wrapper: scene.Wrapper, initialProps: { v: [0.25, 0.75] } },
+      );
+      const first = result.current;
+
+      rerender({ v: 'cursor' });
+      movePointer(600, 400);
+      expect(result.current).toBe(first);
+      expect(read(result.current).x).toBeCloseTo(0.6, 3);
+
+      rerender({ v: signal });
+      expect(result.current).toBe(first);
+      expect(read(result.current).x).toBe(0.9);
+
+      rerender({ v: [0.3, 0.3] });
+      movePointer(100, 100);
+      expect(result.current).toBe(first);
+      expect(read(result.current).x).toBe(0.3);
+      expect(read(result.current).y).toBe(0.3);
+      scene.dispose();
     });
   });
 });

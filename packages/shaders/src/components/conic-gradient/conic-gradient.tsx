@@ -5,7 +5,10 @@
 // (./shader.tsx), which does the actual GPU work. Render it inside a
 // <ShaderScene> — the component draws nothing on its own.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { ColorStop } from '../shared/color.js';
 import { ConicGradientShader } from './shader.js';
 
@@ -23,9 +26,10 @@ export interface ConicGradientProps {
   /**
    * Pivot the sweep rotates around, 0..1 across the canvas; `[0.5, 0.5]` is
    * centered and `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`.
-   * Accepts a static value or an animation signal.
+   * Pass `"cursor"` to follow the pointer. Accepts a static value or an
+   * animation signal.
    */
-  center?: AnimatableProp<readonly [number, number]>;
+  center?: PositionProp;
   /**
    * Degrees; rotates the whole sweep clockwise. 0 starts the first stop at
    * 12 o'clock. Note the direction: LinearGradient and RadialGradient's

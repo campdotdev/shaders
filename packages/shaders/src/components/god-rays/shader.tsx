@@ -35,7 +35,10 @@ import {
 import type { ShaderNodeObject } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -55,11 +58,12 @@ export interface GodRaysShaderProps {
    */
   colors: string[];
   /**
-   * Ray origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner. Values outside 0..1 park the source
-   * off-canvas. Accepts a static value or an animation signal.
+   * Ray origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and `[0, 0]`
+   * is the top-left corner. Values outside 0..1 park the source off-canvas.
+   * Pass `"cursor"` to follow the pointer. Accepts a static value or an
+   * animation signal.
    */
-  center: AnimatableProp<readonly [number, number]>;
+  center: PositionProp;
   /**
    * Cone aim in degrees; 0 points right, 90 points up. Inert while `spread`
    * is 360. Accepts a static value or an animation signal.

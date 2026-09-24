@@ -6,7 +6,10 @@
 // splitting shapes. Render it inside a <ShaderScene>, typically stacked
 // over a background layer — the space between blobs is transparent.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { ColorStop } from '../shared/color.js';
 import { BlobsShader } from './shader.js';
 
@@ -58,10 +61,10 @@ export interface BlobsProps {
   shading?: AnimatableProp<number>;
   /**
    * Center of the roam region, 0..1 across the canvas; `[0.5, 0.5]` is the
-   * canvas middle. Defaults to `[0.5, 0.5]`. Accepts a static value or an
-   * animation signal.
+   * canvas middle. Defaults to `[0.5, 0.5]`. Pass `"cursor"` to follow the
+   * pointer. Accepts a static value or an animation signal.
    */
-  center?: AnimatableProp<readonly [number, number]>;
+  center?: PositionProp;
   /**
    * How fast blobs drift. 0 freezes them. Defaults to 0.2. Accepts a
    * static value or an animation signal.

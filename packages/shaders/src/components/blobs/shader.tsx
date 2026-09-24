@@ -12,7 +12,10 @@ import { add, clamp, fwidth, smoothstep, sub, uniform, uv, vec2, vec4 } from 'th
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { colorRamp, type ColorSpace, type HueInterpolation, metaballs } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -79,9 +82,10 @@ export interface BlobsShaderProps {
   shading: AnimatableProp<number>;
   /**
    * Center of the roam region, 0..1 across the canvas; `[0.5, 0.5]` is the
-   * canvas middle. Accepts a static value or an animation signal.
+   * canvas middle. Pass `"cursor"` to follow the pointer. Accepts a static
+   * value or an animation signal.
    */
-  center: AnimatableProp<readonly [number, number]>;
+  center: PositionProp;
   /**
    * How fast blobs drift. 0 freezes them. Accepts a static value or an
    * animation signal.

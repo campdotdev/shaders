@@ -58,20 +58,32 @@ Shaders ships three React hooks that produce ready-to-use signals — they handl
 - `useScroll()` — returns a `ScrollSignal` with normalized scroll progress.
 - `useResize()` — returns a `ResizeSignal` with current canvas dimensions.
 
+### Following the pointer
+
+Every position prop, such as `center` or LedWall's `swellCenter`, accepts the string `"cursor"`. The component then follows the pointer on its own, with no hook call:
+
 ```tsx
-import { ShaderScene, useCursor } from '@camp-dev/shaders'
+import { LedWall, MeshGradient, ShaderScene } from '@camp-dev/shaders'
 
 function App() {
   return (
     <ShaderScene>
-      <Cursor />
+      <MeshGradient />
+      <LedWall swellCenter="cursor" />
     </ShaderScene>
   )
 }
+```
 
-function Cursor() {
-  const cursor = useCursor()
-  return <DotField cursor={cursor} />
+A position prop given a fixed point attaches no pointer listener, so the shorthand costs nothing where you don't use it. When you need the cursor signal itself, for example to smooth one consumer more slowly than the rest, call `useCursor()` inside the scene and pass its result to the prop:
+
+```tsx
+import { LedWall, useCursor } from '@camp-dev/shaders'
+
+// Render inside the <ShaderScene>, in place of the plain LedWall above.
+function SlowSwell() {
+  const cursor = useCursor({ smoothing: 0.3 })
+  return <LedWall swellCenter={cursor} />
 }
 ```
 

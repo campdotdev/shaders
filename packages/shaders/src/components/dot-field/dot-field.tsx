@@ -5,7 +5,10 @@
 // pixel-spaced grid of dots and ripples them outward from a center point.
 // Render it inside a <ShaderScene>; the gaps between dots are transparent,
 // so it can sit over other layers.
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { DotShape } from './marks.js';
 import { DotFieldShader } from './shader.js';
 
@@ -65,10 +68,10 @@ export interface DotFieldProps {
   decay?: AnimatableProp<number>;
   /**
    * Ripple origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`. Accepts a
-   * static value or an animation signal.
+   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`. Pass `"cursor"`
+   * to follow the pointer. Accepts a static value or an animation signal.
    */
-  center?: AnimatableProp<readonly [number, number]>;
+  center?: PositionProp;
 }
 
 export function DotField({

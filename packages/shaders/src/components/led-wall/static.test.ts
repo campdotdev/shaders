@@ -4,22 +4,23 @@ import type { AnimatableSignal } from '../../react/hooks/animatable-signal/anima
 import { isLedWallStatic } from './static.js';
 
 // Two correctly-typed mocks: one for the number-typed fields (`flicker`,
-// `speed`, `swell`), one for the tuple-typed `focus`.
+// `speed`, `swell`), one for the tuple-typed `swellCenter`.
 const numberSignal: AnimatableSignal<number> = { get: () => 0.5, on: () => () => undefined };
 const pointSignal: AnimatableSignal<readonly [number, number]> = {
   get: () => [0.5, 0.5] as const,
   on: () => () => undefined,
 };
 
-const still = { flicker: 0, focus: [0.5, 0.5] as const, speed: 2.4, swell: 0.85 };
+const still = { flicker: 0, swellCenter: [0.5, 0.5] as const, speed: 2.4, swell: 0.85 };
 
 // The wall may tell the scene to stop drawing only when nothing on it can
 // change between frames. Only the breath moves on its own, and it needs
 // both a flicker depth and a speed; the swell reads static inputs, so it
 // draws the same dots every frame however strong it is. A live signal on
 // flicker, speed, or swell counts as motion whatever it reads right now.
-// The focus is the exception: a cursor signal wakes the scene itself when
+// The swell center is the exception: a cursor wakes the scene itself when
 // the pointer moves, so a still pointer must be allowed to let it park.
+// That holds for a cursor signal and for the `'cursor'` shorthand alike.
 describe('isLedWallStatic', () => {
   it('is static when the flicker depth is 0, whatever the swell', () => {
     expect(isLedWallStatic(still)).toBe(true);
@@ -34,9 +35,10 @@ describe('isLedWallStatic', () => {
     expect(isLedWallStatic({ ...still, flicker: 0.3 })).toBe(false);
   });
 
-  it('treats the focus as static whether it is a tuple or a signal', () => {
-    expect(isLedWallStatic({ ...still, focus: [0.2, 0.8] as const })).toBe(true);
-    expect(isLedWallStatic({ ...still, focus: pointSignal })).toBe(true);
+  it('treats the swell center as static whether it is a tuple, a signal, or the cursor', () => {
+    expect(isLedWallStatic({ ...still, swellCenter: [0.2, 0.8] as const })).toBe(true);
+    expect(isLedWallStatic({ ...still, swellCenter: pointSignal })).toBe(true);
+    expect(isLedWallStatic({ ...still, swellCenter: 'cursor' })).toBe(true);
   });
 
   it('is live when the swell is a signal', () => {

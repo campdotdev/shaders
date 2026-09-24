@@ -5,7 +5,10 @@
 // (./shader.tsx), which does the actual GPU work. Render it inside a
 // <ShaderScene> — the component draws nothing on its own.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { ColorStop } from '../shared/color.js';
 import { RadialGradientShader } from './shader.js';
 
@@ -18,14 +21,14 @@ export interface RadialGradientProps {
    */
   stops?: ColorStop[];
   /**
-   * Where the gradient starts, 0..1 across the canvas; `[0.5, 0.5]` is
-   * centered and `[0, 0]` is the top-left corner. Note this is the ramp's
-   * origin — the first stop sits here and the colors run outward — unlike the
-   * linear gradient's `center`, which slides the ramp's midpoint along its
-   * axis. Defaults to `[0.5, 0.5]`. Accepts a static value or an animation
-   * signal.
+   * Where the gradient starts, 0..1 across the canvas; `[0.5, 0.5]` is centered
+   * and `[0, 0]` is the top-left corner. Note this is the ramp's origin — the
+   * first stop sits here and the colors run outward — unlike the linear
+   * gradient's `center`, which slides the ramp's midpoint along its axis.
+   * Defaults to `[0.5, 0.5]`. Pass `"cursor"` to follow the pointer. Accepts a
+   * static value or an animation signal.
    */
-  center?: AnimatableProp<readonly [number, number]>;
+  center?: PositionProp;
   /**
    * How far out the ramp reaches its last color, where 1 lands at the canvas
    * corners. Below 1 the gradient tightens toward the center and the final

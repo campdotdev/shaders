@@ -17,8 +17,8 @@ import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 export interface CursorOptions extends CursorInputOptions {
   /**
    * Whether to track the pointer at all. When false the hook attaches no
-   * listener, joins no frame loop, and returns a signal fixed at the canvas
-   * center with presence 0, so a position prop that is not `"cursor"` costs
+   * listener, joins no frame loop, and returns a signal fixed at `initial`
+   * with presence 0, so a position prop that is not `"cursor"` costs
    * nothing. Defaults to true.
    */
   enabled?: boolean;
@@ -64,16 +64,23 @@ const PRESENCE_SETTLE_THRESHOLD = 1e-3;
 // The stub
 // ----------------------------------------------------------------------------
 
-const STUB_SIGNAL: CursorSignal = {
-  get: () => [0.5, 0.5] as const,
+// What the hook returns while disabled, and on the first render before its
+// effect has built the live signal. It sits at the caller's `initial`, so a
+// consumer that parks its point off-canvas is parked from the first value
+// it reads, not at the canvas center for one pass.
+const createStubSignal = (initial: Vector2): CursorSignal => ({
+  get: () => initial,
   on: () => () => undefined,
   presence: {
     get: () => 0,
     on: () => () => undefined,
   },
-};
+});
 
 const noop = () => undefined;
+
+/** Where a call's easing starts when the caller passes no `initial`. */
+const CANVAS_CENTER: Vector2 = [0.5, 0.5];
 
 // ----------------------------------------------------------------------------
 // The hook
@@ -82,6 +89,9 @@ const noop = () => undefined;
 export function useCursor(opts: CursorOptions = {}): CursorSignal {
   const shaderContext = useShaderContext();
   const [signal, setSignal] = useState<CursorSignal | null>(null);
+  // Created once, at mount, so the stub reads `initial` once. The easing
+  // below re-reads it whenever its effect re-runs.
+  const [stubSignal] = useState(() => createStubSignal(opts.initial ?? CANVAS_CENTER));
   const onMoveRef = useRef(opts.onMove);
   const { enabled = true, element, target } = opts;
 
@@ -113,7 +123,7 @@ export function useCursor(opts: CursorOptions = {}): CursorSignal {
     // This call's own easing. Both start from the caller's initial and 0,
     // not from wherever the shared pointer already is, so a consumer that
     // parks its position off-canvas stays parked until the pointer moves.
-    const position = new Smoother(opts.initial ?? [0.5, 0.5], {
+    const position = new Smoother(opts.initial ?? CANVAS_CENTER, {
       smoothing: opts.smoothing ?? 0.1,
       settleThreshold: POSITION_SETTLE_THRESHOLD,
     });
@@ -254,5 +264,5 @@ export function useCursor(opts: CursorOptions = {}): CursorSignal {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shaderContext, enabled, element, target]);
 
-  return signal ?? STUB_SIGNAL;
+  return signal ?? stubSignal;
 }

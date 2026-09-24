@@ -5,7 +5,10 @@
 // (./shader.tsx), which does the actual GPU work. Render it inside a
 // <ShaderScene> — the component draws nothing on its own.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import type { ColorStop } from '../shared/color.js';
 import { LinearGradientShader } from './shader.js';
 
@@ -24,12 +27,12 @@ export interface LinearGradientProps {
   angle?: AnimatableProp<number>;
   /**
    * Anchor point of the gradient, 0..1 across the canvas; `[0.5, 0.5]` is
-   * centered and `[0, 0]` is the top-left corner. The middle of the color
-   * ramp sits at the anchor, so moving it slides the whole gradient along
-   * its direction. Defaults to `[0.5, 0.5]`. Accepts a static value or an
-   * animation signal.
+   * centered and `[0, 0]` is the top-left corner. The middle of the color ramp
+   * sits at the anchor, so moving it slides the whole gradient along its
+   * direction. Defaults to `[0.5, 0.5]`. Pass `"cursor"` to follow the pointer.
+   * Accepts a static value or an animation signal.
    */
-  center?: AnimatableProp<readonly [number, number]>;
+  center?: PositionProp;
   /**
    * How many times the stops run across the gradient's span. 1 is a single
    * pass; above 1 the pattern tiles past both ends, so stripes run edge to
