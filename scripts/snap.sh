@@ -57,7 +57,7 @@ done
 # esbuild). Without this, the next host-side `pnpm snap` fails because the
 # .pnpm store ends up populated with the wrong-platform binaries.
 NM_MOUNTS=(-v /work/node_modules)
-for dir in apps/docs apps/docs-tests apps/editor packages/shaders \
+for dir in apps/docs apps/docs-tests packages/shaders \
            packages/shaders-cli tooling/tsconfig; do
   NM_MOUNTS+=(-v "/work/$dir/node_modules")
 done
