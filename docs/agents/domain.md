@@ -13,12 +13,7 @@ If either is missing, continue without comment. Do not flag the absence, and do 
 
 Read the decisions already made before you record a new one. If the question is answered, cite the answer instead of copying it into `docs/adr/`.
 
-Two places hold that history:
-
-- **Linear**, on the Shaders team, for anything specced since 2026-09-17. `to-spec` publishes the spec as an issue, so the decisions sit in the issue and its comments.
-- **`docs/superpowers/specs/`**, for features that predate the switch. Every file there has a `## Decisions` section near the top, and files written before 2026-09-12 also close with `## Appendix A: decision history`, which holds the longer reasoning. Check both sections.
-
-`docs/superpowers/` is frozen and gitignored, so it is absent on a fresh clone. When it is absent, Linear and `docs/adr/` are the only decision records available.
+Check **Linear**, on the Shaders team, and the relevant records in **`docs/adr/`**. `to-spec` publishes the spec as an issue, so read the issue and its comments. For older implementation decisions, also consult git history. The local archive of earlier specs and plans has been deleted.
 
 ## File structure
 

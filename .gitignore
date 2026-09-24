@@ -36,9 +36,6 @@ pnpm-debug.log*
 .eslintcache
 .fallow/
 
-# Brainstorming companion (not source code)
-.superpowers/
-
 # Git worktrees
 .worktrees/
 
@@ -54,7 +51,6 @@ blob-report/
 **/.vp-cache/
 
 # Local-only design docs and plans (kept off GitHub)
-docs/superpowers/
 .planning/
 
 # Local-only agent memory (kept off GitHub); AGENTS.md + the CLAUDE.md pointer are tracked
