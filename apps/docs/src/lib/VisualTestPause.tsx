@@ -75,8 +75,21 @@ function useVisualTestPause(): void {
       window.__shadersTestAwaitingPointer = true;
     }
 
-    const settled = (now: number) =>
-      !awaitPointer || (pointerMovedAt !== null && now - pointerMovedAt >= POINTER_SETTLE_MS);
+    // ShaderScene's render client runs before any cursor hook in a tick, so
+    // a tick draws the cursor as the previous tick left it. The first tick
+    // past the settle time can therefore land the cursor after drawing the
+    // old one, so pointer mode waits for the next tick, whose render is the
+    // first guaranteed to show the landed cursor.
+    let settleTimeSeen = false;
+    const settled = (now: number) => {
+      if (!awaitPointer) return true;
+      if (pointerMovedAt === null || now - pointerMovedAt < POINTER_SETTLE_MS) return false;
+      const drawnSinceSettle = settleTimeSeen;
+
+      settleTimeSeen = true;
+
+      return drawnSinceSettle;
+    };
 
     let frame = 0;
     const client = ({ now }: SchedulerTick) => {
