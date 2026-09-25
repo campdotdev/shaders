@@ -39,7 +39,7 @@ Shaders doubles as the author's shader-learning project. When you build or rebui
 
 - Put every change on a branch and open a PR, including a one-line doc fix. Never push to `main`. If a commit lands on local `main`, move it to a branch and reset `main` to `origin/main`.
 - When you finish a branch, push it and open a PR. Don't merge locally, and don't ask which integration option to use.
-- Write commit messages as Conventional Commits, such as `feat(shaders): …` or `docs: …`. The scope is the package name without `@camp-dev/`.
+- Write commit messages as Conventional Commits, such as `feat(shaders): …` or `docs: …`. The scope is the package name without `@camp-dev/`. Use no emojis.
 - Leave AI attribution off commits and PR bodies: no "Generated with" line and no `Co-Authored-By` trailer for an agent.
 - Before a PR opens, run its body, the commit messages, any changeset, and any docs through the `technical-writing` skill, as `docs/agents/pull-requests.md` describes.
 
