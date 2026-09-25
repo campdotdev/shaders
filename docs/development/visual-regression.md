@@ -4,7 +4,7 @@ Playwright visual regression tests in [`apps/docs-tests/visual/`](../../apps/doc
 
 Five specs keep no baseline. `color-space`, `dot-field-stack`, `hsl-gamut`, and `hue-arc` open a `/dev/*-probe` route and assert on sampled pixel colors. `gamut` checks that both of its canvases render, and takes no screenshot.
 
-The Playwright config is [`apps/docs-tests/playwright.config.ts`](../../apps/docs-tests/playwright.config.ts). The tolerance is `maxDiffPixelRatio: 0.02`, so 2% of pixels may differ, with a per-pixel YIQ `threshold: 0.2`. [`VisualTestPause`](../../apps/docs/src/lib/VisualTestPause.tsx) makes the capture reproducible. It forces the scheduler out of idle, rewinds the renderer clock and the scheduler's phase accumulators on the first frame, and flags the page ready on the third scheduler tick.
+The Playwright config is [`apps/docs-tests/playwright.config.ts`](../../apps/docs-tests/playwright.config.ts). The default tolerance is `maxDiffPixelRatio: 0.02`, so 2% of pixels may differ, with a per-pixel YIQ `threshold: 0.2`. The `grain` and `dither` specs raise it to 0.05, because SwiftShader's precision drift between arm64 and amd64 pushes their high-frequency output past 2%. [`VisualTestPause`](../../apps/docs/src/lib/VisualTestPause.tsx) makes the capture reproducible. It forces the scheduler out of idle, rewinds the renderer clock and the scheduler's phase accumulators on the first frame, and flags the page ready on the third scheduler tick.
 
 ## What the screenshot covers
 
@@ -26,7 +26,7 @@ CI runs on Linux, so the `-linux.png` is the one that gates merges. The `-darwin
 
 ## When to regenerate
 
-Only when you have intentionally changed how a component looks. A pixel diff over 2% means one of two things:
+Only when you have intentionally changed how a component looks. A pixel diff over the tolerance means one of two things:
 
 1. You wanted the visual change. Regenerate the baseline.
 2. You introduced a regression. Fix the code, and leave the baseline alone.
