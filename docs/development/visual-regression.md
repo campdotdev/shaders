@@ -14,12 +14,12 @@ Three changes do invalidate baselines: a change to the shader's output, to the a
 
 ## Two platform baselines
 
-Each baseline has two committed snapshots:
+Each baseline has two committed snapshots. `<spec>` is the spec file's name, and `<snapshot>` is the name the spec passes to `toHaveScreenshot`. That name is usually `<spec>-default`, but `cursor-ripple` and `wave-field` use `-probe` and `cursor-spotlight` uses `-lit`.
 
 ```
-visual/<name>.spec.ts-snapshots/
-  <name>-default-chromium-linux.png
-  <name>-default-chromium-darwin.png
+visual/<spec>.spec.ts-snapshots/
+  <snapshot>-chromium-linux.png
+  <snapshot>-chromium-darwin.png
 ```
 
 CI runs on Linux, so the `-linux.png` is the one that gates merges. The `-darwin.png` keeps local `pnpm test:visual` runs green on macOS. The two files are not interchangeable. Chromium rasterizes fonts and applies sub-pixel anti-aliasing differently on each OS, so a Mac-generated PNG fails on Linux, and the reverse.
@@ -63,8 +63,8 @@ To recover, run `CI=true pnpm install`. The `CI` variable is required, because w
 ## Verify before committing
 
 ```bash
-git status apps/docs-tests/visual/<name>.spec.ts-snapshots/
-open apps/docs-tests/visual/<name>.spec.ts-snapshots/<name>-default-chromium-linux.png
+git status apps/docs-tests/visual/<spec>.spec.ts-snapshots/
+open apps/docs-tests/visual/<spec>.spec.ts-snapshots/<snapshot>-chromium-linux.png
 ```
 
 Look at the PNG. It should show the new visual you intended, not a black canvas, a half-compiled frame, or a startup artifact. The test cannot check what the baseline contains. It can only check that future runs match it.
@@ -72,8 +72,8 @@ Look at the PNG. It should show the new visual you intended, not a black canvas,
 Commit both baselines together, so CI passes on Linux and local runs pass on macOS:
 
 ```bash
-git add apps/docs-tests/visual/<name>.spec.ts-snapshots/<name>-default-chromium-{linux,darwin}.png
-git commit -m "test(docs-tests): regenerate <name> baselines after <reason>"
+git add apps/docs-tests/visual/<spec>.spec.ts-snapshots/<snapshot>-chromium-{linux,darwin}.png
+git commit -m "test(docs-tests): regenerate <spec> baselines after <reason>"
 ```
 
 ## Restart the dev server after any Playwright run
