@@ -23,6 +23,6 @@ Styling lives in `controls.module.css` (the panel and its controls) and `demo-la
 move the Playwright visual baselines: the fixture pins `[data-shader-demo]` to 560px.
 
 **The subscription rule:** subscribe to a leaf (or a list's `length`), never to a container. A
-container subscription re-renders on every write anywhere inside it — see the demo control
-store gotcha in `AGENTS.md`. This has bitten three times; the fix is always to push the
+container subscription re-renders on every write anywhere inside it — see the demo-store
+gotcha in `docs/agents/docs-site.md`. This has bitten three times; the fix is always to push the
 subscription down to the specific field a control actually shows.

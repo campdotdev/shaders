@@ -195,7 +195,7 @@ export default defineConfig([
             {
               group: ['react/*', 'react-dom/*', '**/react/**', '**/components/**'],
               message:
-                'The engine is framework-free: it must not import React or anything under src/react or src/components. See the React-free core note in AGENTS.md.',
+                'The engine is framework-free: it must not import React or anything under src/react or src/components. See "The engine is framework-free" in AGENTS.md.',
             },
           ],
         },

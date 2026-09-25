@@ -118,8 +118,8 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
     // uniform gain can change per frame without recompiling the shader.
     // Both `sum` and `total` are additive chains — each step references the
     // accumulator exactly once, so this stays clear of the exponential
-    // getNodeType recursion that bans select-chain accumulators (see
-    // AGENTS.md, the running-minimum gotcha).
+    // getNodeType recursion that bans select-chain accumulators (see the
+    // running-minimum gotcha in docs/agents/tsl.md).
     let sum = foldOctave(simplexNoise(p), fold);
     // gain^0 = 1: the base octave's amplitude, starting the normalizing total.
     let total: ShaderNodeObject<Node> = float(1);
@@ -163,9 +163,9 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
     // decorrelated. The scalar broadcasts across all components of `p`
     // (works for vec2 and vec3 inputs alike).
     //
-    // Build the chain functionally from `p`: the vec-uniform-as-receiver
-    // gotcha doesn't apply because `p` is uv-rooted, but the TSLNode union
-    // still requires functional form on this hop.
+    // Build the chain functionally from `p`: the vec-uniform gotcha in
+    // docs/agents/tsl.md doesn't apply because `p` is uv-rooted, but the
+    // TSLNode union still requires functional form on this hop.
     const pAtFreq = add(mul(p, frequency), i * 100);
     const layer = foldOctave(simplexNoise(pAtFreq), fold).mul(amplitude);
 

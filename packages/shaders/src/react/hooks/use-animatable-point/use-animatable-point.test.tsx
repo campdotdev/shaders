@@ -174,9 +174,10 @@ describe('useAnimatablePoint', () => {
       expect(requestRender).toHaveBeenCalledTimes(2);
     });
 
-    // Gotcha 16: a wrapper's `center = [0.5, 0.5]` default allocates a fresh
-    // array every render, so depending on tuple identity would re-run the
-    // effect - and poke an idle scheduler - on every unrelated re-render.
+    // The array-props gotcha in docs/agents/tsl.md: a wrapper's
+    // `center = [0.5, 0.5]` default allocates a fresh array every render, so
+    // depending on tuple identity would re-run the effect - and poke an idle
+    // scheduler - on every unrelated re-render.
     it('does not poke the scheduler when a re-render passes an equal tuple', () => {
       const scheduler = new FrameScheduler();
 

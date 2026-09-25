@@ -63,7 +63,7 @@ export function useAnimatablePoint(
   // below depends on these rather than on `value` itself, because a wrapper's
   // `center = [0.5, 0.5]` default allocates a new array on every render - and
   // depending on that identity would re-subscribe, and wake an idle scene, on
-  // every unrelated re-render (gotcha 16).
+  // every unrelated re-render (the array-props gotcha in docs/agents/tsl.md).
   const pair = followsCursor ? cursor : value;
   const signal = isSignal(pair) ? pair : null;
   const [staticX, staticY] = isSignal(pair) ? [0, 0] : pair;

@@ -191,7 +191,8 @@ export function WaveLinesShader({
   // Every dial lives in a uniform (a value the CPU can update each frame
   // without rebuilding the shader), tracking either a static number or an
   // animation signal. These are scalar uniforms, so chaining methods off
-  // them below is safe (the vec-uniform chaining gotcha doesn't apply).
+  // them below is safe (the vec-uniform gotcha in docs/agents/tsl.md doesn't
+  // apply).
   // Speed is integrated by useAnimatableSpeed into a phase uniform
   // (speed x delta summed each frame), so a speed change shifts the tempo
   // without snapping the lines.

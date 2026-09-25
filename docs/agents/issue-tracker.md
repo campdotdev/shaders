@@ -1,6 +1,6 @@
 # Issue tracker: Linear
 
-Issues for this repo are tracked in Linear, on the **Shaders** team, with the `SHA-` identifier prefix. The team was called Matter with a `MAT-` prefix until 2026-08-21, so older commit messages and AGENTS.md gotchas cite `MAT-` numbers for the same issues. Specs live here too: `to-spec` publishes one as an issue on this team. Reach Linear through the Linear MCP server, not a CLI. There is no `linear` binary here, and the MCP tools are the only supported path.
+Issues for this repo are tracked in Linear, on the **Shaders** team, with the `SHA-` identifier prefix. The team was called Matter with a `MAT-` prefix until 2026-08-21, so older commit messages and some gotchas in `docs/agents/` cite `MAT-` numbers for the same issues. Specs live here too: `to-spec` publishes one as an issue on this team. Reach Linear through the Linear MCP server, not a CLI. There is no `linear` binary here, and the MCP tools are the only supported path.
 
 Skills from the mattpocock set look for this file. It is the hand-written Linear equivalent of the `issue-tracker-github.md` template that ships with `setup-matt-pocock-skills`, which covers only GitHub, GitLab, and local markdown.
 

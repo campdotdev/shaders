@@ -225,8 +225,9 @@ function buildDotFieldMaterial({
   // ---------------------------------------------
   // Ripple origin snapped to the nearest dot, in the same integer lattice space
   // as the cells. vec2(0).add(centerUniform) lifts the bare uniform into a node
-  // receiver so the chain stays safe (the vec-uniform-as-receiver gotcha —
-  // chaining directly off a vec uniform silently produces wrong GPU values).
+  // receiver so the chain stays safe (the vec-uniform gotcha in
+  // docs/agents/tsl.md — chaining directly off a vec uniform silently
+  // produces wrong GPU values).
   const originIndex = round(
     vec2(0, 0).add(centerUniform).sub(0.5).mul(resUniform).div(spacingUniform),
   );
@@ -472,9 +473,9 @@ function pickMarkMask(
   // innermost fallback, and each earlier entry adds one select around what
   // is already there. Every level references the pick once, its own mask
   // once, and the level inside it once, so the graph grows linearly with
-  // the entry count. The exponential-select gotcha is about a running
-  // accumulator that references ITSELF twice per step, which this chain
-  // never does.
+  // the entry count. The running-minimum gotcha in docs/agents/tsl.md is
+  // about a running accumulator that references ITSELF twice per step,
+  // which this chain never does.
   let mask = maskFor(lastEntry);
 
   for (let index = entries.length - 2; index >= 0; index -= 1) {
@@ -504,8 +505,8 @@ export function DotFieldShader({
   // string key that stands in for it in the material effect's deps: an
   // inline array literal in JSX is a new reference on every parent render,
   // so depending on the array itself would rebuild the shader each time
-  // the parent rendered (the AGENTS.md gotcha on array props in effect
-  // deps). Cheap enough to redo per render.
+  // the parent rendered (the array-props gotcha in docs/agents/tsl.md).
+  // Cheap enough to redo per render.
   const { entries, key: shapeKey } = resolveMarkEntries(shape);
 
   // The atlas layout for the custom entries, redone only when the list

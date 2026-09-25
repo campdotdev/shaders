@@ -111,7 +111,7 @@ Where each value comes from:
 | `--ease-hover` | `ease` | "I use this one mostly for hover effects that transition color, background-color, opacity" ([The Easing Blueprint](https://animations.dev/learn/animation-theory/the-easing-blueprint)). Spec value `cubic-bezier(0.25, 0.1, 0.25, 1)` ([CSS Easing Functions Level 2](https://www.w3.org/TR/css-easing-2/)). |
 | `--ease-linear` | `linear` | "only for constant animations like a marquee" (same lesson). |
 
-There is no `--ease-in` token. Material's `easing-emphasized-accelerate`, `cubic-bezier(0.3, 0, 0.8, 0.15)`, is the candidate if the site ever needs an exit that clears fast, but the site has no such exit, the rule at the top of this doc says never to use `ease-in` for UI, and AGENTS.md rules out inert entries added for symmetry.
+There is no `--ease-in` token. Material's `easing-emphasized-accelerate`, `cubic-bezier(0.3, 0, 0.8, 0.15)`, is the candidate if the site ever needs an exit that clears fast, but the site has no such exit, the rule at the top of this doc says never to use `ease-in` for UI, and `docs/agents/code-style.md` rules out inert entries added for symmetry.
 
 ### Reduced-motion strategy
 
