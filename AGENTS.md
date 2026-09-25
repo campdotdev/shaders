@@ -202,6 +202,14 @@ Open Code Review supplies deterministic file selection and a coverage checklist;
 
 **Machine-local patches.** Two skills in `~/.agents/skills/` are edited away from upstream on the author's machine, and neither change syncs or survives `npx skills update`. `implement` adds the three review passes above and commits before reviewing rather than after. `code-review` no longer reads a bare `#<n>` as a ticket id, because squash merges put the GitHub PR number in the commit subject and those numbers collide with live `SHA-` issues, which silently resolved the wrong spec. Upstream originals are kept outside the repo alongside the install backup.
 
+### Fallow
+
+Fallow is installed at user scope, not in the repo: the `fallow` CLI, the `fallow` and `fallow-review` skills, and the `fallow-mcp` server. Its config is `.fallowrc.json` at the repo root. Fallow is a deterministic check, not a reviewer, so it stays out of the table above and `implement` does not run it.
+
+- Before the push, run `fallow audit --base origin/main`. It reports the dead code, complexity, and duplication the branch introduces, and exits 1 on a fail verdict.
+- To review a diff or a pull request, load the `fallow-review` skill.
+- Before you delete code that Fallow reports as unused, run `fallow dead-code --trace <file>:<export>` to confirm nothing reaches it.
+
 ## Agent-specific notes
 
 - **Claude Code.** `CLAUDE.md` imports this file. Machine-local session memory lives outside the repo and is NOT synced across machines, so this file is the portable source of truth. Keep it current when durable preferences or gotchas emerge.
