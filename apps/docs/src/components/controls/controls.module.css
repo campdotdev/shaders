@@ -6,13 +6,15 @@
 
 /* ---- Panel shell ---- */
 
+/* No border of its own: the hairline is an overlay on the scroll area
+   around the panel (demo-layout.module.css). A border here scrolled away
+   with the panel, and the title row's square corners painted over it. */
 .panel {
   display: flex;
   flex-direction: column;
   gap: var(--spacing-4);
   padding: var(--spacing-4);
   background: var(--bg-muted);
-  border: var(--border-width-1) solid var(--white-a5);
   border-radius: var(--radius-xl);
   font-size: var(--font-size-xs);
   line-height: var(--leading-4);
@@ -21,9 +23,9 @@
 /* The title row stays put while the controls scroll under it. It bleeds
    into the panel's padding so it covers the panel edge to edge, carries the
    rule the first group would otherwise draw, and is dark glass: 90% of the
-   panel's gray with the scrolled controls blurred behind it. The viewport
-   (demo-layout.module.css) has the panel's corner radius, which is what
-   clips this row's corners once the panel's own top has scrolled away. The
+   panel's gray with the scrolled controls blurred behind it. The row's
+   corners are square; the viewport (demo-layout.module.css) has the panel's
+   corner radius and clips them to it, at rest and once scrolled. The
    scroll area's top fade starts at this row's rule, at an inset the demo
    layout writes out from this row's padding, the button's height, and the
    border below, so a change to any of those goes there too. */
@@ -510,7 +512,7 @@
   background: var(--bg-muted);
   color: var(--fg);
   border: var(--border-width-1) solid var(--white-a5);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xl);
   box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
   font-size: var(--font-size-xs);
   line-height: var(--leading-4);
