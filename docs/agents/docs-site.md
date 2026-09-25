@@ -6,7 +6,7 @@ Read this before you work in `apps/docs`: a component page, a demo panel, a dev 
 
 The package ships no manifest. The docs site keeps its own record of each component in `apps/docs/src/content/components.ts`: one description and one category per component, keyed by slug. The slug is also the URL segment and the folder name under `packages/shaders/src/components/`, and `props.ts` reads that folder to build the API table.
 
-Adding a component takes three edits: the folder in the package, an export from `packages/shaders/src/components/index.ts`, and an entry in `components.ts`. A new sidebar group is one more entry in `taxonomy.ts`.
+Adding a component takes five edits: the folder in the package, an export from `packages/shaders/src/components/index.ts`, an entry in `components.ts`, a demo island at `apps/docs/src/app/components/<slug>/demo.tsx`, and an entry in `apps/docs/src/app/components/demo-registry.tsx`. The registry is what generates the page: `[slug]/page.tsx` builds its static params from `COMPONENT_PAGES`, so a component without an entry gets no route. A new sidebar group is one more entry in `taxonomy.ts`.
 
 ## The SSR gotcha: keep three out of server code
 

@@ -35,13 +35,13 @@ If you are unsure which, open the diff artifact that CI uploads on failed runs, 
 
 ## Regenerate with `pnpm snap`
 
-`pnpm snap <component>` regenerates both baselines for one spec. It needs Node 22 and a running Docker daemon. On macOS, [OrbStack](https://orbstack.dev/) (`brew install --cask orbstack`) starts faster and idles lighter than Docker Desktop, and both work. Run `docker info` once to confirm the daemon answers.
+`pnpm snap <component>` regenerates both baselines for one spec when you run it on macOS. On Linux, the native run and the Docker run both write the `-linux.png`, so the `-darwin.png` still needs a run on a Mac. It needs Node 22 and a running Docker daemon. On macOS, [OrbStack](https://orbstack.dev/) (`brew install --cask orbstack`) starts faster and idles lighter than Docker Desktop, and both work. Run `docker info` once to confirm the daemon answers.
 
 ```bash
 pnpm snap aurora
 ```
 
-`scripts/snap.sh` runs the spec natively for the macOS baseline, then inside Microsoft's Playwright image for the Linux baseline:
+`scripts/snap.sh` runs the spec natively, which writes the baseline for the host OS, then inside Microsoft's Playwright image for the Linux baseline:
 
 - The image tag comes from the installed `@playwright/test` version, so the image and the test runner stay in step. When you bump `@playwright/test`, the next run pulls the new image.
 - It forces `--platform linux/amd64`, so a baseline made on Apple Silicon matches CI's amd64 runners. Without the flag Docker pulls the arm64 image, and its pixels drift from CI enough to push noise-heavy shaders such as Grain past the 2% threshold.
