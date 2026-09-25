@@ -4,7 +4,7 @@ Playwright visual regression tests in [`apps/docs-tests/visual/`](../../apps/doc
 
 Five specs keep no baseline. `color-space`, `dot-field-stack`, `hsl-gamut`, and `hue-arc` open a `/dev/*-probe` route and assert on sampled pixel colors. `gamut` checks that both of its canvases render, and takes no screenshot.
 
-The Playwright config is [`apps/docs-tests/playwright.config.ts`](../../apps/docs-tests/playwright.config.ts). The tolerance is `maxDiffPixelRatio: 0.02`, so 2% of pixels may differ, with a per-pixel YIQ `threshold: 0.2`. [`VisualTestPause`](../../apps/docs/src/lib/VisualTestPause.tsx) makes the capture reproducible. It forces the scheduler out of idle, rewinds the renderer clock and the scheduler's phase accumulators on the first frame, and flags the page ready after frame 2.
+The Playwright config is [`apps/docs-tests/playwright.config.ts`](../../apps/docs-tests/playwright.config.ts). The tolerance is `maxDiffPixelRatio: 0.02`, so 2% of pixels may differ, with a per-pixel YIQ `threshold: 0.2`. [`VisualTestPause`](../../apps/docs/src/lib/VisualTestPause.tsx) makes the capture reproducible. It forces the scheduler out of idle, rewinds the renderer clock and the scheduler's phase accumulators on the first frame, and flags the page ready on the third scheduler tick.
 
 ## What the screenshot covers
 
