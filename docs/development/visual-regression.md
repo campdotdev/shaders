@@ -1,18 +1,20 @@
 # Visual regression testing
 
-Playwright visual regression tests in [`apps/docs-tests/visual/`](../../apps/docs-tests/visual/) check the shader components. Each test opens a deterministic visual-test route on the docs site (`/components/<name>?visualTest=1`), screenshots the canvas, and compares the shot with a committed baseline PNG.
+Playwright visual regression tests in [`apps/docs-tests/visual/`](../../apps/docs-tests/visual/) check the shader components. Most specs open a component's deterministic visual-test route on the docs site (`/components/<name>?visualTest=1`), screenshot the canvas, and compare the shot with a committed baseline PNG. The `cursor-ripple` and `wave-field` specs take their baselines from the `/dev/wave-field-probe` route instead.
+
+Five specs keep no baseline. `color-space`, `dot-field-stack`, `hsl-gamut`, and `hue-arc` open a `/dev/*-probe` route and assert on sampled pixel colors. `gamut` checks that both of its canvases render, and takes no screenshot.
 
 The Playwright config is [`apps/docs-tests/playwright.config.ts`](../../apps/docs-tests/playwright.config.ts). The tolerance is `maxDiffPixelRatio: 0.02`, so 2% of pixels may differ, with a per-pixel YIQ `threshold: 0.2`. [`VisualTestPause`](../../apps/docs/src/lib/VisualTestPause.tsx) makes the capture reproducible. It forces the scheduler out of idle, rewinds the renderer clock and the scheduler's phase accumulators on the first frame, and flags the page ready after frame 2.
 
 ## What the screenshot covers
 
-Every spec screenshots the canvas element through `page.locator('canvas').first()`, not the full page or the `[data-shader-demo]` container. The Playwright fixture stamps `data-visual-test` on `<html>` for any `?visualTest=1` page, and a rule in `globals.css` then pins `[data-shader-demo]` to the 560px width every baseline was captured at. You can restyle the sidebar, the shell, the gutters, or the control panel without touching a baseline. `DemoPoster`'s image sits inside `[data-shader-demo]` but outside the canvas, so no spec captures it.
+Every baseline spec screenshots the canvas element through `page.locator('canvas').first()`, not the full page or the `[data-shader-demo]` container. The Playwright fixture stamps `data-visual-test` on `<html>` for any `?visualTest=1` page, and a rule in `globals.css` then pins `[data-shader-demo]` to the 560px width every baseline was captured at. You can restyle the sidebar, the shell, the gutters, or the control panel without touching a baseline. `DemoPoster`'s image sits inside `[data-shader-demo]` but outside the canvas, so no spec captures it.
 
 Three changes do invalidate baselines: a change to the shader's output, to the aspect ratio of the demo wrapper, or to the fixture's 560px pin.
 
 ## Two platform baselines
 
-Each spec has two committed snapshots:
+Each baseline has two committed snapshots:
 
 ```
 visual/<name>.spec.ts-snapshots/

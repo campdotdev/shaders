@@ -128,7 +128,7 @@ export function LinearGradientShader({
     // Degrees to radians, then the unit direction. Scalar uniforms are safe
     // as chained receivers, so the multiply reads left to right; the vec2 is
     // built from the results rather than chained off a vec uniform, which is
-    // the form the vec-uniform gotcha requires.
+    // the form the vec-uniform gotcha in docs/agents/tsl.md requires.
     const angleRadians = angleUniform.mul(Math.PI / 180);
     const direction = vec2(cos(angleRadians), sin(angleRadians));
 

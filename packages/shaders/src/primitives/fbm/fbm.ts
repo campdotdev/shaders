@@ -163,9 +163,9 @@ export function fractalNoise(p: TSLNode, opts: FractalNoiseOptions = {}): Shader
     // decorrelated. The scalar broadcasts across all components of `p`
     // (works for vec2 and vec3 inputs alike).
     //
-    // Build the chain functionally from `p`: the vec-uniform gotcha
-    // doesn't apply because `p` is uv-rooted, but the TSLNode union
-    // still requires functional form on this hop.
+    // Build the chain functionally from `p`: the vec-uniform gotcha in
+    // docs/agents/tsl.md doesn't apply because `p` is uv-rooted, but the
+    // TSLNode union still requires functional form on this hop.
     const pAtFreq = add(mul(p, frequency), i * 100);
     const layer = foldOctave(simplexNoise(pAtFreq), fold).mul(amplitude);
 

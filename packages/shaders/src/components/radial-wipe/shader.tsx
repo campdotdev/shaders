@@ -84,7 +84,8 @@ export function RadialWipeShader({ progress, center, feather }: RadialWipeShader
       // 1 wherever the center sits: the farthest corner from a point in the
       // unit box is max(c, 1 - c) on each axis, corrected the same way.
       // vec2(0, 0).add(centerUniform) lifts the bare vec uniform into a node
-      // receiver so the chain stays safe (the vec-uniform gotcha).
+      // receiver so the chain stays safe (the vec-uniform gotcha in
+      // docs/agents/tsl.md).
       const toPixel = uv().sub(centerUniform);
       const corrected = vec2(toPixel.x.mul(aspectUniform), toPixel.y);
       const centerLifted = vec2(0, 0).add(centerUniform);

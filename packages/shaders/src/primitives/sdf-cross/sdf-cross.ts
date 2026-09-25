@@ -54,8 +54,8 @@ export function signedDistanceFieldCross(
   armHalfThickness: TSLNode | number,
 ): ShaderNodeObject<Node> {
   // vec2(0).add(p) lifts p into a chainable receiver, so a bare vec uniform
-  // passed as p stays in argument position (the vec-uniform gotcha). Then
-  // the 45 degree turn puts each arm on an axis.
+  // passed as p stays in argument position (the vec-uniform gotcha in
+  // docs/agents/tsl.md). Then the 45 degree turn puts each arm on an axis.
   const point = vec2(0, 0).add(p);
   const rotated = vec2(point.x.add(point.y), point.x.sub(point.y)).mul(HALF_SQRT_2);
 
