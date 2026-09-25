@@ -4,7 +4,7 @@ export interface LedWallParams {
   bleed: number;
   flicker: number;
   speed: number;
-  focusRadius: number;
+  swellRadius: number;
   swell: number;
 }
 
@@ -14,6 +14,6 @@ export const INITIAL: LedWallParams = {
   bleed: 0,
   flicker: 0.5,
   speed: 2.4,
-  focusRadius: 0.6,
+  swellRadius: 0.6,
   swell: 0.85,
 };

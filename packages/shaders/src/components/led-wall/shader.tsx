@@ -6,7 +6,7 @@
 // supplies the props. Two overlay hooks do the work: a base-pass uv snap so
 // every pixel in a cell samples the same scene color, then a color pass
 // that masks each cell down to its dot, breathes its brightness with a
-// per-dot flicker, swells it toward `focus`, and scales the gaps by
+// per-dot flicker, swells it toward `swellCenter`, and scales the gaps by
 // `bleed`.
 import { useEffect, useMemo } from 'react';
 
@@ -28,7 +28,10 @@ import {
 } from 'three/tsl';
 
 import { stableHash, stableHashUint } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -68,20 +71,21 @@ export interface LedWallShaderProps {
    */
   speed: AnimatableProp<number>;
   /**
-   * The point the dots swell toward, 0..1 across the canvas with `[0, 0]`
-   * at the top-left corner. Feed it a cursor signal to follow the pointer.
-   * Accepts a static value or an animation signal.
+   * Center of the swell: the point the dots grow toward, 0..1 across the
+   * canvas with `[0, 0]` at the top-left corner. Pass `"cursor"` to follow
+   * the pointer, which parks the swell below the canvas until the first
+   * move. Accepts a static value or an animation signal.
    */
-  focus: AnimatableProp<readonly [number, number]>;
+  swellCenter: PositionProp;
   /**
-   * Reach of the swell from the focus, in canvas units where 1 is the
+   * Reach of the swell from its center, in canvas units where 1 is the
    * canvas height. Accepts a static value or an animation signal.
    */
-  focusRadius: AnimatableProp<number>;
+  swellRadius: AnimatableProp<number>;
   /**
-   * How much a dot grows at the focus, as a fraction of its edge. 0 turns
-   * the swell off, 1 doubles the edge at the focus, and the cell caps it so
-   * a dot never touches its neighbour. Accepts a static value or an
+   * How much a dot grows at the swell center, as a fraction of its edge. 0
+   * turns the swell off, 1 doubles the edge at the center, and the cell caps
+   * it so a dot never touches its neighbour. Accepts a static value or an
    * animation signal.
    */
   swell: AnimatableProp<number>;
@@ -104,12 +108,21 @@ const RIM_SOFTNESS_PX = 0.7;
 const VARIANCE = 0.5;
 
 // Smallest reach the swell's smoothstep may use, in canvas units. The
-// smoothstep runs from 0 out to focusRadius, and both GLSL ES and WGSL
+// smoothstep runs from 0 out to swellRadius, and both GLSL ES and WGSL
 // need that upper edge strictly above the lower one: GLSL ES leaves the
 // result undefined otherwise, and WGSL divides by their difference. A
-// focusRadius of 0 or below therefore clamps to this, which reaches no
+// swellRadius of 0 or below therefore clamps to this, which reaches no
 // cell center in practice, so it reads as the swell switched off.
-const MIN_FOCUS_RADIUS = 1e-4;
+const MIN_SWELL_RADIUS = 1e-4;
+
+// Where a `"cursor"` swell center waits before the pointer first moves, in
+// the same 0..1 frame as the prop: one canvas height below the bottom edge.
+// The shared cursor would otherwise start at the canvas center and swell a
+// cluster of dots there for a pointer that is not on the page. The nearest
+// dot is then a full canvas height away, beyond the default 0.6 reach, so
+// no dot moves. A swellRadius of 1 or more would reach the bottom row. The
+// first real move brings the center in from below.
+const SWELL_CENTER_PARKED = [0.5, 2] as const;
 
 // The brightness dials are applied in a gamma-encoded approximation of
 // display space rather than in the linear light the pass composes in. In
@@ -126,8 +139,8 @@ export function LedWallShader({
   bleed,
   flicker,
   speed,
-  focus,
-  focusRadius,
+  swellCenter,
+  swellRadius,
   swell,
 }: LedWallShaderProps) {
   // The dials live in uniforms: values the CPU can update each frame without
@@ -142,16 +155,19 @@ export function LedWallShader({
   // already scaled for reduced motion), so a speed change shifts the tempo
   // without snapping every dot to a new point in its breath.
   const phaseUniform = useAnimatableSpeed(speed);
-  // focus is already a screen-style pair, [0, 0] at the top-left, the same
-  // frame the pass's uv() reads, so it needs no conversion.
-  const focusUniform = useAnimatablePoint(focus);
-  const focusRadiusUniform = useAnimatableUniform(focusRadius);
+  // swellCenter is already a screen-style pair, [0, 0] at the top-left, the
+  // same frame the pass's uv() reads, so it needs no conversion.
+  const swellCenterUniform = useAnimatablePoint(swellCenter, {
+    cursorInitial: SWELL_CENTER_PARKED,
+  });
+  const swellRadiusUniform = useAnimatableUniform(swellRadius);
   const swellUniform = useAnimatableUniform(swell);
 
   // The render-on-demand vote: the scene may stop drawing only when nothing
   // on the wall can change between frames. static.ts says why the swell's
-  // strength and a cursor-driven focus do not count and why speed does.
-  useStaticSceneHint(isLedWallStatic({ flicker, focus, speed, swell }));
+  // strength and a cursor-driven swell center do not count and why speed
+  // does.
+  useStaticSceneHint(isLedWallStatic({ flicker, speed, swell, swellCenter }));
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
@@ -189,7 +205,7 @@ export function LedWallShader({
   // Track the canvas aspect ratio
   // ---------------------------------------------
   // The distance math below multiplies the horizontal offset by
-  // width/height so the focus's reach stays a circle on a wide canvas.
+  // width/height so the swell's reach stays a circle on a wide canvas.
   // useAspectUniform keeps the ratio current across resizes.
   const aspectUniform = useAspectUniform();
 
@@ -281,36 +297,36 @@ export function LedWallShader({
       // The swell: dots grow toward a point
       // ---------------------------------------------
       // The cell's center in the pass's screen frame, so it compares with
-      // the focus uniform directly. Evaluated per CELL, not per pixel, so a
-      // dot grows as one piece. Then the aspect-corrected distance from the
-      // focus, and a smoothstep from 0 out to the radius, flipped with
-      // oneMinus so the term is 1 at the focus and 0 past the radius. The
-      // edges have to ascend: GLSL ES leaves smoothstep undefined when the
-      // first edge is not below the second, and the WebGL2 fallback is what
-      // headless Playwright and CI render on, which is also why the radius
-      // is clamped to MIN_FOCUS_RADIUS. The dot's half-edge below grows by
-      // swell times that term.
+      // the swell center uniform directly. Evaluated per CELL, not per
+      // pixel, so a dot grows as one piece. Then the aspect-corrected
+      // distance from the swell center, and a smoothstep from 0 out to the
+      // radius, flipped with oneMinus so the term is 1 at the center and 0
+      // past the radius. The edges have to ascend: GLSL ES leaves smoothstep
+      // undefined when the first edge is not below the second, and the
+      // WebGL2 fallback is what headless Playwright and CI render on, which
+      // is also why the radius is clamped to MIN_SWELL_RADIUS. The dot's
+      // half-edge below grows by swell times that term.
       const cellCenterPx = cellIndex.add(0.5).mul(cellPx);
       const cellCenterUv = cellCenterPx.div(screenSize);
-      const toFocus = cellCenterUv.sub(focusUniform);
-      const focusDistance = length(vec2(toFocus.x.mul(aspectUniform), toFocus.y));
-      const nearFocus = smoothstep(
+      const toSwellCenter = cellCenterUv.sub(swellCenterUniform);
+      const swellDistance = length(vec2(toSwellCenter.x.mul(aspectUniform), toSwellCenter.y));
+      const nearSwellCenter = smoothstep(
         float(0),
-        focusRadiusUniform.max(MIN_FOCUS_RADIUS),
-        focusDistance,
+        swellRadiusUniform.max(MIN_SWELL_RADIUS),
+        swellDistance,
       ).oneMinus();
 
       // The dot's half-edge in cell units. dotSize in device pixels over the
       // cell pitch gives the edge as a fraction of the cell; half of it is
-      // the distance from the center to the rim. The focus then grows that
-      // by up to swell's fraction, at the focus. min(0.5) comes last so a
-      // dot never crosses into the next cell, whether it got there from a
-      // large dotSize or from a strong swell.
+      // the distance from the center to the rim. The swell then grows that
+      // by up to swell's fraction, at the swell center. min(0.5) comes last
+      // so a dot never crosses into the next cell, whether it got there from
+      // a large dotSize or from a strong swell.
       const halfEdge = dotSizeUniform
         .mul(dprUniform)
         .div(cellPx)
         .mul(0.5)
-        .mul(nearFocus.mul(swellUniform).add(1))
+        .mul(nearSwellCenter.mul(swellUniform).add(1))
         .min(0.5);
 
       // Signed distance to the square's rim: the larger of the two axis
@@ -344,9 +360,9 @@ export function LedWallShader({
       bleedUniform,
       flickerUniform,
       phaseUniform,
-      focusUniform,
-      focusRadiusUniform,
       swellUniform,
+      swellCenterUniform,
+      swellRadiusUniform,
       aspectUniform,
       dprUniform,
     ],

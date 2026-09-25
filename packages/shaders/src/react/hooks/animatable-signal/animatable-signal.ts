@@ -13,6 +13,14 @@ export interface AnimatableSignal<T> {
 
 export type AnimatableProp<T> = T | AnimatableSignal<T>;
 
+/**
+ * A prop that names a point on the canvas, such as `center`: an `[x, y]`
+ * pair, an animation signal carrying one, or the string `'cursor'`, which
+ * follows the pointer through the scene's shared cursor. Every position
+ * prop shares this one type so they all accept the same inputs.
+ */
+export type PositionProp = AnimatableProp<readonly [number, number]> | 'cursor';
+
 // Duck-type check rather than instanceof, which is what lets foreign objects
 // like Motion's MotionValue qualify without Shaders importing anything.
 export const isSignal = <T>(value: AnimatableProp<T>): value is AnimatableSignal<T> => {

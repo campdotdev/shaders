@@ -5,7 +5,10 @@
 // is a post-process layer: stack it after other components inside a
 // <ShaderScene> and it reveals or hides everything beneath it from a point
 // with a feathered edge. Stack a Dissolve after it to grain that edge.
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { RadialWipeShader } from './shader.js';
 
 export interface RadialWipeProps {
@@ -17,11 +20,11 @@ export interface RadialWipeProps {
    */
   progress?: AnimatableProp<number>;
   /**
-   * Where the wipe starts, 0..1 across the canvas; `[0.5, 0.5]` is the
-   * middle and `[0, 0]` the top-left corner. Defaults to `[0.5, 0.5]`.
-   * Accepts a static value or an animation signal.
+   * Where the wipe starts, 0..1 across the canvas; `[0.5, 0.5]` is the middle
+   * and `[0, 0]` the top-left corner. Defaults to `[0.5, 0.5]`. Pass `"cursor"`
+   * to follow the pointer. Accepts a static value or an animation signal.
    */
-  center?: AnimatableProp<readonly [number, number]>;
+  center?: PositionProp;
   /**
    * Softness of the front, as a fraction of the distance from `center` to
    * the far corner. 0 is a hard edge, 1 feathers across the whole canvas.

@@ -8,7 +8,7 @@
  * client-only import, the poster that stands in until this scene paints,
  * and the visual-test skip; this file is the scene.
  */
-import { type ColorStop, LedWall, RadialGradient, ShaderScene, useCursor } from '@camp-dev/shaders';
+import { type ColorStop, LedWall, RadialGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { BANNER_HEIGHT, BANNER_WIDTH } from './banner-geometry';
 
@@ -92,42 +92,22 @@ const BANNER_FLICKER = 0.7;
  */
 const BANNER_SPEED = 1.8;
 
-/**
- * Where the wall's focus sits before the pointer first moves: one canvas
- * height below the bottom edge, in the same 0..1 frame as `focus`. The
- * cursor input otherwise seeds at the canvas center, which would swell a
- * cluster of dots under the middle of the header on every load, reading as
- * a highlight for a pointer that is not there. The first real pointer move
- * brings the focus in from below.
- */
-const FOCUS_PARKED: readonly [number, number] = [0.5, 2];
-
 // ----------------------------------------------------------------------------
 // The scene
 // ----------------------------------------------------------------------------
 
 /**
- * The wall with the pointer as its focus. useCursor reads the scene's canvas
- * from context, so this has to render inside the ShaderScene. The input
- * listens on the window and normalizes against the canvas, so a pointer
- * anywhere on the page steers the focus, and one far below the header lands
- * well outside the swell's reach and moves no dot. Swell strength and reach
- * are LedWall's own tuned defaults.
- */
-function BannerWall() {
-  const cursor = useCursor({ initial: FOCUS_PARKED });
-
-  return (
-    <LedWall bleed={BANNER_BLEED} flicker={BANNER_FLICKER} focus={cursor} speed={BANNER_SPEED} />
-  );
-}
-
-/**
  * Two layers in mount order: the glow, then the wall screening it, breathing
- * and swelling toward the pointer. The poster in banner-shader.tsx is
- * captured from this scene at its first frame, and ShaderScene rewinds the
- * clock and the breath phases on that frame, so the live wall takes over
- * from the poster in the same pose.
+ * and swelling toward the pointer. `swellCenter="cursor"` reads the scene's
+ * shared cursor, which listens on the window and normalizes against the
+ * canvas, so a pointer anywhere on the page steers the swell, and one far
+ * below the header lands well outside its reach and moves no dot. Until the
+ * first move, LedWall parks the swell below the canvas, so no dots swell on
+ * load. Swell strength and reach are LedWall's own tuned defaults.
+ *
+ * The poster in banner-shader.tsx is captured from this scene at its first
+ * frame, and ShaderScene rewinds the clock and the breath phases on that
+ * frame, so the live wall takes over from the poster in the same pose.
  */
 export default function BannerScene() {
   return (
@@ -138,7 +118,12 @@ export default function BannerScene() {
         stops={LIME_STOPS}
         stretch={GLOW_STRETCH}
       />
-      <BannerWall />
+      <LedWall
+        bleed={BANNER_BLEED}
+        flicker={BANNER_FLICKER}
+        speed={BANNER_SPEED}
+        swellCenter="cursor"
+      />
     </ShaderScene>
   );
 }

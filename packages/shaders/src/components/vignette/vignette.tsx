@@ -5,7 +5,10 @@
 // a post-process layer — stack it after other components inside a
 // <ShaderScene> and it blends the image toward `color` at the edges.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { VignetteShader } from './shader.js';
 
 export interface VignetteProps {
@@ -23,10 +26,10 @@ export interface VignetteProps {
   feather?: AnimatableProp<number>;
   /**
    * Vignette center, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`. Accepts a
-   * static value or an animation signal.
+   * `[0, 0]` is the top-left corner. Defaults to `[0.5, 0.5]`. Pass `"cursor"`
+   * to follow the pointer. Accepts a static value or an animation signal.
    */
-  center?: AnimatableProp<readonly [number, number]>;
+  center?: PositionProp;
   /**
    * Normalized distance from `center` at which the vignette reaches full
    * strength. Smaller values close the vignette in sooner. Defaults to 0.7.

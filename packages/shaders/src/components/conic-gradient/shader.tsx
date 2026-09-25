@@ -12,7 +12,10 @@ import { atan2, fract, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { colorRamp, type ColorSpace, type HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -28,10 +31,11 @@ export interface ConicGradientShaderProps {
    */
   stops: ColorStop[];
   /**
-   * Pivot the sweep rotates around, 0..1 across the canvas, screen-style
-   * (y grows downward). Accepts a static value or an animation signal.
+   * Pivot the sweep rotates around, 0..1 across the canvas, screen-style (y
+   * grows downward). Pass `"cursor"` to follow the pointer. Accepts a static
+   * value or an animation signal.
    */
-  center: AnimatableProp<readonly [number, number]>;
+  center: PositionProp;
   /**
    * Degrees; rotates the whole sweep clockwise (CSS conic-gradient's
    * direction — the siblings' `angle` turns counterclockwise). Accepts a

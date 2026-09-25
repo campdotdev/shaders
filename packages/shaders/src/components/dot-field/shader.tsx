@@ -56,7 +56,10 @@ import {
   type MarkTilePlan,
   planMarkTiles,
 } from '../../primitives/mark-atlas/plan.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -114,10 +117,10 @@ export interface DotFieldShaderProps {
   decay: AnimatableProp<number>;
   /**
    * Ripple origin, 0..1 across the canvas; `[0.5, 0.5]` is centered and
-   * `[0, 0]` is the top-left corner. Accepts a static value or an animation
-   * signal.
+   * `[0, 0]` is the top-left corner. Pass `"cursor"` to follow the pointer.
+   * Accepts a static value or an animation signal.
    */
-  center: AnimatableProp<readonly [number, number]>;
+  center: PositionProp;
 }
 
 // ---------------------------------------------

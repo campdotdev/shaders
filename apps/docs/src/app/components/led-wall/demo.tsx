@@ -57,8 +57,8 @@ function LedWallControls() {
         <SliderInput label="Flicker" max={1} min={0} path="flicker" step={0.01} />
         <SliderInput label="Speed" max={8} min={0} path="speed" step={0.1} />
       </Section>
-      <Section title="Focus">
-        <SliderInput label="Radius" max={1} min={0.05} path="focusRadius" step={0.01} />
+      <Section title="Swell">
+        <SliderInput label="Radius" max={1} min={0.05} path="swellRadius" step={0.01} />
         <SliderInput label="Swell" max={1.5} min={0} path="swell" step={0.05} />
       </Section>
     </ControlPanel>

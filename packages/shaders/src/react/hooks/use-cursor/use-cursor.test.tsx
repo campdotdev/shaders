@@ -537,6 +537,41 @@ describe('useCursor inside a ShaderScene', () => {
     expect(result.current.presence.get()).toBe(0);
   });
 
+  // The cleanup clears the live signal with a state update, which lands one
+  // render late. The render that turns tracking off must already read the
+  // stub, not the live signal's last position.
+  it('returns the stub from the render that disables it', () => {
+    const frames = captureFrames();
+    const runFrame = makeFrameRunner(frames);
+    const scheduler = new FrameScheduler();
+    const scene = makeScene(scheduler);
+    const disabledReads: Array<readonly [number, number]> = [];
+
+    scheduler.start();
+
+    const { rerender } = renderHook(
+      ({ enabled }) => {
+        const signal = useCursor({ enabled, smoothing: 0, initial: [0.5, 2] });
+
+        if (!enabled) disabledReads.push(signal.get());
+
+        return signal;
+      },
+      { wrapper: scene.Wrapper, initialProps: { enabled: true } },
+    );
+
+    runFrame();
+    act(() => {
+      fireMoveOnWindow(250, 250);
+    });
+    runFrame();
+    rerender({ enabled: false });
+
+    expect(disabledReads.length).toBeGreaterThan(0);
+    expect(disabledReads.every(([x, y]) => x === 0.5 && y === 2)).toBe(true);
+    scene.dispose();
+  });
+
   it('creates a private input in the caller frame when given an element', () => {
     const frames = captureFrames();
     const runFrame = makeFrameRunner(frames);
@@ -643,6 +678,23 @@ describe('useCursor', () => {
 
     expect(result.current.get()).toEqual([0.5, 0.5]);
     expect(result.current.presence.get()).toBe(0);
+  });
+
+  // The first render returns before the effect builds the live signal. A
+  // consumer that parks its point off-canvas must read the parked point
+  // then too, or it draws one pass at the canvas center.
+  it('reports its initial from the first render, and while disabled', () => {
+    const firstReads: Array<readonly [number, number]> = [];
+
+    renderHook(() => {
+      const cursor = useCursor({ initial: [0.5, 2] });
+
+      firstReads.push(cursor.get());
+    });
+    const { result } = renderHook(() => useCursor({ enabled: false, initial: [0.5, 2] }));
+
+    expect(firstReads[0]).toEqual([0.5, 2]);
+    expect(result.current.get()).toEqual([0.5, 2]);
   });
 
   it('survives Strict Mode pseudo-unmount/remount cycle without throwing', () => {

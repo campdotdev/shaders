@@ -12,7 +12,10 @@ import { clamp, cos, fract, length, mix, sin, step, uv, vec2 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { colorRamp, type ColorSpace, type HueInterpolation } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -28,11 +31,11 @@ export interface RadialGradientShaderProps {
    */
   stops: ColorStop[];
   /**
-   * Where the gradient starts, 0..1 across the canvas; `[0.5, 0.5]` is
-   * centered and `[0, 0]` is the top-left corner. Accepts a static value or an
-   * animation signal.
+   * Where the gradient starts, 0..1 across the canvas; `[0.5, 0.5]` is centered
+   * and `[0, 0]` is the top-left corner. Pass `"cursor"` to follow the pointer.
+   * Accepts a static value or an animation signal.
    */
-  center: AnimatableProp<readonly [number, number]>;
+  center: PositionProp;
   /**
    * How far out the ramp reaches its last color, where 1 lands at the canvas
    * corners. Accepts a static value or an animation signal.
