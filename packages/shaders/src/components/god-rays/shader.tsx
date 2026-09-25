@@ -302,8 +302,8 @@ export function GodRaysShader({
   // Stable string proxy for the colors array — the layer colors are baked
   // into the compiled shader as literals, so a content change must rebuild
   // the material, but an identity-only change (a parent re-render passing a
-  // fresh array) must not (see the AGENTS.md gotcha on array props in
-  // effect deps).
+  // fresh array) must not (see the array-props gotcha in
+  // docs/agents/tsl.md).
   const colorsKey = colors.join('|');
 
   // A literal speed of 0 means nothing on screen ever changes (an animation

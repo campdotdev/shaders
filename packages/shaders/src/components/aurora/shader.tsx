@@ -176,8 +176,8 @@ export function AuroraShader({
 
   // Stable string proxy for the stops array — colors/positions are baked
   // into the ramp as literals, so a content change must rebuild the
-  // material, but an identity-only change must not (see the AGENTS.md
-  // gotchas on uniform stability and array props in effect deps).
+  // material, but an identity-only change must not (see the
+  // uniform-stability and array-props gotchas in docs/agents/tsl.md).
   const stopsKey = colorStopsKey(stops);
 
   // Canvas aspect ratio (width/height), used to un-stretch the view ray on

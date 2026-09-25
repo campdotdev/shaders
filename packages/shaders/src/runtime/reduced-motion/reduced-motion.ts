@@ -79,9 +79,9 @@ export function createReducedMotionWatcher(): ReducedMotionWatcher {
   // SSR watcher: scale() respects policy override but does not emit
   // subscription events (the engine has no way to notify SSR-created
   // watchers because they are not added to state.watchers — but in
-  // practice the AGENTS.md gotcha on three/webgpu referencing `self` at
-  // module load requires `ssr: false` for any component that touches the
-  // Shaders engine).
+  // practice the SSR gotcha in docs/agents/docs-site.md, three/webgpu
+  // referencing `self` at module load, requires `ssr: false` for any
+  // component that touches the Shaders engine).
   if (typeof matchMedia !== 'function') {
     return {
       scale: () => computeScale(false),

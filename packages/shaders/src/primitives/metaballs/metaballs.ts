@@ -127,8 +127,8 @@ const FAST_WEIGHT = 0.35;
  * Written with TSL's Fn/Loop/If so the GPU runs a real loop with an early
  * Break at `count`. The accumulators are ADDITIVE — each step references
  * them exactly once — so this stays clear of the exponential getNodeType
- * recursion that bans select-chain argmins (see AGENTS.md's running-minimum
- * gotcha; fbm's additive chain is the safe precedent). In-loop randomness
+ * recursion that bans select-chain argmins (see the running-minimum gotcha
+ * in docs/agents/tsl.md; fbm's additive chain is the safe precedent). In-loop randomness
  * comes only from the integer stableHash() — never a heavyweight noise primitive
  * (the 128-second-compile gotcha).
  *

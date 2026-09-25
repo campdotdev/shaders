@@ -9,9 +9,9 @@
 // Why not three's PostProcessing class: in three 0.170 it keeps a SINGLE quad
 // and material at module level, shared by every instance, so two scenes on
 // one page overwrite each other's output and both canvases draw whichever
-// scene updated last (the shared-quad gotcha in AGENTS.md). Owning the quad
-// per stage is the whole fix. A three bump that gives PostProcessing a quad
-// per instance could swap this back.
+// scene updated last (the shared-quad gotcha in docs/agents/tsl.md). Owning
+// the quad per stage is the whole fix. A three bump that gives
+// PostProcessing a quad per instance could swap this back.
 import { type Camera, LinearSRGBColorSpace, NoToneMapping, type Scene } from 'three';
 import type { ShaderNodeObject } from 'three/tsl';
 import { pass, passTexture, renderOutput, uv, vec4 } from 'three/tsl';

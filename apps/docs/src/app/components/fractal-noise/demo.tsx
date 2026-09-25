@@ -39,7 +39,7 @@ const FractalNoiseScene = dynamic(() => import('./scene'), { ssr: false });
  * defaults: switching Style writes that style's dial defaults into the store,
  * so the panel shows what an uncontrolled <FractalNoise style="..."> renders.
  * Subscribes to the style leaf only (writing a container path re-renders
- * everything under it — see the demo-store gotcha in AGENTS.md).
+ * everything under it — see the demo-store gotcha in docs/agents/docs-site.md).
  */
 function StyleDialSync() {
   const style = usePropValue<FractalNoiseStyle>('style');

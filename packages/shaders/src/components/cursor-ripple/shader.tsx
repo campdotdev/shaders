@@ -116,7 +116,8 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
 
   // One field texel, in uv units, so the slope below can step to the
   // neighbouring texels. Two floats rather than a vec2 uniform, so they can
-  // be chained freely in TSL math (the vec-uniform gotcha in AGENTS.md).
+  // be chained freely in TSL math (the vec-uniform gotcha in
+  // docs/agents/tsl.md).
   const texelWidth = useMemo(() => uniform(0), []);
   const texelHeight = useMemo(() => uniform(0), []);
 

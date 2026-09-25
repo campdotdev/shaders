@@ -8,7 +8,8 @@ import type { Node } from 'three/webgpu';
  * and return a cleanup callback that safely removes and disposes it.
  *
  * three's WebGPURenderer can throw during dispose() under rapid rebuild cycles
- * (Nodes bookkeeping race — CLAUDE.md gotcha #13-adjacent). The try/catch
+ * (a Nodes bookkeeping race, related to the Strict Mode gotcha in
+ * docs/agents/tsl.md). The try/catch
  * swallows the benign error; GPU resources are reaped when the renderer itself
  * is disposed at unmount.
  */

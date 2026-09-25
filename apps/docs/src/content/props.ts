@@ -81,8 +81,8 @@ export async function extractProps(source: string, componentName: string): Promi
       const name = member.name.getText(file);
       const description = readJsDocText(member);
 
-      // Fail the build rather than render an empty cell — AGENTS.md mandates
-      // JSDoc on every user-facing prop, so a miss here is a component bug.
+      // Fail the build rather than render an empty cell — docs/agents/code-style.md
+      // mandates JSDoc on every user-facing prop, so a miss here is a component bug.
       if (description === '') {
         throw new Error(`Prop "${name}" on ${componentName}Props has no JSDoc description`);
       }
@@ -184,7 +184,7 @@ function readJsDocText(member: ts.PropertySignature): string {
 
 // The table shows the default in its own column and flags animatability via
 // the type chip, so the JSDoc sentences carrying those (mandated by
-// AGENTS.md) are redundant here. The "Defaults to ..." sentence can contain
+// docs/agents/code-style.md) are redundant here. The "Defaults to ..." sentence can contain
 // periods inside numbers and tuples, so it ends at the first period followed
 // by a new sentence or the end of the text, not at the first period.
 function cleanDescription(raw: string): string {

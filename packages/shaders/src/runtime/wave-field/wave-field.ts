@@ -447,7 +447,7 @@ function buildStampNode({
   // where x is scaled by the aspect so distances mean the same along both
   // axes and the brush is round on screen. The vec2 uniforms are consumed
   // as arguments of mul, never as chained receivers (the vec-uniform gotcha
-  // in AGENTS.md).
+  // in docs/agents/tsl.md).
   const stretch = vec2(aspect, 1);
   const point = stretch.mul(here);
   const start = stretch.mul(strokeFrom);
@@ -515,7 +515,8 @@ export function createWaveField(
   let write: RenderTarget | null = createTarget(size.width, size.height);
 
   // The passes' live inputs. Vector2 uniforms are held as stable objects
-  // and written with set(), the pattern from the AGENTS.md uniform gotchas.
+  // and written with set(), per the uniform-stability gotcha in
+  // docs/agents/tsl.md.
   // One set serves both materials, so a write reaches whichever draws next.
   const uniforms: FieldUniforms = {
     previous: texture(read.texture),

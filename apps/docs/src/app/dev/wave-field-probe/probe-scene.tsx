@@ -156,8 +156,9 @@ export default function ProbeScene() {
     // Fixed and stacked above the site header (z-index 1) and the search
     // portal (2): the spec screenshots the canvas element's box, which would
     // otherwise include whatever chrome overlaps it, and page chrome must not
-    // be able to re-roll a shader baseline (the visual-regression gotcha in
-    // AGENTS.md). The other probes assert pixel fractions and never needed it.
+    // be able to re-roll a shader baseline (see "What the screenshot covers"
+    // in docs/development/visual-regression.md). The other probes assert
+    // pixel fractions and never needed it.
     <div style={{ position: 'fixed', inset: 0, zIndex: 10 }}>
       <ShaderScene>
         {effect === 'cursor-ripple' ? (

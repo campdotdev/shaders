@@ -43,9 +43,9 @@ export function cursorRipple(
 
   // d = length(p - center). Use functional `sub(p, center)` because both
   // are typed as the broad TSLNode union (no chain receiver). Chaining off a
-  // raw vec `uniform()` receiver silently produces wrong GPU values (see the
-  // AGENTS.md gotcha), so the functional form is also safer for `center`
-  // being a uniform.
+  // raw vec `uniform()` receiver silently produces wrong GPU values (the
+  // vec-uniform gotcha in docs/agents/tsl.md), so the functional form is
+  // also safer for `center` being a uniform.
   const d = length(sub(p, center));
   // `time` is the engine-gated TSL node (from primitives/time/time.ts);
   // chains rooted in `time` automatically respect `prefers-reduced-motion` and
