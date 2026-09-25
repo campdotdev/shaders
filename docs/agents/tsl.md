@@ -20,7 +20,7 @@ Every component folder holds at least two files. `components/<name>/<name>.tsx` 
 
 Hold a live value in a stable `Vector2` or `Vector3` from `useMemo(..., [])`, wrap it once in `uniform(vec)`, and write the prop into it with `vec.set(...)` in a light effect. The material effect then depends only on stable references and runs once per mount.
 
-The exception is every `colorRamp` consumer, such as `LinearGradient`, `WaveLines`, and `Voronoi`. `colorRamp` takes literal stop positions and the components pass literal colors, so these components rebuild the material when `colors` or `stops` change. On `WaveLines`, the largest ramp at 16 colors, one rebuild is a brief but visible stutter. The demo panels commit colors on pointer release to keep that acceptable, as `docs/agents/docs-site.md` describes.
+The exceptions are props baked into the shader as literals. Every `colorRamp` consumer, such as `LinearGradient`, `WaveLines`, and `Voronoi`, rebuilds the material when `colors` or `stops` change, because `colorRamp` takes literal stop positions and the components pass literal colors. `GodRays` rebuilds on its baked layer colors, and `DotField` on its mark shapes. On `WaveLines`, the largest ramp at 16 colors, one rebuild is a brief but visible stutter. The demo panels commit colors on pointer release to keep that acceptable, as `docs/agents/docs-site.md` describes.
 
 ### The array-props gotcha: give arrays a stable proxy in effect deps
 

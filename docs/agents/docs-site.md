@@ -14,7 +14,7 @@ Adding a component takes six edits: the folder in the package, an export from `p
 
 - Load anything that reaches the renderer through `next/dynamic` with `{ ssr: false }`. Every demo loads its `scene.tsx` that way.
 - Scalar code has a three-free import path, so reach for it before `ssr: false`. CPU color math comes from `@camp-dev/shaders/color`, and `useDisplayGamut` from `@camp-dev/shaders/gamut`. A lint rule on `apps/docs/**` rejects those names from the package root, and each subpath has a `// @vitest-environment node` test that fails if three enters its import graph.
-- The package's root entry, `gamut.ts`, and `poster.ts` open with `'use client'`. The directive lives in source because the docs site compiles the package from source. Server code, RSC pages, and `generateMetadata` import from `@camp-dev/shaders/color` only, which has no directive and no path to three.
+- The package's root entry, `gamut.ts`, and `poster.ts` open with `'use client'`. The directive lives in source because the docs site compiles the package from source. `generateMetadata` and other server-only logic import from `@camp-dev/shaders/color` only, which has no directive and no path to three. An RSC page can also render what `/gamut` and `/poster` export, because both are client boundaries that never import three.
 - three ships two standalone bundles, `three.module.js` and `three.webgpu.js`. Importing both duplicates three's core, which shows up as `Cannot read properties of undefined (reading 'usedTimes')` on dispose. `next.config.ts` aliases `three`, `three/webgpu`, and `three/tsl` to the webgpu bundle. Keep all three aliases.
 
 ## Demo panels
