@@ -143,9 +143,6 @@ importers:
       three:
         specifier: ^0.170.0
         version: 0.170.0
-      tweakpane:
-        specifier: ^4.0.5
-        version: 4.0.5
       unified:
         specifier: ^11.0.5
         version: 11.0.5
@@ -159,9 +156,6 @@ importers:
       '@shaders/tsconfig':
         specifier: workspace:*
         version: link:../../tooling/tsconfig
-      '@tweakpane/core':
-        specifier: ^2.0.5
-        version: 2.0.5
       '@types/culori':
         specifier: ^4.0.1
         version: 4.0.1
@@ -1848,9 +1842,6 @@ packages:
     resolution: {integrity: sha512-xBBgxCC5PK2+WZ1PPRZdp+aJ0bMBcEbweXWux3RUHJvX9ZodcoQySkrW6qt+ahb+uk8ZjyQodLfDwtVSoYds1w==}
     cpu: [arm64]
     os: [win32]
-
-  '@tweakpane/core@2.0.5':
-    resolution: {integrity: sha512-punBgD5rKCF5vcNo6BsSOXiDR/NSs9VM7SG65QSLJIxfRaGgj54ree9zQW6bO3pNFf3AogiGgaNODUVQRk9YqQ==}
 
   '@tweenjs/tween.js@23.1.3':
     resolution: {integrity: sha512-vJmvvwFxYuGnF2axRtPYocag6Clbb5YS7kLL+SO/TeVFzHqDIWrNKYtcsPMibjDx9O+bu+psAy9NKfWklassUA==}
@@ -4709,9 +4700,6 @@ packages:
     resolution: {integrity: sha512-epxzqVO2s0IxcSWcgb+qKrtco8isfe7g3VtiS6hkYnEK4A9XQDZbrtavQ6MtWR1KoQn+1fUomaQth2rfRHlUlg==}
     hasBin: true
 
-  tweakpane@4.0.5:
-    resolution: {integrity: sha512-rxEXdSI+ArlG1RyO6FghC4ZUX8JkEfz8F3v1JuteXSV0pEtHJzyo07fcDG+NsJfN5L39kSbCYbB9cBGHyuI/tQ==}
-
   type-check@0.4.0:
     resolution: {integrity: sha512-XleUoc9uwGXqjWwXaUTZAmzMcFZ5858QA2vvx1Ur5xIcixXIP+8LnFDgRplU30us6teqdlskFfu+ae4K79Ooew==}
     engines: {node: '>= 0.8.0'}
@@ -6281,8 +6269,6 @@ snapshots:
 
   '@turbo/windows-arm64@2.9.7':
     optional: true
-
-  '@tweakpane/core@2.0.5': {}
 
   '@tweenjs/tween.js@23.1.3': {}
 
@@ -9678,8 +9664,6 @@ snapshots:
       '@turbo/linux-arm64': 2.9.7
       '@turbo/windows-64': 2.9.7
       '@turbo/windows-arm64': 2.9.7
-
-  tweakpane@4.0.5: {}
 
   type-check@0.4.0:
     dependencies:

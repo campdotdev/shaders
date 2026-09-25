@@ -28,14 +28,12 @@
     "remark-parse": "^11.0.0",
     "shiki": "^4.0.2",
     "three": "^0.170.0",
-    "tweakpane": "^4.0.5",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.1.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@shaders/tsconfig": "workspace:*",
-    "@tweakpane/core": "^2.0.5",
     "@types/culori": "^4.0.1",
     "@types/node": "^22.7.0",
     "@types/react": "^19.0.0",
