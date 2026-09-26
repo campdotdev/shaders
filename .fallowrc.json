@@ -15,5 +15,5 @@
     "apps/playground/**",
     "packages/shaders-cli/src/test-fixtures/**"
   ],
-  "ignoreDependencies": ["@tweakpane/core", "eslint-import-resolver-typescript", "react"]
+  "ignoreDependencies": ["eslint-import-resolver-typescript", "react"]
 }
