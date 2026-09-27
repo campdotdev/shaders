@@ -204,6 +204,13 @@ export function linearSrgbToOklch(
   return [lightness, chroma, (hueDegrees + 360) % 360];
 }
 
+// -------------------------------------------------
+// Reading color strings
+// -------------------------------------------------
+// `parseColorString` checks the prefix and hands the string to one parser per
+// format. Each parser reads the trimmed string and quotes the caller's
+// original, untrimmed input in its error message.
+
 /** Parse `50%` -> 0.5 or a bare number. `scale` is the value of 100% (default 1). */
 function parseComponent(token: string, scale: number): number {
   const trimmed = token.trim();
@@ -236,6 +243,70 @@ function functionArgs(input: string, prefix: string): string[] {
  */
 const HEX_COLOR = /^[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/;
 
+/** `#rrggbb` or `#rrggbbaa` -> linear-sRGB. `input` is the caller's string, quoted in the error. */
+function parseHexColor(value: string, input: string): [number, number, number] {
+  const hex = value.slice(1);
+
+  if (!HEX_COLOR.test(hex)) {
+    throw new Error(`Invalid hex color: "${input}". Use #rrggbb or #rrggbbaa.`);
+  }
+
+  return [
+    srgbChannelToLinear(parseInt(hex.slice(0, 2), 16) / 255),
+    srgbChannelToLinear(parseInt(hex.slice(2, 4), 16) / 255),
+    srgbChannelToLinear(parseInt(hex.slice(4, 6), 16) / 255),
+  ];
+}
+
+/**
+ * `oklch(L C H)` -> extended linear-sRGB. 100% lightness is 1 and 100% chroma
+ * is 0.4, as in CSS. `input` is the caller's string, quoted in the error.
+ */
+function parseOklchColor(value: string, input: string): [number, number, number] {
+  const [lightnessToken, chromaToken, hueToken] = functionArgs(value, 'oklch(');
+
+  if (lightnessToken === undefined || chromaToken === undefined || hueToken === undefined) {
+    throw new Error(`Invalid oklch() color: "${input}"`);
+  }
+
+  const lightness = parseComponent(lightnessToken, 1);
+  const chroma = parseComponent(chromaToken, 0.4);
+  const hueDegrees = parseFloat(hueToken.replace(/deg$/, ''));
+
+  // parseFloat answers NaN for a non-numeric token rather than throwing, and
+  // NaN does not fail loudly: it rides into colorRamp or mixColor, gets baked
+  // into a literal, and reaches the GPU as a blank shader with a clean
+  // console. Checking here names the offending string at the call site.
+  if (!Number.isFinite(lightness) || !Number.isFinite(chroma) || !Number.isFinite(hueDegrees)) {
+    throw new Error(`Invalid oklch() color: "${input}"`);
+  }
+
+  return oklchToLinearSrgb(lightness, chroma, hueDegrees);
+}
+
+/**
+ * `oklab(L a b)` -> extended linear-sRGB. 100% lightness is 1 and 100% on a or
+ * b is 0.4, as in CSS. `input` is the caller's string, quoted in the error.
+ */
+function parseOklabColor(value: string, input: string): [number, number, number] {
+  const [lightnessToken, aToken, bToken] = functionArgs(value, 'oklab(');
+
+  if (lightnessToken === undefined || aToken === undefined || bToken === undefined) {
+    throw new Error(`Invalid oklab() color: "${input}"`);
+  }
+
+  const lightness = parseComponent(lightnessToken, 1);
+  const greenRed = parseComponent(aToken, 0.4);
+  const blueYellow = parseComponent(bToken, 0.4);
+
+  // The same NaN guard as parseOklchColor, for the same reason.
+  if (!Number.isFinite(lightness) || !Number.isFinite(greenRed) || !Number.isFinite(blueYellow)) {
+    throw new Error(`Invalid oklab() color: "${input}"`);
+  }
+
+  return oklabToLinearSrgb(lightness, greenRed, blueYellow);
+}
+
 /**
  * Parse a color string to **extended** linear-sRGB. Accepts `#rrggbb` and
  * `#rrggbbaa` (alpha parsed and dropped), `oklab(L a b)`, and `oklch(L C H)`
@@ -247,57 +318,15 @@ export function parseColorString(input: string): [number, number, number] {
   const value = input.trim();
 
   if (value.startsWith('#')) {
-    const hex = value.slice(1);
-
-    if (!HEX_COLOR.test(hex)) {
-      throw new Error(`Invalid hex color: "${input}". Use #rrggbb or #rrggbbaa.`);
-    }
-
-    return [
-      srgbChannelToLinear(parseInt(hex.slice(0, 2), 16) / 255),
-      srgbChannelToLinear(parseInt(hex.slice(2, 4), 16) / 255),
-      srgbChannelToLinear(parseInt(hex.slice(4, 6), 16) / 255),
-    ];
+    return parseHexColor(value, input);
   }
 
   if (value.startsWith('oklch(')) {
-    const [lightnessToken, chromaToken, hueToken] = functionArgs(value, 'oklch(');
-
-    if (lightnessToken === undefined || chromaToken === undefined || hueToken === undefined) {
-      throw new Error(`Invalid oklch() color: "${input}"`);
-    }
-
-    const lightness = parseComponent(lightnessToken, 1);
-    const chroma = parseComponent(chromaToken, 0.4);
-    const hueDegrees = parseFloat(hueToken.replace(/deg$/, ''));
-
-    // parseFloat answers NaN for a non-numeric token rather than throwing, and
-    // NaN does not fail loudly: it rides into colorRamp or mixColor, gets baked
-    // into a literal, and reaches the GPU as a blank shader with a clean
-    // console. Checking here names the offending string at the call site.
-    if (!Number.isFinite(lightness) || !Number.isFinite(chroma) || !Number.isFinite(hueDegrees)) {
-      throw new Error(`Invalid oklch() color: "${input}"`);
-    }
-
-    return oklchToLinearSrgb(lightness, chroma, hueDegrees);
+    return parseOklchColor(value, input);
   }
 
   if (value.startsWith('oklab(')) {
-    const [lightnessToken, aToken, bToken] = functionArgs(value, 'oklab(');
-
-    if (lightnessToken === undefined || aToken === undefined || bToken === undefined) {
-      throw new Error(`Invalid oklab() color: "${input}"`);
-    }
-
-    const lightness = parseComponent(lightnessToken, 1);
-    const greenRed = parseComponent(aToken, 0.4);
-    const blueYellow = parseComponent(bToken, 0.4);
-
-    if (!Number.isFinite(lightness) || !Number.isFinite(greenRed) || !Number.isFinite(blueYellow)) {
-      throw new Error(`Invalid oklab() color: "${input}"`);
-    }
-
-    return oklabToLinearSrgb(lightness, greenRed, blueYellow);
+    return parseOklabColor(value, input);
   }
 
   throw new Error(`Unsupported color syntax: "${input}". Use #rrggbb, oklch(...), or oklab(...).`);
