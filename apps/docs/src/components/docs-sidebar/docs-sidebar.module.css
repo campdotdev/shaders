@@ -106,9 +106,10 @@
   list-style: none;
 }
 
-/* A row: 14px muted text in the 36px box. The active row is the mock's
-   lime-900 fill with lime text. The mock draws no hover, so hover borrows
-   the faint white fill code blocks use and lifts the text to full white. */
+/* A row: 14px muted text in the 36px box. The muted text, the hover, and
+   the focus ring are the link row the table of contents shares
+   (nav-row.module.css). The active row is the mock's lime-900 fill with
+   lime text, hover included. */
 .row {
   display: block;
   height: var(--spacing-9);
@@ -116,30 +117,10 @@
   border-radius: var(--radius-md);
   font-size: var(--font-size-sm);
   line-height: var(--leading-5);
-  color: var(--fg-muted);
-  text-decoration: none;
-  transition:
-    color var(--fade-xs) var(--ease-hover),
-    background-color var(--fade-xs) var(--ease-hover);
-}
-
-/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
-   and the fill would then stick on the tapped row. */
-@media (hover: hover) and (pointer: fine) {
-  .row:hover {
-    background: var(--white-a5);
-    color: var(--fg);
-    text-decoration: none;
-  }
 }
 
 .row[aria-current='page'],
 .row[aria-current='page']:hover {
   background: var(--lime-900);
   color: var(--accent);
-}
-
-.row:focus-visible {
-  outline: var(--border-width-2) solid var(--accent);
-  outline-offset: var(--border-width-2);
 }

@@ -14,6 +14,7 @@ import { useCallback, useRef, useState } from 'react';
 import { Dialog } from '@base-ui/react/dialog';
 
 import backdropStyles from '@/components/overlay-backdrop/overlay-backdrop.module.css';
+import textButtonStyles from '@/components/text-button/text-button.module.css';
 
 import { SearchResults, SearchStatus } from './search-results';
 import styles from './search.module.css';
@@ -61,7 +62,7 @@ export function Search() {
     <Dialog.Root onOpenChange={setOpen} onOpenChangeComplete={resetAfterClose} open={open}>
       <Dialog.Trigger
         aria-label="Open search"
-        className={styles.trigger}
+        className={`${textButtonStyles.box} ${styles.trigger}`}
         onPointerDown={rememberFocus}
         ref={triggerRef}
       >

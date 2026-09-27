@@ -124,7 +124,7 @@ export function ColorPopoverContents({ path, label }: { path: PathInput; label: 
           <input
             aria-invalid={typedIsInvalid}
             aria-label={`${label} value`}
-            className={styles.colorTextInput}
+            className={`${styles.textBox} ${styles.colorTextInput}`}
             onBlur={commitTyped}
             onChange={handleTyping}
             onKeyDown={(event) => {

@@ -20,6 +20,8 @@ import { useRef } from 'react';
 
 import { Popover } from '@base-ui/react/popover';
 
+import popupStyles from '@/components/popup/popup.module.css';
+
 import { ColorPopoverContents } from './ColorPopoverContents';
 import { useListRowTrail } from './context';
 import styles from './controls.module.css';
@@ -67,7 +69,7 @@ export function ColorInput({ path, label }: ColorInputProps) {
               followed it out to the row's name, hundreds of pixels from the
               swatch the reader clicked. */}
           <Popover.Positioner align="end" anchor={anchor} sideOffset={4}>
-            <Popover.Popup className={styles.colorPopup}>
+            <Popover.Popup className={`${popupStyles.popup} ${styles.colorPopup}`}>
               <ColorPopoverContents label={name} path={path} />
             </Popover.Popup>
           </Popover.Positioner>

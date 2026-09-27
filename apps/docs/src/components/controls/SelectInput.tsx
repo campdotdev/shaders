@@ -8,6 +8,7 @@
 import { Select } from '@base-ui/react/select';
 
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
+import popupStyles from '@/components/popup/popup.module.css';
 
 import styles from './controls.module.css';
 import type { PathInput } from './store';
@@ -32,7 +33,7 @@ export function SelectInput({ path, label, options }: SelectInputProps) {
     <Select.Root items={options} onValueChange={(next) => setProp(path, next)} value={value}>
       <div className={styles.field}>
         <Select.Label className={styles.fieldLabel}>{label}</Select.Label>
-        <Select.Trigger className={styles.selectTrigger}>
+        <Select.Trigger className={`${styles.textBox} ${styles.selectTrigger}`}>
           <Select.Value className={styles.selectValue} />
           <Select.Icon className={styles.selectIcon}>
             <ChevronDownIcon />
@@ -41,7 +42,7 @@ export function SelectInput({ path, label, options }: SelectInputProps) {
       </div>
       <Select.Portal>
         <Select.Positioner sideOffset={4}>
-          <Select.Popup className={styles.selectPopup}>
+          <Select.Popup className={`${popupStyles.popup} ${styles.selectPopup}`}>
             <Select.List>
               {options.map(({ label: optionLabel, value: optionValue }) => (
                 <Select.Item className={styles.selectItem} key={optionValue} value={optionValue}>
