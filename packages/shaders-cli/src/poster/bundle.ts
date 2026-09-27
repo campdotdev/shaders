@@ -33,61 +33,94 @@ export interface BundlePosterResult {
 // with `name === '@camp-dev/shaders-cli'`, then try `dist/harness` then `src/harness` in order.
 // This is robust to any output chunk location tsup chooses.
 
+const CLI_PACKAGE_NAME = '@camp-dev/shaders-cli';
+
+// Built output first, so an installed CLI uses its bundled harness. The source fallback
+// covers dev and test runs straight from `src/`.
+const HARNESS_CANDIDATES = ['dist/harness', 'src/harness'];
+
 let harnessDirPromise: Promise<string> | undefined;
 
-async function locateHarnessDir(): Promise<string> {
-  if (harnessDirPromise) return harnessDirPromise;
-  harnessDirPromise = (async () => {
-    let dir = dirname(fileURLToPath(import.meta.url));
-
-    for (;;) {
-      try {
-        const packageJsonRaw = await readFile(join(dir, 'package.json'), 'utf-8');
-        const parsed: unknown = JSON.parse(packageJsonRaw);
-        const packageJson = (typeof parsed === 'object' && parsed !== null ? parsed : {}) as {
-          name?: string;
-        };
-
-        if (packageJson.name === '@camp-dev/shaders-cli') {
-          for (const candidate of ['dist/harness', 'src/harness']) {
-            const harnessPath = join(dir, candidate);
-
-            try {
-              await access(join(harnessPath, 'index.html'));
-
-              return harnessPath;
-            } catch {
-              // try next candidate
-            }
-          }
-          throw new Error(
-            `Found @camp-dev/shaders-cli at ${dir} but neither dist/harness nor src/harness contains index.html`,
-          );
-        }
-      } catch (caughtError) {
-        // Re-throw if we found the package but harness is missing
-        if (
-          caughtError instanceof Error &&
-          caughtError.message.startsWith('Found @camp-dev/shaders-cli')
-        ) {
-          throw caughtError;
-        }
-        // Otherwise, package.json missing or wrong name; walk up
-      }
-      const parent = dirname(dir);
-
-      if (parent === dir) {
-        throw new Error(
-          'Could not locate @camp-dev/shaders-cli package root from ' +
-            fileURLToPath(import.meta.url),
-        );
-      }
-      dir = parent;
-    }
-  })();
+function locateHarnessDir(): Promise<string> {
+  harnessDirPromise ??= resolveHarnessDir(fileURLToPath(import.meta.url));
 
   return harnessDirPromise;
 }
+
+// ---------------------------------------------
+// Harness search
+// ---------------------------------------------
+
+// `fromFile` is the module doing the looking. Only the first ancestor whose package.json names
+// the CLI counts: if it has no harness, the search throws there rather than walking on to an
+// outer copy of the package.
+export async function resolveHarnessDir(fromFile: string): Promise<string> {
+  for (const dir of ancestorDirs(dirname(fromFile))) {
+    if ((await readPackageName(dir)) !== CLI_PACKAGE_NAME) continue;
+
+    const harnessDir = await findHarnessIn(dir);
+
+    if (harnessDir !== undefined) return harnessDir;
+    throw new Error(
+      `Found ${CLI_PACKAGE_NAME} at ${dir} but neither dist/harness nor src/harness contains index.html`,
+    );
+  }
+  throw new Error(`Could not locate ${CLI_PACKAGE_NAME} package root from ${fromFile}`);
+}
+
+// `startDir`, then each parent in turn, ending at the filesystem root, the one directory that
+// `dirname` returns unchanged.
+export function* ancestorDirs(startDir: string): Generator<string> {
+  let dir = startDir;
+
+  for (;;) {
+    yield dir;
+    const parent = dirname(dir);
+
+    if (parent === dir) return;
+    dir = parent;
+  }
+}
+
+// The `name` field of `dir/package.json`, or undefined when the file is missing or isn't JSON.
+// Either case means "not our package, keep walking".
+async function readPackageName(dir: string): Promise<string | undefined> {
+  try {
+    const parsed: unknown = JSON.parse(await readFile(join(dir, 'package.json'), 'utf-8'));
+    const packageJson = (typeof parsed === 'object' && parsed !== null ? parsed : {}) as {
+      name?: string;
+    };
+
+    return packageJson.name;
+  } catch {
+    return undefined;
+  }
+}
+
+// The first harness candidate under `packageRoot` that holds an `index.html`.
+async function findHarnessIn(packageRoot: string): Promise<string | undefined> {
+  for (const candidate of HARNESS_CANDIDATES) {
+    const harnessPath = join(packageRoot, candidate);
+
+    if (await fileExists(join(harnessPath, 'index.html'))) return harnessPath;
+  }
+
+  return undefined;
+}
+
+async function fileExists(path: string): Promise<boolean> {
+  try {
+    await access(path);
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------
+// Bundle
+// ---------------------------------------------
 
 export async function bundlePoster(opts: BundlePosterOpts): Promise<BundlePosterResult> {
   const harnessDir = await locateHarnessDir();
