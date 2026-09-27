@@ -112,7 +112,7 @@ export interface WaveLinesProps {
 // line pairs (1–2, 3–4, 5–6) share a hue pair and differ only by rung, while
 // lines 0 and 7 carry unique hue pairs at the arc ends, an efficient packing
 // of eight lines across a six-accent arc spaced roughly 30° apart.
-export const DEFAULT_LINES: WaveLine[] = [
+const DEFAULT_LINES: WaveLine[] = [
   // paletteOklch.sky[10], paletteOklch.cyan[10]
   { color: ['oklch(0.863 0.083 235)', 'oklch(0.863 0.150 205)'] },
   // paletteOklch.blue[9], paletteOklch.sky[9]

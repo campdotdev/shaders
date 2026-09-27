@@ -14,16 +14,16 @@
    yet, so it is not listed; a tier appears here when its first group does.
    The records beside the tuples are typed so a slug cannot be added to one
    without the other. */
-export const TIER_SLUGS = ['sources', 'effects'] as const;
+const TIER_SLUGS = ['sources', 'effects'] as const;
 
 export type TierSlug = (typeof TIER_SLUGS)[number];
 
-export const TIERS: Record<TierSlug, { label: string }> = {
+const TIERS: Record<TierSlug, { label: string }> = {
   sources: { label: 'Sources' },
   effects: { label: 'Effects' },
 };
 
-export const CATEGORY_SLUGS = [
+const CATEGORY_SLUGS = [
   'gradients',
   'noise',
   'patterns',
