@@ -11,7 +11,7 @@
   // The poster command esbuilds the harness at runtime, from a directory it
   // resolves by path in poster/bundle.ts.
   "dynamicallyLoaded": ["packages/shaders-cli/src/harness/index.tsx"],
-  // The poster server serves the esbuilt harness at this URL.
+  // The poster server serves the esbuild bundle at this URL.
   "ignoreUnresolvedImports": ["/harness.js"],
   "ignoreExports": [
     // Every demo route owns a params.ts with the same export names, by
