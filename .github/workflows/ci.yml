@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  # The merge queue tests each queued pull request on top of main and the
+  # pull requests ahead of it, and waits for the required checks below.
+  merge_group:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
