@@ -1,5 +1,32 @@
 {
   "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/main/schema.json",
+  // Roots no framework plugin declares.
+  "entry": [
+    // Dev-only probe routes. next.config.ts adds the `dev.tsx` page extension
+    // behind INCLUDE_DEV_ROUTES=1, which fallow's Next plugin can't see.
+    "apps/docs/src/app/**/page.dev.tsx",
+    // Run by hand to regenerate blue-noise-tile.ts.
+    "scripts/generate-blue-noise.mjs"
+  ],
+  // The poster command esbuilds the harness at runtime, from a directory it
+  // resolves by path in poster/bundle.ts.
+  "dynamicallyLoaded": ["packages/shaders-cli/src/harness/index.tsx"],
+  // The poster server serves the esbuilt harness at this URL.
+  "ignoreUnresolvedImports": ["/harness.js"],
+  "ignoreExports": [
+    // Every demo route owns a params.ts with the same export names, by
+    // convention. No barrel re-exports them together.
+    {
+      "file": "apps/docs/src/app/components/*/params.ts",
+      "exports": ["INITIAL", "MIN_STOPS", "MAX_STOPS", "Params", "PlainColorStop"]
+    }
+  ],
+  "rules": {
+    // The engine boundary is enforced by no-restricted-imports in
+    // eslint.config.js, and the repo has no rule packs.
+    "boundary-violation": "off",
+    "policy-violation": "off"
+  },
   "duplicates": {
     "ignore": [
       "packages/shaders/src/components/**",
@@ -10,9 +37,9 @@
     ]
   },
   "ignorePatterns": [
+    ".claude/**",
     "apps/docs/content/**",
     "**/*.mdx",
-    "apps/playground/**",
     "packages/shaders-cli/src/test-fixtures/**"
   ],
   "ignoreDependencies": ["eslint-import-resolver-typescript", "react"]
