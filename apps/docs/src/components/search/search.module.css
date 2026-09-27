@@ -5,35 +5,24 @@
 
 /* ---- The trigger ---- */
 
-/* The mock's box, which is the Copy React button's box
-   (page-actions.module.css): 32px tall, the darkest gray, a hairline, 6px
-   corners. The keyboard hint sits 8px in from the left and the label 16px
-   in from the right, 16px apart, so the box is as wide as its two texts.
-   The press scales it to 0.98 rather than the site's usual 0.97 for
-   the reason that button gives: the box is wide, and 2% of it is the same
-   pixel of give. Focus is that button's 1px lime ring. Hidden under 40rem
-   with the header's link row, which site-header.module.css hides as one
-   block, so no query here. */
+/* The mock's box, which is the Copy React button's box: the site's boxed
+   text button's box (text-button.module.css), 32px tall with a hairline,
+   6px corners, and the 1px lime focus ring, here on the darkest gray. The
+   keyboard hint sits 8px in from the left and the label 16px in from the
+   right, 16px apart, so the box is as wide as its two texts. The press
+   scales it to 0.98 rather than the site's usual 0.97 for the reason the
+   Copy React button gives (page-actions.module.css): the box is wide, and
+   2% of it is the same pixel of give. Hidden under 40rem with the header's
+   link row, which site-header.module.css hides as one block, so no query
+   here. */
 .trigger {
-  display: inline-flex;
   flex: none;
-  align-items: center;
   gap: var(--spacing-4);
-  height: var(--spacing-8);
   margin: 0;
   padding: 0 var(--spacing-4) 0 var(--spacing-2);
   background: var(--gray-900);
   color: var(--gray-50);
-  border: var(--border-width-1) solid var(--white-a5);
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-5);
   cursor: pointer;
-  transition:
-    color var(--fade-xs) var(--ease-hover),
-    background-color var(--fade-xs) var(--ease-hover),
-    transform var(--duration-sm) var(--ease-out);
 }
 
 .trigger:active {
@@ -55,11 +44,6 @@
   .trigger:hover .hint {
     color: var(--fg);
   }
-}
-
-.trigger:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
 }
 
 /* The keyboard hint: the literal "Cmd+k" in 12px mono on the faint white

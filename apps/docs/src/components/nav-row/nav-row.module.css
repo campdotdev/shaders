@@ -1,0 +1,36 @@
+/* The link row that the docs sidebar (docs-sidebar/) and the table of
+   contents menu (page-toc/) share: muted text that takes the faint white
+   fill and full white on hover, and a 2px lime focus ring. Each applies
+   .row beside its own row class, which keeps its own box and current-row
+   fill; those rules add :hover to the current-row selector so it outranks
+   the hover here. No property is set both here and in a local class at the
+   same specificity, so the result does not depend on which stylesheet the
+   bundle emits first. */
+
+/* ---- The row ---- */
+
+/* The mock draws no hover, so hover borrows the faint white fill code
+   blocks use. Text and fill ease on the hover step. */
+.row {
+  color: var(--fg-muted);
+  text-decoration: none;
+  transition:
+    color var(--fade-xs) var(--ease-hover),
+    background-color var(--fade-xs) var(--ease-hover);
+}
+
+/* Hover styles are gated to pointing devices: a touch tap fires :hover too,
+   and the fill would then stick on the tapped row. The text-decoration
+   beats the site's underline on link hover (globals.css). */
+@media (hover: hover) and (pointer: fine) {
+  .row:hover {
+    background: var(--white-a5);
+    color: var(--fg);
+    text-decoration: none;
+  }
+}
+
+.row:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+}

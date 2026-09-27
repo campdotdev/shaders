@@ -1,0 +1,75 @@
+/* The site's boxed text button, the mock's drawing of the page header's
+   Copy React button: the control panel's Reset (controls/), the prev and
+   next links at the foot of a page (pagination/), and, as a box only, the
+   header's search trigger (search/). Each component applies classes from
+   here beside its own. No property is set both here and in a local class
+   at the same specificity, so the result does not depend on which
+   stylesheet the bundle emits first. The split Copy
+   React box itself (page-actions/) is two buttons inside one border, so it
+   keeps its own rules. */
+
+/* ---- The box ---- */
+
+/* 32px tall with a hairline and 6px corners, 14px text on a 20px line, and
+   the site's 1px lime focus ring. `font: inherit` comes before the size
+   because the shorthand resets it; on a link it changes nothing, since
+   every font property inherits anyway. Color and fill ease on the hover
+   step, and the press scale, which .button and the search trigger each
+   set, rides a duration token so Reduce Motion drops it. */
+.box {
+  display: inline-flex;
+  align-items: center;
+  height: var(--spacing-8);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+  transition:
+    color var(--fade-xs) var(--ease-hover),
+    background-color var(--fade-xs) var(--ease-hover),
+    transform var(--duration-sm) var(--ease-out);
+}
+
+.box:focus-visible {
+  outline: var(--border-width-1) solid var(--accent);
+  outline-offset: var(--border-width-1);
+}
+
+/* ---- The text button ---- */
+
+/* The box on the muted fill, with a 16px glyph 8px from 14px text and 8px
+   of padding each side. The mock draws the glyph a step darker than the
+   label. Hover lays the faint white fill over it and brings the label and
+   the glyph up to full white. The press is felt through a slight scale
+   rather than seen. Applied with .box. */
+.button {
+  gap: var(--spacing-2);
+  padding: 0 var(--spacing-2);
+  background: var(--bg-muted);
+  color: var(--gray-50);
+  cursor: pointer;
+}
+
+.button svg {
+  color: var(--gray-200);
+  transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* Gated to pointing devices: a touch tap fires :hover too, and the fill
+   would then stick on the button until the next tap lands elsewhere. */
+@media (hover: hover) and (pointer: fine) {
+  .button:hover {
+    background: var(--white-a5);
+    color: var(--fg);
+  }
+
+  .button:hover svg {
+    color: var(--fg);
+  }
+}
+
+/* Outside the hover gate, so a touch press is felt too. */
+.button:active {
+  transform: scale(0.97);
+}

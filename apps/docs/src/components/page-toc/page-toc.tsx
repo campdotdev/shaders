@@ -14,6 +14,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { Popover } from '@base-ui/react/popover';
 
+import navRowStyles from '@/components/nav-row/nav-row.module.css';
+import popupStyles from '@/components/popup/popup.module.css';
+
 import { pickCurrentSection } from './current-section';
 import styles from './page-toc.module.css';
 
@@ -138,7 +141,7 @@ export function PageToc({ sections }: { sections: PageTocSection[] }) {
             scroll, which reads as jitter. */}
         <Popover.Portal container={dockRef}>
           <Popover.Positioner align="center" side="right" sideOffset={6}>
-            <Popover.Popup className={styles.popup}>
+            <Popover.Popup className={`${popupStyles.popup} ${popupStyles.menu} ${styles.popup}`}>
               <nav aria-label="On this page">
                 <ul className={styles.list}>
                   {sections.map((section) => (
@@ -149,7 +152,7 @@ export function PageToc({ sections }: { sections: PageTocSection[] }) {
                         on, whatever the scroll position says. */}
                       <a
                         aria-current={section.id === activeId ? 'location' : undefined}
-                        className={styles.row}
+                        className={`${navRowStyles.row} ${styles.row}`}
                         href={`#${section.id}`}
                         onClick={() => {
                           choose(section.id);

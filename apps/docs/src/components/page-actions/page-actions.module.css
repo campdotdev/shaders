@@ -1,8 +1,8 @@
 /* The header's split "Copy React" button and the menu it opens. The box,
    its two buttons, and the menu follow the Figma mock; the button's hover
-   and press feel copy the control panel's text button, and the menu's
-   panel and rows copy the floating table of contents, so the site's three
-   popups read as one family. */
+   and press feel copy the control panel's text button, the menu's panel is
+   the floating table of contents' panel (popup.module.css), and its rows
+   copy that menu's rows, so the site's popups read as one family. */
 
 /* ---- The box ---- */
 
@@ -167,37 +167,16 @@
 
 /* ---- The menu ---- */
 
-/* Portaled to <body>, so it sets its own type. The mock's panel, shared
-   with the table of contents: the darkest gray with a hairline and 12px
-   corners, 6px of padding, 6px below the chevron. This one is 208px wide,
-   the three labels' width with room to spare, where the table of contents
-   takes the 3xs container. It scales in from the edge nearest the chevron,
-   the site's popup pattern; Base UI sets --transform-origin from where the
-   popup was placed. */
+/* The mock's menu panel, shared with the table of contents through
+   popup.module.css, which also scales it in from the edge nearest the
+   chevron. This one is 208px wide, the three labels' width with room to
+   spare, where the table of contents takes the 3xs container, and it
+   stacks its rows 2px apart. */
 .popup {
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-0-5);
   width: var(--spacing-52);
-  padding: var(--spacing-1-5);
-  background: var(--gray-900);
-  color: var(--fg);
-  border: var(--border-width-1) solid var(--white-a5);
-  border-radius: var(--radius-xl);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-5);
-  transform-origin: var(--transform-origin);
-  transition:
-    transform var(--duration-sm) var(--ease-out),
-    opacity var(--fade-sm) var(--ease-out);
-}
-
-.popup[data-starting-style],
-.popup[data-ending-style] {
-  opacity: 0;
-  transform: scale(0.95);
 }
 
 /* A row is the button's shape: a 14px label in a 32px box with 12px on the

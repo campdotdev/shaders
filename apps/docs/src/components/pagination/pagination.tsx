@@ -10,6 +10,7 @@
 import Link from 'next/link';
 
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
+import textButtonStyles from '@/components/text-button/text-button.module.css';
 import type { DocsNeighbor } from '@/content/types';
 
 import styles from './pagination.module.css';
@@ -36,7 +37,10 @@ export function Pagination({ prev, next, className }: PaginationProps) {
           single button on a section's first or last page would slide over
           to the side it does not belong on. */}
       {prev ? (
-        <Link className={styles.link} href={prev.url}>
+        <Link
+          className={join(textButtonStyles.box, textButtonStyles.button, styles.link)}
+          href={prev.url}
+        >
           <ChevronDownIcon className={styles.chevronPrevious} />
           {prev.label}
         </Link>
@@ -44,7 +48,10 @@ export function Pagination({ prev, next, className }: PaginationProps) {
         <span />
       )}
       {next ? (
-        <Link className={styles.link} href={next.url}>
+        <Link
+          className={join(textButtonStyles.box, textButtonStyles.button, styles.link)}
+          href={next.url}
+        >
           {next.label}
           <ChevronDownIcon className={styles.chevronNext} />
         </Link>

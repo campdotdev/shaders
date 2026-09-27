@@ -9,17 +9,30 @@
  * drives the open state. The tree scrolls inside the shared ScrollArea once
  * it outgrows the box, with a fade at whichever edge has rows past it.
  */
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { type MouseEvent, type RefObject, useId, useLayoutEffect, useRef, useState } from 'react';
+import { type MouseEvent, useLayoutEffect, useRef, useState } from 'react';
 
 import { Collapsible } from '@base-ui/react/collapsible';
 
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
+import {
+  NavGroup,
+  navigatesThisTab,
+  type NavTreeClassNames,
+  treeNests,
+} from '@/components/nav-tree/nav-tree';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types';
 
 import styles from './docs-nav-dropdown.module.css';
+
+// The tree's look, from this file's stylesheet; its markup is NavGroup's.
+const TREE_CLASS_NAMES: NavTreeClassNames = {
+  group: styles.group,
+  groupHeader: styles.groupHeader,
+  list: styles.list,
+  row: styles.row,
+};
 
 interface DocsNavDropdownProps {
   /** The sidebar's tree: groups of rows, where a group may nest groups. */
@@ -27,8 +40,6 @@ interface DocsNavDropdownProps {
   /** The trigger's text on a page the tree has no row for, such as the components index. */
   fallbackLabel: string;
 }
-
-type RowClickHandler = (event: MouseEvent<HTMLAnchorElement>) => void;
 
 // How far from the top or bottom edge, in px, still counts as reaching it
 // before the fade over that edge goes off. At the end edge it matches the
@@ -82,11 +93,8 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
   if (openedOn !== null && openedOn !== pathname) setOpenedOn(null);
 
   const open = openedOn === pathname;
-  const closeOnNavigate: RowClickHandler = (event) => {
-    const navigatesHere =
-      event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey;
-
-    if (navigatesHere) setOpenedOn(null);
+  const closeOnNavigate = (event: MouseEvent<HTMLAnchorElement>) => {
+    if (navigatesThisTab(event)) setOpenedOn(null);
   };
 
   // The element that scrolls, the current page's row inside it, and the box
@@ -161,13 +169,11 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
     };
   }, [open]);
 
-  // A tree whose groups hold groups takes larger top-level headers, so that
-  // a parent reads as the parent of the groups under it. Read off the tree
-  // rather than handed down as a look, the way the sidebar does it. The
-  // `|| undefined` is what drops the attribute on a flat tree: React writes
-  // a literal false out as data-nests="false", and [data-nests] matches any
-  // value, that string included.
-  const nests = tree.some((group) => group.items.some((item) => 'items' in item));
+  // A tree whose groups hold groups takes larger top-level headers. The
+  // `|| undefined` below is what drops the attribute on a flat tree: React
+  // writes a literal false out as data-nests="false", and [data-nests]
+  // matches any value, that string included.
+  const nests = treeNests(tree);
 
   return (
     <Collapsible.Root
@@ -195,7 +201,8 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
               data-pagefind-ignore="all"
             >
               {tree.map((group) => (
-                <Group
+                <NavGroup
+                  classNames={TREE_CLASS_NAMES}
                   currentRowRef={currentRowRef}
                   group={group}
                   key={group.label}
@@ -209,70 +216,6 @@ export function DocsNavDropdown({ tree, fallbackLabel }: DocsNavDropdownProps) {
         </div>
       </Collapsible.Panel>
     </Collapsible.Root>
-  );
-}
-
-// ----------------------------------------------------------------------------
-// The tree
-// ----------------------------------------------------------------------------
-
-interface GroupProps {
-  /** Attached to the current page's row, which the open effect scrolls to. */
-  currentRowRef: RefObject<HTMLAnchorElement | null>;
-  group: ResolvedNavGroup;
-  /** Which heading this group's label is: h2 at the top, h3 inside a group. */
-  level: 2 | 3;
-  onRowClick: RowClickHandler;
-  pathname: string;
-}
-
-// A group header over its rows. A nested group, such as React under
-// Frameworks on the docs pages, renders as a group inside the list, and
-// its header steps down to an h3 so that heading navigation reads it as
-// the child of the h2 above it, the same levels the docs sidebar gives the
-// same tree. No tree nests deeper than that. A plain div rather than a
-// <section>: these are groupings of links inside a nav, not sections of
-// the page, and the spec reserves <section> for content that would appear
-// in the document's outline. aria-labelledby ties the list to its heading,
-// so a screen reader announces "Gradients, list, 4 items" instead of an
-// unlabelled list. Mirrors the docs sidebar.
-function Group({ currentRowRef, group, level, onRowClick, pathname }: GroupProps) {
-  const headingId = useId();
-  const Heading = level === 2 ? 'h2' : 'h3';
-
-  return (
-    <div className={styles.group}>
-      <Heading className={styles.groupHeader} id={headingId}>
-        {group.label}
-      </Heading>
-      <ul aria-labelledby={headingId} className={styles.list}>
-        {group.items.map((item) =>
-          'items' in item ? (
-            <li key={item.label}>
-              <Group
-                currentRowRef={currentRowRef}
-                group={item}
-                level={3}
-                onRowClick={onRowClick}
-                pathname={pathname}
-              />
-            </li>
-          ) : (
-            <li key={item.url}>
-              <Link
-                aria-current={item.url === pathname ? 'page' : undefined}
-                className={styles.row}
-                href={item.url}
-                onClick={onRowClick}
-                ref={item.url === pathname ? currentRowRef : undefined}
-              >
-                {item.label}
-              </Link>
-            </li>
-          ),
-        )}
-      </ul>
-    </div>
   );
 }
 
