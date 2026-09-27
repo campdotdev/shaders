@@ -40,6 +40,38 @@ jobs:
       - run: pnpm install --frozen-lockfile
       - run: pnpm test
 
+  # Reports the dead code, complexity, and duplication a pull request adds, as
+  # annotations on the diff and a job summary, without failing the job. Exit 0
+  # is a clean audit and 1 means findings. Any other code means fallow itself
+  # broke, such as a bad .fallowrc.json, so that fails the job. To make the
+  # audit a blocking gate, fail on exit 1 as well.
+  fallow-audit:
+    name: Fallow audit
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The audit diffs against the merge base, so it needs history.
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Audit the changes against the base branch
+        env:
+          BASE_REF: origin/${{ github.base_ref }}
+        run: |
+          status=0
+          pnpm exec fallow audit --base "$BASE_REF" --format github-annotations --quiet || status=$?
+          pnpm exec fallow audit --base "$BASE_REF" --format github-summary --quiet >> "$GITHUB_STEP_SUMMARY" || true
+          if [ "$status" -gt 1 ]; then
+            echo "::error::fallow audit exited $status, which means the analysis failed, not that it found issues"
+            exit "$status"
+          fi
+
   # The visual job must render in the exact container snap.sh bakes the Linux
   # baselines in. A bare ubuntu runner ships a different font set, so fontconfig
   # resolves the `monospace` fallback to a different font (the image lands on
