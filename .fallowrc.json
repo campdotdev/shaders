@@ -27,6 +27,14 @@
     "boundary-violation": "off",
     "policy-violation": "off"
   },
+  "overrides": [
+    {
+      // Docs components keep their props interfaces private. Nothing outside
+      // the app imports them, so a leak there has no one to hurt.
+      "files": ["apps/docs/**"],
+      "rules": { "private-type-leaks": "off" }
+    }
+  ],
   "duplicates": {
     "ignore": [
       "packages/shaders/src/components/**",

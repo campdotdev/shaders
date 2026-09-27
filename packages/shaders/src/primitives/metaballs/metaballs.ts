@@ -33,8 +33,6 @@ import type { Node } from 'three/webgpu';
 import type { TSLNode } from '../color-ramp/color-ramp.js';
 import { stableHash, stableHashUint } from '../stable-hash/stable-hash.js';
 
-type TSLScalar = TSLNode | number;
-
 // three's Loop callback receives its iterator variables untyped; this names
 // the shape once.
 type LoopVars = Record<string, ShaderNodeObject<Node>>;
@@ -46,32 +44,32 @@ export interface MetaballsOptions {
    * in smoothly instead of popping it. Out-of-range values clamp.
    * Default 8.
    */
-  count?: TSLScalar;
+  count?: TSLNode | number;
   /**
    * 0..1 base blob size, mapped onto the falloff exponent (small size =
    * steep falloff = tight blob). Bigger blobs also merge sooner — their
    * falloffs overlap at greater distances. Out-of-range values clamp.
    * Default 0.5.
    */
-  size?: TSLScalar;
+  size?: TSLNode | number;
   /**
    * 0..1 per-blob size variation: 0 renders every blob at `size`, 1 lets
    * each blob's own random scale it anywhere down to near-zero.
    * Out-of-range values clamp. Default 0.
    */
-  sizeVariation?: TSLScalar;
+  sizeVariation?: TSLNode | number;
   /**
    * 0..1 roam radius — how far blobs wander from the origin, as a fraction
    * of ROAM_EXTENT pattern units. Out-of-range values clamp. Default 0.5.
    */
-  spread?: TSLScalar;
+  spread?: TSLNode | number;
   /**
    * Pre-integrated animation phase (speed × elapsed time, summed CPU-side).
    * Default 0 (static).
    */
-  time?: TSLScalar;
+  time?: TSLNode | number;
   /** Re-rolls every per-blob random stream (paths, sizes, blend values). Default 0. */
-  seed?: TSLScalar;
+  seed?: TSLNode | number;
 }
 
 export interface MetaballsResult {
