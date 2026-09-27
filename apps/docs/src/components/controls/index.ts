@@ -1,23 +1,13 @@
 export { ColorInput } from './ColorInput';
-export {
-  ControlsProvider,
-  CopySourceProvider,
-  ListRowProvider,
-  PathPrefixProvider,
-  useCopySource,
-  useListRowTrail,
-} from './context';
+export { ControlsProvider, CopySourceProvider, useCopySource } from './context';
 export { ControlPanel } from './ControlPanel';
-export { formatJsx, formatParams } from './copy';
-export type { CopyConfig } from './copy';
+export { formatJsx } from './copy';
 export { DemoLayout } from './DemoLayout';
 export { ListInput } from './ListInput';
 export { NumberInput } from './NumberInput';
 export { COLOR_SPACE_OPTIONS, HUE_ARC_OPTIONS } from './options';
 export { Section } from './Section';
 export { SelectInput } from './SelectInput';
-export type { SelectOption } from './SelectInput';
 export { SliderInput } from './SliderInput';
 export { createControlStore } from './store';
-export type { ControlPath, ControlStore, PathInput, PathSegment } from './store';
-export { usePropValue, useResetControls, useSetProp, useSnapshot } from './useControl';
+export { usePropValue, useSetProp, useSnapshot } from './useControl';

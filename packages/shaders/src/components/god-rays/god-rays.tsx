@@ -16,11 +16,7 @@ import { GodRaysShader } from './shader.js';
 // it, pink at the back. Layer light is additive, so overlaps bloom toward
 // pale lavender-white; chroma stays high on every stop so partial-strength
 // rays keep their hue instead of graying out.
-export const DEFAULT_COLORS = [
-  'oklch(0.80 0.12 250)',
-  'oklch(0.70 0.16 300)',
-  'oklch(0.75 0.14 345)',
-];
+const DEFAULT_COLORS = ['oklch(0.80 0.12 250)', 'oklch(0.70 0.16 300)', 'oklch(0.75 0.14 345)'];
 
 export interface GodRaysProps {
   /**

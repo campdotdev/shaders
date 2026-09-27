@@ -14,9 +14,8 @@ the same four-part shape:
    and wraps both `*Demo` and `*Controls` in one `<ControlsProvider store={store}>` inside
    `<DemoLayout>`.
 
-`copy.ts` still exports `formatJsx` and `formatParams`, which turn a params snapshot into the
-JSX and params strings a copy button hands out. Nothing in the panel calls them today; the page
-header's copy menu will (SHA-115).
+`copy.ts` exports `formatJsx`, which turns a params snapshot into the JSX that the page header's
+Copy React menu (`page-actions.tsx`) hands out.
 
 Styling lives in `controls.module.css` (the panel and its controls) and `demo-layout.module.css`
 (the shader-beside-controls grid and the sticky, fading controls column). Nothing in here can
