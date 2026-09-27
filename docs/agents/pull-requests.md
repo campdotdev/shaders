@@ -46,7 +46,7 @@ The `fallow` CLI is a root devDependency, pinned so CI and every machine run the
 - Before the push, run `pnpm exec fallow audit --base origin/main`. It reports the dead code, complexity, and duplication the branch adds, and exits 1 on a fail verdict.
 - CI runs the same audit on every pull request, in the `Fallow audit` job. The job posts findings as annotations and a job summary without failing, and it fails only when fallow itself breaks.
 - To review a diff or a pull request, load the `fallow-review` skill.
-- Before you delete code that Fallow reports as unused, run `fallow dead-code --trace <file>:<export>` to confirm nothing reaches it.
+- Before you delete code that Fallow reports as unused, run `pnpm exec fallow dead-code --trace <file>:<export>` to confirm nothing reaches it.
 
 ## Work through bot findings with `resolve-pr-feedback`
 

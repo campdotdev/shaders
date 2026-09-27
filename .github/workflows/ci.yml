@@ -64,13 +64,16 @@ jobs:
         env:
           BASE_REF: origin/${{ github.base_ref }}
         run: |
-          status=0
-          pnpm exec fallow audit --base "$BASE_REF" --format github-annotations --quiet || status=$?
-          pnpm exec fallow audit --base "$BASE_REF" --format github-summary --quiet >> "$GITHUB_STEP_SUMMARY" || true
-          if [ "$status" -gt 1 ]; then
-            echo "::error::fallow audit exited $status, which means the analysis failed, not that it found issues"
-            exit "$status"
-          fi
+          annotations_status=0
+          summary_status=0
+          pnpm exec fallow audit --base "$BASE_REF" --format github-annotations --quiet || annotations_status=$?
+          pnpm exec fallow audit --base "$BASE_REF" --format github-summary --quiet >> "$GITHUB_STEP_SUMMARY" || summary_status=$?
+          for status in "$annotations_status" "$summary_status"; do
+            if [ "$status" -gt 1 ]; then
+              echo "::error::fallow audit exited $status, which means the analysis failed, not that it found issues"
+              exit "$status"
+            fi
+          done
 
   # The visual job must render in the exact container snap.sh bakes the Linux
   # baselines in. A bare ubuntu runner ships a different font set, so fontconfig
