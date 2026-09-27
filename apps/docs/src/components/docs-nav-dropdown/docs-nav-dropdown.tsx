@@ -15,12 +15,8 @@ import { type MouseEvent, useLayoutEffect, useRef, useState } from 'react';
 import { Collapsible } from '@base-ui/react/collapsible';
 
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
-import {
-  NavGroup,
-  navigatesThisTab,
-  type NavTreeClassNames,
-  treeNests,
-} from '@/components/nav-tree/nav-tree';
+import { navigatesThisTab, treeNests } from '@/components/nav-tree/helpers';
+import { NavGroup, type NavTreeClassNames } from '@/components/nav-tree/nav-tree';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import type { ResolvedNavGroup, ResolvedNavItem } from '@/content/types';
 

@@ -19,12 +19,8 @@ import { usePathname } from 'next/navigation';
 import { type MouseEvent, useEffect, useRef } from 'react';
 
 import navRowStyles from '@/components/nav-row/nav-row.module.css';
-import {
-  NavGroup,
-  navigatesThisTab,
-  type NavTreeClassNames,
-  treeNests,
-} from '@/components/nav-tree/nav-tree';
+import { navigatesThisTab, treeNests } from '@/components/nav-tree/helpers';
+import { NavGroup, type NavTreeClassNames } from '@/components/nav-tree/nav-tree';
 import { ScrollArea } from '@/components/scroll-area/scroll-area';
 import type { ResolvedNavGroup } from '@/content/types';
 
