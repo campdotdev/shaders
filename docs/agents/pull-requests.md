@@ -52,3 +52,5 @@ Fallow is installed at user scope, not in the repo: the `fallow` CLI, the `fallo
 After the bots post, run the `resolve-pr-feedback` skill rather than reading comments by hand. The bots split their findings across inline threads, issue comments, and review bodies, and the skill's registry knows where each one puts them. It proposes each fix for approval, applies and validates the approved ones, then commits, pushes, and resolves the threads. Check every finding against the gotchas in `docs/agents/` before you accept it.
 
 To skip waiting on Copilot, run `/watch-pr <number>` after the push. It waits for each Copilot review, then runs `resolve-pr-feedback` unattended to fix the high- and medium-severity findings and push. It stops when a round has nothing left to fix or after three rounds, then reports the findings it held for you. It covers Copilot only, and it runs in the PR's own checkout, so leave that checkout alone until it reports.
+
+`resolve-pr-feedback` and `watch-pr` are installed at user scope, not in the repo. `docs/development/agent-setup.md` lists them.
