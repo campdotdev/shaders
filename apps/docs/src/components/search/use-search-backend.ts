@@ -5,7 +5,7 @@
  */
 import { useEffect, useRef, useState } from 'react';
 
-interface SearchResult {
+export interface SearchResult {
   url: string;
   title: string;
   /** HTML: Pagefind's excerpt with its <mark> tags, or the fallback's description. */
