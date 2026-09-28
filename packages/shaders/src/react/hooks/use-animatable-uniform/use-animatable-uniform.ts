@@ -14,6 +14,7 @@ import {
   type AnimatableSignal,
   isSignal,
 } from '../animatable-signal/animatable-signal.js';
+import { followAnimatable } from '../animatable-signal/follow-animatable.js';
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 
 export type { AnimatableProp, AnimatableSignal };
@@ -37,37 +38,19 @@ export function useAnimatableUniform<T>(value: AnimatableProp<T>): ReturnType<ty
   // Keep the uniform current. Signal values stream in through the
   // subscription — writes go straight to uniformNode.value with no React
   // re-render, which is what makes 60Hz animation cheap. Static values are
-  // pushed once per prop change.
-  //
-  // Every write is followed by a scheduler poke, because the scene renders on
-  // demand. A component that has voted itself static — a gradient at speed 0,
-  // say — parks the frame loop, and then a bare uniform write reaches the GPU
-  // and is never drawn: the new value sits there until something else happens
-  // to trigger a frame. Dragging a slider would change the number and repaint
-  // nothing. requestRender() returns immediately unless the scheduler really
-  // is idle, so a scene that is already animating pays one property read.
-  useEffect(() => {
-    const scheduler = shaderContext?.scheduler;
-
-    if (isSignal(value)) {
-      const write = (next: T) => {
-        uniformNode.value = next;
-        scheduler?.requestRender();
-      };
-
-      // Seed from the signal's current value before subscribing: this effect
-      // also runs when one signal is swapped for another, and the new source
-      // may not tick for a while — without the seed the uniform would keep
-      // showing the previous signal's last value.
-      write(value.get());
-
-      return value.on('change', write);
-    }
-    uniformNode.value = value;
-    scheduler?.requestRender();
-
-    return undefined;
-  }, [shaderContext, value, uniformNode]);
+  // pushed once per prop change. followAnimatable pokes the scheduler after
+  // every write, so dragging a slider on a parked scene repaints it.
+  useEffect(
+    () =>
+      followAnimatable(
+        value,
+        (next) => {
+          uniformNode.value = next;
+        },
+        shaderContext?.scheduler,
+      ),
+    [shaderContext, value, uniformNode],
+  );
 
   return uniformNode;
 }
