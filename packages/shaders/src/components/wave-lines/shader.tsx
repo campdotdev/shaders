@@ -32,7 +32,7 @@ import { useShaderContext } from '../../react/hooks/use-shader-context/use-shade
 import { parseColor, toColorRampStops } from '../shared/color.js';
 
 /** A single wave line: a flat color or a gradient along its length. */
-interface WaveLinesShaderLine {
+export interface WaveLinesShaderLine {
   /** Single color, or 2+ stops forming a gradient along the line — hex, `oklch()`, or `oklab()`. */
   color?: string | string[];
 }

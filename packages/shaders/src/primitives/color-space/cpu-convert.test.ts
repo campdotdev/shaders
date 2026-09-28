@@ -113,6 +113,79 @@ describe('parseColorString', () => {
   it('throws on three-digit hex shorthand, which is not supported', () => {
     expect(() => parseColorString('#abc')).toThrow(/Invalid hex/);
   });
+
+  it('throws on seven-digit hex', () => {
+    expect(() => parseColorString('#abcdef0')).toThrow(/Invalid hex/);
+  });
+
+  it('accepts uppercase hex digits', () => {
+    expect(parseColorString('#8C0067')).toEqual(parseColorString('#8c0067'));
+  });
+
+  it('ignores whitespace around the color', () => {
+    expect(parseColorString('  #8c0067\n')).toEqual(parseColorString('#8c0067'));
+    expect(parseColorString(' oklch(0.7 0.15 280) ')).toEqual(
+      parseColorString('oklch(0.7 0.15 280)'),
+    );
+  });
+
+  it('quotes the input exactly as given, whitespace included, in each error message', () => {
+    expect(() => parseColorString(' #abc ')).toThrow(
+      new Error('Invalid hex color: " #abc ". Use #rrggbb or #rrggbbaa.'),
+    );
+    expect(() => parseColorString(' oklch(a b c) ')).toThrow(
+      new Error('Invalid oklch() color: " oklch(a b c) "'),
+    );
+    expect(() => parseColorString(' oklab(a b c) ')).toThrow(
+      new Error('Invalid oklab() color: " oklab(a b c) "'),
+    );
+    expect(() => parseColorString(' red ')).toThrow(
+      new Error('Unsupported color syntax: " red ". Use #rrggbb, oklch(...), or oklab(...).'),
+    );
+  });
+
+  it('throws when oklch() or oklab() is missing a component', () => {
+    expect(() => parseColorString('oklch(0.7 0.15)')).toThrow(/Invalid oklch/);
+    expect(() => parseColorString('oklch()')).toThrow(/Invalid oklch/);
+    expect(() => parseColorString('oklab(0.7 0.15)')).toThrow(/Invalid oklab/);
+    expect(() => parseColorString('oklab()')).toThrow(/Invalid oklab/);
+  });
+
+  it('throws when a single oklab() component is not a number', () => {
+    expect(() => parseColorString('oklab(0.7 x -0.1)')).toThrow(/Invalid oklab/);
+  });
+
+  it('reads oklch() chroma percentages against 0.4, the CSS value of 100%', () => {
+    expect(parseColorString('oklch(70% 50% 280)')).toEqual(oklchToLinearSrgb(0.7, 0.2, 280));
+  });
+
+  it('reads oklab() a and b percentages against 0.4, the CSS value of 100%', () => {
+    expect(parseColorString('oklab(50% 25% -25%)')).toEqual(oklabToLinearSrgb(0.5, 0.1, -0.1));
+  });
+
+  it('accepts comma-separated components', () => {
+    expect(parseColorString('oklch(0.7, 0.15, 280)')).toEqual(oklchToLinearSrgb(0.7, 0.15, 280));
+    expect(parseColorString('oklab(0.7, 0.15, -0.1)')).toEqual(oklabToLinearSrgb(0.7, 0.15, -0.1));
+  });
+
+  it('parses and drops an oklab() alpha', () => {
+    expect(parseColorString('oklab(0.7 0.15 -0.1 / 50%)')).toEqual(
+      oklabToLinearSrgb(0.7, 0.15, -0.1),
+    );
+  });
+
+  it('returns wide-gamut colors unclamped', () => {
+    const channels = parseColorString('oklch(0.87 0.34 142)');
+
+    expect(channels).toEqual(oklchToLinearSrgb(0.87, 0.34, 142));
+    expect(channels.some((channel) => channel < 0 || channel > 1)).toBe(true);
+  });
+
+  it('matches function names case-sensitively and rejects other CSS color functions', () => {
+    expect(() => parseColorString('OKLCH(0.7 0.15 280)')).toThrow(/Unsupported color syntax/);
+    expect(() => parseColorString('rgb(255 0 0)')).toThrow(/Unsupported color syntax/);
+    expect(() => parseColorString('hsl(0 100% 50%)')).toThrow(/Unsupported color syntax/);
+  });
 });
 
 describe('linearSrgbToOklab', () => {

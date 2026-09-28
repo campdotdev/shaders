@@ -3,7 +3,12 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { resolveOutPath, runPoster, validateDeviceScaleFactor } from './poster.js';
+import {
+  isIntegerInRange,
+  resolveOutPath,
+  runPoster,
+  validateDeviceScaleFactor,
+} from './poster.js';
 
 const { launchAndScreenshotMock } = vi.hoisted(() => ({
   launchAndScreenshotMock: vi.fn(async () => ({ bytes: 123 })),
@@ -211,5 +216,24 @@ describe('validateDeviceScaleFactor', () => {
     expect(() => validateDeviceScaleFactor(0)).toThrow(/device-scale-factor/);
     expect(() => validateDeviceScaleFactor(-1)).toThrow(/device-scale-factor/);
     expect(() => validateDeviceScaleFactor(Number.NaN)).toThrow(/device-scale-factor/);
+  });
+});
+
+describe('isIntegerInRange', () => {
+  it('accepts integers at and between both bounds', () => {
+    expect(isIntegerInRange(1, 1, 100)).toBe(true);
+    expect(isIntegerInRange(50, 1, 100)).toBe(true);
+    expect(isIntegerInRange(100, 1, 100)).toBe(true);
+  });
+
+  it('rejects integers outside the bounds', () => {
+    expect(isIntegerInRange(0, 1, 100)).toBe(false);
+    expect(isIntegerInRange(101, 1, 100)).toBe(false);
+  });
+
+  it('rejects fractions, NaN, and infinities', () => {
+    expect(isIntegerInRange(1.5, 1, 100)).toBe(false);
+    expect(isIntegerInRange(Number.NaN, 1, 100)).toBe(false);
+    expect(isIntegerInRange(Number.POSITIVE_INFINITY, 1, 100)).toBe(false);
   });
 });

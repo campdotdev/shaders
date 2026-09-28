@@ -41,9 +41,6 @@ export interface CursorInputOptions {
   };
 }
 
-type ChangeListener = (value: Vector2) => void;
-type MoveListener = () => void;
-
 /**
  * Gap below which the smoothed position snaps onto its target, per axis, in
  * canvas units where 1 is the canvas width on x and the canvas height on y.
@@ -68,8 +65,8 @@ export class CursorInput {
   private target: Vector2 | null = null;
   private targetDirty = false;
   private inside = false;
-  private readonly listeners = new Set<ChangeListener>();
-  private readonly moveListeners = new Set<MoveListener>();
+  private readonly listeners = new Set<(value: Vector2) => void>();
+  private readonly moveListeners = new Set<() => void>();
   private readonly eventTarget: EventTarget;
   private readonly element: CursorInputOptions['element'];
   private readonly handlePointerMove: (e: Event) => void;
@@ -156,7 +153,7 @@ export class CursorInput {
   }
 
   /** Subscribe to change events. Returns an unsubscribe function. */
-  on(_eventType: 'change', changeListener: ChangeListener): () => void {
+  on(_eventType: 'change', changeListener: (value: Vector2) => void): () => void {
     this.listeners.add(changeListener);
 
     return () => this.listeners.delete(changeListener);
@@ -169,7 +166,7 @@ export class CursorInput {
    * needs this to know when to start again: `useCursor` uses it to wake an
    * idle scene. Returns an unsubscribe function.
    */
-  onMove(moveListener: MoveListener): () => void {
+  onMove(moveListener: () => void): () => void {
     this.moveListeners.add(moveListener);
 
     return () => {
