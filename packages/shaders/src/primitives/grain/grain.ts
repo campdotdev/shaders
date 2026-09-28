@@ -5,8 +5,6 @@ import type { Node } from 'three/webgpu';
 import type { TSLNode } from '../color-ramp/color-ramp.js';
 import { stableHash, stableHashUint } from '../stable-hash/stable-hash.js';
 
-type TSLScalar = TSLNode | number;
-
 /**
  * Per-pixel film-grain value: a random number derived from the pixel's
  * screen position and `timeOffset`, centered on zero — the result lands in
@@ -14,7 +12,10 @@ type TSLScalar = TSLNode | number;
  * gives the same value; advance `timeOffset` in discrete steps to re-roll
  * the whole pattern (see the grain registry component).
  */
-export function grain(intensity: TSLScalar, timeOffset: TSLScalar = 0): ShaderNodeObject<Node> {
+export function grain(
+  intensity: TSLNode | number,
+  timeOffset: TSLNode | number = 0,
+): ShaderNodeObject<Node> {
   const pixel = screenCoordinate.xy.floor();
   // Convert to uint up front so all seed arithmetic stays in exact integer
   // space — float32 loses integer precision above 2^24 (~16.7M), which a

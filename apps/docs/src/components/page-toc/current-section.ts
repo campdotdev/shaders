@@ -11,7 +11,7 @@
 // rather than a share of the viewport, so that a jump from the menu (which
 // lands a section's title 24px from the top) always puts that section, and
 // never the next one, under the line, however tall the window is.
-export const READING_LINE_PX = 200;
+const READING_LINE_PX = 200;
 
 // How far short of the end a scroll position may sit and still count as the
 // bottom, in px. Scroll positions are fractional on zoomed and Retina

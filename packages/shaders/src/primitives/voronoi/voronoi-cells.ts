@@ -27,8 +27,6 @@ import type { Node } from 'three/webgpu';
 import type { TSLNode } from '../color-ramp/color-ramp.js';
 import { stableHash, stableHashUint } from '../stable-hash/stable-hash.js';
 
-type TSLScalar = TSLNode | number;
-
 // three's Loop callback receives its iterator variables untyped; this names
 // the shape once for both nested loops.
 type LoopVars = Record<string, ShaderNodeObject<Node>>;
@@ -38,13 +36,13 @@ export interface VoronoiCellsOptions {
    * Pre-integrated animation phase (speed × elapsed time, summed CPU-side).
    * Default 0 (static).
    */
-  time?: TSLScalar;
+  time?: TSLNode | number;
   /**
    * 0..1 seed scatter: 0 pins every seed to its cell center (a perfect
    * square grid), 1 lets seeds sit anywhere in their cell. Out-of-range
    * values clamp. Default 1.
    */
-  jitter?: TSLScalar;
+  jitter?: TSLNode | number;
   /**
    * 0..1 orbit radius, as a fraction of a half-cell: 0 is no motion, 1
    * swings every seed through the full room its cell offers. Anchors
@@ -52,7 +50,7 @@ export interface VoronoiCellsOptions {
    * never leave their cell and the 3x3 neighbor search stays valid at any
    * drift. Out-of-range values clamp. Default 0.
    */
-  drift?: TSLScalar;
+  drift?: TSLNode | number;
 }
 
 export interface VoronoiCellsResult {

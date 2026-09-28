@@ -33,6 +33,8 @@ function withSuffix(slugs: string[]): string[] {
 // page reads, and prose slugs from getDocsStaticParams, so a markdown file
 // exists exactly where a page exists. getDocsStaticParams drops hidden
 // pages and keeps drafts, which matches the page and not the search index.
+// Next reads this from route handlers too, which fallow's Next plugin misses.
+// fallow-ignore-next-line unused-export
 export async function generateStaticParams(): Promise<Array<{ slug: string[] }>> {
   const components = Object.keys(COMPONENT_PAGES).map((slug) => ({
     slug: withSuffix(['components', slug]),

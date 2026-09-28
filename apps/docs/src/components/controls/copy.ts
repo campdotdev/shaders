@@ -1,8 +1,7 @@
 /**
- * Turns a params snapshot into the two things the panel's copy buttons hand
- * out: a ready-to-paste JSX block and a plain params object. This works because
- * each page's params object mirrors its component's real prop shape — every
- * page used to hand-write both strings and repeat each prop name three times.
+ * Turns a params snapshot into the ready-to-paste JSX block that the page
+ * header's Copy React menu hands out. This works because each page's params
+ * object mirrors its component's real prop shape.
  */
 
 export interface CopyConfig {
@@ -43,15 +42,6 @@ function formatValue(value: unknown, indent: string): string {
   }
 
   return String(value);
-}
-
-/** The params object, one prop per line, in declaration order. */
-export function formatParams(params: object): string {
-  const lines = Object.entries(params).map(
-    ([key, value]) => `  ${key}: ${formatValue(value, '  ')},`,
-  );
-
-  return `{\n${lines.join('\n')}\n}`;
 }
 
 /** A JSX attribute: strings use quotes, everything else braces. */

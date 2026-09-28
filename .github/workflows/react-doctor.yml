@@ -13,6 +13,9 @@ on:
   # Scans `main` on every push to track the health-score trend and catch regressions that slipped past PR review.
   push:
     branches: ['main']
+  # The merge queue waits for this required check. The scan is advisory and
+  # already ran on the pull request, so a queue run only reports success.
+  merge_group:
 
 permissions:
   contents: read
@@ -29,12 +32,17 @@ jobs:
   react-doctor:
     runs-on: ubuntu-latest
     steps:
+      - if: github.event_name == 'merge_group'
+        run: echo "React Doctor scanned this change on its pull request."
+
       # fetch-depth: 0 gives React Doctor the full git history it needs to find the merge base with the target branch. Without it a shallow checkout has no merge base, so PR runs can't compare against the base and fall back to reporting every issue in the changed files (pre-existing ones included) instead of only the ones the PR introduced.
-      - uses: actions/checkout@v5
+      - if: github.event_name != 'merge_group'
+        uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: millionco/react-doctor@v2
+      - if: github.event_name != 'merge_group'
+        uses: millionco/react-doctor@v2
         with:
           # Must match the repo's devEngines pin exactly. The action's npm steps
           # run with the checkout as cwd, so npm enforces devEngines against the

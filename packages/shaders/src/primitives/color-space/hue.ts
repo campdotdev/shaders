@@ -10,7 +10,7 @@ const EQUAL_HUE_EPSILON = 1e-6;
  * `shorter` — travel the SHORTER arc (CSS Color 4 default). The signed delta is
  * wrapped into [-period/2, period/2) so the lerp never goes the long way.
  */
-export const shortestArcHue: ArcHueFn = (h1, h2, t, period) => {
+const shortestArcHue: ArcHueFn = (h1, h2, t, period) => {
   const half = period / 2;
   const delta = mod(h2.sub(h1).add(half), period).sub(half);
 
@@ -22,7 +22,7 @@ export const shortestArcHue: ArcHueFn = (h1, h2, t, period) => {
  * full period the other way. At exactly-equal hues `sign` is 0, so the delta
  * stays 0 (no surprise full-circle spin) rather than looping the wheel.
  */
-export const longestArcHue: ArcHueFn = (h1, h2, t, period) => {
+const longestArcHue: ArcHueFn = (h1, h2, t, period) => {
   const half = period / 2;
   const short = mod(h2.sub(h1).add(half), period).sub(half);
   const delta = short.sub(sign(short).mul(period));
@@ -34,7 +34,7 @@ export const longestArcHue: ArcHueFn = (h1, h2, t, period) => {
  * `increasing` — hue counts strictly UP (wrapping period→0). Delta in [0, period),
  * so a multi-stop ramp marches one way around the wheel without reversing.
  */
-export const increasingArcHue: ArcHueFn = (h1, h2, t, period) => {
+const increasingArcHue: ArcHueFn = (h1, h2, t, period) => {
   const delta = mod(h2.sub(h1), period);
 
   return h1.add(delta.mul(t));
@@ -45,7 +45,7 @@ export const increasingArcHue: ArcHueFn = (h1, h2, t, period) => {
  * full period subtracted (unless the hues are equal, guarded by the epsilon), so
  * the result lands in (-period, 0].
  */
-export const decreasingArcHue: ArcHueFn = (h1, h2, t, period) => {
+const decreasingArcHue: ArcHueFn = (h1, h2, t, period) => {
   const up = mod(h2.sub(h1), period);
   const delta = up.sub(step(EQUAL_HUE_EPSILON, up).mul(period));
 

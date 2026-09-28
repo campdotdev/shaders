@@ -14,6 +14,7 @@ import { uniform } from 'three/tsl';
 import { getReducedMotionTimeScale } from '../../../engine.js';
 import type { SchedulerTick } from '../../../engine.js';
 import { type AnimatableProp, isSignal } from '../animatable-signal/animatable-signal.js';
+import { followAnimatable } from '../animatable-signal/follow-animatable.js';
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 
 // Longest slice of time one tick may contribute, in seconds. The scheduler
@@ -44,31 +45,20 @@ export function useAnimatableSpeed(
 
   // Keep the ref current — subscribe when the prop is a signal, write once
   // when it is a plain number. A speed change needs no phase correction
-  // (continuity is the construction), but every write still pokes the
-  // scheduler so a signal driving speed on an idle scene wakes it for
-  // exactly the frames the signal ticks — the same render-on-demand
-  // contract useAnimatableUniform keeps.
-  useEffect(() => {
-    const scheduler = shaderContext?.scheduler;
-
-    if (isSignal(speed)) {
-      const write = (next: number) => {
-        speedRef.current = next;
-        scheduler?.requestRender();
-      };
-
-      // Seed from the signal's current value before subscribing: this
-      // effect also runs when one signal is swapped for another, and the
-      // new source may not tick for a while.
-      write(speed.get());
-
-      return speed.on('change', write);
-    }
-    speedRef.current = speed;
-    scheduler?.requestRender();
-
-    return undefined;
-  }, [shaderContext, speed]);
+  // (continuity is the construction), but followAnimatable still pokes the
+  // scheduler after every write, so a signal driving speed on an idle scene
+  // wakes it for exactly the frames the signal ticks.
+  useEffect(
+    () =>
+      followAnimatable(
+        speed,
+        (next) => {
+          speedRef.current = next;
+        },
+        shaderContext?.scheduler,
+      ),
+    [shaderContext, speed],
+  );
 
   // The integrator: one scheduler client advancing the phase each frame.
   // Multiplying by the reduced-motion scale preserves the engine's

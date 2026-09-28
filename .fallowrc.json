@@ -27,6 +27,34 @@
     "boundary-violation": "off",
     "policy-violation": "off"
   },
+  "overrides": [
+    {
+      // Docs components keep their props interfaces private. Nothing outside
+      // the app imports them, so a leak there has no one to hurt.
+      "files": ["apps/docs/**"],
+      "rules": { "private-type-leaks": "off" }
+    }
+  ],
+  "health": {
+    "thresholdOverrides": [
+      {
+        "files": ["packages/shaders/src/components/*/shader.tsx"],
+        "maxUnitSize": 320,
+        "maxCognitive": 20,
+        "reason": "A TSL shader builds the pixel's journey as one node graph, and its comments walk it top to bottom. Splitting it is a gated shader rebuild, not a lint fix."
+      },
+      {
+        "files": ["**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts"],
+        "maxUnitSize": 1000,
+        "reason": "A describe() callback spans its whole suite."
+      },
+      {
+        "files": ["apps/docs/**"],
+        "maxCrap": 1000,
+        "reason": "CRAP needs real coverage. Playwright, not Vitest, covers the docs UI, so fallow's static estimate scores it as untested."
+      }
+    ]
+  },
   "duplicates": {
     "ignore": [
       "packages/shaders/src/components/**",
