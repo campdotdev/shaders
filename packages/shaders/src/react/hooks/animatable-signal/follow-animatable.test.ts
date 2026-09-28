@@ -36,12 +36,14 @@ describe('followAnimatable', () => {
     expect(cleanup).toBeUndefined();
   });
 
-  it('seeds from a signal before it ticks, then applies every tick', () => {
+  it('seeds from a signal before subscribing, then applies every tick', () => {
     const apply = vi.fn();
     const { signal, set } = makeSignal(0.1);
+    const on = vi.spyOn(signal, 'on');
 
     followAnimatable(signal, apply, makeScheduler());
     expect(apply).toHaveBeenLastCalledWith(0.1);
+    expect(apply).toHaveBeenCalledBefore(on);
 
     set(0.7);
     expect(apply).toHaveBeenLastCalledWith(0.7);
