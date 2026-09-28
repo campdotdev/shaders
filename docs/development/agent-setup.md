@@ -1,18 +1,18 @@
 # Set up coding agents on a new machine
 
-The repo carries its own agent guide and two skills. Everything else lives at user scope and has to be installed on each machine.
+The repo carries its own agent guide and one skill. Everything else lives at user scope and has to be installed on each machine.
 
 ## What arrives with the clone
 
 - `AGENTS.md` at the repo root. `CLAUDE.md` imports it, so Claude Code, Codex, and OpenCode read the same file.
-- The `react-doctor` and `resolve-pr-feedback` skills, in `.claude/skills/` with a plain-copy mirror in `.agents/skills/` for Codex. `react-doctor` calls `pnpm exec react-doctor` instead of the upstream `npx` on purpose, and its `SKILL.md` says why.
+- The `react-doctor` skill, in `.claude/skills/` with a plain-copy mirror in `.agents/skills/` for Codex. It calls `pnpm exec react-doctor` instead of the upstream `npx` on purpose, and its `SKILL.md` says why.
 
 ## Install the user-scope skills
 
 1. Install the mattpocock skill set with `npx skills@latest add mattpocock/skills -g`. Take the `engineering` and `productivity` groups, and skip `in-progress` and `misc`.
 2. Run `setup-matt-pocock-skills` once. It reads and writes the `## Agent skills` block in `AGENTS.md` and the three files in `docs/agents/` that block points to.
 3. Install Fallow at user scope: the `fallow` CLI, the `fallow` and `fallow-review` skills, and the `fallow-mcp` server.
-4. Install the `technical-writing`, `unslop`, and `design-engineering` skills into `~/.claude/skills/`. `design-engineering` builds on Emil Kowalski's animations.dev skills, which are also local.
+4. Install the `technical-writing`, `unslop`, `design-engineering`, `resolve-pr-feedback`, and `watch-pr` skills into `~/.claude/skills/`, and into `~/.agents/skills/` for Codex. `design-engineering` builds on Emil Kowalski's animations.dev skills, which are also local.
 
 ## Reapply the local patches after an update
 

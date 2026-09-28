@@ -67,7 +67,7 @@ Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root. See `docs
 
 ### Repo-local skills
 
-`react-doctor`, `resolve-pr-feedback`, and `watch-pr` live in `.claude/skills/`, with a plain copy in `.agents/skills/` for Codex. When you edit one, copy it to both. `diff -rq .claude/skills .agents/skills` should print nothing.
+`react-doctor` lives in `.claude/skills/`, with a plain copy in `.agents/skills/` for Codex. When you edit it, copy it to both. `diff -rq .claude/skills .agents/skills` should print nothing.
 
 ## Keep this file small
 
