@@ -11,7 +11,7 @@ The repo carries its own agent guide and one skill. Everything else lives at use
 
 1. Install the mattpocock skill set with `npx skills@latest add mattpocock/skills -g`. Take the `engineering` and `productivity` groups, and skip `in-progress` and `misc`.
 2. Run `setup-matt-pocock-skills` once. It reads and writes the `## Agent skills` block in `AGENTS.md` and the three files in `docs/agents/` that block points to.
-3. Install Fallow at user scope: the `fallow` CLI, the `fallow` and `fallow-review` skills, and the `fallow-mcp` server.
+3. Install Fallow's `fallow` and `fallow-review` skills and the `fallow-mcp` server at user scope. The `fallow` CLI arrives with `pnpm install` as a root devDependency.
 4. Install the `technical-writing`, `unslop`, `design-engineering`, `resolve-pr-feedback`, and `watch-pr` skills into `~/.claude/skills/`, and into `~/.agents/skills/` for Codex. `design-engineering` builds on Emil Kowalski's animations.dev skills, which are also local.
 
 ## Reapply the local patches after an update
