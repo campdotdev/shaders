@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
+import { treeNests } from '@/components/nav-tree/helpers';
+
 import { getDocsNavTree, getDocsPrevNext, getDocsSidebarTree } from './nav';
 import { getMdxDocsPages } from './source';
 import type { ResolvedNavGroup } from './types';
@@ -65,10 +67,7 @@ describe('getDocsSidebarTree', () => {
   // this asserts. Flattening Frameworks in nav.config.ts would otherwise
   // drop that distinction with nothing to say so.
   it('gives the components tree no nesting and the docs tree one level of it', async () => {
-    const nests = (tree: ResolvedNavGroup[]) =>
-      tree.some((group) => group.items.some((item) => 'items' in item));
-
-    expect(nests(await getDocsSidebarTree('components'))).toBe(false);
-    expect(nests(await getDocsSidebarTree('docs')), 'Frameworks holds React').toBe(true);
+    expect(treeNests(await getDocsSidebarTree('components'))).toBe(false);
+    expect(treeNests(await getDocsSidebarTree('docs')), 'Frameworks holds React').toBe(true);
   });
 });

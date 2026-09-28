@@ -97,56 +97,6 @@
   cursor: not-allowed;
 }
 
-/* ---- Text buttons ---- */
-
-/* The page header's Copy React button, reused for Reset: a 32px boxed
-   button with a 16px glyph and 14px text. Hover brightens, and the press
-   is felt through a slight scale rather than seen. */
-.textButton {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--spacing-2);
-  height: var(--spacing-8);
-  padding: 0 var(--spacing-2);
-  background: var(--bg-muted);
-  color: var(--gray-50);
-  border: var(--border-width-1) solid var(--white-a5);
-  border-radius: var(--radius-md);
-  font: inherit;
-  font-size: var(--font-size-sm);
-  line-height: var(--leading-5);
-  cursor: pointer;
-  transition:
-    color var(--fade-xs) var(--ease-hover),
-    background-color var(--fade-xs) var(--ease-hover),
-    transform var(--duration-sm) var(--ease-out);
-}
-
-.textButton svg {
-  color: var(--gray-200);
-  transition: color var(--fade-xs) var(--ease-hover);
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .textButton:hover {
-    background: var(--white-a5);
-    color: var(--fg);
-  }
-
-  .textButton:hover svg {
-    color: var(--fg);
-  }
-}
-
-.textButton:active {
-  transform: scale(0.97);
-}
-
-.textButton:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
-}
-
 /* ---- Groups ---- */
 
 /* Every group opens with a hairline rule and 12px of air, then a 24px header
@@ -363,6 +313,30 @@
   color: var(--gray-200);
 }
 
+/* ---- Text boxes ---- */
+
+/* The panel's 24px text box, shared by the select trigger and the color
+   picker's text field: 8px of side padding on the field gray, a hairline,
+   4px corners, and the 1px lime focus ring. Each applies it beside its own
+   class, which adds the width and layout. `font: inherit` resets every
+   font property, so a class that sets one, as the text field's tabular
+   digits do, has to sit below this rule in this file: equal specificity,
+   so source order decides, and the order of names in className does not. */
+.textBox {
+  height: var(--spacing-6);
+  padding: 0 var(--spacing-2);
+  background: var(--gray-800);
+  color: var(--fg);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+
+.textBox:focus-visible {
+  outline: 1px solid var(--accent);
+  outline-offset: 1px;
+}
+
 /* ---- Select ---- */
 
 .selectTrigger {
@@ -371,20 +345,8 @@
   align-items: center;
   gap: var(--spacing-2);
   width: 8.75rem;
-  height: var(--spacing-6);
-  padding: 0 var(--spacing-2);
-  background: var(--gray-800);
-  color: var(--fg);
-  border: var(--border-width-1) solid var(--white-a5);
-  border-radius: var(--radius-sm);
-  font: inherit;
   text-align: left;
   cursor: pointer;
-}
-
-.selectTrigger:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
 }
 
 .selectValue {
@@ -407,29 +369,16 @@
    The popup has no padding of its own and takes the trigger's width from
    --anchor-width, and each item is the trigger's shape (24px tall, 8px side
    padding), so the selected item lands on the trigger box for box and the
-   whole list reads as the trigger unrolled. */
+   whole list reads as the trigger unrolled. The hairline, the shadow, and
+   the scale-in are the site's popup pattern (popup.module.css). */
 .selectPopup {
-  box-sizing: border-box;
   width: var(--anchor-width);
   padding: 0;
   overflow: hidden;
   background: var(--gray-800);
-  color: var(--fg);
-  border: var(--border-width-1) solid var(--white-a5);
   border-radius: var(--radius-sm);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
   font-size: var(--font-size-xs);
   line-height: var(--leading-4);
-  transform-origin: var(--transform-origin);
-  transition:
-    transform var(--duration-sm) var(--ease-out),
-    opacity var(--fade-sm) var(--ease-out);
-}
-
-.selectPopup[data-starting-style],
-.selectPopup[data-ending-style] {
-  opacity: 0;
-  transform: scale(0.95);
 }
 
 .selectItem {
@@ -501,31 +450,18 @@
    spans the row's name, swatch, value, and position field exactly, and it
    opens from the row's left edge (see ColorInput's anchor). Same gray-900
    as the panel, so the hairline border and the shadow are what separate
-   the two. */
+   the two. The hairline, the shadow, and the scale-in are the site's popup
+   pattern (popup.module.css). */
 .colorPopup {
-  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   gap: var(--spacing-3);
   width: calc(var(--container-2xs) - 2 * var(--spacing-4) - var(--spacing-6) - var(--spacing-1));
   padding: var(--spacing-2);
   background: var(--bg-muted);
-  color: var(--fg);
-  border: var(--border-width-1) solid var(--white-a5);
   border-radius: var(--radius-xl);
-  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
   font-size: var(--font-size-xs);
   line-height: var(--leading-4);
-  transform-origin: var(--transform-origin);
-  transition:
-    transform var(--duration-sm) var(--ease-out),
-    opacity var(--fade-sm) var(--ease-out);
-}
-
-.colorPopup[data-starting-style],
-.colorPopup[data-ending-style] {
-  opacity: 0;
-  transform: scale(0.95);
 }
 
 /* A label over its control, the picker's stacked layout. */
@@ -629,19 +565,7 @@
 .colorTextInput {
   flex: 1;
   min-width: 0;
-  height: var(--spacing-6);
-  padding: 0 var(--spacing-2);
-  background: var(--gray-800);
-  color: var(--fg);
-  border: var(--border-width-1) solid var(--white-a5);
-  border-radius: var(--radius-sm);
-  font: inherit;
   font-variant-numeric: tabular-nums;
-}
-
-.colorTextInput:focus-visible {
-  outline: 1px solid var(--accent);
-  outline-offset: 1px;
 }
 
 .colorTextInput[aria-invalid='true'] {

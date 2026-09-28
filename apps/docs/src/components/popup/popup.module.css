@@ -1,0 +1,47 @@
+/* The site's popup pattern, shared by every anchored popup: the control
+   panel's select list and color picker, the header's copy menu
+   (page-actions/), and the floating table of contents (page-toc/). Each
+   popup's component applies a class from here beside its own, which keeps
+   the popup's size, fill, corners, and type. No property is set both here
+   and in a local class at the same specificity, so the result does not
+   depend on which stylesheet the bundle emits first. */
+
+/* ---- The popup ---- */
+
+/* A hairline and a soft drop shadow lift it off whatever it opens over. It
+   scales in from the edge nearest its anchor: Base UI sets
+   --transform-origin from where the popup was placed. Base UI holds
+   data-starting-style for the first frame and data-ending-style through
+   the exit, so one transition carries both directions. Opacity rides a
+   fade token and the scale a duration token, so Reduce Motion keeps the
+   fade and drops the scale (tokens.css). */
+.popup {
+  box-sizing: border-box;
+  color: var(--fg);
+  border: var(--border-width-1) solid var(--white-a5);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 0.35);
+  transform-origin: var(--transform-origin);
+  transition:
+    transform var(--duration-sm) var(--ease-out),
+    opacity var(--fade-sm) var(--ease-out);
+}
+
+.popup[data-starting-style],
+.popup[data-ending-style] {
+  opacity: 0;
+  transform: scale(0.95);
+}
+
+/* ---- The header menus ---- */
+
+/* The mock's menu panel, which the copy menu and the table of contents
+   share: the darkest gray with 12px corners, 6px of padding, and 14px text
+   on a 20px line. Portaled to <body>, so it sets its own type. A menu
+   applies .popup with it, and sets its own width. */
+.menu {
+  padding: var(--spacing-1-5);
+  background: var(--gray-900);
+  border-radius: var(--radius-xl);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-5);
+}

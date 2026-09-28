@@ -24,6 +24,7 @@ import { formatJsx, useCopySource } from '@/components/controls';
 import { CheckIcon } from '@/components/icons/check';
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
 import { CopyIcon } from '@/components/icons/copy';
+import popupStyles from '@/components/popup/popup.module.css';
 import { deriveUsageImport } from '@/lib/usage-import';
 import { COPY_ANNOUNCEMENTS, useClipboardCopy } from '@/lib/use-clipboard-copy';
 
@@ -144,7 +145,7 @@ export function PageActions({ componentName, siblings, markdownUrl }: PageAction
               shader's edge on a wide viewport. The chevron button sits
               1px inside that edge, behind the box's border. */}
           <Menu.Positioner align="end" anchor={boxRef} side="bottom" sideOffset={6}>
-            <Menu.Popup className={styles.popup}>
+            <Menu.Popup className={`${popupStyles.popup} ${popupStyles.menu} ${styles.popup}`}>
               {/* Each row is its own action and runs on click; the left
                   half of the button always means Copy React, so the menu
                   does not repeat it. The view row is a link, so it opens

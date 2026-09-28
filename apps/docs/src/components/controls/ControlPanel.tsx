@@ -9,6 +9,7 @@
 import type { ReactNode } from 'react';
 
 import { ResetIcon } from '@/components/icons/reset';
+import textButtonStyles from '@/components/text-button/text-button.module.css';
 
 import styles from './controls.module.css';
 import { useResetControls } from './useControl';
@@ -20,7 +21,11 @@ export function ControlPanel({ children }: { children: ReactNode }) {
     <div aria-label="Shader controls" className={styles.panel} role="group">
       <div className={styles.titleRow}>
         <p className={styles.title}>Shader Controls</p>
-        <button className={styles.textButton} onClick={reset} type="button">
+        <button
+          className={`${textButtonStyles.box} ${textButtonStyles.button}`}
+          onClick={reset}
+          type="button"
+        >
           <ResetIcon />
           Reset
         </button>
