@@ -3,6 +3,8 @@
 //   - registry.ts: ColorSpace keyword -> implementation lookup
 //   - transfer.ts: sRGB gamma encode/decode
 //   - linear/oklab/oklch/lch/hsl/hsv.ts: the six space implementations
+//   - lab-polar.ts: the Lab <-> polar math OKLch and LCh share
+//   - hue-wheel.ts: the hue wheel HSL and HSV share
 //   - hue.ts: which way around the color wheel cylindrical spaces travel
 //   - mix-color.ts + ../color-ramp: the consumers (2-color blend, N-stop ramp)
 //   - cpu-convert.ts: CPU-side color-string parsing for prop decode

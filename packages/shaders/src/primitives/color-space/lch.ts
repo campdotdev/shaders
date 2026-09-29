@@ -4,15 +4,14 @@
 // CIE XYZ, the 1931 measurement space, with lightness on a 0..100 scale.
 // The route: rgb -> XYZ (a weighted-sum matrix) -> Lab's f() nonlinearity
 // relative to the D65 white point (the standard "daylight" white that sRGB
-// assumes) -> polar coordinates. OKLch is usually the better-behaved pick;
-// this exists for parity.
+// assumes) -> polar coordinates, which lab-polar.ts shares with OKLch.
+// OKLch is usually the better-behaved pick; this exists for parity.
 import type { ShaderNodeObject } from 'three/tsl';
-import { atan2, cbrt, cos, length, mix, sin, step, vec2, vec3 } from 'three/tsl';
+import { cbrt, mix, step, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
+import { labToPolar, lerpHueLast, polarToLab } from './lab-polar.js';
 import type { ColorSpaceImpl } from './types.js';
-
-const TWO_PI = Math.PI * 2;
 
 // D65 reference white (CIE 1931 2°).
 const WHITE_X = 0.95047;
@@ -39,8 +38,8 @@ function labInverse(f: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
   return mix(linearPart, cubed, step(EPSILON, cubed));
 }
 
-/** linear-sRGB -> CIELAB LCh (L, C, h). h in radians. */
-function linearToLch(rgb: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
+/** linear-sRGB -> CIELAB (L, a, b). */
+function linearToCielab(rgb: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
   const r = rgb.r;
   const g = rgb.g;
   const b = rgb.b;
@@ -58,20 +57,14 @@ function linearToLch(rgb: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
   const greenRed = fx.sub(fy).mul(500);
   const blueYellow = fy.sub(fz).mul(200);
 
-  const chroma = length(vec2(greenRed, blueYellow));
-  const hue = atan2(blueYellow, greenRed);
-
-  return vec3(lightness, chroma, hue);
+  return vec3(lightness, greenRed, blueYellow);
 }
 
-/** CIELAB LCh (L, C, h) -> linear-sRGB. */
-function lchToLinear(lch: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
-  const lightness = lch.x;
-  const chroma = lch.y;
-  const hue = lch.z;
-
-  const greenRed = chroma.mul(cos(hue));
-  const blueYellow = chroma.mul(sin(hue));
+/** CIELAB (L, a, b) -> linear-sRGB. */
+function cielabToLinear(lab: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
+  const lightness = lab.x;
+  const greenRed = lab.y;
+  const blueYellow = lab.z;
 
   const fy = lightness.add(16).div(116);
   const fx = fy.add(greenRed.div(500));
@@ -90,7 +83,7 @@ function lchToLinear(lch: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
 }
 
 export const lchSpace: ColorSpaceImpl = {
-  fromLinear: linearToLch,
-  toLinear: lchToLinear,
-  lerp: (a, b, t, hue) => vec3(mix(a.x, b.x, t), mix(a.y, b.y, t), hue(a.z, b.z, t, TWO_PI)),
+  fromLinear: (rgb) => labToPolar(linearToCielab(rgb)),
+  toLinear: (lch) => cielabToLinear(polarToLab(lch)),
+  lerp: lerpHueLast,
 };
