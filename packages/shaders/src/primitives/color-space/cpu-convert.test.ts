@@ -8,6 +8,7 @@ import {
   oklchToGamut,
   oklchToLinearSrgb,
   parseColorString,
+  parseOklchString,
 } from './cpu-convert.js';
 import { srgbChannelToLinear } from './cpu-transfer.js';
 
@@ -185,6 +186,45 @@ describe('parseColorString', () => {
     expect(() => parseColorString('OKLCH(0.7 0.15 280)')).toThrow(/Unsupported color syntax/);
     expect(() => parseColorString('rgb(255 0 0)')).toThrow(/Unsupported color syntax/);
     expect(() => parseColorString('hsl(0 100% 50%)')).toThrow(/Unsupported color syntax/);
+  });
+});
+
+describe('parseOklchString', () => {
+  it('reads the three components as written, with no conversion', () => {
+    expect(parseOklchString('oklch(0.7 0.15 280)')).toEqual([0.7, 0.15, 280]);
+  });
+
+  it('reads percentages against 1 for lightness and 0.4 for chroma, and a deg suffix', () => {
+    expect(parseOklchString('oklch(70% 50% 280deg)')).toEqual([0.7, 0.2, 280]);
+  });
+
+  it('accepts commas, surrounding whitespace, and a dropped alpha', () => {
+    expect(parseOklchString('  oklch(0.7, 0.15, 280 / 50%) ')).toEqual([0.7, 0.15, 280]);
+  });
+
+  it('returns the hue as written, without wrapping it into [0, 360)', () => {
+    expect(parseOklchString('oklch(0.5 0.1 420)')).toEqual([0.5, 0.1, 420]);
+    expect(parseOklchString('oklch(0.5 0.1 -30)')).toEqual([0.5, 0.1, -30]);
+  });
+
+  it('is the reader parseColorString uses for oklch()', () => {
+    const input = 'oklch(62.8% 64.5% 29.23deg)';
+
+    expect(parseColorString(input)).toEqual(oklchToLinearSrgb(...parseOklchString(input)));
+  });
+
+  it('throws on a missing or non-numeric component, quoting the input', () => {
+    expect(() => parseOklchString('oklch(0.7 0.15)')).toThrow(
+      new Error('Invalid oklch() color: "oklch(0.7 0.15)"'),
+    );
+    expect(() => parseOklchString(' oklch(a b c) ')).toThrow(
+      new Error('Invalid oklch() color: " oklch(a b c) "'),
+    );
+  });
+
+  it('throws on any other color syntax', () => {
+    expect(() => parseOklchString('#ff0000')).toThrow(/Invalid oklch/);
+    expect(() => parseOklchString('oklab(0.7 0.1 -0.1)')).toThrow(/Invalid oklch/);
   });
 });
 

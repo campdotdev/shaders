@@ -230,6 +230,7 @@ export default defineConfig([
                 'oklchToGamut',
                 'oklchToLinearSrgb',
                 'parseColorString',
+                'parseOklchString',
                 'srgbChannelToLinear',
                 'useDisplayGamut',
               ],

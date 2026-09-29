@@ -34,6 +34,7 @@ export {
   oklchToGamut,
   oklchToLinearSrgb,
   parseColorString,
+  parseOklchString,
   srgbChannelToLinear,
 } from './color.js';
 export type { OutputGamut } from './color.js';
