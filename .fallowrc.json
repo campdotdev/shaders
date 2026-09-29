@@ -58,6 +58,10 @@
     ]
   },
   "duplicates": {
+    // `fallow dupes` fails above 1% duplicated lines. The repo stood at 1.2%
+    // when fallow was adopted. The PR audit doesn't read this limit. It flags
+    // each new clone group in the files a PR changes instead.
+    "threshold": 1,
     "ignore": [
       "packages/shaders/src/components/**",
       "apps/docs/src/app/components/**",
