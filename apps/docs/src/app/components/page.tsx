@@ -12,6 +12,7 @@ import Link from 'next/link';
 import { useId } from 'react';
 
 import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
 import { type ComponentCatalogRecord, getComponentsTree } from '@/content/catalog';
 import { DOCS_TRAIL_ROOT } from '@/content/nav';
 import type { TaxonomyGroup } from '@/content/taxonomy';
@@ -43,7 +44,7 @@ export default async function ComponentsIndex() {
       {/* The section banner prints "Components" as a paragraph, because it
           also sits over every component page, where the component's name is
           the h1. This gives the index its h1 without a second visible title. */}
-      <h1 className={styles.srOnly}>Components</h1>
+      <h1 className={visuallyHiddenStyles.srOnly}>Components</h1>
       {/* Out of the search index, like the docs home's list: every card
           repeats the name and description its component page is already
           indexed under, so the index would turn up in every search for a

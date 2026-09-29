@@ -317,17 +317,3 @@
   background: none;
   color: var(--fg);
 }
-
-/* The dialog's name for assistive tech. border: 0 is not needed on an h2,
-   but the rule is the site-nav one so the two read the same. */
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  border: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}

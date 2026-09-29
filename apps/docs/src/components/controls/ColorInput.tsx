@@ -21,6 +21,7 @@ import { useRef } from 'react';
 import { Popover } from '@base-ui/react/popover';
 
 import popupStyles from '@/components/popup/popup.module.css';
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
 
 import { ColorPopoverContents } from './ColorPopoverContents';
 import { useListRowTrail } from './context';
@@ -53,7 +54,7 @@ export function ColorInput({ path, label }: ColorInputProps) {
       {!inRow && <span className={styles.fieldLabel}>{label}</span>}
       <Popover.Root>
         <Popover.Trigger className={styles.swatchTrigger}>
-          <span className={styles.srOnly}>{`Edit ${name}`}</span>
+          <span className={visuallyHiddenStyles.srOnly}>{`Edit ${name}`}</span>
           <span aria-hidden="true" className={styles.swatch} style={{ background: stored }} />
           <span className={styles.swatchValue}>{stored}</span>
         </Popover.Trigger>

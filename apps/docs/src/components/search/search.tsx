@@ -15,6 +15,7 @@ import { Dialog } from '@base-ui/react/dialog';
 
 import backdropStyles from '@/components/overlay-backdrop/overlay-backdrop.module.css';
 import textButtonStyles from '@/components/text-button/text-button.module.css';
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
 
 import { SearchResults, SearchStatus } from './search-results';
 import styles from './search.module.css';
@@ -74,7 +75,7 @@ export function Search() {
         {/* The input takes focus on every open, a shortcut open included.
             finalFocus in use-panel-open.ts picks where it goes on close. */}
         <Dialog.Popup className={styles.panel} finalFocus={finalFocus} initialFocus={inputRef}>
-          <Dialog.Title className={styles.srOnly}>Search</Dialog.Title>
+          <Dialog.Title className={visuallyHiddenStyles.srOnly}>Search</Dialog.Title>
           <div className={styles.inputRow}>
             <input
               aria-activedescendant={activeOptionId}
