@@ -28,6 +28,7 @@ Before you start one of these tasks, read the doc beside it:
 | Change a dependency, a tsconfig, `turbo.json`, or a workflow, fix a CI failure, or publish   | `docs/agents/build-and-ci.md`           |
 | Run `pnpm snap` or Playwright, or fix a failing visual spec                                  | `docs/development/visual-regression.md` |
 | Finish a branch: run the reviews, write the PR body, or resolve bot findings                 | `docs/agents/pull-requests.md`          |
+| Commit, branch, push, open a PR, or work beside another agent                                | `docs/agents/version-control.md`        |
 
 Code comments cite gotchas by name, such as "the vec-uniform gotcha". To find one, search `docs/agents/` for the name.
 
@@ -37,8 +38,9 @@ Shaders doubles as the author's shader-learning project. When you build or rebui
 
 ## Git
 
-- Put every change on a branch and open a PR, including a one-line doc fix. Never push to `main`. If a commit lands on local `main`, move it to a branch and reset `main` to `origin/main`.
-- When you finish a branch, push it and open a PR. Don't merge locally, and don't ask which integration option to use.
+- The main checkout is a GitButler workspace that several agents share. Make every commit, branch, and push through `but`, never `git commit` or `git checkout`. `docs/agents/version-control.md` has the rules.
+- Put every change on its own branch and open a PR, including a one-line doc fix. `main` changes only through merged PRs.
+- When you finish a branch, push it and open a PR. Don't merge or land it locally, and don't ask which integration option to use.
 - Write commit messages as Conventional Commits, such as `feat(shaders): …` or `docs: …`. The scope is the package name without `@camp-dev/`. Use no emojis.
 - Leave AI attribution off commits and PR bodies: no "Generated with" line and no `Co-Authored-By` trailer for an agent.
 - Before a PR opens, run its body, the commit messages, any changeset, and any docs through the `technical-writing` skill, as `docs/agents/pull-requests.md` describes.
