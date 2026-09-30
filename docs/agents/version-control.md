@@ -11,7 +11,7 @@ The main checkout runs in GitButler workspace mode. `HEAD` is `gitbutler/workspa
 - Commit only the files and hunks your session changed. Pass their IDs from `but diff`. Leave other agents' uncommitted changes and branches alone, even when they sit in a file you also edited.
 - When `but commit` refuses because your change builds on another branch's commits, stack your branch on that branch: `but move <your-branch> --above <other-branch>`.
 - Update from `main` with `but pull`. It rebases every applied branch, so run `but pull --check` first, and ask before a pull that would conflict with another agent's branch.
-- To recover from a bad history edit, use `but undo` or `but oplog restore`. Don't pile more edits on top of the bad one.
+- To reverse a commit of your own, run `but uncommit <commit>` on that commit. `but undo` and `but oplog restore` reverse the workspace's latest operations, whoever made them, so run them only when no other agent is working. Don't pile more edits on top of a bad one.
 
 ## Finish a branch
 
