@@ -3,15 +3,15 @@
 /**
  * The site navigation on a narrow viewport, after the Figma mock: a
  * hamburger at the right of the header row that opens a full-screen overlay
- * over the blurred page, with Docs and Examples right-aligned in large type
- * under the header row and the GitHub link at the bottom. The real header
- * paints above the overlay (site-header.module.css lifts it to z-index 1),
- * so the overlay carries no row of its own: the header's trigger is the
- * Close control while the nav is open. The header renders this beside its
- * link row and CSS shows one or the other at 40rem of the site container. A
- * Base UI Dialog rather than a Drawer: the overlay fades in over the page,
- * nothing slides from an edge or is swiped away, and Dialog brings the
- * focus trap, scroll lock, Escape, and outside-press dismissal.
+ * over the blurred page, with Docs right-aligned in large type under the
+ * header row and the GitHub link at the bottom. The real header paints above
+ * the overlay (site-header.module.css lifts it to z-index 1), so the overlay
+ * carries no row of its own: the header's trigger is the Close control while
+ * the nav is open. The header renders this beside its link row and CSS shows
+ * one or the other at 40rem of the site container. A Base UI Dialog rather
+ * than a Drawer: the overlay fades in over the page, nothing slides from an
+ * edge or is swiped away, and Dialog brings the focus trap, scroll lock,
+ * Escape, and outside-press dismissal.
  */
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';

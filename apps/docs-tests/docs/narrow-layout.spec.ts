@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
 
 test.use({ viewport: { width: 390, height: 844 } });
 
-const routes = ['/components/aurora', '/getting-started'];
+const routes = ['/components/aurora', '/getting-started', '/docs'];
 
 for (const route of routes) {
   test(`${route} has no horizontal scroll at 390px`, async ({ page }) => {
@@ -123,7 +123,7 @@ test('the hamburger opens the site nav, and Escape and a link close it', async (
 
   await open.click();
   await dialog.getByRole('link', { name: 'Docs' }).click();
-  await expect(page).toHaveURL('/components');
+  await expect(page).toHaveURL('/docs');
   await expect(dialog).toBeHidden();
 });
 

@@ -1,14 +1,21 @@
 import type { NavGroup } from './types';
 
+/**
+ * The docs home, where the header's Docs link, the sidebar's first row, and
+ * every Documentation breadcrumb lead. It is a route of its own rather than
+ * an MDX page, because it lists this config (app/(docs-content)/docs/).
+ */
+export const DOCS_HOME_URL = '/docs';
+
 export const NAV: NavGroup[] = [
   {
     label: 'Overview',
     sidebar: 'docs',
     items: [
+      { kind: 'link', label: 'Documentation', url: DOCS_HOME_URL },
       { kind: 'page', slug: '/getting-started' },
       { kind: 'page', slug: '/cli' },
       { kind: 'page', slug: '/changelog' },
-      { kind: 'page', slug: '/examples' },
       { kind: 'link', label: 'Palette', url: '/palette' },
     ],
   },

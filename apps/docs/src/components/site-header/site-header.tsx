@@ -1,12 +1,12 @@
 /**
  * Site-wide navigation after the Figma mock: the logo mark on the left and
- * Docs, Examples, and a GitHub link on the right, one 56px row with no
- * divider. The root layout renders it once above every route. On the
- * components routes the SectionBanner sits directly under it, and the two
- * together make the 200px header block the mock draws, and the banner's
- * shader reaches up behind this row to fill that block. Under 40rem of the
- * site container the link row and search hide and a hamburger opens the
- * same links as a full-screen nav (site-nav/).
+ * Docs and a GitHub link on the right, one 56px row with no divider. The
+ * root layout renders it once above every route. On the components routes
+ * the SectionBanner sits directly under it, and the two together make the
+ * 200px header block the mock draws, and the banner's shader reaches up
+ * behind this row to fill that block. Under 40rem of the site container the
+ * link row and search hide and a hamburger opens the same links as a
+ * full-screen nav (site-nav/).
  */
 import Link from 'next/link';
 

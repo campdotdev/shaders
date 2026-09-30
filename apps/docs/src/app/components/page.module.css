@@ -1,0 +1,17 @@
+/* The components index. The page is a placeholder list until its card grid
+   lands (SHA-180), so this file only places the breadcrumbs. */
+
+/* The same spacing as a component page's trail ([slug]/page.module.css):
+   16px below the top of the page and 24px above the title. */
+.breadcrumbs {
+  margin: var(--spacing-4) 0 var(--spacing-6);
+}
+
+/* Breadcrumbs are desktop chrome, and they go at the width where a
+   component page's go, so the trail does not come and go between the index
+   and the pages it links to. */
+@container docs-main (width < 53.5rem) {
+  .breadcrumbs {
+    display: none;
+  }
+}
