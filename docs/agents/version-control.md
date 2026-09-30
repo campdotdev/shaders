@@ -18,16 +18,16 @@ The main checkout runs in GitButler workspace mode. `HEAD` is `gitbutler/workspa
 Finishing a branch means pushing it and opening a PR. This rule overrides any global GitButler instruction that says not to push or open PRs without being asked.
 
 1. Commit to your branch, then run the reviews in `docs/agents/pull-requests.md` against that branch.
-2. Open the PR with `but pr new <branch> -F <body-file>`. It pushes the branch first. For a stack, `but pr new <top-branch>` opens a PR for each branch and sets each PR's base.
+2. Open the PR with `but pr new <branch> -F <message-file>`. The file's first line becomes the PR title, so put the Conventional Commits title there and the body from `docs/agents/pull-requests.md` below it. The command pushes the branch first. For a stack, open the PRs bottom-up, one `but pr new` per branch with its own message file.
 3. Never run `but land`. `main` changes only through merged PRs.
 
 ## Review a branch, not `HEAD`
 
-`HEAD` holds every applied branch, so a diff against `HEAD` mixes your work with every other agent's. Name your branch instead:
+`HEAD` holds every applied branch, so a diff against `HEAD` mixes your work with every other agent's. Name your branch and its PR base instead. The base is `origin/main`, or the branch directly below yours in a stack:
 
 ```bash
-git diff origin/main...<branch>
-git log --oneline origin/main..<branch>
+git diff <base>...<branch>
+git log --oneline <base>..<branch>
 ```
 
 The branch holds only committed work, so commit before you review.
@@ -41,8 +41,9 @@ Use a separate worktree only for these tasks:
 - Competing attempts at the same task.
 - Regenerating visual baselines while another applied branch changes the pages the spec renders. `pnpm snap` captures whatever the working tree renders.
 - A dependency upgrade that changes behavior, because `pnpm install` rewrites `node_modules` for every agent.
+- A scan that must see one exact commit or one exact set of branches, such as react-doctor's baseline and integration scans in PR mode.
 
-Create the worktree from `origin/main`, never from `HEAD`. `HEAD` is the workspace commit, and GitButler's `post-checkout` hook removes GitButler's hooks for the whole repo when a checkout leaves that commit. `but commit` does not work in a linked worktree, so use plain Git there.
+Create the worktree from `origin/main` or another named commit, never from `HEAD`. `HEAD` is the workspace commit, and GitButler's `post-checkout` hook removes GitButler's hooks for the whole repo when a checkout leaves that commit. `but commit` does not work in a linked worktree, so use plain Git there.
 
 ```bash
 git worktree add .worktrees/<name> -b <branch> origin/main

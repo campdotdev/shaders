@@ -143,7 +143,7 @@ Prefer a nonmutating format-check command. If repository instructions require a 
 
 For visual changes, inspect the affected state at relevant viewport, theme, input, reduced-motion, zoom/reflow, and right-to-left (RTL) settings where applicable. If a check could not run, mark it **not run**; never convert unavailable evidence into a pass.
 
-Use the final successful report's `summary.score` as the after score. Label every score with its scanner version, project, scope, and category selection. Never compare scores from different selections. In PR mode, claim a combined projected score only after applying all candidate patches to a temporary integration worktree and rescanning it. In a GitButler workspace, the checkout with every bucket branch applied is that integration. Otherwise report verified diagnostic counts and omit the projection.
+Use the final successful report's `summary.score` as the after score. Label every score with its scanner version, project, scope, and category selection. Never compare scores from different selections. In PR mode, claim a combined projected score only after applying all candidate patches to a temporary integration worktree and rescanning it. Otherwise report verified diagnostic counts and omit the projection.
 
 ## 5. Deliver
 
