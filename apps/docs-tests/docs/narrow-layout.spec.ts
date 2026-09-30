@@ -9,7 +9,7 @@ import { expect, test } from '@playwright/test';
 
 test.use({ viewport: { width: 390, height: 844 } });
 
-const routes = ['/components/aurora', '/getting-started', '/docs'];
+const routes = ['/components', '/components/aurora', '/getting-started', '/docs'];
 
 for (const route of routes) {
   test(`${route} has no horizontal scroll at 390px`, async ({ page }) => {
