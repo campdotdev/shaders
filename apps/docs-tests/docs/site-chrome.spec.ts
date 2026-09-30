@@ -33,20 +33,9 @@ test('the header Docs link opens the docs home', async ({ page }) => {
   await expect(page.getByRole('heading', { level: 1, name: 'Documentation' })).toBeVisible();
 });
 
-test('the narrow-viewport Docs link opens the docs home', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto('/getting-started');
-  await page.waitForLoadState('networkidle');
-
-  await page.getByRole('button', { name: 'Open site navigation' }).click();
-
-  const dialog = page.getByRole('dialog', { name: 'Site navigation' });
-
-  await dialog.getByRole('link', { name: 'Docs' }).click();
-
-  await expect(page).toHaveURL('/docs');
-  await expect(dialog).toBeHidden();
-});
+// The narrow-viewport nav's Docs link is clicked through in
+// narrow-layout.spec.ts, which checks that the click lands on /docs and
+// closes the nav.
 
 // ---------------------------------------------
 // The docs home
@@ -129,7 +118,9 @@ for (const route of ['/', '/docs', '/getting-started', '/components', '/componen
   });
 }
 
-test('the narrow-viewport nav has no Examples link', async ({ page }) => {
+test('the narrow-viewport nav links Docs to the docs home and has no Examples', async ({
+  page,
+}) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.goto('/getting-started');
   await page.waitForLoadState('networkidle');
@@ -138,7 +129,7 @@ test('the narrow-viewport nav has no Examples link', async ({ page }) => {
 
   const dialog = page.getByRole('dialog', { name: 'Site navigation' });
 
-  await expect(dialog.getByRole('link', { name: 'Docs' })).toBeVisible();
+  await expect(dialog.getByRole('link', { name: 'Docs' })).toHaveAttribute('href', '/docs');
   await expect(dialog.getByRole('link', { name: 'Examples' })).toHaveCount(0);
 });
 

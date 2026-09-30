@@ -1,7 +1,7 @@
 /* The docs home. It has no design yet, so it takes the MDX pages' prose
-   (globals.css) and adds only the spacing its sections need, since each
-   section wraps its heading and `.prose > :is(h2, h3)` reaches direct
-   children only. */
+   (globals.css) and adds only the spacing its sections need. Each section
+   wraps its heading, and the sections sit in a wrapper div, so the prose
+   rules that space headings reach none of them. */
 
 /* Mirrors the MDX page's trail ([...slug]/page.module.css): 24px above the
    title, and gone at the same width, so the trail does not come and go
@@ -16,9 +16,9 @@
   }
 }
 
-/* The 32px a prose heading gets above it. The module rule is unlayered, so
-   it beats the 16px `.prose > * + *` gives the section without needing
-   more specificity. */
+/* The 32px a prose heading gets above it. Above the first section, the
+   wrapper div's 16px from `.prose > * + *` collapses into this margin, so
+   the gap there is 32px too. */
 .section {
   margin-block-start: var(--spacing-8);
 }

@@ -2,9 +2,10 @@
  * Breadcrumb trail for the docs pages, after the Figma mock: muted links
  * separated by pixel triangles, with the current page last, in lime,
  * and not linked. The MDX route derives its trail from the nav tree in
- * content/nav.ts and the component page template hands over a fixed
- * four-entry trail, but both pass the same DocsBreadcrumb shape, so this
- * file owns the look for every page.
+ * content/nav.ts, and the docs home, the components index, and the
+ * component page template each hand over a fixed trail. Every trail opens
+ * with DOCS_TRAIL_ROOT (content/nav.ts) and passes the same DocsBreadcrumb
+ * shape, so this file owns the look for every page.
  */
 import Link from 'next/link';
 
@@ -50,7 +51,7 @@ export function Breadcrumbs({ crumbs, className }: BreadcrumbsProps) {
 }
 
 // Every crumb before the current page: a link when the trail has a URL for
-// it, plain text for a grouping such as "Documentation" that has no page.
+// it, plain text for a nav group such as "Overview" that has no page.
 function Ancestor({ crumb }: { crumb: DocsBreadcrumb }) {
   if (crumb.url === null || crumb.url === '') {
     return <span className={styles.label}>{crumb.label}</span>;
