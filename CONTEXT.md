@@ -53,3 +53,15 @@ _Avoid_: Search bar, search box, search input (for the header control)
 **Search panel**:
 The dialog the search trigger opens, holding the query input and the result list over the blurred page.
 _Avoid_: Search modal, search dialog, command palette
+
+**Demo**:
+The live scene and its control panel at the top of a component page. The homepage hero turns into Aurora's demo as the page scrolls.
+_Avoid_: Editor, playground
+
+**Favorite**:
+A component hand-picked for the homepage's favorites grid. It links to its component page.
+_Avoid_: Featured component, highlight
+
+**Card tab**:
+The strip that cuts into a favorite's edge to show the component's name when the card is hovered or focused.
+_Avoid_: Tab, name tab, label tab
