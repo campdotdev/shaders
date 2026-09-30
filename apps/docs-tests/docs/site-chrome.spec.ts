@@ -144,7 +144,7 @@ test('the static export has no /examples page', async ({ request }) => {
 
 // Straight to the built Pagefind index rather than through the search panel,
 // because a result row carries its page's title but not its URL.
-test('site search does not return /examples', async ({ page }) => {
+test('site search excludes removed pages and docs-home page listings', async ({ page }) => {
   await page.goto('/getting-started');
   await page.waitForLoadState('networkidle');
 
@@ -157,11 +157,25 @@ test('site search does not return /examples', async ({ page }) => {
         query: string,
       ) => Promise<{ results: Array<{ data: () => Promise<{ url: string }> }> }>;
     };
-    const search = await pagefind.search('examples');
-    const results = await Promise.all(search.results.map((result) => result.data()));
 
-    return results.map((result) => result.url);
+    async function searchUrls(query: string) {
+      const search = await pagefind.search(query);
+      const results = await Promise.all(search.results.map((result) => result.data()));
+
+      return results.map((result) =>
+        new URL(result.url, location.origin).pathname.replace(/(?:\.html|\/)$/, ''),
+      );
+    }
+
+    const [examples, getStarted] = await Promise.all([
+      searchUrls('examples'),
+      searchUrls('Get Started'),
+    ]);
+
+    return { examples, getStarted };
   });
 
-  expect(urls.filter((url) => url.startsWith('/examples'))).toEqual([]);
+  expect(urls.examples.filter((url) => url.startsWith('/examples'))).toEqual([]);
+  expect(urls.getStarted).toContain('/getting-started');
+  expect(urls.getStarted).not.toContain('/docs');
 });
