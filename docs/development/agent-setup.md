@@ -23,6 +23,6 @@ Run `but setup` once in the main checkout. It switches the checkout to `gitbutle
 
 Two mattpocock skills are edited away from upstream on the author's machine. Neither change syncs, and `npx skills update` overwrites both. The upstream originals are kept outside the repo with the install backup.
 
-- `implement` adds the three local review passes listed in `docs/agents/pull-requests.md`, and it commits before reviewing rather than after. In a GitButler workspace, it names the branch to review.
+- `implement` runs `/code-review` as its local review, as `docs/agents/pull-requests.md` describes, and it commits before reviewing rather than after. In a GitButler workspace, it names the branch to review.
 - `code-review` reviews a named branch instead of `HEAD`, because `HEAD` in a GitButler workspace merges every applied branch.
 - `code-review` no longer reads a bare `#<n>` as a ticket ID. Squash merges put the GitHub PR number in the commit subject, and those numbers collide with live `SHA-` issues, so the skill once resolved the wrong spec without any error.

@@ -23,23 +23,19 @@ Run PR bodies, commit messages, changesets, and docs through the `technical-writ
 
 ## Review in order
 
-Six reviewers run on every change: two locally before the push, and four on the pull request. A seventh joins the local set on wide or multi-commit branches. Each answers a different question, so none replaces another.
+Five reviewers run on every change: one locally before the push, and four on the pull request. Each answers a different question, so none replaces another.
 
-| When                               | Reviewer                      | What it checks                                                         |
-| ---------------------------------- | ----------------------------- | ---------------------------------------------------------------------- |
-| Uncommitted work, during the build | `/ocr-delegate-review`        | Workspace mechanics, including untracked files, with per-file coverage |
-| After the commit, before the push  | `/code-review`                | The repo's documented standards, and the diff against its ticket       |
-| Wide or multi-commit branches      | `/ocr-delegate-review-branch` | Every file the branch touches, across all its commits                  |
-| After the push                     | Greptile                      | The pull request                                                       |
-| After the push                     | Codex                         | The pull request                                                       |
-| After the push                     | Copilot                       | The pull request                                                       |
-| After the push                     | React Doctor                  | The pull request                                                       |
+| When                              | Reviewer       | What it checks                                                   |
+| --------------------------------- | -------------- | ---------------------------------------------------------------- |
+| After the commit, before the push | `/code-review` | The repo's documented standards, and the diff against its ticket |
+| After the push                    | Greptile       | The pull request                                                 |
+| After the push                    | Codex          | The pull request                                                 |
+| After the push                    | Copilot        | The pull request                                                 |
+| After the push                    | React Doctor   | The pull request                                                 |
 
-The `implement` skill runs the three local reviewers in that order. The order matters: `/code-review` and `/ocr-delegate-review-branch` both resolve git refs, so running either before the commit reviews the previous state and misses the new work.
+The `implement` skill runs `/code-review` after it commits. The order matters: `/code-review` resolves git refs, so running it before the commit reviews the previous state and misses the new work.
 
-In the shared GitButler workspace, `HEAD` holds every applied branch. Give `/code-review` and `/ocr-delegate-review-branch` your branch name as the ref to review, not `HEAD`. `/ocr-delegate-review` reads the working tree, so it also lists other agents' uncommitted files. Review only the files your session changed. `docs/agents/version-control.md` explains the workspace.
-
-Open Code Review supplies deterministic file selection and a coverage checklist, and the agent does the review itself through the `open-code-review-delegate` skill. The repo has no `rule.json` for it, so it reviews against its own defaults as the generic mechanics pass. Repo conventions are `/code-review`'s job.
+In the shared GitButler workspace, `HEAD` holds every applied branch. Give `/code-review` your branch name as the ref to review, not `HEAD`. `docs/agents/version-control.md` explains the workspace.
 
 ## Run Fallow before the push
 
