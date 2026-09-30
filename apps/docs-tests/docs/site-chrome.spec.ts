@@ -23,8 +23,11 @@ async function hrefsIn(page: Page, selector: string): Promise<string[]> {
 // The Docs link
 // ---------------------------------------------
 
+// From a static guide, not a component page, whose two scenes slow every
+// step on CI's software renderer. The reasoning is in search.spec.ts
+// (SHA-163). The header is the same on every route.
 test('the header Docs link opens the docs home', async ({ page }) => {
-  await page.goto('/components/aurora');
+  await page.goto('/getting-started');
   await page.waitForLoadState('networkidle');
 
   await page.locator('header nav[aria-label="Site"]').getByRole('link', { name: 'Docs' }).click();
