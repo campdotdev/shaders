@@ -10,9 +10,8 @@
   margin: var(--spacing-4) 0;
 }
 
-/* Breadcrumbs are desktop chrome, and they go at the width where a
-   component page's go, so the trail does not come and go between the index
-   and the pages it links to. */
+/* Breadcrumbs hide below 53.5rem on both the index and component pages,
+   so the trail stays consistent when navigating between them. */
 @container docs-main (width < 53.5rem) {
   .breadcrumbs {
     display: none;

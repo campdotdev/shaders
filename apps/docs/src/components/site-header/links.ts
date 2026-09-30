@@ -1,8 +1,8 @@
 /**
  * The site-wide links, in one place so the header's link row and the
  * narrow-viewport nav (site-nav/) can never disagree. Docs lands on the
- * docs home. Examples left for launch and comes back once it has a design
- * (SHA-178).
+ * docs home. Examples is omitted for launch and will return once it has
+ * a design (SHA-178).
  */
 import { DOCS_HOME_URL } from '@/content/nav.config';
 
