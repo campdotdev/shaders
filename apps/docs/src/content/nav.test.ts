@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { treeNests } from '@/components/nav-tree/helpers';
 
 import { getDocsNavTree, getDocsPrevNext, getDocsSidebarTree } from './nav';
+import { DOCS_HOME_URL } from './nav.config';
 import { getMdxDocsPages } from './source';
 import type { ResolvedNavGroup } from './types';
 
@@ -38,6 +39,18 @@ describe('getDocsPrevNext', () => {
 
     expect(tree.map((group) => group.label)).toContain('Components');
     expect(prev?.url.startsWith('/components')).toBe(false);
+  });
+
+  // The Documentation row opens Overview, so Get Started's Previous link
+  // leads back to the docs home.
+  it('pages Get Started back to the docs home', async () => {
+    const pages = await getMdxDocsPages();
+    const gettingStarted = pages.find((page) => page.url === '/getting-started');
+
+    expect(gettingStarted).toBeDefined();
+    const { prev } = await getDocsPrevNext(gettingStarted!);
+
+    expect(prev).toEqual({ url: DOCS_HOME_URL, label: 'Documentation' });
   });
 });
 

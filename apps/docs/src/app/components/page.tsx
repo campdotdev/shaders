@@ -1,17 +1,25 @@
 import Link from 'next/link';
 
+import { Breadcrumbs } from '@/components/breadcrumbs/breadcrumbs';
 import { getComponentsCatalog } from '@/content/catalog';
+import { DOCS_TRAIL_ROOT } from '@/content/nav';
+import type { DocsBreadcrumb } from '@/content/types';
+
+import styles from './page.module.css';
 
 export const metadata = {
   title: 'Components',
   description: 'Tier 1 shader components, imported from @camp-dev/shaders and tuned through props.',
 };
 
+const crumbs: DocsBreadcrumb[] = [...DOCS_TRAIL_ROOT, { label: 'Components', url: '/components' }];
+
 export default async function ComponentsIndex() {
   const components = await getComponentsCatalog();
 
   return (
     <article style={{ lineHeight: 1.65 }}>
+      <Breadcrumbs className={styles.breadcrumbs} crumbs={crumbs} />
       <h1 style={{ marginTop: 0 }}>Components</h1>
       <p style={{ color: 'var(--fg-muted)' }}>
         Tier 1: polished shader components, imported from <code>@camp-dev/shaders</code> and tuned

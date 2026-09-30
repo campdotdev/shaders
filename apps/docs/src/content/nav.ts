@@ -1,7 +1,7 @@
 import { cache } from 'react';
 
 import { getComponentsTree } from './catalog';
-import { NAV } from './nav.config';
+import { DOCS_HOME_URL, NAV } from './nav.config';
 import { getMdxDocsPages } from './source';
 import type {
   DocsBreadcrumb,
@@ -157,15 +157,47 @@ export const getDocsPrevNext = cache(
   },
 );
 
+/**
+ * The start of every docs breadcrumb trail. The docs home, the components
+ * index, the component pages, and the MDX pages all open with it, so the
+ * Documentation crumb leads to the docs home wherever it appears.
+ */
+export const DOCS_TRAIL_ROOT: DocsBreadcrumb[] = [
+  { label: 'Home', url: '/' },
+  { label: 'Documentation', url: DOCS_HOME_URL },
+];
+
 export const getDocsBreadcrumbs = cache(async (page: DocsPage): Promise<DocsBreadcrumb[]> => {
   const tree = await getDocsNavTree();
   const flat = flatten(tree);
   const item = flat.find((i) => i.url === page.url);
+  const current = { label: page.frontmatter.navTitle, url: page.url };
 
-  if (!item) return [{ label: page.frontmatter.navTitle, url: page.url }];
+  if (!item) return [...DOCS_TRAIL_ROOT, current];
 
-  return [
-    ...item.trail.map((label) => ({ label, url: null })),
-    { label: page.frontmatter.navTitle, url: page.url },
-  ];
+  // The nav groups above the page, such as Overview or Frameworks and
+  // React, have no pages of their own, so they stay plain text.
+  return [...DOCS_TRAIL_ROOT, ...item.trail.map((label) => ({ label, url: null })), current];
+});
+
+/**
+ * The sections the docs home lists: every top-level group in the nav
+ * config, in config order. A docs group keeps its rows and any nested
+ * group, minus the row for the docs home itself. The components group
+ * would expand to every catalog page, so it becomes one link to the
+ * components index, which the docs home calls React components.
+ */
+export const getDocsHomeSections = cache(async (): Promise<ResolvedNavGroup[]> => {
+  const tree = await getDocsNavTree();
+
+  return tree.map((group) => {
+    if (group.sidebar === 'components') {
+      return { ...group, items: [{ label: 'React components', url: '/components' }] };
+    }
+
+    return {
+      ...group,
+      items: group.items.filter((item) => isResolvedGroup(item) || item.url !== DOCS_HOME_URL),
+    };
+  });
 });

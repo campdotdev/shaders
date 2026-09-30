@@ -23,6 +23,7 @@ import { PageToc, type PageTocSection } from '@/components/page-toc/page-toc';
 import { Pagination } from '@/components/pagination/pagination';
 import { PropsTable } from '@/components/props-table/props-table';
 import { getComponentsCatalog, getComponentsTree } from '@/content/catalog';
+import { DOCS_TRAIL_ROOT } from '@/content/nav';
 import { getComponentProps } from '@/content/props';
 import { flattenTaxonomy } from '@/content/taxonomy';
 import type { DocsBreadcrumb } from '@/content/types';
@@ -67,11 +68,9 @@ export default async function ComponentPage({ params }: PageProps) {
   const Island = entry.Island;
 
   // Every component page sits at the same depth, so the trail is fixed apart
-  // from its last entry. "Documentation" has no landing route yet, so it
-  // renders as plain text until one exists.
+  // from its last entry.
   const crumbs: DocsBreadcrumb[] = [
-    { label: 'Home', url: '/' },
-    { label: 'Documentation', url: null },
+    ...DOCS_TRAIL_ROOT,
     { label: 'Components', url: '/components' },
     { label: record.label, url: record.url },
   ];

@@ -42,13 +42,13 @@
    left.
 
    The negative right margin cancels that 6px of right padding. The box is
-   36px because it is a touch target, but the ink has to line up with Docs,
-   Examples, and the GitHub mark, which all sit at the popup's 16px gutter,
-   so the button overhangs its own gutter by exactly the padding that
-   centres the glyph. Dropping the padding instead would shrink the box to
-   30px and leave the focus ring hugging the glyph on the right with 6px of
-   air on the left. Hidden until the header's link row hides on the same
-   query (site-header.module.css). */
+   36px because it is a touch target, but the ink has to line up with Docs
+   and the GitHub mark, which both sit at the popup's 16px gutter, so the
+   button overhangs its own gutter by exactly the padding that centres the
+   glyph. Dropping the padding instead would shrink the box to 30px and
+   leave the focus ring hugging the glyph on the right with 6px of air on
+   the left. Hidden until the header's link row hides on the same query
+   (site-header.module.css). */
 .trigger {
   display: none;
   align-items: center;
@@ -238,7 +238,7 @@
 
 /* ---- The links ---- */
 
-/* Docs and Examples right-aligned in 30px semibold on a 36px line, 12px
+/* The site links right-aligned in 30px semibold on a 36px line, 12px
    apart for the mock's 48px pitch, 24px under the header row. */
 .links {
   display: flex;
