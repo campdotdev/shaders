@@ -127,7 +127,7 @@ React Native preflight:
 
 When batching local work, partition by proven file ownership and dependency order. Concurrent writers must never share a file.
 
-PR-mode parallelism gives each bucket its own branch. In a GitButler workspace, the buckets are parallel branches in the one checkout. Elsewhere, each bucket needs a separate `git worktree` directory. Compute file overlap first. Assign an overlapping file to one bucket or make the buckets an ordered dependency chain; category buckets are not inherently file-disjoint.
+PR-mode parallelism gives each bucket its own branch. In a GitButler workspace, the buckets are parallel branches in the one checkout. The section 4 checks there read every applied branch, so run each bucket's checks from a separate worktree at that bucket's commit, as `docs/agents/version-control.md` describes. Elsewhere, each bucket needs a separate `git worktree` directory. Compute file overlap first. Assign an overlapping file to one bucket or make the buckets an ordered dependency chain; category buckets are not inherently file-disjoint.
 
 ## 4. Verify the outcome
 
