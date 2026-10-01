@@ -45,7 +45,7 @@ Open Code Review supplies deterministic file selection and a coverage checklist,
 
 The `fallow` CLI is a root devDependency, pinned so CI and every machine run the same analyzer. The `fallow` and `fallow-review` skills and the `fallow-mcp` server are installed at user scope. Fallow's config is `.fallowrc.json` at the repo root, and each exception in it carries its reason. Fallow is a deterministic check, not a reviewer, so `implement` does not run it.
 
-- Before the push, run `pnpm exec fallow audit --base origin/main`. It reports the dead code, complexity, and duplication the branch adds, and exits 1 on a fail verdict. It reads the working tree, so in the shared workspace it also reports other applied branches' changes. Act only on findings in your branch's files.
+- Before the push, run `pnpm exec fallow audit --base <base>` from an isolated worktree at your branch, where `<base>` is `origin/main` or the branch directly below yours in a stack. It reports the dead code, complexity, and duplication that branch adds, and exits 1 on a fail verdict. The shared workspace contains every applied branch, so its audit result cannot reliably evaluate one branch.
 - CI runs the same audit on every pull request, in the `Fallow audit` job. The job posts findings as annotations and a job summary without failing, and it fails only when fallow itself breaks.
 - To review a diff or a pull request, load the `fallow-review` skill.
 - Before you delete code that Fallow reports as unused, run `pnpm exec fallow dead-code --trace <file>:<export>` to confirm nothing reaches it.
