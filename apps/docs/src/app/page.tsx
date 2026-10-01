@@ -1,34 +1,51 @@
+/**
+ * The homepage, after the Figma mock: the heading and a one-line description
+ * of the library with a Get started button, a live Aurora hero, the
+ * favorites grid, and the footer, which no other page renders. The homepage
+ * has no sidebar and no section banner, so it renders straight into the root
+ * layout under the site header. The motion the mock implies, on the hero,
+ * the favorites, and the footer, comes in later tickets.
+ */
 import Link from 'next/link';
 
-const COMPONENTS = [
-  { slug: 'linear-gradient', label: '<LinearGradient>' },
-  { slug: 'simplex-noise', label: '<SimplexNoise>' },
-  { slug: 'dot-field', label: '<DotField>' },
-  { slug: 'wave-lines', label: '<WaveLines>' },
-  { slug: 'mesh-gradient', label: '<MeshGradient>' },
-  { slug: 'aurora', label: '<Aurora>' },
-  { slug: 'god-rays', label: '<GodRays>' },
-] as const;
+import { Favorites } from '@/components/favorites/favorites';
+import { HomeFooter } from '@/components/home-footer/home-footer';
+import { HomeHero } from '@/components/home-hero/home-hero';
+import { ChevronDownIcon } from '@/components/icons/chevron-down';
+import textButtonStyles from '@/components/text-button/text-button.module.css';
+import { getFavorites } from '@/content/homepage';
 
-export default function Home() {
+import styles from './page.module.css';
+
+export default async function Home() {
+  const favorites = await getFavorites();
+
   return (
-    <main style={{ padding: '4rem 2rem', maxWidth: '60ch', margin: '0 auto' }}>
-      <h1 style={{ marginTop: 0 }}>Shaders</h1>
-      <p>React shader components powered by WebGPU and Three.js TSL.</p>
-      <p style={{ opacity: 0.75 }}>Status: pre-release, M3 complete — six v1 components live.</p>
-      <h2 style={{ marginTop: '2rem' }}>Components</h2>
-      <ul style={{ paddingLeft: '1.25rem', lineHeight: 1.8 }}>
-        {COMPONENTS.map((component) => (
-          <li key={component.slug}>
+    <>
+      <section className={`site-gutter ${styles.intro}`}>
+        <div className={styles.introRow}>
+          <h1 className={styles.title}>Shader components for the modern web</h1>
+          <div className={styles.lede}>
+            <p className={styles.description}>
+              A growing library for React, written in TSL and rendered with WebGPU.
+            </p>
             <Link
-              href={`/components/${component.slug}`}
-              style={{ color: '#88aaff', textDecoration: 'none' }}
+              className={`${textButtonStyles.box} ${textButtonStyles.button} ${styles.getStarted}`}
+              href="/getting-started"
             >
-              {component.label}
+              Get started
+              <ChevronDownIcon className={styles.chevron} />
             </Link>
-          </li>
-        ))}
-      </ul>
-    </main>
+          </div>
+        </div>
+      </section>
+      <section className={`site-gutter ${styles.hero}`}>
+        <div className="site-container">
+          <HomeHero />
+        </div>
+      </section>
+      <Favorites records={favorites} />
+      <HomeFooter />
+    </>
   );
 }

@@ -1,0 +1,184 @@
+import { expect, test } from '@playwright/test';
+import type { Page } from '@playwright/test';
+
+/**
+ * The homepage layout with no motion (SHA-181): the hero text and its Get
+ * started button, a live Aurora hero behind its poster, seven favorites as
+ * poster links, and the footer with the outlined wordmark and the camp.dev
+ * mark. The footer is the homepage's alone. Everything is asserted through
+ * roles, hrefs, and image sources, so a restyle cannot break this file.
+ *
+ * The favorites are listed here by hand, in the mock's order, rather than
+ * read from the homepage content module. The spec is what pins that order,
+ * so a reshuffle of the module shows up as a failure to review.
+ */
+
+const FAVORITES = [
+  'simplex-noise',
+  'mesh-gradient',
+  'wave-lines',
+  'voronoi',
+  'dither',
+  'god-rays',
+  'led-wall',
+];
+
+const favorites = (page: Page) =>
+  page.getByRole('list', { name: 'Start with one of our favorites' }).getByRole('link');
+
+async function open(page: Page): Promise<void> {
+  await page.goto('/');
+  await page.waitForLoadState('networkidle');
+}
+
+// The HTTP status of a route, fetched from inside the page.
+async function statusOf(page: Page, href: string): Promise<number> {
+  return page.evaluate(async (url) => (await fetch(url)).status, href);
+}
+
+// ---------------------------------------------
+// Hero
+// ---------------------------------------------
+
+test('the heading and description introduce the library', async ({ page }) => {
+  await open(page);
+
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Shader components for the modern web' }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('A growing library for React, written in TSL and rendered with WebGPU.'),
+  ).toBeVisible();
+});
+
+// The link is checked by its href and by fetching its target, rather than
+// by a click. A click from a page running a live scene can outlast the
+// expect budget on CI's software renderer (the "Open site chrome from a
+// static route" section of docs/development/visual-regression.md).
+test('Get started links to the getting started guide', async ({ page }) => {
+  await open(page);
+
+  const getStarted = page.getByRole('link', { name: 'Get started' });
+
+  await expect(getStarted).toHaveAttribute('href', '/getting-started');
+  expect(await statusOf(page, '/getting-started')).toBe(200);
+});
+
+// The poster is checked in the server's HTML, which is what a visitor sees
+// before any script runs and what stays up when WebGPU is missing. The live
+// scene is checked in the browser, where the scene mounts its canvas.
+test('the hero shows the Aurora poster first, then the live scene', async ({ page, request }) => {
+  const html = await (await request.get('/')).text();
+
+  expect(html).toMatch(/<img[^>]+src="[^"]*aurora\.jpg[^"]*"/);
+
+  await open(page);
+
+  await expect(page.locator('[data-home-hero] canvas')).toBeAttached();
+});
+
+// ---------------------------------------------
+// Favorites
+// ---------------------------------------------
+
+test('seven favorites link to their pages, in order', async ({ page }) => {
+  await open(page);
+
+  const hrefs = await favorites(page).evaluateAll((links) =>
+    links.map((link) => link.getAttribute('href') ?? ''),
+  );
+
+  expect(hrefs).toEqual(FAVORITES.map((slug) => `/components/${slug}`));
+
+  for (const href of hrefs) {
+    expect(await statusOf(page, href), href).toBe(200);
+  }
+});
+
+// The link's name is the component's label, which the poster's alt carries.
+test('a favorite is named for its component', async ({ page }) => {
+  await open(page);
+
+  await expect(favorites(page).first()).toHaveAccessibleName('Simplex Noise');
+});
+
+// Each favorite shows its component's full poster, not the small square the
+// components index uses, and every one has loaded.
+test('each favorite shows its poster', async ({ page }) => {
+  await open(page);
+  await expect(favorites(page)).toHaveCount(FAVORITES.length);
+  // The posters load lazily, so the grid is brought on screen first.
+  await favorites(page).last().scrollIntoViewIfNeeded();
+
+  const readImages = () =>
+    favorites(page).evaluateAll((links) =>
+      links.map((link) => {
+        const image = link.querySelector('img');
+
+        return {
+          href: link.getAttribute('href') ?? '',
+          src: decodeURIComponent(image?.currentSrc ?? ''),
+          loaded: !!image && image.complete && image.naturalWidth > 0,
+        };
+      }),
+    );
+
+  await expect
+    .poll(async () => (await readImages()).filter((image) => !image.loaded).map((i) => i.href))
+    .toEqual([]);
+
+  for (const [index, image] of (await readImages()).entries()) {
+    expect(image.src, image.href).toMatch(new RegExp(`/posters/${FAVORITES[index]}\\.(jpg|png)`));
+  }
+});
+
+// ---------------------------------------------
+// Footer
+// ---------------------------------------------
+
+test('the footer shows the wordmark and links the camp.dev mark', async ({ page }) => {
+  await open(page);
+
+  const footer = page.locator('footer');
+
+  await expect(footer).toHaveCount(1);
+  await expect(footer.getByText('shaders', { exact: true })).toBeVisible();
+
+  const campLink = footer.getByRole('link', { name: 'camp.dev' });
+
+  await expect(campLink).toBeVisible();
+  await expect(campLink).toHaveAttribute('href', 'https://camp.dev');
+});
+
+// The phone mock fills the footer with the wordmark and leaves the mark out.
+test('on a phone the footer shows the wordmark without the mark', async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await open(page);
+
+  const footer = page.locator('footer');
+
+  await expect(footer.getByText('shaders', { exact: true })).toBeVisible();
+  await expect(footer.getByRole('link', { name: 'camp.dev' })).toBeHidden();
+});
+
+// One route per layout the site has: the docs home and a guide share the
+// docs-content layout, and the components index and a component page share
+// the components layout.
+for (const route of ['/docs', '/getting-started', '/components', '/components/aurora']) {
+  test(`${route} renders no footer`, async ({ page }) => {
+    await page.goto(route);
+
+    await expect(page.locator('footer')).toHaveCount(0);
+  });
+}
+
+// ---------------------------------------------
+// The placeholder is gone
+// ---------------------------------------------
+
+test('the old placeholder content is gone', async ({ page }) => {
+  await open(page);
+
+  await expect(page.getByText(/^Status:/)).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '<LinearGradient>' })).toHaveCount(0);
+});

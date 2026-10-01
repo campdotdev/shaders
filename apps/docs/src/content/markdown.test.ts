@@ -18,6 +18,7 @@ const aurora: ComponentCatalogRecord = {
   description: 'Flowing ribbons of color.',
   category: 'gradients',
   thumbnail: '/posters/aurora.thumb.webp',
+  poster: '/posters/aurora.jpg',
   order: 0,
   tags: [],
 };
