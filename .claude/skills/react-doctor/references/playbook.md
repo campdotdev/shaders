@@ -127,7 +127,7 @@ React Native preflight:
 
 When batching local work, partition by proven file ownership and dependency order. Concurrent writers must never share a file.
 
-PR-mode parallelism gives each bucket its own branch. In a GitButler workspace, the buckets are parallel branches in the one checkout, and the section 4 checks there read every applied branch. So commit each bucket to its branch first, then run its section 4 checks from a separate worktree at that commit, as `docs/agents/version-control.md` describes. If a check fails, fix it in the main checkout and amend the bucket commit before you check again. Push only after the checks pass. Elsewhere, each bucket needs a separate `git worktree` directory. Compute file overlap first. Assign an overlapping file to one bucket or make the buckets an ordered dependency chain; category buckets are not inherently file-disjoint.
+PR-mode parallelism requires a separate `git worktree` directory per bucket. Compute file overlap first. Assign an overlapping file to one bucket or make the buckets an ordered dependency chain; category buckets are not inherently file-disjoint.
 
 ## 4. Verify the outcome
 
@@ -158,13 +158,13 @@ Leave changes unstaged. Summarize:
 
 ### PR mode
 
-Use one branch per file-disjoint bucket: a GitButler branch in a GitButler workspace, and an isolated worktree elsewhere. Include machine-readable ownership, bucket, base-SHA, and diagnostic-manifest markers in each PR body. Carry a prior PR forward only when its open state, exact head, base SHA, ownership marker, bucket marker, and diagnostic manifest match.
+Use one isolated worktree per file-disjoint bucket. Include machine-readable ownership, bucket, base-SHA, and diagnostic-manifest markers in each PR body. Carry a prior PR forward only when its open state, exact head, base SHA, ownership marker, bucket marker, and diagnostic manifest match.
 
 Create missing labels without `--force`; never overwrite an existing label's metadata. Mutate only PRs and issues carrying this workflow's ownership marker. If multiple owned tracking issues exist, report the conflict.
 
 If push succeeds but PR creation fails, preserve and report the remote branch and recovery path. Do not call the bucket completed or silently delete the branch.
 
-Before committing, compare the worktree diff with the bucket's diagnostic and collateral manifest. Stop on unexplained files. Stage explicit paths or hunks; never use `git add -A` or `git add .`. Recheck the staged diff before committing. In a GitButler workspace, pass the bucket's file or hunk IDs to `but commit -b <bucket-branch>`, then recheck the commit with `git show --name-only <bucket-branch>`.
+Before committing, compare the worktree diff with the bucket's diagnostic and collateral manifest. Stop on unexplained files. Stage explicit paths or hunks; never use `git add -A` or `git add .`. Recheck the staged diff before committing.
 
 The tracking issue is a live dashboard of verified open PRs, not a score projection. Close it only when no owned PR remains open. A clean run with no open PR needs no fabricated tracking-issue link.
 
