@@ -13,10 +13,16 @@ The repo carries its own agent guide and one skill. Everything else lives at use
 2. Run `setup-matt-pocock-skills` once. It reads and writes the `## Agent skills` block in `AGENTS.md` and the three files in `docs/agents/` that block points to.
 3. Install Fallow's `fallow` and `fallow-review` skills and the `fallow-mcp` server at user scope. The `fallow` CLI arrives with `pnpm install` as a root devDependency.
 4. Install the `technical-writing`, `unslop`, `design-engineering`, `resolve-pr-feedback`, and `watch-pr` skills into `~/.claude/skills/`, and into `~/.agents/skills/` for Codex. `design-engineering` builds on Emil Kowalski's animations.dev skills, which are also local.
+5. Install the GitButler CLI with `curl -fsSL https://gitbutler.com/install.sh | sh`, then its `gitbutler` skill with `but skill install --global`. Run `but config forge auth` so `but pr` can open pull requests.
+
+## Put the checkout in GitButler workspace mode
+
+Run `but setup` once in the main checkout. It switches the checkout to `gitbutler/workspace` and installs the `pre-commit` and `post-checkout` hooks that `docs/agents/version-control.md` describes. To go back to plain Git, run `but teardown`, but only when no other agent is working in the checkout. It checks out a branch, which takes the checkout out of workspace mode for every session.
 
 ## Reapply the local patches after an update
 
 Two mattpocock skills are edited away from upstream on the author's machine. Neither change syncs, and `npx skills update` overwrites both. The upstream originals are kept outside the repo with the install backup.
 
-- `implement` adds the three local review passes listed in `docs/agents/pull-requests.md`, and it commits before reviewing rather than after.
+- `implement` adds the three local review passes listed in `docs/agents/pull-requests.md`, and it commits before reviewing rather than after. In a GitButler workspace, it names the branch to review.
+- `code-review` reviews a named branch instead of `HEAD`, because `HEAD` in a GitButler workspace merges every applied branch.
 - `code-review` no longer reads a bare `#<n>` as a ticket ID. Squash merges put the GitHub PR number in the commit subject, and those numbers collide with live `SHA-` issues, so the skill once resolved the wrong spec without any error.
