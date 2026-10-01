@@ -1,10 +1,13 @@
-/* The components index. The page is a placeholder list until its card grid
-   lands (SHA-180), so this file only places the breadcrumbs. */
+/* The components index, after the Figma mock: breadcrumbs over one section
+   per category, each a heading over a grid of cards. Unlike a component
+   page, the index is not capped at the 4xl reading width, because the mock
+   runs its grid four cards across the whole column. */
 
-/* The same spacing as a component page's trail ([slug]/page.module.css):
-   16px below the top of the page and 24px above the title. */
+/* The mock's breadcrumb row sits 16px below the top of the page and 16px
+   above the first category, whose own 12px (.category) makes 28px to the
+   first heading. */
 .breadcrumbs {
-  margin: var(--spacing-4) 0 var(--spacing-6);
+  margin: var(--spacing-4) 0;
 }
 
 /* Breadcrumbs hide below 53.5rem on both the index and component pages,
@@ -13,4 +16,143 @@
   .breadcrumbs {
     display: none;
   }
+}
+
+/* ---- Categories ---- */
+
+/* The mock pads each category 12px above and 16px below, and the last one
+   64px below, which is the page's bottom margin. The 16px on the right
+   lines the grid's right edge up with the header's links, which sit 16px
+   in from the same container edge. */
+.category {
+  padding: var(--spacing-3) var(--spacing-4) var(--spacing-4) 0;
+}
+
+.category:last-child {
+  padding-bottom: var(--spacing-16);
+}
+
+/* Under 53.5rem of the column the docs shell drops its 40px left inset
+   (docs-shell.module.css) and the page runs from the gutter on the left, so
+   the right inset goes too and the grid stays centered in the column. */
+@container docs-main (width < 53.5rem) {
+  .category {
+    padding-right: 0;
+  }
+}
+
+.categoryTitle {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-7);
+}
+
+/* ---- The grid ----
+   Four columns at full width, fewer as the column narrows, and never five.
+   auto-fill fits as many columns as the width allows, each at least the
+   larger of two sizes. --card-min is the narrowest a card gets before its
+   text column is too cramped for a two-line description: raising it drops
+   to fewer columns sooner. The quarter of the width, less the three gaps
+   between four columns, is what caps the count at four, because a fifth
+   column would need each column under a quarter. */
+.grid {
+  --card-min: 14rem;
+
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(max(var(--card-min), (100% - 3 * var(--spacing-3)) / 4), 1fr)
+  );
+  gap: var(--spacing-3);
+  padding: var(--spacing-2-5) 0 0;
+  list-style: none;
+}
+
+/* ---- The card ---- */
+
+/* The thumbnail's square plus the 8px padding and 1px border make the
+   mock's 80px card. The card fills its grid cell, so a card whose text
+   wraps taller does not leave its row neighbors short. */
+.card {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2-5);
+  height: 100%;
+  padding: var(--spacing-2);
+  border: var(--border-width-1) solid var(--white-a5);
+  border-radius: var(--radius-xl);
+  background: var(--bg-muted);
+  color: var(--fg);
+  transition:
+    background-color var(--fade-xs) var(--ease-hover),
+    border-color var(--fade-xs) var(--ease-hover);
+}
+
+/* The site underlines a link on hover (globals.css); a card is a block, not
+   a line of text, so it does not. Ungated, because a touch tap fires
+   :hover as well. */
+.card:hover {
+  text-decoration: none;
+}
+
+/* The mock draws no hover, so this is a placeholder for the author to tune:
+   the card lifts one gray step and its hairline brightens. Gated to pointing
+   devices, because a touch tap fires :hover too and the fill would then
+   stick on the tapped card. */
+@media (hover: hover) and (pointer: fine) {
+  .card:hover {
+    border-color: var(--white-a10);
+    background: var(--gray-800);
+  }
+}
+
+/* The sidebar rows' focus ring (nav-row.module.css). */
+.card:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+}
+
+/* The width and height attributes set the 62px square; flex: none keeps a
+   long description from squeezing it. */
+.thumbnail {
+  flex: none;
+  border-radius: var(--radius-sm);
+}
+
+/* min-width: 0 lets the text column shrink below its longest word, so the
+   label can truncate instead of pushing the card wider than its cell. */
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+  min-width: 0;
+  font-size: var(--font-size-xs);
+  line-height: var(--leading-4);
+}
+
+.label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Two lines, then an ellipsis. The full description is on the component
+   page, and still in the DOM for a screen reader. */
+.description {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--fg-muted);
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }

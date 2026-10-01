@@ -6,7 +6,9 @@
     // behind INCLUDE_DEV_ROUTES=1, which fallow's Next plugin can't see.
     "apps/docs/src/app/**/page.dev.tsx",
     // Run by hand to regenerate blue-noise-tile.ts.
-    "scripts/generate-blue-noise.mjs"
+    "scripts/generate-blue-noise.mjs",
+    // Run by build-posters.sh after each poster capture.
+    "scripts/build-thumbnail.mjs"
   ],
   // The poster command esbuilds the harness at runtime, from a directory it
   // resolves by path in poster/bundle.ts.

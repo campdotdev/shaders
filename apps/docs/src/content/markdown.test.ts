@@ -17,6 +17,7 @@ const aurora: ComponentCatalogRecord = {
   componentName: 'Aurora',
   description: 'Flowing ribbons of color.',
   category: 'gradients',
+  thumbnail: '/posters/aurora.thumb.webp',
   order: 0,
   tags: [],
 };
