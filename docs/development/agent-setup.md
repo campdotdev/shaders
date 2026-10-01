@@ -17,7 +17,7 @@ The repo carries its own agent guide and one skill. Everything else lives at use
 
 ## Put the checkout in GitButler workspace mode
 
-Run `but setup` once in the main checkout. It switches the checkout to `gitbutler/workspace` and installs the `pre-commit` and `post-checkout` hooks that `docs/agents/version-control.md` describes. To go back to plain Git, run `but teardown`.
+Run `but setup` once in the main checkout. It switches the checkout to `gitbutler/workspace` and installs the `pre-commit` and `post-checkout` hooks that `docs/agents/version-control.md` describes. To go back to plain Git, run `but teardown`, but only when no other agent is working in the checkout. It checks out a branch, which takes the checkout out of workspace mode for every session.
 
 ## Reapply the local patches after an update
 
