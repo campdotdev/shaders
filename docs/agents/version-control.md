@@ -50,4 +50,10 @@ git worktree add .worktrees/<name> -b <branch> origin/main
 cd .worktrees/<name> && pnpm install
 ```
 
+To scan an existing commit, check it out detached instead of creating a branch:
+
+```bash
+git worktree add --detach .worktrees/<name> <commit>
+```
+
 After the PR merges, run `git worktree remove .worktrees/<name>`.
