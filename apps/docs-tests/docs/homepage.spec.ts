@@ -139,6 +139,36 @@ test('each favorite shows its poster', async ({ page }) => {
   }
 });
 
+// This file's browser has no WebGPU adapter: headless Chromium exposes
+// navigator.gpu but hands out none without --enable-unsafe-webgpu, which
+// favorites-hover.spec.ts turns on to test the live scenes. The spec asks for
+// an adapter itself first, to prove this browser has none.
+test('with no WebGPU, a hovered or focused favorite stays a poster', async ({ page }) => {
+  await open(page);
+
+  // This package's TypeScript config carries no WebGPU types.
+  const hasAdapter = await page.evaluate(async () => {
+    const { gpu } = navigator as { gpu?: { requestAdapter: () => Promise<unknown> } };
+
+    return (await gpu?.requestAdapter()) != null;
+  });
+
+  expect(hasAdapter).toBe(false);
+
+  const favorite = favorites(page).first();
+
+  await favorite.hover();
+  await favorite.focus();
+  // Nothing to wait on when nothing should happen, so the spec gives the page
+  // the time a favorite with WebGPU takes to mount its canvas.
+  await page.waitForTimeout(1_000);
+
+  await expect(
+    page.getByRole('list', { name: 'Start with one of our favorites' }).locator('canvas'),
+  ).toHaveCount(0);
+  await expect(favorite.getByRole('img')).toBeVisible();
+});
+
 // ---------------------------------------------
 // Footer
 // ---------------------------------------------

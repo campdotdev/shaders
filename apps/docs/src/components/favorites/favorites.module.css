@@ -78,20 +78,47 @@
   outline-offset: var(--border-width-2);
 }
 
-/* The card's window is about 4:3, and the posters are wider: 3:2 for every
-   favorite, from scripts/build-posters.sh. The poster covers the window and
-   its sides are cropped. next/image's fill sets the
-   image absolute over this box. */
-.poster {
+/* The card's window, which holds the poster and, while the favorite is live,
+   its scene under it. Both cover the window: next/image's fill sets the
+   poster absolute over this box, and .scene does the same for the scene. */
+.window {
   position: relative;
-  display: block;
   height: 100%;
   overflow: hidden;
   border-radius: var(--radius-xl);
 }
 
-.poster img {
+/* The window is about 4:3, and the posters are wider: 3:2 for every
+   favorite, from scripts/build-posters.sh. The poster covers the window and
+   its sides are cropped. */
+.poster {
   object-fit: cover;
+}
+
+/* ---- The live scene ----
+   Mounted under the poster on hover or focus (favorites-list.tsx), and
+   covering the window like the poster. */
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+/* The ground under a scene whose demo has no backdrop of its own: the
+   page's --bg, which is --black, #0b0f0d. LED Wall's dot gaps show it on
+   its own page, and scripts/build-posters.sh flattens its poster onto the
+   same color. A demo with a backdrop, such as God Rays, takes that class in
+   place of this one, so the two never compete in the cascade. */
+.ground {
+  background: var(--bg);
+}
+
+/* The poster fades once the scene's first frame is on screen, a reveal
+   the visitor started, so it takes the md fade. Only the fade out
+   transitions. When the scene unmounts for another favorite, the poster
+   is back at once, because nothing sits under it to fade to. */
+.card:has([data-scene='painted']) .poster {
+  opacity: 0;
+  transition: opacity var(--fade-md) var(--ease-out);
 }
 
 /* On a phone the heading is a row of its own above the cards, on one
