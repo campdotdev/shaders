@@ -5,16 +5,9 @@
   padding-block: var(--spacing-8);
 }
 
-/* Three columns, with the wordmark in the middle one and the mark at the
-   end of the last, so the wordmark stays centered however wide the mark
-   is. The items line up on their last baseline. The wordmark's baseline is
-   the foot of its letters, and the mark is an inline SVG, whose bottom edge
-   sits on its line's baseline, so the mark's foot lines up with the foot of
-   the letters rather than with the bottom of the wordmark's line box. */
 .row {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: last baseline;
+  display: flex;
+  justify-content: center;
   padding: var(--spacing-8) var(--spacing-8) 0;
 }
 
@@ -22,9 +15,8 @@
    line as tall as the type, outlined in a 1px stroke of 30% white and with
    no fill. Narrower than the artboard, it scales with the site container
    (13.9% of its width is 240px at 1728px), so the word never outgrows the
-   space beside the mark. */
+   container. */
 .wordmark {
-  grid-column: 2;
   color: transparent;
   font-size: min(239.593px, 13.9cqi);
   font-weight: var(--font-weight-semibold);
@@ -33,38 +25,22 @@
   -webkit-text-stroke: var(--border-width-1) var(--white-a30);
 }
 
-.campLink {
-  justify-self: end;
-}
-
-/* The sidebar rows' focus ring (nav-row.module.css). */
-.campLink:focus-visible {
-  outline: var(--border-width-2) solid var(--accent);
-  outline-offset: var(--border-width-2);
-}
-
 /* The phone mock: 32px above the wordmark and 24px below it, with the
-   wordmark filling the column and no camp.dev mark. The phone gutter is
-   the whole side inset (.site-gutter in globals.css), so the row's padding
-   goes. The word is 3.78 times as wide as its font size, so the font size
-   that fills the column is the column's width, the container less the two
-   16px gutters, over 3.78: 95.6px on the mock's 393px screen. */
+   wordmark filling the column. The phone gutter is the whole side inset
+   (.site-gutter in globals.css), so the row's padding goes. The word is
+   3.78 times as wide as its font size, so the font size that fills the
+   column is the column's width, the container less the two 16px gutters,
+   over 3.78: 95.6px on the mock's 393px screen. */
 @container site (width < 40rem) {
   .footer {
     padding-block: var(--spacing-8) var(--spacing-6);
   }
 
   .row {
-    grid-template-columns: minmax(0, 1fr);
     padding: 0;
   }
 
   .wordmark {
-    grid-column: 1;
     font-size: calc((100cqi - 2 * var(--spacing-4)) / 3.78);
-  }
-
-  .campLink {
-    display: none;
   }
 }

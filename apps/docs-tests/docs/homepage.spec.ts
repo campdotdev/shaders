@@ -4,8 +4,8 @@ import type { Page } from '@playwright/test';
 /**
  * The homepage layout with no motion (SHA-181): the hero text and its Get
  * started button, a live Aurora hero behind its poster, seven favorites as
- * poster links, and the footer with the outlined wordmark and the camp.dev
- * mark. The footer is the homepage's alone. Everything is asserted through
+ * poster links, and the footer with the outlined wordmark. The footer is the
+ * homepage's alone. Everything is asserted through
  * roles, hrefs, and image sources, so a restyle cannot break this file.
  *
  * The favorites are listed here by hand, in the mock's order, rather than
@@ -147,29 +147,14 @@ test('each favorite shows its poster', async ({ page }) => {
 // Footer
 // ---------------------------------------------
 
-test('the footer shows the wordmark and links the camp.dev mark', async ({ page }) => {
+test('the footer shows the wordmark and no links', async ({ page }) => {
   await open(page);
 
   const footer = page.locator('footer');
 
   await expect(footer).toHaveCount(1);
   await expect(footer.getByText('shaders', { exact: true })).toBeVisible();
-
-  const campLink = footer.getByRole('link', { name: 'camp.dev' });
-
-  await expect(campLink).toBeVisible();
-  await expect(campLink).toHaveAttribute('href', 'https://camp.dev');
-});
-
-// The phone mock fills the footer with the wordmark and leaves the mark out.
-test('on a phone the footer shows the wordmark without the mark', async ({ page }) => {
-  await page.setViewportSize({ width: 390, height: 844 });
-  await open(page);
-
-  const footer = page.locator('footer');
-
-  await expect(footer.getByText('shaders', { exact: true })).toBeVisible();
-  await expect(footer.getByRole('link', { name: 'camp.dev' })).toBeHidden();
+  await expect(footer.getByRole('link')).toHaveCount(0);
 });
 
 // One route per layout the site has: the docs home and a guide share the
