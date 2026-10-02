@@ -5,7 +5,7 @@
  * oklab(), and throws on anything else, so emitting rgb() or hsl() would crash
  * the shader.
  */
-import { linearSrgbToOklch, parseColorString } from '@camp-dev/shaders/color';
+import { linearSrgbToOklch, parseColorString, parseOklchString } from '@camp-dev/shaders/color';
 
 /**
  * OKLCH in one line: lightness is how bright (0 black, 1 white), chroma is how
@@ -38,47 +38,24 @@ const round = (value: number, places: number) => {
 
 /**
  * Any color string the engine accepts -> L/C/H numbers for the sliders.
- * oklch() input is read directly rather than round-tripped through linear light,
- * so a value the user typed comes back byte-identical instead of drifting in
- * the last decimal place.
+ * oklch() input is read by the engine's own parser rather than round-tripped
+ * through linear light, so a value the user typed comes back byte-identical
+ * instead of drifting in the last decimal place.
  */
 export function parseToOklch(input: string): OklchColor {
-  const value = input.trim();
+  if (input.trim().startsWith('oklch(')) {
+    const [lightness, chroma, hue] = parseOklchString(input);
 
-  if (value.startsWith('oklch(')) {
-    const inner = value.slice('oklch('.length, value.lastIndexOf(')'));
-    const [lightnessToken, chromaToken, hueToken] = (inner.split('/')[0] ?? '')
-      .trim()
-      .split(/[\s,]+/)
-      .filter((token) => token.length > 0);
-
-    if (lightnessToken !== undefined && chromaToken !== undefined && hueToken !== undefined) {
-      const readComponent = (token: string, percentScale: number) =>
-        token.endsWith('%') ? (parseFloat(token) / 100) * percentScale : parseFloat(token);
-
-      const lightness = readComponent(lightnessToken, 1);
-      const chroma = readComponent(chromaToken, MAX_CHROMA);
-      const hue = parseFloat(hueToken.replace(/deg$/, ''));
-
-      // parseFloat silently returns NaN for a non-numeric token ("abc") rather
-      // than throwing, which would otherwise let a broken value ride all the
-      // way to formatOklch and come out as the unparseable "oklch(NaN NaN NaN)".
-      if (!Number.isFinite(lightness) || !Number.isFinite(chroma) || !Number.isFinite(hue)) {
-        throw new Error(`Invalid oklch() color: "${input}"`);
-      }
-
-      return {
-        lightness,
-        chroma,
-        // Wraps into [0, 360) so a pasted out-of-range hue (420deg, -30deg)
-        // matches the type's documented range instead of passing straight through.
-        hue: ((hue % 360) + 360) % 360,
-      };
-    }
+    return {
+      lightness,
+      chroma,
+      // Wraps into [0, 360) so a pasted out-of-range hue (420deg, -30deg)
+      // matches the type's documented range instead of passing straight through.
+      hue: ((hue % 360) + 360) % 360,
+    };
   }
 
-  const [red, green, blue] = parseColorString(value);
-  const [lightness, chroma, hue] = linearSrgbToOklch(red, green, blue);
+  const [lightness, chroma, hue] = linearSrgbToOklch(...parseColorString(input));
 
   return { lightness, chroma, hue };
 }

@@ -208,29 +208,60 @@ export function linearSrgbToOklch(
 // Reading color strings
 // -------------------------------------------------
 // `parseColorString` checks the prefix and hands the string to one parser per
-// format. Each parser reads the trimmed string and quotes the caller's
-// original, untrimmed input in its error message.
+// format. Each parser quotes the caller's original, untrimmed input in its
+// error message. The oklch() parser is also public, as `parseOklchString`,
+// because a color picker needs the raw numbers rather than linear-sRGB, so it
+// trims its own input instead of taking a trimmed copy.
+
+/** A whole CSS number: optional sign, digits with an optional fraction, optional exponent. */
+const NUMBER_TOKEN = /^[+-]?(\d+|\d*\.\d+)(e[+-]?\d+)?$/i;
+
+/**
+ * Read a token that is a number and nothing else, or NaN. `parseFloat` alone
+ * would read `0.7foo` as 0.7.
+ */
+function parseNumber(token: string): number {
+  return NUMBER_TOKEN.test(token) ? Number(token) : NaN;
+}
 
 /** Parse `50%` -> 0.5 or a bare number. `scale` is the value of 100% (default 1). */
 function parseComponent(token: string, scale: number): number {
   const trimmed = token.trim();
 
   if (trimmed.endsWith('%')) {
-    return (parseFloat(trimmed.slice(0, -1)) / 100) * scale;
+    return (parseNumber(trimmed.slice(0, -1)) / 100) * scale;
   }
 
-  return parseFloat(trimmed);
+  return parseNumber(trimmed);
 }
 
-/** Split `oklch(...)`/`oklab(...)` inner text into component tokens, dropping `/ alpha`. */
+/**
+ * Split `oklch(...)`/`oklab(...)` inner text into its three component tokens,
+ * dropping `/ alpha`. Answers an empty list, which every caller rejects, unless
+ * the string ends at its closing paren, holds exactly three components, and has
+ * at most one numeric alpha. Slicing to `lastIndexOf(')')` instead would read
+ * `oklch(0.7 0.15 280` as hue 28.
+ */
 function functionArgs(input: string, prefix: string): string[] {
-  const inner = input.slice(prefix.length, input.lastIndexOf(')'));
-  const beforeAlpha = inner.split('/')[0] ?? '';
+  if (!input.endsWith(')')) {
+    return [];
+  }
 
-  return beforeAlpha
+  const [components = '', alpha, ...extra] = input.slice(prefix.length, -1).split('/');
+  const tokens = components
     .trim()
     .split(/[\s,]+/)
     .filter((token) => token.length > 0);
+
+  if (tokens.length !== 3 || extra.length > 0) {
+    return [];
+  }
+
+  if (alpha !== undefined && !Number.isFinite(parseComponent(alpha, 1))) {
+    return [];
+  }
+
+  return tokens;
 }
 
 /**
@@ -259,10 +290,20 @@ function parseHexColor(value: string, input: string): [number, number, number] {
 }
 
 /**
- * `oklch(L C H)` -> extended linear-sRGB. 100% lightness is 1 and 100% chroma
- * is 0.4, as in CSS. `input` is the caller's string, quoted in the error.
+ * Read an `oklch(L C H)` string into its three numbers, with no conversion:
+ * `[lightness, chroma, hueDegrees]`. 100% lightness is 1 and 100% chroma is
+ * 0.4, as in CSS, and the hue comes back as written, not wrapped into
+ * [0, 360). A color picker uses this to set its sliders from a typed value,
+ * which a round trip through linear-sRGB would drift in the last decimal.
+ * Throws on any other syntax and on components that are not numbers.
  */
-function parseOklchColor(value: string, input: string): [number, number, number] {
+export function parseOklchString(input: string): [number, number, number] {
+  const value = input.trim();
+
+  if (!value.startsWith('oklch(')) {
+    throw new Error(`Invalid oklch() color: "${input}"`);
+  }
+
   const [lightnessToken, chromaToken, hueToken] = functionArgs(value, 'oklch(');
 
   if (lightnessToken === undefined || chromaToken === undefined || hueToken === undefined) {
@@ -271,9 +312,9 @@ function parseOklchColor(value: string, input: string): [number, number, number]
 
   const lightness = parseComponent(lightnessToken, 1);
   const chroma = parseComponent(chromaToken, 0.4);
-  const hueDegrees = parseFloat(hueToken.replace(/deg$/, ''));
+  const hueDegrees = parseNumber(hueToken.replace(/deg$/, ''));
 
-  // parseFloat answers NaN for a non-numeric token rather than throwing, and
+  // parseNumber answers NaN for a non-numeric token rather than throwing, and
   // NaN does not fail loudly: it rides into colorRamp or mixColor, gets baked
   // into a literal, and reaches the GPU as a blank shader with a clean
   // console. Checking here names the offending string at the call site.
@@ -281,7 +322,7 @@ function parseOklchColor(value: string, input: string): [number, number, number]
     throw new Error(`Invalid oklch() color: "${input}"`);
   }
 
-  return oklchToLinearSrgb(lightness, chroma, hueDegrees);
+  return [lightness, chroma, hueDegrees];
 }
 
 /**
@@ -299,7 +340,7 @@ function parseOklabColor(value: string, input: string): [number, number, number]
   const greenRed = parseComponent(aToken, 0.4);
   const blueYellow = parseComponent(bToken, 0.4);
 
-  // The same NaN guard as parseOklchColor, for the same reason.
+  // The same NaN guard as parseOklchString, for the same reason.
   if (!Number.isFinite(lightness) || !Number.isFinite(greenRed) || !Number.isFinite(blueYellow)) {
     throw new Error(`Invalid oklab() color: "${input}"`);
   }
@@ -322,7 +363,7 @@ export function parseColorString(input: string): [number, number, number] {
   }
 
   if (value.startsWith('oklch(')) {
-    return parseOklchColor(value, input);
+    return oklchToLinearSrgb(...parseOklchString(input));
   }
 
   if (value.startsWith('oklab(')) {

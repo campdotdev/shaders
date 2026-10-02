@@ -71,6 +71,7 @@ import { parseColorString, linearSrgbToOklch } from '@camp-dev/shaders/color'
 ```
 
 - `parseColorString(input)` → extended linear-sRGB. Accepts `#rrggbb`, `#rrggbbaa` (alpha dropped), `oklab(L a b)`, and `oklch(L C H)`. Throws on anything else, including components that aren't numbers.
+- `parseOklchString(input)` → `[l, c, h]`, the numbers as written, with no conversion. Takes the same `oklch(L C H)` syntax as `parseColorString`, so a color picker can set its sliders from a typed value without drifting it. The hue is not wrapped into [0, 360).
 - `oklabToLinearSrgb(l, a, b)` / `oklchToLinearSrgb(l, c, h)` → extended linear-sRGB. Not clamped: colors outside sRGB come back with channels below 0 or above 1.
 - `linearSrgbToOklch(r, g, b)` → `[l, c, h]`, hue normalized to [0, 360).
 - `linearSrgbToLinearDisplayP3(r, g, b)` → extended linear Display-P3.

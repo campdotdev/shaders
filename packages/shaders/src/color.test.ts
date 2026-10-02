@@ -8,7 +8,12 @@
 // months from now.
 import { describe, expect, it } from 'vitest';
 
-import { linearSrgbToOklch, parseColorString, srgbChannelToLinear } from './color.js';
+import {
+  linearSrgbToOklch,
+  parseColorString,
+  parseOklchString,
+  srgbChannelToLinear,
+} from './color.js';
 
 describe('@camp-dev/shaders/color', () => {
   it('runs with no DOM globals present', () => {
@@ -20,6 +25,7 @@ describe('@camp-dev/shaders/color', () => {
 
   it('exposes the CPU color math through the subpath entry', () => {
     expect(parseColorString('#000000')).toEqual([0, 0, 0]);
+    expect(parseOklchString('oklch(0.5 0.1 200)')).toEqual([0.5, 0.1, 200]);
     expect(srgbChannelToLinear(0)).toBe(0);
     expect(linearSrgbToOklch(1, 1, 1)[0]).toBeCloseTo(1, 3);
   });

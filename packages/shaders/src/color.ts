@@ -21,6 +21,7 @@ export {
   oklchToGamut,
   oklchToLinearSrgb,
   parseColorString,
+  parseOklchString,
 } from './primitives/color-space/cpu-convert.js';
 export type { OutputGamut } from './primitives/color-space/cpu-convert.js';
 export { linearChannelToSrgb, srgbChannelToLinear } from './primitives/color-space/cpu-transfer.js';
