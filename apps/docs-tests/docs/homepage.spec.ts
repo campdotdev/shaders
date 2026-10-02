@@ -2,15 +2,11 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 /**
- * The homepage layout with no motion (SHA-181): the hero text and its Get
- * started button, a live Aurora hero behind its poster, seven favorites as
- * poster links, and the footer with the outlined wordmark. The footer is the
- * homepage's alone. Everything is asserted through
- * roles, hrefs, and image sources, so a restyle cannot break this file.
- *
- * The favorites are listed here by hand, in the mock's order, rather than
- * read from the homepage content module. The spec is what pins that order,
- * so a reshuffle of the module shows up as a failure to review.
+ * The homepage layout with no motion (SHA-181): the intro, the Aurora hero,
+ * the favorites, and the homepage-only footer, asserted through roles, hrefs,
+ * and image sources so a restyle cannot break this file. FAVORITES is listed
+ * by hand rather than read from the content module, so a reshuffle there
+ * fails here for review.
  */
 
 const FAVORITES = [

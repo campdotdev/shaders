@@ -1,9 +1,8 @@
 /**
  * The homepage's favorites, after the Figma mock: the section heading in the
- * grid's first cell, then one card per favorite, each the component's poster
- * linking to its page. The list and its order come from content/homepage.ts.
- * The cards are still pictures for now. The hover that brings a favorite's
- * scene to life and cuts in its card tab comes in later tickets.
+ * grid's first cell, then one card per favorite, its poster linking to its
+ * page, in the order content/homepage.ts lists them. The hover that brings a
+ * favorite's scene to life and cuts in its card tab comes in later tickets.
  */
 import Image from 'next/image';
 import Link from 'next/link';

@@ -17,6 +17,10 @@ export interface AuroraParams {
   stops: PlainColorStop[];
 }
 
+// Aurora's still at INITIAL, from scripts/build-posters.sh. The demo and the
+// homepage hero both show it before the scene's first frame.
+export const POSTER_SRC = '/posters/aurora.jpg';
+
 export const MIN_STOPS = 2;
 export const MAX_STOPS = 6;
 

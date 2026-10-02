@@ -22,8 +22,8 @@ interface CatalogRecord {
    The label is for reading ("Conic Gradient") and the tag name is for code
    ("ConicGradient"), so a page cannot use one for the other. The thumbnail
    is the URL of the small square the components index shows on each card,
-   and the poster is the URL of the full 1080 by 720 still the homepage's
-   favorites show. */
+   and the poster is the URL of the full-size still the homepage's favorites
+   show. */
 export interface ComponentCatalogRecord extends CatalogRecord {
   category: CategorySlug;
   componentName: string;

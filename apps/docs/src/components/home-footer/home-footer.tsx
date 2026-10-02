@@ -1,9 +1,8 @@
 /**
  * The homepage's footer, after the Figma mock: the outlined "shaders"
- * wordmark centered at the foot of the page. On a phone the wordmark fills
- * the width, as the phone mock draws it. Only the homepage renders the
- * footer (app/page.tsx). The wordmark is drawn here in its final state. Its
- * scroll reveal comes in a later ticket.
+ * wordmark centered at the foot of the page, filling the width on a phone.
+ * Only the homepage renders it (app/page.tsx). The wordmark is drawn in its
+ * final state. Its scroll reveal comes in a later ticket.
  */
 import styles from './home-footer.module.css';
 

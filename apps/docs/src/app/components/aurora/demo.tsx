@@ -29,7 +29,14 @@ import { createStop, newStopIndex } from '@/lib/stops';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import styles from './demo.module.css';
-import { type AuroraParams, INITIAL, MAX_STOPS, MIN_STOPS, type PlainColorStop } from './params';
+import {
+  type AuroraParams,
+  INITIAL,
+  MAX_STOPS,
+  MIN_STOPS,
+  type PlainColorStop,
+  POSTER_SRC,
+} from './params';
 
 const AuroraScene = dynamic(() => import('./scene'), { ssr: false });
 
@@ -39,7 +46,7 @@ function AuroraDemo() {
   return (
     <DemoPoster
       alt="Aurora shader preview: green and teal light curtains with a blue veil and pink fringe over a dark backdrop"
-      src="/posters/aurora.jpg"
+      src={POSTER_SRC}
     >
       <AuroraScene params={params}>
         <VisualTestPause />

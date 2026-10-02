@@ -1,10 +1,8 @@
 /**
- * The homepage, after the Figma mock: the heading and a one-line description
- * of the library with a Get started button, a live Aurora hero, the
- * favorites grid, and the footer, which no other page renders. The homepage
- * has no sidebar and no section banner, so it renders straight into the root
- * layout under the site header. The motion the mock implies, on the hero,
- * the favorites, and the footer, comes in later tickets.
+ * The homepage, after the Figma mock: the heading, description, and Get
+ * started button, then the live Aurora hero, the favorites grid, and the
+ * footer, which no other page renders. With no sidebar or section banner, it
+ * renders straight into the root layout. Its motion comes in later tickets.
  */
 import Link from 'next/link';
 

@@ -78,8 +78,9 @@
   outline-offset: var(--border-width-2);
 }
 
-/* The posters are 3:2 and the card's window is about 4:3, so the poster
-   covers the window and its sides are cropped. next/image's fill sets the
+/* The card's window is about 4:3, and the posters are wider: 3:2 for every
+   favorite, from scripts/build-posters.sh. The poster covers the window and
+   its sides are cropped. next/image's fill sets the
    image absolute over this box. */
 .poster {
   position: relative;

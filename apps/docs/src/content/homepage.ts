@@ -1,9 +1,8 @@
 /**
- * The homepage's content. The favorites are the components hand-picked for
- * the homepage's grid, in the Figma mock's order, read row by row after the
- * heading cell. The list is typed against the slugs in components.ts, so a
- * renamed or removed component fails the type check here instead of
- * breaking the homepage. The catalog itself carries no favorite flag.
+ * The homepage's content: the favorites, hand-picked in the Figma mock's
+ * order, read row by row after the heading cell. The list is typed against
+ * the slugs in components.ts, so a renamed or removed component fails the
+ * type check here. The catalog itself carries no favorite flag.
  */
 import { type ComponentCatalogRecord, getComponentsCatalog } from './catalog';
 import type { ComponentSlug } from './components';
