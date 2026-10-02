@@ -77,7 +77,7 @@ test('Get started shows no underline on hover', async ({ page }) => {
 test('the hero shows the Aurora poster first, then the live scene', async ({ page, request }) => {
   const html = await (await request.get('/')).text();
 
-  expect(html).toMatch(/<img[^>]+src="[^"]*aurora\.jpg[^"]*"/);
+  expect(html).toMatch(/<img[^>]+src="[^"]*aurora-hero\.jpg[^"]*"/);
 
   await open(page);
 

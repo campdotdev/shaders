@@ -108,6 +108,20 @@ if [ "$THUMBNAILS_ONLY" = 1 ]; then
   exit 0
 fi
 
+# The homepage hero gets its own Aurora poster at the hero's 1636 by 696.
+# Aurora always fits the sky band to the canvas height and widens it at the
+# sides, so the 3:2 poster, cover-cropped into the wider hero, showed a
+# zoomed-in slice that jumped when the live scene replaced it. A poster at
+# least as wide as the box crops only its sides, the way the shader does.
+echo "==> aurora-hero (jpg, 1636x696)"
+$CLI \
+  --source "${COMPONENTS_DIR}/aurora/scene.tsx" \
+  --output "${OUT_DIR}/aurora-hero.jpg" \
+  --format jpg \
+  --width 1636 \
+  --height 696 \
+  --background "#0b0f1a"
+
 # The Components banner is captured from its own scene at the mock's width,
 # 1728 by the 200px header block, and shown at that size, center-cropped, by
 # banner-shader.tsx. Past 864px either side of center the glow has already
