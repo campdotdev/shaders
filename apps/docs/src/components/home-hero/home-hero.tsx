@@ -27,8 +27,13 @@ export function HomeHero() {
           library is, and the live canvas that replaces the poster has no
           text either. */}
       <div className={`${styles.scene} ${auroraStyles.demoBackdrop}`} data-home-hero>
+        {/* Capped at one canvas pixel per CSS pixel. Aurora marches 60
+            steps per pixel, and at the full 2x of a retina screen the
+            full-width hero is 4.5 million pixels, which pinned an M1 Max's
+            GPU and halved the frame rate. At 1x it is a quarter of that,
+            and the soft curtains lose little from the upscale. */}
         <DemoPoster alt="" src="/posters/aurora.jpg">
-          <AuroraScene />
+          <AuroraScene maxDPR={1} />
         </DemoPoster>
       </div>
     </div>
