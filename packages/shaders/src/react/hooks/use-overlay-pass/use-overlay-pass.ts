@@ -1,9 +1,9 @@
 'use client';
 
-import { type DependencyList, useEffect } from 'react';
+import type { DependencyList } from 'react';
 
 import type { PostProcessTransform } from '../../context/shader-context.js';
-import { useShaderContext } from '../use-shader-context/use-shader-context.js';
+import { useSceneRegistration } from '../use-scene-registration/use-scene-registration.js';
 
 /**
  * Register a post-process pass with the enclosing <ShaderScene>: `transform`
@@ -14,13 +14,5 @@ import { useShaderContext } from '../use-shader-context/use-shader-context.js';
  * the transform closes over.
  */
 export function usePostProcessPass(transform: PostProcessTransform, deps: DependencyList): void {
-  const shaderContext = useShaderContext();
-
-  useEffect(() => {
-    if (!shaderContext) return;
-    const unregister = shaderContext.registerOverlay(transform);
-
-    return unregister;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shaderContext, ...deps]);
+  useSceneRegistration((shaderContext) => shaderContext.registerOverlay(transform), deps);
 }

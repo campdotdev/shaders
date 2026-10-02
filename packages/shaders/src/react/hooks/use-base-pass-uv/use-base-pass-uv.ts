@@ -1,9 +1,9 @@
 'use client';
 
-import { type DependencyList, useEffect } from 'react';
+import type { DependencyList } from 'react';
 
 import type { UvTransform } from '../../context/shader-context.js';
-import { useShaderContext } from '../use-shader-context/use-shader-context.js';
+import { useSceneRegistration } from '../use-scene-registration/use-scene-registration.js';
 
 /**
  * Register a base-pass UV transform with the enclosing <ShaderScene>:
@@ -16,13 +16,5 @@ import { useShaderContext } from '../use-shader-context/use-shader-context.js';
  * transform closes over.
  */
 export function useBasePassUv(transform: UvTransform, deps: DependencyList): void {
-  const shaderContext = useShaderContext();
-
-  useEffect(() => {
-    if (!shaderContext) return;
-    const unregister = shaderContext.registerBaseUvTransform(transform);
-
-    return unregister;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shaderContext, ...deps]);
+  useSceneRegistration((shaderContext) => shaderContext.registerBaseUvTransform(transform), deps);
 }
