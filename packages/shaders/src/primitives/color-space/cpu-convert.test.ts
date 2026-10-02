@@ -156,6 +156,12 @@ describe('parseColorString', () => {
     expect(() => parseColorString('oklab(0.7 x -0.1)')).toThrow(/Invalid oklab/);
   });
 
+  it('throws on a malformed oklab() boundary or an extra component', () => {
+    expect(() => parseColorString('oklab(0.7 0.15 -0.1')).toThrow(/Invalid oklab/);
+    expect(() => parseColorString('oklab(0.7 0.15 -0.1) x')).toThrow(/Invalid oklab/);
+    expect(() => parseColorString('oklab(0.7 0.15 -0.1 0.2)')).toThrow(/Invalid oklab/);
+  });
+
   it('reads oklch() chroma percentages against 0.4, the CSS value of 100%', () => {
     expect(parseColorString('oklch(70% 50% 280)')).toEqual(oklchToLinearSrgb(0.7, 0.2, 280));
   });
@@ -225,6 +231,35 @@ describe('parseOklchString', () => {
   it('throws on any other color syntax', () => {
     expect(() => parseOklchString('#ff0000')).toThrow(/Invalid oklch/);
     expect(() => parseOklchString('oklab(0.7 0.1 -0.1)')).toThrow(/Invalid oklch/);
+  });
+
+  it('throws on a missing closing paren rather than reading a truncated hue', () => {
+    expect(() => parseOklchString('oklch(0.7 0.15 280')).toThrow(/Invalid oklch/);
+  });
+
+  it('throws on anything after the closing paren', () => {
+    expect(() => parseOklchString('oklch(0.7 0.15 280) trailing')).toThrow(/Invalid oklch/);
+    expect(() => parseOklchString('oklch(0.7 0.15 280))')).toThrow(/Invalid oklch/);
+  });
+
+  it('throws on a fourth component', () => {
+    expect(() => parseOklchString('oklch(0.7 0.15 280 999)')).toThrow(/Invalid oklch/);
+  });
+
+  it('throws on a number with trailing characters', () => {
+    expect(() => parseOklchString('oklch(0.7foo 0.15 280)')).toThrow(/Invalid oklch/);
+    expect(() => parseOklchString('oklch(0.7 0.15%% 280)')).toThrow(/Invalid oklch/);
+    expect(() => parseOklchString('oklch(0.7 0.15 280degrees)')).toThrow(/Invalid oklch/);
+  });
+
+  it('throws on an alpha that is not a single number', () => {
+    expect(() => parseOklchString('oklch(0.7 0.15 280 / foo)')).toThrow(/Invalid oklch/);
+    expect(() => parseOklchString('oklch(0.7 0.15 280 / 0.5 / 0.5)')).toThrow(/Invalid oklch/);
+    expect(() => parseOklchString('oklch(0.7 0.15 280 /)')).toThrow(/Invalid oklch/);
+  });
+
+  it('reads signed and exponent numbers in full', () => {
+    expect(parseOklchString('oklch(+.5 1e-1 -30)')).toEqual([0.5, 0.1, -30]);
   });
 });
 
