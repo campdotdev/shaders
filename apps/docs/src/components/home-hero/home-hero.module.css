@@ -1,0 +1,38 @@
+/* The hero's frame, after the Figma mock: a muted panel with a 2px border and
+   24px corners, holding the scene 12px in, with the scene's own corners at
+   12px so the two curves run parallel. */
+.frame {
+  padding: var(--spacing-3);
+  border: var(--border-width-2) solid var(--white-a5);
+  border-radius: var(--radius-3xl);
+  background: var(--bg-muted);
+}
+
+/* The mock's scene box is 1636 by 696, about 2.35:1, and the scene keeps
+   that shape at every width. The poster and the canvas both cover it
+   absolutely (ShaderPoster and ShaderScene), so this box is what sizes
+   them. */
+.scene {
+  position: relative;
+  aspect-ratio: 1636 / 696;
+  overflow: hidden;
+  isolation: isolate;
+  border-radius: var(--radius-xl);
+}
+
+/* The phone mock drops the outer panel and draws the scene alone at 16:9,
+   with the panel's 2px border moved onto it. The canvas and the poster
+   fill the box inside the border. */
+@container site (width < 40rem) {
+  .frame {
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: none;
+  }
+
+  .scene {
+    aspect-ratio: 16 / 9;
+    border: var(--border-width-2) solid var(--white-a5);
+  }
+}

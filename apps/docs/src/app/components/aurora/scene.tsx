@@ -9,9 +9,12 @@ import { type AuroraParams, INITIAL } from './params';
 export default function AuroraScene({
   params = INITIAL,
   children,
+  maxDPR,
 }: {
   params?: AuroraParams;
   children?: ReactNode;
+  /** Cap on the canvas's pixel ratio, passed to ShaderScene. Leave unset for ShaderScene's default of 2. */
+  maxDPR?: number;
 } = {}) {
   const stops: ColorStop[] = params.stops.map((stop) => ({
     color: stop.color,
@@ -19,7 +22,7 @@ export default function AuroraScene({
   }));
 
   return (
-    <ShaderScene>
+    <ShaderScene maxDPR={maxDPR}>
       <Aurora
         colorSpace={params.colorSpace}
         coverage={params.coverage}

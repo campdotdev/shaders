@@ -1,0 +1,46 @@
+/* The homepage footer, after the Figma mock: 32px around a container whose
+   own 32px on top and at the sides frame the wordmark. With the wordmark's
+   240px line, that makes the mock's 336px footer. */
+.footer {
+  padding-block: var(--spacing-8);
+}
+
+.row {
+  display: flex;
+  justify-content: center;
+  padding: var(--spacing-8) var(--spacing-8) 0;
+}
+
+/* The mock sets the wordmark at 239.593px on its 1728px artboard, with the
+   line as tall as the type, outlined in a 1px stroke of 30% white and with
+   no fill. Narrower than the artboard, it scales with the page width, which
+   cqi reads from the `site` query container (.site in globals.css): 13.9% of
+   1728px is 240px. */
+.wordmark {
+  color: transparent;
+  font-size: min(239.593px, 13.9cqi);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  white-space: nowrap;
+  -webkit-text-stroke: var(--border-width-1) var(--white-a30);
+}
+
+/* The phone mock: 32px above the wordmark and 24px below it, with the
+   wordmark filling the column. The phone gutter is the whole side inset
+   (.site-gutter in globals.css), so the row's padding goes. The word is
+   3.78 times as wide as its font size, so the font size that fills the
+   column is the column's width, the page less the two 16px gutters, over
+   3.78: 95.5px on the mock's 393px screen. */
+@container site (width < 40rem) {
+  .footer {
+    padding-block: var(--spacing-8) var(--spacing-6);
+  }
+
+  .row {
+    padding: 0;
+  }
+
+  .wordmark {
+    font-size: calc((100cqi - 2 * var(--spacing-4)) / 3.78);
+  }
+}

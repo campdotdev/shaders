@@ -1,0 +1,125 @@
+/* The homepage's intro and hero sections, after the Figma mock. The
+   favorites and the footer style themselves (components/favorites and
+   components/home-footer). */
+
+/* ---- Intro ---- */
+
+/* 64px under the header and 32px over the hero section, whose own 32px
+   makes 64px to the hero's frame. */
+.intro {
+  padding-block: var(--spacing-16) var(--spacing-8);
+}
+
+/* The mock caps the intro at 1280px, narrower than the 1664px the hero and
+   the favorites span, with the heading's 768px on the left and the
+   description and button bottom-aligned beside it. */
+.introRow {
+  display: flex;
+  align-items: flex-end;
+  max-width: var(--container-7xl);
+  margin-inline: auto;
+}
+
+/* The mock breaks the heading where the line fills, "Shader components /
+   for the modern web" at 768px and "Shader components for / the modern
+   web" on a phone, so it wraps greedily rather than with the balanced
+   wrapping the reset gives every heading (globals.css). */
+.title {
+  flex: 0 0 var(--container-3xl);
+  font-size: var(--font-size-7xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+  text-wrap: wrap;
+}
+
+/* The description takes what the heading leaves, 16px in from it and 16px
+   from the button, and the button sits on the description's last line. */
+.lede {
+  display: flex;
+  flex: 1;
+  align-items: flex-end;
+  gap: var(--spacing-4);
+  min-width: 0;
+  padding-left: var(--spacing-4);
+}
+
+.description {
+  flex: 1;
+  color: var(--fg-muted);
+  font-size: var(--font-size-xl);
+  line-height: var(--leading-7);
+}
+
+.getStarted {
+  flex: none;
+}
+
+/* The chevron points down as drawn, so a quarter turn points it right, as
+   on the pagination's next button. */
+.chevron {
+  transform: rotate(-90deg);
+}
+
+/* Under 75rem of the site the description beside a 768px heading would be
+   squeezed to a narrow column, so the two stack: the heading on top at the
+   width it needs, and the description and button under it at the 512px the
+   mock gives them. The mocks draw only the full width and a phone, so this
+   band between them is for the author to tune. */
+@container site (width < 75rem) {
+  .introRow {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-6);
+  }
+
+  .title {
+    flex-basis: auto;
+    max-width: var(--container-3xl);
+  }
+
+  .lede {
+    max-width: var(--container-lg);
+    padding-left: 0;
+  }
+}
+
+/* The phone mock: 24px above and below the intro, a 30px heading 8px over
+   a 16px description, and the button 16px under the description. */
+@container site (width < 40rem) {
+  .intro {
+    padding-block: var(--spacing-6);
+  }
+
+  .introRow {
+    gap: var(--spacing-2);
+  }
+
+  .title {
+    font-size: var(--font-size-3xl);
+    line-height: var(--leading-9);
+  }
+
+  .lede {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .description {
+    font-size: var(--font-size-base);
+    line-height: var(--leading-6);
+  }
+}
+
+/* ---- Hero ---- */
+
+.hero {
+  padding-block: var(--spacing-8);
+}
+
+/* On a phone the intro's own 24px is the space above the hero, and 24px
+   sits under it. */
+@container site (width < 40rem) {
+  .hero {
+    padding-block: 0 var(--spacing-6);
+  }
+}

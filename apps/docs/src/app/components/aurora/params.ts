@@ -17,6 +17,14 @@ export interface AuroraParams {
   stops: PlainColorStop[];
 }
 
+// Aurora's stills at INITIAL, from scripts/build-posters.sh, shown before the
+// scene's first frame. The demo's poster is 3:2, like its box. The homepage
+// hero's is captured at the hero's own shape, because a 3:2 poster
+// cover-cropped into the wider hero doesn't line up with the live scene
+// (build-posters.sh explains why).
+export const POSTER_SRC = '/posters/aurora.jpg';
+export const HERO_POSTER_SRC = '/posters/aurora-hero.jpg';
+
 export const MIN_STOPS = 2;
 export const MAX_STOPS = 6;
 

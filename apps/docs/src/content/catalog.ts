@@ -1,5 +1,8 @@
 import { cache } from 'react';
 
+import { existsSync } from 'node:fs';
+import { resolve } from 'node:path';
+
 import { COMPONENTS } from './components';
 import type { ComponentMeta } from './components';
 import { groupByTaxonomy } from './taxonomy';
@@ -18,11 +21,14 @@ interface CatalogRecord {
    name, which the page header's Copy React writes into the copied snippet.
    The label is for reading ("Conic Gradient") and the tag name is for code
    ("ConicGradient"), so a page cannot use one for the other. The thumbnail
-   is the URL of the small square the components index shows on each card. */
+   is the URL of the small square the components index shows on each card,
+   and the poster is the URL of the full-size still the homepage's favorites
+   show. */
 export interface ComponentCatalogRecord extends CatalogRecord {
   category: CategorySlug;
   componentName: string;
   thumbnail: string;
+  poster: string;
 }
 
 const capitalize = (word: string) => word.charAt(0).toUpperCase() + word.slice(1);
@@ -45,6 +51,25 @@ function thumbnailUrl(slug: string): string {
   return `/posters/${slug}.thumb.webp`;
 }
 
+// scripts/build-posters.sh writes each poster as a PNG or a JPEG, whichever
+// compresses that shader better, so the extension cannot derive from the
+// slug. The file on disk decides it. A component with no poster fails the
+// build here rather than shipping a broken image.
+const POSTER_FORMATS = ['jpg', 'png'] as const;
+
+function posterUrl(slug: string): string {
+  const postersDir = resolve(process.cwd(), 'public', 'posters');
+  const format = POSTER_FORMATS.find((extension) =>
+    existsSync(resolve(postersDir, `${slug}.${extension}`)),
+  );
+
+  if (format === undefined) {
+    throw new Error(`No poster for ${slug} in public/posters. Run scripts/build-posters.sh.`);
+  }
+
+  return `/posters/${slug}.${format}`;
+}
+
 // eslint-disable-next-line @typescript-eslint/require-await -- kept async so every catalog getter has one shape
 export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogRecord[]> => {
   // COMPONENTS is written in whatever order made sense to its author; the
@@ -56,6 +81,7 @@ export const getComponentsCatalog = cache(async (): Promise<ComponentCatalogReco
       label: info.label ?? prettifySlug(slug),
       componentName: pascalizeSlug(slug),
       thumbnail: thumbnailUrl(slug),
+      poster: posterUrl(slug),
       description: info.description,
       category: info.category,
       order: index * 10,

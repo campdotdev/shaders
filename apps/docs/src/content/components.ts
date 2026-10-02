@@ -119,3 +119,6 @@ export const COMPONENTS = {
     category: 'scenes',
   },
 } satisfies Record<string, ComponentMeta>;
+
+/** A component's slug, typed from the keys of COMPONENTS so an unknown slug fails the type check. */
+export type ComponentSlug = keyof typeof COMPONENTS;

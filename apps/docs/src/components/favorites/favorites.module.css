@@ -1,0 +1,105 @@
+/* The favorites section, after the Figma mocks: one grid holding the
+   heading and seven cards, four across at full width, with the heading in
+   the first cell so the cards fill the two rows evenly. 64px of space sits
+   above it, 32 from this section and 32 from the hero's. The phone mock
+   tightens that to 40px, 16 here and 24 under the hero. */
+.section {
+  padding-block: var(--spacing-8);
+}
+
+@container site (width < 40rem) {
+  .section {
+    padding-block: var(--spacing-4) var(--spacing-6);
+  }
+}
+
+/* ---- The grid ----
+   Four columns at full width, two from 64rem of the site container down,
+   and one on a phone under 40rem. Eight cells divide evenly into four or
+   two columns, so no row is left with a gap. The one column matches the
+   phone mock. The two-column band has no mock. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-4);
+}
+
+@container site (width < 64rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container site (width < 40rem) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* The list's items take the grid's cells directly, so the heading and the
+   cards share one set of columns. The list stays in the accessibility tree
+   as a list of seven, which homepage.spec.ts checks by finding it through
+   its role and the heading's name. */
+.list {
+  display: contents;
+  list-style: none;
+}
+
+/* The heading sits at the bottom of its cell, level with the bottom of the
+   first row of cards. The mock breaks it as "Start with one of / our
+   favorites". At 36px "Start with one of" is about 7.8em wide and "Start
+   with one of our" about 9.6em, so a greedy wrap inside 8.5em breaks it
+   there, and a narrower cell wraps it sooner. */
+.heading {
+  align-self: end;
+  max-width: 8.5em;
+  font-size: var(--font-size-4xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-10);
+  text-wrap: wrap;
+}
+
+/* ---- The card ---- */
+
+/* The mock's card is 400 by 300 with the poster 12px inside a 2px border and
+   24px corners. The poster's own 12px corners run parallel to the card's. */
+.card {
+  display: block;
+  aspect-ratio: 4 / 3;
+  padding: var(--spacing-3);
+  border: var(--border-width-2) solid var(--white-a5);
+  border-radius: var(--radius-3xl);
+  background: var(--bg-muted);
+}
+
+/* The sidebar rows' focus ring (nav-row.module.css). */
+.card:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+}
+
+/* The card's window is about 4:3, and the posters are wider: 3:2 for every
+   favorite, from scripts/build-posters.sh. The poster covers the window and
+   its sides are cropped. next/image's fill sets the
+   image absolute over this box. */
+.poster {
+  position: relative;
+  display: block;
+  height: 100%;
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+}
+
+.poster img {
+  object-fit: cover;
+}
+
+/* On a phone the heading is a row of its own above the cards, on one
+   24px line, as the phone mock draws it. */
+@container site (width < 40rem) {
+  .heading {
+    max-width: none;
+    font-size: var(--font-size-2xl);
+    line-height: var(--leading-8);
+  }
+}

@@ -37,10 +37,7 @@ export function Pagination({ prev, next, className }: PaginationProps) {
           single button on a section's first or last page would slide over
           to the side it does not belong on. */}
       {prev ? (
-        <Link
-          className={join(textButtonStyles.box, textButtonStyles.button, styles.link)}
-          href={prev.url}
-        >
+        <Link className={join(textButtonStyles.box, textButtonStyles.button)} href={prev.url}>
           <ChevronDownIcon className={styles.chevronPrevious} />
           {prev.label}
         </Link>
@@ -48,10 +45,7 @@ export function Pagination({ prev, next, className }: PaginationProps) {
         <span />
       )}
       {next ? (
-        <Link
-          className={join(textButtonStyles.box, textButtonStyles.button, styles.link)}
-          href={next.url}
-        >
+        <Link className={join(textButtonStyles.box, textButtonStyles.button)} href={next.url}>
           {next.label}
           <ChevronDownIcon className={styles.chevronNext} />
         </Link>
