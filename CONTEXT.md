@@ -33,7 +33,7 @@ _Avoid_: Interactive shader, cursor component, drop-in
 ### Rendering
 
 **Render on demand**:
-A scene draws every frame until its components' idle votes let it park. A parked scene does no GPU work. An Input or a prop change draws one frame and leaves the scene parked, and an animated vote restarts the frame loop.
+A scene draws every frame until its components' idle votes let it park. A parked scene does no GPU work. An Input or a prop change asks for frames only until its value settles, and the scene stays parked. An animated vote restarts the frame loop.
 _Avoid_: Idle mode, frameloop demand, static scene
 
 **Idle vote**:
