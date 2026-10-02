@@ -25,6 +25,7 @@ import { CheckIcon } from '@/components/icons/check';
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
 import { CopyIcon } from '@/components/icons/copy';
 import popupStyles from '@/components/popup/popup.module.css';
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
 import { deriveUsageImport } from '@/lib/usage-import';
 import { COPY_ANNOUNCEMENTS, useClipboardCopy } from '@/lib/use-clipboard-copy';
 
@@ -113,10 +114,10 @@ export function PageActions({ componentName, siblings, markdownUrl }: PageAction
       </button>
       {/* Two live regions, one per clipboard hook, so a markdown copy is
           announced without the Copy React button's check lighting up. */}
-      <span aria-live="polite" className={styles.srOnly}>
+      <span aria-live="polite" className={visuallyHiddenStyles.srOnly}>
         {COPY_ANNOUNCEMENTS[status]}
       </span>
-      <span aria-live="polite" className={styles.srOnly}>
+      <span aria-live="polite" className={visuallyHiddenStyles.srOnly}>
         {COPY_ANNOUNCEMENTS[markdownCopy.status]}
       </span>
       <Menu.Root

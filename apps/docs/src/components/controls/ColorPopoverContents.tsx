@@ -13,6 +13,7 @@ import { oklchInGamut, oklchToGamut } from '@camp-dev/shaders/color';
 import { useDisplayGamut } from '@camp-dev/shaders/gamut';
 
 import { CopyIcon } from '@/components/icons/copy';
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
 import { COPY_ANNOUNCEMENTS, useClipboardCopy } from '@/lib/use-clipboard-copy';
 
 import { ChannelSlider } from './color/ChannelSlider';
@@ -163,7 +164,7 @@ function CopyButton({ label, text }: { label: string; text: string }) {
       >
         <CopyIcon />
       </button>
-      <span aria-live="polite" className={styles.srOnly}>
+      <span aria-live="polite" className={visuallyHiddenStyles.srOnly}>
         {COPY_ANNOUNCEMENTS[status]}
       </span>
     </>

@@ -11,6 +11,8 @@
  */
 import { Slider } from '@base-ui/react/slider';
 
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
+
 import { useListRowTrail } from './context';
 import styles from './controls.module.css';
 import { decimalsForStep } from './decimals';
@@ -71,7 +73,9 @@ export function SliderInput({
         thumbAlignment="edge"
         value={value}
       >
-        <Slider.Label className={inRow ? styles.srOnly : styles.fieldLabel}>{name}</Slider.Label>
+        <Slider.Label className={inRow ? visuallyHiddenStyles.srOnly : styles.fieldLabel}>
+          {name}
+        </Slider.Label>
         <Slider.Control className={styles.sliderControl}>
           <Slider.Track className={styles.sliderTrack}>
             <Slider.Indicator className={styles.sliderIndicator} />

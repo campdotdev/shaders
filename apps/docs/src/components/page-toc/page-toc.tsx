@@ -16,6 +16,7 @@ import { Popover } from '@base-ui/react/popover';
 
 import navRowStyles from '@/components/nav-row/nav-row.module.css';
 import popupStyles from '@/components/popup/popup.module.css';
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
 
 import { pickCurrentSection } from './current-section';
 import styles from './page-toc.module.css';
@@ -123,7 +124,7 @@ export function PageToc({ sections }: { sections: PageTocSection[] }) {
     <div className={styles.dock} ref={dockRef}>
       <Popover.Root onOpenChange={setOpen} open={open}>
         <Popover.Trigger className={styles.trigger} delay={OPEN_DELAY_MS} openOnHover>
-          <span className={styles.srOnly}>On this page</span>
+          <span className={visuallyHiddenStyles.srOnly}>On this page</span>
           {sections.map((section) => (
             <span
               aria-hidden="true"

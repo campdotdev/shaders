@@ -142,17 +142,6 @@
   transform: scale(1);
 }
 
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
-
 /* The chevron cell: a 32px square behind a hairline, with the glyph box
    centered. The rule is drawn as a left border so the cell and its divider
    are one box, and it stops 1px short of the top and bottom as in the mock

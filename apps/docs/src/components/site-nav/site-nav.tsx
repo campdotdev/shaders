@@ -23,6 +23,7 @@ import { GitHubIcon } from '@/components/icons/github';
 import { MenuToggleIcon } from '@/components/icons/menu-toggle';
 import backdropStyles from '@/components/overlay-backdrop/overlay-backdrop.module.css';
 import { REPO_URL, SITE_LINKS } from '@/components/site-header/links';
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
 
 import styles from './site-nav.module.css';
 
@@ -92,7 +93,7 @@ export function SiteNav() {
             dialog's title. Base UI's default does that for touch opens
             only and otherwise focuses the first tabbable link. */}
         <Dialog.Popup className={styles.popup} initialFocus={popupRef} ref={popupRef}>
-          <Dialog.Title className={styles.srOnly}>Site navigation</Dialog.Title>
+          <Dialog.Title className={visuallyHiddenStyles.srOnly}>Site navigation</Dialog.Title>
           <nav aria-label="Site" className={styles.links}>
             {SITE_LINKS.map((link) => (
               <Link className={styles.link} href={link.href} key={link.href} onClick={close}>
@@ -118,7 +119,7 @@ export function SiteNav() {
               sighted keyboard user from tabbing onto an invisible control;
               their path is Escape or the trigger. A screen reader's virtual
               cursor still reaches it. */}
-          <Dialog.Close className={styles.srOnly} tabIndex={-1}>
+          <Dialog.Close className={visuallyHiddenStyles.srOnly} tabIndex={-1}>
             Close
           </Dialog.Close>
         </Dialog.Popup>

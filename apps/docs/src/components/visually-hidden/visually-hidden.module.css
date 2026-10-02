@@ -1,0 +1,27 @@
+/* The site's visually hidden class, for text that only assistive tech
+   reads. Six modules use it: the control panel's in-row labels, swatch
+   names, and copy announcement (controls/), the header's copy
+   announcements (page-actions/), the table of contents trigger's name
+   (page-toc/), the search panel's title (search/), the site nav's title
+   and Close (site-nav/), and the components index's <h1>
+   (app/components/). No element that takes it has a local class beside
+   it, so the result does not depend on which stylesheet the bundle emits
+   first. */
+
+/* ---- The class ---- */
+
+/* The element keeps its place in the accessibility tree but paints nothing:
+   a 1px box with its contents clipped away. border: 0 is for the site nav's
+   Close, a <button>, whose user-agent border would otherwise grow the 1px
+   box to the border sum. On every other element it changes nothing. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  border: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

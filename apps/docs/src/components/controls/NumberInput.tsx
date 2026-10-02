@@ -7,6 +7,8 @@
  * as "35 %" without changing what the store holds. Inside a list row the
  * visible label drops away, since the row already names the control.
  */
+import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
+
 import { useListRowTrail } from './context';
 import styles from './controls.module.css';
 import { decimalsForStep } from './decimals';
@@ -60,7 +62,7 @@ export function NumberInput({
 
   return (
     <div className={styles.field}>
-      <span className={inRow ? styles.srOnly : styles.fieldLabel}>{label}</span>
+      <span className={inRow ? visuallyHiddenStyles.srOnly : styles.fieldLabel}>{label}</span>
       <NumberReadout
         ariaLabel={name}
         decimals={decimals ?? decimalsForStep(displayStep)}
