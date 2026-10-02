@@ -8,12 +8,6 @@
   justify-content: space-between;
 }
 
-/* The site underlines a link on hover (globals.css); these read as buttons,
-   so they do not. Ungated, because a touch tap fires :hover as well. */
-.link:hover {
-  text-decoration: none;
-}
-
 /* The glyph points down; a quarter turn each way gives the left and right
    arrows, which on the 16-unit pixel grid match the mock's own exports
    exactly. */

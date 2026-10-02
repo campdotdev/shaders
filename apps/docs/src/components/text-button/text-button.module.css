@@ -1,7 +1,8 @@
 /* The site's boxed text button, the mock's drawing of the page header's
    Copy React button: the control panel's Reset (controls/), the prev and
-   next links at the foot of a page (pagination/), and, as a box only, the
-   header's search trigger (search/). Each component applies classes from
+   next links at the foot of a page (pagination/), the homepage's Get
+   started link (app/page.tsx), and, as a box only, the header's search
+   trigger (search/). Each component applies classes from
    here beside its own. No property is set both here and in a local class
    at the same specificity, so the result does not depend on which
    stylesheet the bundle emits first. The split Copy
@@ -54,6 +55,15 @@
 .button svg {
   color: var(--gray-200);
   transition: color var(--fade-xs) var(--ease-hover);
+}
+
+/* The site underlines a link on hover (globals.css), and a link drawn as
+   this button reads as a button, so it drops the underline. Only an <a>
+   picks up that rule, so only an <a> needs this one, and the element in
+   the selector outranks the global a:hover. Ungated, because a touch tap
+   fires :hover as well. */
+a.button:hover {
+  text-decoration: none;
 }
 
 /* Gated to pointing devices: a touch tap fires :hover too, and the fill

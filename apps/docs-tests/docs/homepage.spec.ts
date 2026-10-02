@@ -64,6 +64,17 @@ test('Get started links to the getting started guide', async ({ page }) => {
   expect(await statusOf(page, '/getting-started')).toBe(200);
 });
 
+// The site underlines a link on hover, and Get started is a link drawn as
+// the site's text button, which drops the underline.
+test('Get started shows no underline on hover', async ({ page }) => {
+  await open(page);
+
+  const getStarted = page.getByRole('link', { name: 'Get started' });
+
+  await getStarted.hover();
+  await expect(getStarted).toHaveCSS('text-decoration-line', 'none');
+});
+
 // The poster is checked in the server's HTML, which is what a visitor sees
 // before any script runs and what stays up when WebGPU is missing. The live
 // scene is checked in the browser, where the scene mounts its canvas.
