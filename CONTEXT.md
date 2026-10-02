@@ -30,6 +30,16 @@ _Avoid_: Interaction, cursor ability, hover effect
 An Effect driven by the cursor Input that works over any scene with no help from the components beneath it. CursorSpotlight and CursorRipple are two.
 _Avoid_: Interactive shader, cursor component, drop-in
 
+### Rendering
+
+**Render on demand**:
+A scene draws every frame until its components' idle votes let it park. A parked scene does no GPU work. An Input or a prop change asks for frames only until its value settles, and the scene stays parked. An animated vote restarts the frame loop.
+_Avoid_: Idle mode, frameloop demand, static scene
+
+**Idle vote**:
+A component's say in whether its scene may park. A component votes idle while nothing it draws can change, votes animated while anything can, or casts no vote; a scene parks only when at least one component votes idle and none votes animated.
+_Avoid_: Static hint, render-on-demand vote, static vote
+
 ### Pattern components
 
 **Mark**:
