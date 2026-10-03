@@ -78,9 +78,10 @@
   outline-offset: var(--border-width-2);
 }
 
-/* The card's window, which holds the poster and, while the favorite is live,
-   its scene under it. Both cover the window: next/image's fill sets the
-   poster absolute over this box, and .scene does the same for the scene. */
+/* The card's window, which holds the poster and, once the favorite has been
+   hovered or focused, its scene under it. Both cover the window: next/image's
+   fill sets the poster absolute over this box, and .scene does the same for
+   the scene. */
 .window {
   position: relative;
   height: 100%;
@@ -118,9 +119,9 @@
 /* The poster fades once the scene's first frame is on screen. The fade is
    the short sm one: a scene can change fast from its first frame, as Mesh
    Gradient's palette does, and a longer fade lets it drift from the poster
-   while both show. Only the fade out transitions. When the scene unmounts
-   for another favorite, the poster is back at once, because nothing sits
-   under it to fade to. */
+   while both show. Only the fade out transitions: if the renderer is ever
+   rebuilt, the poster is back at once, because the new renderer has
+   nothing on screen yet to fade to. */
 .card:has([data-scene='painted']) .poster {
   opacity: 0;
   transition: opacity var(--fade-sm) var(--ease-out);

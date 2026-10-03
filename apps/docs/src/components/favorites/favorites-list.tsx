@@ -4,7 +4,7 @@
  * The favorites' cards, and the hover that brings one to life. Hovering or
  * focusing a card mounts its live scene under the poster, which fades on the
  * scene's first frame. The scene plays while the pointer or keyboard focus
- * is on its card and pauses when both leave. One favorite is live at a time.
+ * is on its card, then stays paused on its last frame. One plays at a time.
  */
 import Image from 'next/image';
 import Link from 'next/link';
@@ -22,17 +22,18 @@ import styles from './favorites.module.css';
 const POSTER_SIZES = '(width < 40rem) 100vw, (width < 64rem) 50vw, 25vw';
 
 // ---------------------------------------------
-// The list: which favorite is live, and whether it plays
+// The list: which favorites are mounted, and which one plays
 // ---------------------------------------------
 
 /** What brought a visitor to a card: the pointer, or keyboard focus. */
 type Engagement = 'pointer' | 'focus';
 
-// A live scene stays mounted, paused, after the pointer and focus leave, until
-// another favorite takes over. Coming back to the same favorite then resumes
-// it at once, with no renderer to start, and the page still holds one
-// favorite's renderer at most. Unmounting on leave would start a renderer on
-// every hover.
+// Every favorite a visitor has hovered or focused keeps its scene mounted,
+// paused on the frame it stopped on, so its card never falls back to the
+// poster, and coming back resumes it at once. Each mounted scene holds a
+// renderer, so the page can hold one per favorite, but a paused one does no
+// GPU work. Only the most recently engaged favorite plays, and only while
+// the pointer or keyboard focus is still on it.
 export function FavoritesList({
   favorites,
   labelledBy,
@@ -42,12 +43,17 @@ export function FavoritesList({
 }) {
   const canGoLive = useCanGoLive();
   const listRef = useRef<HTMLUListElement>(null);
-  const [liveSlug, setLiveSlug] = useState<FavoriteSlug | null>(null);
+  const [mountedSlugs, setMountedSlugs] = useState<readonly FavoriteSlug[]>([]);
+  const [lastEngagedSlug, setLastEngagedSlug] = useState<FavoriteSlug | null>(null);
   // The favorite under the pointer and the favorite with keyboard focus, each
-  // null when there is none. The live favorite plays while either is on it.
+  // null when there is none. The last engaged favorite plays while either is
+  // still on it.
   const [hoveredSlug, setHoveredSlug] = useState<FavoriteSlug | null>(null);
   const [focusedSlug, setFocusedSlug] = useState<FavoriteSlug | null>(null);
-  const playing = liveSlug !== null && (hoveredSlug === liveSlug || focusedSlug === liveSlug);
+  const playingSlug =
+    lastEngagedSlug !== null && (hoveredSlug === lastEngagedSlug || focusedSlug === lastEngagedSlug)
+      ? lastEngagedSlug
+      : null;
 
   usePreloadScenesNearView(listRef, canGoLive);
 
@@ -55,7 +61,8 @@ export function FavoritesList({
     const setSlug = engagement === 'pointer' ? setHoveredSlug : setFocusedSlug;
 
     if (engaged) {
-      setLiveSlug(slug);
+      setLastEngagedSlug(slug);
+      setMountedSlugs((current) => (current.includes(slug) ? current : [...current, slug]));
       setSlug(slug);
     } else {
       setSlug((current) => (current === slug ? null : current));
@@ -64,24 +71,20 @@ export function FavoritesList({
 
   return (
     <ul aria-labelledby={labelledBy} className={styles.list} ref={listRef}>
-      {favorites.map((favorite) => {
-        const live = canGoLive && favorite.slug === liveSlug;
-
-        return (
-          <li key={favorite.url}>
-            <FavoriteCard
-              favorite={favorite}
-              live={live}
-              onEngagedChange={
-                canGoLive
-                  ? (engagement, engaged) => setEngaged(favorite.slug, engagement, engaged)
-                  : undefined
-              }
-              playing={live && playing}
-            />
-          </li>
-        );
-      })}
+      {favorites.map((favorite) => (
+        <li key={favorite.url}>
+          <FavoriteCard
+            favorite={favorite}
+            onEngagedChange={
+              canGoLive
+                ? (engagement, engaged) => setEngaged(favorite.slug, engagement, engaged)
+                : undefined
+            }
+            playing={favorite.slug === playingSlug}
+            sceneMounted={canGoLive && mountedSlugs.includes(favorite.slug)}
+          />
+        </li>
+      ))}
     </ul>
   );
 }
@@ -102,12 +105,12 @@ export function FavoritesList({
 // keeps keyboard focus.
 function FavoriteCard({
   favorite,
-  live,
+  sceneMounted,
   playing,
   onEngagedChange,
 }: {
   favorite: Favorite;
-  live: boolean;
+  sceneMounted: boolean;
   playing: boolean;
   onEngagedChange: ((engagement: Engagement, engaged: boolean) => void) | undefined;
 }) {
@@ -127,7 +130,7 @@ function FavoriteCard({
       }}
     >
       <div className={styles.window}>
-        {live && <LiveScene paused={!playing} slug={favorite.slug} />}
+        {sceneMounted && <LiveScene paused={!playing} slug={favorite.slug} />}
         <Image
           alt={favorite.label}
           className={styles.poster}
@@ -239,9 +242,10 @@ const PRELOAD_MARGIN = '200px';
  * Loads every favorite's scene module once the cards come within
  * PRELOAD_MARGIN of the viewport, the way next/link prefetches a page in
  * view, so a first hover mounts its canvas at once rather than waiting on
- * the code. It loads code only: starting the seven renderers ahead would
- * hold seven at once. The list is `display: contents` and has no box to
- * observe, so its first card stands in for it.
+ * the code. It loads code only: a renderer starts on a favorite's first
+ * hover, so a favorite never hovered costs nothing on the GPU. The list is
+ * `display: contents` and has no box to observe, so its first card stands in
+ * for it.
  */
 function usePreloadScenesNearView(listRef: RefObject<HTMLUListElement | null>, enabled: boolean) {
   useEffect(() => {

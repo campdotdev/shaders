@@ -2,12 +2,10 @@ import { expect, test } from '@playwright/test';
 import type { Locator, Page } from '@playwright/test';
 
 /**
- * The homepage favorites come alive on hover (SHA-183): hovering or focusing a
- * favorite mounts its live scene, the poster stays up until the scene's first
- * frame, the scene pauses when the visitor leaves, at most one favorite holds
- * a canvas, and a touch device never mounts one. The case with no WebGPU
- * lives in homepage.spec.ts, because it needs the browser this file turns
- * WebGPU on for.
+ * The homepage favorites come alive on hover (SHA-183): the scene mounts under
+ * its poster on hover or focus, pauses when the visitor leaves, stays paused
+ * when another favorite plays, and never mounts on touch. The no-WebGPU case
+ * is in homepage.spec.ts, which runs without the adapter this file turns on.
  */
 
 // Headless Chromium exposes navigator.gpu but hands out no adapter, so the
@@ -40,25 +38,25 @@ async function open(page: Page): Promise<void> {
   );
 }
 
-// Every canvas under the favorites list, counted on each DOM change from the
-// moment this is called, so the spec sees the most the page ever held at once
-// rather than only the count when it looks.
-async function trackMostCanvases(page: Page): Promise<() => Promise<number>> {
-  await favoritesList(page).evaluate((list) => {
-    const tracked = window as unknown as { mostFavoriteCanvases: number };
-    const count = () => list.querySelectorAll('canvas').length;
+// The elements under the favorites list that match `selector`, counted on
+// each DOM change from the moment this is called, so the spec sees the most
+// the page ever held at once rather than only the count when it looks.
+async function trackMostMatching(page: Page, selector: string): Promise<() => Promise<number>> {
+  await favoritesList(page).evaluate((list, matching) => {
+    const tracked = window as unknown as { mostMatching: number };
+    const count = () => list.querySelectorAll(matching).length;
 
-    tracked.mostFavoriteCanvases = count();
+    tracked.mostMatching = count();
     new MutationObserver(() => {
-      tracked.mostFavoriteCanvases = Math.max(tracked.mostFavoriteCanvases, count());
-    }).observe(list, { childList: true, subtree: true });
-  });
+      tracked.mostMatching = Math.max(tracked.mostMatching, count());
+    }).observe(list, { attributes: true, childList: true, subtree: true });
+  }, selector);
 
-  return () =>
-    page.evaluate(
-      () => (window as unknown as { mostFavoriteCanvases: number }).mostFavoriteCanvases,
-    );
+  return () => page.evaluate(() => (window as unknown as { mostMatching: number }).mostMatching);
 }
+
+// A live scene that is playing, rather than paused on its frame.
+const PLAYING_SCENE = '[data-scene]:not([data-paused])';
 
 // What the favorite looked like the moment its canvas was added, read inside
 // the DOM change that added it, before the renderer could start up.
@@ -168,36 +166,41 @@ test('a favorite that loses keyboard focus pauses its scene', async ({ page }) =
 });
 
 // ---------------------------------------------
-// One live favorite at a time
+// One playing favorite at a time
 // ---------------------------------------------
 
-test('at most one favorite holds a canvas', async ({ page }) => {
+// Every favorite a visitor engages keeps its scene, paused on its last
+// frame, so its card never falls back to the poster. Only one plays. The
+// first half waits for a paint, so the paused card shows a drawn frame. The
+// sweep after it checks only the counts, before any of those scenes paint.
+test('one favorite plays at a time, and the ones before it stay paused, not posters', async ({
+  page,
+}) => {
   await open(page);
 
-  const readMostCanvases = await trackMostCanvases(page);
+  const readMostPlaying = await trackMostMatching(page, PLAYING_SCENE);
   const links = await favorites(page).all();
   const [first, second] = links;
 
-  // A second favorite takes over from one whose scene is playing, and the
-  // first returns to its poster at once.
+  // A second favorite takes over from one whose scene is playing. The first
+  // keeps its canvas, paused, with its poster still faded.
   await first!.hover();
   await expect(scene(first!)).toHaveAttribute('data-scene', 'painted', { timeout: 30_000 });
   await second!.hover();
   await expect(second!.locator('canvas')).toHaveCount(1);
-  await expect(first!.locator('canvas')).toHaveCount(0);
-  await expect(poster(first!)).toHaveCSS('opacity', '1');
+  await expect(scene(first!)).toHaveAttribute('data-paused');
+  await expect(first!.locator('canvas')).toHaveCount(1);
+  await expect(poster(first!)).toHaveCSS('opacity', '0');
 
   // Then every favorite is hovered, and a few focused, without waiting for
-  // any scene to paint, so each one takes over from a scene still starting.
+  // any scene to paint. The last one focused is the one that plays.
   for (const link of links) await link.hover();
   for (const link of links.slice(0, 3)) await link.focus();
 
-  const lastFocused = links[2]!;
-
-  await expect(lastFocused.locator('canvas')).toHaveCount(1);
-  await expect(scene(lastFocused)).toHaveAttribute('data-scene', 'painted', { timeout: 30_000 });
-  await expect(favoritesList(page).locator('canvas')).toHaveCount(1);
-  expect(await readMostCanvases()).toBe(1);
+  await expect(favoritesList(page).locator('canvas')).toHaveCount(links.length);
+  await expect(favoritesList(page).locator(PLAYING_SCENE)).toHaveCount(1);
+  await expect(scene(links[2]!)).not.toHaveAttribute('data-paused');
+  expect(await readMostPlaying()).toBe(1);
 });
 
 // ---------------------------------------------
@@ -210,7 +213,7 @@ test.describe('on a touch device', () => {
   test('no favorite mounts a scene, and a tap opens the component page', async ({ page }) => {
     await open(page);
 
-    const readMostCanvases = await trackMostCanvases(page);
+    const readMostCanvases = await trackMostMatching(page, 'canvas');
     const favorite = favorites(page).first();
 
     // A touch browser still fires focus and mouse events on a tap, so both
