@@ -294,8 +294,13 @@ function Prototype() {
     [measure, options.panelHeight, options.endAlign],
   );
   // Progress runs 0 to 1 while the pin is stuck: from the track's top
-  // reaching the viewport's top to its bottom reaching the viewport's bottom.
-  const { scrollYProgress } = useScroll({ target: trackRef, offset: ['start start', 'end end'] });
+  // reaching the viewport's top to its bottom reaching the pin's bottom,
+  // where the sticky pin releases. The viewport's bottom would drift from
+  // that release whenever the pin unit differs from the viewport's height.
+  const { scrollYProgress } = useScroll({
+    target: trackRef,
+    offset: ['start start', measure ? `end ${measure.pinHeight}px` : 'end end'],
+  });
   const moving = useScrollMoving(scrollYProgress);
 
   return (
@@ -607,9 +612,18 @@ function Switcher({
   const stats = useStats(sceneRef, progress);
   const detailsRef = useRef<HTMLDetailsElement>(null);
 
-  // Open on a wide screen, closed on a phone, where it would cover the stage.
+  // Open on a wide screen, closed on a phone, where it would cover the stage,
+  // and set again whenever the viewport crosses the phone width.
   useEffect(() => {
-    if (detailsRef.current) detailsRef.current.open = !window.matchMedia(PHONE_QUERY).matches;
+    const phoneQuery = window.matchMedia(PHONE_QUERY);
+    const sync = () => {
+      if (detailsRef.current) detailsRef.current.open = !phoneQuery.matches;
+    };
+
+    sync();
+    phoneQuery.addEventListener('change', sync);
+
+    return () => phoneQuery.removeEventListener('change', sync);
   }, []);
   const overflow = layout ? Math.round(layout.endHeight - layout.pinHeight) : 0;
 
