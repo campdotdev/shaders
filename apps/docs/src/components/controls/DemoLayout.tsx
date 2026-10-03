@@ -13,7 +13,8 @@
  * under that row continue above it: the row is dark glass, so without the
  * fade the first visible control clipped hard against its rule. The shader
  * child keeps its own [data-shader-demo] wrapper, which is what the
- * Playwright visual suite sizes against.
+ * Playwright visual suite sizes against. ControlsScroller is that scroll
+ * area on its own, for a page that lays out a demo without this frame.
  */
 import type { ReactNode } from 'react';
 
@@ -43,15 +44,28 @@ export function DemoLayout({ controls, children }: { controls: ReactNode; childr
     <div className={styles.layout}>
       <div>{children}</div>
       <aside className={styles.controls}>
-        <ScrollArea
-          className={styles.scroller}
-          edgeFades="both"
-          overflowEdgeThreshold={{ yStart: FADE_START_THRESHOLD_PX, yEnd: FADE_END_THRESHOLD_PX }}
-          viewportClassName={styles.viewport}
-        >
-          {controls}
-        </ScrollArea>
+        <ControlsScroller>{controls}</ControlsScroller>
       </aside>
     </div>
+  );
+}
+
+/**
+ * The control panel's scroll area on its own: the hairline, both edge fades,
+ * and the rounded clip, for a page that lays out the demo itself instead of
+ * through DemoLayout. It takes its height cap from its parent's max-height,
+ * through the inherit chain in scroll-area.module.css, so the parent sets
+ * max-height rather than height.
+ */
+export function ControlsScroller({ children }: { children: ReactNode }) {
+  return (
+    <ScrollArea
+      className={styles.scroller}
+      edgeFades="both"
+      overflowEdgeThreshold={{ yStart: FADE_START_THRESHOLD_PX, yEnd: FADE_END_THRESHOLD_PX }}
+      viewportClassName={styles.viewport}
+    >
+      {children}
+    </ScrollArea>
   );
 }

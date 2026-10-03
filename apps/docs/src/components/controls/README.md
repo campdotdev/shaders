@@ -6,13 +6,19 @@ the same four-part shape:
 1. **The scene** — `./scene.tsx`, imported via `next/dynamic({ ssr: false })` because it pulls
    in `three/webgpu`, which references `self` at module load.
 2. **A `*Demo` component** — reads the whole params object with `useSnapshot()` and passes it
-   into the scene. This is the one place a full-object subscription belongs.
+   into the scene. This is the one place a full-object subscription belongs. Aurora's moves it
+   one level down, into `LiveAuroraScene`, so a second host can reuse it.
 3. **A `*Controls` component** — the JSX tree of `<SliderInput>`/`<NumberInput>`/`<SelectInput>`/
    `<ColorInput>`/`<ListInput>` inside `<ControlPanel>`. It never calls `useSnapshot()` or reads params itself;
    each control subscribes to its own leaf path independently via `usePropValue`.
 4. **The `*Island` export** — creates the store with `useMemo(() => createControlStore(INITIAL), [])`
    and wraps both `*Demo` and `*Controls` in one `<ControlsProvider store={store}>` inside
-   `<DemoLayout>`.
+   `<DemoLayout>`. Aurora's does the same through `AuroraControlsProvider`.
+
+A page that hosts a demo in a layout of its own, such as the hero-to-demo prototype route with
+Aurora's, skips `DemoLayout` and wraps the controls in `<ControlsScroller>` inside a box whose `max-height` caps
+the panel. Aurora's `demo.tsx` exports its store provider, live scene, and controls for that host,
+and each provider mounts a fresh store, so the two pages never share state.
 
 `copy.ts` exports `formatJsx`, which turns a params snapshot into the JSX that the page header's
 Copy React menu (`page-actions.tsx`) hands out.

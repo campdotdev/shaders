@@ -2,7 +2,7 @@ export { ColorInput } from './ColorInput';
 export { ControlsProvider, CopySourceProvider, useCopySource } from './context';
 export { ControlPanel } from './ControlPanel';
 export { formatJsx } from './copy';
-export { DemoLayout } from './DemoLayout';
+export { ControlsScroller, DemoLayout } from './DemoLayout';
 export { ListInput } from './ListInput';
 export { NumberInput } from './NumberInput';
 export { COLOR_SPACE_OPTIONS, HUE_ARC_OPTIONS } from './options';
