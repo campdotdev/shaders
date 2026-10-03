@@ -4,9 +4,10 @@ import type { Locator, Page } from '@playwright/test';
 /**
  * The homepage favorites come alive on hover (SHA-183): hovering or focusing a
  * favorite mounts its live scene, the poster stays up until the scene's first
- * frame, at most one favorite holds a canvas, and a touch device never mounts
- * one. The case with no WebGPU lives in homepage.spec.ts, because it needs the
- * browser this file turns WebGPU on for.
+ * frame, the scene pauses when the visitor leaves, at most one favorite holds
+ * a canvas, and a touch device never mounts one. The case with no WebGPU
+ * lives in homepage.spec.ts, because it needs the browser this file turns
+ * WebGPU on for.
  */
 
 // Headless Chromium exposes navigator.gpu but hands out no adapter, so the
@@ -120,6 +121,50 @@ test('focusing a favorite mounts its scene behind the poster until the first fra
   expect(await readCanvasMount()).toEqual({ scene: 'loading', posterOpacity: '1' });
   await expect(scene(favorite)).toHaveAttribute('data-scene', 'painted', { timeout: 30_000 });
   await expect(poster(favorite)).toHaveCSS('opacity', '0');
+});
+
+// ---------------------------------------------
+// Pausing when the visitor leaves
+// ---------------------------------------------
+
+// The scene freezes on its current frame rather than unmounting, so the
+// spec marks the canvas and checks the same one plays again. The frozen
+// frame itself is the package's to prove: the shader-scene unit tests check
+// that a paused scene draws nothing and loses no time.
+test('leaving a favorite pauses its scene, and coming back resumes the same one', async ({
+  page,
+}) => {
+  await open(page);
+
+  const favorite = favorites(page).first();
+
+  await favorite.hover();
+  await expect(scene(favorite)).toHaveAttribute('data-scene', 'painted', { timeout: 30_000 });
+  await expect(scene(favorite)).not.toHaveAttribute('data-paused');
+  await favorite.locator('canvas').evaluate((canvas) => {
+    canvas.dataset.firstMount = 'true';
+  });
+
+  // The heading sits outside every card.
+  await page.getByRole('heading', { name: 'Start with one of our favorites' }).hover();
+  await expect(scene(favorite)).toHaveAttribute('data-paused');
+  await expect(favorite.locator('canvas')).toHaveCount(1);
+
+  await favorite.hover();
+  await expect(scene(favorite)).not.toHaveAttribute('data-paused');
+  await expect(favorite.locator('canvas[data-first-mount]')).toHaveCount(1);
+});
+
+test('a favorite that loses keyboard focus pauses its scene', async ({ page }) => {
+  await open(page);
+
+  const favorite = favorites(page).nth(1);
+
+  await favorite.focus();
+  await expect(scene(favorite)).toHaveAttribute('data-scene', 'painted', { timeout: 30_000 });
+  await favorite.blur();
+
+  await expect(scene(favorite)).toHaveAttribute('data-paused');
 });
 
 // ---------------------------------------------

@@ -96,11 +96,14 @@
 }
 
 /* ---- The live scene ----
-   Mounted under the poster on hover or focus (favorites-list.tsx), and
-   covering the window like the poster. */
+   Mounted under the poster on hover or focus (favorites-list.tsx). Its box
+   is SCENE_SIZE there, centered in the window, and useCoverScale scales it
+   to cover the window, as object-fit does for the poster. */
 .scene {
   position: absolute;
-  inset: 0;
+  top: 50%;
+  left: 50%;
+  translate: -50% -50%;
 }
 
 /* The ground under a scene whose demo has no backdrop of its own: the
@@ -112,13 +115,15 @@
   background: var(--bg);
 }
 
-/* The poster fades once the scene's first frame is on screen, a reveal
-   the visitor started, so it takes the md fade. Only the fade out
-   transitions. When the scene unmounts for another favorite, the poster
-   is back at once, because nothing sits under it to fade to. */
+/* The poster fades once the scene's first frame is on screen. The fade is
+   the short sm one: a scene can change fast from its first frame, as Mesh
+   Gradient's palette does, and a longer fade lets it drift from the poster
+   while both show. Only the fade out transitions. When the scene unmounts
+   for another favorite, the poster is back at once, because nothing sits
+   under it to fade to. */
 .card:has([data-scene='painted']) .poster {
   opacity: 0;
-  transition: opacity var(--fade-md) var(--ease-out);
+  transition: opacity var(--fade-sm) var(--ease-out);
 }
 
 /* On a phone the heading is a row of its own above the cards, on one

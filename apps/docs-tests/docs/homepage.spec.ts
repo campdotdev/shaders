@@ -19,6 +19,9 @@ const FAVORITES = [
   'led-wall',
 ];
 
+// The favorites that show a card poster rather than their component's.
+const CARD_POSTERS = new Set(['dither', 'led-wall']);
+
 const favorites = (page: Page) =>
   page.getByRole('list', { name: 'Start with one of our favorites' }).getByRole('link');
 
@@ -109,8 +112,10 @@ test('a favorite is named for its component', async ({ page }) => {
   await expect(favorites(page).first()).toHaveAccessibleName('Simplex Noise');
 });
 
-// Each favorite shows its component's full poster, not the small square the
-// components index uses, and every one has loaded.
+// Each favorite shows a full poster, not the small square the components
+// index uses, and every one has loaded. Dither and LED Wall show a card
+// poster, captured at the live scene's size, because both size their pattern
+// in CSS pixels.
 test('each favorite shows its poster', async ({ page }) => {
   await open(page);
   await expect(favorites(page)).toHaveCount(FAVORITES.length);
@@ -135,7 +140,11 @@ test('each favorite shows its poster', async ({ page }) => {
     .toEqual([]);
 
   for (const [index, image] of (await readImages()).entries()) {
-    expect(image.src, image.href).toMatch(new RegExp(`/posters/${FAVORITES[index]}\\.(jpg|png)`));
+    expect(image.src, image.href).toMatch(
+      new RegExp(
+        `/posters/${FAVORITES[index]}${CARD_POSTERS.has(FAVORITES[index]!) ? '-card' : ''}\\.(jpg|png)`,
+      ),
+    );
   }
 });
 

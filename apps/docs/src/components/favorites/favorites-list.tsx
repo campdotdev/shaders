@@ -1,22 +1,20 @@
 'use client';
 
 /**
- * The favorites' cards, and the hover that brings one to life. At rest each
- * card is its poster. Hovering or focusing a card mounts its live scene under
- * the poster, and the poster fades once the scene's first frame is on
- * screen. The list holds at most one live scene, so the page never runs more
- * than the hero's renderer and one favorite's. favorites.tsx renders this
- * inside the section and its heading.
+ * The favorites' cards, and the hover that brings one to life. Hovering or
+ * focusing a card mounts its live scene under the poster, which fades on the
+ * scene's first frame. The scene plays while the pointer or keyboard focus
+ * is on its card and pauses when both leave. One favorite is live at a time.
  */
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useState, useSyncExternalStore } from 'react';
+import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 
 import { ShaderPoster } from '@camp-dev/shaders/poster';
 
 import type { Favorite, FavoriteSlug } from '@/content/homepage';
 
-import { FAVORITE_SCENES } from './favorite-scenes';
+import { favoriteSceneBackdrop, preloadFavoriteScenes, useFavoriteScene } from './favorite-scenes';
 import styles from './favorites.module.css';
 
 // The width each poster renders at, per the grid's columns in
@@ -24,13 +22,17 @@ import styles from './favorites.module.css';
 const POSTER_SIZES = '(width < 40rem) 100vw, (width < 64rem) 50vw, 25vw';
 
 // ---------------------------------------------
-// The list: which favorite is live
+// The list: which favorite is live, and whether it plays
 // ---------------------------------------------
 
-// A live scene stays mounted after the pointer leaves, until another favorite
-// takes over. Coming back to the same favorite is then instant, with no
-// renderer to start, and the page still holds one favorite's renderer at
-// most. Unmounting on leave would start a renderer on every hover.
+/** What brought a visitor to a card: the pointer, or keyboard focus. */
+type Engagement = 'pointer' | 'focus';
+
+// A live scene stays mounted, paused, after the pointer and focus leave, until
+// another favorite takes over. Coming back to the same favorite then resumes
+// it at once, with no renderer to start, and the page still holds one
+// favorite's renderer at most. Unmounting on leave would start a renderer on
+// every hover.
 export function FavoritesList({
   favorites,
   labelledBy,
@@ -39,19 +41,47 @@ export function FavoritesList({
   labelledBy: string;
 }) {
   const canGoLive = useCanGoLive();
+  const listRef = useRef<HTMLUListElement>(null);
   const [liveSlug, setLiveSlug] = useState<FavoriteSlug | null>(null);
+  // The favorite under the pointer and the favorite with keyboard focus, each
+  // null when there is none. The live favorite plays while either is on it.
+  const [hoveredSlug, setHoveredSlug] = useState<FavoriteSlug | null>(null);
+  const [focusedSlug, setFocusedSlug] = useState<FavoriteSlug | null>(null);
+  const playing = liveSlug !== null && (hoveredSlug === liveSlug || focusedSlug === liveSlug);
+
+  usePreloadScenesNearView(listRef, canGoLive);
+
+  const setEngaged = (slug: FavoriteSlug, engagement: Engagement, engaged: boolean) => {
+    const setSlug = engagement === 'pointer' ? setHoveredSlug : setFocusedSlug;
+
+    if (engaged) {
+      setLiveSlug(slug);
+      setSlug(slug);
+    } else {
+      setSlug((current) => (current === slug ? null : current));
+    }
+  };
 
   return (
-    <ul aria-labelledby={labelledBy} className={styles.list}>
-      {favorites.map((favorite) => (
-        <li key={favorite.url}>
-          <FavoriteCard
-            favorite={favorite}
-            live={canGoLive && favorite.slug === liveSlug}
-            onGoLive={canGoLive ? () => setLiveSlug(favorite.slug) : undefined}
-          />
-        </li>
-      ))}
+    <ul aria-labelledby={labelledBy} className={styles.list} ref={listRef}>
+      {favorites.map((favorite) => {
+        const live = canGoLive && favorite.slug === liveSlug;
+
+        return (
+          <li key={favorite.url}>
+            <FavoriteCard
+              favorite={favorite}
+              live={live}
+              onEngagedChange={
+                canGoLive
+                  ? (engagement, engaged) => setEngaged(favorite.slug, engagement, engaged)
+                  : undefined
+              }
+              playing={live && playing}
+            />
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -67,30 +97,37 @@ export function FavoritesList({
 //
 // A tap never takes a card live, even on a touch-screen laptop that passes
 // the hover gate, because the tap is on its way to the component page. The
-// pointer check skips a touch's pointerenter. The :focus-visible check skips
-// the focus a tap or a click gives the link, and keeps keyboard focus.
+// pointer checks skip a touch's pointerenter and pointerleave. The
+// :focus-visible check skips the focus a tap or a click gives the link, and
+// keeps keyboard focus.
 function FavoriteCard({
   favorite,
   live,
-  onGoLive,
+  playing,
+  onEngagedChange,
 }: {
   favorite: Favorite;
   live: boolean;
-  onGoLive: (() => void) | undefined;
+  playing: boolean;
+  onEngagedChange: ((engagement: Engagement, engaged: boolean) => void) | undefined;
 }) {
   return (
     <Link
       className={styles.card}
       href={favorite.url}
+      onBlur={() => onEngagedChange?.('focus', false)}
       onFocus={(event) => {
-        if (event.currentTarget.matches(':focus-visible')) onGoLive?.();
+        if (event.currentTarget.matches(':focus-visible')) onEngagedChange?.('focus', true);
       }}
       onPointerEnter={(event) => {
-        if (event.pointerType !== 'touch') onGoLive?.();
+        if (event.pointerType !== 'touch') onEngagedChange?.('pointer', true);
+      }}
+      onPointerLeave={(event) => {
+        if (event.pointerType !== 'touch') onEngagedChange?.('pointer', false);
       }}
     >
       <div className={styles.window}>
-        {live && <LiveScene slug={favorite.slug} />}
+        {live && <LiveScene paused={!playing} slug={favorite.slug} />}
         <Image
           alt={favorite.label}
           className={styles.poster}
@@ -105,29 +142,79 @@ function FavoriteCard({
 
 // The scene, on its demo's backdrop, with `data-scene` saying whether its
 // first frame is on screen yet. favorites.module.css fades the card's poster
-// on "painted", and the Playwright spec reads it too. The state lives here, so
-// every mount starts from "loading".
+// on "painted", and the Playwright spec reads it too, along with
+// `data-paused`. The state lives here, so every mount starts from "loading".
+// A paused scene keeps its last frame on the canvas, and ShaderScene stops
+// its clock, so it resumes on the same frame.
 //
 // ShaderPoster is what learns of the first frame: ShaderScene tells the
 // nearest one, which then drops its poster. The poster here is an empty
 // marker, so its unmount is the signal. If the renderer is ever rebuilt, as
 // on a display gamut change, ShaderPoster puts the marker back and the card's
 // poster returns until the new renderer paints.
-function LiveScene({ slug }: { slug: FavoriteSlug }) {
-  const { Scene, backdrop } = FAVORITE_SCENES[slug];
+//
+// The scene renders at SCENE_SIZE and is scaled to cover the card's window,
+// the way the poster is, so the two shrink together on a narrower card.
+// Rendered at the window's own size instead, a component that sizes its
+// pattern in CSS pixels, such as Dither's cells or LED Wall's dots, would
+// keep its pattern full size while the poster's shrank.
+function LiveScene({ slug, paused }: { slug: FavoriteSlug; paused: boolean }) {
+  const Scene = useFavoriteScene(slug);
+  const backdrop = favoriteSceneBackdrop(slug);
   const [painted, setPainted] = useState(false);
+  const sceneRef = useRef<HTMLDivElement>(null);
+
+  useCoverScale(sceneRef);
 
   return (
     <div
       aria-hidden
       className={`${styles.scene} ${backdrop ?? styles.ground}`}
+      data-paused={paused || undefined}
       data-scene={painted ? 'painted' : 'loading'}
+      ref={sceneRef}
+      style={{ width: SCENE_SIZE.width, height: SCENE_SIZE.height }}
     >
-      <ShaderPoster poster={<UntilFirstPaint onPaintedChange={setPainted} />}>
-        <Scene />
-      </ShaderPoster>
+      {Scene && (
+        <ShaderPoster poster={<UntilFirstPaint onPaintedChange={setPainted} />}>
+          <Scene paused={paused} />
+        </ShaderPoster>
+      )}
     </div>
   );
+}
+
+// The card window's size at the site container's full width, in CSS pixels.
+// Every favorite renders at this size, and scripts/build-posters.sh captures
+// the card posters of Dither and LED Wall at it.
+const SCENE_SIZE = { width: 376, height: 275 };
+
+/**
+ * Scales the scene to cover its window, the way `object-fit: cover` scales
+ * the poster: up or down until both sides fill it, centered, with the
+ * overflow cropped. Written straight to the element's `scale`, so a resize
+ * re-renders nothing.
+ */
+function useCoverScale(sceneRef: RefObject<HTMLDivElement | null>) {
+  useEffect(() => {
+    const scene = sceneRef.current;
+    const sceneWindow = scene?.parentElement;
+
+    if (!scene || !sceneWindow) return;
+
+    const observer = new ResizeObserver(() => {
+      scene.style.scale = String(
+        Math.max(
+          sceneWindow.clientWidth / SCENE_SIZE.width,
+          sceneWindow.clientHeight / SCENE_SIZE.height,
+        ),
+      );
+    });
+
+    observer.observe(sceneWindow);
+
+    return () => observer.disconnect();
+  }, [sceneRef]);
 }
 
 function UntilFirstPaint({ onPaintedChange }: { onPaintedChange: (painted: boolean) => void }) {
@@ -138,6 +225,43 @@ function UntilFirstPaint({ onPaintedChange }: { onPaintedChange: (painted: boole
   }, [onPaintedChange]);
 
   return null;
+}
+
+// ---------------------------------------------
+// Preloading: the scenes' code, before the first hover
+// ---------------------------------------------
+
+// How far outside the viewport the cards are when their scenes start to
+// load, in CSS pixels. Larger loads them sooner on the way down the page.
+const PRELOAD_MARGIN = '200px';
+
+/**
+ * Loads every favorite's scene module once the cards come within
+ * PRELOAD_MARGIN of the viewport, the way next/link prefetches a page in
+ * view, so a first hover mounts its canvas at once rather than waiting on
+ * the code. It loads code only: starting the seven renderers ahead would
+ * hold seven at once. The list is `display: contents` and has no box to
+ * observe, so its first card stands in for it.
+ */
+function usePreloadScenesNearView(listRef: RefObject<HTMLUListElement | null>, enabled: boolean) {
+  useEffect(() => {
+    const firstCard = listRef.current?.firstElementChild;
+
+    if (!enabled || !firstCard) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        observer.disconnect();
+        preloadFavoriteScenes();
+      },
+      { rootMargin: PRELOAD_MARGIN },
+    );
+
+    observer.observe(firstCard);
+
+    return () => observer.disconnect();
+  }, [listRef, enabled]);
 }
 
 // ---------------------------------------------

@@ -122,6 +122,29 @@ $CLI \
   --height 696 \
   --background "#0b0f1a"
 
+# The homepage favorites render every live scene at the card window's size
+# at the site container's full width, 376 by 275 (SCENE_SIZE in
+# apps/docs/src/components/favorites/favorites-list.tsx), and scale it down
+# with the card. Dither and LED Wall size their cells in CSS pixels, so their
+# 3:2 posters, shrunk into a card, showed cells half the live size. Their card
+# posters are captured at the scene's own size, so poster and scene scale
+# together.
+for pair in "dither:jpg" "led-wall:jpg:#0b0f0d"; do
+  IFS=':' read -r name format background <<< "$pair"
+  echo "==> ${name}-card ($format, 376x275)"
+  card_args=(
+    --source "${COMPONENTS_DIR}/${name}/scene.tsx"
+    --output "${OUT_DIR}/${name}-card.${format}"
+    --format "$format"
+    --width 376
+    --height 275
+  )
+  if [ -n "$background" ]; then
+    card_args+=(--background "$background")
+  fi
+  $CLI "${card_args[@]}"
+done
+
 # The Components banner is captured from its own scene at the mock's width,
 # 1728 by the 200px header block, and shown at that size, center-cropped, by
 # banner-shader.tsx. Past 864px either side of center the glow has already

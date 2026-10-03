@@ -1,28 +1,28 @@
 'use client';
 
 /**
- * Each favorite's live scene: the same scene module its component page
- * renders, at its demo defaults, so a favorite cannot drift from its page.
- * Keyed by FavoriteSlug, so a favorite added in content/homepage.ts with no
- * scene here fails the type check. Each module loads behind next/dynamic with
- * `ssr: false` (the SSR gotcha in docs/agents/docs-site.md), on the first
- * hover that asks for it.
+ * Each favorite's live scene: the scene module its component page renders,
+ * at its demo defaults, keyed by FavoriteSlug so a favorite added in
+ * content/homepage.ts with no scene here fails the type check. favorites-
+ * list.tsx preloads them all and renders one with useFavoriteScene.
  */
-import dynamic from 'next/dynamic';
-import type { ComponentType } from 'react';
+import { type ComponentType, useEffect, useState } from 'react';
 
 import godRaysStyles from '@/app/components/god-rays/demo.module.css';
 import waveLinesStyles from '@/app/components/wave-lines/demo.module.css';
 import type { FavoriteSlug } from '@/content/homepage';
 
-// What a favorite renders its scene with: no props, so every scene module
-// falls back to its demo defaults. Each dynamic() call names this type,
-// because a scene module's props type, with its `= {}` default, includes
-// undefined, which ComponentType's class half rejects.
-type NoProps = Record<string, never>;
+// What a favorite renders its scene with: no params, so every scene module
+// falls back to its demo defaults, and whether the scene is paused.
+interface SceneProps {
+  paused: boolean;
+}
+
+type Scene = ComponentType<SceneProps>;
 
 interface FavoriteScene {
-  Scene: ComponentType<NoProps>;
+  /** Loads the scene's module. */
+  load: () => Promise<{ default: Scene }>;
   /**
    * The demo's backdrop class, for a component that draws over a transparent
    * ground, so the scene sits on the same backdrop as on its own page.
@@ -30,28 +30,83 @@ interface FavoriteScene {
   backdrop?: string;
 }
 
-export const FAVORITE_SCENES: Record<FavoriteSlug, FavoriteScene> = {
-  'simplex-noise': {
-    Scene: dynamic<NoProps>(() => import('@/app/components/simplex-noise/scene'), { ssr: false }),
-  },
-  'mesh-gradient': {
-    Scene: dynamic<NoProps>(() => import('@/app/components/mesh-gradient/scene'), { ssr: false }),
-  },
+const FAVORITE_SCENES: Record<FavoriteSlug, FavoriteScene> = {
+  'simplex-noise': { load: () => import('@/app/components/simplex-noise/scene') },
+  'mesh-gradient': { load: () => import('@/app/components/mesh-gradient/scene') },
   'wave-lines': {
-    Scene: dynamic<NoProps>(() => import('@/app/components/wave-lines/scene'), { ssr: false }),
+    load: () => import('@/app/components/wave-lines/scene'),
     backdrop: waveLinesStyles.demoBackdrop,
   },
-  voronoi: {
-    Scene: dynamic<NoProps>(() => import('@/app/components/voronoi/scene'), { ssr: false }),
-  },
-  dither: {
-    Scene: dynamic<NoProps>(() => import('@/app/components/dither/scene'), { ssr: false }),
-  },
+  voronoi: { load: () => import('@/app/components/voronoi/scene') },
+  dither: { load: () => import('@/app/components/dither/scene') },
   'god-rays': {
-    Scene: dynamic<NoProps>(() => import('@/app/components/god-rays/scene'), { ssr: false }),
+    load: () => import('@/app/components/god-rays/scene'),
     backdrop: godRaysStyles.demoBackdrop,
   },
-  'led-wall': {
-    Scene: dynamic<NoProps>(() => import('@/app/components/led-wall/scene'), { ssr: false }),
-  },
+  'led-wall': { load: () => import('@/app/components/led-wall/scene') },
 };
+
+// ---------------------------------------------
+// Loading, once per scene
+// ---------------------------------------------
+
+// The modules load through a plain import() rather than next/dynamic, which
+// is React.lazy underneath. A lazy component suspends on its first render
+// even when its module has already loaded, and React then holds the reveal
+// back by 300ms, so every first hover waited that long. The import() still
+// runs only in the browser, from an effect or the preload, which keeps three
+// out of the server render (the SSR gotcha in docs/agents/docs-site.md).
+
+// The component of every scene whose module has loaded, so a render can
+// read it straight away.
+const loadedScenes = new Map<FavoriteScene, Scene>();
+
+function loadScene(favoriteScene: FavoriteScene): Promise<Scene> {
+  return favoriteScene.load().then((module) => {
+    loadedScenes.set(favoriteScene, module.default);
+
+    return module.default;
+  });
+}
+
+/** Loads every favorite's scene module ahead of its first hover. */
+export function preloadFavoriteScenes(): void {
+  for (const favoriteScene of Object.values(FAVORITE_SCENES)) {
+    // A failed preload leaves the module for the hover to load.
+    loadScene(favoriteScene).catch(() => undefined);
+  }
+}
+
+/** The demo backdrop class a favorite's scene sits on, if its demo has one. */
+export function favoriteSceneBackdrop(slug: FavoriteSlug): string | undefined {
+  return FAVORITE_SCENES[slug].backdrop;
+}
+
+/**
+ * A favorite's scene component, or null until its module has loaded. A
+ * preloaded scene is there on the first render, so a hover mounts its canvas
+ * in the same commit.
+ */
+export function useFavoriteScene(slug: FavoriteSlug): Scene | null {
+  const favoriteScene = FAVORITE_SCENES[slug];
+  const [scene, setScene] = useState(() => loadedScenes.get(favoriteScene) ?? null);
+
+  useEffect(() => {
+    if (scene) return;
+
+    let cancelled = false;
+
+    void loadScene(favoriteScene)
+      // A module that fails to load leaves the favorite on its poster.
+      .catch(() => null)
+      .then((loaded) => {
+        if (!cancelled && loaded) setScene(() => loaded);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [favoriteScene, scene]);
+
+  return scene;
+}

@@ -21,6 +21,15 @@ const FAVORITES = [
 /** A favorite's slug. The live scenes in components/favorites are keyed by it. */
 export type FavoriteSlug = (typeof FAVORITES)[number];
 
+// Card posters for the favorites whose demo sizes its pattern in CSS pixels.
+// scripts/build-posters.sh captures each at the live scene's own size, so the
+// poster scales with the card the way the scene does. The rest show their
+// component's poster.
+const CARD_POSTERS: Partial<Record<FavoriteSlug, string>> = {
+  dither: '/posters/dither-card.jpg',
+  'led-wall': '/posters/led-wall-card.jpg',
+};
+
 /** A favorite's catalog record, with the slug that picks its live scene. */
 export interface Favorite extends ComponentCatalogRecord {
   slug: FavoriteSlug;
@@ -37,6 +46,6 @@ export async function getFavorites(): Promise<Favorite[]> {
     // URLs have drifted apart.
     if (!record) throw new Error(`Favorite ${slug} has no catalog record.`);
 
-    return { ...record, slug };
+    return { ...record, slug, poster: CARD_POSTERS[slug] ?? record.poster };
   });
 }
