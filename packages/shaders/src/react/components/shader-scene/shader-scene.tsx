@@ -33,6 +33,7 @@ import {
   type OutputStage,
   resetRendererClock,
 } from '../../../engine.js';
+import { createCanvasSize, type ResizeSignal } from '../../../inputs/canvas-size/canvas-size.js';
 import { ShaderContext, type ShaderContextValue } from '../../context/shader-context.js';
 import { ShadersError } from '../../errors/shaders-error.js';
 import {
@@ -157,7 +158,7 @@ export function ShaderScene({
           canvas,
           renderer,
           scheduler,
-          createStillDrawer(frameRenderer, pausedClock, outputStage),
+          createRedrawer(frameRenderer, pausedClock, outputStage),
         );
 
         const detachPausedProp = pausedProp.attach(canvasWatch);
@@ -183,6 +184,7 @@ export function ShaderScene({
           registerOverlay: outputStage.registerOverlay,
           registerBaseUvTransform: outputStage.registerBaseUvTransform,
           getCursorInput: cursorInput.get,
+          canvasSize: canvasWatch.canvasSize,
         });
       } catch (caughtError) {
         if (cancelled) return;
@@ -289,8 +291,8 @@ interface FrameRenderer {
   render: () => void;
   /**
    * Whether the loop has rendered a frame with content yet, which is what a
-   * paused scene redraws on a resize. A scene paused from its mount, or
-   * paused after only the empty frames before its child mounted, has none.
+   * resize redraws. A scene paused from its mount, or paused after only the
+   * empty frames before its child mounted, has none.
    */
   hasRenderedContent: () => boolean;
 }
@@ -347,8 +349,8 @@ function createFrameRenderer(
  * three runs its own animation loop, which advances its clock on every
  * animation frame whether this scene renders or not. The scheduler leaves
  * paused time out of its own ticks, and this holds three's clock at the time
- * the scene paused, so a resume, or a still frame drawn while paused,
- * carries on from the frame the scene stopped on. `restore` puts the held
+ * the scene paused, so a resume, or a frame redrawn while paused, carries on
+ * from the frame the scene stopped on. `restore` puts the held
  * time back, and does nothing while the scene runs.
  */
 function holdClockWhilePaused(
@@ -371,11 +373,13 @@ function holdClockWhilePaused(
 }
 
 /**
- * Draws the frame a paused scene stopped on, at the held time, for the
- * canvas watcher to call after a resize clears the canvas. A scene paused
- * before the loop drew any content has no frame to draw.
+ * Draws the scene's current frame again, for the canvas watcher to call
+ * after a resize clears the canvas. A paused scene draws the frame it
+ * stopped on, at the held time. A running scene draws at the current time,
+ * and ticks no scheduler client, so no animation phase advances twice in
+ * one frame. A scene whose loop drew no content yet has no frame to draw.
  */
-function createStillDrawer(
+function createRedrawer(
   frameRenderer: FrameRenderer,
   pausedClock: { restore: () => void },
   outputStage: OutputStage,
@@ -393,25 +397,33 @@ function createStillDrawer(
 // ----------------------------------------------------------------------------
 
 interface CanvasWatch {
+  /** The canvas size, updated before each redraw, for the shader context. */
+  canvasSize: ResizeSignal;
   /** Pause the loop for the `paused` prop, or hand it back to visibility. */
   setPaused: (paused: boolean) => void;
-  /** Stop watching visibility and size. */
+  /** Stop watching visibility and size, and drop the size's listeners. */
   stop: () => void;
 }
 
 /**
  * Pauses the loop while the tab is hidden, the canvas is out of view, or the
- * `paused` prop is set, and keeps the renderer sized to the canvas.
- * `drawStill` renders one frame outside the loop, at the time the scene
- * paused: a resize clears the canvas, and a scene paused by its prop has no
- * loop to draw it again.
+ * `paused` prop is set, and keeps the renderer and `canvasSize` sized to the
+ * canvas. `redraw` renders one frame outside the loop, because a resize
+ * clears the canvas.
  */
 function watchCanvas(
   canvas: HTMLCanvasElement,
   renderer: GpuRenderer,
   scheduler: FrameScheduler,
-  drawStill: () => void,
+  redraw: () => void,
 ): CanvasWatch {
+  const canvasSize = createCanvasSize(canvas);
+  // Subscribed before the pause watcher exists, because it pauses the loop
+  // as it starts when the canvas is already out of view.
+  let loopPaused = false;
+  const stopWatchingLoop = scheduler.onPauseChange((nowPaused) => {
+    loopPaused = nowPaused;
+  });
   const pauseWatcher = createPauseWatcher(canvas, scheduler);
   let pausedByProp = false;
 
@@ -422,34 +434,45 @@ function watchCanvas(
   // undersized target — compressing every shader's output. ResizeObserver
   // fires once on observe() and on every subsequent box change.
   //
-  // A paused scene redraws its frozen frame at the new size, once straight
-  // away, so the cleared canvas never shows, and once more on the next
-  // frame. ResizeObserver calls observers in the order they were created,
-  // and this one comes before the children's useResize, so the first draw
-  // still has the old aspect and size uniforms. By the next frame, they are
-  // current.
-  let redrawFrame: number | null = null;
+  // The browser runs this callback after layout and before it paints, and
+  // the resize has just cleared the canvas. The loop's frame for this
+  // animation frame ran before layout, so without a redraw here the browser
+  // paints the cleared canvas, and a continuous resize, such as a window
+  // drag or a scroll-driven size change, paints one on every frame. So the
+  // scene redraws straight away, running or paused. canvasSize updates
+  // first: the children's size and aspect uniforms are written from it, so
+  // the redraw has them at the new size.
+  //
+  // A loop paused only because the canvas is out of view or the tab is
+  // hidden skips the redraw, since no one can see it. It asks for a frame
+  // instead, which the loop draws at the new size once it resumes: a static
+  // scene's loop has parked and would otherwise never draw again. A scene
+  // paused by its prop has no loop to draw it, so it redraws even out of
+  // view.
   const resizeObserver = new ResizeObserver(() => {
     renderer.resize();
-    if (!pausedByProp) return;
-    drawStill();
-    redrawFrame ??= requestAnimationFrame(() => {
-      redrawFrame = null;
-      if (pausedByProp) drawStill();
-    });
+    canvasSize.update();
+    if (loopPaused && !pausedByProp) {
+      scheduler.requestRender();
+
+      return;
+    }
+    redraw();
   });
 
   resizeObserver.observe(canvas);
 
   return {
+    canvasSize: canvasSize.signal,
     setPaused(paused) {
       pausedByProp = paused;
       pauseWatcher.setPaused(paused);
     },
     stop() {
       pauseWatcher.dispose();
+      stopWatchingLoop();
       resizeObserver.disconnect();
-      if (redrawFrame !== null) cancelAnimationFrame(redrawFrame);
+      canvasSize.dispose();
     },
   };
 }

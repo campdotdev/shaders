@@ -9,6 +9,7 @@ import type {
   PostProcessTransform,
   UvTransform,
 } from '../../engine.js';
+import type { ResizeSignal } from '../../inputs/canvas-size/canvas-size.js';
 
 // The contract between <ShaderScene> and everything rendered inside it:
 // the scene fills this in once its renderer is up, and every child hook
@@ -33,6 +34,11 @@ export interface ShaderContextValue {
    * scene reads this one input and smooths at its own rate.
    */
   getCursorInput: () => CursorInput;
+  /**
+   * The canvas size, which the scene updates before it redraws a resized
+   * canvas. useResize hands it to components.
+   */
+  canvasSize: ResizeSignal;
 }
 
 export const ShaderContext = createContext<ShaderContextValue | null>(null);

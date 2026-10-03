@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type * as ShadersModule from '../../../engine.js';
 import { createRenderer, type CursorInput, type GpuRenderer } from '../../../engine.js';
 import { ShadersError } from '../../errors/shaders-error.js';
+import { useResize } from '../../hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../hooks/use-shader-context/use-shader-context.js';
 import { PosterContext } from '../shader-poster/poster-context.js';
 import { ShaderScene } from './shader-scene.js';
@@ -278,92 +279,119 @@ describe('ShaderScene', () => {
     await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
     expect(onError).not.toHaveBeenCalled();
   });
+
   // ---------------------------------------------
-  // paused
+  // stubs the paused and resize tests share
   // ---------------------------------------------
 
-  describe('paused', () => {
-    // A renderer whose three clock the test can read and move. three's own
-    // animation loop advances nodeFrame.time on every animation frame,
-    // rendering or not, so a test moves it by hand to stand for that loop
-    // running while the scene is paused. The stub records the time each
-    // frame renders at.
-    function rendererWithClock() {
-      const nodeFrame = { time: 5, deltaTime: 0 };
-      const timeAtRender: number[] = [];
-      const gpuRenderer = {
-        three: {
-          render: vi.fn(() => timeAtRender.push(nodeFrame.time)),
-          dispose: vi.fn(),
-          domElement: document.createElement('canvas'),
-          getPixelRatio: () => 1,
-          setSize: vi.fn(),
-          _nodes: { nodeFrame },
-        },
-        backend: 'webgl2' as const,
+  // A renderer whose three clock the test can read and move. three's own
+  // animation loop advances nodeFrame.time on every animation frame,
+  // rendering or not, so a test moves it by hand to stand for that loop
+  // running while the scene is paused. The stub records the time each
+  // frame renders at.
+  function rendererWithClock() {
+    const nodeFrame = { time: 5, deltaTime: 0 };
+    const timeAtRender: number[] = [];
+    const gpuRenderer = {
+      three: {
+        render: vi.fn(() => timeAtRender.push(nodeFrame.time)),
         dispose: vi.fn(),
-        resize: vi.fn(),
-      } as unknown as GpuRenderer;
+        domElement: document.createElement('canvas'),
+        getPixelRatio: () => 1,
+        setSize: vi.fn(),
+        _nodes: { nodeFrame },
+      },
+      backend: 'webgl2' as const,
+      dispose: vi.fn(),
+      resize: vi.fn(),
+    } as unknown as GpuRenderer;
 
-      vi.mocked(createRenderer).mockResolvedValueOnce(gpuRenderer);
+    vi.mocked(createRenderer).mockResolvedValueOnce(gpuRenderer);
 
-      return { gpuRenderer, nodeFrame, timeAtRender };
-    }
+    return { gpuRenderer, nodeFrame, timeAtRender };
+  }
 
-    function captureFrames(): FrameRequestCallback[] {
-      const frames: FrameRequestCallback[] = [];
+  function captureFrames(): FrameRequestCallback[] {
+    const frames: FrameRequestCallback[] = [];
 
-      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-        frames.push(callback);
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
 
-        return frames.length;
-      });
+      return frames.length;
+    });
 
-      return frames;
-    }
+    return frames;
+  }
 
-    const runFrames = (frames: FrameRequestCallback[], now: number) => {
-      for (const frame of frames.splice(0)) frame(now);
-    };
+  const runFrames = (frames: FrameRequestCallback[], now: number) => {
+    for (const frame of frames.splice(0)) frame(now);
+  };
 
-    // A child that adds a mesh to the scene, as a shader component does, so
-    // the frames after it mounts have content.
-    function MeshChild() {
-      const shaderContext = useShaderContext();
+  // A child that adds a mesh to the scene, as a shader component does, so
+  // the frames after it mounts have content.
+  function MeshChild() {
+    const shaderContext = useShaderContext();
 
-      useEffect(() => {
-        if (!shaderContext) return undefined;
-        const mesh = new Object3D();
+    useEffect(() => {
+      if (!shaderContext) return undefined;
+      const mesh = new Object3D();
 
-        shaderContext.scene.add(mesh);
-
-        return () => {
-          shaderContext.scene.remove(mesh);
-        };
-      }, [shaderContext]);
-
-      return <div data-testid="child" />;
-    }
-
-    function stubResizeObserver(): () => void {
-      const resizeCallbacks: ResizeObserverCallback[] = [];
-
-      vi.stubGlobal(
-        'ResizeObserver',
-        class {
-          constructor(callback: ResizeObserverCallback) {
-            resizeCallbacks.push(callback);
-          }
-          observe() {}
-          disconnect() {}
-        },
-      );
+      shaderContext.scene.add(mesh);
 
       return () => {
-        for (const callback of resizeCallbacks) callback([], {} as ResizeObserver);
+        shaderContext.scene.remove(mesh);
       };
-    }
+    }, [shaderContext]);
 
+    return <div data-testid="child" />;
+  }
+
+  function stubResizeObserver(): () => void {
+    const resizeCallbacks: ResizeObserverCallback[] = [];
+
+    vi.stubGlobal(
+      'ResizeObserver',
+      class {
+        constructor(callback: ResizeObserverCallback) {
+          resizeCallbacks.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+
+    return () => {
+      for (const callback of resizeCallbacks) callback([], {} as ResizeObserver);
+    };
+  }
+
+  // Returns a function that tells the scene its canvas has scrolled in or
+  // out of view.
+  function stubIntersectionObserver(): (inView: boolean) => void {
+    const intersectionCallbacks: IntersectionObserverCallback[] = [];
+
+    vi.stubGlobal(
+      'IntersectionObserver',
+      class {
+        constructor(callback: IntersectionObserverCallback) {
+          intersectionCallbacks.push(callback);
+        }
+        observe() {}
+        disconnect() {}
+      },
+    );
+
+    return (inView) => {
+      for (const callback of intersectionCallbacks) {
+        callback(
+          [{ isIntersecting: inView } as IntersectionObserverEntry],
+          {} as IntersectionObserver,
+        );
+      }
+    };
+  }
+
+  describe('paused', () => {
     it('draws no frames while paused, and draws again once unpaused', async () => {
       const frames = captureFrames();
       const { gpuRenderer } = rendererWithClock();
@@ -419,7 +447,13 @@ describe('ShaderScene', () => {
 
       expect(timeAtRender).toEqual([5, 5]);
     });
+  });
 
+  // ---------------------------------------------
+  // resize
+  // ---------------------------------------------
+
+  describe('resize', () => {
     // A resize clears the canvas, so a paused scene draws its frozen frame
     // again at the new size, without letting any time pass. A scene paused
     // from its mount has no frame to redraw, and ResizeObserver fires once as
@@ -456,11 +490,156 @@ describe('ShaderScene', () => {
       fireResize();
 
       expect(timeAtRender).toEqual([0]);
+    });
 
-      // The children's resize observers run after the scene's, so the frame
-      // is drawn once more on the next frame, with their uniforms current.
+    // A running scene's loop drew this frame before layout resized the
+    // canvas, and the browser paints before the loop runs again. Without a
+    // redraw in the resize callback, every frame of a continuous resize
+    // paints a cleared canvas. The redraw is a draw only: it ticks no
+    // scheduler client, so no phase advances twice in one frame.
+    it('redraws a running scene straight after a resize, without a tick', async () => {
+      const fireResize = stubResizeObserver();
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      const tick = vi.fn();
+
+      function TickingChild() {
+        const shaderContext = useShaderContext();
+
+        useEffect(() => {
+          if (!shaderContext) return undefined;
+          shaderContext.scheduler.add(tick);
+
+          return () => shaderContext.scheduler.remove(tick);
+        }, [shaderContext]);
+
+        return <MeshChild />;
+      }
+
+      const { getByTestId } = render(
+        <ShaderScene>
+          <TickingChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, 16);
+      vi.mocked(gpuRenderer.three.render).mockClear();
+      tick.mockClear();
+      fireResize();
+
+      expect(gpuRenderer.resize).toHaveBeenCalled();
+      expect(gpuRenderer.three.render).toHaveBeenCalledTimes(1);
+      expect(tick).not.toHaveBeenCalled();
+    });
+
+    // The scene's resize observer runs before anything a child set up, so
+    // the size reaches the children's uniforms through the scene, before
+    // it draws. Otherwise each frame of a resize would draw at the previous
+    // frame's aspect.
+    it('publishes the new size to the children before it redraws', async () => {
+      const fireResize = stubResizeObserver();
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      let childWidth = 0;
+      const widthAtRender: number[] = [];
+
+      function SizedChild() {
+        const resize = useResize();
+
+        useEffect(
+          () =>
+            resize.on('change', ([width]) => {
+              childWidth = width;
+            }),
+          [resize],
+        );
+
+        return <MeshChild />;
+      }
+
+      const { container, getByTestId } = render(
+        <ShaderScene>
+          <SizedChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, 16);
+      vi.mocked(gpuRenderer.three.render).mockImplementation(async () => {
+        widthAtRender.push(childWidth);
+      });
+
+      const canvas = container.querySelector('canvas');
+
+      if (!canvas) throw new Error('ShaderScene rendered no canvas');
+      Object.defineProperty(canvas, 'clientWidth', { configurable: true, value: 800 });
+      Object.defineProperty(canvas, 'clientHeight', { configurable: true, value: 400 });
+      fireResize();
+
+      expect(widthAtRender).toEqual([800]);
+    });
+
+    // The loop is paused while the canvas is out of view, and a redraw no
+    // one can see is wasted GPU work. The loop draws at the new size once
+    // the canvas scrolls back into view.
+    it('sizes the renderer but draws nothing while the canvas is out of view', async () => {
+      const fireResize = stubResizeObserver();
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      const setInView = stubIntersectionObserver();
+      const { getByTestId } = render(
+        <ShaderScene>
+          <MeshChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, 16);
+      setInView(false);
+      vi.mocked(gpuRenderer.three.render).mockClear();
+      vi.mocked(gpuRenderer.resize).mockClear();
+      fireResize();
+
+      expect(gpuRenderer.resize).toHaveBeenCalled();
+      expect(gpuRenderer.three.render).not.toHaveBeenCalled();
+    });
+
+    // A static scene has parked its loop, so on its own it would never draw
+    // again after an out-of-view resize cleared its canvas. The skipped
+    // redraw asks for a frame, which the loop draws once it resumes.
+    it('draws a static scene resized out of view once it is back in view', async () => {
+      const fireResize = stubResizeObserver();
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      const setInView = stubIntersectionObserver();
+
+      function StaticChild() {
+        const shaderContext = useShaderContext();
+
+        useEffect(() => shaderContext?.scheduler.setIdle(true), [shaderContext]);
+
+        return <MeshChild />;
+      }
+
+      const { getByTestId } = render(
+        <ShaderScene>
+          <StaticChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, 16);
       runFrames(frames, 32);
-      expect(timeAtRender).toEqual([0, 0]);
+      expect(frames).toHaveLength(0);
+
+      setInView(false);
+      fireResize();
+      vi.mocked(gpuRenderer.three.render).mockClear();
+      setInView(true);
+      runFrames(frames, 48);
+
+      expect(gpuRenderer.three.render).toHaveBeenCalled();
     });
 
     // The loop renders empty frames until a child mounts its mesh. A scene

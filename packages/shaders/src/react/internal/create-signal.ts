@@ -1,6 +1,6 @@
 'use client';
 
-// The tiny pub/sub every input signal is built on (useResize, useScroll).
+// The tiny pub/sub every input signal is built on (useScroll, useCursor).
 // Returns the consumer-facing signal (get + on('change'), the
 // AnimatableSignal protocol) alongside the raw listener set, which stays
 // PRIVATE to the creating hook — the hook emits by iterating the set, so
