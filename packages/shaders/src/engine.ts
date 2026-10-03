@@ -67,7 +67,7 @@ export type { CursorRippleOptions } from './primitives/cursor-ripple/cursor-ripp
 
 export { elapsedTime } from './primitives/time/time.js';
 
-export { resetRendererClock } from './runtime/clock/reset-clock.js';
+export { holdRendererClock, resetRendererClock } from './runtime/clock/reset-clock.js';
 
 export { grain } from './primitives/grain/grain.js';
 export { stableHash, stableHashUint } from './primitives/stable-hash/stable-hash.js';

@@ -4,8 +4,9 @@
 // own themselves: the canvas, the renderer (WebGPU with WebGL2 fallback),
 // ONE three.js scene that all children mount their meshes into, the
 // post-process chain overlays register with, the render-on-demand frame
-// loop, and the pause behaviors (hidden tab, off-screen canvas). Children
-// receive all of it through ShaderContext and render no DOM of their own —
+// loop, and the pause behaviors (hidden tab, off-screen canvas, and the
+// `paused` prop). Children receive all of it through ShaderContext and
+// render no DOM of their own —
 // composition is stacking children, painting into this one scene. One effect
 // owns that whole lifecycle; the helpers below the component are its steps.
 import {
@@ -14,6 +15,7 @@ import {
   type RefObject,
   useContext,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -27,6 +29,7 @@ import {
   CursorInput,
   FrameScheduler,
   type GpuRenderer,
+  holdRendererClock,
   type OutputStage,
   resetRendererClock,
 } from '../../../engine.js';
@@ -49,6 +52,12 @@ export interface ShaderSceneProps {
   onFirstPaint?: () => void;
   /** Fires once with a typed ShadersError when renderer init fails. */
   onError?: (error: ShadersError) => void;
+  /**
+   * Freezes the scene on its current frame. Time stops while the scene is
+   * paused, so it resumes from the frame it stopped on. A scene paused before
+   * its first frame draws nothing until it resumes. Defaults to false.
+   */
+  paused?: boolean;
 }
 
 const defaultStyle: CSSProperties = {
@@ -67,6 +76,7 @@ export function ShaderScene({
   gamut = 'auto',
   onFirstPaint,
   onError,
+  paused = false,
 }: ShaderSceneProps) {
   const resolvedGamut = useDisplayGamut(gamut);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -77,6 +87,7 @@ export function ShaderScene({
   // re-runs on dep changes (gamut, maxDPR), and a persistently failing init
   // would otherwise re-notify on every re-run.
   const errorFiredRef = useRef(false);
+  const pausedProp = usePausedProp(paused);
   // Poster boundary controls, when a ShaderPoster wraps this scene. The value
   // is memoized stable by ShaderPoster, so listing it in the setup effect's
   // deps does not cause renderer rebuilds. Null (a no-op below) when the
@@ -130,16 +141,32 @@ export function ShaderScene({
         const outputStage = createOutputStage(renderer.three, scene, camera);
         const scheduler = new FrameScheduler();
 
-        scheduler.add(
-          createFrameRenderer(renderer, scene, outputStage, scheduler, signalFirstPaint),
+        const frameRenderer = createFrameRenderer(
+          renderer,
+          scene,
+          outputStage,
+          scheduler,
+          signalFirstPaint,
         );
+
+        scheduler.add(frameRenderer.render);
         scheduler.start();
 
-        const stopWatchingCanvas = watchCanvas(canvas, renderer, scheduler);
+        const pausedClock = holdClockWhilePaused(renderer, scheduler);
+        const canvasWatch = watchCanvas(
+          canvas,
+          renderer,
+          scheduler,
+          createStillDrawer(frameRenderer, pausedClock, outputStage),
+        );
+
+        const detachPausedProp = pausedProp.attach(canvasWatch);
         const cursorInput = createLazyCursorInput(canvas);
 
         cleanup = () => {
-          stopWatchingCanvas();
+          detachPausedProp();
+          pausedClock.stop();
+          canvasWatch.stop();
           cursorInput.dispose();
           scheduler.dispose();
           outputStage.dispose();
@@ -178,7 +205,7 @@ export function ShaderScene({
       // so re-arm the enclosing poster until it does.
       posterControls?.setShaderPainted(false);
     };
-  }, [maxDPR, resolvedGamut, posterControls]);
+  }, [maxDPR, resolvedGamut, posterControls, pausedProp]);
 
   // Mount the children as soon as the context exists so the shader can build
   // and paint. The children render no visible DOM of their own (they drive
@@ -198,6 +225,41 @@ export function ShaderScene({
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%', display: 'block' }} />
       {content}
     </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// The `paused` prop: applied to whichever canvas watcher the scene has
+// ----------------------------------------------------------------------------
+
+/**
+ * Carries the `paused` prop to the canvas watcher without rebuilding the
+ * renderer. `attach` applies the current value to a new watcher and keeps it
+ * current through later prop changes, and the function it returns lets go.
+ */
+function usePausedProp(paused: boolean): {
+  attach: (canvasWatch: CanvasWatch) => () => void;
+} {
+  const pausedRef = useRef(paused);
+  const canvasWatchRef = useRef<CanvasWatch | null>(null);
+
+  useEffect(() => {
+    pausedRef.current = paused;
+    canvasWatchRef.current?.setPaused(paused);
+  }, [paused]);
+
+  return useMemo(
+    () => ({
+      attach(canvasWatch) {
+        canvasWatch.setPaused(pausedRef.current);
+        canvasWatchRef.current = canvasWatch;
+
+        return () => {
+          canvasWatchRef.current = null;
+        };
+      },
+    }),
+    [],
   );
 }
 
@@ -222,11 +284,21 @@ function createFullScreenView(): { scene: Scene; camera: OrthographicCamera } {
 // The frame loop's one job: render, and spot the first frame with content
 // ----------------------------------------------------------------------------
 
+interface FrameRenderer {
+  /** The callback the scheduler runs each frame. */
+  render: () => void;
+  /**
+   * Whether the loop has rendered a frame yet, which is what a paused scene
+   * redraws on a resize. A scene paused from its mount has none.
+   */
+  hasRendered: () => boolean;
+}
+
 /**
- * The callback the scheduler runs each frame. It calls `onFirstContentFrame`
- * once, on the first frame that has something to draw: a base shader mesh, or
- * at least an overlay pass. The scheduler renders empty frames before the
- * child shader mounts its mesh, and the enclosing poster must not drop over an
+ * The scheduler's per-frame callback. It calls `onFirstContentFrame` once,
+ * on the first frame that has something to draw: a base shader mesh, or at
+ * least an overlay pass. The scheduler renders empty frames before the child
+ * shader mounts its mesh, and the enclosing poster must not drop over an
  * empty canvas.
  */
 function createFrameRenderer(
@@ -235,10 +307,12 @@ function createFrameRenderer(
   outputStage: OutputStage,
   scheduler: FrameScheduler,
   onFirstContentFrame: () => void,
-): () => void {
+): FrameRenderer {
   let firstPaintSignaled = false;
+  let rendered = false;
 
-  return () => {
+  const render = () => {
+    rendered = true;
     const hasContent = scene.children.length > 0 || outputStage.hasOverlays();
 
     // On the frame that first has something to draw, rewind BOTH time
@@ -262,22 +336,85 @@ function createFrameRenderer(
       onFirstContentFrame();
     }
   };
+
+  return { render, hasRendered: () => rendered };
 }
 
 // ----------------------------------------------------------------------------
-// Watching the canvas: visibility pauses the loop, box size drives the renderer
+// Paused time: hold three's clock while the loop is paused
 // ----------------------------------------------------------------------------
 
 /**
- * Parks the loop while the tab is hidden or the canvas is out of view, and
- * keeps the renderer sized to the canvas. Returns the function that stops both.
+ * three runs its own animation loop, which advances its clock on every
+ * animation frame whether this scene renders or not. The scheduler leaves
+ * paused time out of its own ticks, and this holds three's clock at the time
+ * the scene paused, so a resume, or a still frame drawn while paused,
+ * carries on from the frame the scene stopped on. `restore` puts the held
+ * time back, and does nothing while the scene runs.
+ */
+function holdClockWhilePaused(
+  renderer: GpuRenderer,
+  scheduler: FrameScheduler,
+): { restore: () => void; stop: () => void } {
+  let restoreHeldClock: (() => void) | null = null;
+
+  const stop = scheduler.onPauseChange((nowPaused) => {
+    if (nowPaused) {
+      restoreHeldClock = holdRendererClock(renderer.three);
+
+      return;
+    }
+    restoreHeldClock?.();
+    restoreHeldClock = null;
+  });
+
+  return { restore: () => restoreHeldClock?.(), stop };
+}
+
+/**
+ * Draws the frame a paused scene stopped on, at the held time, for the
+ * canvas watcher to call after a resize clears the canvas. A scene paused
+ * before the loop drew anything has no frame to draw.
+ */
+function createStillDrawer(
+  frameRenderer: FrameRenderer,
+  pausedClock: { restore: () => void },
+  outputStage: OutputStage,
+): () => void {
+  return () => {
+    if (!frameRenderer.hasRendered()) return;
+    pausedClock.restore();
+    outputStage.render();
+  };
+}
+
+// ----------------------------------------------------------------------------
+// Watching the canvas: visibility and the `paused` prop pause the loop, box
+// size drives the renderer
+// ----------------------------------------------------------------------------
+
+interface CanvasWatch {
+  /** Pause the loop for the `paused` prop, or hand it back to visibility. */
+  setPaused: (paused: boolean) => void;
+  /** Stop watching visibility and size. */
+  stop: () => void;
+}
+
+/**
+ * Pauses the loop while the tab is hidden, the canvas is out of view, or the
+ * `paused` prop is set, and keeps the renderer sized to the canvas.
+ * `drawStill` renders one frame outside the loop, at the time the scene
+ * paused: a resize clears the canvas, and a scene paused by its prop has no
+ * loop to draw it again.
  */
 function watchCanvas(
   canvas: HTMLCanvasElement,
   renderer: GpuRenderer,
   scheduler: FrameScheduler,
-): () => void {
+  drawStill: () => void,
+): CanvasWatch {
   const pauseWatcher = createPauseWatcher(canvas, scheduler);
+  let pausedByProp = false;
 
   // Track the canvas's actual box size, not just window 'resize'. The
   // canvas commonly gets its real size from layout AFTER renderer init
@@ -285,13 +422,24 @@ function watchCanvas(
   // renderer stuck at the default 300x150 and render the scene into an
   // undersized target — compressing every shader's output. ResizeObserver
   // fires once on observe() and on every subsequent box change.
-  const resizeObserver = new ResizeObserver(() => renderer.resize());
+  //
+  // A paused scene redraws its frozen frame at the new size.
+  const resizeObserver = new ResizeObserver(() => {
+    renderer.resize();
+    if (pausedByProp) drawStill();
+  });
 
   resizeObserver.observe(canvas);
 
-  return () => {
-    pauseWatcher.dispose();
-    resizeObserver.disconnect();
+  return {
+    setPaused(paused) {
+      pausedByProp = paused;
+      pauseWatcher.setPaused(paused);
+    },
+    stop() {
+      pauseWatcher.dispose();
+      resizeObserver.disconnect();
+    },
   };
 }
 

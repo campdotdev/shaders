@@ -54,3 +54,27 @@ export function resetRendererClock(renderer: WebGPURenderer): void {
   nodeFrame.deltaTime = 0;
   nodeFrame.lastTime = undefined;
 }
+
+/**
+ * Hold the renderer's clock at its current time, for a paused scene. three
+ * runs its own animation loop, which advances the clock on every animation
+ * frame whether the scene renders or not, so a paused scene's time keeps
+ * running and its first frame after a resume would jump ahead by the whole
+ * pause. The returned function puts the clock back to the held time, and
+ * clears `lastTime` so three's next tick adds nothing: that loop stops while
+ * the tab is hidden, and its stale `lastTime` would otherwise carry the
+ * whole hidden gap. Call it before every frame the paused scene draws and
+ * once as it resumes. It can run any number of times. No-ops safely if
+ * three's internal shape ever changes.
+ */
+export function holdRendererClock(renderer: WebGPURenderer): () => void {
+  const nodeFrame = getNodeFrame(renderer);
+  const heldTime = nodeFrame?.time;
+
+  return () => {
+    if (!nodeFrame || heldTime === undefined) return;
+    nodeFrame.time = heldTime;
+    nodeFrame.deltaTime = 0;
+    nodeFrame.lastTime = undefined;
+  };
+}

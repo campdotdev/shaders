@@ -3,7 +3,7 @@ import type { QuadMesh } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type * as ShadersModule from '../../../engine.js';
-import { createRenderer, type CursorInput } from '../../../engine.js';
+import { createRenderer, type CursorInput, type GpuRenderer } from '../../../engine.js';
 import { ShadersError } from '../../errors/shaders-error.js';
 import { useShaderContext } from '../../hooks/use-shader-context/use-shader-context.js';
 import { PosterContext } from '../shader-poster/poster-context.js';
@@ -274,5 +274,161 @@ describe('ShaderScene', () => {
     // this waits for the success path to fully settle.
     await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
     expect(onError).not.toHaveBeenCalled();
+  });
+  // ---------------------------------------------
+  // paused
+  // ---------------------------------------------
+
+  describe('paused', () => {
+    // A renderer whose three clock the test can read and move. three's own
+    // animation loop advances nodeFrame.time on every animation frame,
+    // rendering or not, so a test moves it by hand to stand for that loop
+    // running while the scene is paused. The stub records the time each
+    // frame renders at.
+    function rendererWithClock() {
+      const nodeFrame = { time: 5, deltaTime: 0 };
+      const timeAtRender: number[] = [];
+      const gpuRenderer = {
+        three: {
+          render: vi.fn(() => timeAtRender.push(nodeFrame.time)),
+          dispose: vi.fn(),
+          domElement: document.createElement('canvas'),
+          getPixelRatio: () => 1,
+          setSize: vi.fn(),
+          _nodes: { nodeFrame },
+        },
+        backend: 'webgl2' as const,
+        dispose: vi.fn(),
+        resize: vi.fn(),
+      } as unknown as GpuRenderer;
+
+      vi.mocked(createRenderer).mockResolvedValueOnce(gpuRenderer);
+
+      return { gpuRenderer, nodeFrame, timeAtRender };
+    }
+
+    function captureFrames(): FrameRequestCallback[] {
+      const frames: FrameRequestCallback[] = [];
+
+      vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+        frames.push(callback);
+
+        return frames.length;
+      });
+
+      return frames;
+    }
+
+    const runFrames = (frames: FrameRequestCallback[], now: number) => {
+      for (const frame of frames.splice(0)) frame(now);
+    };
+
+    it('draws no frames while paused, and draws again once unpaused', async () => {
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      const { getByTestId, rerender } = render(
+        <ShaderScene paused>
+          <div data-testid="child" />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, 16);
+      expect(gpuRenderer.three.render).not.toHaveBeenCalled();
+
+      rerender(
+        <ShaderScene paused={false}>
+          <div data-testid="child" />
+        </ShaderScene>,
+      );
+      await waitFor(() => expect(frames.length).toBeGreaterThan(0));
+      runFrames(frames, 32);
+      expect(gpuRenderer.three.render).toHaveBeenCalled();
+    });
+
+    // A frozen frame stays frozen: the first frame after a resume adds none
+    // of the paused time to the renderer clock, so the animation carries on
+    // from the frame it stopped on.
+    it('leaves the paused time out of the renderer clock on resume', async () => {
+      const frames = captureFrames();
+      const { nodeFrame, timeAtRender } = rendererWithClock();
+      const { getByTestId, rerender } = render(
+        <ShaderScene>
+          <div data-testid="child" />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, 16);
+      expect(timeAtRender).toEqual([5]);
+
+      rerender(
+        <ShaderScene paused>
+          <div data-testid="child" />
+        </ShaderScene>,
+      );
+      nodeFrame.time = 50;
+      rerender(
+        <ShaderScene paused={false}>
+          <div data-testid="child" />
+        </ShaderScene>,
+      );
+      await waitFor(() => expect(frames.length).toBeGreaterThan(0));
+      runFrames(frames, 5000);
+
+      expect(timeAtRender).toEqual([5, 5]);
+    });
+
+    // A resize clears the canvas, so a paused scene draws its frozen frame
+    // again at the new size, without letting any time pass. A scene paused
+    // from its mount has no frame to redraw, and ResizeObserver fires once as
+    // it starts observing, so that first callback must draw nothing.
+    it('redraws the frozen frame when the canvas resizes', async () => {
+      const resizeCallbacks: ResizeObserverCallback[] = [];
+      const fireResize = () => {
+        for (const callback of resizeCallbacks) callback([], {} as ResizeObserver);
+      };
+
+      vi.stubGlobal(
+        'ResizeObserver',
+        class {
+          constructor(callback: ResizeObserverCallback) {
+            resizeCallbacks.push(callback);
+          }
+          observe() {}
+          disconnect() {}
+        },
+      );
+      const frames = captureFrames();
+      const { gpuRenderer, nodeFrame, timeAtRender } = rendererWithClock();
+      const { getByTestId, rerender } = render(
+        <ShaderScene paused>
+          <div data-testid="child" />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      fireResize();
+      expect(gpuRenderer.resize).toHaveBeenCalled();
+      expect(gpuRenderer.three.render).not.toHaveBeenCalled();
+
+      rerender(
+        <ShaderScene paused={false}>
+          <div data-testid="child" />
+        </ShaderScene>,
+      );
+      await waitFor(() => expect(frames.length).toBeGreaterThan(0));
+      runFrames(frames, 16);
+      rerender(
+        <ShaderScene paused>
+          <div data-testid="child" />
+        </ShaderScene>,
+      );
+      timeAtRender.length = 0;
+      nodeFrame.time = 50;
+      fireResize();
+
+      expect(timeAtRender).toEqual([5]);
+    });
   });
 });
