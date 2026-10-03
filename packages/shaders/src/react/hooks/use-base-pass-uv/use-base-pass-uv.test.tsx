@@ -29,6 +29,7 @@ function makeCtx(): {
     getCursorInput: () => {
       throw new Error('not used by this hook');
     },
+    canvasSize: { get: () => [0, 0, 1] as const, on: () => () => undefined },
   };
 
   return { ctx, registered };

@@ -4,10 +4,10 @@
 // the shaders that keep circles round and grids square on a wide canvas.
 // Every aspect-corrected component reads it from here rather than wiring
 // useResize to a uniform by hand, because that wiring hides a
-// render-on-demand trap: the resize signal is a stub on a component's first
-// effect pass and materializes one render later, by which time a scene
-// hinted static has drawn its last frame at the 16:9 fallback. A bare
-// uniform write then repaints nothing, so the fallback stays on screen. The
+// render-on-demand trap: on a scene hinted static, a bare uniform write
+// repaints nothing. useResize once returned a stub on a component's first
+// effect pass, so the scene drew its last frame at the 16:9 fallback, and
+// the real ratio, written a render later, never reached the screen. The
 // Components banner, a 12:1 canvas rendered as 16:9, is how it was found.
 import { useEffect, useMemo } from 'react';
 
