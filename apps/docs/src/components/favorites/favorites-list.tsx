@@ -33,7 +33,11 @@ type Engagement = 'pointer' | 'focus';
 // poster, and coming back resumes it at once. Each mounted scene holds a
 // renderer, so the page can hold one per favorite, but a paused one does no
 // GPU work. Only the most recently engaged favorite plays, and only while
-// the pointer or keyboard focus is still on it.
+// the pointer or keyboard focus is still on it. When that one is let go, a
+// favorite the other input is still on plays instead.
+//
+// Engagement is tracked before the gate opens, so a card hovered or focused
+// while the WebGPU adapter is still on its way goes live once it arrives.
 export function FavoritesList({
   favorites,
   labelledBy,
@@ -47,13 +51,13 @@ export function FavoritesList({
   const [lastEngagedSlug, setLastEngagedSlug] = useState<FavoriteSlug | null>(null);
   // The favorite under the pointer and the favorite with keyboard focus, each
   // null when there is none. The last engaged favorite plays while either is
-  // still on it.
+  // still on it, and otherwise whichever one is still engaged.
   const [hoveredSlug, setHoveredSlug] = useState<FavoriteSlug | null>(null);
   const [focusedSlug, setFocusedSlug] = useState<FavoriteSlug | null>(null);
   const playingSlug =
     lastEngagedSlug !== null && (hoveredSlug === lastEngagedSlug || focusedSlug === lastEngagedSlug)
       ? lastEngagedSlug
-      : null;
+      : (hoveredSlug ?? focusedSlug);
 
   usePreloadScenesNearView(listRef, canGoLive);
 
@@ -75,10 +79,8 @@ export function FavoritesList({
         <li key={favorite.url}>
           <FavoriteCard
             favorite={favorite}
-            onEngagedChange={
-              canGoLive
-                ? (engagement, engaged) => setEngaged(favorite.slug, engagement, engaged)
-                : undefined
+            onEngagedChange={(engagement, engaged) =>
+              setEngaged(favorite.slug, engagement, engaged)
             }
             playing={favorite.slug === playingSlug}
             sceneMounted={canGoLive && mountedSlugs.includes(favorite.slug)}

@@ -203,6 +203,21 @@ test('one favorite plays at a time, and the ones before it stay paused, not post
   expect(await readMostPlaying()).toBe(1);
 });
 
+test('when the playing favorite loses focus, the one under the pointer plays', async ({ page }) => {
+  await open(page);
+
+  const [hovered, focused] = await favorites(page).all();
+
+  await hovered!.hover();
+  await focused!.focus();
+  await expect(scene(focused!)).not.toHaveAttribute('data-paused');
+  await expect(scene(hovered!)).toHaveAttribute('data-paused');
+
+  await focused!.blur();
+  await expect(scene(focused!)).toHaveAttribute('data-paused');
+  await expect(scene(hovered!)).not.toHaveAttribute('data-paused');
+});
+
 // ---------------------------------------------
 // Touch
 // ---------------------------------------------
@@ -231,5 +246,44 @@ test.describe('on a touch device', () => {
     // be slow to load on CI's software renderer (the "Open site chrome from a
     // static route" section of docs/development/visual-regression.md).
     await expect(page).toHaveURL('/components/simplex-noise', { timeout: 30_000 });
+  });
+});
+
+// A touch-screen laptop passes the hover gate, because its primary pointer
+// is the trackpad, so only the card's own checks keep a tap from going live.
+// Chromium's touch emulation fails the gate's query, so the spec answers it
+// for the page. The click that follows a tap is stopped before it navigates,
+// so the spec can watch the favorites after it. A mouse hover at the end
+// proves the gate was open all along.
+test.describe('on a touch-screen laptop', () => {
+  test.use({ hasTouch: true });
+
+  test('a tap never mounts a scene, and a mouse hover still does', async ({ page }) => {
+    await page.addInitScript(() => {
+      const matchMedia = window.matchMedia.bind(window);
+
+      window.matchMedia = (query) =>
+        matchMedia(query === '(hover: hover) and (pointer: fine)' ? 'all' : query);
+    });
+    await open(page);
+
+    expect(
+      await page.evaluate(() => matchMedia('(hover: hover) and (pointer: fine)').matches),
+    ).toBe(true);
+
+    const readMostCanvases = await trackMostMatching(page, 'canvas');
+    const favorite = favorites(page).first();
+
+    await page.evaluate(() =>
+      document.addEventListener('click', (event) => event.preventDefault(), { capture: true }),
+    );
+    await favorite.tap();
+    await expect(favorite).toBeFocused();
+    // As above, the time a desktop favorite takes to mount its canvas.
+    await page.waitForTimeout(1_000);
+    expect(await readMostCanvases()).toBe(0);
+
+    await favorite.hover();
+    await expect(favorite.locator('canvas')).toHaveCount(1);
   });
 });
