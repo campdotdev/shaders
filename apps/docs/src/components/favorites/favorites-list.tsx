@@ -47,7 +47,7 @@ export function FavoritesList({
 }) {
   const canGoLive = useCanGoLive();
   const listRef = useRef<HTMLUListElement>(null);
-  const [mountedSlugs, setMountedSlugs] = useState<readonly FavoriteSlug[]>([]);
+  const [mountedSlugs, setMountedSlugs] = useState<ReadonlySet<FavoriteSlug>>(() => new Set());
   const [lastEngagedSlug, setLastEngagedSlug] = useState<FavoriteSlug | null>(null);
   // The favorite under the pointer and the favorite with keyboard focus, each
   // null when there is none. The last engaged favorite plays while either is
@@ -66,7 +66,7 @@ export function FavoritesList({
 
     if (engaged) {
       setLastEngagedSlug(slug);
-      setMountedSlugs((current) => (current.includes(slug) ? current : [...current, slug]));
+      setMountedSlugs((current) => (current.has(slug) ? current : new Set(current).add(slug)));
       setSlug(slug);
     } else {
       setSlug((current) => (current === slug ? null : current));
@@ -83,7 +83,7 @@ export function FavoritesList({
               setEngaged(favorite.slug, engagement, engaged)
             }
             playing={favorite.slug === playingSlug}
-            sceneMounted={canGoLive && mountedSlugs.includes(favorite.slug)}
+            sceneMounted={canGoLive && mountedSlugs.has(favorite.slug)}
           />
         </li>
       ))}
