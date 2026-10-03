@@ -288,10 +288,11 @@ interface FrameRenderer {
   /** The callback the scheduler runs each frame. */
   render: () => void;
   /**
-   * Whether the loop has rendered a frame yet, which is what a paused scene
-   * redraws on a resize. A scene paused from its mount has none.
+   * Whether the loop has rendered a frame with content yet, which is what a
+   * paused scene redraws on a resize. A scene paused from its mount, or
+   * paused after only the empty frames before its child mounted, has none.
    */
-  hasRendered: () => boolean;
+  hasRenderedContent: () => boolean;
 }
 
 /**
@@ -309,10 +310,8 @@ function createFrameRenderer(
   onFirstContentFrame: () => void,
 ): FrameRenderer {
   let firstPaintSignaled = false;
-  let rendered = false;
 
   const render = () => {
-    rendered = true;
     const hasContent = scene.children.length > 0 || outputStage.hasOverlays();
 
     // On the frame that first has something to draw, rewind BOTH time
@@ -337,7 +336,7 @@ function createFrameRenderer(
     }
   };
 
-  return { render, hasRendered: () => rendered };
+  return { render, hasRenderedContent: () => firstPaintSignaled };
 }
 
 // ----------------------------------------------------------------------------
@@ -374,7 +373,7 @@ function holdClockWhilePaused(
 /**
  * Draws the frame a paused scene stopped on, at the held time, for the
  * canvas watcher to call after a resize clears the canvas. A scene paused
- * before the loop drew anything has no frame to draw.
+ * before the loop drew any content has no frame to draw.
  */
 function createStillDrawer(
   frameRenderer: FrameRenderer,
@@ -382,7 +381,7 @@ function createStillDrawer(
   outputStage: OutputStage,
 ): () => void {
   return () => {
-    if (!frameRenderer.hasRendered()) return;
+    if (!frameRenderer.hasRenderedContent()) return;
     pausedClock.restore();
     outputStage.render();
   };
