@@ -18,10 +18,11 @@ import { followAnimatable } from '../animatable-signal/follow-animatable.js';
 import { useShaderContext } from '../use-shader-context/use-shader-context.js';
 
 // Longest slice of time one tick may contribute, in seconds. The scheduler
-// reports real wall-clock deltas, so the first tick after a parked scene or
-// a hidden tab carries the whole gap — accumulating it would snap the
-// pattern forward by minutes at once, the exact jump this hook exists to
-// remove. Normal frames (16-33ms) never come near the cap.
+// reports real wall-clock deltas, and it drops the gap after a pause but not
+// after a parked scene wakes, so that first tick can carry the whole park —
+// accumulating it would snap the pattern forward by minutes at once, the
+// exact jump this hook exists to remove. Normal frames (16-33ms) never come
+// near the cap.
 const MAX_DELTA = 0.1;
 
 export function useAnimatableSpeed(

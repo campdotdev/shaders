@@ -29,14 +29,21 @@ const toPalette = (colors: readonly string[]): Palette => {
 export default function MeshGradientScene({
   params = INITIAL,
   children,
+  paused,
 }: {
   params?: Params;
   children?: ReactNode;
+  /**
+   * Freezes the scene on its current frame, passed to ShaderScene. A homepage
+   * favorite pauses it once the pointer and keyboard focus have both left
+   * its card.
+   */
+  paused?: boolean;
 } = {}) {
   const [paletteA, paletteB] = params.palettes;
 
   return (
-    <ShaderScene>
+    <ShaderScene paused={paused}>
       <MeshGradient
         amplitude={params.amplitude}
         colorSpace={params.colorSpace}

@@ -9,12 +9,19 @@ import { type DitherParams, INITIAL } from './params';
 export default function DitherScene({
   params = INITIAL,
   children,
+  paused,
 }: {
   params?: DitherParams;
   children?: ReactNode;
+  /**
+   * Freezes the scene on its current frame, passed to ShaderScene. A homepage
+   * favorite pauses it once the pointer and keyboard focus have both left
+   * its card.
+   */
+  paused?: boolean;
 } = {}) {
   return (
-    <ShaderScene>
+    <ShaderScene paused={paused}>
       <MeshGradient />
       <Dither
         levels={params.levels}

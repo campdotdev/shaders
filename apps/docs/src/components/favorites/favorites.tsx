@@ -1,22 +1,18 @@
 /**
  * The homepage's favorites, after the Figma mock: the section heading in the
  * grid's first cell, then one card per favorite, its poster linking to its
- * page, in the order content/homepage.ts lists them. The hover that brings a
- * favorite's scene to life and cuts in its card tab comes in later tickets.
+ * page, in the order content/homepage.ts lists them. The cards and the hover
+ * that brings a favorite's scene to life are in favorites-list.tsx. The card
+ * tab that cuts in on hover comes in a later ticket.
  */
-import Image from 'next/image';
-import Link from 'next/link';
 import { useId } from 'react';
 
-import type { ComponentCatalogRecord } from '@/content/catalog';
+import type { Favorite } from '@/content/homepage';
 
+import { FavoritesList } from './favorites-list';
 import styles from './favorites.module.css';
 
-// The width each poster renders at, per the grid's columns in
-// favorites.module.css, so next/image picks a file no larger than it needs.
-const POSTER_SIZES = '(width < 40rem) 100vw, (width < 64rem) 50vw, 25vw';
-
-export function Favorites({ records }: { records: ComponentCatalogRecord[] }) {
+export function Favorites({ favorites }: { favorites: Favorite[] }) {
   const headingId = useId();
 
   return (
@@ -27,27 +23,8 @@ export function Favorites({ records }: { records: ComponentCatalogRecord[] }) {
         <h2 className={styles.heading} id={headingId}>
           Start with one of our favorites
         </h2>
-        <ul aria-labelledby={headingId} className={styles.list}>
-          {records.map((record) => (
-            <li key={record.url}>
-              <FavoriteCard record={record} />
-            </li>
-          ))}
-        </ul>
+        <FavoritesList favorites={favorites} labelledBy={headingId} />
       </div>
     </section>
-  );
-}
-
-// The whole card is the link, and the poster's alt is the component's label,
-// so the link's name is the label and a screen reader says "Simplex Noise,
-// link".
-function FavoriteCard({ record }: { record: ComponentCatalogRecord }) {
-  return (
-    <Link className={styles.card} href={record.url}>
-      <span className={styles.poster}>
-        <Image alt={record.label} fill sizes={POSTER_SIZES} src={record.poster} />
-      </span>
-    </Link>
   );
 }

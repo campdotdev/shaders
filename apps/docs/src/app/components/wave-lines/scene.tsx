@@ -9,9 +9,16 @@ import { INITIAL, type Params } from './params';
 export default function WaveLinesScene({
   params = INITIAL,
   children,
+  paused,
 }: {
   params?: Params;
   children?: ReactNode;
+  /**
+   * Freezes the scene on its current frame, passed to ShaderScene. A homepage
+   * favorite pauses it once the pointer and keyboard focus have both left
+   * its card.
+   */
+  paused?: boolean;
 } = {}) {
   const lines: WaveLine[] = params.lines.map((line) => {
     const [firstColor] = line.color;
@@ -24,7 +31,7 @@ export default function WaveLinesScene({
   });
 
   return (
-    <ShaderScene>
+    <ShaderScene paused={paused}>
       <WaveLines
         amplitude={params.amplitude}
         baseline={params.baseline}

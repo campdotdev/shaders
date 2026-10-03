@@ -40,6 +40,10 @@ _Avoid_: Idle mode, frameloop demand, static scene
 A component's say in whether its scene may park. A component votes idle while nothing it draws can change, votes animated while anything can, or casts no vote; a scene parks only when at least one component votes idle and none votes animated.
 _Avoid_: Static hint, render-on-demand vote, static vote
 
+**Paused scene**:
+A scene frozen on its current frame, by its app through `paused`, or because the tab is hidden or the canvas is off screen. Time stops while a scene is paused, so it resumes on the frame it stopped on. A parked scene stops drawing because nothing it draws can change. A paused scene stops whatever its components vote.
+_Avoid_: Frozen scene, stopped scene
+
 ### Pattern components
 
 **Mark**:

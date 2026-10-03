@@ -69,6 +69,40 @@ describe('createPauseWatcher', () => {
     expect(resume).toHaveBeenCalledTimes(1);
   });
 
+  it('pauses a visible scene the app pauses, and resumes it when the app lets go', () => {
+    const scheduler = new FrameScheduler();
+    const pause = vi.spyOn(scheduler, 'pause');
+    const resume = vi.spyOn(scheduler, 'resume');
+    const watcher = createPauseWatcher(document.createElement('canvas'), scheduler);
+
+    pause.mockClear();
+    resume.mockClear();
+
+    watcher.setPaused(true);
+    expect(pause).toHaveBeenCalledTimes(1);
+    expect(resume).not.toHaveBeenCalled();
+
+    // A visibility vote while paused must not wake the scene.
+    fireIntersection(true);
+    expect(resume).not.toHaveBeenCalled();
+
+    watcher.setPaused(false);
+    expect(resume).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps an off-screen scene paused when the app lets go', () => {
+    const scheduler = new FrameScheduler();
+    const resume = vi.spyOn(scheduler, 'resume');
+    const watcher = createPauseWatcher(document.createElement('canvas'), scheduler);
+
+    watcher.setPaused(true);
+    fireIntersection(false);
+    resume.mockClear();
+
+    watcher.setPaused(false);
+    expect(resume).not.toHaveBeenCalled();
+  });
+
   it('releases the observer on dispose', () => {
     const scheduler = new FrameScheduler();
     const watcher = createPauseWatcher(document.createElement('canvas'), scheduler);

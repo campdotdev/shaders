@@ -1,7 +1,7 @@
 import type { WebGPURenderer } from 'three/webgpu';
 import { describe, expect, it } from 'vitest';
 
-import { resetRendererClock } from './reset-clock.js';
+import { holdRendererClock, resetRendererClock } from './reset-clock.js';
 
 // Build a minimal object shaped like the internal slice of WebGPURenderer the
 // util reaches into. Cast through unknown because the real `_nodes`/`nodeFrame`
@@ -33,5 +33,50 @@ describe('resetRendererClock', () => {
 
   it('no-ops when nodeFrame is not an object', () => {
     expect(() => resetRendererClock(makeRenderer(42))).not.toThrow();
+  });
+});
+
+describe('holdRendererClock', () => {
+  // three's own animation loop advances nodeFrame.time on every animation
+  // frame, rendering or not, so a paused scene's clock keeps running. The
+  // hold puts it back to the time it was taken at.
+  it('sets time back to where it was held', () => {
+    const nodeFrame = { time: 12.5, deltaTime: 0.016, lastTime: 12_484 };
+    const restore = holdRendererClock(makeRenderer(nodeFrame));
+
+    nodeFrame.time = 20;
+    nodeFrame.deltaTime = 0.016;
+    restore();
+
+    expect(nodeFrame.time).toBe(12.5);
+    expect(nodeFrame.deltaTime).toBe(0);
+  });
+
+  // three's loop stops while the tab is hidden, so its lastTime goes stale,
+  // and its next tick would add the whole hidden gap. Clearing lastTime
+  // makes that tick measure from itself.
+  it('clears lastTime, so three adds no time on its next tick', () => {
+    const nodeFrame = { time: 12.5, deltaTime: 0.016, lastTime: 12_484 };
+    const restore = holdRendererClock(makeRenderer(nodeFrame));
+
+    restore();
+
+    expect(nodeFrame.lastTime).toBeUndefined();
+  });
+
+  it('restores to the same time every time it runs', () => {
+    const nodeFrame = { time: 3 };
+    const restore = holdRendererClock(makeRenderer(nodeFrame));
+
+    nodeFrame.time = 4;
+    restore();
+    nodeFrame.time = 5;
+    restore();
+
+    expect(nodeFrame.time).toBe(3);
+  });
+
+  it('no-ops when nodeFrame is missing', () => {
+    expect(() => holdRendererClock(makeRenderer(undefined))()).not.toThrow();
   });
 });

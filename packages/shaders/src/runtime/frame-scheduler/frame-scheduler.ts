@@ -10,7 +10,7 @@
 export interface SchedulerTick {
   /** Seconds since the previous tick. */
   delta: number;
-  /** Seconds since the scheduler's first tick. */
+  /** Seconds the scheduler has run since its first tick, not counting pauses. */
   elapsed: number;
   /** The rAF timestamp, in milliseconds. */
   now: number;
@@ -21,12 +21,15 @@ export type SchedulerClient = (tick: SchedulerTick) => void;
 export class FrameScheduler {
   private readonly clients = new Set<SchedulerClient>();
   private readonly phaseResetListeners = new Set<() => void>();
+  private readonly pauseListeners = new Set<(paused: boolean) => void>();
   private rafId: number | null = null;
   private running = false;
   private paused = false;
   private flushPending = false;
   private startedAt = 0;
   private lastTickAt = 0;
+  // Set by a resume() that ends a pause, so the next tick can drop the gap.
+  private resumedFromPause = false;
 
   // Reference-counted idle voting. The scheduler is idle only when at least
   // one component has voted idle AND no component has voted animated. This
@@ -40,10 +43,13 @@ export class FrameScheduler {
     return this.idleVotes > 0 && this.animatedVotes === 0;
   }
 
-  /** Activate the scheduler. The rAF loop starts on the first client added. */
+  /**
+   * Activate the scheduler. The rAF loop starts on the first client added.
+   * A start() while paused also resumes, the way resume() does.
+   */
   start(): void {
     this.running = true;
-    this.paused = false;
+    this.resume();
     this.maybeQueue();
   }
 
@@ -53,15 +59,40 @@ export class FrameScheduler {
     this.cancel();
   }
 
-  /** Temporarily skip ticks without losing client registrations. */
+  /**
+   * Temporarily skip ticks without losing client registrations. Pause
+   * listeners hear of it. A pause() while already paused changes nothing.
+   */
   pause(): void {
+    if (this.paused) return;
     this.paused = true;
+    for (const listener of this.pauseListeners) listener(true);
   }
 
-  /** Resume after pause(). */
+  /**
+   * Resume after pause(). The time spent paused never reaches the clients,
+   * and pause listeners hear of it. A resume() while not paused, which the
+   * pause watcher sends on every visibility change, changes nothing.
+   */
   resume(): void {
+    if (!this.paused) return;
     this.paused = false;
+    this.resumedFromPause = true;
+    for (const listener of this.pauseListeners) listener(false);
     if (this.running) this.maybeQueue();
+  }
+
+  /**
+   * Register a callback for when the scheduler pauses (true) or resumes
+   * (false). Returns the unsubscribe. A clock the scheduler does not own,
+   * such as the renderer's, listens here to hold its time while paused.
+   */
+  onPauseChange(listener: (paused: boolean) => void): () => void {
+    this.pauseListeners.add(listener);
+
+    return () => {
+      this.pauseListeners.delete(listener);
+    };
   }
 
   /** Register a client to be called every frame. */
@@ -80,6 +111,7 @@ export class FrameScheduler {
     this.stop();
     this.clients.clear();
     this.phaseResetListeners.clear();
+    this.pauseListeners.clear();
   }
 
   /**
@@ -201,6 +233,13 @@ export class FrameScheduler {
 
     if (this.startedAt === 0) {
       this.startedAt = now;
+      this.lastTickAt = now;
+    }
+    // The first tick after a pause: move both origins forward by the gap,
+    // so delta is 0 and elapsed picks up where the last tick left it.
+    if (this.resumedFromPause) {
+      this.resumedFromPause = false;
+      this.startedAt += now - this.lastTickAt;
       this.lastTickAt = now;
     }
     const delta = (now - this.lastTickAt) / 1000;

@@ -2,7 +2,8 @@
  * The homepage, after the Figma mock: the heading, description, and Get
  * started button, then the live Aurora hero, the favorites grid, and the
  * footer, which no other page renders. With no sidebar or section banner, it
- * renders straight into the root layout. Its motion comes in later tickets.
+ * renders straight into the root layout. The rest of its motion comes in
+ * later tickets.
  */
 import Link from 'next/link';
 
@@ -42,7 +43,7 @@ export default async function Home() {
           <HomeHero />
         </div>
       </section>
-      <Favorites records={favorites} />
+      <Favorites favorites={favorites} />
       <HomeFooter />
     </>
   );

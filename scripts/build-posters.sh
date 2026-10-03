@@ -122,6 +122,39 @@ $CLI \
   --height 696 \
   --background "#0b0f1a"
 
+# The homepage favorites render every live scene at the card window's size
+# at the site container's full width, 376 by 275 (SCENE_SIZE in
+# apps/docs/src/components/favorites/favorites-list.tsx), and scale it with
+# the card. Each favorite's card poster is captured at that size, over the
+# ground its scene sits on there, so the poster frames and crops the scene
+# the way the live canvas does. A 3:2 poster cropped into the card drifted
+# from shaders that stretch to the canvas, such as Simplex Noise, and from
+# ones that size their cells in CSS pixels, such as Dither and LED Wall.
+# Entries are name:format[:background]; the backgrounds are the demos'
+# backdrops, and the page color for LED Wall's gaps.
+for pair in \
+  "simplex-noise:png" \
+  "mesh-gradient:jpg" \
+  "wave-lines:jpg:#0a0a14" \
+  "voronoi:jpg" \
+  "dither:jpg" \
+  "god-rays:jpg:linear-gradient(to top, #131b31, #0b0f1a)" \
+  "led-wall:jpg:#0b0f0d"; do
+  IFS=':' read -r name format background <<< "$pair"
+  echo "==> ${name}-card ($format, 376x275)"
+  card_args=(
+    --source "${COMPONENTS_DIR}/${name}/scene.tsx"
+    --output "${OUT_DIR}/${name}-card.${format}"
+    --format "$format"
+    --width 376
+    --height 275
+  )
+  if [ -n "$background" ]; then
+    card_args+=(--background "$background")
+  fi
+  $CLI "${card_args[@]}"
+done
+
 # The Components banner is captured from its own scene at the mock's width,
 # 1728 by the 200px header block, and shown at that size, center-cropped, by
 # banner-shader.tsx. Past 864px either side of center the glow has already

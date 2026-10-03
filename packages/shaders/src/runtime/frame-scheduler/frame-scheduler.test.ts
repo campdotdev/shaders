@@ -106,6 +106,88 @@ describe('FrameScheduler', () => {
     expect(client).toHaveBeenCalledTimes(1);
   });
 
+  // A paused scene is frozen, so the time it spends paused must not reach
+  // the clients: the first tick after a resume carries no delta, and elapsed
+  // counts only the time the scheduler ran.
+  it('leaves the paused gap out of delta and elapsed', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(1000);
+    tickFrame(1016);
+
+    scheduler.pause();
+    scheduler.resume();
+    tickFrame(9000);
+    expect(client).toHaveBeenLastCalledWith(expect.objectContaining({ delta: 0, elapsed: 0.016 }));
+
+    tickFrame(9016);
+    expect(client).toHaveBeenLastCalledWith(
+      expect.objectContaining({ delta: 0.016, elapsed: 0.032 }),
+    );
+  });
+
+  // The pause watcher calls resume() on every visibility change, paused or
+  // not, and a scheduler that is already running must keep its timing.
+  it('keeps its timing when resume() runs while not paused', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(1000);
+    scheduler.resume();
+    tickFrame(1016);
+
+    expect(client).toHaveBeenLastCalledWith(expect.objectContaining({ delta: 0.016 }));
+  });
+
+  it('tells pause listeners when it pauses and resumes, once per change', () => {
+    const scheduler = new FrameScheduler();
+    const listener = vi.fn();
+    const unsubscribe = scheduler.onPauseChange(listener);
+
+    scheduler.start();
+    scheduler.resume();
+    expect(listener).not.toHaveBeenCalled();
+
+    scheduler.pause();
+    scheduler.pause();
+    expect(listener.mock.calls).toEqual([[true]]);
+
+    scheduler.resume();
+    scheduler.resume();
+    expect(listener.mock.calls).toEqual([[true], [false]]);
+
+    unsubscribe();
+    scheduler.pause();
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  // A start() that ends a pause is a resume too, so a clock that holds its
+  // time while paused hears of it, and the paused gap stays out of the tick.
+  it('resumes, telling pause listeners, when start() runs while paused', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+    const listener = vi.fn();
+
+    scheduler.onPauseChange(listener);
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(1000);
+    tickFrame(1016);
+
+    scheduler.pause();
+    scheduler.stop();
+    scheduler.start();
+    tickFrame(9000);
+
+    expect(listener.mock.calls).toEqual([[true], [false]]);
+    expect(client).toHaveBeenLastCalledWith(expect.objectContaining({ delta: 0, elapsed: 0.016 }));
+  });
+
   it('does not start the rAF loop when no clients are registered', () => {
     const scheduler = new FrameScheduler();
 
