@@ -128,14 +128,12 @@
 
 /* ---- Panel ---- */
 
+/* Only the position: the hairline, the scroll, and the edge fades come from
+   the demo's own ControlsScroller, capped by the max-height the stage sets. */
 .panel {
   position: absolute;
   top: 0;
   left: 0;
-  overflow: auto;
-  border: var(--border-width-1) solid var(--white-a5);
-  border-radius: var(--radius-xl);
-  background: var(--bg-muted);
 }
 
 /* ---- Switcher ---- */

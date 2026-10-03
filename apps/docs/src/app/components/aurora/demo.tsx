@@ -4,10 +4,13 @@
  * Aurora demo island: the interactive slice of the Aurora page — control
  * store, shader preview, and control panel. The shared components/[slug]
  * template renders this between its static header and prose sections, so
- * only this slice ships as client JavaScript.
+ * only this slice ships as client JavaScript. The store provider, the live
+ * scene, and the controls are exported on their own too, for a second host
+ * that lays out the demo itself with a store of its own: the hero-to-demo
+ * prototype route today, and the homepage hero once it turns into this demo.
  */
 import dynamic from 'next/dynamic';
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
 
 import {
   COLOR_SPACE_OPTIONS,
@@ -40,17 +43,49 @@ import {
 
 const AuroraScene = dynamic(() => import('./scene'), { ssr: false });
 
-function AuroraDemo() {
+/**
+ * A fresh control store at Aurora's defaults, created when the provider
+ * mounts, so every host starts from INITIAL and shares no state with another.
+ */
+export function AuroraControlsProvider({ children }: { children: ReactNode }) {
+  const store = useMemo(() => createControlStore<AuroraParams>(INITIAL), []);
+
+  return <ControlsProvider store={store}>{children}</ControlsProvider>;
+}
+
+/**
+ * Aurora's scene with the nearest store's live params. This is the demo's one
+ * whole-object subscriber, kept in a component with nothing under it but the
+ * scene, so a slider drag re-renders only the scene, not the host and its
+ * unmemoized controls (the demo-store gotcha in docs/agents/docs-site.md).
+ * It fills its parent, so the host sizes the box.
+ */
+export function LiveAuroraScene({
+  maxDPR,
+  children,
+}: {
+  /** Cap on the canvas's pixel ratio, passed to ShaderScene. Leave unset for ShaderScene's default of 2. */
+  maxDPR?: number;
+  children?: ReactNode;
+}) {
   const params = useSnapshot<AuroraParams>();
 
+  return (
+    <AuroraScene maxDPR={maxDPR} params={params}>
+      {children}
+    </AuroraScene>
+  );
+}
+
+function AuroraDemo() {
   return (
     <DemoPoster
       alt="Aurora shader preview: green and teal light curtains with a blue veil and pink fringe over a dark backdrop"
       src={POSTER_SRC}
     >
-      <AuroraScene params={params}>
+      <LiveAuroraScene>
         <VisualTestPause />
-      </AuroraScene>
+      </LiveAuroraScene>
     </DemoPoster>
   );
 }
@@ -99,15 +134,13 @@ export function AuroraControls() {
 }
 
 export function AuroraIsland() {
-  const store = useMemo(() => createControlStore<AuroraParams>(INITIAL), []);
-
   return (
-    <ControlsProvider store={store}>
+    <AuroraControlsProvider>
       <DemoLayout controls={<AuroraControls />}>
         <div className={styles.demoBackdrop} data-shader-demo>
           <AuroraDemo />
         </div>
       </DemoLayout>
-    </ControlsProvider>
+    </AuroraControlsProvider>
   );
 }

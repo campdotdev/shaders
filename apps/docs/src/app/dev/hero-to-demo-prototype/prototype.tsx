@@ -8,7 +8,6 @@
  * changing box, and its readouts report frame rate, renderer resizes, and
  * whether the stacked end state fits the pin. Throwaway: see page.dev.tsx.
  */
-import dynamic from 'next/dynamic';
 import {
   type RefObject,
   useCallback,
@@ -27,14 +26,15 @@ import {
   useScroll,
 } from 'motion/react';
 
-import { AuroraControls } from '@/app/components/aurora/demo';
+import {
+  AuroraControls,
+  AuroraControlsProvider,
+  LiveAuroraScene,
+} from '@/app/components/aurora/demo';
 import auroraStyles from '@/app/components/aurora/demo.module.css';
-import { type AuroraParams, INITIAL } from '@/app/components/aurora/params';
-import { ControlsProvider, createControlStore, useSnapshot } from '@/components/controls';
+import { ControlsScroller } from '@/components/controls';
 
 import styles from './prototype.module.css';
-
-const AuroraScene = dynamic(() => import('@/app/components/aurora/scene'), { ssr: false });
 
 // ---- Options the switcher sets
 
@@ -264,12 +264,10 @@ function revealMask(edge: number, panelWidth: number, remaining: number) {
 // ---- The page
 
 export function HeroToDemoPrototype() {
-  const store = useMemo(() => createControlStore<AuroraParams>(INITIAL), []);
-
   return (
-    <ControlsProvider store={store}>
+    <AuroraControlsProvider>
       <Prototype />
-    </ControlsProvider>
+    </AuroraControlsProvider>
   );
 }
 
@@ -401,13 +399,15 @@ function Stage({
           className={styles.panel}
           style={{
             width: layout.panel.width,
-            height: layout.panel.height,
+            maxHeight: layout.panel.height,
             x: panelX,
             y: panelY,
             maskImage: panelMask,
           }}
         >
-          <AuroraControls />
+          <ControlsScroller>
+            <AuroraControls />
+          </ControlsScroller>
         </motion.div>
       )}
     </div>
@@ -467,15 +467,6 @@ function useScrub(layout: Layout | null, scrollYProgress: MotionValue<number>) {
   useLayoutEffect(() => scrubTo(scrollYProgress.get()), [scrubTo, scrollYProgress]);
 
   return { frameX, frameWidth, frameHeight, frameInset, frameRadius, panelX, panelY, panelMask };
-}
-
-// The scene with the panel's live params. The params subscription lives in
-// this leaf so a slider drag re-renders only the scene, not the page and
-// its unmemoized controls (the demo-store gotcha in docs/agents/docs-site.md).
-function LiveAuroraScene({ maxDPR }: { maxDPR: 1 | 2 }) {
-  const params = useSnapshot<AuroraParams>();
-
-  return <AuroraScene maxDPR={maxDPR} params={params} />;
 }
 
 // ---- Measuring the pin
