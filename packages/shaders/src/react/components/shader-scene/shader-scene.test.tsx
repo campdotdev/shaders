@@ -429,6 +429,11 @@ describe('ShaderScene', () => {
       fireResize();
 
       expect(timeAtRender).toEqual([5]);
+
+      // The children's resize observers run after the scene's, so the frame
+      // is drawn once more on the next frame, with their uniforms current.
+      runFrames(frames, 32);
+      expect(timeAtRender).toEqual([5, 5]);
     });
   });
 });

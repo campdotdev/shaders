@@ -423,10 +423,21 @@ function watchCanvas(
   // undersized target — compressing every shader's output. ResizeObserver
   // fires once on observe() and on every subsequent box change.
   //
-  // A paused scene redraws its frozen frame at the new size.
+  // A paused scene redraws its frozen frame at the new size, once straight
+  // away, so the cleared canvas never shows, and once more on the next
+  // frame. ResizeObserver calls observers in the order they were created,
+  // and this one comes before the children's useResize, so the first draw
+  // still has the old aspect and size uniforms. By the next frame, they are
+  // current.
+  let redrawFrame: number | null = null;
   const resizeObserver = new ResizeObserver(() => {
     renderer.resize();
-    if (pausedByProp) drawStill();
+    if (!pausedByProp) return;
+    drawStill();
+    redrawFrame ??= requestAnimationFrame(() => {
+      redrawFrame = null;
+      if (pausedByProp) drawStill();
+    });
   });
 
   resizeObserver.observe(canvas);
@@ -439,6 +450,7 @@ function watchCanvas(
     stop() {
       pauseWatcher.dispose();
       resizeObserver.disconnect();
+      if (redrawFrame !== null) cancelAnimationFrame(redrawFrame);
     },
   };
 }
