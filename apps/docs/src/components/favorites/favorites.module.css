@@ -89,9 +89,9 @@
   border-radius: var(--radius-xl);
 }
 
-/* The window is about 4:3, and the posters are wider: 3:2 for every
-   favorite, from scripts/build-posters.sh. The poster covers the window and
-   its sides are cropped. */
+/* Each card poster is captured at the scene's own size (SCENE_SIZE in
+   favorites-list.tsx), so the poster and the scene cover the window the
+   same way and crop the same edges. */
 .poster {
   object-fit: cover;
 }

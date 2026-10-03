@@ -189,7 +189,7 @@ function LiveScene({ slug, paused }: { slug: FavoriteSlug; paused: boolean }) {
 
 // The card window's size at the site container's full width, in CSS pixels.
 // Every favorite renders at this size, and scripts/build-posters.sh captures
-// the card posters of Dither and LED Wall at it.
+// every favorite's card poster at it.
 const SCENE_SIZE = { width: 376, height: 275 };
 
 /**

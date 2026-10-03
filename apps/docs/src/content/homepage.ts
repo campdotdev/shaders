@@ -21,18 +21,25 @@ const FAVORITES = [
 /** A favorite's slug. The live scenes in components/favorites are keyed by it. */
 export type FavoriteSlug = (typeof FAVORITES)[number];
 
-// Card posters for the favorites whose demo sizes its pattern in CSS pixels.
-// scripts/build-posters.sh captures each at the live scene's own size, so the
-// poster scales with the card the way the scene does. The rest show their
-// component's poster.
-const CARD_POSTERS: Partial<Record<FavoriteSlug, string>> = {
+// Each favorite's card poster: its live scene's first frame, captured by
+// scripts/build-posters.sh at the size the favorites render every scene, so
+// the poster lines up with the scene that replaces it. A complete record, so
+// a favorite with no card poster fails the type check.
+const CARD_POSTERS: Record<FavoriteSlug, string> = {
+  'simplex-noise': '/posters/simplex-noise-card.png',
+  'mesh-gradient': '/posters/mesh-gradient-card.jpg',
+  'wave-lines': '/posters/wave-lines-card.jpg',
+  voronoi: '/posters/voronoi-card.jpg',
   dither: '/posters/dither-card.jpg',
+  'god-rays': '/posters/god-rays-card.jpg',
   'led-wall': '/posters/led-wall-card.jpg',
 };
 
 /** A favorite's catalog record, with the slug that picks its live scene. */
 export interface Favorite extends ComponentCatalogRecord {
   slug: FavoriteSlug;
+  /** The URL of the favorite's card poster, from CARD_POSTERS. */
+  poster: string;
 }
 
 /** The favorites' catalog records, in the order FAVORITES lists them. */
@@ -46,6 +53,6 @@ export async function getFavorites(): Promise<Favorite[]> {
     // URLs have drifted apart.
     if (!record) throw new Error(`Favorite ${slug} has no catalog record.`);
 
-    return { ...record, slug, poster: CARD_POSTERS[slug] ?? record.poster };
+    return { ...record, slug, poster: CARD_POSTERS[slug] };
   });
 }

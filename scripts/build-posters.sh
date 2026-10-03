@@ -124,12 +124,22 @@ $CLI \
 
 # The homepage favorites render every live scene at the card window's size
 # at the site container's full width, 376 by 275 (SCENE_SIZE in
-# apps/docs/src/components/favorites/favorites-list.tsx), and scale it down
-# with the card. Dither and LED Wall size their cells in CSS pixels, so their
-# 3:2 posters, shrunk into a card, showed cells half the live size. Their card
-# posters are captured at the scene's own size, so poster and scene scale
-# together.
-for pair in "dither:jpg" "led-wall:jpg:#0b0f0d"; do
+# apps/docs/src/components/favorites/favorites-list.tsx), and scale it with
+# the card. Each favorite's card poster is captured at that size, over the
+# ground its scene sits on there, so the poster frames and crops the scene
+# the way the live canvas does. A 3:2 poster cropped into the card drifted
+# from shaders that stretch to the canvas, such as Simplex Noise, and from
+# ones that size their cells in CSS pixels, such as Dither and LED Wall.
+# Entries are name:format[:background]; the backgrounds are the demos'
+# backdrops, and the page color for LED Wall's gaps.
+for pair in \
+  "simplex-noise:png" \
+  "mesh-gradient:jpg" \
+  "wave-lines:jpg:#0a0a14" \
+  "voronoi:jpg" \
+  "dither:jpg" \
+  "god-rays:jpg:linear-gradient(to top, #131b31, #0b0f1a)" \
+  "led-wall:jpg:#0b0f0d"; do
   IFS=':' read -r name format background <<< "$pair"
   echo "==> ${name}-card ($format, 376x275)"
   card_args=(

@@ -19,9 +19,6 @@ const FAVORITES = [
   'led-wall',
 ];
 
-// The favorites that show a card poster rather than their component's.
-const CARD_POSTERS = new Set(['dither', 'led-wall']);
-
 const favorites = (page: Page) =>
   page.getByRole('list', { name: 'Start with one of our favorites' }).getByRole('link');
 
@@ -112,10 +109,9 @@ test('a favorite is named for its component', async ({ page }) => {
   await expect(favorites(page).first()).toHaveAccessibleName('Simplex Noise');
 });
 
-// Each favorite shows a full poster, not the small square the components
-// index uses, and every one has loaded. Dither and LED Wall show a card
-// poster, captured at the live scene's size, because both size their pattern
-// in CSS pixels.
+// Each favorite shows its card poster, not the small square the components
+// index uses, and every one has loaded. A card poster is captured at the live
+// scene's shape, 376 by 275, so the spec checks the file's shape too.
 test('each favorite shows its poster', async ({ page }) => {
   await open(page);
   await expect(favorites(page)).toHaveCount(FAVORITES.length);
@@ -131,6 +127,8 @@ test('each favorite shows its poster', async ({ page }) => {
           href: link.getAttribute('href') ?? '',
           src: decodeURIComponent(image?.currentSrc ?? ''),
           loaded: !!image && image.complete && image.naturalWidth > 0,
+          // next/image may serve a resized file, which keeps the shape.
+          shape: image ? image.naturalWidth / image.naturalHeight : 0,
         };
       }),
     );
@@ -141,10 +139,9 @@ test('each favorite shows its poster', async ({ page }) => {
 
   for (const [index, image] of (await readImages()).entries()) {
     expect(image.src, image.href).toMatch(
-      new RegExp(
-        `/posters/${FAVORITES[index]}${CARD_POSTERS.has(FAVORITES[index]!) ? '-card' : ''}\\.(jpg|png)`,
-      ),
+      new RegExp(`/posters/${FAVORITES[index]}-card\\.(jpg|png)`),
     );
+    expect(image.shape, image.href).toBeCloseTo(376 / 275, 2);
   }
 });
 
