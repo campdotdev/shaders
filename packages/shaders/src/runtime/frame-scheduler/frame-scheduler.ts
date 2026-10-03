@@ -43,10 +43,13 @@ export class FrameScheduler {
     return this.idleVotes > 0 && this.animatedVotes === 0;
   }
 
-  /** Activate the scheduler. The rAF loop starts on the first client added. */
+  /**
+   * Activate the scheduler. The rAF loop starts on the first client added.
+   * A start() while paused also resumes, the way resume() does.
+   */
   start(): void {
     this.running = true;
-    this.paused = false;
+    this.resume();
     this.maybeQueue();
   }
 

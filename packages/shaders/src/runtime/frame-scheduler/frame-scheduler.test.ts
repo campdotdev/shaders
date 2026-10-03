@@ -166,6 +166,28 @@ describe('FrameScheduler', () => {
     expect(listener).toHaveBeenCalledTimes(2);
   });
 
+  // A start() that ends a pause is a resume too, so a clock that holds its
+  // time while paused hears of it, and the paused gap stays out of the tick.
+  it('resumes, telling pause listeners, when start() runs while paused', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+    const listener = vi.fn();
+
+    scheduler.onPauseChange(listener);
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(1000);
+    tickFrame(1016);
+
+    scheduler.pause();
+    scheduler.stop();
+    scheduler.start();
+    tickFrame(9000);
+
+    expect(listener.mock.calls).toEqual([[true], [false]]);
+    expect(client).toHaveBeenLastCalledWith(expect.objectContaining({ delta: 0, elapsed: 0.016 }));
+  });
+
   it('does not start the rAF loop when no clients are registered', () => {
     const scheduler = new FrameScheduler();
 
