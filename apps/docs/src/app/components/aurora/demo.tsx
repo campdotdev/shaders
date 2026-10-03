@@ -55,7 +55,7 @@ function AuroraDemo() {
   );
 }
 
-function AuroraControls() {
+export function AuroraControls() {
   return (
     <ControlPanel>
       <Section title="Motion">
