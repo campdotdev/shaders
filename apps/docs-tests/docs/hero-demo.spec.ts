@@ -10,6 +10,16 @@ import type { Page } from '@playwright/test';
  * curve it follows, so tuning the motion cannot break this file.
  */
 
+// Headless Chromium hands out no WebGPU adapter, so the hero's renderer falls
+// back to WebGL2, which on CI's GPU-less runners is SwiftShader drawing
+// full-width Aurora on the CPU, at about one frame every 6 seconds. A check
+// that scrolls waits on a frame, so those checks outran their 5-second
+// budget. No check reads the scene's pixels, so this file turns WebGL off: the
+// renderer fails to start and the hero keeps its poster, the same layout
+// with nothing to draw. A launch option forces a new browser, so it has to
+// be set for the whole file.
+test.use({ launchOptions: { args: ['--disable-webgl'] } });
+
 // The site container's width at Playwright's 1280px viewport: the page's
 // two 32px gutters come off it.
 const WIDE_CONTAINER = 1280 - 2 * 32;
