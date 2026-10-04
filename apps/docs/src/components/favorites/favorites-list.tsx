@@ -8,7 +8,14 @@
  */
 import Image from 'next/image';
 import Link from 'next/link';
-import { type RefObject, useEffect, useRef, useState, useSyncExternalStore } from 'react';
+import {
+  type CSSProperties,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+  useSyncExternalStore,
+} from 'react';
 
 import { ShaderPoster } from '@camp-dev/shaders/poster';
 
@@ -20,6 +27,14 @@ import styles from './favorites.module.css';
 // The width each poster renders at, per the grid's columns in
 // favorites.module.css, so next/image picks a file no larger than it needs.
 const POSTER_SIZES = '(width < 40rem) 100vw, (width < 64rem) 50vw, 25vw';
+
+// A card's place in the grid's reveal (favorites.module.css): the heading
+// goes first, at 0, so the cards count from 1.
+type RevealStyle = CSSProperties & { '--reveal-index': number };
+
+function revealStyle(index: number): RevealStyle {
+  return { '--reveal-index': index + 1 };
+}
 
 // ---------------------------------------------
 // The list: which favorites are mounted, and which one plays
@@ -75,8 +90,8 @@ export function FavoritesList({
 
   return (
     <ul aria-labelledby={labelledBy} className={styles.list} ref={listRef}>
-      {favorites.map((favorite) => (
-        <li key={favorite.url}>
+      {favorites.map((favorite, index) => (
+        <li key={favorite.url} style={revealStyle(index)}>
           <FavoriteCard
             favorite={favorite}
             onEngagedChange={(engagement, engaged) =>

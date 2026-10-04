@@ -1,38 +1,146 @@
-/* The hero's frame, after the Figma mock: a muted panel with a 2px border and
-   24px corners, holding the scene 12px in, with the scene's own corners at
-   12px so the two curves run parallel. */
+/* The homepage hero's track, pin, and stage. Before any script runs, these
+   rules lay out the hero alone, after the Figma mock: a muted panel with a
+   2px border and 24px corners, holding the scene 12px in, with the scene's
+   own corners at 12px so the two curves run parallel. Once measured, the
+   frame's position, size, inset, and corners come from motion values in
+   home-hero.tsx, and the panel's from geometry.ts. */
+
+/* ---- Track, pin, and spacer ---- */
+
+/* The pin holds the hero and the rest of the page under it, and the spacer
+   after it is the scroll the pin holds for, which home-hero.tsx sets from
+   SCRUB_DISTANCE_VH. A sticky box stays stuck until its bottom meets its
+   parent's, so the pin holds while the spacer scrolls under it, and the
+   spacer never shows as empty space. The pin is taller than the viewport,
+   so while it holds, the visitor sees the hero or the demo and the top of
+   the favorites.
+
+   The pin's height follows the frame's through the change, which moves
+   everything below the track. Scroll anchoring would answer that by
+   scrolling the page to keep what's on screen in place, which would fight
+   the scroll driving the change, so it is off here. */
+.track {
+  overflow-anchor: none;
+}
+
+.pin {
+  position: sticky;
+  top: 0;
+}
+
+.spacer {
+  height: var(--scrub-distance);
+}
+
+/* Where the end state would stack (geometry.ts's 816px container, which is
+   55rem of site less its two 32px gutters), or where the script measured an
+   end state taller than the viewport, the hero stays in normal flow and
+   doesn't pin. */
+@container site (width < 55rem) {
+  .pin {
+    position: static;
+  }
+
+  .spacer {
+    display: none;
+  }
+}
+
+.track[data-pinned='false'] .pin {
+  position: static;
+}
+
+.track[data-pinned='false'] .spacer {
+  display: none;
+}
+
+/* ---- Hero ---- */
+
+/* 32px above and below the stage, the hero section's padding, which keeps
+   64px between the intro and the hero's frame, and 64px between the frame
+   and the favorites with their own 32px. Keep in step with PIN_PADDING in
+   geometry.ts. */
+.hero {
+  padding-block: var(--spacing-8);
+}
+
+/* On a phone the intro's own 24px is the space above the hero, and 24px
+   sits under it. */
+@container site (width < 40rem) {
+  .hero {
+    padding-block: 0 var(--spacing-6);
+  }
+}
+
+/* Clips the panel while it waits past the right edge, without clipping
+   anything vertically, and anchors the panel. */
+.container {
+  position: relative;
+  overflow-x: clip;
+}
+
+/* ---- Frame: the hero at the start, the demo's scene at the end ---- */
+
+/* Its width, its x, and the padding that insets the scene come from
+   home-hero.tsx. The padding is the hero's 12px plus the 2px border, which
+   the ring below draws over it. */
 .frame {
-  padding: var(--spacing-3);
-  border: var(--border-width-2) solid var(--white-a5);
-  border-radius: var(--radius-3xl);
+  position: relative;
+}
+
+/* The hero's muted panel, under the scene. */
+.chromeFill {
+  position: absolute;
+  inset: 0;
   background: var(--bg-muted);
 }
 
-/* The mock's scene box is 1636 by 696, about 2.35:1, and the scene keeps
-   that shape at every width. The poster and the canvas both cover it
+/* The hero's 2px border, drawn over the scene rather than under it. Once
+   the scene has grown out to fill the frame, the ring sits on the scene's
+   edge, where it becomes the demo's hairline. */
+.chromeRing {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: var(--border-width-2) solid var(--white-a5);
+  pointer-events: none;
+}
+
+/* The mock's scene box is 1636 by 696, about 2.35:1, and before measuring
+   the scene keeps that shape. Once measured, home-hero.tsx sets its height,
+   which overrides the ratio. The poster and the canvas both cover it
    absolutely (ShaderPoster and ShaderScene), so this box is what sizes
    them. */
 .scene {
   position: relative;
+  z-index: 1;
+  width: 100%;
   aspect-ratio: 1636 / 696;
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--radius-xl);
 }
 
-/* The phone mock drops the outer panel and draws the scene alone at 16:9,
-   with the panel's 2px border moved onto it. The canvas and the poster
-   fill the box inside the border. */
-@container site (width < 40rem) {
-  .frame {
-    padding: 0;
-    border: none;
-    border-radius: 0;
-    background: none;
-  }
+/* ---- Panel ---- */
 
-  .scene {
-    aspect-ratio: 16 / 9;
-    border: var(--border-width-2) solid var(--white-a5);
-  }
+/* Only the position: the hairline, the scroll, and the edge fades come from
+   the demo's own ControlsScroller. home-hero.tsx sets the panel's height and
+   max-height to the frame's height on every scroll tick, so the two
+   outlines share a top and a bottom through the change. */
+.panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* The scroller fills the panel, so where the frame is taller than the
+   controls, as at the start of the change on a wide window, the hairline
+   still runs the frame's height. The panel's own muted ground and corners
+   fill the space under the last row, so it reads as panel rather than a
+   gap. Where the frame is shorter, the scroller's max-height caps it and
+   the controls scroll, with the bottom edge fade saying there are more. */
+.panelScroller {
+  height: 100%;
+  border-radius: var(--radius-xl);
+  background: var(--bg-muted);
 }

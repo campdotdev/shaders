@@ -1,9 +1,9 @@
 /**
  * The homepage, after the Figma mock: the heading, description, and Get
- * started button, then the live Aurora hero, the favorites grid, and the
- * footer, which no other page renders. With no sidebar or section banner, it
- * renders straight into the root layout. The rest of its motion comes in
- * later tickets.
+ * started button, then the live Aurora hero that turns into Aurora's demo on
+ * scroll, the favorites grid, and the footer, which no other page renders.
+ * With no sidebar or section banner, it renders straight into the root
+ * layout.
  */
 import Link from 'next/link';
 
@@ -38,13 +38,13 @@ export default async function Home() {
           </div>
         </div>
       </section>
-      <section className={`site-gutter ${styles.hero}`}>
-        <div className="site-container">
-          <HomeHero />
-        </div>
-      </section>
-      <Favorites favorites={favorites} />
-      <HomeFooter />
+      {/* The rest of the page rides in the hero's pin, so the favorites
+          sit against it while it turns into Aurora's demo, and the pin
+          always reaches past the viewport's bottom. */}
+      <HomeHero>
+        <Favorites favorites={favorites} />
+        <HomeFooter />
+      </HomeHero>
     </>
   );
 }
