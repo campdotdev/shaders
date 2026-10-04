@@ -6,8 +6,8 @@
  * template renders this between its static header and prose sections, so
  * only this slice ships as client JavaScript. The store provider, the live
  * scene, and the controls are exported on their own too, for a second host
- * that lays out the demo itself with a store of its own: the hero-to-demo
- * prototype route today, and the homepage hero once it turns into this demo.
+ * that lays out the demo itself with a store of its own: the homepage hero,
+ * which turns into this demo as the page scrolls (components/home-hero).
  */
 import dynamic from 'next/dynamic';
 import { type ReactNode, useMemo } from 'react';

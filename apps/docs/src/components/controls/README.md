@@ -15,10 +15,12 @@ the same four-part shape:
    and wraps both `*Demo` and `*Controls` in one `<ControlsProvider store={store}>` inside
    `<DemoLayout>`. Aurora's does the same through `AuroraControlsProvider`.
 
-A page that hosts a demo in a layout of its own, such as the hero-to-demo prototype route with
-Aurora's, skips `DemoLayout` and wraps the controls in `<ControlsScroller>` inside a box whose `max-height` caps
-the panel. Aurora's `demo.tsx` exports its store provider, live scene, and controls for that host,
-and each provider mounts a fresh store, so the two pages never share state.
+A page that hosts a demo in a layout of its own, such as the homepage hero with Aurora's
+(`components/home-hero`), skips `DemoLayout` and wraps the controls in `<ControlsScroller>` inside a box
+whose `max-height` caps the panel. `ControlsScroller`'s optional `className` joins its scroll area root's,
+for a host that sizes or grounds the root itself, as the hero does to keep the panel as tall as its scene.
+Aurora's `demo.tsx` exports its store provider, live scene, and controls for that host, and each provider
+mounts a fresh store, so the two pages never share state.
 
 `copy.ts` exports `formatJsx`, which turns a params snapshot into the JSX that the page header's
 Copy React menu (`page-actions.tsx`) hands out.
