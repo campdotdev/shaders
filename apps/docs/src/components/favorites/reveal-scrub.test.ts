@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { cardRevealAt, itemRevealAt } from './reveal-scrub';
+import { cardRevealAt, itemRevealAt, revealAt, revealStartAt } from './reveal-scrub';
 
 // The heading and the seven cards.
 const COUNT = 8;
@@ -42,5 +42,33 @@ describe('cardRevealAt', () => {
     // Halfway, the card is 144px down, so the resting edge sits 144px into
     // it and the fade, 160px for a 288px card, starts 16px above its top.
     expect(card.mask).toMatch(/^linear-gradient\(to bottom, #000 -16px/);
+  });
+});
+
+describe('revealStartAt', () => {
+  it('starts the reveal where the grid comes into view', () => {
+    expect(revealStartAt(0.16)).toBe(0.16);
+  });
+
+  it('starts it halfway at the latest, so it never squeezes into the end', () => {
+    expect(revealStartAt(0.9)).toBe(0.5);
+  });
+});
+
+describe('revealAt', () => {
+  it('runs from the start to the demo landing', () => {
+    expect(revealAt(0.16, 0.16)).toBe(0);
+    expect(revealAt(0.58, 0.16)).toBeCloseTo(0.5);
+    expect(revealAt(1, 0.16)).toBe(1);
+  });
+
+  it('holds a grid not yet seen hidden while the demo is still changing', () => {
+    expect(revealAt(0.9, null)).toBe(0);
+  });
+
+  // On a window too short to show the grid under the pinned demo, it is
+  // still below the fold when the demo lands, and scrolls in at rest.
+  it('rests a grid not yet seen once the demo lands', () => {
+    expect(revealAt(1, null)).toBe(1);
   });
 });

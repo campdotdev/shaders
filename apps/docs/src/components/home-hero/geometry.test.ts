@@ -3,25 +3,12 @@ import { describe, expect, it } from 'vitest';
 import { computeLayout, scrubAt } from './geometry';
 
 // A 1440 by 900 window: the container is 1440 less the two 32px gutters.
-const WIDE = { width: 1376, viewportHeight: 900 };
+const WIDE = { width: 1376, canPin: true };
 
 describe('computeLayout', () => {
-  it('pins once the end state fits side by side', () => {
+  it('pins wherever the flow media query leaves it', () => {
     expect(computeLayout(WIDE).pinned).toBe(true);
-  });
-
-  it('does not pin where the end state would stack', () => {
-    expect(computeLayout({ width: 815, viewportHeight: 900 }).pinned).toBe(false);
-  });
-
-  // The end state is the 597.33px scene plus the pin's 32px above and below.
-  it('does not pin where the end state is taller than the viewport', () => {
-    expect(computeLayout({ width: 1376, viewportHeight: 662 }).pinned).toBe(true);
-    expect(computeLayout({ width: 1376, viewportHeight: 661 }).pinned).toBe(false);
-  });
-
-  it('measures the end state with the hero section padding, for the fit check', () => {
-    expect(computeLayout(WIDE).endHeight).toBe(896 / 1.5 + 64);
+    expect(computeLayout({ ...WIDE, canPin: false }).pinned).toBe(false);
   });
 
   it('ends on the 896px scene column, centered with the panel as one group', () => {
@@ -33,7 +20,7 @@ describe('computeLayout', () => {
   });
 
   it('narrows the scene column to leave room for the panel', () => {
-    const { frameEnd } = computeLayout({ width: 1000, viewportHeight: 900 });
+    const { frameEnd } = computeLayout({ ...WIDE, width: 1000 });
 
     expect(frameEnd.width).toBe(1000 - 16 - 288);
   });

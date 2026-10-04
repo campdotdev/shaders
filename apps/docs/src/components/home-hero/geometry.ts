@@ -22,14 +22,15 @@ export const SCRUB_DISTANCE_VH = 50;
 const HERO_RATIO = 1636 / 696;
 // Every demo scene is 3:2 ([data-shader-demo] in globals.css).
 const DEMO_RATIO = 3 / 2;
+
 // The hero frame's 12px padding plus its 2px border, on each side. The frame
 // stays through the change and the scene grows out to fill it: the inset
 // runs down to 0 while the frame's corner radius runs from the hero's 24px
 // to the scene's and the panel's 12px, so at the end the two outlines are
 // one. Keeping the inset would need an inner radius of 12 - 14 = -2px to
 // stay concentric with a 12px frame.
-const FRAME_INSET = 14;
-const FRAME_RADIUS_START = 24;
+export const FRAME_INSET = 14;
+export const FRAME_RADIUS_START = 24;
 const FRAME_RADIUS_END = 12;
 // The demo's 4xl scene column, its 2xs panel, and the 16px gap between them
 // (demo-layout.module.css).
@@ -37,41 +38,45 @@ const SCENE_MAX_WIDTH = 896;
 
 export const PANEL_WIDTH = 288;
 const COLUMN_GAP = 16;
-// Under this container width the scene column would drop below 512px, where
-// the docs page stacks its demo, so the end state would stack and the hero
-// does not pin. 512 + 16 + 288; the docs page's 53.5rem adds its shell's
-// 40px inset, which the homepage container doesn't have.
-const SIDE_BY_SIDE_MIN = 816;
-// The hero section's padding above and below the stage, 32px each way
-// (home-hero.module.css).
-const PIN_PADDING = 32;
 
 // The panel's reveal: a mask that fades it toward the container's right
 // edge, so it emerges through the edge rather than from behind a hard cut
 // (lib/edge-reveal.ts). It runs over 160px, against the scroll areas' 64px.
 export const PANEL_FADE = 160;
 
+// ---- Where the hero pins
+
+/**
+ * Where the hero doesn't pin, and the finished demo sits in the page's flow
+ * instead: under 55rem of viewport, where the scene column would drop below
+ * 512px beside the panel and the docs page stacks its demo (512 + 16 + 288
+ * is an 816px container, 55rem less the two 32px gutters), or under
+ * reduced motion. The window's height plays no part: on a window shorter
+ * than the finished demo, the pin holds it with its bottom below the fold,
+ * and the page scrolls on to the rest once the pin releases. The flow
+ * layout in home-hero.module.css, the poster's <picture>, and the script's
+ * pin decision all read this one rule, so the server's HTML lays out what
+ * the script will decide and nothing changes when the page hydrates. Keep
+ * the two CSS copies in step: the flow block in home-hero.module.css, and
+ * the rule above it that tests the opposite, where the hero pins.
+ */
+export const FLOW_MEDIA = '(width < 55rem), (prefers-reduced-motion: reduce)';
+
 // ---- The two ends of the change
 
 export interface Measure {
   /** The site container's width. */
   width: number;
-  /** The viewport's height, toolbars shown on a phone: 100svh. */
-  viewportHeight: number;
+  /** Whether the hero pins: FLOW_MEDIA doesn't match. */
+  canPin: boolean;
 }
 
 export interface Layout {
   /**
-   * Whether the hero pins and scrubs: only when the end state sits side by
-   * side and fits the viewport's height.
+   * Whether the hero pins and scrubs. Otherwise the finished demo sits in
+   * the page's flow (FLOW_MEDIA).
    */
   pinned: boolean;
-  /**
-   * The end state's height plus the hero section's padding above and below
-   * it. While the pin holds, the demo sits at the viewport's top, so this
-   * has to fit the viewport for the visitor to see the demo whole.
-   */
-  endHeight: number;
   /** The container's width, which the hero fills and the panel reveals at. */
   width: number;
   /** The hero's scene height, inside the frame's inset. */
@@ -82,16 +87,14 @@ export interface Layout {
   panel: { x: number; width: number };
 }
 
-export function computeLayout({ width, viewportHeight }: Measure): Layout {
+export function computeLayout({ width, canPin }: Measure): Layout {
   const columnWidth = Math.min(SCENE_MAX_WIDTH, width - COLUMN_GAP - PANEL_WIDTH);
   const sceneHeight = columnWidth / DEMO_RATIO;
   // The frame and the panel center in the container as one group.
   const x = (width - (columnWidth + COLUMN_GAP + PANEL_WIDTH)) / 2;
-  const endHeight = sceneHeight + 2 * PIN_PADDING;
 
   return {
-    pinned: width >= SIDE_BY_SIDE_MIN && endHeight <= viewportHeight,
-    endHeight,
+    pinned: canPin,
     width,
     heroSceneHeight: (width - 2 * FRAME_INSET) / HERO_RATIO,
     frameEnd: { x, width: columnWidth, sceneHeight },

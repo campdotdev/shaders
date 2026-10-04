@@ -1,18 +1,10 @@
 'use client';
 
 /**
- * The favorites' entrance: the grid that holds the heading and the cards,
- * which reveals them in reading order, the heading first. While the
- * homepage hero pins, the reveal follows the hero's scroll progress from
- * the moment the grid comes into view, so the last card lands as the demo
- * does, and scrolling back up takes it back (reveal-scrub.ts holds those
- * numbers). Wherever the hero doesn't pin, it plays once on its own clock
- * the first time the grid scrolls into view (favorites.module.css holds
- * that motion). Either way, the server renders the grid at rest, and only
- * a grid still below the viewport when the page hydrates is hidden to wait
- * for its reveal, so a grid already on screen never blinks out, and with
- * no JavaScript the grid simply shows. Under reduced motion it stays at
- * rest.
+ * The favorites' entrance: the grid reveals its heading, then its cards, in
+ * reading order. While the hero pins, the reveal follows the hero's scroll
+ * (reveal-scrub.ts). Elsewhere it plays once as the grid scrolls into view
+ * (favorites.module.css). A grid on screen at hydration stays at rest.
  */
 import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 
@@ -20,12 +12,13 @@ import type { MotionValue } from 'motion/react';
 
 import { useHeroProgress } from '@/components/home-hero/hero-progress';
 
-import { cardRevealAt, itemRevealAt } from './reveal-scrub';
+import { cardRevealAt, itemRevealAt, revealAt, revealStartAt } from './reveal-scrub';
 
-// The played reveal starts once the grid's top has risen this far above
-// the viewport's bottom, as a share of the viewport's height. At 0% it
-// plays as the grid's first pixels appear. Higher waits until more of the
-// grid is on screen.
+// The bottom of the IntersectionObserver's rootMargin for the played
+// reveal, as a share of the viewport's height. At 0% it plays as the grid's
+// first pixels appear. A negative share waits until the grid's top has
+// risen that far up the viewport, and a positive one plays before the grid
+// arrives.
 const REVEAL_LINE = '0%';
 
 /** Where the played reveal stands: hidden and waiting, or revealed. Unset is at rest. */
@@ -42,10 +35,12 @@ export function FavoritesReveal({
   const [reveal, setReveal] = useState<Reveal>();
   const heroProgress = useHeroProgress();
 
-  // Picks the reveal for where the grid stands now: none if it is on screen
-  // or above it, the scrub while the hero pins, and the played reveal
-  // otherwise. Runs again when the hero starts or stops pinning, as it does
-  // once the hero has measured itself after hydration, or on a resize.
+  // Picks the reveal for where the grid stands now: none under reduced
+  // motion, or if the grid is on screen or above it, so the grid the server
+  // rendered at rest never blinks out; the scrub while the hero pins; and
+  // the played reveal otherwise. Runs again when the hero starts or stops
+  // pinning, as it does once the hero has measured itself after hydration,
+  // or on a resize.
   useLayoutEffect(() => {
     const grid = gridRef.current;
 
@@ -79,8 +74,9 @@ export function FavoritesReveal({
 
 // Drives the heading and the cards from the hero's progress, writing their
 // styles straight to the elements on each change, so the scroll re-renders
-// nothing. The reveal's own range starts at the progress where the grid's
-// top first comes into view and ends at 1, where the hero's demo lands.
+// nothing. The reveal's own range starts where the grid's top first comes
+// into view, or halfway at the latest, and ends at 1, where the hero's demo
+// lands. A grid that hasn't come into view by then rests (revealAt).
 // Returns the cleanup, which puts every item back at rest.
 function scrubReveal(grid: HTMLElement, progress: MotionValue<number>) {
   const heading = grid.querySelector<HTMLElement>(':scope > h2');
@@ -88,12 +84,15 @@ function scrubReveal(grid: HTMLElement, progress: MotionValue<number>) {
   const count = cards.length + 1;
   // Every card shares one size, so the first stands for all of them.
   let cardHeight = cards[0]?.offsetHeight ?? 0;
-  // The hero's progress when the grid came into view, or null until then.
+  // Where the reveal starts in the hero's progress, or null until the grid
+  // has come into view.
   let start: number | null = null;
 
   const apply = (at: number) => {
-    if (start === null && grid.getBoundingClientRect().top < window.innerHeight) start = at;
-    const reveal = start === null || start >= 1 ? 0 : Math.max(0, (at - start) / (1 - start));
+    if (start === null && grid.getBoundingClientRect().top < window.innerHeight) {
+      start = revealStartAt(at);
+    }
+    const reveal = revealAt(at, start);
 
     if (heading) heading.style.opacity = String(itemRevealAt(reveal, 0, count));
     cards.forEach((card, index) => {

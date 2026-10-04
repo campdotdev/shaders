@@ -1,19 +1,12 @@
 'use client';
 
 /**
- * The homepage's hero, which turns into Aurora's demo as the visitor scrolls.
- * A track holds a sticky pin and, under it, an empty spacer. The pin holds
- * the hero and the rest of the page after it (the favorites and the footer,
- * passed as children), and it stays stuck while the spacer scrolls under
- * it, so the favorites sit against the demo the whole time, with no empty
- * space between. From the top of the page to the pin releasing, scroll
- * progress morphs the hero's framed scene into the demo's 3:2 scene with
- * the control panel beside it. geometry.ts holds the numbers, and this file
- * feeds them into motion values. Before any script runs, CSS lays out
- * the hero alone, which is the change at progress 0, so hydration moves
- * nothing. The demo has a store of its own (AuroraControlsProvider), so
- * every load starts from Aurora's defaults.
+ * The homepage's hero, which turns into Aurora's demo as the visitor scrolls,
+ * with the rest of the page riding in its sticky pin. geometry.ts holds the
+ * numbers, and this file feeds them into motion values. Where the hero
+ * doesn't pin (FLOW_MEDIA), the finished demo sits in the page's flow.
  */
+import Image from 'next/image';
 import {
   type CSSProperties,
   type FocusEvent,
@@ -26,6 +19,7 @@ import {
   useState,
 } from 'react';
 
+import { ShaderPoster } from '@camp-dev/shaders/poster';
 // `m` under LazyMotion rather than `motion`: these elements only bind
 // motion values to style, so they need the DOM renderer that domMin carries
 // and none of the gesture and layout features `motion` bundles.
@@ -45,11 +39,19 @@ import {
   LiveAuroraScene,
 } from '@/app/components/aurora/demo';
 import auroraStyles from '@/app/components/aurora/demo.module.css';
-import { HERO_POSTER_SRC } from '@/app/components/aurora/params';
+import { HERO_POSTER_SRC, POSTER_SRC } from '@/app/components/aurora/params';
 import { ControlsScroller } from '@/components/controls';
-import { DemoPoster } from '@/components/DemoPoster';
 
-import { computeLayout, type Layout, type Measure, SCRUB_DISTANCE_VH, scrubAt } from './geometry';
+import {
+  computeLayout,
+  FLOW_MEDIA,
+  FRAME_INSET,
+  FRAME_RADIUS_START,
+  type Layout,
+  type Measure,
+  SCRUB_DISTANCE_VH,
+  scrubAt,
+} from './geometry';
 import { HeroProgressContext } from './hero-progress';
 import styles from './home-hero.module.css';
 
@@ -98,8 +100,8 @@ function PinnedHero({ children }: { children?: ReactNode }) {
   // clicks a control mid-change can already see it, and a jump to the end
   // would take the page out from under the pointer.
   const revealPanel = (event: FocusEvent<HTMLElement>) => {
-    if (!event.target.matches(':focus-visible')) return;
-    if (range > 0 && scrollY.get() < range) window.scrollTo({ top: range });
+    if (layout?.pinned !== true || !event.target.matches(':focus-visible')) return;
+    if (scrollY.get() < range) window.scrollTo({ top: range });
   };
 
   return (
@@ -114,48 +116,48 @@ function PinnedHero({ children }: { children?: ReactNode }) {
               <m.div className={styles.chromeFill} style={{ borderRadius: frame.radius }} />
               <m.div className={styles.chromeRing} style={{ borderRadius: frame.radius }} />
               {/* Aurora draws over a transparent ground, so the scene sits on
-                the same dusk backdrop as on its own page. The poster's alt is
-                empty because the hero is decoration: the heading above says
-                what the library is, and the live canvas that replaces the
-                poster has no text either. */}
+                the same dusk backdrop as on its own page. */}
               <m.div
                 className={`${styles.scene} ${auroraStyles.demoBackdrop}`}
                 data-home-hero
                 style={{ height: frame.sceneHeight }}
               >
-                {/* Capped at one canvas pixel per CSS pixel. Aurora marches
-                  60 steps per pixel, and at the full 2x of a retina screen
-                  the full-width hero is 4.5 million pixels, which pinned an
-                  M1 Max's GPU and halved the frame rate. At 1x it is a
-                  quarter of that, at the cost of softer filaments, until
-                  Aurora gets a cheaper render path. The cap holds through
-                  the change, because a new pixel ratio mid-scrub would be
-                  one more resize. */}
-                <DemoPoster alt="" src={HERO_POSTER_SRC}>
-                  <LiveAuroraScene maxDPR={1} />
-                </DemoPoster>
+                {/* Capped at one canvas pixel per CSS pixel while the hero
+                  can pin. Aurora marches 60 steps per pixel, and at the
+                  full 2x of a retina screen the full-width hero is 4.5
+                  million pixels, which pinned an M1 Max's GPU and halved
+                  the frame rate. At 1x it is a quarter of that, at the
+                  cost of softer filaments, until Aurora gets a cheaper
+                  render path. The cap holds through the change, because a
+                  new pixel ratio mid-scrub would be one more resize. The
+                  flow demo is no bigger than the docs page's, so it takes
+                  ShaderScene's default of 2, as that page does. */}
+                <HeroPoster>
+                  <LiveAuroraScene maxDPR={layout?.pinned === false ? undefined : 1} />
+                </HeroPoster>
               </m.div>
             </m.div>
-            {layout?.pinned === true && (
-              <m.div
-                className={styles.panel}
-                onFocus={revealPanel}
-                style={{
-                  width: layout.panel.width,
-                  // The scroller inside takes its cap from max-height, and
-                  // height keeps the box as tall as the frame when the
-                  // controls are shorter.
-                  height: frame.panelHeight,
-                  maxHeight: frame.panelHeight,
-                  x: frame.panelX,
-                  maskImage: frame.panelMask,
-                }}
-              >
-                <ControlsScroller className={styles.panelScroller}>
-                  <AuroraControls />
-                </ControlsScroller>
-              </m.div>
-            )}
+            {/* Rendered from the start, so the flow demo has its controls
+                before any script runs. While the hero may pin, the CSS
+                hides it until the first measure places it. */}
+            <m.div
+              className={styles.panel}
+              onFocus={revealPanel}
+              style={{
+                width: layout?.panel.width,
+                // The scroller inside takes its cap from max-height, and
+                // height keeps the box as tall as the frame when the
+                // controls are shorter.
+                height: frame.panelHeight,
+                maxHeight: frame.panelHeight,
+                x: frame.panelX,
+                maskImage: frame.panelMask,
+              }}
+            >
+              <ControlsScroller className={styles.panelScroller}>
+                <AuroraControls />
+              </ControlsScroller>
+            </m.div>
           </div>
         </section>
         {/* What rides in the pin reads the progress only while the hero
@@ -169,12 +171,47 @@ function PinnedHero({ children }: { children?: ReactNode }) {
   );
 }
 
+// ---- The poster
+
+// The still shown before the scene's first frame, and in its place with no
+// WebGPU. The hero and the flow demo are different shapes, and each poster
+// is captured at its own (params.ts), because a still cover-cropped into
+// the other shape doesn't line up with the live scene that replaces it. A
+// <picture> picks the flow demo's 3:2 one wherever FLOW_MEDIA matches,
+// the same rule the script pins by, so the still always matches the
+// layout. The alt
+// is empty because the hero is decoration: the heading above says what the
+// library is, and the live canvas that replaces the poster has no text
+// either.
+function HeroPoster({ children }: { children: ReactNode }) {
+  return (
+    <ShaderPoster
+      poster={
+        <picture className={styles.poster}>
+          <source media={FLOW_MEDIA} srcSet={POSTER_SRC} />
+          <Image
+            alt=""
+            fill
+            priority
+            sizes="100vw"
+            src={HERO_POSTER_SRC}
+            style={{ objectFit: 'cover' }}
+          />
+        </picture>
+      }
+    >
+      {children}
+    </ShaderPoster>
+  );
+}
+
 // ---- Scroll progress to motion values
 
 // The motion values the frame and the panel render from, and the progress
-// they were set from, which the pin's other contents read. They start at what
-// the CSS lays out before measuring (the full-width hero, its scene sized by
-// its aspect ratio), so the server's HTML and the first client render agree.
+// they were set from, which the pin's other contents read. They start at the
+// hero's start: a 100% width and an auto scene height leave the size to the
+// CSS, and the inset and the corners are the hero's own, so the server's
+// HTML and the first client render agree.
 // Once measured, they are set on every scroll and again whenever the layout
 // changes, from the scroll as a fraction of `range`: 0 at the top of the
 // page, 1 where the pin releases. A layout that doesn't pin hands the frame
@@ -183,8 +220,8 @@ function useScrub(layout: Layout | null, scrollY: MotionValue<number>, range: nu
   const x = useMotionValue(0);
   const width = useMotionValue<number | string>('100%');
   const sceneHeight = useMotionValue<number | string>('auto');
-  const inset = useMotionValue(14);
-  const radius = useMotionValue(24);
+  const inset = useMotionValue(FRAME_INSET);
+  const radius = useMotionValue(FRAME_RADIUS_START);
   const panelX = useMotionValue(0);
   const panelHeight = useMotionValue(0);
   const panelMask = useMotionValue('none');
@@ -198,8 +235,8 @@ function useScrub(layout: Layout | null, scrollY: MotionValue<number>, range: nu
         x.set(0);
         width.set('100%');
         sceneHeight.set('auto');
-        inset.set(14);
-        radius.set(24);
+        inset.set(FRAME_INSET);
+        radius.set(FRAME_RADIUS_START);
 
         return;
       }
@@ -236,14 +273,12 @@ interface PageMeasure extends Measure {
   scrubDistance: number;
 }
 
-// The container's width, the viewport's height, where the track starts on
+// The container's width, whether the hero pins, where the track starts on
 // the page, and the spacer's height. The container's box changes with the
 // window's width, the root element's box changes whenever anything above
-// the track changes height (the intro rewrapping once its font loads), and
-// the window's resize event covers a change of height alone, which the
-// spacer's vh height follows. The root element's clientHeight is the
-// viewport's height less any scrollbar, which on a phone is the height with
-// its toolbars shown, so it matches 100svh.
+// the track changes height (the intro rewrapping once its font loads), the
+// spacer's box follows the window's height through its vh, and FLOW_MEDIA
+// reports its own changes.
 function useMeasure(
   containerRef: RefObject<HTMLDivElement | null>,
   trackRef: RefObject<HTMLDivElement | null>,
@@ -258,10 +293,11 @@ function useMeasure(
 
     if (!container || !track || !spacer) return undefined;
     const root = document.documentElement;
+    const flow = window.matchMedia(FLOW_MEDIA);
     const read = () => {
       const next = {
         width: container.clientWidth,
-        viewportHeight: root.clientHeight,
+        canPin: !flow.matches,
         trackTop: track.getBoundingClientRect().top + window.scrollY,
         scrubDistance: spacer.offsetHeight,
       };
@@ -272,7 +308,7 @@ function useMeasure(
       // land here.
       setMeasure((current) =>
         current?.width === next.width &&
-        current.viewportHeight === next.viewportHeight &&
+        current.canPin === next.canPin &&
         current.trackTop === next.trackTop &&
         current.scrubDistance === next.scrubDistance
           ? current
@@ -284,12 +320,12 @@ function useMeasure(
     observer.observe(container);
     observer.observe(root);
     observer.observe(spacer);
-    window.addEventListener('resize', read);
+    flow.addEventListener('change', read);
     read();
 
     return () => {
       observer.disconnect();
-      window.removeEventListener('resize', read);
+      flow.removeEventListener('change', read);
     };
   }, [containerRef, trackRef, spacerRef]);
 
