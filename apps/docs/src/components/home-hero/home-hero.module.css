@@ -9,9 +9,15 @@
    after it is the scroll the pin holds for, which home-hero.tsx sets from
    SCRUB_DISTANCE_VH. A sticky box stays stuck until its bottom meets its
    parent's, so the pin holds while the spacer scrolls under it, and the
-   spacer never shows as empty space. The pin is taller than the viewport,
-   so while it holds, the visitor sees the hero or the demo and the top of
-   the favorites.
+   spacer never shows as empty space. While it holds, the visitor sees the
+   hero or the demo and the top of the favorites.
+
+   Once the pin catches, the page has the pin's height plus the spacer's
+   left to scroll, less a viewport. The pin releases a spacer's height
+   later. On a tall window the rest of the page is shorter than the
+   viewport, so the page would run out of scroll before the change lands.
+   The pin is at least a viewport tall to prevent that. 100vh is the large
+   viewport, never shorter than the visible one.
 
    The pin's height follows the frame's through the change, which moves
    everything below the track. Scroll anchoring would answer that by
@@ -24,6 +30,7 @@
 .pin {
   position: sticky;
   top: 0;
+  min-height: 100vh;
 }
 
 .spacer {
@@ -159,6 +166,7 @@
 @media (width < 55rem), (prefers-reduced-motion: reduce) {
   .pin {
     position: static;
+    min-height: auto;
   }
 
   .spacer {
