@@ -3,8 +3,9 @@
 /**
  * The favorites' cards, and the hover that brings one to life. Hovering or
  * focusing a card mounts its live scene under the poster, which fades on the
- * scene's first frame. The scene plays while the pointer or keyboard focus
- * is on its card, then stays paused on its last frame. One plays at a time.
+ * scene's first frame, and shows its card tab (card-tab.tsx). The scene
+ * plays while the pointer or keyboard focus is on its card, then stays
+ * paused on its last frame. One plays at a time.
  */
 import Image from 'next/image';
 import Link from 'next/link';
@@ -21,6 +22,7 @@ import { ShaderPoster } from '@camp-dev/shaders/poster';
 
 import type { Favorite, FavoriteSlug } from '@/content/homepage';
 
+import { CardTab } from './card-tab';
 import { favoriteSceneBackdrop, preloadFavoriteScenes, useFavoriteScene } from './favorite-scenes';
 import styles from './favorites.module.css';
 
@@ -45,7 +47,10 @@ type Engagement = 'pointer' | 'focus';
 
 // Every favorite a visitor has hovered or focused keeps its scene mounted,
 // paused on the frame it stopped on, so its card never falls back to the
-// poster, and coming back resumes it at once. Each mounted scene holds a
+// poster, and coming back resumes it at once. Its card tab mounts on the
+// same first hover or focus, without waiting on the gate below, and stays
+// mounted, so it can slide back out when the card is let go and slide in
+// again from wherever it is. Each mounted scene holds a
 // renderer, so the page can hold one per favorite, but a paused one does no
 // GPU work. Only the most recently engaged favorite plays, and only while
 // the pointer or keyboard focus is still on it. When that one is let go, a
@@ -93,6 +98,8 @@ export function FavoritesList({
       {favorites.map((favorite, index) => (
         <li key={favorite.url} style={revealStyle(index)}>
           <FavoriteCard
+            cardTabMounted={mountedSlugs.has(favorite.slug)}
+            engaged={favorite.slug === hoveredSlug || favorite.slug === focusedSlug}
             favorite={favorite}
             onEngagedChange={(engagement, engaged) =>
               setEngaged(favorite.slug, engagement, engaged)
@@ -122,11 +129,16 @@ export function FavoritesList({
 // keeps keyboard focus.
 function FavoriteCard({
   favorite,
+  engaged,
+  cardTabMounted,
   sceneMounted,
   playing,
   onEngagedChange,
 }: {
   favorite: Favorite;
+  /** Whether the pointer or keyboard focus is on the card, which shows its card tab. */
+  engaged: boolean;
+  cardTabMounted: boolean;
   sceneMounted: boolean;
   playing: boolean;
   onEngagedChange: ((engagement: Engagement, engaged: boolean) => void) | undefined;
@@ -155,6 +167,7 @@ function FavoriteCard({
           sizes={POSTER_SIZES}
           src={favorite.poster}
         />
+        {cardTabMounted && <CardTab shortName={favorite.shortName} shown={engaged} />}
       </div>
     </Link>
   );

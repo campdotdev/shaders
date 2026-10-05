@@ -35,11 +35,29 @@ const CARD_POSTERS: Record<FavoriteSlug, string> = {
   'led-wall': '/posters/led-wall-card.jpg',
 };
 
+// The short name each favorite's card tab shows. The catalog label, such as
+// "Simplex Noise", runs longer than the strip the mock draws, so the card
+// tab takes a name of its own. Every card tab is the mock's one length, and
+// its swell holds a name up to about 60px long: God Rays, the longest here,
+// is about 54px. favorites-card-tab.spec.ts fails on a name past that. A
+// complete record, so a favorite with no short name fails the type check.
+const SHORT_NAMES: Record<FavoriteSlug, string> = {
+  'simplex-noise': 'Simplex',
+  'mesh-gradient': 'Mesh',
+  'wave-lines': 'Waves',
+  voronoi: 'Voronoi',
+  dither: 'Dither',
+  'god-rays': 'God Rays',
+  'led-wall': 'LED Wall',
+};
+
 /** A favorite's catalog record, with the slug that picks its live scene. */
 export interface Favorite extends ComponentCatalogRecord {
   slug: FavoriteSlug;
   /** The URL of the favorite's card poster, from CARD_POSTERS. */
   poster: string;
+  /** The short name the favorite's card tab shows, from SHORT_NAMES. */
+  shortName: string;
 }
 
 /** The favorites' catalog records, in the order FAVORITES lists them. */
@@ -53,6 +71,6 @@ export async function getFavorites(): Promise<Favorite[]> {
     // URLs have drifted apart.
     if (!record) throw new Error(`Favorite ${slug} has no catalog record.`);
 
-    return { ...record, slug, poster: CARD_POSTERS[slug] };
+    return { ...record, slug, poster: CARD_POSTERS[slug], shortName: SHORT_NAMES[slug] };
   });
 }

@@ -1,11 +1,9 @@
 /**
  * The homepage's favorites, after the Figma mock: the section heading in the
  * grid's first cell, then one card per favorite, its poster linking to its
- * page, in the order content/homepage.ts lists them. The cards and the hover
- * that brings a favorite's scene to life are in favorites-list.tsx, and the
- * entrance that reveals the grid as it scrolls into view is in
- * favorites-reveal.tsx. The card tab that cuts in on hover comes in a later
- * ticket.
+ * page, in the order content/homepage.ts lists them. The cards and their
+ * hover are in favorites-list.tsx, the card tab in card-tab.tsx, and the
+ * grid's entrance in favorites-reveal.tsx.
  */
 import { useId } from 'react';
 
