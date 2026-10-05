@@ -1,6 +1,6 @@
 // GPU timing for the render passes a scene draws each frame (a render pass is
 // one batch of draws into one target). The output stage creates one timer for
-// its two passes and calls collect() after each draw. ShaderMonitor turns
+// its two passes and draws each frame through measure(). ShaderMonitor turns
 // timing on through the scene context's timeGpu while it is mounted.
 import type { Camera, Object3D, RenderTarget } from 'three';
 import type { WebGPURenderer } from 'three/webgpu';
@@ -24,8 +24,12 @@ export type TimeGpu = (onFrameTime: (milliseconds: number) => void) => () => voi
 
 export interface GpuTimer {
   start: TimeGpu;
-  /** Read back the passes just drawn. The owner calls this after each draw. */
-  collect: () => void;
+  /**
+   * Run `draw` with timing on, then read back the passes it drew. The owner
+   * draws every frame through this, and `draw` must draw the measured passes
+   * and no others, because three times every pass it begins inside it.
+   */
+  measure: (draw: () => void) => void;
 }
 
 // ----------------------------------------------------------------------------
@@ -105,13 +109,28 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
     );
   };
 
-  const stopTiming = (activeBackend: TimestampBackend) => {
-    activeBackend.trackTimestamp = false;
-    // With the flag off, three stops resolving the query sets, but a cached
-    // descriptor would keep asking the GPU to write timestamps into them.
-    for (const state of passStates(activeBackend) ?? []) {
-      delete state.descriptor?.timestampWrites;
-    }
+  const collect = (activeBackend: TimestampBackend) => {
+    const states = passStates(activeBackend);
+
+    if (!states) return;
+
+    // Every pass is checked, even after one fails, so each rebuilt
+    // descriptor gets its timestamp writes back on the same frame.
+    const buffers = states.map(bufferToRead);
+
+    if (!buffers.every((buffer) => buffer !== null)) return;
+
+    // A read fails when the device is lost or the renderer is disposed
+    // mid-read. That frame goes unreported, and the next frame tries again.
+    Promise.all(buffers.map(readPassSpan)).then(
+      (spans) => {
+        const frameMilliseconds = busyMilliseconds(spans);
+
+        if (frameMilliseconds === null) return;
+        for (const listener of listeners) listener.onFrameTime(frameMilliseconds);
+      },
+      () => undefined,
+    );
   };
 
   return {
@@ -121,38 +140,37 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
       const listener = { onFrameTime };
 
       listeners.add(listener);
-      timestampBackend.trackTimestamp = true;
+      // A restart finds the writes the last stop removed. Putting them back
+      // now times the first frame, which may be the only one an idle scene
+      // draws.
+      for (const state of passStates(timestampBackend) ?? []) restoreTimestampWrites(state);
 
       return () => {
         if (!listeners.delete(listener) || listeners.size > 0) return;
-        stopTiming(timestampBackend);
+        // three stops resolving a query set once timing is off, but a cached
+        // descriptor would keep asking the GPU to write timestamps into it.
+        for (const state of passStates(timestampBackend) ?? []) {
+          delete state.descriptor?.timestampWrites;
+        }
       };
     },
 
-    collect() {
-      if (!timestampBackend || listeners.size === 0) return;
+    measure(draw) {
+      if (!timestampBackend || listeners.size === 0) {
+        draw();
 
-      const states = passStates(timestampBackend);
-
-      if (!states) return;
-
-      // Every pass is checked, even after one fails, so each rebuilt
-      // descriptor gets its timestamp writes back on the same frame.
-      const buffers = states.map(bufferToRead);
-
-      if (!buffers.every((buffer) => buffer !== null)) return;
-
-      // A read fails when the device is lost or the renderer is disposed
-      // mid-read. That frame goes unreported, and the next frame tries again.
-      Promise.all(buffers.map(readPassSpan)).then(
-        (spans) => {
-          const frameMilliseconds = busyMilliseconds(spans);
-
-          if (frameMilliseconds === null) return;
-          for (const listener of listeners) listener.onFrameTime(frameMilliseconds);
-        },
-        () => undefined,
-      );
+        return;
+      }
+      // The flag is on only for this draw, so no other pass, such as
+      // CursorRipple's wave field, ever gets timestamp writes. The finally
+      // turns it off even when a lost device makes the draw throw.
+      timestampBackend.trackTimestamp = true;
+      try {
+        draw();
+      } finally {
+        timestampBackend.trackTimestamp = false;
+      }
+      collect(timestampBackend);
     },
   };
 }
@@ -162,26 +180,35 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
 // ----------------------------------------------------------------------------
 
 /**
+ * Put the timestamp writes back on a pass descriptor that lost them, and
+ * report whether it had. three puts them on a pass's descriptor once, when it
+ * creates the pass's query set. A resize rebuilds the descriptor without
+ * them, and a stop takes them off.
+ */
+function restoreTimestampWrites(state: PassTimestampState): boolean {
+  const { descriptor, timeStampQuerySet } = state;
+
+  if (!descriptor || !timeStampQuerySet || descriptor.timestampWrites) return false;
+  descriptor.timestampWrites = {
+    querySet: timeStampQuerySet,
+    beginningOfPassWriteIndex: 0,
+    endOfPassWriteIndex: 1,
+  };
+
+  return true;
+}
+
+/**
  * The result buffer that holds this frame's timestamps for a pass, or null
  * when the pass cannot be read this frame.
  */
 function bufferToRead(state: PassTimestampState): TimestampBuffers | null {
-  const { descriptor, timeStampQuerySet, currentTimestampQueryBuffers } = state;
+  const { currentTimestampQueryBuffers } = state;
 
-  // three puts the timestamp writes on a pass's descriptor once, when it
-  // creates the pass's query set. A resize rebuilds the descriptor without
-  // them, and stopTiming takes them off. This frame then drew untimed, and
-  // its resolved timestamps are stale, so put the writes back for the next
-  // frame and skip this one.
-  if (descriptor && timeStampQuerySet && !descriptor.timestampWrites) {
-    descriptor.timestampWrites = {
-      querySet: timeStampQuerySet,
-      beginningOfPassWriteIndex: 0,
-      endOfPassWriteIndex: 1,
-    };
-
-    return null;
-  }
+  // A descriptor without its writes drew this frame untimed, and its
+  // resolved timestamps are stale, so put the writes back for the next frame
+  // and skip this one.
+  if (restoreTimestampWrites(state)) return null;
   // No buffers yet means three has not drawn this pass with timing on. A
   // buffer still mapped from an earlier read was skipped by this frame's
   // resolve, so it holds an older frame than the other pass.

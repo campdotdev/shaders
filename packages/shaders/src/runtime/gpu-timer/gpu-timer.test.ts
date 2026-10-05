@@ -94,6 +94,10 @@ const makePasses = (): [TimedPass, TimedPass] => [
 // Lets the timer's map-and-read promise chains settle.
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
+// The draw a test hands the timer. The fake backend's pass states already
+// say what three drew.
+const drawNothing = () => undefined;
+
 describe('createGpuTimer', () => {
   beforeEach(() => {
     vi.stubGlobal('GPUMapMode', { READ: 1 });
@@ -113,7 +117,7 @@ describe('createGpuTimer', () => {
     timer.start(onFrameTime);
     setPassState(passes[0], scenePass);
     setPassState(passes[1], outputPass);
-    timer.collect();
+    timer.measure(drawNothing);
     await settle();
 
     return onFrameTime;
@@ -143,17 +147,41 @@ describe('createGpuTimer', () => {
     expect(onFrameTime.mock.calls[0]?.[0]).toBeCloseTo(0.2);
   });
 
-  it("turns on the backend's timestamp flag while timing, and off after the last stop", () => {
+  // three puts timestamp writes on every pass it begins while the flag is on,
+  // so a flag left on would time passes the timer never reads.
+  it("turns on the backend's timestamp flag only inside the draw, until the last stop", () => {
     const { renderer, backend } = makeRenderer();
     const timer = createGpuTimer(renderer, makePasses());
+    const flagInsideDraws: boolean[] = [];
+    const drawRecordingFlag = () => {
+      flagInsideDraws.push(backend.trackTimestamp);
+    };
 
     const stopFirst = timer.start(vi.fn());
     const stopSecond = timer.start(vi.fn());
 
-    expect(backend.trackTimestamp).toBe(true);
+    expect(backend.trackTimestamp).toBe(false);
+    timer.measure(drawRecordingFlag);
+    expect(backend.trackTimestamp).toBe(false);
     stopFirst();
-    expect(backend.trackTimestamp).toBe(true);
+    timer.measure(drawRecordingFlag);
     stopSecond();
+    timer.measure(drawRecordingFlag);
+
+    expect(flagInsideDraws).toEqual([true, true, false]);
+  });
+
+  it('turns the flag off when the draw throws', () => {
+    const { renderer, backend } = makeRenderer();
+    const timer = createGpuTimer(renderer, makePasses());
+
+    timer.start(vi.fn());
+
+    expect(() =>
+      timer.measure(() => {
+        throw new Error('device lost');
+      }),
+    ).toThrow('device lost');
     expect(backend.trackTimestamp).toBe(false);
   });
 
@@ -173,6 +201,25 @@ describe('createGpuTimer', () => {
     expect(states[1]?.descriptor).not.toHaveProperty('timestampWrites');
   });
 
+  // three adds the writes only when it creates a pass's query set, which a
+  // restart does not. An idle scene may draw only the one frame after it.
+  it('puts the timestamp writes back when timing starts again, and times the next frame', async () => {
+    const { renderer, setPassState } = makeRenderer();
+    const passes = makePasses();
+    const timer = createGpuTimer(renderer, passes);
+    const onFrameTime = vi.fn();
+
+    setPassState(passes[0], timedPassState(10, 11));
+    setPassState(passes[1], timedPassState(11, 12));
+    timer.start(vi.fn())();
+    timer.start(onFrameTime);
+    timer.measure(drawNothing);
+    await settle();
+
+    expect(onFrameTime).toHaveBeenCalledTimes(1);
+    expect(onFrameTime.mock.calls[0]?.[0]).toBeCloseTo(2);
+  });
+
   // three skips the resolve into a buffer that is still mapped from an
   // earlier read, so that buffer holds an older frame. Reading the other pass
   // alone would pair two different frames.
@@ -188,7 +235,7 @@ describe('createGpuTimer', () => {
     timer.start(onFrameTime);
     setPassState(passes[0], ready);
     setPassState(passes[1], busy);
-    timer.collect();
+    timer.measure(drawNothing);
     await settle();
 
     expect(ready.currentTimestampQueryBuffers?.resultBuffer.mapAsync).not.toHaveBeenCalled();
@@ -196,8 +243,7 @@ describe('createGpuTimer', () => {
   });
 
   // three attaches a pass's timestamp writes only when it creates the pass's
-  // query set. A resize rebuilds the descriptor without them, and so does a
-  // restart after stop removed them.
+  // query set. A resize rebuilds the descriptor without them.
   it('puts the timestamp writes back on a rebuilt descriptor, and skips that frame', async () => {
     const { renderer, setPassState } = makeRenderer();
     const passes = makePasses();
@@ -209,7 +255,7 @@ describe('createGpuTimer', () => {
     timer.start(onFrameTime);
     setPassState(passes[0], rebuilt);
     setPassState(passes[1], timedPassState(10, 11));
-    timer.collect();
+    timer.measure(drawNothing);
     await settle();
 
     expect(rebuilt.descriptor.timestampWrites).toEqual({
@@ -219,7 +265,7 @@ describe('createGpuTimer', () => {
     });
     expect(onFrameTime).not.toHaveBeenCalled();
 
-    timer.collect();
+    timer.measure(drawNothing);
     await settle();
 
     expect(onFrameTime).toHaveBeenCalledTimes(1);
@@ -233,23 +279,25 @@ describe('createGpuTimer', () => {
 
     timer.start(onFrameTime);
     setPassState(passes[0], timedPassState(10, 11));
-    timer.collect();
+    timer.measure(drawNothing);
     await settle();
 
     expect(onFrameTime).not.toHaveBeenCalled();
   });
 
-  it('reads nothing while no one is timing', async () => {
+  it('draws, and reads nothing, while no one is timing', async () => {
     const { renderer, setPassState } = makeRenderer();
     const passes = makePasses();
     const timer = createGpuTimer(renderer, passes);
     const state = timedPassState(10, 11);
+    const draw = vi.fn();
 
     setPassState(passes[0], state);
     setPassState(passes[1], timedPassState(10, 11));
-    timer.collect();
+    timer.measure(draw);
     await settle();
 
+    expect(draw).toHaveBeenCalledTimes(1);
     expect(state.currentTimestampQueryBuffers?.resultBuffer.mapAsync).not.toHaveBeenCalled();
   });
 
@@ -265,7 +313,7 @@ describe('createGpuTimer', () => {
     timer.start(onFrameTime);
     setPassState(passes[0], timedPassState(10, 11));
     setPassState(passes[1], timedPassState(10, 11));
-    timer.collect();
+    timer.measure(drawNothing);
     await settle();
 
     expect(backend.trackTimestamp).toBe(false);
@@ -277,7 +325,7 @@ describe('createGpuTimer', () => {
 
     expect(() => {
       timer.start(vi.fn())();
-      timer.collect();
+      timer.measure(drawNothing);
     }).not.toThrow();
   });
 });

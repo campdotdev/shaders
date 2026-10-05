@@ -2,9 +2,10 @@
 
 // Debug overlay: a small corner readout of the enclosing scene's frame rate,
 // GPU time per frame, and tick count, each averaged over 500ms windows. The
-// fps stalls and the tick counter freezes when the scene goes idle. GPU time
-// can show a nearly full GPU while fps still reads 60, and the monitor turns
-// the scene's GPU timing on only while it is mounted.
+// fps stalls and the tick counter freezes when the scene goes idle, and the
+// GPU time settles on the scene's last frames. GPU time can show a nearly
+// full GPU while fps still reads 60, and the monitor turns the scene's GPU
+// timing on only while it is mounted.
 import { type CSSProperties, useContext, useEffect, useRef, useState } from 'react';
 
 import { ShaderContext } from '../../context/shader-context.js';
@@ -30,6 +31,10 @@ const baseStyle: CSSProperties = {
   pointerEvents: 'none',
   whiteSpace: 'pre',
 };
+
+// How long each fps and GPU average runs, in milliseconds. Longer reads
+// steadier, and shorter shows a spike sooner.
+const WINDOW_MILLISECONDS = 500;
 
 export interface ShaderMonitorProps {
   anchor?: ShaderMonitorAnchor;
@@ -57,9 +62,26 @@ export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
       frames: number;
       milliseconds: number | null;
     } = { totalMilliseconds: 0, frames: 0, milliseconds: null };
+    // A window with no frame time keeps the last average.
+    const closeGpuWindow = () => {
+      if (gpuAccumulator.frames === 0) return;
+      gpuAccumulator.milliseconds = gpuAccumulator.totalMilliseconds / gpuAccumulator.frames;
+      gpuAccumulator.totalMilliseconds = 0;
+      gpuAccumulator.frames = 0;
+    };
+    // An idle scene stops ticking, so the frame times of its last draws
+    // arrive after its last tick, and no tick closes their window. Each frame
+    // time pushes this timeout back, so it fires only once a window passes
+    // with none arriving, and then it closes the window.
+    let quietTimeout: ReturnType<typeof setTimeout> | undefined;
     const stopGpuTiming = shaderContext.timeGpu((frameMilliseconds) => {
       gpuAccumulator.totalMilliseconds += frameMilliseconds;
       gpuAccumulator.frames += 1;
+      clearTimeout(quietTimeout);
+      quietTimeout = setTimeout(() => {
+        closeGpuWindow();
+        setStats((current) => ({ ...current, gpuMilliseconds: gpuAccumulator.milliseconds }));
+      }, WINDOW_MILLISECONDS);
     });
 
     const schedulerTickHandler = (tick: { now: number }) => {
@@ -70,16 +92,11 @@ export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
       if (fpsAccumulator.lastSampleAt === 0) fpsAccumulator.lastSampleAt = tick.now;
       const deltaTimeSinceLastSample = tick.now - fpsAccumulator.lastSampleAt;
 
-      if (deltaTimeSinceLastSample >= 500) {
+      if (deltaTimeSinceLastSample >= WINDOW_MILLISECONDS) {
         fpsAccumulator.fps = Math.round((fpsAccumulator.frames * 1000) / deltaTimeSinceLastSample);
         fpsAccumulator.frames = 0;
         fpsAccumulator.lastSampleAt = tick.now;
-        // A window with no frame time keeps the last average.
-        if (gpuAccumulator.frames > 0) {
-          gpuAccumulator.milliseconds = gpuAccumulator.totalMilliseconds / gpuAccumulator.frames;
-          gpuAccumulator.totalMilliseconds = 0;
-          gpuAccumulator.frames = 0;
-        }
+        closeGpuWindow();
       }
       setStats({
         fps: fpsAccumulator.fps,
@@ -90,9 +107,13 @@ export function ShaderMonitor({ anchor = 'top-right' }: ShaderMonitorProps) {
     };
 
     shaderContext.scheduler.add(schedulerTickHandler);
+    // An idle scene draws nothing until something asks, so ask it for one
+    // frame to time. A scene that is still animating ignores the request.
+    shaderContext.scheduler.requestRender();
 
     return () => {
       shaderContext.scheduler.remove(schedulerTickHandler);
+      clearTimeout(quietTimeout);
       stopGpuTiming();
     };
   }, [shaderContext]);

@@ -160,20 +160,22 @@ export function createOutputStage(
     // encoded twice. The restore runs in a finally block so a draw that
     // throws (a lost device, say) cannot leave both switched off, where the
     // next rebuildOutputNode would capture them and bake the wrong settings
-    // into the quad's material for every frame after. Once both passes are
-    // drawn, the timer reads back their timestamps while timing is on.
+    // into the quad's material for every frame after. The timer wraps the
+    // draw, which holds exactly the two passes it measures, because three
+    // renders the scene pass while it draws the quad that samples it.
     render() {
-      const { toneMapping, outputColorSpace } = renderer;
+      gpuTimer.measure(() => {
+        const { toneMapping, outputColorSpace } = renderer;
 
-      renderer.toneMapping = NoToneMapping;
-      renderer.outputColorSpace = LinearSRGBColorSpace;
-      try {
-        outputQuad.render(renderer);
-      } finally {
-        renderer.toneMapping = toneMapping;
-        renderer.outputColorSpace = outputColorSpace;
-      }
-      gpuTimer.collect();
+        renderer.toneMapping = NoToneMapping;
+        renderer.outputColorSpace = LinearSRGBColorSpace;
+        try {
+          outputQuad.render(renderer);
+        } finally {
+          renderer.toneMapping = toneMapping;
+          renderer.outputColorSpace = outputColorSpace;
+        }
+      });
     },
 
     dispose() {

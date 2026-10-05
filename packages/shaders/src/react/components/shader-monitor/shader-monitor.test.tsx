@@ -57,6 +57,7 @@ function startScheduler() {
 
 describe('ShaderMonitor', () => {
   afterEach(() => {
+    vi.useRealTimers();
     vi.unstubAllGlobals();
   });
 
@@ -103,6 +104,51 @@ describe('ShaderMonitor', () => {
     tickAt(1600);
 
     expect(screen.getByTestId('shaders-monitor-gpu').textContent).toBe('gpu: 5.25 ms');
+  });
+
+  // An idle scene stops ticking, so the frame times of its last draws arrive
+  // with no tick left to close their window.
+  it('shows the GPU time of an idle scene once a window passes with no new frame time', () => {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] });
+    const { scheduler, tickAt } = startScheduler();
+    let reportFrameTime: (milliseconds: number) => void = () => undefined;
+    const timeGpu: ShaderContextValue['timeGpu'] = (onFrameTime) => {
+      reportFrameTime = onFrameTime;
+
+      return () => undefined;
+    };
+
+    render(<ShaderMonitor />, { wrapper: createContextWrapper(scheduler, timeGpu) });
+    tickAt(1000);
+    reportFrameTime(3);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+    reportFrameTime(4);
+    act(() => {
+      vi.advanceTimersByTime(300);
+    });
+
+    expect(screen.getByTestId('shaders-monitor-gpu').textContent).toBe('gpu: —');
+
+    act(() => {
+      vi.advanceTimersByTime(200);
+    });
+
+    expect(screen.getByTestId('shaders-monitor-gpu').textContent).toBe('gpu: 3.50 ms');
+  });
+
+  it('asks an idle scene for a frame when it mounts', () => {
+    const { scheduler, tickAt } = startScheduler();
+
+    // The scene's own draw, which has run its last tick and parked.
+    scheduler.add(() => undefined);
+    scheduler.setIdle(true);
+    tickAt(1000);
+    render(<ShaderMonitor />, { wrapper: createContextWrapper(scheduler) });
+    tickAt(1016);
+
+    expect(screen.getByTestId('shaders-monitor-ticks').textContent).toBe('ticks: 1');
   });
 
   it('turns GPU timing off when it unmounts', () => {

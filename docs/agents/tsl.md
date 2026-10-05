@@ -92,9 +92,9 @@ A component whose `colorNode` emits light-contribution rgb with coverage alpha, 
 
 `ShaderMonitor` reads GPU time from `runtime/gpu-timer/`, which times the scene pass and the output quad. three 0.170 reads timestamps only on its async render path, and a scene draws synchronously. So the timer turns on the backend's `trackTimestamp` flag after init, and it maps the result buffers that WebGPUBackend resolves at the end of each pass.
 
-three puts `timestampWrites` on a pass descriptor only when it creates that pass's query set. A resize rebuilds the descriptor without them, so the pass draws untimed while three keeps resolving the last timestamps it wrote. The timer puts the writes back and skips that frame. At a three upgrade, check whether three re-attaches the writes itself, and delete that step if it does.
+three puts `timestampWrites` on a pass descriptor only when it creates that pass's query set. A resize rebuilds the descriptor without them, so the pass draws untimed while three keeps resolving the last timestamps it wrote. The timer puts the writes back and skips that frame. Stopping the timer removes the writes, so starting it again puts them back before the next draw. At a three upgrade, check whether three re-attaches the writes itself, and delete those steps if it does.
 
-The flag times every pass while it is on, not only the two the timer reads, so a pass such as `CursorRipple`'s wave field gets timestamp writes too. The timer removes the writes from its own two passes when timing stops, and the others keep theirs, which costs the GPU two timestamps per pass.
+The flag times every pass three begins while it is on, not only the two the timer reads. So the timer turns it on only for the output stage's draw, which holds exactly its two passes, and turns it off after. A pass drawn anywhere else, such as `CursorRipple`'s wave field, never gets timestamp writes. Don't leave the flag on between frames: three would give every such pass writes that the timer never removes.
 
 On Apple silicon the two passes overlap. The output quad starts about 0.1ms after the scene pass and ends just after it, so the timer reports the union of the two spans, not their sum. Metal writes no end timestamp for a pass that drew nothing, and the unwritten timestamp reads as 0.
 
