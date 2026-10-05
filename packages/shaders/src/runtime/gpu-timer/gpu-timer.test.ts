@@ -233,6 +233,23 @@ describe('createGpuTimer', () => {
     expect(states[1]?.descriptor).not.toHaveProperty('timestampWrites');
   });
 
+  // three would not put the writes back, so app code timing its own passes
+  // would read stale timestamps from then on.
+  it('keeps the timestamp writes after the last stop while app code has the flag on', () => {
+    const { renderer, backend, setPassState } = makeRenderer();
+    const passes = makePasses();
+    const timer = createGpuTimer(renderer, passes);
+    const state = timedPassState(10, 11);
+
+    backend.trackTimestamp = true;
+    const stop = timer.start(vi.fn());
+
+    setPassState(passes[0], state);
+    stop();
+
+    expect(state.descriptor).toHaveProperty('timestampWrites');
+  });
+
   // three adds the writes only when it creates a pass's query set, which a
   // restart does not. An idle scene may draw only the one frame after it.
   it('puts the timestamp writes back when timing starts again, and times the next frame', async () => {

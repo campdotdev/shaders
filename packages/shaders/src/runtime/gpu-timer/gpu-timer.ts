@@ -151,6 +151,9 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
         if (!listeners.delete(listener) || listeners.size > 0) return;
         // three stops resolving a query set once timing is off, but a cached
         // descriptor would keep asking the GPU to write timestamps into it.
+        // App code that turned the flag on itself still reads them, and three
+        // would not put the writes back, so they stay while the flag is on.
+        if (timestampBackend.trackTimestamp) return;
         for (const state of passStates(timestampBackend) ?? []) {
           delete state.descriptor?.timestampWrites;
         }
