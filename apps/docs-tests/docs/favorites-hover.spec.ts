@@ -30,12 +30,24 @@ const scene = (favorite: Locator) => favorite.locator('[data-scene]');
 // SwiftShader the full-width Aurora hero otherwise takes every CPU cycle, and
 // a favorite's renderer never finishes starting. The section is what scrolls,
 // because the list itself is `display: contents` and has no box to scroll to.
+// It scrolls twice: the section rides in the hero's sticky pin (SHA-187),
+// so the first scroll aims at where it sits while the pin holds, and lands
+// past the pin's release with the section still partway down. The hero
+// finishes its change on the next frame, which moves the section again, so
+// the second scroll waits for that frame and then lands the section at the
+// top.
 async function open(page: Page): Promise<void> {
   await page.goto('/');
   await page.waitForLoadState('networkidle');
-  await favoritesList(page).evaluate((list) =>
-    list.closest('section')!.scrollIntoView({ block: 'start' }),
-  );
+  await favoritesList(page).evaluate(async (list) => {
+    const section = list.closest('section')!;
+    const nextFrames = () =>
+      new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
+    section.scrollIntoView({ block: 'start' });
+    await nextFrames();
+    section.scrollIntoView({ block: 'start' });
+  });
 }
 
 // The elements under the favorites list that match `selector`, counted on

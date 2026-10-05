@@ -55,12 +55,19 @@ export function DemoLayout({ controls, children }: { controls: ReactNode; childr
  * and the rounded clip, for a page that lays out the demo itself instead of
  * through DemoLayout. It takes its height cap from its parent's max-height,
  * through the inherit chain in scroll-area.module.css, so the parent sets
- * max-height rather than height.
+ * max-height rather than height. `className` joins the scroll area root's
+ * own, for a host that sizes or grounds the root itself.
  */
-export function ControlsScroller({ children }: { children: ReactNode }) {
+export function ControlsScroller({
+  className,
+  children,
+}: {
+  className?: string;
+  children: ReactNode;
+}) {
   return (
     <ScrollArea
-      className={styles.scroller}
+      className={className === undefined ? styles.scroller : `${styles.scroller} ${className}`}
       edgeFades="both"
       overflowEdgeThreshold={{ yStart: FADE_START_THRESHOLD_PX, yEnd: FADE_END_THRESHOLD_PX }}
       viewportClassName={styles.viewport}

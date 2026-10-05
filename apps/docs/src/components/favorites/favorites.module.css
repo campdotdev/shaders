@@ -127,6 +127,47 @@
   transition: opacity var(--fade-sm) var(--ease-out);
 }
 
+/* ---- The reveal ----
+   The first time the grid scrolls into view, its heading fades in, then
+   each card fades in and rises into place, in reading order.
+   favorites-reveal.tsx decides when, by setting data-reveal on the grid:
+   pending while it waits below the viewport, shown once it crosses the
+   reveal line. Only the reveal transitions, so hiding is instant.
+
+   Each item waits --reveal-index steps of the stagger, the heading 0 and
+   the cards 1 to 7 (favorites-list.tsx), so the wave runs about 0.85s:
+   7 steps of 50ms plus one item's 500ms. The heading only fades, so the
+   cards' rise carries the motion. The curve is the site's --ease-out,
+   fast off the mark with a long settle. 500ms is past the --duration-*
+   tokens' 400ms top, which those reserve for toasts and drawers, because
+   this entrance is a page-sized group rather than one small piece of UI.
+   A longer duration or stagger slows the wave, and a longer distance makes
+   the rise read stronger. Under reduced motion none of this applies and
+   the grid is at rest. */
+@media (prefers-reduced-motion: no-preference) {
+  .grid {
+    --reveal-duration: 500ms;
+    --reveal-stagger: 50ms;
+    --reveal-distance: 24px;
+  }
+
+  .grid[data-reveal='pending'] .heading {
+    opacity: 0;
+  }
+
+  .grid[data-reveal='pending'] .list > li {
+    opacity: 0;
+    transform: translateY(var(--reveal-distance));
+  }
+
+  .grid[data-reveal='shown'] :is(.heading, .list > li) {
+    transition:
+      opacity var(--reveal-duration) var(--ease-out),
+      transform var(--reveal-duration) var(--ease-out);
+    transition-delay: calc(var(--reveal-index, 0) * var(--reveal-stagger));
+  }
+}
+
 /* On a phone the heading is a row of its own above the cards, on one
    24px line, as the phone mock draws it. */
 @container site (width < 40rem) {

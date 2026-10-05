@@ -1,38 +1,243 @@
-/* The hero's frame, after the Figma mock: a muted panel with a 2px border and
-   24px corners, holding the scene 12px in, with the scene's own corners at
-   12px so the two curves run parallel. */
+/* The homepage hero's track, pin, and stage. Before any script runs, the
+   hero stands at the change's start: these rules size it, and the motion
+   values' start values, rendered inline, give its 14px inset and 24px
+   corners (home-hero.tsx). The rules at the end lay out the flow demo. */
+
+/* ---- Track, pin, and spacer ---- */
+
+/* The pin holds the hero and the rest of the page under it, and the spacer
+   after it is the scroll the pin holds for, which home-hero.tsx sets from
+   SCRUB_DISTANCE_VH. A sticky box stays stuck until its bottom meets its
+   parent's, so the pin holds while the spacer scrolls under it, and the
+   spacer never shows as empty space. While it holds, the visitor sees the
+   hero or the demo and the top of the favorites.
+
+   Once the pin catches, the page has the pin's height plus the spacer's
+   left to scroll, less a viewport. The pin releases a spacer's height
+   later. On a tall window the rest of the page is shorter than the
+   viewport, so the page would run out of scroll before the change lands.
+   The pin is at least a viewport tall to prevent that. 100vh is the large
+   viewport, never shorter than the visible one.
+
+   The pin's height follows the frame's through the change, which moves
+   everything below the track. Scroll anchoring would answer that by
+   scrolling the page to keep what's on screen in place, which would fight
+   the scroll driving the change, so it is off here. */
+.track {
+  overflow-anchor: none;
+}
+
+.pin {
+  position: sticky;
+  top: 0;
+  min-height: 100vh;
+}
+
+.spacer {
+  height: var(--scrub-distance);
+}
+
+/* ---- Hero ---- */
+
+/* 32px above and below the stage, the hero section's padding, which keeps
+   64px between the intro and the hero's frame, and 64px between the frame
+   and the favorites with their own 32px. */
+.hero {
+  padding-block: var(--spacing-8);
+}
+
+/* On a phone the intro's own 24px is the space above the hero, and 24px
+   sits under it. */
+@container site (width < 40rem) {
+  .hero {
+    padding-block: 0 var(--spacing-6);
+  }
+}
+
+/* Clips the panel while it waits past the right edge, without clipping
+   anything vertically, and anchors the panel. */
+.container {
+  position: relative;
+  overflow-x: clip;
+}
+
+/* ---- Frame: the hero at the start, the demo's scene at the end ---- */
+
+/* Its width, its x, and the padding that insets the scene come from
+   home-hero.tsx. The padding is the hero's 12px plus the 2px border, which
+   the ring below draws over it. */
 .frame {
-  padding: var(--spacing-3);
-  border: var(--border-width-2) solid var(--white-a5);
-  border-radius: var(--radius-3xl);
+  position: relative;
+}
+
+/* The hero's muted panel, under the scene. */
+.chromeFill {
+  position: absolute;
+  inset: 0;
   background: var(--bg-muted);
 }
 
-/* The mock's scene box is 1636 by 696, about 2.35:1, and the scene keeps
-   that shape at every width. The poster and the canvas both cover it
+/* The hero's 2px border, drawn over the scene rather than under it. Once
+   the scene has grown out to fill the frame, the ring sits on the scene's
+   edge, where it becomes the demo's hairline. */
+.chromeRing {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border: var(--border-width-2) solid var(--white-a5);
+  pointer-events: none;
+}
+
+/* The mock's scene box is 1636 by 696, about 2.35:1, and before measuring
+   the scene keeps that shape. Once measured, home-hero.tsx sets its height,
+   which overrides the ratio. The poster and the canvas both cover it
    absolutely (ShaderPoster and ShaderScene), so this box is what sizes
    them. */
 .scene {
   position: relative;
+  z-index: 1;
+  width: 100%;
   aspect-ratio: 1636 / 696;
   overflow: hidden;
   isolation: isolate;
   border-radius: var(--radius-xl);
 }
 
-/* The phone mock drops the outer panel and draws the scene alone at 16:9,
-   with the panel's 2px border moved onto it. The canvas and the poster
-   fill the box inside the border. */
-@container site (width < 40rem) {
+/* ---- Panel ---- */
+
+/* Only the position: the hairline, the scroll, and the edge fades come from
+   the demo's own ControlsScroller. home-hero.tsx sets the panel's height and
+   max-height to the frame's height on every scroll tick, so the two
+   outlines share a top and a bottom through the change. */
+.panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+
+/* The scroller fills the panel, so where the frame is taller than the
+   controls, as at the start of the change on a wide window, the hairline
+   still runs the frame's height. The panel's own muted ground and corners
+   fill the space under the last row, so it reads as panel rather than a
+   gap. Where the frame is shorter, the scroller's max-height caps it and
+   the controls scroll, with the bottom edge fade saying there are more. */
+.panelScroller {
+  height: 100%;
+  border-radius: var(--radius-xl);
+  background: var(--bg-muted);
+}
+
+/* The hero's <picture>, covering the scene as the canvas does
+   (home-hero.tsx's HeroPoster). It is the positioned box next/image's fill
+   covers. */
+.poster {
+  position: absolute;
+  inset: 0;
+}
+
+/* While the hero pins, the panel waits hidden until the first measure
+   places it past the container's edge, rather than showing at the frame's
+   top left with no size. The media query is the flow demo's below, turned
+   around: where the hero pins. */
+@media (width >= 55rem) and (prefers-reduced-motion: no-preference) {
+  .track:not([data-pinned]) .panel {
+    visibility: hidden;
+  }
+}
+
+/* ---- The flow demo ----
+   Where the hero doesn't pin, the finished demo sits in the page's flow:
+   the 3:2 scene with the hairline and the panel, laid out as on Aurora's
+   docs page, and working the same. The media query is geometry.ts's
+   FLOW_MEDIA, written out, which the script pins by too, so these rules
+   apply from the first paint exactly where the script will decide not to
+   pin. Keep the two in step.
+
+   The motion values keep the hero's start values inline whatever the mode,
+   so the frame's, the scene's, and the panel's sizes and positions here
+   take !important to win over them.
+
+   Side by side, the scene column is 896px, or less where the container
+   leaves under 896px beside the 16px gap and the 288px panel, and the group
+   centers in the container, as the pinned end state does. The panel is the
+   scene's height, 2/3 of its column: 100cqw is the site's width, less the
+   two 32px gutters, the gap, and the panel. Keep in step with computeLayout
+   in geometry.ts. */
+@media (width < 55rem), (prefers-reduced-motion: reduce) {
+  .pin {
+    position: static;
+    min-height: auto;
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  .container {
+    display: grid;
+    grid-template-columns: minmax(0, var(--container-4xl)) var(--container-2xs);
+    justify-content: center;
+    align-items: start;
+    gap: var(--spacing-4);
+  }
+
   .frame {
-    padding: 0;
-    border: none;
-    border-radius: 0;
-    background: none;
+    width: 100% !important;
+    padding: 0 !important;
+    transform: none !important;
+  }
+
+  .chromeFill {
+    display: none;
+  }
+
+  .chromeRing {
+    border-radius: var(--radius-xl) !important;
   }
 
   .scene {
-    aspect-ratio: 16 / 9;
-    border: var(--border-width-2) solid var(--white-a5);
+    height: auto !important;
+    aspect-ratio: 3 / 2;
+  }
+
+  .panel {
+    position: static;
+    width: auto !important;
+    height: calc(
+      min(
+          var(--container-4xl),
+          100cqw - 2 * var(--spacing-8) - var(--spacing-4) - var(--container-2xs)
+        ) *
+        2 / 3
+    ) !important;
+    max-height: calc(
+      min(
+          var(--container-4xl),
+          100cqw - 2 * var(--spacing-8) - var(--spacing-4) - var(--container-2xs)
+        ) *
+        2 / 3
+    ) !important;
+    transform: none !important;
+    mask-image: none !important;
+  }
+}
+
+/* Stacked, under 55rem of viewport, where the scene column would drop
+   below 512px, as the docs page stacks its demo: the scene on top, then
+   12px, the mock's gap, then the panel, capped at the sm container's 384px
+   and scrolling, so a phone sees the scene with the top of the panel under
+   it (demo-layout.module.css). It tests the viewport, as FLOW_MEDIA does,
+   rather than the site container, which leaves out a classic scrollbar, so
+   these rules never meet a pinned hero. They refine the flow demo above,
+   and win on order. */
+@media (width < 55rem) {
+  .container {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--spacing-3);
+  }
+
+  .panel {
+    height: auto !important;
+    max-height: var(--container-sm) !important;
   }
 }
