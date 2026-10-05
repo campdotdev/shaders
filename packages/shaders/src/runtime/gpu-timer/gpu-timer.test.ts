@@ -60,7 +60,15 @@ function makeRenderer({ timestampQuery = true, webgpu = true, timestampFlag = tr
     get: (renderContext: object) => {
       if (!passStates.has(renderContext)) passStates.set(renderContext, {});
 
-      return passStates.get(renderContext);
+      return passStates.get(renderContext)!;
+    },
+    // Like three, adds the writes only when it creates the pass's query set.
+    initTimestampQuery: (renderContext: object, descriptor: { timestampWrites?: unknown }) => {
+      const state = backend.get(renderContext);
+
+      if (!backend.trackTimestamp || state.timeStampQuerySet) return;
+      state.timeStampQuerySet = {};
+      descriptor.timestampWrites = { querySet: state.timeStampQuerySet };
     },
   };
 
@@ -87,7 +95,16 @@ function makeRenderer({ timestampQuery = true, webgpu = true, timestampFlag = tr
     passStates.set(renderer._renderContexts!.get(pass.scene, pass.camera), state);
   };
 
-  return { renderer, backend, setPassState };
+  /** A draw that begins each pass the way three does, on the descriptor in its state. */
+  const drawPasses = (passes: readonly TimedPass[]) => () => {
+    for (const { scene, camera } of passes) {
+      const renderContext = renderer._renderContexts!.get(scene, camera);
+
+      backend.initTimestampQuery(renderContext, backend.get(renderContext).descriptor ?? {});
+    }
+  };
+
+  return { renderer, backend, setPassState, drawPasses };
 }
 
 const makePasses = (): [TimedPass, TimedPass] => [
@@ -177,22 +194,28 @@ describe('createGpuTimer', () => {
 
   // App code can reach the renderer through the scene context and turn the
   // flag on itself.
-  it.each([false, true])('puts back the flag it found (%s), even when the draw throws', (found) => {
-    const { renderer, backend } = makeRenderer();
-    const timer = createGpuTimer(renderer, makePasses());
+  it.each([false, true])(
+    'puts back the flag it found (%s) and initTimestampQuery, even when the draw throws',
+    (found) => {
+      const { renderer, backend } = makeRenderer();
+      const timer = createGpuTimer(renderer, makePasses());
+      const { initTimestampQuery } = backend;
 
-    backend.trackTimestamp = found;
-    timer.start(vi.fn());
-    timer.measure(drawNothing);
+      backend.trackTimestamp = found;
+      timer.start(vi.fn());
+      timer.measure(drawNothing);
 
-    expect(backend.trackTimestamp).toBe(found);
-    expect(() =>
-      timer.measure(() => {
-        throw new Error('device lost');
-      }),
-    ).toThrow('device lost');
-    expect(backend.trackTimestamp).toBe(found);
-  });
+      expect(backend.trackTimestamp).toBe(found);
+      expect(backend.initTimestampQuery).toBe(initTimestampQuery);
+      expect(() =>
+        timer.measure(() => {
+          throw new Error('device lost');
+        }),
+      ).toThrow('device lost');
+      expect(backend.trackTimestamp).toBe(found);
+      expect(backend.initTimestampQuery).toBe(initTimestampQuery);
+    },
+  );
 
   it("removes the timestamp writes from the passes' descriptors after the last stop", () => {
     const { renderer, setPassState } = makeRenderer();
@@ -213,7 +236,7 @@ describe('createGpuTimer', () => {
   // three adds the writes only when it creates a pass's query set, which a
   // restart does not. An idle scene may draw only the one frame after it.
   it('puts the timestamp writes back when timing starts again, and times the next frame', async () => {
-    const { renderer, setPassState } = makeRenderer();
+    const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
     const timer = createGpuTimer(renderer, passes);
     const onFrameTime = vi.fn();
@@ -222,7 +245,7 @@ describe('createGpuTimer', () => {
     setPassState(passes[1], timedPassState(11, 12));
     timer.start(vi.fn())();
     timer.start(onFrameTime);
-    timer.measure(drawNothing);
+    timer.measure(drawPasses(passes));
     await settle();
 
     expect(onFrameTime).toHaveBeenCalledTimes(1);
@@ -252,31 +275,29 @@ describe('createGpuTimer', () => {
   });
 
   // three attaches a pass's timestamp writes only when it creates the pass's
-  // query set. A resize rebuilds the descriptor without them.
-  it('puts the timestamp writes back on a rebuilt descriptor, and skips that frame', async () => {
-    const { renderer, setPassState } = makeRenderer();
+  // query set. A resize rebuilds the descriptor without them, and a paused
+  // or idle scene draws only the one frame at its new size.
+  it('puts the timestamp writes back on a rebuilt descriptor before its pass begins, and times that frame', async () => {
+    const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
     const timer = createGpuTimer(renderer, passes);
     const onFrameTime = vi.fn();
     const rebuilt = timedPassState(10, 11);
+    const writesAtPassBegin: unknown[] = [];
 
     rebuilt.descriptor = {};
     timer.start(onFrameTime);
     setPassState(passes[0], rebuilt);
     setPassState(passes[1], timedPassState(10, 11));
-    timer.measure(drawNothing);
-    await settle();
-
-    expect(rebuilt.descriptor.timestampWrites).toEqual({
-      querySet: rebuilt.timeStampQuerySet,
-      beginningOfPassWriteIndex: 0,
-      endOfPassWriteIndex: 1,
+    timer.measure(() => {
+      drawPasses(passes)();
+      writesAtPassBegin.push(rebuilt.descriptor?.timestampWrites);
     });
-    expect(onFrameTime).not.toHaveBeenCalled();
-
-    timer.measure(drawNothing);
     await settle();
 
+    expect(writesAtPassBegin).toEqual([
+      { querySet: rebuilt.timeStampQuerySet, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 },
+    ]);
     expect(onFrameTime).toHaveBeenCalledTimes(1);
   });
 
