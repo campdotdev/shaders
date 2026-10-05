@@ -51,14 +51,17 @@ function AuroraShaderReader({ onCompiled }: { onCompiled: (compiled: CompiledAur
     // getShaderAsync compiles the scene, then returns the shader three built
     // for this mesh's material. Aurora is transparent, so the compile would
     // throw and blank the canvas without the flag flip (the
-    // transparent-compile gotcha in docs/agents/tsl.md).
+    // transparent-compile gotcha in docs/agents/tsl.md). The finally puts
+    // back the value it found.
+    const wasTransparent = three.transparent;
+
     three.transparent = false;
     let shaderRead: ReturnType<typeof three.debug.getShaderAsync>;
 
     try {
       shaderRead = three.debug.getShaderAsync(scene, camera, auroraMesh);
     } finally {
-      three.transparent = true;
+      three.transparent = wasTransparent;
     }
 
     void shaderRead
