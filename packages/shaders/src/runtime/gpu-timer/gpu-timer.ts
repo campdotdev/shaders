@@ -271,7 +271,7 @@ async function readPassSpan(buffers: TimestampBuffers): Promise<PassSpan> {
 function busyMilliseconds(spans: readonly PassSpan[]): number | null {
   const usable = spans
     .filter(({ begin, end }) => begin > 0n && end >= begin)
-    .sort((first, second) => (first.begin < second.begin ? -1 : 1));
+    .sort((first, second) => Number(first.begin - second.begin));
 
   if (usable.length === 0) return null;
 
