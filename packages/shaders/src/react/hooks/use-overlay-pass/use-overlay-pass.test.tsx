@@ -34,6 +34,7 @@ function makeCtx(): {
       throw new Error('not used by this hook');
     },
     canvasSize: { get: () => [0, 0, 1] as const, on: () => () => undefined },
+    timeGpu: () => () => undefined,
   };
 
   return { ctx, registered, cleanups };

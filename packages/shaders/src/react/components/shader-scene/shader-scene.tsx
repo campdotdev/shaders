@@ -185,6 +185,7 @@ export function ShaderScene({
           registerBaseUvTransform: outputStage.registerBaseUvTransform,
           getCursorInput: cursorInput.get,
           canvasSize: canvasWatch.canvasSize,
+          timeGpu: outputStage.timeGpu,
         });
       } catch (caughtError) {
         if (cancelled) return;

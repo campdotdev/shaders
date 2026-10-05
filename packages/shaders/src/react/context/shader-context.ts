@@ -7,6 +7,7 @@ import type {
   FrameScheduler,
   GpuRenderer,
   PostProcessTransform,
+  TimeGpu,
   UvTransform,
 } from '../../engine.js';
 import type { ResizeSignal } from '../../inputs/canvas-size/canvas-size.js';
@@ -39,6 +40,11 @@ export interface ShaderContextValue {
    * canvas. useResize hands it to components.
    */
   canvasSize: ResizeSignal;
+  /**
+   * Turns on GPU timing for the scene's two passes, the meshes and the
+   * output quad. ShaderMonitor holds it on while mounted.
+   */
+  timeGpu: TimeGpu;
 }
 
 export const ShaderContext = createContext<ShaderContextValue | null>(null);

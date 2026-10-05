@@ -96,6 +96,7 @@ export type { IntersectionWatcher } from './runtime/intersection/intersection.js
 export { FrameScheduler } from './runtime/frame-scheduler/frame-scheduler.js';
 
 export { createOutputStage } from './runtime/output-stage/output-stage.js';
+export type { TimeGpu } from './runtime/gpu-timer/gpu-timer.js';
 export type {
   OutputStage,
   PostProcessTransform,

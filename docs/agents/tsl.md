@@ -88,6 +88,18 @@ Neither headless mode shows this bug. Headless falls back to WebGL2, and the sof
 
 A component whose `colorNode` emits light-contribution rgb with coverage alpha, the way Aurora does, gets multiplied by alpha twice under the default `NormalBlending`, and soft wisps dim quadratically. Set `material.premultipliedAlpha = true`.
 
+### The timestamp-writes gotcha: three attaches a pass's timestamp writes once
+
+`ShaderMonitor` reads GPU time from `runtime/gpu-timer/`, which times the scene pass and the output quad. three 0.170 reads timestamps only on its async render path, and a scene draws synchronously. So the timer turns on the backend's `trackTimestamp` flag after init, and it maps the result buffers that WebGPUBackend resolves at the end of each pass.
+
+three puts `timestampWrites` on a pass descriptor only when it creates that pass's query set. A resize rebuilds the descriptor without them, so the pass draws untimed while three keeps resolving the last timestamps it wrote. The timer puts the writes back and skips that frame. At a three upgrade, check whether three re-attaches the writes itself, and delete that step if it does.
+
+The flag times every pass while it is on, not only the two the timer reads, so a pass such as `CursorRipple`'s wave field gets timestamp writes too. The timer removes the writes from its own two passes when timing stops, and the others keep theirs, which costs the GPU two timestamps per pass.
+
+On Apple silicon the two passes overlap. The output quad starts about 0.1ms after the scene pass and ends just after it, so the timer reports the union of the two spans, not their sum. Metal writes no end timestamp for a pass that drew nothing, and the unwritten timestamp reads as 0.
+
+Headless Chromium falls back to WebGL2, where the readout shows a dash. Read GPU time in headed Chromium with WebGPU.
+
 ## Color
 
 - `colorSpace` sets the interpolation space. A component takes it only if it computes a midpoint between two colors. Being additive is not the test: Aurora is additive, but it blends along a depth-indexed ramp, so it takes `colorSpace`.
