@@ -98,7 +98,7 @@ The flag times every pass while it is on, not only the two the timer reads, so a
 
 On Apple silicon the two passes overlap. The output quad starts about 0.1ms after the scene pass and ends just after it, so the timer reports the union of the two spans, not their sum. Metal writes no end timestamp for a pass that drew nothing, and the unwritten timestamp reads as 0.
 
-Headless Chromium falls back to WebGL2, where the readout shows a dash. Read GPU time in headed Chromium with WebGPU.
+Headless Chromium falls back to WebGL2, where the readout shows a dash. Read GPU time in headed Chromium with WebGPU, such as on `/dev/aurora-benchmark`, which renders Aurora at the homepage hero's size.
 
 ## Color
 
@@ -117,3 +117,7 @@ Headless Chromium falls back to WebGL2, where the readout shows a dash. Read GPU
 ### The renderer-size gotcha: a cropped or zoomed shader means a wrong renderer size
 
 When the output looks cropped, compressed, or zoomed, compare `renderer.getSize()` with the canvas client size before you look at uv or camera math. The renderer once stuck at the canvas default of 300×150, and a logical-size guard plus a `ResizeObserver` fixed it. Headless Playwright falls back to WebGL2 here, because `navigator.gpu` exists but device init fails.
+
+### The transparent-compile gotcha: `getShaderAsync` throws on a transparent mesh
+
+`renderer.debug.getShaderAsync` compiles the scene first. In three 0.170 that compile passes four arguments to the five-parameter `_renderTransparents`, so it throws on any scene with a transparent mesh. The throw skips the compile's cleanup and leaves the renderer building pipelines without drawing, so the canvas goes blank. Set `renderer.transparent` to `false` around the call, as `apps/docs/src/app/dev/aurora-benchmark/benchmark-scene.tsx` does. The compile reaches that call before its first `await`, so the flag is back on before the next frame draws.
