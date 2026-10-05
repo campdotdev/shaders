@@ -126,6 +126,10 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
 
     if (!buffers.every((buffer) => buffer !== null)) return;
 
+    // Callers can start and stop while the read is in flight, so the frame
+    // goes only to the callers that were timing when it drew and still are.
+    const timing = [...listeners];
+
     // A read fails when the device is lost or the renderer is disposed
     // mid-read. That frame goes unreported, and the next frame tries again.
     Promise.all(buffers.map(readPassSpan)).then(
@@ -133,7 +137,9 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
         const frameMilliseconds = busyMilliseconds(spans);
 
         if (frameMilliseconds === null) return;
-        for (const listener of listeners) listener.onFrameTime(frameMilliseconds);
+        for (const listener of timing) {
+          if (listeners.has(listener)) listener.onFrameTime(frameMilliseconds);
+        }
       },
       () => undefined,
     );

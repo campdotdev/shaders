@@ -291,6 +291,31 @@ describe('createGpuTimer', () => {
     expect(onFrameTime).not.toHaveBeenCalled();
   });
 
+  // The read finishes a frame or more after the draw, by which time a monitor
+  // may have stopped or a new one started.
+  it('reports a frame only to the callers that were timing when it drew and still are', async () => {
+    const { renderer, setPassState } = makeRenderer();
+    const passes = makePasses();
+    const timer = createGpuTimer(renderer, passes);
+    const staying = vi.fn();
+    const leaving = vi.fn();
+    const late = vi.fn();
+
+    timer.start(staying);
+    const stopLeaving = timer.start(leaving);
+
+    setPassState(passes[0], timedPassState(10, 11));
+    setPassState(passes[1], timedPassState(11, 12));
+    timer.measure(drawNothing);
+    stopLeaving();
+    timer.start(late);
+    await settle();
+
+    expect(staying).toHaveBeenCalledTimes(1);
+    expect(leaving).not.toHaveBeenCalled();
+    expect(late).not.toHaveBeenCalled();
+  });
+
   // three attaches a pass's timestamp writes only when it creates the pass's
   // query set. A resize rebuilds the descriptor without them, and a paused
   // or idle scene draws only the one frame at its new size.
