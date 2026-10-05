@@ -77,6 +77,8 @@ function isTimestampBackend(backend: unknown): backend is TimestampBackend {
   if (!('isWebGPUBackend' in backend) || backend.isWebGPUBackend !== true) return false;
 
   return (
+    'trackTimestamp' in backend &&
+    typeof backend.trackTimestamp === 'boolean' &&
     'hasFeature' in backend &&
     typeof backend.hasFeature === 'function' &&
     'get' in backend &&
@@ -162,13 +164,17 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
         return;
       }
       // The flag is on only for this draw, so no other pass, such as
-      // CursorRipple's wave field, ever gets timestamp writes. The finally
-      // turns it off even when a lost device makes the draw throw.
+      // CursorRipple's wave field, gets timestamp writes from the timer. The
+      // finally puts back the value it found, which app code that reached
+      // the renderer through the scene context may have set, even when a
+      // lost device makes the draw throw.
+      const wasTracking = timestampBackend.trackTimestamp;
+
       timestampBackend.trackTimestamp = true;
       try {
         draw();
       } finally {
-        timestampBackend.trackTimestamp = false;
+        timestampBackend.trackTimestamp = wasTracking;
       }
       collect(timestampBackend);
     },

@@ -51,7 +51,7 @@ function timedPassState(beginMilliseconds: number, endMilliseconds: number): Fak
   };
 }
 
-function makeRenderer({ timestampQuery = true, webgpu = true } = {}) {
+function makeRenderer({ timestampQuery = true, webgpu = true, timestampFlag = true } = {}) {
   const passStates = new Map<object, FakePassState>();
   const backend = {
     isWebGPUBackend: webgpu,
@@ -63,6 +63,10 @@ function makeRenderer({ timestampQuery = true, webgpu = true } = {}) {
       return passStates.get(renderContext);
     },
   };
+
+  // A three upgrade could rename the flag, and the timer must not write a
+  // flag three no longer reads.
+  if (!timestampFlag) Reflect.deleteProperty(backend, 'trackTimestamp');
   // three keys a render context by what is drawn, from where, and into what.
   // The timer passes the same three things, so one context per scene is
   // enough for a stand-in.
@@ -171,18 +175,23 @@ describe('createGpuTimer', () => {
     expect(flagInsideDraws).toEqual([true, true, false]);
   });
 
-  it('turns the flag off when the draw throws', () => {
+  // App code can reach the renderer through the scene context and turn the
+  // flag on itself.
+  it.each([false, true])('puts back the flag it found (%s), even when the draw throws', (found) => {
     const { renderer, backend } = makeRenderer();
     const timer = createGpuTimer(renderer, makePasses());
 
+    backend.trackTimestamp = found;
     timer.start(vi.fn());
+    timer.measure(drawNothing);
 
+    expect(backend.trackTimestamp).toBe(found);
     expect(() =>
       timer.measure(() => {
         throw new Error('device lost');
       }),
     ).toThrow('device lost');
-    expect(backend.trackTimestamp).toBe(false);
+    expect(backend.trackTimestamp).toBe(found);
   });
 
   it("removes the timestamp writes from the passes' descriptors after the last stop", () => {
@@ -304,19 +313,23 @@ describe('createGpuTimer', () => {
   it.each([
     ['an adapter without timestamp queries', { timestampQuery: false }],
     ['the WebGL2 fallback', { webgpu: false }],
+    ['a backend without the timestamp flag', { timestampFlag: false }],
   ])('never turns timing on for %s', async (_, options) => {
     const { renderer, backend, setPassState } = makeRenderer(options);
     const passes = makePasses();
     const timer = createGpuTimer(renderer, passes);
     const onFrameTime = vi.fn();
+    let flagInsideDraw: boolean | undefined;
 
     timer.start(onFrameTime);
     setPassState(passes[0], timedPassState(10, 11));
     setPassState(passes[1], timedPassState(10, 11));
-    timer.measure(drawNothing);
+    timer.measure(() => {
+      flagInsideDraw = backend.trackTimestamp;
+    });
     await settle();
 
-    expect(backend.trackTimestamp).toBe(false);
+    expect(flagInsideDraw).not.toBe(true);
     expect(onFrameTime).not.toHaveBeenCalled();
   });
 
