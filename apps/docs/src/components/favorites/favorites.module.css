@@ -131,11 +131,14 @@
    The strip a hovered or focused favorite's frame cuts into its window
    (card-tab.tsx), placed as in the mock: on the window's right edge, its
    foot 16px above the window's bottom, clear of the 12px corner. Its size
-   is the outline's, CARD_TAB_PATH's 24 by 168 CSS pixels. It comes after
-   the poster and the scene in the window, so it paints over both. Its
-   slide and its name's fade are Motion's, set inline from card-tab.tsx,
-   and the window's overflow clips the strip while it is out past the
-   edge.
+   is the outline's, CARD_TAB_PATH's 24 by 168 CSS pixels, on a window at
+   least 200px tall. A shorter window would clip the strip's head, such as
+   the 143px window each of four columns gets at a 1024px viewport. There
+   the strip shortens to keep 16px clear at the top, as at the foot, and
+   the outline stretches to fit (card-tab.tsx). It comes after the
+   poster and the scene in the window, so it paints over both. Its slide
+   and its name's fade are Motion's, set inline from card-tab.tsx, and the
+   window's overflow clips the strip while it is out past the edge.
 
    A device that cannot hover never shows it, behind the site's hover gate,
    as SHA-178 asks: a tap there goes straight to the component page. */
@@ -145,7 +148,7 @@
   right: 0;
   bottom: var(--spacing-4);
   width: 24px;
-  height: 168px;
+  height: min(168px, 100% - 2 * var(--spacing-4));
 }
 
 @media (hover: hover) and (pointer: fine) {

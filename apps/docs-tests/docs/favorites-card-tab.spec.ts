@@ -169,6 +169,36 @@ test('each favorite shows its own short name, one at a time, inside the swell', 
 });
 
 // ---------------------------------------------
+// A narrow desktop
+// ---------------------------------------------
+
+// At 1024px the grid still has four columns, and each card's window is about
+// 143px tall, shorter than the outline's 168px plus its 16px foot. The card
+// tab shortens to fit rather than running out past the window's top, where
+// the window would clip the card tab's head.
+test.describe('on a narrow desktop', () => {
+  test.use({ viewport: { width: 1024, height: 768 } });
+
+  test('the card tab fits inside its window', async ({ page }) => {
+    await open(page);
+
+    const favorite = favorites(page).first();
+
+    await favorite.hover();
+    await expect(cardTab(favorite)).toBeVisible();
+    await expectOnTheEdge(favorite);
+
+    const [tabBox, windowBox] = [
+      (await cardTab(favorite).boundingBox())!,
+      (await cardWindow(favorite).boundingBox())!,
+    ];
+
+    expect(tabBox.y).toBeGreaterThanOrEqual(windowBox.y);
+    expect(tabBox.y + tabBox.height).toBeLessThanOrEqual(windowBox.y + windowBox.height);
+  });
+});
+
+// ---------------------------------------------
 // Touch
 // ---------------------------------------------
 

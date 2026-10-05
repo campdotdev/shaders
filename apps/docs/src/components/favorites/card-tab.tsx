@@ -21,7 +21,11 @@ import styles from './favorites.module.css';
 // The mock's card tab outline, turned upright: a strip 24 by 168 CSS pixels
 // whose right side runs along the window's right edge and whose left side
 // swells 24px into the window and back. It is the mock's two curves
-// unchanged, rotated a quarter turn from Figma's horizontal drawing.
+// unchanged, rotated a quarter turn from Figma's horizontal drawing. On a
+// window too short for the full 168px, favorites.module.css shortens the
+// strip. The svg's preserveAspectRatio="none" then stretches the outline to
+// the strip's length rather than shrinking the whole outline, so the outline
+// keeps its 24px swell.
 const CARD_TAB_PATH = 'M24 168C24 145.417 0 123.022 0 83.98C0 44.937 24 22.542 24 0Z';
 
 // ---------------------------------------------
@@ -137,7 +141,7 @@ export function CardTab({ shortName, shown }: { shortName: string; shown: boolea
         initial="hidden"
         variants={reducedMotion ? FADE_STRIP_VARIANTS : SLIDE_STRIP_VARIANTS}
       >
-        <svg className={styles.cardTabShape} viewBox="0 0 24 168">
+        <svg className={styles.cardTabShape} preserveAspectRatio="none" viewBox="0 0 24 168">
           <path d={CARD_TAB_PATH} />
         </svg>
         <m.span
