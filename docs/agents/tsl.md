@@ -12,6 +12,8 @@ Shaders doubles as a shader-learning project for its author, who is fluent in Re
 4. End every phase at something the author can open in the docs site or a dev route. Then stop. Show the diff, teach the new concepts in about three minutes, and wait for the author to react in the dev server before you start the next phase. A clean compile is not approval.
 5. If the shader collects feel constants, such as bend amounts, noise frequencies, or dapple strengths, build a temporary tuning rig. Route the constants through a temporary `tuning` prop that rides uniforms, so the sliders move without a material rebuild, and wire it to a demo-panel section titled "Tuning (dev)". At the defaults-tuning gate, delete the prop, its params, and the panel section, and bake the landed values into named constants.
 
+Implement a spec that adds or rebuilds a shader one ticket at a time, in a session with the author, so every phase stops at its gate. `implement-spec` runs every ticket to the end in background subagents. Save it for specs with no shader work.
+
 Every component folder holds at least two files. `components/<name>/<name>.tsx` is the wrapper, which holds props, uniforms, and mesh lifecycle in about 80 lines. `components/<name>/shader.tsx` holds the TSL shader function. Some folders add helper modules and their tests beside the pair, such as `decay.ts` and `stroke.ts` in `cursor-ripple` and `marks.ts` in `dot-field`.
 
 ## Keep the material stable
