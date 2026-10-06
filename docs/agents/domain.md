@@ -1,10 +1,10 @@
 # Domain docs
 
-How the engineering skills consume this repo's domain documentation. The layout is single-context: one `CONTEXT.md` and one `docs/adr/`, both at the repo root.
+How the engineering skills consume this repo's domain documentation. The layout is single-context: one `GLOSSARY.md` and one `docs/adr/`, both at the repo root.
 
 ## Read these before you explore
 
-- `CONTEXT.md` at the repo root. It defines the domain terms this project uses.
+- `GLOSSARY.md` at the repo root. It defines the domain terms this project uses.
 - `docs/adr/`. Read the records that touch the area you are about to change.
 
 If either is missing, continue without comment. Do not flag the absence, and do not propose creating either up front. The `domain-modeling` skill creates them when a term or a decision actually resolves. `grill-with-docs` and `improve-codebase-architecture` both reach it.
@@ -19,7 +19,7 @@ Check **Linear**, on the Shaders team, and the relevant records in **`docs/adr/`
 
 ```
 /
-├── CONTEXT.md
+├── GLOSSARY.md
 ├── docs/adr/
 │   ├── 0001-<slug>.md
 │   └── 0002-<slug>.md
@@ -29,7 +29,7 @@ Check **Linear**, on the Shaders team, and the relevant records in **`docs/adr/`
 
 ## Use the glossary's vocabulary
 
-When your output names a domain concept, use the term as `CONTEXT.md` defines it. This applies to issue titles, refactor proposals, hypotheses, and test names. Do not drift to a synonym the glossary avoids.
+When your output names a domain concept, use the term as `GLOSSARY.md` defines it. This applies to issue titles, refactor proposals, hypotheses, and test names. Do not drift to a synonym the glossary avoids.
 
 If the concept is not in the glossary, treat that as a signal. Either you are inventing language the project does not use, which is worth reconsidering, or there is a real gap worth noting for `domain-modeling`.
 

@@ -13,7 +13,7 @@ Shaders is a React shader component library built on WebGPU and Three.js TSL. Th
 
 - Specs, tickets, backlog, and status are in Linear, on the Shaders team. New work produces no spec file in the repo.
 - Decisions that outlive their ticket are in `docs/adr/`.
-- The domain vocabulary is in `CONTEXT.md`. Use its terms in code, issues, and docs.
+- The domain vocabulary is in `GLOSSARY.md`. Use its terms in code, issues, and docs.
 - Older implementation decisions are in git history.
 
 ## Read the doc for your task first
@@ -65,7 +65,7 @@ The five canonical roles keep their default names as Linear labels. See `docs/ag
 
 ### Domain docs
 
-Single-context: one `CONTEXT.md` and one `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+Single-context: one `GLOSSARY.md` and one `docs/adr/` at the repo root. See `docs/agents/domain.md`.
 
 ### Repo-local skills
 

@@ -5,7 +5,7 @@ Read this before you write or edit code in `packages/` or `apps/`. ESLint, Prett
 ## Components and props
 
 - Destructure props in the component signature, and set defaults inline, as in `function MeshGradient({ speed = 2 }: MeshGradientProps)`. Order the destructured fields to match the interface.
-- Name props with everyday words, not GPU jargon: `waviness` over `turbulence`, `coverage` or `radius` over `falloff`, and `balance` over `bias`. When two components share a concept, they share the name. `CONTEXT.md` defines the names for position props and reactions, such as `center` and `swellCenter`.
+- Name props with everyday words, not GPU jargon: `waviness` over `turbulence`, `coverage` or `radius` over `falloff`, and `balance` over `bias`. When two components share a concept, they share the name. `GLOSSARY.md` defines the names for position props and reactions, such as `center` and `swellCenter`.
 - Add only what the task needs. A prop that does nothing on a component, added so its API matches another's, is still a prop to document and maintain. Grain and Dither take no `colorSpace`, because neither computes a midpoint between colors.
 - Use clear names over abbreviations such as `u`, `cfg`, `ctx`, or `cb`. Loop counters and math or shader locals that mirror the math, such as `x` and `y`, are the exceptions.
 - Use no emojis in code, comments, or strings.
