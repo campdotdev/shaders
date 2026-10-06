@@ -33,6 +33,7 @@ import {
 } from 'three/webgpu';
 
 import { getReducedMotionTimeScale } from '../reduced-motion/reduced-motion.js';
+import { canRenderTo, isDeviceLost } from '../renderer-capabilities/renderer-capabilities.js';
 
 /**
  * A stroke the pointer made this frame: the segment from where it was on
@@ -288,48 +289,6 @@ export function strokePushForFrame(
 const WAVE_STIFFNESS = 0.4;
 
 // ----------------------------------------------------------------------------
-// Capability checks
-// ----------------------------------------------------------------------------
-
-/**
- * Whether the renderer can draw into a half-float target. WebGPU renders
- * rgba16float in core. The WebGL2 fallback needs EXT_color_buffer_float,
- * which three's hasFeature() table does not list, so this reads the
- * backend's extension registry the way create-renderer reads its
- * isWebGLBackend flag: both are internal fields, probed with `in` guards.
- */
-function supportsHalfFloatTargets(renderer: WebGPURenderer): boolean {
-  const backend: unknown = renderer.backend;
-
-  if (typeof backend !== 'object' || backend === null) return false;
-  if (!('isWebGLBackend' in backend) || backend.isWebGLBackend !== true) return true;
-  if (!('extensions' in backend)) return false;
-  const extensions: unknown = backend.extensions;
-
-  if (typeof extensions !== 'object' || extensions === null || !('has' in extensions)) return false;
-  const has: unknown = extensions.has;
-
-  return typeof has === 'function' && has.call(extensions, 'EXT_color_buffer_float') === true;
-}
-
-/**
- * Whether three's renderer has recorded a lost device. It keeps that on a
- * private `_isDeviceLost` field and turns every later draw into a silent
- * no-op rather than a throw, so the flag is the only early signal. Re-check
- * the field name at any three bump.
- */
-function isDeviceLost(renderer: WebGPURenderer): boolean {
-  const candidate: unknown = renderer;
-
-  return (
-    typeof candidate === 'object' &&
-    candidate !== null &&
-    '_isDeviceLost' in candidate &&
-    candidate._isDeviceLost === true
-  );
-}
-
-// ----------------------------------------------------------------------------
 // The passes
 // ----------------------------------------------------------------------------
 
@@ -502,7 +461,9 @@ export function createWaveField(
   width: number,
   height: number,
 ): WaveField {
-  if (!supportsHalfFloatTargets(renderer) || isDeviceLost(renderer)) return inertField;
+  if (!canRenderTo(renderer, HalfFloatType, LinearFilter) || isDeviceLost(renderer)) {
+    return inertField;
+  }
 
   const size = fieldSize(width, height);
   // Kept so `tune` can re-derive the settle model without a resize.

@@ -72,6 +72,31 @@ To verify a change here, diff `/components/voronoi?visualTest=1` captures across
 - `uniform(vec2(...))` has no Vector2 mutators. Use `uniform(new Vector2(...))` when you need `.set()`.
 - In three 0.170 and later, `setClearColor` takes only a `Color`. Convert with `new Color(...)`.
 
+## Keep shared work out of per-pixel loops
+
+A loop in a fragment shader runs once per step for every pixel, so work inside it that gives every pixel the same answer is paid millions of times a frame. The WGSL dump on `/dev/aurora-benchmark` shows what landed inside the `for`. Two cases come up:
+
+- A value that depends on the pixel and the uniforms but not on the loop index. Pin it before the loop with `.toVar()`, as the first-use gotcha below describes.
+- A value that depends on the loop index alone. It differs from step to step, so no compiler can move it out of the loop. Draw it once with `createTexturePass` from `runtime/texture-pass/`, and read one texel per step. Aurora's slice palette is the model.
+
+### The first-use gotcha: TSL writes an expression where the shader first uses it
+
+A JS `const` that holds a TSL node names a node in the graph, not a GPU variable. Codegen writes the expression at its first use, so a value first used inside `Loop` lands inside the `for` and runs on every step. `.toVar()` appends an assignment where you call it, which pins the value there. Aurora pins its ray direction, jitter seed, and phase rotations before its loop this way.
+
+The GPU's own compiler may already move a loop-invariant expression out of the loop. Apple's Metal compiler did on the M1 Max: pinning Aurora's values changed the WGSL but not the GPU time (SHA-207). Pin them anyway, because nothing promises that every compiler does the same.
+
+## Draw into render targets the renderer can bind, and read them cheaply
+
+The texture pass, the wave field, and the output stage each draw into a render target, a texture the GPU draws into instead of the canvas. A shader then reads it back through a texture node. Two gotchas apply.
+
+### The float32-filterable gotcha: WebGPU binds a full-float target only with a device feature
+
+three 0.170 binds every render target's texture as a filterable float, whatever filter the texture sets. WebGPU accepts that for an `rgba32float` texture only on a device with the `float32-filterable` feature. Without it, the bind group fails validation and the draw fails. Half floats are filterable in core. `canRenderTo` in `runtime/renderer-capabilities/` checks the feature, and `createTexturePass` exposes no texture without it, so its consumer computes the value inline instead. Apple GPUs have the feature. At a three upgrade, check whether three binds a full-float render target as unfilterable.
+
+### The texture-matrix gotcha: chaining `.uv()` onto a bare `texture()` adds a matrix multiply to every read
+
+A texture node built without a coordinate, `texture(map)`, runs its coordinate through the texture's offset-and-repeat matrix, a 3x3 multiply. A node made by chaining `.uv(coordinate)` onto it keeps the multiply. Pass the coordinate when you build the node, as in `texture(map, coordinate)`, and three skips the matrix. Inside a loop, the multiply runs on every step.
+
 ## The output stage owns dither, gamut, and the final quad
 
 ### The scene-dither gotcha: dither and gamut are scene-wide

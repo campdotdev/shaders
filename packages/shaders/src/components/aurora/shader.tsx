@@ -7,6 +7,7 @@ import {
   dot,
   exp2,
   float,
+  floor,
   Fn,
   fract,
   Loop,
@@ -16,14 +17,28 @@ import {
   type ShaderNodeObject,
   sin,
   smoothstep,
+  texture,
   uv,
   vec2,
   vec3,
   vec4,
 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
+import {
+  FloatType,
+  Mesh,
+  MeshBasicNodeMaterial,
+  NearestFilter,
+  type Node,
+  PlaneGeometry,
+} from 'three/webgpu';
 
-import { colorRamp, type ColorSpace, type HueInterpolation, type TSLNode } from '../../engine.js';
+import {
+  colorRamp,
+  type ColorSpace,
+  createTexturePass,
+  type HueInterpolation,
+  type TSLNode,
+} from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -72,24 +87,35 @@ const triangleWave2 = (point: TSLValue): TSLValue =>
     triangleWave(point.y.add(triangleWave(point.x))),
   );
 
-/** Rotate a vec2 by an angle without mat2 — keeps everything a plain chain. */
+/** A rotation by some angle, as that angle's cosine and sine. */
+interface Rotation {
+  cosine: TSLValue;
+  sine: TSLValue;
+}
+
+/**
+ * Rotate a vec2 by a rotation whose cosine and sine are already worked out,
+ * without mat2 — keeps everything a plain chain. A caller that rotates by the
+ * same angle many times works out the pair once and passes it to each call.
+ */
+const rotateBy = (point: TSLValue, { cosine, sine }: Rotation): TSLValue =>
+  vec2(point.x.mul(cosine).sub(point.y.mul(sine)), point.x.mul(sine).add(point.y.mul(cosine)));
+
+/** Rotate a vec2 by an angle that changes from call to call. */
 const rotate2d = (point: TSLValue, angle: TSLNode): TSLValue =>
-  vec2(
-    point.x.mul(cos(angle)).sub(point.y.mul(sin(angle))),
-    point.x.mul(sin(angle)).add(point.y.mul(cos(angle))),
-  );
+  rotateBy(point, { cosine: cos(angle), sine: sin(angle) });
 
 /**
  * Five-octave triangle-noise fbm. Each octave warps the domain with a
- * time-rotated triangle-wave offset (the shimmer), climbs a lacunarity/gain
- * ladder, accumulates a ridge term, and rotates the whole domain a little
- * (`domainPhase` — slow continuous evolution). Reciprocal-power shaping
- * concentrates brightness into thin filaments.
+ * time-rotated triangle-wave offset (`warpRotation` — the shimmer), climbs a
+ * lacunarity/gain ladder, accumulates a ridge term, and rotates the whole
+ * domain a little (`domainRotation` — slow continuous evolution).
+ * Reciprocal-power shaping concentrates brightness into thin filaments.
  */
 const auroraField = (
   coords: TSLValue,
-  warpPhase: TSLNode,
-  domainPhase: TSLNode,
+  warpRotation: Rotation,
+  domainRotation: Rotation,
   warpStrength: TSLNode,
 ): TSLValue => {
   let ridgeGain = 1.8;
@@ -99,9 +125,9 @@ const auroraField = (
   let warpPoint = point;
 
   for (let octave = 0; octave < 5; octave += 1) {
-    const warp = rotate2d(
+    const warp = rotateBy(
       triangleWave2(warpPoint.mul(1.85)).mul(0.75).mul(warpStrength),
-      warpPhase,
+      warpRotation,
     );
 
     point = point.sub(warp.div(warpGain));
@@ -112,7 +138,7 @@ const auroraField = (
     point = point.mul(ridgeSum.sub(1).mul(0.02).add(1.21));
 
     ridgeSum = ridgeSum.add(triangleWave(point.x.add(triangleWave(point.y))).mul(ridgeGain));
-    point = rotate2d(point, domainPhase);
+    point = rotateBy(point, domainRotation);
   }
 
   return float(1).div(ridgeSum.mul(20).pow(1.3)).clamp(0, 1);
@@ -189,7 +215,8 @@ export function AuroraShader({
   // ---------------------------------------------
   // Runs once per mount — and again only when the stops or color space
   // change, because colorRamp bakes the stop colors into the compiled
-  // shader. The dials all flow through uniforms.
+  // shader, and the slice palette below is drawn from it. The dials all
+  // flow through uniforms.
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
     const rampStops = toColorRampStops(stops);
@@ -199,6 +226,57 @@ export function AuroraShader({
     // alpha is coverage. Without this flag NormalBlending scales rgb by
     // alpha a second time and everything dims quadratically (MAT-45).
     material.premultipliedAlpha = true;
+
+    // ---------------------------------------------
+    // Draw the slice palette
+    // ---------------------------------------------
+    // Depth-stratified color: the slice index drives the user ramp, so near
+    // and far ribbons glow different stops. pow keeps the upper stops
+    // visible: extinction weights early slices, so a linear index would
+    // read as stop 0 almost everywhere.
+    const rampColorAt = (stepIndex: TSLValue) =>
+      colorRamp(stepIndex.div(STEP_COUNT).pow(0.6), rampStops, colorSpace, hueInterpolation);
+
+    // The slice color depends on the step alone, yet the ramp behind it
+    // (an oklab round trip per stop, plus the mixes) would run 60 times for
+    // every pixel. So a texture pass (src/runtime/texture-pass) draws it
+    // once per material build into a palette: a texture with one texel (one
+    // pixel of a texture) per step, which the march loop reads from.
+    //
+    // Each texel runs the same ramp at its own step. uv().x is the texel's
+    // 0..1 position, and at texel i's center, (i + 0.5) / 60, times 60
+    // floors to i exactly. Full float keeps the ramp's colors as computed
+    // rather than rounded to 8 or 16 bits, and nearest filtering hands back
+    // one texel unmixed with its neighbours, so the color matches the
+    // inline ramp. The pass is created, drawn, and disposed in this effect,
+    // so a Strict Mode remount builds a fresh one (the Strict Mode gotcha in
+    // docs/agents/tsl.md).
+    const slicePalette = shaderContext
+      ? createTexturePass(
+          shaderContext.renderer.three,
+          vec4(rampColorAt(floor(uv().x.mul(STEP_COUNT))), 1),
+          { width: STEP_COUNT, height: 1, type: FloatType, filter: NearestFilter },
+        )
+      : null;
+
+    slicePalette?.render();
+
+    // Null when the renderer cannot draw into a full-float target or bind
+    // one (WebGL2 without EXT_color_buffer_float, or a WebGPU device without
+    // float32-filterable, the float32-filterable gotcha in
+    // docs/agents/tsl.md), in which case each step runs the ramp inline as
+    // before.
+    const paletteTexture = slicePalette?.texture ?? null;
+
+    // A texture node is the GPU's handle on an image, read here at step i's
+    // texel center so nearest filtering lands on texel i alone. The
+    // coordinate goes in when the node is built, rather than through .uv()
+    // on a bare texture(), which would add a 3x3 matrix multiply to every
+    // read (the texture-matrix gotcha in docs/agents/tsl.md).
+    const sliceColorAt = (stepIndex: TSLValue) =>
+      paletteTexture === null
+        ? rampColorAt(stepIndex)
+        : texture(paletteTexture, vec2(stepIndex.add(0.5).div(STEP_COUNT), 0.5)).rgb;
 
     // Fn() wraps the body in a reusable GPU function node; the trailing ()
     // calls it once to produce the node the material renders.
@@ -215,19 +293,39 @@ export function AuroraShader({
       const ndcY = uv().y.mul(1.03).sub(0.03);
 
       // Virtual camera looking toward the horizon (+z); z sets the fov.
-      const rayDirection = normalize(vec3(ndcX, ndcY, 1.064));
+      //
+      // .toVar() stores the result in a GPU variable at this point in the
+      // shader. Without it, TSL writes an expression out where the shader
+      // first uses it, and the ray is first used inside the march loop
+      // below, so every step would redo the normalize (the first-use gotcha
+      // in docs/agents/tsl.md). The same goes for the jitter seed and the
+      // two rotations below.
+      const rayDirection = normalize(vec3(ndcX, ndcY, 1.064)).toVar();
 
       // Both motion phases derive from the same accumulated phase, so
       // shimmer and drift stay coupled and keep their 2:1 rate ratio.
       const warpPhase = phaseUniform.mul(0.02);
       const domainPhase = phaseUniform.mul(0.01);
 
+      // Every octave of every step rotates by these two angles, which
+      // change once a frame. Working out each cosine and sine once here
+      // replaces the 40 trig calls a step used to make (5 octaves, 2
+      // rotations, 2 cosines and 2 sines each) with 4 per pixel.
+      const warpRotation: Rotation = {
+        cosine: cos(warpPhase).toVar(),
+        sine: sin(warpPhase).toVar(),
+      };
+      const domainRotation: Rotation = {
+        cosine: cos(domainPhase).toVar(),
+        sine: sin(domainPhase).toVar(),
+      };
+
       // ---------------------------------------------
       // March the ray, accumulating light
       // ---------------------------------------------
       // Per-pixel jitter seed: decorrelates slice offsets pixel-to-pixel so
       // the discrete march dissolves into grain instead of contour banding.
-      const jitterSeed = hashNoise(screenCoordinate.xy);
+      const jitterSeed = hashNoise(screenCoordinate.xy).toVar();
 
       // Loop state must be GPU-side variables (toVar) — the loop runs on the
       // GPU, so a JS binding can't change per iteration there.
@@ -257,17 +355,14 @@ export function AuroraShader({
         // horizon, x runs across the screen.
         const fieldValue = auroraField(
           vec2(samplePoint.z, samplePoint.x),
-          warpPhase,
-          domainPhase,
+          warpRotation,
+          domainRotation,
           wavinessUniform,
         );
 
-        // Depth-stratified color: slice index drives the user ramp, so near
-        // and far ribbons glow different stops. pow keeps the upper stops
-        // visible — extinction weights early slices, so a linear index
-        // would read as stop 0 almost everywhere.
-        const sliceProgress = stepIndex.div(STEP_COUNT).pow(0.6);
-        const sliceColor = colorRamp(sliceProgress, rampStops, colorSpace, hueInterpolation);
+        // This slice's color: its palette texel, or the inline ramp where
+        // the renderer has no palette.
+        const sliceColor = sliceColorAt(stepIndex);
 
         const slice = vec4(sliceColor.mul(fieldValue), fieldValue);
 
@@ -318,6 +413,7 @@ export function AuroraShader({
       } catch {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
+      slicePalette?.dispose();
     };
     // stopsKey stands in for stops (content proxy; rampStops derives from it).
     // eslint-disable-next-line react-hooks/exhaustive-deps
