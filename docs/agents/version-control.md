@@ -42,6 +42,8 @@ Use a separate worktree only for these tasks:
 - Regenerating visual baselines while another applied branch changes the pages the spec renders. `pnpm snap` captures whatever the working tree renders.
 - A dependency upgrade that changes behavior, because `pnpm install` rewrites `node_modules` for every agent.
 - A scan that must see one exact commit or one exact set of branches, such as react-doctor's baseline and integration scans in PR mode.
+- A spec run with `implement-spec`. The integration branch and each ticket branch get their own worktree, created with the patched skill's commands. Run `pnpm install` in each worktree before its implementer starts. The run pushes and opens its PR from the integration worktree with plain Git and `gh`, not `but pr new`.
+- A `git bisect`, or a checkout of someone else's PR to verify it. Both move `HEAD`.
 
 Create the worktree from `origin/main` or another named commit, never from `HEAD`. `HEAD` is the workspace commit, and GitButler's `post-checkout` hook removes GitButler's hooks for the whole repo when a checkout leaves that commit. `but commit` does not work in a linked worktree, so use plain Git there.
 

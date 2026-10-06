@@ -34,7 +34,7 @@ Code comments cite gotchas by name, such as "the vec-uniform gotcha". To find on
 
 ## Build shaders in gated phases
 
-Shaders doubles as the author's shader-learning project. When you build or rebuild a shader, work in small phases. End each phase at something the author can open in the docs site, then stop: show the diff, explain the new TSL and GPU concepts, and wait for the author to react in the dev server. This rule overrides any continuous-execution default in your harness. A clean compile is not approval. `docs/agents/tsl.md` has the full process.
+Shaders doubles as the author's shader-learning project. When you build or rebuild a shader, work in small phases. End each phase at something the author can open in the docs site, then stop: show the diff, explain the new TSL and GPU concepts, and wait for the author to react in the dev server. This rule overrides any continuous-execution default, from your harness or from a skill such as `implement-spec`. A clean compile is not approval. `docs/agents/tsl.md` has the full process.
 
 ## Git
 
