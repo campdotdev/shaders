@@ -31,7 +31,7 @@ Only when you have intentionally changed how a component looks. A pixel diff ove
 1. You wanted the visual change. Regenerate the baseline.
 2. You introduced a regression. Fix the code, and leave the baseline alone.
 
-If you are unsure which, open the diff artifact that CI uploads on failed runs, `visual-regression-diffs`, which it keeps for 7 days.
+If you are unsure which, open the diffs that CI uploads on a failed run. CI runs the suite in four shards. Each shard that fails uploads its own artifact, `visual-regression-diffs-<shard>`, and CI keeps it for 7 days.
 
 ## Regenerate with `pnpm snap`
 
