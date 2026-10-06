@@ -88,6 +88,18 @@ Neither headless mode shows this bug. Headless falls back to WebGL2, and the sof
 
 A component whose `colorNode` emits light-contribution rgb with coverage alpha, the way Aurora does, gets multiplied by alpha twice under the default `NormalBlending`, and soft wisps dim quadratically. Set `material.premultipliedAlpha = true`.
 
+### The timestamp-writes gotcha: three attaches a pass's timestamp writes once
+
+`ShaderMonitor` reads GPU time from `runtime/gpu-timer/`, which times the scene pass and the output quad. three 0.170 reads timestamps only on its async render path, and a scene draws synchronously. So the timer turns on the backend's `trackTimestamp` flag after init, and it maps the result buffers that WebGPUBackend resolves at the end of each pass.
+
+three puts `timestampWrites` on a pass descriptor only when it creates that pass's query set. A resize rebuilds the descriptor without them, so the pass draws untimed while three keeps resolving the last timestamps it wrote. Stopping the timer removes the writes too, unless app code has turned the flag on to time passes itself. So for each timed draw, the timer wraps the backend's `initTimestampQuery`, which three calls on each pass's descriptor right before the pass begins, and puts the writes back on a descriptor that lost them. The first frame after a resize or a restart is then timed, which matters for a paused or idle scene that draws only that frame. At a three upgrade, check whether three re-attaches the writes itself, and delete the wrapper if it does.
+
+The flag times every pass three begins while it is on, not only the two the timer reads. So the timer turns it on only for the output stage's draw, which holds exactly its two passes, and turns it off after. A pass drawn anywhere else, such as `CursorRipple`'s wave field, never gets timestamp writes. Don't leave the flag on between frames: three would give every such pass writes that the timer never removes.
+
+On Apple silicon the two passes overlap. The output quad starts about 0.1ms after the scene pass and ends just after it, so the timer reports the union of the two spans, not their sum. Metal writes no end timestamp for a pass that drew nothing, and the unwritten timestamp reads as 0.
+
+Headless Chromium falls back to WebGL2, where the readout shows a dash. Read GPU time in headed Chromium with WebGPU, such as on `/dev/aurora-benchmark`, which renders Aurora at the homepage hero's size.
+
 ## Color
 
 - `colorSpace` sets the interpolation space. A component takes it only if it computes a midpoint between two colors. Being additive is not the test: Aurora is additive, but it blends along a depth-indexed ramp, so it takes `colorSpace`.
@@ -105,3 +117,7 @@ A component whose `colorNode` emits light-contribution rgb with coverage alpha, 
 ### The renderer-size gotcha: a cropped or zoomed shader means a wrong renderer size
 
 When the output looks cropped, compressed, or zoomed, compare `renderer.getSize()` with the canvas client size before you look at uv or camera math. The renderer once stuck at the canvas default of 300×150, and a logical-size guard plus a `ResizeObserver` fixed it. Headless Playwright falls back to WebGL2 here, because `navigator.gpu` exists but device init fails.
+
+### The transparent-compile gotcha: `getShaderAsync` throws on a transparent mesh
+
+`renderer.debug.getShaderAsync` compiles the scene first. In three 0.170 that compile passes four arguments to the five-parameter `_renderTransparents`, so it throws on any scene with a transparent mesh. The throw skips the compile's cleanup and leaves the renderer building pipelines without drawing, so the canvas goes blank. Set `renderer.transparent` to `false` around the call, as `apps/docs/src/app/dev/aurora-benchmark/benchmark-scene.tsx` does. The compile reaches that call before its first `await`, so the flag is back on before the next frame draws.

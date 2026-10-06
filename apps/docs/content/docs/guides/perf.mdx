@@ -74,7 +74,7 @@ Beyond intersection-based pausing, `<ShaderScene>` also listens to `document.vis
 
 ## Monitoring at dev time
 
-Drop `<ShaderMonitor />` into your dev pages to get a corner overlay showing FPS, active component count, and scheduler state. It's a dev tool — not for production — and tree-shakes out when guarded behind `import.meta.env.DEV` or similar.
+Drop `<ShaderMonitor />` inside a `<ShaderScene>` on your dev pages to get a corner overlay with the scene's frame rate, its GPU time per frame, and a tick count. The GPU time is how long the GPU spent drawing each frame, averaged over half a second, so it shows how close a scene is to its frame budget while the frame rate still reads 60. The monitor turns GPU timing on for its scene while it is mounted. The GPU readout shows a dash on the WebGL2 fallback, and on a GPU without timestamp queries. It's a dev tool — not for production — and tree-shakes out when guarded behind `import.meta.env.DEV` or similar.
 
 ```tsx
 import { ShaderMonitor } from '@camp-dev/shaders'

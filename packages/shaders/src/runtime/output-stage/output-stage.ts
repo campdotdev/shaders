@@ -2,9 +2,9 @@
 // meshes to a texture, the chain of post-process transforms that overlays
 // register, and the full-screen quad that writes the composed result to the
 // canvas. ShaderScene creates one per mount and hands the two register
-// functions to its children through the context. It is written against
-// three's renderer alone, with no React, so the scene component stays
-// readable and this part has its own test.
+// functions and the GPU timer's switch to its children through the context.
+// It is written against three's renderer alone, with no React, so the scene
+// component stays readable and this part has its own test.
 //
 // Why not three's PostProcessing class: in three 0.170 it keeps a SINGLE quad
 // and material at module level, shared by every instance, so two scenes on
@@ -19,6 +19,7 @@ import type { Node, WebGPURenderer } from 'three/webgpu';
 import { NodeMaterial, QuadMesh } from 'three/webgpu';
 
 import { dither } from '../../primitives/dither/dither.js';
+import { createGpuTimer, type TimeGpu } from '../gpu-timer/gpu-timer.js';
 
 /** A post-process step: takes the composed pixel (rgba), returns its replacement. */
 export type PostProcessTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
@@ -40,6 +41,8 @@ export interface OutputStage {
   registerBaseUvTransform: (transform: UvTransform) => () => void;
   /** True while at least one overlay is registered, which counts as something to draw. */
   hasOverlays: () => boolean;
+  /** Turn on GPU timing for the scene pass and the output quad. */
+  timeGpu: TimeGpu;
   /** Draw the composed scene to the canvas. */
   render: () => void;
   /** Release the quad's material. The renderer stays the caller's to dispose. */
@@ -68,6 +71,13 @@ export function createOutputStage(
   const overlays = new Map<symbol, PostProcessTransform>();
   const uvTransforms = new Map<symbol, UvTransform>();
   const scenePass = pass(scene, camera);
+  // The two passes every frame draws: the scene pass renders the meshes into
+  // its own render target, and the quad draws the composed result to the
+  // canvas.
+  const gpuTimer = createGpuTimer(renderer, [
+    { scene, camera, renderTarget: scenePass.renderTarget },
+    { scene: outputQuad, camera: outputQuad.camera, renderTarget: null },
+  ]);
 
   const rebuildOutputNode = () => {
     // With no UV transforms the pass node samples itself at the screen
@@ -141,6 +151,8 @@ export function createOutputStage(
 
     hasOverlays: () => overlays.size > 0,
 
+    timeGpu: gpuTimer.start,
+
     // Draw the quad the way PostProcessing.render does: the quad's material
     // already applied tone mapping and the output transfer (renderOutput
     // above), so the renderer's own pass of both is switched off for this
@@ -148,18 +160,22 @@ export function createOutputStage(
     // encoded twice. The restore runs in a finally block so a draw that
     // throws (a lost device, say) cannot leave both switched off, where the
     // next rebuildOutputNode would capture them and bake the wrong settings
-    // into the quad's material for every frame after.
+    // into the quad's material for every frame after. The timer wraps the
+    // draw, which holds exactly the two passes it measures, because three
+    // renders the scene pass while it draws the quad that samples it.
     render() {
-      const { toneMapping, outputColorSpace } = renderer;
+      gpuTimer.measure(() => {
+        const { toneMapping, outputColorSpace } = renderer;
 
-      renderer.toneMapping = NoToneMapping;
-      renderer.outputColorSpace = LinearSRGBColorSpace;
-      try {
-        outputQuad.render(renderer);
-      } finally {
-        renderer.toneMapping = toneMapping;
-        renderer.outputColorSpace = outputColorSpace;
-      }
+        renderer.toneMapping = NoToneMapping;
+        renderer.outputColorSpace = LinearSRGBColorSpace;
+        try {
+          outputQuad.render(renderer);
+        } finally {
+          renderer.toneMapping = toneMapping;
+          renderer.outputColorSpace = outputColorSpace;
+        }
+      });
     },
 
     dispose() {

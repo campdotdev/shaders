@@ -173,7 +173,7 @@ Returns the current `ShaderContextValue` — renderer, scheduler, canvas refs. I
 
 ## `<ShaderMonitor>`
 
-Dev overlay showing FPS, active component count, scheduler state, and per-component frame budget. Not for production:
+Dev overlay showing the scene's FPS, its GPU time per frame, and a tick count. Mount it inside a `<ShaderScene>`. While mounted, it turns on GPU timing for that scene. The GPU readout shows a dash on the WebGL2 fallback, and on a GPU without timestamp queries. Not for production:
 
 ```tsx
 {process.env.NODE_ENV === 'development' && <ShaderMonitor anchor="bottom-right" />}
@@ -183,4 +183,4 @@ Dev overlay showing FPS, active component count, scheduler state, and per-compon
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `anchor` | `'top-left' \| 'top-right' \| 'bottom-left' \| 'bottom-right'` | `'bottom-right'` | Where to position the overlay. |
+| `anchor` | `'top-left' \| 'top-right' \| 'bottom-left' \| 'bottom-right'` | `'top-right'` | Where to position the overlay. |
