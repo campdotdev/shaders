@@ -1,7 +1,7 @@
 /* The docs search after the Figma mock (SHA-155): the trigger in the header
    and the Base UI search panel it opens over the blurred page. The portaled
    panel owns its gutter and shares overlay-backdrop.module.css with the site
-   nav. Names follow CONTEXT.md: trigger and panel. */
+   nav. Names follow GLOSSARY.md: trigger and panel. */
 
 /* ---- The trigger ---- */
 

@@ -6,7 +6,7 @@
  * owns modal behavior. use-panel-open.ts owns the open state, the shortcut,
  * and focus return, use-highlight.ts the selected row, search-results.tsx
  * what shows under the input, and use-search-backend.ts Pagefind and its
- * fallback. Names follow CONTEXT.md: trigger and panel.
+ * fallback. Names follow GLOSSARY.md: trigger and panel.
  */
 import { useRouter } from 'next/navigation';
 import { useCallback, useRef, useState } from 'react';
