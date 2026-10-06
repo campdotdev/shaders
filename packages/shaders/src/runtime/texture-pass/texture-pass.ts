@@ -119,11 +119,23 @@ export function createTexturePass(
 
   // Release the target and the material and forget them. Nothing recreates
   // them, so from here `texture` reads null and every later call is a no-op.
+  //
+  // The material dispose can throw. Disposing three's renderer clears its
+  // records of every material it drew, and a later dispose of one of those
+  // materials reads a cleared record and throws. ShaderScene disposes its
+  // renderer before its children's cleanups run, so a component that
+  // disposes this pass on unmount always meets that case. The renderer has
+  // already dropped its references to the material's pipeline by then, so
+  // swallowing the throw leaves nothing behind.
   const dropTarget = () => {
     if (target === null) return;
     target.dispose();
-    material.dispose();
     target = null;
+    try {
+      material.dispose();
+    } catch {
+      // The renderer is already gone, see above.
+    }
   };
 
   // Whether the pass still has its target. A lost device is noticed here, on

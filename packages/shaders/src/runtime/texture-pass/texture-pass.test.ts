@@ -263,4 +263,24 @@ describe('dispose', () => {
     expect(renderer.render).toHaveBeenCalledTimes(1);
     expect(disposeTarget).toHaveBeenCalledTimes(1);
   });
+
+  // ShaderScene disposes its renderer before its children's cleanups run,
+  // and three then throws from the dispose of any material that renderer
+  // drew. A component that disposes its pass on unmount meets exactly that,
+  // and a throw there crashes the page it is leaving.
+  it('swallows a throw from the material dispose and still goes inert', () => {
+    const renderer = makeRenderer();
+    const pass = createTexturePass(renderer, red, floatSlices);
+
+    pass.render();
+    const [mesh] = vi.mocked(renderer.render).mock.calls[0] ?? [];
+    const { material } = mesh as unknown as { material: { dispose: () => void } };
+
+    vi.spyOn(material, 'dispose').mockImplementation(() => {
+      throw new TypeError("Cannot read properties of undefined (reading 'usedTimes')");
+    });
+
+    expect(() => pass.dispose()).not.toThrow();
+    expect(pass.texture).toBeNull();
+  });
 });
