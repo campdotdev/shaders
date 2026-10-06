@@ -46,7 +46,8 @@ function hasWebGLExtension(backend: object, name: string): boolean {
  * - WebGPU renders to both float types in core. three 0.170 binds every
  *   render target's texture as filterable, though, and WebGPU accepts that
  *   for a full float only on a device with the float32-filterable feature,
- *   whatever filter the texture asks for. Half floats are filterable in core.
+ *   whatever filter the texture asks for (the float32-filterable gotcha in
+ *   docs/agents/tsl.md). Half floats are filterable in core.
  */
 export function canRenderTo(
   renderer: WebGPURenderer,

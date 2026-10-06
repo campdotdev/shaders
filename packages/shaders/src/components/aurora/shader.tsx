@@ -263,15 +263,16 @@ export function AuroraShader({
 
     // Null when the renderer cannot draw into a full-float target or bind
     // one (WebGL2 without EXT_color_buffer_float, or a WebGPU device without
-    // float32-filterable), in which case each step runs the ramp inline as
+    // float32-filterable, the float32-filterable gotcha in
+    // docs/agents/tsl.md), in which case each step runs the ramp inline as
     // before.
     const paletteTexture = slicePalette?.texture ?? null;
 
     // A texture node is the GPU's handle on an image, read here at step i's
-    // texel center so nearest filtering lands on texel i alone. Passing the
-    // coordinate when the node is built, rather than chaining .uv() onto a
-    // bare texture(), matters: three runs a bare node's coordinate through
-    // the texture's offset-and-repeat matrix, a 3x3 multiply on every read.
+    // texel center so nearest filtering lands on texel i alone. The
+    // coordinate goes in when the node is built, rather than through .uv()
+    // on a bare texture(), which would add a 3x3 matrix multiply to every
+    // read (the texture-matrix gotcha in docs/agents/tsl.md).
     const sliceColorFor = (stepIndex: TSLValue) =>
       paletteTexture === null
         ? sliceColorAt(stepIndex)
@@ -296,8 +297,9 @@ export function AuroraShader({
       // .toVar() stores the result in a GPU variable at this point in the
       // shader. Without it, TSL writes an expression out where the shader
       // first uses it, and the ray is first used inside the march loop
-      // below, so every step would redo the normalize. The same goes for
-      // the jitter seed and the two rotations below.
+      // below, so every step would redo the normalize (the first-use gotcha
+      // in docs/agents/tsl.md). The same goes for the jitter seed and the
+      // two rotations below.
       const rayDirection = normalize(vec3(ndcX, ndcY, 1.064)).toVar();
 
       // Both motion phases derive from the same accumulated phase, so
