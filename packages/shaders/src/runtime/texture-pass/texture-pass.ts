@@ -9,6 +9,7 @@ import {
   type Node,
   NodeMaterial,
   QuadMesh,
+  type RedFormat,
   RenderTarget,
   RGBAFormat,
   type Texture,
@@ -39,6 +40,13 @@ export interface TexturePassOptions {
    * nearest texel as stored, LinearFilter mixes the four around it.
    */
   filter: TargetFilter;
+  /**
+   * How many channels a texel holds: RGBAFormat for four, RedFormat for one.
+   * A one-channel texture keeps only the node's first component and stores
+   * a quarter of the bytes, which a pass drawn every frame saves on every
+   * write and every read. Defaults to RGBAFormat.
+   */
+  format?: typeof RGBAFormat | typeof RedFormat;
 }
 
 export interface TexturePass {
@@ -78,7 +86,7 @@ const inertPass: TexturePass = {
 export function createTexturePass(
   renderer: WebGPURenderer,
   node: Node | ShaderNodeObject<Node>,
-  { width, height, type, filter }: TexturePassOptions,
+  { width, height, type, filter, format = RGBAFormat }: TexturePassOptions,
 ): TexturePass {
   if (!canRenderTo(renderer, type, filter) || isDeviceLost(renderer)) return inertPass;
 
@@ -87,13 +95,15 @@ export function createTexturePass(
   // ----------------------------------------------------------------------------
 
   // A render target is a texture the GPU can draw into instead of the canvas.
-  // RGBA is the format every backend can render to. Clamping keeps a read
-  // past the edge on the edge texel. Nothing here tests depth, and the
-  // texture is read at the one size it was drawn at, so it keeps no depth
-  // buffer and no mipmaps (smaller copies for reading it shrunk).
+  // Every backend that renders to a texel type renders to its one-channel
+  // and four-channel formats alike, so the format needs no check of its own.
+  // Clamping keeps a read past the edge on the edge texel. Nothing here
+  // tests depth, and the texture is read at the one size it was drawn at,
+  // so it keeps no depth buffer and no mipmaps (smaller copies for reading
+  // it shrunk).
   let target: RenderTarget | null = new RenderTarget(width, height, {
     type,
-    format: RGBAFormat,
+    format,
     minFilter: filter,
     magFilter: filter,
     wrapS: ClampToEdgeWrapping,

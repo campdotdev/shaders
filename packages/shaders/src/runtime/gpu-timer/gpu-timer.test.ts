@@ -1,8 +1,7 @@
-import { OrthographicCamera, RenderTarget, Scene } from 'three';
 import type { WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createGpuTimer, type TimedPass } from './gpu-timer.js';
+import { createGpuTimer } from './gpu-timer.js';
 
 // ----------------------------------------------------------------------------
 // A stand-in for three's WebGPU backend
@@ -51,6 +50,15 @@ function timedPassState(beginMilliseconds: number, endMilliseconds: number): Fak
   };
 }
 
+/**
+ * One pass three draws. three keys a pass's render context by what it draws,
+ * from where, and into what. Every pass here is its own object, so the
+ * stand-in keys the context on the pass alone.
+ */
+interface FakePass {
+  name: string;
+}
+
 function makeRenderer({ timestampQuery = true, webgpu = true, timestampFlag = true } = {}) {
   const passStates = new Map<object, FakePassState>();
   const backend = {
@@ -75,30 +83,27 @@ function makeRenderer({ timestampQuery = true, webgpu = true, timestampFlag = tr
   // A three upgrade could rename the flag, and the timer must not write a
   // flag three no longer reads.
   if (!timestampFlag) Reflect.deleteProperty(backend, 'trackTimestamp');
-  // three keys a render context by what is drawn, from where, and into what.
-  // The timer passes the same three things, so one context per scene is
-  // enough for a stand-in.
-  const renderContexts = new Map<object, object>();
-  const renderer = {
-    backend,
-    _renderContexts: {
-      get: (scene: object) => {
-        if (!renderContexts.has(scene)) renderContexts.set(scene, {});
+  const renderContexts = new Map<FakePass, object>();
+  const renderContextFor = (pass: FakePass) => {
+    if (!renderContexts.has(pass)) renderContexts.set(pass, {});
 
-        return renderContexts.get(scene);
-      },
-    },
-  } as unknown as WebGPURenderer;
+    return renderContexts.get(pass)!;
+  };
+  const renderer = { backend } as unknown as WebGPURenderer;
 
   /** Set the state three left on a pass's render context. */
-  const setPassState = (pass: TimedPass, state: FakePassState) => {
-    passStates.set(renderer._renderContexts!.get(pass.scene, pass.camera), state);
+  const setPassState = (pass: FakePass, state: FakePassState) => {
+    passStates.set(renderContextFor(pass), state);
   };
 
-  /** A draw that begins each pass the way three does, on the descriptor in its state. */
-  const drawPasses = (passes: readonly TimedPass[]) => () => {
-    for (const { scene, camera } of passes) {
-      const renderContext = renderer._renderContexts!.get(scene, camera);
+  /**
+   * A draw that begins each pass the way three does: initTimestampQuery on
+   * the pass's render context and the descriptor in its state, whether
+   * timing is on or not.
+   */
+  const drawPasses = (passes: readonly FakePass[]) => () => {
+    for (const pass of passes) {
+      const renderContext = renderContextFor(pass);
 
       backend.initTimestampQuery(renderContext, backend.get(renderContext).descriptor ?? {});
     }
@@ -107,16 +112,16 @@ function makeRenderer({ timestampQuery = true, webgpu = true, timestampFlag = tr
   return { renderer, backend, setPassState, drawPasses };
 }
 
-const makePasses = (): [TimedPass, TimedPass] => [
-  { scene: new Scene(), camera: new OrthographicCamera(), renderTarget: new RenderTarget() },
-  { scene: new Scene(), camera: new OrthographicCamera(), renderTarget: null },
-];
+/** The two passes every frame draws: the scene pass and the output quad. */
+const makePasses = (): [FakePass, FakePass] => [{ name: 'scene' }, { name: 'output' }];
+
+/** A pre-pass, such as Aurora's field, drawn before the scene pass. */
+const makePrePass = (): FakePass => ({ name: 'pre-pass' });
 
 // Lets the timer's map-and-read promise chains settle.
 const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
-// The draw a test hands the timer. The fake backend's pass states already
-// say what three drew.
+// A draw that begins no pass, for the tests about the flag and the renderer.
 const drawNothing = () => undefined;
 
 describe('createGpuTimer', () => {
@@ -130,15 +135,15 @@ describe('createGpuTimer', () => {
 
   /** Time one frame whose two passes ran over the given GPU clock spans, in milliseconds. */
   async function frameTimeFor(scenePass: FakePassState, outputPass: FakePassState) {
-    const { renderer, setPassState } = makeRenderer();
+    const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const onFrameTime = vi.fn();
 
     timer.start(onFrameTime);
     setPassState(passes[0], scenePass);
     setPassState(passes[1], outputPass);
-    timer.measure(drawNothing);
+    timer.measure(drawPasses(passes));
     await settle();
 
     return onFrameTime;
@@ -160,6 +165,53 @@ describe('createGpuTimer', () => {
     expect(onFrameTime.mock.calls[0]?.[0]).toBeCloseTo(9.9);
   });
 
+  // A pre-pass, such as Aurora's field, is part of the frame's GPU cost. The
+  // timer finds every pass three begins inside the draw, so a pass a
+  // component adds is timed without the timer being told about it.
+  it('times every pass three begins inside the draw', async () => {
+    const { renderer, setPassState, drawPasses } = makeRenderer();
+    const [scenePass, outputPass] = makePasses();
+    const fieldPass = makePrePass();
+    const timer = createGpuTimer(renderer);
+    const onFrameTime = vi.fn();
+
+    timer.start(onFrameTime);
+    setPassState(fieldPass, timedPassState(8, 9.5));
+    setPassState(scenePass, timedPassState(10, 13));
+    setPassState(outputPass, timedPassState(13.5, 14));
+    timer.measure(drawPasses([fieldPass, scenePass, outputPass]));
+    await settle();
+
+    expect(onFrameTime.mock.calls[0]?.[0]).toBeCloseTo(5);
+  });
+
+  // A component that unmounts takes its pre-pass with it. The pass three no
+  // longer begins must not hold up or skew the frames after.
+  it('reads only the passes the latest draw began', async () => {
+    const { renderer, setPassState, drawPasses } = makeRenderer();
+    const [scenePass, outputPass] = makePasses();
+    const fieldPass = makePrePass();
+    const timer = createGpuTimer(renderer);
+    const onFrameTime = vi.fn();
+    const field = timedPassState(8, 9.5);
+
+    timer.start(onFrameTime);
+    setPassState(fieldPass, field);
+    setPassState(scenePass, timedPassState(10, 13));
+    setPassState(outputPass, timedPassState(13.5, 14));
+    timer.measure(drawPasses([fieldPass, scenePass, outputPass]));
+    await settle();
+    vi.mocked(field.currentTimestampQueryBuffers!.resultBuffer.mapAsync).mockClear();
+    timer.measure(drawPasses([scenePass, outputPass]));
+    await settle();
+
+    expect(onFrameTime.mock.calls.map(([milliseconds]) => milliseconds)).toEqual([
+      expect.closeTo(5),
+      expect.closeTo(3.5),
+    ]);
+    expect(field.currentTimestampQueryBuffers?.resultBuffer.mapAsync).not.toHaveBeenCalled();
+  });
+
   // Metal writes no end timestamp for a pass that did no work, and an
   // unwritten timestamp reads as 0.
   it('leaves out a pass whose end timestamp was never written', async () => {
@@ -172,7 +224,7 @@ describe('createGpuTimer', () => {
   // so a flag left on would time passes the timer never reads.
   it("turns on the backend's timestamp flag only inside the draw, until the last stop", () => {
     const { renderer, backend } = makeRenderer();
-    const timer = createGpuTimer(renderer, makePasses());
+    const timer = createGpuTimer(renderer);
     const flagInsideDraws: boolean[] = [];
     const drawRecordingFlag = () => {
       flagInsideDraws.push(backend.trackTimestamp);
@@ -198,7 +250,7 @@ describe('createGpuTimer', () => {
     'puts back the flag it found (%s) and initTimestampQuery, even when the draw throws',
     (found) => {
       const { renderer, backend } = makeRenderer();
-      const timer = createGpuTimer(renderer, makePasses());
+      const timer = createGpuTimer(renderer);
       const { initTimestampQuery } = backend;
 
       backend.trackTimestamp = found;
@@ -218,15 +270,16 @@ describe('createGpuTimer', () => {
   );
 
   it("removes the timestamp writes from the passes' descriptors after the last stop", () => {
-    const { renderer, setPassState } = makeRenderer();
+    const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const states = [timedPassState(10, 11), timedPassState(10, 11)];
 
     const stop = timer.start(vi.fn());
 
     setPassState(passes[0], states[0]!);
     setPassState(passes[1], states[1]!);
+    timer.measure(drawPasses(passes));
     stop();
 
     expect(states[0]?.descriptor).not.toHaveProperty('timestampWrites');
@@ -236,15 +289,16 @@ describe('createGpuTimer', () => {
   // three would not put the writes back, so app code timing its own passes
   // would read stale timestamps from then on.
   it('keeps the timestamp writes after the last stop while app code has the flag on', () => {
-    const { renderer, backend, setPassState } = makeRenderer();
+    const { renderer, backend, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const state = timedPassState(10, 11);
 
     backend.trackTimestamp = true;
     const stop = timer.start(vi.fn());
 
     setPassState(passes[0], state);
+    timer.measure(drawPasses(passes));
     stop();
 
     expect(state.descriptor).toHaveProperty('timestampWrites');
@@ -255,12 +309,16 @@ describe('createGpuTimer', () => {
   it('puts the timestamp writes back when timing starts again, and times the next frame', async () => {
     const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const onFrameTime = vi.fn();
 
     setPassState(passes[0], timedPassState(10, 11));
     setPassState(passes[1], timedPassState(11, 12));
-    timer.start(vi.fn())();
+    const stop = timer.start(vi.fn());
+
+    timer.measure(drawPasses(passes));
+    await settle();
+    stop();
     timer.start(onFrameTime);
     timer.measure(drawPasses(passes));
     await settle();
@@ -273,9 +331,9 @@ describe('createGpuTimer', () => {
   // earlier read, so that buffer holds an older frame. Reading the other pass
   // alone would pair two different frames.
   it('skips a frame while any pass is still being read', async () => {
-    const { renderer, setPassState } = makeRenderer();
+    const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const onFrameTime = vi.fn();
     const busy = timedPassState(10, 11);
     const ready = timedPassState(10, 11);
@@ -284,7 +342,7 @@ describe('createGpuTimer', () => {
     timer.start(onFrameTime);
     setPassState(passes[0], ready);
     setPassState(passes[1], busy);
-    timer.measure(drawNothing);
+    timer.measure(drawPasses(passes));
     await settle();
 
     expect(ready.currentTimestampQueryBuffers?.resultBuffer.mapAsync).not.toHaveBeenCalled();
@@ -294,9 +352,9 @@ describe('createGpuTimer', () => {
   // The read finishes a frame or more after the draw, by which time a monitor
   // may have stopped or a new one started.
   it('reports a frame only to the callers that were timing when it drew and still are', async () => {
-    const { renderer, setPassState } = makeRenderer();
+    const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const staying = vi.fn();
     const leaving = vi.fn();
     const late = vi.fn();
@@ -306,7 +364,7 @@ describe('createGpuTimer', () => {
 
     setPassState(passes[0], timedPassState(10, 11));
     setPassState(passes[1], timedPassState(11, 12));
-    timer.measure(drawNothing);
+    timer.measure(drawPasses(passes));
     stopLeaving();
     timer.start(late);
     await settle();
@@ -322,7 +380,7 @@ describe('createGpuTimer', () => {
   it('puts the timestamp writes back on a rebuilt descriptor before its pass begins, and times that frame', async () => {
     const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const onFrameTime = vi.fn();
     const rebuilt = timedPassState(10, 11);
     const writesAtPassBegin: unknown[] = [];
@@ -343,15 +401,18 @@ describe('createGpuTimer', () => {
     expect(onFrameTime).toHaveBeenCalledTimes(1);
   });
 
+  // three resolves a pass's timestamps into a buffer at the end of the
+  // first pass it draws with timing on. A pass that has none yet holds up
+  // the frame rather than leaving it out.
   it('skips a frame until three has drawn every pass with timing on', async () => {
-    const { renderer, setPassState } = makeRenderer();
+    const { renderer, setPassState, drawPasses } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const onFrameTime = vi.fn();
 
     timer.start(onFrameTime);
     setPassState(passes[0], timedPassState(10, 11));
-    timer.measure(drawNothing);
+    timer.measure(drawPasses(passes));
     await settle();
 
     expect(onFrameTime).not.toHaveBeenCalled();
@@ -360,7 +421,7 @@ describe('createGpuTimer', () => {
   it('draws, and reads nothing, while no one is timing', async () => {
     const { renderer, setPassState } = makeRenderer();
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const state = timedPassState(10, 11);
     const draw = vi.fn();
 
@@ -380,7 +441,7 @@ describe('createGpuTimer', () => {
   ])('never turns timing on for %s', async (_, options) => {
     const { renderer, backend, setPassState } = makeRenderer(options);
     const passes = makePasses();
-    const timer = createGpuTimer(renderer, passes);
+    const timer = createGpuTimer(renderer);
     const onFrameTime = vi.fn();
     let flagInsideDraw: boolean | undefined;
 
@@ -397,7 +458,7 @@ describe('createGpuTimer', () => {
   });
 
   it('accepts a renderer with no backend, as the scene tests build', () => {
-    const timer = createGpuTimer({} as WebGPURenderer, makePasses());
+    const timer = createGpuTimer({} as WebGPURenderer);
 
     expect(() => {
       timer.start(vi.fn())();

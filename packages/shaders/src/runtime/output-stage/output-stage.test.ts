@@ -81,6 +81,29 @@ describe('createOutputStage', () => {
     expect(material.version).toBeGreaterThan(versionWithOverlay);
   });
 
+  // A pre-pass draws something the scene's meshes read, such as Aurora's
+  // field texture, so it has to land before the scene pass on every frame
+  // and on the redraw after a resize, both of which call render().
+  it('draws every pre-pass before the scene, in the order they registered, until removed', () => {
+    const renderer = makeRenderer();
+    const stage = createOutputStage(renderer, new Scene(), new OrthographicCamera());
+    const draws: string[] = [];
+
+    vi.mocked(renderer.render).mockImplementation(() => {
+      draws.push('scene');
+
+      return undefined;
+    });
+    stage.registerPrePass(() => draws.push('first'));
+    const removeSecond = stage.registerPrePass(() => draws.push('second'));
+
+    stage.render();
+    removeSecond();
+    stage.render();
+
+    expect(draws).toEqual(['first', 'second', 'scene', 'first', 'scene']);
+  });
+
   // Every component draws a full-screen quad at the same depth, so a depth
   // buffer behind the scene pass would never reject a pixel.
   it('renders the scene pass without a depth buffer', () => {

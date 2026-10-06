@@ -76,20 +76,27 @@ To verify a change here, diff `/components/voronoi?visualTest=1` captures across
 
 ## Keep shared work out of per-pixel loops
 
-A loop in a fragment shader runs once per step for every pixel, so work inside it that gives every pixel the same answer is paid millions of times a frame. The WGSL dump on `/dev/aurora-benchmark` shows what landed inside the `for`. Two cases come up:
+A loop in a fragment shader runs once per step for every pixel, so work inside it that gives every pixel the same answer is paid millions of times a frame. The WGSL dump on `/dev/aurora-benchmark` shows what landed inside the `for`. Three cases come up:
 
 - A value that depends on the pixel and the uniforms but not on the loop index. Pin it before the loop with `.toVar()`, as the first-use gotcha below describes.
 - A value that depends on the loop index alone. It differs from step to step, so no compiler can move it out of the loop. Draw it once with `createTexturePass` from `runtime/texture-pass/`, and read one texel per step. Aurora's slice palette is the model.
+- A value that depends on a point the loop reaches, not on the pixel, such as Aurora's field on its sky plane. Every pixel's steps read the same 2D function. Draw it once a frame with a texture pass into a texture that covers every point the loop reaches, and read it at each step, as the draw-order gotcha below describes. The texture filter blends neighboring texels, so store the smooth value and apply any sharp shaping after the read. Aurora's field pass is the model: it stores the raw ridge sum and shapes the filaments in the march.
 
 ### The first-use gotcha: TSL writes an expression where the shader first uses it
 
-A JS `const` that holds a TSL node names a node in the graph, not a GPU variable. Codegen writes the expression at its first use, so a value first used inside `Loop` lands inside the `for` and runs on every step. `.toVar()` appends an assignment where you call it, which pins the value there. Aurora pins its ray direction, jitter seed, and phase rotations before its loop this way.
+A JS `const` that holds a TSL node names a node in the graph, not a GPU variable. Codegen writes the expression at its first use, so a value first used inside `Loop` lands inside the `for` and runs on every step. `.toVar()` appends an assignment where you call it, which pins the value there. Aurora pins its ray direction and jitter seed before its loop this way, and its phase rotations too when it works out the field inline.
 
 The GPU's own compiler may already move a loop-invariant expression out of the loop. Apple's Metal compiler did on the M1 Max: pinning Aurora's values changed the WGSL but not the GPU time (SHA-207). Pin them anyway, because nothing promises that every compiler does the same.
 
 ## Draw into render targets the renderer can bind, and read them cheaply
 
-The texture pass, the wave field, and the output stage each draw into a render target, a texture the GPU draws into instead of the canvas. A shader then reads it back through a texture node. Two gotchas apply.
+The texture pass, the wave field, and the output stage each draw into a render target, a texture the GPU draws into instead of the canvas. A shader then reads it back through a texture node. Three gotchas apply.
+
+### The draw-order gotcha: draw a texture the scene reads in a pre-pass
+
+`ShaderScene` adds its render client to the scheduler before any child mounts, so each frame draws the scene first and runs the children's clients after. A texture drawn from a child's scheduler client lands after the scene pass, and the scene reads the texture from the frame before. On a running scene the lag is one frame. On the last frame before a static scene parks, a change never reaches the screen, which is the bare-uniform-write gotcha in a new form.
+
+Register the draw with `registerPrePass` from the scene context instead. The output stage runs every pre-pass before the scene pass, on every frame and on the redraw after a resize. Aurora's field pass is the model. `CursorRipple`'s wave field still steps from a scheduler client, and asks for one more frame after the step that settles it.
 
 ### The float32-filterable gotcha: WebGPU binds a full-float target only with a device feature
 
@@ -125,15 +132,15 @@ three 0.170's pass node always gives its render target a depth texture. three al
 
 ### The timestamp-writes gotcha: three attaches a pass's timestamp writes once
 
-`ShaderMonitor` reads GPU time from `runtime/gpu-timer/`, which times the scene pass and the output quad. three 0.170 reads timestamps only on its async render path, and a scene draws synchronously. So the timer turns on the backend's `trackTimestamp` flag after init, and it maps the result buffers that WebGPUBackend resolves at the end of each pass.
+`ShaderMonitor` reads GPU time from `runtime/gpu-timer/`, which times every pass the output stage draws: its pre-passes, the scene pass, and the output quad. three 0.170 reads timestamps only on its async render path, and a scene draws synchronously. So the timer turns on the backend's `trackTimestamp` flag after init, and it maps the result buffers that WebGPUBackend resolves at the end of each pass.
 
 three puts `timestampWrites` on a pass descriptor only when it creates that pass's query set. A resize rebuilds the descriptor without them, so the pass draws untimed while three keeps resolving the last timestamps it wrote. Stopping the timer removes the writes too, unless app code has turned the flag on to time passes itself. So for each timed draw, the timer wraps the backend's `initTimestampQuery`, which three calls on each pass's descriptor right before the pass begins, and puts the writes back on a descriptor that lost them. The first frame after a resize or a restart is then timed, which matters for a paused or idle scene that draws only that frame. At a three upgrade, check whether three re-attaches the writes itself, and delete the wrapper if it does.
 
-The flag times every pass three begins while it is on, not only the two the timer reads. So the timer turns it on only for the output stage's draw, which holds exactly its two passes, and turns it off after. A pass drawn anywhere else, such as `CursorRipple`'s wave field, never gets timestamp writes. Don't leave the flag on between frames: three would give every such pass writes that the timer never removes.
+The flag times every pass three begins while it is on. So the timer turns it on only for the output stage's draw, and turns it off after. The same `initTimestampQuery` wrapper records each pass three begins inside the draw, and the timer reads exactly those passes, so a new pre-pass is timed with no change to the timer. A pass drawn anywhere else, such as `CursorRipple`'s wave field, never gets timestamp writes. Don't leave the flag on between frames: three would give every such pass writes that the timer never removes.
 
-On Apple silicon the two passes overlap. The output quad starts about 0.1ms after the scene pass and ends just after it, so the timer reports the union of the two spans, not their sum. Metal writes no end timestamp for a pass that drew nothing, and the unwritten timestamp reads as 0.
+On Apple silicon the passes overlap. The output quad starts about 0.1ms after the scene pass and ends just after it, so the timer reports the union of all the passes' spans, not their sum. Metal writes no end timestamp for a pass that drew nothing, and the unwritten timestamp reads as 0.
 
-Headless Chromium falls back to WebGL2, where the readout shows a dash. Read GPU time in headed Chromium with WebGPU, such as on `/dev/aurora-benchmark`, which renders Aurora at the homepage hero's size.
+Read GPU time with WebGPU, such as on `/dev/aurora-benchmark`, which renders Aurora at the homepage hero's size. On WebGL2 the readout shows a dash. Playwright's default headless shell falls back to WebGL2. On a Mac, the full Chromium binary in headless mode (`channel: 'chromium'`) launched with `--enable-unsafe-webgpu --ignore-gpu-blocklist --enable-gpu` runs WebGPU on the Metal adapter, and so does headed Chromium. A headless page reports a pixel ratio of 1, so `?dpr=2` draws at 1x unless the browser context sets `deviceScaleFactor: 2`. The route's header prints the drawing buffer, which reads 3272 × 1392 at 2x.
 
 ## Color
 

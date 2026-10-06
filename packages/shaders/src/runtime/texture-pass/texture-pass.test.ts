@@ -8,7 +8,9 @@ import {
   HalfFloatType,
   LinearFilter,
   NearestFilter,
+  RedFormat,
   type RenderTarget,
+  RGBAFormat,
   type WebGPURenderer,
 } from 'three/webgpu';
 import { describe, expect, it, vi } from 'vitest';
@@ -73,6 +75,19 @@ describe('createTexturePass', () => {
     expect(pass.texture?.type).toBe(FloatType);
     expect(pass.texture?.minFilter).toBe(NearestFilter);
     expect(pass.texture?.magFilter).toBe(NearestFilter);
+  });
+
+  // Four channels unless asked otherwise. A value that needs one channel,
+  // such as Aurora's field, asks for RedFormat and stores a quarter of the
+  // bytes.
+  it('holds four channels by default, or one when asked for RedFormat', () => {
+    const renderer = makeRenderer();
+    const field = { width: 64, height: 32, type: HalfFloatType, filter: LinearFilter } as const;
+
+    expect(createTexturePass(renderer, red, field).texture?.format).toBe(RGBAFormat);
+    expect(createTexturePass(renderer, red, { ...field, format: RedFormat }).texture?.format).toBe(
+      RedFormat,
+    );
   });
 });
 

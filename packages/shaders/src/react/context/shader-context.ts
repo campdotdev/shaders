@@ -7,6 +7,7 @@ import type {
   FrameScheduler,
   GpuRenderer,
   PostProcessTransform,
+  PrePass,
   TimeGpu,
   UvTransform,
 } from '../../engine.js';
@@ -29,6 +30,12 @@ export interface ShaderContextValue {
   registerOverlay: (transform: PostProcessTransform) => () => void;
   registerBaseUvTransform: (transform: UvTransform) => () => void;
   /**
+   * Adds a draw that runs before the scene's meshes on every frame the scene
+   * draws, including the redraw after a resize, such as Aurora's field pass.
+   * Returns its remover.
+   */
+  registerPrePass: (prePass: PrePass) => () => void;
+  /**
    * The scene's one shared cursor input, normalized to its canvas. Created
    * on the first call and disposed with the scene, so a scene nobody asks
    * never attaches a pointer listener. Every useCursor call inside the
@@ -41,8 +48,9 @@ export interface ShaderContextValue {
    */
   canvasSize: ResizeSignal;
   /**
-   * Turns on GPU timing for the scene's two passes, the meshes and the
-   * output quad. ShaderMonitor holds it on while mounted.
+   * Turns on GPU timing for every pass the scene draws each frame: the
+   * pre-passes, the meshes, and the output quad. ShaderMonitor holds it on
+   * while mounted.
    */
   timeGpu: TimeGpu;
 }

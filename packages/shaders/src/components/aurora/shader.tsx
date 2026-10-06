@@ -18,6 +18,7 @@ import {
   sin,
   smoothstep,
   texture,
+  uniform,
   uv,
   vec2,
   vec3,
@@ -25,11 +26,16 @@ import {
 } from 'three/tsl';
 import {
   FloatType,
+  HalfFloatType,
+  LinearFilter,
   Mesh,
   MeshBasicNodeMaterial,
   NearestFilter,
   type Node,
   PlaneGeometry,
+  RedFormat,
+  type Texture,
+  Vector2,
 } from 'three/webgpu';
 
 import {
@@ -39,12 +45,32 @@ import {
   type HueInterpolation,
   type TSLNode,
 } from '../../engine.js';
+import type { ShaderContextValue } from '../../react/context/shader-context.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
+import {
+  type ResizeSignal,
+  type ResizeValue,
+  useResize,
+} from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color.js';
+import {
+  BEND_OFFSET,
+  fieldTextureSize,
+  FIRST_SLICE,
+  FOCAL_LENGTH,
+  HORIZON_BEND,
+  RAY_ORIGIN,
+  RAY_Y_AT_BOTTOM,
+  RAY_Y_AT_TOP,
+  skyPatch,
+  SLICE_CURVE,
+  SLICE_SPREAD,
+  STEP_COUNT,
+} from './sky.js';
 
 // The aurora's GPU half. Unlike the flat 2D components, this one fakes a 3D
 // scene: each pixel shoots a view ray toward a virtual horizon and marches
@@ -52,7 +78,9 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color
 // distances and accumulating what it hits). At every step it samples a
 // layered noise field; where the noise creases, light accumulates, and the
 // creases stack up into the curtain ribbons. Depth also picks the color:
-// near slices take the ramp's first stops, far slices the last.
+// near slices take the ramp's first stops, far slices the last. A field
+// pass draws the field into a texture once a frame (createFieldPass), and
+// ./sky.ts holds the ray geometry the march and the pass share.
 //
 // Aurora technique inspired by nimitz's "Auroras" (shadertoy.com/view/XtGGRt):
 // triangle-noise fbm, depth-sliced raymarch, average-then-accumulate
@@ -61,9 +89,6 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color
 // billows carry fine detail.)
 
 type TSLValue = ShaderNodeObject<Node>;
-
-/** Raymarch slice count. Banding re-judged at the Phase 2 gate. */
-const STEP_COUNT = 60;
 
 /** Per-pixel hash (fract-dot construction) — seeds the march jitter. */
 const hashNoise = (point: TSLValue): TSLValue => {
@@ -105,22 +130,49 @@ const rotateBy = (point: TSLValue, { cosine, sine }: Rotation): TSLValue =>
 const rotate2d = (point: TSLValue, angle: TSLNode): TSLValue =>
   rotateBy(point, { cosine: cos(angle), sine: sin(angle) });
 
+/** The two rotations every octave of the field applies. */
+interface MotionRotations {
+  /** The shimmer: turns each octave's warp offset. */
+  warp: Rotation;
+  /** The drift: turns the whole domain a little after each octave. */
+  domain: Rotation;
+}
+
 /**
- * Five-octave triangle-noise fbm. Each octave warps the domain with a
- * time-rotated triangle-wave offset (`warpRotation` — the shimmer), climbs a
- * lacunarity/gain ladder, accumulates a ridge term, and rotates the whole
- * domain a little (`domainRotation` — slow continuous evolution).
- * Reciprocal-power shaping concentrates brightness into thin filaments.
+ * Both rotations, worked out once from the accumulated phase. Call it inside
+ * Fn(), because .toVar() stores each cosine and sine in a GPU variable at
+ * the point of the call, which needs Fn's list of statements. Every octave
+ * then reads the four variables instead of redoing the trig (the first-use
+ * gotcha in docs/agents/tsl.md).
  */
-const auroraField = (
+const motionRotations = (phase: ReturnType<typeof uniform<number>>): MotionRotations => {
+  // Both motion phases derive from the same accumulated phase, so shimmer
+  // and drift stay coupled and keep their 2:1 rate ratio.
+  const warpPhase = phase.mul(0.02);
+  const domainPhase = phase.mul(0.01);
+
+  return {
+    warp: { cosine: cos(warpPhase).toVar(), sine: sin(warpPhase).toVar() },
+    domain: { cosine: cos(domainPhase).toVar(), sine: sin(domainPhase).toVar() },
+  };
+};
+
+/**
+ * Five-octave triangle-noise fbm, as the raw sum of its ridge terms. Each
+ * octave warps the domain with a rotated triangle-wave offset (the shimmer),
+ * climbs a lacunarity/gain ladder, accumulates a ridge term, and rotates the
+ * whole domain a little (the drift). The sum is smooth except at the
+ * creases, where it dips toward 0 in a sharp V; `filaments` turns those
+ * dips into light.
+ */
+const ridgeSum = (
   coords: TSLValue,
-  warpRotation: Rotation,
-  domainRotation: Rotation,
+  { warp: warpRotation, domain: domainRotation }: MotionRotations,
   warpStrength: TSLNode,
 ): TSLValue => {
   let ridgeGain = 1.8;
   let warpGain = 2.5;
-  let ridgeSum: TSLValue = float(0);
+  let sum: TSLValue = float(0);
   let point = rotate2d(coords, coords.x.mul(0.06));
   let warpPoint = point;
 
@@ -135,14 +187,162 @@ const auroraField = (
     warpPoint = warpPoint.mul(1.3);
     warpGain *= 0.45;
     ridgeGain *= 0.42;
-    point = point.mul(ridgeSum.sub(1).mul(0.02).add(1.21));
+    point = point.mul(sum.sub(1).mul(0.02).add(1.21));
 
-    ridgeSum = ridgeSum.add(triangleWave(point.x.add(triangleWave(point.y))).mul(ridgeGain));
+    sum = sum.add(triangleWave(point.x.add(triangleWave(point.y))).mul(ridgeGain));
     point = rotateBy(point, domainRotation);
   }
 
-  return float(1).div(ridgeSum.mul(20).pow(1.3)).clamp(0, 1);
+  return sum;
 };
+
+/**
+ * Reciprocal-power shaping: 1 / (20 * sum)^1.3, clamped to 0..1. It is full
+ * brightness where the sum dips below 0.05, at a crease, and falls off fast
+ * either side (0.4 at a sum of 0.1, 0.1 at 0.3), which concentrates the
+ * light into thin filaments.
+ *
+ * The field texture stores the sum before this step, not after. A texture
+ * read between texels blends its neighbours linearly, and blending the
+ * smooth sum keeps a crease's V almost intact, where blending the shaped
+ * value would smear each filament across a texel.
+ */
+const filaments = (sum: TSLValue): TSLValue => float(1).div(sum.mul(20).pow(1.3)).clamp(0, 1);
+
+/**
+ * The field texture's density, in texels per canvas pixel along each side:
+ * at 0.7 the texture has about half as many texels as the canvas has
+ * pixels. Chosen by eye at the SHA-208 gate, as the lowest density that
+ * looks the same as the field worked out at every step; lower softens the
+ * filaments. The field pass is a small share of a frame, so density moves
+ * memory more than GPU time: at the homepage hero's size at 2x, 1 measured
+ * 5.1 ms a frame and 0.5 measured 4.9 ms.
+ */
+const FIELD_DENSITY = 0.7;
+
+// ----------------------------------------------------------------------------
+// The field pass: the field drawn once a frame
+// ----------------------------------------------------------------------------
+
+type FloatUniform = ReturnType<typeof uniform<number>>;
+type Vector2Uniform = ReturnType<typeof uniform<Vector2>>;
+
+/** The field pass's texture, how the march finds a sky point in it, and its teardown. */
+interface FieldPass {
+  /** The raw ridge sum over the patch of sky the rays reach, one channel. */
+  texture: Texture;
+  /** The patch's near-left corner on the sky plane: its smallest x and z. */
+  patchCorner: Vector2Uniform;
+  /** 1 over the patch's size, so (point - corner) * scale is a 0..1 texture coordinate. */
+  patchScale: Vector2Uniform;
+  /** Stop drawing and refitting the field, and release its texture. */
+  dispose: () => void;
+}
+
+interface FieldPassInputs {
+  shaderContext: ShaderContextValue;
+  /** The canvas size, which the patch and the texel count follow. */
+  resize: ResizeSignal;
+  /** The canvas aspect ratio, for a canvas that reports a size of 0. */
+  aspect: FloatUniform;
+  phase: FloatUniform;
+  waviness: FloatUniform;
+}
+
+/**
+ * Draws the field into a texture once a frame, so each march step reads one
+ * texel instead of working out five octaves. The field depends on a point on
+ * the sky plane and on the uniforms, never on the pixel, so every pixel's 60
+ * samples read the same 2D field. Returns null where the renderer cannot
+ * draw into a half-float target, and the march works out the field inline.
+ *
+ * The texture covers the patch of the sky plane the rays reach (see
+ * ./sky.ts), stretched over the texture's 0..1 square: texel x runs across
+ * the screen and texel y toward the horizon. Two vec2 uniforms carry the
+ * mapping, so a sky point maps to a texture coordinate as
+ * (point - corner) * scale, and back as uv / scale + corner. Both are passed
+ * as arguments, never chained from (the vec-uniform gotcha in
+ * docs/agents/tsl.md).
+ *
+ * The caller creates and disposes the pass in one effect, so a Strict Mode
+ * remount builds a fresh one (the Strict Mode gotcha in docs/agents/tsl.md).
+ */
+function createFieldPass({
+  shaderContext,
+  resize,
+  aspect,
+  phase,
+  waviness,
+}: FieldPassInputs): FieldPass | null {
+  const renderer = shaderContext.renderer.three;
+  const patchCorner = uniform(new Vector2());
+  const patchScale = uniform(new Vector2(1, 1));
+
+  // One texel's value: the raw ridge sum at the sky point under it. vec2
+  // swaps to (z, x) because the field takes z first, as the march samples
+  // it. Each texel works out the rotations for itself, four trig calls per
+  // texel, which is nothing beside the octaves.
+  const fieldNode = Fn(() => {
+    const skyPoint = uv().div(patchScale).add(patchCorner);
+
+    return vec4(ridgeSum(vec2(skyPoint.y, skyPoint.x), motionRotations(phase), waviness), 0, 0, 1);
+  })();
+
+  // A half float holds the sum to about three significant digits, which
+  // moves brightness near a filament by well under 1%. An 8-bit texel would
+  // move it by about 6% per step and band. Linear filtering blends the four
+  // texels around each read, so the sum varies smoothly between texel
+  // centers. One channel stores a quarter of the bytes an RGBA texel would.
+  const pass = createTexturePass(renderer, fieldNode, {
+    width: 1,
+    height: 1,
+    type: HalfFloatType,
+    filter: LinearFilter,
+    format: RedFormat,
+  });
+  const fieldTexture = pass.texture;
+
+  if (fieldTexture === null) return null;
+
+  // Size the texture and its patch to the canvas: the patch from the aspect
+  // ratio, the texel count from the canvas's size in device pixels. That
+  // size is the CSS size times the renderer's pixel ratio, rather than the
+  // drawing buffer, which still holds the old size when a zoom reaches this
+  // listener before the renderer resizes. A collapsed canvas reports 0, so
+  // the aspect falls back to the uniform's own. The write asks for a frame,
+  // because a parked scene would otherwise keep showing the old field (the
+  // bare-uniform-write gotcha in docs/agents/tsl.md).
+  const fit = ([width, height]: ResizeValue) => {
+    const patch = skyPatch(width > 0 && height > 0 ? width / height : aspect.value);
+    const pixelRatio = renderer.getPixelRatio();
+    const size = fieldTextureSize(patch, width * pixelRatio, height * pixelRatio, FIELD_DENSITY);
+
+    patchCorner.value.set(patch.minX, patch.minZ);
+    patchScale.value.set(1 / (patch.maxX - patch.minX), 1 / (patch.maxZ - patch.minZ));
+    pass.resize(size.width, size.height);
+    shaderContext.scheduler.requestRender();
+  };
+
+  fit(resize.get());
+  const stopFitting = resize.on('change', fit);
+
+  // The output stage draws pre-passes ahead of the scene pass in the same
+  // frame, so the march always reads this frame's field, and the resize
+  // redraw draws the field at the new size before the scene reads it (the
+  // draw-order gotcha in docs/agents/tsl.md).
+  const removePrePass = shaderContext.registerPrePass(pass.render);
+
+  return {
+    texture: fieldTexture,
+    patchCorner,
+    patchScale,
+    dispose() {
+      removePrePass();
+      stopFitting();
+      pass.dispose();
+    },
+  };
+}
 
 export interface AuroraShaderProps {
   /**
@@ -209,6 +409,8 @@ export function AuroraShader({
   // Canvas aspect ratio (width/height), used to un-stretch the view ray on
   // wide canvases. useAspectUniform keeps it current across resizes.
   const aspectNode = useAspectUniform();
+  // The canvas size, which sizes the field texture and its patch of sky.
+  const resize = useResize();
 
   // ---------------------------------------------
   // Build the material and mount the mesh
@@ -278,6 +480,22 @@ export function AuroraShader({
         ? rampColorAt(stepIndex)
         : texture(paletteTexture, vec2(stepIndex.add(0.5).div(STEP_COUNT), 0.5)).rgb;
 
+    // The field pass, which draws the field once a frame for the march to
+    // read (see createFieldPass above). Null outside a scene, or where the
+    // renderer cannot draw into a half-float target (WebGL2 without
+    // EXT_color_buffer_float). The march then works out the field at every
+    // step, as it did before the field pass, with the same TSL. Aurora
+    // draws its own image, so it must never draw nothing.
+    const fieldPass = shaderContext
+      ? createFieldPass({
+          shaderContext,
+          resize,
+          aspect: aspectNode,
+          phase: phaseUniform,
+          waviness: wavinessUniform,
+        })
+      : null;
+
     // Fn() wraps the body in a reusable GPU function node; the trailing ()
     // calls it once to produce the node the material renders.
     const auroraNode = Fn(() => {
@@ -285,40 +503,44 @@ export function AuroraShader({
       // Aim the view ray
       // ---------------------------------------------
       // Screen uv → NDC; x carries the aspect so ribbons don't stretch on
-      // wide canvases. y maps the canvas bottom to just above the
-      // geometry's horizon (march distances flip negative below
-      // rayDirection.y = -0.2 and sample behind the camera), so the whole
-      // canvas is valid sky and the curtain band spans its full height.
+      // wide canvases. y runs from RAY_Y_AT_BOTTOM at the canvas bottom to
+      // RAY_Y_AT_TOP at its top (./sky.ts says why).
       const ndcX = uv().x.sub(0.5).mul(2).mul(aspectNode);
-      const ndcY = uv().y.mul(1.03).sub(0.03);
+      const ndcY = uv()
+        .y.mul(RAY_Y_AT_TOP - RAY_Y_AT_BOTTOM)
+        .add(RAY_Y_AT_BOTTOM);
 
-      // Virtual camera looking toward the horizon (+z); z sets the fov.
+      // Virtual camera looking toward the horizon (+z); FOCAL_LENGTH sets
+      // the fov.
       //
       // .toVar() stores the result in a GPU variable at this point in the
       // shader. Without it, TSL writes an expression out where the shader
       // first uses it, and the ray is first used inside the march loop
       // below, so every step would redo the normalize (the first-use gotcha
       // in docs/agents/tsl.md). The same goes for the jitter seed and the
-      // two rotations below.
-      const rayDirection = normalize(vec3(ndcX, ndcY, 1.064)).toVar();
+      // rotations below.
+      const rayDirection = normalize(vec3(ndcX, ndcY, FOCAL_LENGTH)).toVar();
 
-      // Both motion phases derive from the same accumulated phase, so
-      // shimmer and drift stay coupled and keep their 2:1 rate ratio.
-      const warpPhase = phaseUniform.mul(0.02);
-      const domainPhase = phaseUniform.mul(0.01);
+      // The field at a sample point. With a field texture, one read at the
+      // point's place in the patch; the texture's linear filter blends the
+      // four nearest texels. Without one, all five octaves at the point,
+      // with the rotations worked out once here, before the loop. Either
+      // way the shaping runs on the value the march gets.
+      const fieldSumAt = (() => {
+        if (fieldPass !== null) {
+          const { texture: fieldTexture, patchCorner, patchScale } = fieldPass;
 
-      // Every octave of every step rotates by these two angles, which
-      // change once a frame. Working out each cosine and sine once here
-      // replaces the 40 trig calls a step used to make (5 octaves, 2
-      // rotations, 2 cosines and 2 sines each) with 4 per pixel.
-      const warpRotation: Rotation = {
-        cosine: cos(warpPhase).toVar(),
-        sine: sin(warpPhase).toVar(),
-      };
-      const domainRotation: Rotation = {
-        cosine: cos(domainPhase).toVar(),
-        sine: sin(domainPhase).toVar(),
-      };
+          return (samplePoint: TSLValue) =>
+            texture(
+              fieldTexture,
+              vec2(samplePoint.x, samplePoint.z).sub(patchCorner).mul(patchScale),
+            ).r;
+        }
+        const rotations = motionRotations(phaseUniform);
+
+        return (samplePoint: TSLValue) =>
+          ridgeSum(vec2(samplePoint.z, samplePoint.x), rotations, wavinessUniform);
+      })();
 
       // ---------------------------------------------
       // March the ray, accumulating light
@@ -339,26 +561,21 @@ export function AuroraShader({
         // curtain's sharp bottom edge and shouldn't be blurred.
         const jitter = jitterSeed.mul(0.006).mul(smoothstep(0, 15, stepIndex));
 
-        // pow(i, 1.4) packs slices tight at the base and spreads them with
-        // height; the bent divisor fakes atmospheric curvature so
+        // pow(i, SLICE_CURVE) packs slices tight at the base and spreads
+        // them with height; the bent divisor fakes atmospheric curvature so
         // horizon-grazing rays push the sheet toward the horizon line.
         const marchDistance = stepIndex
-          .pow(1.4)
-          .mul(0.002)
-          .add(0.8)
-          .div(rayDirection.y.mul(2).add(0.4))
+          .pow(SLICE_CURVE)
+          .mul(SLICE_SPREAD)
+          .add(FIRST_SLICE)
+          .div(rayDirection.y.mul(HORIZON_BEND).add(BEND_OFFSET))
           .sub(jitter);
 
-        const samplePoint = vec3(5.5).add(rayDirection.mul(marchDistance));
+        const samplePoint = vec3(RAY_ORIGIN).add(rayDirection.mul(marchDistance));
 
         // Sample the field on the horizontal plane: z runs toward the
         // horizon, x runs across the screen.
-        const fieldValue = auroraField(
-          vec2(samplePoint.z, samplePoint.x),
-          warpRotation,
-          domainRotation,
-          wavinessUniform,
-        );
+        const fieldValue = filaments(fieldSumAt(samplePoint));
 
         // This slice's color: its palette texel, or the inline ramp where
         // the renderer has no palette.
@@ -407,6 +624,7 @@ export function AuroraShader({
     shaderContext?.scene.add(mesh);
 
     return () => {
+      fieldPass?.dispose();
       shaderContext?.scene.remove(mesh);
       try {
         material.dispose();
@@ -427,6 +645,7 @@ export function AuroraShader({
     wavinessUniform,
     coverageUniform,
     aspectNode,
+    resize,
   ]);
 
   return null;
