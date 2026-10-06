@@ -52,10 +52,7 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color
 // distances and accumulating what it hits). At every step it samples a
 // layered noise field; where the noise creases, light accumulates, and the
 // creases stack up into the curtain ribbons. Depth also picks the color:
-// near slices take the ramp's first stops, far slices the last. Those 60
-// colors are the same for every pixel, so they are drawn once into a 60-texel
-// texture (a texture pass, src/runtime/texture-pass) and each step reads its
-// own texel instead of running the color ramp.
+// near slices take the ramp's first stops, far slices the last.
 //
 // Aurora technique inspired by nimitz's "Auroras" (shadertoy.com/view/XtGGRt):
 // triangle-noise fbm, depth-sliced raymarch, average-then-accumulate
@@ -237,24 +234,27 @@ export function AuroraShader({
     // and far ribbons glow different stops. pow keeps the upper stops
     // visible: extinction weights early slices, so a linear index would
     // read as stop 0 almost everywhere.
-    const sliceColorAt = (stepIndex: TSLValue) =>
+    const rampColorAt = (stepIndex: TSLValue) =>
       colorRamp(stepIndex.div(STEP_COUNT).pow(0.6), rampStops, colorSpace, hueInterpolation);
 
     // The slice color depends on the step alone, yet the ramp behind it
     // (an oklab round trip per stop, plus the mixes) would run 60 times for
-    // every pixel. So draw it once per material build into a texture with
-    // one texel per step, a palette the march loop reads from. Each texel
-    // runs the same ramp at its own step: uv().x is the texel's 0..1
-    // position, and at texel i's center, (i + 0.5) / 60, times 60 floors to
-    // i exactly. Full float keeps the ramp's colors as computed rather
-    // than rounded to 8 or 16 bits, and nearest filtering hands back one
-    // texel unmixed with its neighbours, so the color matches the inline
-    // ramp. The pass is created, drawn, and disposed in this effect, so a
-    // Strict Mode remount builds a fresh one.
+    // every pixel. So a texture pass (src/runtime/texture-pass) draws it
+    // once per material build into a palette: a texture with one texel (one
+    // pixel of a texture) per step, which the march loop reads from.
+    //
+    // Each texel runs the same ramp at its own step. uv().x is the texel's
+    // 0..1 position, and at texel i's center, (i + 0.5) / 60, times 60
+    // floors to i exactly. Full float keeps the ramp's colors as computed
+    // rather than rounded to 8 or 16 bits, and nearest filtering hands back
+    // one texel unmixed with its neighbours, so the color matches the
+    // inline ramp. The pass is created, drawn, and disposed in this effect,
+    // so a Strict Mode remount builds a fresh one (the Strict Mode gotcha in
+    // docs/agents/tsl.md).
     const slicePalette = shaderContext
       ? createTexturePass(
           shaderContext.renderer.three,
-          vec4(sliceColorAt(floor(uv().x.mul(STEP_COUNT))), 1),
+          vec4(rampColorAt(floor(uv().x.mul(STEP_COUNT))), 1),
           { width: STEP_COUNT, height: 1, type: FloatType, filter: NearestFilter },
         )
       : null;
@@ -273,9 +273,9 @@ export function AuroraShader({
     // coordinate goes in when the node is built, rather than through .uv()
     // on a bare texture(), which would add a 3x3 matrix multiply to every
     // read (the texture-matrix gotcha in docs/agents/tsl.md).
-    const sliceColorFor = (stepIndex: TSLValue) =>
+    const sliceColorAt = (stepIndex: TSLValue) =>
       paletteTexture === null
-        ? sliceColorAt(stepIndex)
+        ? rampColorAt(stepIndex)
         : texture(paletteTexture, vec2(stepIndex.add(0.5).div(STEP_COUNT), 0.5)).rgb;
 
     // Fn() wraps the body in a reusable GPU function node; the trailing ()
@@ -362,7 +362,7 @@ export function AuroraShader({
 
         // This slice's color: its palette texel, or the inline ramp where
         // the renderer has no palette.
-        const sliceColor = sliceColorFor(stepIndex);
+        const sliceColor = sliceColorAt(stepIndex);
 
         const slice = vec4(sliceColor.mul(fieldValue), fieldValue);
 
