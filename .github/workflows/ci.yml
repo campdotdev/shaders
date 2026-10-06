@@ -78,7 +78,7 @@ jobs:
             fi
           done
 
-  # The visual job must render in the exact container snap.sh bakes the Linux
+  # Visual shards must render in the exact container snap.sh bakes the Linux
   # baselines in. A bare ubuntu runner ships a different font set, so fontconfig
   # resolves the `monospace` fallback to a different font (the image lands on
   # WenQuanYi Zen Hei Mono) and every DOM baseline that contains text drifts.
@@ -113,10 +113,20 @@ jobs:
           fi
           echo "version=$versions" >> "$GITHUB_OUTPUT"
 
-  visual-regression:
-    name: Visual regression
+  # Playwright runs the suite on one worker, so the matrix splits it across
+  # runners instead. Each shard builds the docs site itself: Playwright's
+  # webServer rebuilds it with INCLUDE_DEV_ROUTES and --force, regardless of
+  # what ran before, so a separate build step, or a wait on the build job,
+  # would only add time.
+  visual-regression-shard:
+    name: Visual regression (shard ${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ubuntu-latest
-    needs: [build-typecheck-lint, playwright-version]
+    needs: playwright-version
+    strategy:
+      # Let every shard finish, so the other shards still report when one fails.
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     # Same image and platform as scripts/snap.sh (amd64 either way). Browsers
     # and their system deps are baked into the image at the matching version,
     # so there is no `playwright install` step here.
@@ -130,12 +140,27 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm build
-      - run: pnpm --filter @shaders/docs-tests test:visual
+      - run: pnpm --filter @shaders/docs-tests test:visual --shard=${{ matrix.shard }}/${{ strategy.job-total }}
       - name: Upload visual diffs on failure
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: visual-regression-diffs
+          name: visual-regression-diffs-${{ matrix.shard }}
           path: apps/docs-tests/test-results
           retention-days: 7
+
+  # The ruleset requires a check named "Visual regression", and the matrix
+  # reports one check per shard, so this job reports one result for all of
+  # them. GitHub reads a skipped required check as a pass, so the job runs on
+  # every outcome, a cancelled run included, and fails unless every shard
+  # succeeded.
+  visual-regression-gate:
+    name: Visual regression
+    if: always()
+    needs: visual-regression-shard
+    runs-on: ubuntu-latest
+    steps:
+      - if: needs.visual-regression-shard.result != 'success'
+        run: |
+          echo "::error::a visual regression shard ended with ${{ needs.visual-regression-shard.result }}"
+          exit 1
