@@ -40,6 +40,10 @@ _Avoid_: Idle mode, frameloop demand, static scene
 A component's say in whether its scene may park. A component votes idle while nothing it draws can change, votes animated while anything can, or casts no vote; a scene parks only when at least one component votes idle and none votes animated.
 _Avoid_: Static hint, render-on-demand vote, static vote
 
+**Frame cap**:
+The most frames per second a scene draws, set by its app. With no frame cap, a scene draws at the display's refresh rate, so a 120 Hz display gets 120 frames a second. Frames a prop change asks for count against the frame cap. A frame cap never wakes a parked scene or resumes a paused one.
+_Avoid_: Frame budget, target frame rate, fps limit
+
 **Paused scene**:
 A scene frozen on its current frame, by its app through `paused`, or because the tab is hidden or the canvas is off screen. Time stops while a scene is paused, so it resumes on the frame it stopped on. A parked scene stops drawing because nothing it draws can change. A paused scene stops whatever its components vote.
 _Avoid_: Frozen scene, stopped scene
