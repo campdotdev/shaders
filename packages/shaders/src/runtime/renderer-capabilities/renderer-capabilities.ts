@@ -8,9 +8,19 @@ import {
   HalfFloatType,
   LinearFilter,
   type NearestFilter,
-  type TextureDataType,
+  type UnsignedByteType,
   type WebGPURenderer,
 } from 'three/webgpu';
+
+/**
+ * What each channel of a target's texel holds: an 8-bit integer, a half
+ * float, or a full float. three's other texel types make targets these
+ * modules cannot use. The signed and wider integer types make integer
+ * targets, which a float shader output cannot draw into, or a signed 8-bit
+ * one, which core WebGPU cannot render to, and three has no RGBA format for
+ * the packed types.
+ */
+export type TargetType = typeof UnsignedByteType | typeof HalfFloatType | typeof FloatType;
 
 /** How a read between texel centers blends: not at all, or linearly. */
 export type TargetFilter = typeof NearestFilter | typeof LinearFilter;
@@ -51,7 +61,7 @@ function hasWebGLExtension(backend: object, name: string): boolean {
  */
 export function canRenderTo(
   renderer: WebGPURenderer,
-  type: TextureDataType,
+  type: TargetType,
   filter: TargetFilter,
 ): boolean {
   const isFloat = type === FloatType;

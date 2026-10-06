@@ -12,7 +12,6 @@ import {
   RenderTarget,
   RGBAFormat,
   type Texture,
-  type TextureDataType,
   type WebGPURenderer,
 } from 'three/webgpu';
 
@@ -20,6 +19,7 @@ import {
   canRenderTo,
   isDeviceLost,
   type TargetFilter,
+  type TargetType,
 } from '../renderer-capabilities/renderer-capabilities.js';
 
 export interface TexturePassOptions {
@@ -33,7 +33,7 @@ export interface TexturePassOptions {
    * floats. A float keeps sign, values past 1, and fractions an 8-bit
    * channel would round away.
    */
-  type: TextureDataType;
+  type: TargetType;
   /**
    * How a read between texel centers blends: NearestFilter returns the
    * nearest texel as stored, LinearFilter mixes the four around it.
