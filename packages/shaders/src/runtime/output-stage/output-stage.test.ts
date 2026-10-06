@@ -1,5 +1,5 @@
 import { OrthographicCamera, Scene } from 'three';
-import type { QuadMesh, WebGPURenderer } from 'three/webgpu';
+import type { NodeMaterial, PassNode, QuadMesh, WebGPURenderer } from 'three/webgpu';
 import { describe, expect, it, vi } from 'vitest';
 
 import { createOutputStage } from './output-stage.js';
@@ -79,6 +79,26 @@ describe('createOutputStage', () => {
     remove();
     expect(stage.hasOverlays()).toBe(false);
     expect(material.version).toBeGreaterThan(versionWithOverlay);
+  });
+
+  // Every component draws a full-screen quad at the same depth, so a depth
+  // buffer behind the scene pass would never reject a pixel.
+  it('renders the scene pass without a depth buffer', () => {
+    const renderer = makeRenderer();
+    const stage = createOutputStage(renderer, new Scene(), new OrthographicCamera());
+
+    stage.render();
+    const material = drawnQuad(renderer)?.material as NodeMaterial;
+    // The output graph can reach one node along more than one path, so the
+    // set keeps each pass once.
+    const scenePasses = new Set<PassNode>();
+
+    material.fragmentNode?.traverse((node) => {
+      if ('isPassNode' in node) scenePasses.add(node as PassNode);
+    });
+
+    expect(scenePasses.size).toBe(1);
+    expect([...scenePasses][0]?.renderTarget.depthBuffer).toBe(false);
   });
 
   it('disposes the quad material', () => {

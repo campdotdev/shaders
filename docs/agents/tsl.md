@@ -88,6 +88,14 @@ Neither headless mode shows this bug. Headless falls back to WebGL2, and the sof
 
 A component whose `colorNode` emits light-contribution rgb with coverage alpha, the way Aurora does, gets multiplied by alpha twice under the default `NormalBlending`, and soft wisps dim quadratically. Set `material.premultipliedAlpha = true`.
 
+### The no-depth gotcha: a WebGPU scene has no depth buffer and no MSAA
+
+Every component draws one quad that covers the canvas at the same depth and smooths its own edges in its shader. So `createRenderer` defaults `antialias` to false and gives the canvas no depth buffer, and the output stage's scene pass renders with `depthBuffer: false`. On WebGPU, nothing in a scene is depth-tested, and draw order alone decides what covers what. Passing `antialias: true` to `createRenderer` turns MSAA back on there, for the canvas and the scene pass.
+
+On the WebGL2 fallback, neither setting changes anything. three creates the WebGL2 context with the browser's defaults, which include a depth buffer and MSAA. It never multisamples the scene pass, and it attaches the pass's depth texture whatever `depthBuffer` says. So WebGL2 still depth-tests, and a mesh that relies on depth would draw differently on the two backends.
+
+three 0.170's pass node always gives its render target a depth texture. three allocates that texture at the pass's size, though WebGPU never attaches it. three's WebGPU backend also allocates a canvas-sized color buffer on every resize, and uses it only with MSAA on. At a three upgrade, check whether either allocation can be skipped.
+
 ### The timestamp-writes gotcha: three attaches a pass's timestamp writes once
 
 `ShaderMonitor` reads GPU time from `runtime/gpu-timer/`, which times the scene pass and the output quad. three 0.170 reads timestamps only on its async render path, and a scene draws synchronously. So the timer turns on the backend's `trackTimestamp` flag after init, and it maps the result buffers that WebGPUBackend resolves at the end of each pass.
