@@ -1,7 +1,10 @@
 // Renderer construction: wraps three's WebGPURenderer (which silently falls
 // back to WebGL2 where WebGPU is missing — notably headless browsers) and
 // applies Shaders' defaults: transparent clear, capped pixel ratio, output
-// gamut, and a resize helper with the logical-size guard described inline.
+// gamut, no MSAA or depth buffer on WebGPU, and a resize helper with the
+// logical-size guard described inline. MSAA keeps several color samples per
+// pixel to smooth triangle edges. A depth buffer keeps each pixel's distance
+// from the camera, so a nearer surface hides a farther one.
 // ShaderScene calls this once per mount; Mode 2 users can call it directly.
 import { Color, Vector2 } from 'three';
 import { WebGPURenderer } from 'three/webgpu';
@@ -13,7 +16,7 @@ export type { OutputGamut } from './gamut.js';
 export type GpuBackend = 'webgpu' | 'webgl2';
 
 export interface CreateRendererOptions {
-  /** Anti-alias the framebuffer. Default: true. */
+  /** Smooth triangle edges with 4x MSAA on WebGPU. Default: false. */
   antialias?: boolean;
   /** Force WebGL2 even if WebGPU is available (useful for testing fallback). Default: false. */
   forceWebGL?: boolean;
@@ -50,7 +53,10 @@ export async function createRenderer(
   opts: CreateRendererOptions = {},
 ): Promise<GpuRenderer> {
   const {
-    antialias = true,
+    // Every component draws one quad that covers the whole canvas and shades
+    // its own soft edges. Every pixel is fully covered, so all 4 MSAA samples
+    // would hold the same color.
+    antialias = false,
     forceWebGL = false,
     clearColor = 0x000000,
     clearAlpha = 0,
@@ -58,9 +64,12 @@ export async function createRenderer(
     gamut = 'srgb',
   } = opts;
 
+  // ShaderScene draws only its output quad to the canvas, so the canvas needs
+  // no depth buffer (the no-depth gotcha in docs/agents/tsl.md).
   const three = new WebGPURenderer({
     canvas,
     antialias,
+    depth: false,
     forceWebGL,
   });
 

@@ -70,7 +70,12 @@ export function createOutputStage(
   // pixel snap, say) and compose in mount order too.
   const overlays = new Map<symbol, PostProcessTransform>();
   const uvTransforms = new Map<symbol, UvTransform>();
-  const scenePass = pass(scene, camera);
+  // The scene pass keeps no depth buffer, the per-pixel distances three tests
+  // to hide a farther surface behind a nearer one, because every component's
+  // quad sits at the same depth (the no-depth gotcha in docs/agents/tsl.md).
+  // On WebGPU the pass keeps as many color samples per pixel as the renderer
+  // does, so createRenderer's antialias option decides its MSAA.
+  const scenePass = pass(scene, camera, { depthBuffer: false });
   // The two passes every frame draws: the scene pass renders the meshes into
   // its own render target, and the quad draws the composed result to the
   // canvas.
