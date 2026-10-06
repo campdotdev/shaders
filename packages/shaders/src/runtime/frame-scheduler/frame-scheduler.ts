@@ -1,9 +1,10 @@
 // The heart of Shaders' render-on-demand system: one requestAnimationFrame
-// loop per scene, with clients (render callbacks) ticked every frame. The
-// interesting part is that the loop can STOP — components vote on whether
-// anything is animating (setIdle), and when the votes say "all static" the
-// scheduler runs one last flush tick (so the final state lands on screen)
-// and then queues nothing until a vote changes or requestRender() pokes it.
+// loop per scene, with clients (render callbacks) ticked every frame, or
+// every frame the scene's frame cap allows (setMaxFPS). The interesting part
+// is that the loop can STOP — components vote on whether anything is
+// animating (setIdle), and when the votes say "all static" the scheduler
+// runs one last flush tick (so the final state lands on screen) and then
+// queues nothing until a vote changes or requestRender() pokes it.
 // Its companions: visibility.ts pauses the loop when the tab is hidden,
 // intersection.ts when the canvas scrolls out of view.
 
@@ -18,6 +19,16 @@ export interface SchedulerTick {
 
 export type SchedulerClient = (tick: SchedulerTick) => void;
 
+// How early a frame may arrive and still tick under a frame cap, as a
+// fraction of the cap's interval. Animation frame timestamps jitter, and
+// some browsers round them to the whole millisecond, so the frame one
+// interval after the last can read short. Without the slack, a 60 cap on a
+// 120 Hz display would skip that frame now and then and stutter. The slack
+// also rounds up a cap that sits just under a divisor of the refresh rate:
+// at 0.1, a 110 cap on a 120 Hz display ticks on every frame. A larger
+// value rounds up caps that sit further below a divisor.
+const FRAME_CAP_TOLERANCE = 0.1;
+
 export class FrameScheduler {
   private readonly clients = new Set<SchedulerClient>();
   private readonly phaseResetListeners = new Set<() => void>();
@@ -30,6 +41,9 @@ export class FrameScheduler {
   private lastTickAt = 0;
   // Set by a resume() that ends a pause, so the next tick can drop the gap.
   private resumedFromPause = false;
+  // The frame cap as the shortest time between two ticks, in milliseconds,
+  // tolerance included. 0 means no frame cap, so every animation frame ticks.
+  private minTickGap = 0;
 
   // Reference-counted idle voting. The scheduler is idle only when at least
   // one component has voted idle AND no component has voted animated. This
@@ -95,7 +109,22 @@ export class FrameScheduler {
     };
   }
 
-  /** Register a client to be called every frame. */
+  /**
+   * Set the frame cap, the most ticks per second. The loop skips an
+   * animation frame that arrives sooner than one interval after its last
+   * tick, so a 60 cap ticks on every other frame of a 120 Hz display.
+   * Frames that requestRender() asks for count against the cap. Undefined,
+   * zero, a negative number, or a non-finite number removes the cap. The cap
+   * applies from the next animation frame, and never wakes a parked or
+   * paused loop.
+   */
+  setMaxFPS(maxFPS: number | undefined): void {
+    const capped = maxFPS !== undefined && Number.isFinite(maxFPS) && maxFPS > 0;
+
+    this.minTickGap = capped ? (1000 / maxFPS) * (1 - FRAME_CAP_TOLERANCE) : 0;
+  }
+
+  /** Register a client to be called on every tick. */
   add(client: SchedulerClient): void {
     this.clients.add(client);
     if (this.running) this.maybeQueue();
@@ -227,9 +256,27 @@ export class FrameScheduler {
     }
   }
 
+  /**
+   * Whether a frame arrives too soon after the last tick for the frame cap.
+   * The first tick always runs. A frame after a pause compares against the
+   * last tick before it, so a short pause cannot slip in an extra tick.
+   */
+  private arrivesTooSoonForFrameCap(now: number): boolean {
+    if (this.minTickGap === 0 || this.startedAt === 0) return false;
+
+    return now - this.lastTickAt < this.minTickGap;
+  }
+
   private readonly frame = (now: number): void => {
     this.rafId = null;
     if (!this.running || this.paused) return;
+    // A skipped frame leaves the loop as it was: a pending idle flush stays
+    // pending, so it ticks on the next frame the cap allows.
+    if (this.arrivesTooSoonForFrameCap(now)) {
+      this.maybeQueue();
+
+      return;
+    }
 
     if (this.startedAt === 0) {
       this.startedAt = now;

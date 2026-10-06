@@ -4,11 +4,11 @@
 // own themselves: the canvas, the renderer (WebGPU with WebGL2 fallback),
 // ONE three.js scene that all children mount their meshes into, the
 // post-process chain overlays register with, the render-on-demand frame
-// loop, and the pause behaviors (hidden tab, off-screen canvas, and the
-// `paused` prop). Children receive all of it through ShaderContext and
-// render no DOM of their own —
-// composition is stacking children, painting into this one scene. One effect
-// owns that whole lifecycle; the helpers below the component are its steps.
+// loop and its frame cap, and the pause behaviors (hidden tab, off-screen
+// canvas, and the `paused` prop). Children receive all of it through
+// ShaderContext and render no DOM of their own — composition is stacking
+// children, painting into this one scene. One effect owns that whole
+// lifecycle; the helpers below the component are its steps.
 import {
   type CSSProperties,
   type ReactNode,
@@ -46,7 +46,20 @@ export interface ShaderSceneProps {
   children?: ReactNode;
   className?: string;
   style?: CSSProperties;
+  /**
+   * The most canvas pixels the scene draws along each side of a CSS pixel.
+   * A display with a higher pixel ratio gets this one, and the browser
+   * scales the canvas up. A change rebuilds the renderer. Defaults to 2.
+   */
   maxDPR?: number;
+  /**
+   * Sets the frame cap, the most frames per second the scene draws. Pick a
+   * divisor of the display's refresh rate, such as 60 on a 120 Hz display,
+   * which draws every other frame. A cap up to a tenth below a divisor draws
+   * at the divisor. A change applies from the next frame. Defaults to no
+   * frame cap, which draws at the display's refresh rate.
+   */
+  maxFPS?: number;
   /** Output color gamut. 'auto' (default) uses the widest the display supports. */
   gamut?: GamutPreference;
   /** Fires once, on the frame after the shader's first content frame is on screen. */
@@ -74,6 +87,7 @@ export function ShaderScene({
   className,
   style,
   maxDPR,
+  maxFPS,
   gamut = 'auto',
   onFirstPaint,
   onError,
@@ -88,7 +102,8 @@ export function ShaderScene({
   // re-runs on dep changes (gamut, maxDPR), and a persistently failing init
   // would otherwise re-notify on every re-run.
   const errorFiredRef = useRef(false);
-  const pausedProp = usePausedProp(paused);
+  const pausedProp = useLiveProp(paused, applyPaused);
+  const maxFPSProp = useLiveProp(maxFPS, applyMaxFPS);
   // Poster boundary controls, when a ShaderPoster wraps this scene. The value
   // is memoized stable by ShaderPoster, so listing it in the setup effect's
   // deps does not cause renderer rebuilds. Null (a no-op below) when the
@@ -141,6 +156,7 @@ export function ShaderScene({
         // PostProcessing.
         const outputStage = createOutputStage(renderer.three, scene, camera);
         const scheduler = new FrameScheduler();
+        const detachMaxFPSProp = maxFPSProp.attach(scheduler);
 
         const frameRenderer = createFrameRenderer(
           renderer,
@@ -165,6 +181,7 @@ export function ShaderScene({
         const cursorInput = createLazyCursorInput(canvas);
 
         cleanup = () => {
+          detachMaxFPSProp();
           detachPausedProp();
           pausedClock.stop();
           canvasWatch.stop();
@@ -208,7 +225,7 @@ export function ShaderScene({
       // so re-arm the enclosing poster until it does.
       posterControls?.setShaderPainted(false);
     };
-  }, [maxDPR, resolvedGamut, posterControls, pausedProp]);
+  }, [maxDPR, resolvedGamut, posterControls, pausedProp, maxFPSProp]);
 
   // Mount the children as soon as the context exists so the shader can build
   // and paint. The children render no visible DOM of their own (they drive
@@ -232,39 +249,52 @@ export function ShaderScene({
 }
 
 // ----------------------------------------------------------------------------
-// The `paused` prop: applied to whichever canvas watcher the scene has
+// Props the running scene takes without a rebuild: `paused` and `maxFPS`
 // ----------------------------------------------------------------------------
 
+interface LiveProp<Target> {
+  attach: (target: Target) => () => void;
+}
+
 /**
- * Carries the `paused` prop to the canvas watcher without rebuilding the
- * renderer. `attach` applies the current value to a new watcher and keeps it
+ * Carries a prop to a part of the scene that the setup effect builds, such
+ * as the canvas watcher, without rebuilding the renderer when the prop
+ * changes. `attach` applies the current value to a new part and keeps it
  * current through later prop changes, and the function it returns lets go.
+ * `apply` must keep its identity across renders, as the module-level
+ * functions below do.
  */
-function usePausedProp(paused: boolean): {
-  attach: (canvasWatch: CanvasWatch) => () => void;
-} {
-  const pausedRef = useRef(paused);
-  const canvasWatchRef = useRef<CanvasWatch | null>(null);
+function useLiveProp<Target, Value>(
+  value: Value,
+  apply: (target: Target, value: Value) => void,
+): LiveProp<Target> {
+  const valueRef = useRef(value);
+  const targetRef = useRef<Target | null>(null);
 
   useEffect(() => {
-    pausedRef.current = paused;
-    canvasWatchRef.current?.setPaused(paused);
-  }, [paused]);
+    valueRef.current = value;
+    if (targetRef.current !== null) apply(targetRef.current, value);
+  }, [value, apply]);
 
   return useMemo(
     () => ({
-      attach(canvasWatch) {
-        canvasWatch.setPaused(pausedRef.current);
-        canvasWatchRef.current = canvasWatch;
+      attach(target) {
+        apply(target, valueRef.current);
+        targetRef.current = target;
 
         return () => {
-          canvasWatchRef.current = null;
+          targetRef.current = null;
         };
       },
     }),
-    [],
+    [apply],
   );
 }
+
+const applyPaused = (canvasWatch: CanvasWatch, paused: boolean) => canvasWatch.setPaused(paused);
+
+const applyMaxFPS = (scheduler: FrameScheduler, maxFPS: number | undefined) =>
+  scheduler.setMaxFPS(maxFPS);
 
 // ----------------------------------------------------------------------------
 // The view: one scene and a camera that frames it edge to edge

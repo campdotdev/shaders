@@ -293,6 +293,198 @@ describe('setIdle (render-on-demand)', () => {
   });
 });
 
+describe('setMaxFPS (frame cap)', () => {
+  const { getRafCallbacks, tickFrame } = setupRafMocks();
+
+  // Animation frame timestamps of a 120 Hz display, in milliseconds, from
+  // the given frame number on.
+  const at120Hz = (frameNumber: number) => 1000 + (frameNumber * 1000) / 120;
+
+  it('runs its clients on every other animation frame at 120 Hz under a 60 cap', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.setMaxFPS(60);
+    scheduler.add(client);
+    scheduler.start();
+    for (let frameNumber = 0; frameNumber < 8; frameNumber += 1) tickFrame(at120Hz(frameNumber));
+
+    expect(client.mock.calls.map(([tick]) => tick.now)).toEqual([
+      at120Hz(0),
+      at120Hz(2),
+      at120Hz(4),
+      at120Hz(6),
+    ]);
+  });
+
+  // With no frame cap a scene draws at the display's refresh rate, and a
+  // value that names no cap behaves the same.
+  it.each([undefined, 0, -30, Number.NaN, Number.POSITIVE_INFINITY])(
+    'runs its clients on every animation frame with a cap of %s',
+    (maxFPS) => {
+      const scheduler = new FrameScheduler();
+      const client = vi.fn();
+
+      scheduler.setMaxFPS(maxFPS);
+      scheduler.add(client);
+      scheduler.start();
+      for (let frameNumber = 0; frameNumber < 4; frameNumber += 1) tickFrame(at120Hz(frameNumber));
+
+      expect(client).toHaveBeenCalledTimes(4);
+    },
+  );
+
+  // Timestamps jitter, and some browsers round them to the millisecond, so
+  // a frame a hair under one interval after the last still ticks.
+  it('ticks on a frame that arrives a little early', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.setMaxFPS(60);
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(1000);
+    tickFrame(1016);
+    tickFrame(1033);
+
+    expect(client).toHaveBeenCalledTimes(3);
+  });
+
+  // A cap that does not divide the refresh rate waits for the first frame
+  // after its interval, so a 100 cap at 120 Hz ticks less often than asked
+  // rather than on every frame.
+  it('ticks on every other frame at 120 Hz under a 100 cap', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.setMaxFPS(100);
+    scheduler.add(client);
+    scheduler.start();
+    for (let frameNumber = 0; frameNumber < 6; frameNumber += 1) tickFrame(at120Hz(frameNumber));
+
+    expect(client.mock.calls.map(([tick]) => tick.now)).toEqual([
+      at120Hz(0),
+      at120Hz(2),
+      at120Hz(4),
+    ]);
+  });
+
+  // Speed-driven phases add speed x delta each tick, so delta must span the
+  // skipped frames for a capped scene to keep its pace.
+  it('measures delta from the last tick, across skipped frames', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.setMaxFPS(60);
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(at120Hz(0));
+    tickFrame(at120Hz(1));
+    tickFrame(at120Hz(2));
+
+    expect(client).toHaveBeenCalledTimes(2);
+    expect(client.mock.lastCall?.[0].delta).toBeCloseTo(1 / 60);
+  });
+
+  it('holds a frame that requestRender() asks for until the cap allows it', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.setMaxFPS(60);
+    scheduler.add(client);
+    scheduler.start();
+    scheduler.setIdle(true);
+    tickFrame(at120Hz(0)); // the idle flush
+    expect(client).toHaveBeenCalledTimes(1);
+
+    scheduler.requestRender();
+    tickFrame(at120Hz(1)); // too soon after the flush
+    expect(client).toHaveBeenCalledTimes(1);
+    tickFrame(at120Hz(2));
+    expect(client).toHaveBeenCalledTimes(2);
+    tickFrame(at120Hz(3)); // parked again
+    tickFrame(at120Hz(4));
+    expect(client).toHaveBeenCalledTimes(2);
+  });
+
+  it('never wakes a parked loop', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.add(client);
+    scheduler.start();
+    scheduler.setIdle(true);
+    tickFrame(1000); // the idle flush, then the loop parks
+    expect(getRafCallbacks()).toHaveLength(0);
+
+    scheduler.setMaxFPS(30);
+    scheduler.setMaxFPS(undefined);
+
+    expect(getRafCallbacks()).toHaveLength(0);
+  });
+
+  it('never resumes a paused loop', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(1000);
+    scheduler.pause();
+    scheduler.setMaxFPS(30);
+    scheduler.setMaxFPS(undefined);
+    tickFrame(2000);
+
+    expect(client).toHaveBeenCalledTimes(1);
+  });
+
+  // The pause watcher can pause and resume within one frame, as a canvas
+  // scrolls out of view and straight back, and that must not let a frame
+  // tick early.
+  it('holds the first frame after a short pause to the cap', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.setMaxFPS(60);
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(at120Hz(0));
+    scheduler.pause();
+    scheduler.resume();
+    tickFrame(at120Hz(1));
+    expect(client).toHaveBeenCalledTimes(1);
+
+    tickFrame(at120Hz(2));
+    expect(client).toHaveBeenCalledTimes(2);
+  });
+
+  it('applies a new cap to a running loop from the next frame', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.setMaxFPS(60);
+    scheduler.add(client);
+    scheduler.start();
+    tickFrame(at120Hz(0));
+    tickFrame(at120Hz(1)); // skipped under the 60 cap
+
+    scheduler.setMaxFPS(undefined);
+    tickFrame(at120Hz(2));
+    tickFrame(at120Hz(3));
+
+    scheduler.setMaxFPS(30);
+    for (let frameNumber = 4; frameNumber < 12; frameNumber += 1) tickFrame(at120Hz(frameNumber));
+
+    expect(client.mock.calls.map(([tick]) => tick.now)).toEqual([
+      at120Hz(0),
+      at120Hz(2),
+      at120Hz(3),
+      at120Hz(7),
+      at120Hz(11),
+    ]);
+  });
+});
+
 describe('dispose invariants', () => {
   let rafCallbacks: FrameRequestCallback[] = [];
   let nextRafId = 0;

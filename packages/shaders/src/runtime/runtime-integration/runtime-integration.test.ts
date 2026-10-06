@@ -124,4 +124,40 @@ describe('runtime integration', () => {
     tickFrame(112);
     expect(client).toHaveBeenCalledTimes(5);
   });
+
+  it('frame cap: limits a visible scene, and leaves the pause gates alone', () => {
+    const scheduler = new FrameScheduler();
+    const client = vi.fn();
+
+    scheduler.setMaxFPS(30);
+    scheduler.add(client);
+    scheduler.start();
+
+    const canvas = document.createElement('canvas');
+    const intersection = createIntersectionWatcher(canvas);
+
+    intersection.subscribe(() => {
+      if (intersection.isInView()) scheduler.resume();
+      else scheduler.pause();
+    });
+
+    // A 60 Hz display under a 30 cap ticks on every other frame.
+    tickFrame(1000);
+    tickFrame(1016.7);
+    tickFrame(1033.3);
+    expect(client).toHaveBeenCalledTimes(2);
+
+    // Canvas offscreen → pause, and a new cap does not resume it
+    observerCallback!([{ isIntersecting: false } as IntersectionObserverEntry], null as never);
+    scheduler.setMaxFPS(60);
+    tickFrame(1050);
+    tickFrame(1066.7);
+    expect(client).toHaveBeenCalledTimes(2);
+
+    // Canvas back in view → resume under the new cap, on every frame
+    observerCallback!([{ isIntersecting: true } as IntersectionObserverEntry], null as never);
+    tickFrame(5000);
+    tickFrame(5016.7);
+    expect(client).toHaveBeenCalledTimes(4);
+  });
 });
