@@ -7,6 +7,7 @@ import {
   dot,
   exp2,
   float,
+  floor,
   Fn,
   fract,
   Loop,
@@ -16,14 +17,28 @@ import {
   type ShaderNodeObject,
   sin,
   smoothstep,
+  texture,
   uv,
   vec2,
   vec3,
   vec4,
 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
+import {
+  FloatType,
+  Mesh,
+  MeshBasicNodeMaterial,
+  NearestFilter,
+  type Node,
+  PlaneGeometry,
+} from 'three/webgpu';
 
-import { colorRamp, type ColorSpace, type HueInterpolation, type TSLNode } from '../../engine.js';
+import {
+  colorRamp,
+  type ColorSpace,
+  createTexturePass,
+  type HueInterpolation,
+  type TSLNode,
+} from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
@@ -37,7 +52,10 @@ import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color
 // distances and accumulating what it hits). At every step it samples a
 // layered noise field; where the noise creases, light accumulates, and the
 // creases stack up into the curtain ribbons. Depth also picks the color:
-// near slices take the ramp's first stops, far slices the last.
+// near slices take the ramp's first stops, far slices the last. Those 60
+// colors are the same for every pixel, so they are drawn once into a 60-texel
+// texture (a texture pass, src/runtime/texture-pass) and each step reads its
+// own texel instead of running the color ramp.
 //
 // Aurora technique inspired by nimitz's "Auroras" (shadertoy.com/view/XtGGRt):
 // triangle-noise fbm, depth-sliced raymarch, average-then-accumulate
@@ -189,7 +207,8 @@ export function AuroraShader({
   // ---------------------------------------------
   // Runs once per mount — and again only when the stops or color space
   // change, because colorRamp bakes the stop colors into the compiled
-  // shader. The dials all flow through uniforms.
+  // shader, and the slice palette below is drawn from it. The dials all
+  // flow through uniforms.
   useEffect(() => {
     const material = new MeshBasicNodeMaterial();
     const rampStops = toColorRampStops(stops);
@@ -199,6 +218,53 @@ export function AuroraShader({
     // alpha is coverage. Without this flag NormalBlending scales rgb by
     // alpha a second time and everything dims quadratically (MAT-45).
     material.premultipliedAlpha = true;
+
+    // ---------------------------------------------
+    // Draw the slice palette
+    // ---------------------------------------------
+    // Depth-stratified color: the slice index drives the user ramp, so near
+    // and far ribbons glow different stops. pow keeps the upper stops
+    // visible: extinction weights early slices, so a linear index would
+    // read as stop 0 almost everywhere.
+    const sliceColorAt = (stepIndex: TSLValue) =>
+      colorRamp(stepIndex.div(STEP_COUNT).pow(0.6), rampStops, colorSpace, hueInterpolation);
+
+    // The slice color depends on the step alone, yet the ramp behind it
+    // (an oklab round trip per stop, plus the mixes) would run 60 times for
+    // every pixel. So draw it once per material build into a texture with
+    // one texel per step, a palette the march loop reads from. Each texel
+    // runs the same ramp at its own step: uv().x is the texel's 0..1
+    // position, and at texel i's center, (i + 0.5) / 60, times 60 floors to
+    // i exactly. Full float keeps the ramp's colors as computed rather
+    // than rounded to 8 or 16 bits, and nearest filtering hands back one
+    // texel unmixed with its neighbours, so the color matches the inline
+    // ramp. The pass is created, drawn, and disposed in this effect, so a
+    // Strict Mode remount builds a fresh one.
+    const slicePalette = shaderContext
+      ? createTexturePass(
+          shaderContext.renderer.three,
+          vec4(sliceColorAt(floor(uv().x.mul(STEP_COUNT))), 1),
+          { width: STEP_COUNT, height: 1, type: FloatType, filter: NearestFilter },
+        )
+      : null;
+
+    slicePalette?.render();
+
+    // Null when the renderer cannot draw into a full-float target or bind
+    // one (WebGL2 without EXT_color_buffer_float, or a WebGPU device without
+    // float32-filterable), in which case each step runs the ramp inline as
+    // before.
+    const paletteTexture = slicePalette?.texture ?? null;
+
+    // A texture node is the GPU's handle on an image, read here at step i's
+    // texel center so nearest filtering lands on texel i alone. Passing the
+    // coordinate when the node is built, rather than chaining .uv() onto a
+    // bare texture(), matters: three runs a bare node's coordinate through
+    // the texture's offset-and-repeat matrix, a 3x3 multiply on every read.
+    const sliceColorFor = (stepIndex: TSLValue) =>
+      paletteTexture === null
+        ? sliceColorAt(stepIndex)
+        : texture(paletteTexture, vec2(stepIndex.add(0.5).div(STEP_COUNT), 0.5)).rgb;
 
     // Fn() wraps the body in a reusable GPU function node; the trailing ()
     // calls it once to produce the node the material renders.
@@ -262,12 +328,9 @@ export function AuroraShader({
           wavinessUniform,
         );
 
-        // Depth-stratified color: slice index drives the user ramp, so near
-        // and far ribbons glow different stops. pow keeps the upper stops
-        // visible — extinction weights early slices, so a linear index
-        // would read as stop 0 almost everywhere.
-        const sliceProgress = stepIndex.div(STEP_COUNT).pow(0.6);
-        const sliceColor = colorRamp(sliceProgress, rampStops, colorSpace, hueInterpolation);
+        // This slice's color: its palette texel, or the inline ramp where
+        // the renderer has no palette.
+        const sliceColor = sliceColorFor(stepIndex);
 
         const slice = vec4(sliceColor.mul(fieldValue), fieldValue);
 
@@ -318,6 +381,7 @@ export function AuroraShader({
       } catch {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
+      slicePalette?.dispose();
     };
     // stopsKey stands in for stops (content proxy; rampStops derives from it).
     // eslint-disable-next-line react-hooks/exhaustive-deps

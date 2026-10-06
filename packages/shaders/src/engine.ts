@@ -110,6 +110,9 @@ export type {
   WaveFieldTuning,
 } from './runtime/wave-field/wave-field.js';
 
+export { createTexturePass } from './runtime/texture-pass/texture-pass.js';
+export type { TexturePass, TexturePassOptions } from './runtime/texture-pass/texture-pass.js';
+
 export { createPauseWatcher } from './runtime/pause-watcher/pause-watcher.js';
 export type { PauseWatcher } from './runtime/pause-watcher/pause-watcher.js';
 export type { SchedulerTick, SchedulerClient } from './runtime/frame-scheduler/frame-scheduler.js';
