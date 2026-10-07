@@ -142,6 +142,14 @@ On Apple silicon the passes overlap. The output quad starts about 0.1ms after th
 
 Read GPU time with WebGPU, such as on `/dev/aurora-benchmark`, which renders Aurora at the homepage hero's size. On WebGL2 the readout shows a dash. Playwright's default headless shell falls back to WebGL2. On a Mac, the full Chromium binary in headless mode (`channel: 'chromium'`) launched with `--enable-unsafe-webgpu --ignore-gpu-blocklist --enable-gpu` runs WebGPU on the Metal adapter, and so does headed Chromium. A headless page reports a pixel ratio of 1, so `?dpr=2` draws at 1x unless the browser context sets `deviceScaleFactor: 2`. The route's header prints the drawing buffer, which reads 3272 × 1392 at 2x.
 
+### The skewed-readout gotcha: a frame cap and a second scene inflate GPU time per frame
+
+On the M1 Max, the readout overstates a scene's cost in two cases.
+
+Under a frame cap, the GPU clocks down in the idle time between frames, so each frame takes longer. Aurora at the hero's size at 2x read 5.0ms a frame uncapped and 7.3ms at `maxFPS={60}`. Over the same runs, the GPU's busy share fell from about 60% to about 44%. To compare readouts across frame caps, multiply each readout by its frame rate.
+
+Every scene has its own GPU device. A pass can wait on another scene's work, and the wait counts toward the pass's own span. A Simplex Noise favorite read 0.2ms alone and 3.5ms beside the homepage hero (SHA-209). To time scenes that share a page, time each scene with the others out of view or paused. Then add the readouts.
+
 ## Color
 
 - `colorSpace` sets the interpolation space. A component takes it only if it computes a midpoint between two colors. Being additive is not the test: Aurora is additive, but it blends along a depth-indexed ramp, so it takes `colorSpace`.

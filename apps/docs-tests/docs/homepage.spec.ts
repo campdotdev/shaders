@@ -149,7 +149,9 @@ test('each favorite shows its poster', async ({ page }) => {
 // navigator.gpu but hands out none without --enable-unsafe-webgpu, which
 // favorites-hover.spec.ts turns on to test the live scenes. The spec asks for
 // an adapter itself first, to prove this browser has none.
-test('with no WebGPU, a hovered or focused favorite stays a poster', async ({ page }) => {
+test('with no WebGPU, a hovered or focused favorite stays a poster and the hero plays on', async ({
+  page,
+}) => {
   await open(page);
 
   // This package's TypeScript config carries no WebGPU types.
@@ -173,6 +175,9 @@ test('with no WebGPU, a hovered or focused favorite stays a poster', async ({ pa
     page.getByRole('list', { name: 'Start with one of our favorites' }).locator('canvas'),
   ).toHaveCount(0);
   await expect(favorite.getByRole('img')).toBeVisible();
+  // The hero falls back to WebGL2 and keeps drawing, and a favorite that
+  // stays a poster costs no GPU time, so the hero has nothing to pause for.
+  await expect(page.locator('[data-home-hero]')).not.toHaveAttribute('data-paused');
 });
 
 // ---------------------------------------------

@@ -108,4 +108,6 @@ import { ShaderMonitor } from '@camp-dev/shaders'
 
 The GPU time is how long the GPU spent drawing each frame. It covers the scene's pass and the pass that writes the canvas, but not a pass that a component draws on its own, such as CursorRipple's wave field. At 120 Hz a frame lasts 8.3 ms, and at 60 Hz it lasts 16.7 ms. A GPU time close to the frame's length means the GPU is nearly full, even while the frame rate still reads 120 or 60. Under a frame cap, the frame rate counts only the frames the scene draws.
 
+A frame cap can raise the GPU time per frame, because a GPU with idle time between frames can lower its clock speed. To compare a scene before and after a frame cap, multiply the GPU time by the frame rate. The result is how many milliseconds of each second the GPU spends on the scene.
+
 The monitor turns GPU timing on for its scene while it is mounted, and off when it unmounts. The GPU readout shows a dash on the WebGL2 fallback, and on a GPU without timestamp queries. The monitor is a development tool. Keep it out of production builds, as the condition above does.
