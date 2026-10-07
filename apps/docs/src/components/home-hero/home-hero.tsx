@@ -5,6 +5,7 @@
  * with the rest of the page riding in its sticky pin. geometry.ts holds the
  * numbers, and this file feeds them into motion values. Where the hero
  * doesn't pin (FLOW_MEDIA), the finished demo sits in the page's flow.
+ * What rides in the pin can pause the hero's scene (hero-pause.ts).
  */
 import Image from 'next/image';
 import {
@@ -52,6 +53,7 @@ import {
   SCRUB_DISTANCE_VH,
   scrubAt,
 } from './geometry';
+import { createHeroPause, type HeroPause, HeroPauseContext, useIsHeroPaused } from './hero-pause';
 import { HeroProgressContext } from './hero-progress';
 import styles from './home-hero.module.css';
 
@@ -92,6 +94,9 @@ function PinnedHero({ children }: { children?: ReactNode }) {
   const range = measure ? measure.trackTop + measure.scrubDistance : 0;
   const { scrollY } = useScroll();
   const { progress, ...frame } = useScrub(layout, scrollY, range);
+  // Created once. Only HeroScene subscribes, so a pause re-renders the
+  // scene's box and not the panel's controls.
+  const [heroPause] = useState(createHeroPause);
 
   // A keyboard visitor who tabs into the panel before it has slid in would
   // be focusing controls past the container's edge, so the page scrolls to
@@ -115,27 +120,7 @@ function PinnedHero({ children }: { children?: ReactNode }) {
             >
               <m.div className={styles.chromeFill} style={{ borderRadius: frame.radius }} />
               <m.div className={styles.chromeRing} style={{ borderRadius: frame.radius }} />
-              {/* Aurora draws over a transparent ground, so the scene sits on
-                the same dusk backdrop as on its own page. */}
-              <m.div
-                className={`${styles.scene} ${auroraStyles.demoBackdrop}`}
-                data-home-hero
-                style={{ height: frame.sceneHeight }}
-              >
-                {/* Capped at one canvas pixel per CSS pixel while the hero
-                  can pin. Aurora marches 60 steps per pixel, and at the
-                  full 2x of a retina screen the full-width hero is 4.5
-                  million pixels, which pinned an M1 Max's GPU and halved
-                  the frame rate. At 1x it is a quarter of that, at the
-                  cost of softer filaments, until Aurora gets a cheaper
-                  render path. The cap holds through the change, because a
-                  new pixel ratio mid-scrub would be one more resize. The
-                  flow demo is no bigger than the docs page's, so it takes
-                  ShaderScene's default of 2, as that page does. */}
-                <HeroPoster>
-                  <LiveAuroraScene maxDPR={layout?.pinned === false ? undefined : 1} />
-                </HeroPoster>
-              </m.div>
+              <HeroScene heroPause={heroPause} sceneHeight={frame.sceneHeight} />
             </m.div>
             {/* Rendered from the start, so the flow demo has its controls
                 before any script runs. While the hero may pin, the CSS
@@ -161,13 +146,45 @@ function PinnedHero({ children }: { children?: ReactNode }) {
           </div>
         </section>
         {/* What rides in the pin reads the progress only while the hero
-            pins, and plays on its own clock otherwise. */}
-        <HeroProgressContext value={layout?.pinned === true ? progress : null}>
-          {children}
-        </HeroProgressContext>
+            pins, and plays on its own clock otherwise. It can pause the
+            hero whatever the layout. */}
+        <HeroPauseContext value={heroPause}>
+          <HeroProgressContext value={layout?.pinned === true ? progress : null}>
+            {children}
+          </HeroProgressContext>
+        </HeroPauseContext>
       </div>
       <div className={styles.spacer} ref={spacerRef} style={SPACER_STYLE} />
     </div>
+  );
+}
+
+// ---- The scene
+
+// The scene's box, which the frame grows through the change. Aurora draws
+// over a transparent ground, so the scene sits on the same dusk backdrop as
+// on its own page. The scene pauses whenever something in the pin pauses
+// the hero (hero-pause.ts), and `data-paused` says so for the Playwright spec.
+function HeroScene({
+  heroPause,
+  sceneHeight,
+}: {
+  heroPause: HeroPause;
+  sceneHeight: MotionValue<number | string>;
+}) {
+  const paused = useIsHeroPaused(heroPause);
+
+  return (
+    <m.div
+      className={`${styles.scene} ${auroraStyles.demoBackdrop}`}
+      data-home-hero
+      data-paused={paused || undefined}
+      style={{ height: sceneHeight }}
+    >
+      <HeroPoster>
+        <LiveAuroraScene paused={paused} />
+      </HeroPoster>
+    </m.div>
   );
 }
 

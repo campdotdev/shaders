@@ -61,17 +61,17 @@ export function AuroraControlsProvider({ children }: { children: ReactNode }) {
  * It fills its parent, so the host sizes the box.
  */
 export function LiveAuroraScene({
-  maxDPR,
+  paused,
   children,
 }: {
-  /** Cap on the canvas's pixel ratio, passed to ShaderScene. Leave unset for ShaderScene's default of 2. */
-  maxDPR?: number;
+  /** Freezes the scene on its current frame, passed to ShaderScene. */
+  paused?: boolean;
   children?: ReactNode;
 }) {
   const params = useSnapshot<AuroraParams>();
 
   return (
-    <AuroraScene maxDPR={maxDPR} params={params}>
+    <AuroraScene params={params} paused={paused}>
       {children}
     </AuroraScene>
   );

@@ -231,6 +231,31 @@ test('when the playing favorite loses focus, the one under the pointer plays', a
 });
 
 // ---------------------------------------------
+// Pausing the hero
+// ---------------------------------------------
+
+// The hero pauses while a favorite plays, for the reason
+// components/home-hero/hero-pause.ts gives. `data-paused` on the hero's box
+// says the hero asked its scene to pause. open() scrolls the hero out of
+// view, which pauses its loop either way, so the attribute is what the spec
+// can tell apart.
+test('the hero pauses while a favorite plays, and plays again once it is let go', async ({
+  page,
+}) => {
+  await open(page);
+
+  const hero = page.locator('[data-home-hero]');
+  const favorite = favorites(page).first();
+
+  await expect(hero).not.toHaveAttribute('data-paused');
+  await favorite.hover();
+  await expect(hero).toHaveAttribute('data-paused');
+
+  await page.getByRole('heading', { name: 'Start with one of our favorites' }).hover();
+  await expect(hero).not.toHaveAttribute('data-paused');
+});
+
+// ---------------------------------------------
 // Touch
 // ---------------------------------------------
 
