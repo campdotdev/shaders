@@ -1,17 +1,10 @@
 // GPU timing for the render passes a scene draws each frame (a render pass is
-// one batch of draws into one target). The output stage creates one timer for
-// its two passes and draws each frame through measure(). ShaderMonitor turns
-// timing on through the scene context's timeGpu while it is mounted.
-import type { Camera, Object3D, RenderTarget } from 'three';
+// one batch of draws into one target). The output stage creates one timer and
+// draws each frame through measure(), and the timer times every pass three
+// begins inside that draw: the pre-passes, the scene pass, and the output
+// quad. ShaderMonitor turns timing on through the scene context's timeGpu
+// while it is mounted.
 import type { WebGPURenderer } from 'three/webgpu';
-
-/** One pass the timer measures: what three draws, from which camera, into what. */
-export interface TimedPass {
-  scene: Object3D;
-  camera: Camera;
-  /** The pass's render target, or null when it draws to the canvas. */
-  renderTarget: RenderTarget | null;
-}
 
 /**
  * Turns GPU timing on, and calls `onFrameTime` with the GPU milliseconds of
@@ -25,9 +18,8 @@ export type TimeGpu = (onFrameTime: (milliseconds: number) => void) => () => voi
 export interface GpuTimer {
   start: TimeGpu;
   /**
-   * Run `draw` with timing on, then read back the passes it drew. The owner
-   * draws every frame through this, and `draw` must draw the measured passes
-   * and no others, because three times every pass it begins inside it.
+   * Run `draw` with timing on, then read back every pass three began inside
+   * it. The owner draws every frame through this.
    */
   measure: (draw: () => void) => void;
 }
@@ -66,8 +58,9 @@ interface TimestampBuffers {
  * it keeps render contexts in, and the call that sets up a pass's timestamp
  * query. three reads the flag at init only to turn it off on an adapter
  * without the feature, and again on every pass. It calls
- * `initTimestampQuery` on each pass's descriptor right before the pass
- * begins.
+ * `initTimestampQuery` with each pass's render context (three's record of
+ * one pass: what it draws, from where, into what) and descriptor right
+ * before the pass begins, whether the flag is on or not.
  */
 interface TimestampBackend {
   trackTimestamp: boolean;
@@ -96,7 +89,7 @@ function isTimestampBackend(backend: unknown): backend is TimestampBackend {
 // Building the timer
 // ----------------------------------------------------------------------------
 
-export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedPass[]): GpuTimer {
+export function createGpuTimer(renderer: WebGPURenderer): GpuTimer {
   // The WebGL2 fallback has no timestamp path three 0.170 can use here, and
   // a WebGPU adapter may lack the feature. three requests every feature the
   // adapter has at init, so the device has it whenever the adapter does.
@@ -106,25 +99,17 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
   // One entry per start() call, so two monitors in one scene each get the
   // frames, and the second one's stop does not end the first one's timing.
   const listeners = new Set<{ onFrameTime: (milliseconds: number) => void }>();
+  // The render contexts of the passes the latest timed draw began, which are
+  // the passes the next stop takes the writes off.
+  let timedContexts: readonly object[] = [];
 
-  const passStates = (activeBackend: TimestampBackend): PassTimestampState[] | null => {
-    const renderContexts = renderer._renderContexts;
-
-    if (!renderContexts) return null;
-
-    return passes.map(({ scene, camera, renderTarget }) =>
-      activeBackend.get(renderContexts.get(scene, camera, renderTarget)),
-    );
-  };
+  const passStates = (activeBackend: TimestampBackend): PassTimestampState[] =>
+    timedContexts.map((renderContext) => activeBackend.get(renderContext));
 
   const collect = (activeBackend: TimestampBackend) => {
-    const states = passStates(activeBackend);
+    const buffers = passStates(activeBackend).map(bufferToRead);
 
-    if (!states) return;
-
-    const buffers = states.map(bufferToRead);
-
-    if (!buffers.every((buffer) => buffer !== null)) return;
+    if (buffers.length === 0 || !buffers.every((buffer) => buffer !== null)) return;
 
     // Callers can start and stop while the read is in flight, so the frame
     // goes only to the callers that were timing when it drew and still are.
@@ -160,7 +145,7 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
         // App code that turned the flag on itself still reads them, and three
         // would not put the writes back, so they stay while the flag is on.
         if (timestampBackend.trackTimestamp) return;
-        for (const state of passStates(timestampBackend) ?? []) {
+        for (const state of passStates(timestampBackend)) {
           delete state.descriptor?.timestampWrites;
         }
       };
@@ -182,9 +167,12 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
       // descriptor that lost them, before its pass begins. A resize rebuilds
       // the descriptor and a stop takes the writes off, so without this the
       // next frame would draw untimed, and a paused or idle scene may draw
-      // only that one frame.
+      // only that one frame. It also notes each pass's render context, which
+      // is how the timer learns which passes this frame drew. A Set keeps a
+      // pass three begins twice from being read twice.
       const wasTracking = timestampBackend.trackTimestamp;
       const { initTimestampQuery } = timestampBackend;
+      const begun = new Set<object>();
 
       timestampBackend.trackTimestamp = true;
       timestampBackend.initTimestampQuery = (renderContext, descriptor) => {
@@ -193,12 +181,14 @@ export function createGpuTimer(renderer: WebGPURenderer, passes: readonly TimedP
           descriptor,
           timeStampQuerySet: timestampBackend.get(renderContext).timeStampQuerySet,
         });
+        begun.add(renderContext);
       };
       try {
         draw();
       } finally {
         timestampBackend.trackTimestamp = wasTracking;
         timestampBackend.initTimestampQuery = initTimestampQuery;
+        timedContexts = [...begun];
       }
       collect(timestampBackend);
     },

@@ -26,6 +26,7 @@ function makeCtx(): {
 
       return () => undefined;
     },
+    registerPrePass: () => () => undefined,
     getCursorInput: () => {
       throw new Error('not used by this hook');
     },

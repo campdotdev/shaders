@@ -1,8 +1,9 @@
 // The output stage of a ShaderScene: the base pass that renders the scene's
 // meshes to a texture, the chain of post-process transforms that overlays
 // register, and the full-screen quad that writes the composed result to the
-// canvas. ShaderScene creates one per mount and hands the two register
-// functions and the GPU timer's switch to its children through the context.
+// canvas, plus the pre-passes that draw before the scene. ShaderScene creates
+// one per mount and hands its register functions and the GPU timer's switch
+// to its children through the context.
 // It is written against three's renderer alone, with no React, so the scene
 // component stays readable and this part has its own test.
 //
@@ -32,16 +33,29 @@ export type PostProcessTransform = (input: ShaderNodeObject<Node>) => ShaderNode
  */
 export type UvTransform = (uv: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
+/**
+ * A draw into a texture that the scene's meshes read, such as Aurora's field.
+ * The stage runs it before the scene pass on every frame it draws (the
+ * draw-order gotcha in docs/agents/tsl.md).
+ */
+export type PrePass = () => void;
+
 // Function-typed properties rather than methods, because ShaderScene hands
-// the two register functions to its context detached from this object.
+// the register functions to its context detached from this object.
 export interface OutputStage {
   /** Add a post-process step after the ones already registered. Returns its remover. */
   registerOverlay: (transform: PostProcessTransform) => () => void;
   /** Add a base-pass UV warp after the ones already registered. Returns its remover. */
   registerBaseUvTransform: (transform: UvTransform) => () => void;
+  /**
+   * Add a draw that runs before the scene pass, after the ones already
+   * registered, on every frame and on the redraw after a resize. Returns its
+   * remover.
+   */
+  registerPrePass: (prePass: PrePass) => () => void;
   /** True while at least one overlay is registered, which counts as something to draw. */
   hasOverlays: () => boolean;
-  /** Turn on GPU timing for the scene pass and the output quad. */
+  /** Turn on GPU timing for every pass render() draws: the pre-passes, the scene pass, and the output quad. */
   timeGpu: TimeGpu;
   /** Draw the composed scene to the canvas. */
   render: () => void;
@@ -70,19 +84,19 @@ export function createOutputStage(
   // pixel snap, say) and compose in mount order too.
   const overlays = new Map<symbol, PostProcessTransform>();
   const uvTransforms = new Map<symbol, UvTransform>();
+  // Pre-passes draw before the chain, in mount order too. They change no
+  // node in the output graph, so registering one rebuilds nothing.
+  const prePasses = new Map<symbol, PrePass>();
   // The scene pass keeps no depth buffer, the per-pixel distances three tests
   // to hide a farther surface behind a nearer one, because every component's
   // quad sits at the same depth (the no-depth gotcha in docs/agents/tsl.md).
   // On WebGPU the pass keeps as many color samples per pixel as the renderer
   // does, so createRenderer's antialias option decides its MSAA.
   const scenePass = pass(scene, camera, { depthBuffer: false });
-  // The two passes every frame draws: the scene pass renders the meshes into
-  // its own render target, and the quad draws the composed result to the
-  // canvas.
-  const gpuTimer = createGpuTimer(renderer, [
-    { scene, camera, renderTarget: scenePass.renderTarget },
-    { scene: outputQuad, camera: outputQuad.camera, renderTarget: null },
-  ]);
+  // Times every pass render() draws: the pre-passes, the scene pass that
+  // renders the meshes into its own render target, and the quad that draws
+  // the composed result to the canvas.
+  const gpuTimer = createGpuTimer(renderer);
 
   const rebuildOutputNode = () => {
     // With no UV transforms the pass node samples itself at the screen
@@ -154,22 +168,33 @@ export function createOutputStage(
       };
     },
 
+    registerPrePass(prePass) {
+      const key = Symbol('pre-pass');
+
+      prePasses.set(key, prePass);
+
+      return () => {
+        prePasses.delete(key);
+      };
+    },
+
     hasOverlays: () => overlays.size > 0,
 
     timeGpu: gpuTimer.start,
 
-    // Draw the quad the way PostProcessing.render does: the quad's material
-    // already applied tone mapping and the output transfer (renderOutput
-    // above), so the renderer's own pass of both is switched off for this
-    // one draw and restored after, or the canvas would be tone-mapped and
-    // encoded twice. The restore runs in a finally block so a draw that
-    // throws (a lost device, say) cannot leave both switched off, where the
-    // next rebuildOutputNode would capture them and bake the wrong settings
-    // into the quad's material for every frame after. The timer wraps the
-    // draw, which holds exactly the two passes it measures, because three
-    // renders the scene pass while it draws the quad that samples it.
+    // Run the pre-passes, then draw the quad the way PostProcessing.render
+    // does: the quad's material already applied tone mapping and the output
+    // transfer (renderOutput above), so the renderer's own pass of both is
+    // switched off for this one draw and restored after, or the canvas
+    // would be tone-mapped and encoded twice. The restore runs in a finally
+    // block so a draw that throws (a lost device, say) cannot leave both
+    // switched off, where the next rebuildOutputNode would capture them and
+    // bake the wrong settings into the quad's material for every frame
+    // after. The timer wraps the whole draw: the pre-passes, then the quad,
+    // during which three renders the scene pass the quad samples.
     render() {
       gpuTimer.measure(() => {
+        for (const prePass of prePasses.values()) prePass();
         const { toneMapping, outputColorSpace } = renderer;
 
         renderer.toneMapping = NoToneMapping;

@@ -9,6 +9,7 @@ import {
   type Node,
   NodeMaterial,
   QuadMesh,
+  type RedFormat,
   RenderTarget,
   RGBAFormat,
   type Texture,
@@ -18,14 +19,19 @@ import {
 import {
   canRenderTo,
   isDeviceLost,
+  maxTextureSide,
   type TargetFilter,
   type TargetType,
 } from '../renderer-capabilities/renderer-capabilities.js';
 
 export interface TexturePassOptions {
-  /** Width of the texture, in texels. */
+  /**
+   * Width of the texture, in texels. Each side is clamped to the longest
+   * the device allows, so a node drawn by uv() still covers the whole
+   * texture, with coarser texels along a clamped side.
+   */
   width: number;
-  /** Height of the texture, in texels. */
+  /** Height of the texture, in texels, clamped the same way. */
   height: number;
   /**
    * What each channel of a texel holds: three's UnsignedByteType for 8-bit
@@ -39,6 +45,13 @@ export interface TexturePassOptions {
    * nearest texel as stored, LinearFilter mixes the four around it.
    */
   filter: TargetFilter;
+  /**
+   * How many channels a texel holds: RGBAFormat for four, RedFormat for one.
+   * A one-channel texture keeps only the node's first component and stores
+   * a quarter of the bytes, which a pass drawn every frame saves on every
+   * write and every read. Defaults to RGBAFormat.
+   */
+  format?: typeof RGBAFormat | typeof RedFormat;
 }
 
 export interface TexturePass {
@@ -51,9 +64,9 @@ export interface TexturePass {
   /** Draw the node into the texture, once per call. */
   render: () => void;
   /**
-   * Change the texture's size in texels. The texture object stays the same,
-   * so a texture node bound to it stays bound, but its contents are gone
-   * until the next render.
+   * Change the texture's size in texels, clamped as the options' width and
+   * height are. The texture object stays the same, so a texture node bound
+   * to it stays bound, but its contents are gone until the next render.
    */
   resize: (width: number, height: number) => void;
   /** Release the texture and the material. The renderer stays the caller's. */
@@ -78,7 +91,7 @@ const inertPass: TexturePass = {
 export function createTexturePass(
   renderer: WebGPURenderer,
   node: Node | ShaderNodeObject<Node>,
-  { width, height, type, filter }: TexturePassOptions,
+  { width, height, type, filter, format = RGBAFormat }: TexturePassOptions,
 ): TexturePass {
   if (!canRenderTo(renderer, type, filter) || isDeviceLost(renderer)) return inertPass;
 
@@ -87,13 +100,18 @@ export function createTexturePass(
   // ----------------------------------------------------------------------------
 
   // A render target is a texture the GPU can draw into instead of the canvas.
-  // RGBA is the format every backend can render to. Clamping keeps a read
-  // past the edge on the edge texel. Nothing here tests depth, and the
-  // texture is read at the one size it was drawn at, so it keeps no depth
-  // buffer and no mipmaps (smaller copies for reading it shrunk).
-  let target: RenderTarget | null = new RenderTarget(width, height, {
+  // Every backend that renders to a texel type renders to its one-channel
+  // and four-channel formats alike, so the format needs no check of its own.
+  // Clamping keeps a read past the edge on the edge texel. Nothing here
+  // tests depth, and the texture is read at the one size it was drawn at,
+  // so it keeps no depth buffer and no mipmaps (smaller copies for reading
+  // it shrunk). A side past the device's limit would fail to allocate, so
+  // every size is clamped to it.
+  const maxSide = maxTextureSide(renderer);
+  const clampSide = (side: number) => Math.min(side, maxSide);
+  let target: RenderTarget | null = new RenderTarget(clampSide(width), clampSide(height), {
     type,
-    format: RGBAFormat,
+    format,
     minFilter: filter,
     magFilter: filter,
     wrapS: ClampToEdgeWrapping,
@@ -176,7 +194,7 @@ export function createTexturePass(
     // reallocates at the new size on the next draw.
     resize(nextWidth, nextHeight) {
       if (!alive()) return;
-      target?.setSize(nextWidth, nextHeight);
+      target?.setSize(clampSide(nextWidth), clampSide(nextHeight));
     },
 
     dispose() {

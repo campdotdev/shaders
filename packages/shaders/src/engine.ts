@@ -100,6 +100,7 @@ export type { TimeGpu } from './runtime/gpu-timer/gpu-timer.js';
 export type {
   OutputStage,
   PostProcessTransform,
+  PrePass,
   UvTransform,
 } from './runtime/output-stage/output-stage.js';
 

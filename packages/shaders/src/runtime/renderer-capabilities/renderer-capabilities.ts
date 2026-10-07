@@ -1,6 +1,6 @@
 // What a renderer can do beyond drawing to the canvas, for the runtime
 // modules that draw into render targets (textures the GPU draws into instead
-// of the canvas): the wave field and the texture pass. Both questions read
+// of the canvas): the wave field and the texture pass. Each question reads
 // three internals its public API does not answer, so they live here once,
 // behind `in` guards, to re-check in one place at a three bump.
 import {
@@ -83,6 +83,48 @@ export function canRenderTo(
   return (
     !isFloat || filter !== LinearFilter || hasWebGLExtension(backend, 'OES_texture_float_linear')
   );
+}
+
+/**
+ * The longest side WebGL2 promises a texture can have, in texels. WebGPU
+ * promises 8192, so every backend allows at least this.
+ */
+const GUARANTEED_TEXTURE_SIDE = 2048;
+
+/** `value[key]` when value is an object that has that key, else undefined. */
+function readField(value: unknown, key: string): unknown {
+  if (typeof value !== 'object' || value === null || !(key in value)) return undefined;
+  const field: unknown = Reflect.get(value, key);
+
+  return field;
+}
+
+/**
+ * The longest side, in texels, of a texture the renderer's device can
+ * allocate. Past it, WebGL2 fails the allocation and leaves the texture
+ * unreadable. Desktop GPUs allow 4096 or more, but WebGL2 lets a device
+ * stop at 2048. The WebGL2 fallback reads MAX_TEXTURE_SIZE off its context,
+ * and the WebGPU backend reads the limit off its device, both internal
+ * fields. A backend that has neither yet answers 2048, the side every
+ * backend allows.
+ */
+export function maxTextureSide(renderer: WebGPURenderer): number {
+  const backend: unknown = renderer.backend;
+  let side: unknown;
+
+  if (readField(backend, 'isWebGLBackend') === true) {
+    const gl = readField(backend, 'gl');
+    const getParameter = readField(gl, 'getParameter');
+
+    side =
+      typeof getParameter === 'function'
+        ? getParameter.call(gl, readField(gl, 'MAX_TEXTURE_SIZE'))
+        : undefined;
+  } else {
+    side = readField(readField(readField(backend, 'device'), 'limits'), 'maxTextureDimension2D');
+  }
+
+  return typeof side === 'number' && side > 0 ? side : GUARANTEED_TEXTURE_SIDE;
 }
 
 /**
