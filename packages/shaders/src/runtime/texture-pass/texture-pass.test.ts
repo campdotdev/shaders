@@ -18,11 +18,12 @@ import { describe, expect, it, vi } from 'vitest';
 import { createTexturePass } from './texture-pass.js';
 
 // The pass only asks the renderer to bind a target and draw one quad into
-// it, and reads the backend to find out which texel types it can render to,
-// so a plain object stands in. `backend` mirrors the two shapes three's
-// renderer can hold: the WebGPU backend, which reports optional device
-// features through hasFeature, and the WebGL2 fallback, which reads its
-// extension registry.
+// it, and reads the backend to find out which texel types it can render to
+// and how large a texture it can allocate, so a plain object stands in.
+// `backend` mirrors the two shapes three's renderer can hold: the WebGPU
+// backend, which reports optional device features through hasFeature and
+// its limits on its device, and the WebGL2 fallback, which reads its
+// extension registry and asks its context for its limits.
 interface StubOptions {
   backend?: 'webgpu' | 'webgl2';
   /** WebGPU: whether the device can filter a full-float texture. */
@@ -31,6 +32,25 @@ interface StubOptions {
   floatTargets?: boolean;
   /** WebGL2: whether OES_texture_float_linear lets it filter full floats. */
   floatLinear?: boolean;
+  /** The longest texture side the device allows. Unset, the backend reports none. */
+  maxTextureSide?: number;
+}
+
+/** WebGL2's enum for its MAX_TEXTURE_SIZE parameter. */
+const MAX_TEXTURE_SIZE = 0x0d33;
+
+/** Where each backend reports its longest texture side, as fields to spread into it. */
+function limitFields(backend: 'webgpu' | 'webgl2', maxTextureSide: number | undefined) {
+  if (maxTextureSide === undefined) return {};
+  if (backend === 'webgpu')
+    return { device: { limits: { maxTextureDimension2D: maxTextureSide } } };
+
+  return {
+    gl: {
+      MAX_TEXTURE_SIZE,
+      getParameter: (name: number) => (name === MAX_TEXTURE_SIZE ? maxTextureSide : null),
+    },
+  };
 }
 
 function makeRenderer({
@@ -38,12 +58,14 @@ function makeRenderer({
   float32Filterable = true,
   floatTargets = true,
   floatLinear = true,
+  maxTextureSide,
 }: StubOptions = {}) {
   let boundTarget: RenderTarget | null = null;
   const extensions = new Set([
     ...(floatTargets ? ['EXT_color_buffer_float'] : []),
     ...(floatLinear ? ['OES_texture_float_linear'] : []),
   ]);
+  const limits = limitFields(backend, maxTextureSide);
 
   return {
     render: vi.fn(),
@@ -55,8 +77,12 @@ function makeRenderer({
       backend === 'webgpu' && float32Filterable && name === 'float32-filterable',
     backend:
       backend === 'webgl2'
-        ? { isWebGLBackend: true, extensions: { has: (name: string) => extensions.has(name) } }
-        : {},
+        ? {
+            isWebGLBackend: true,
+            extensions: { has: (name: string) => extensions.has(name) },
+            ...limits,
+          }
+        : limits,
   } as unknown as WebGPURenderer;
 }
 
@@ -200,6 +226,37 @@ describe('resize', () => {
     expect(pass.texture).toBe(before);
     expect(pass.texture?.image).toMatchObject({ width: 120, height: 2 });
     expect(renderer.render).not.toHaveBeenCalled();
+  });
+
+  // Past the device's limit the allocation fails and the texture reads back
+  // as nothing. WebGL2 lets a device stop at 2048 texels a side.
+  it.each([
+    ['WebGL2', 'webgl2', 2048],
+    ['WebGPU', 'webgpu', 8192],
+  ] as const)('keeps each side within the %s device limit', (_name, backend, limit) => {
+    const renderer = makeRenderer({ backend, maxTextureSide: limit });
+    const pass = createTexturePass(renderer, red, {
+      ...floatSlices,
+      type: HalfFloatType,
+      width: limit + 1,
+    });
+
+    expect(pass.texture?.image).toMatchObject({ width: limit, height: 1 });
+
+    pass.resize(limit * 2, limit + 10);
+    expect(pass.texture?.image).toMatchObject({ width: limit, height: limit });
+
+    pass.resize(limit - 1, 1);
+    expect(pass.texture?.image).toMatchObject({ width: limit - 1, height: 1 });
+  });
+
+  // 2048 is the side WebGL2 promises and WebGPU exceeds.
+  it('keeps each side within 2048 when the backend reports no limit', () => {
+    const pass = createTexturePass(makeRenderer(), red, floatSlices);
+
+    pass.resize(4096, 3000);
+
+    expect(pass.texture?.image).toMatchObject({ width: 2048, height: 2048 });
   });
 });
 

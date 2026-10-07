@@ -35,9 +35,10 @@ interface StubOptions {
 }
 
 /**
- * A WebGL2 renderer at pixel ratio 2. Its drawing buffer stays at its first
- * size: a browser zoom tells the scene's size signal before the renderer has
- * resized, so a listener that reads the drawing buffer then reads a stale one.
+ * A WebGL2 renderer at pixel ratio 2, on a device that allows textures 4096
+ * texels a side. Its drawing buffer stays at its first size: a browser zoom
+ * tells the scene's size signal before the renderer has resized, so a
+ * listener that reads the drawing buffer then reads a stale one.
  */
 function makeRenderer({ floatTargets = true }: StubOptions = {}) {
   let boundTarget: RenderTarget | null = null;
@@ -54,6 +55,7 @@ function makeRenderer({ floatTargets = true }: StubOptions = {}) {
     backend: {
       isWebGLBackend: true,
       extensions: { has: (name: string) => floatTargets && name === 'EXT_color_buffer_float' },
+      gl: { MAX_TEXTURE_SIZE: 0x0d33, getParameter: () => 4096 },
     },
   } as unknown as WebGPURenderer;
 }

@@ -19,14 +19,19 @@ import {
 import {
   canRenderTo,
   isDeviceLost,
+  maxTextureSide,
   type TargetFilter,
   type TargetType,
 } from '../renderer-capabilities/renderer-capabilities.js';
 
 export interface TexturePassOptions {
-  /** Width of the texture, in texels. */
+  /**
+   * Width of the texture, in texels. Each side is clamped to the longest
+   * the device allows, so a node drawn by uv() still covers the whole
+   * texture, with coarser texels along a clamped side.
+   */
   width: number;
-  /** Height of the texture, in texels. */
+  /** Height of the texture, in texels, clamped the same way. */
   height: number;
   /**
    * What each channel of a texel holds: three's UnsignedByteType for 8-bit
@@ -59,9 +64,9 @@ export interface TexturePass {
   /** Draw the node into the texture, once per call. */
   render: () => void;
   /**
-   * Change the texture's size in texels. The texture object stays the same,
-   * so a texture node bound to it stays bound, but its contents are gone
-   * until the next render.
+   * Change the texture's size in texels, clamped as the options' width and
+   * height are. The texture object stays the same, so a texture node bound
+   * to it stays bound, but its contents are gone until the next render.
    */
   resize: (width: number, height: number) => void;
   /** Release the texture and the material. The renderer stays the caller's. */
@@ -100,8 +105,11 @@ export function createTexturePass(
   // Clamping keeps a read past the edge on the edge texel. Nothing here
   // tests depth, and the texture is read at the one size it was drawn at,
   // so it keeps no depth buffer and no mipmaps (smaller copies for reading
-  // it shrunk).
-  let target: RenderTarget | null = new RenderTarget(width, height, {
+  // it shrunk). A side past the device's limit would fail to allocate, so
+  // every size is clamped to it.
+  const maxSide = maxTextureSide(renderer);
+  const clampSide = (side: number) => Math.min(side, maxSide);
+  let target: RenderTarget | null = new RenderTarget(clampSide(width), clampSide(height), {
     type,
     format,
     minFilter: filter,
@@ -186,7 +194,7 @@ export function createTexturePass(
     // reallocates at the new size on the next draw.
     resize(nextWidth, nextHeight) {
       if (!alive()) return;
-      target?.setSize(nextWidth, nextHeight);
+      target?.setSize(clampSide(nextWidth), clampSide(nextHeight));
     },
 
     dispose() {

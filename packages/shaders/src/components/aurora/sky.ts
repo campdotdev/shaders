@@ -156,9 +156,10 @@ export function skyPatch(aspect: number): SkyPatch {
 // ----------------------------------------------------------------------------
 
 /**
- * The longest side the field texture may have, in texels. WebGL2 promises
- * only 2048, but every desktop GPU allows at least 4096, and a full-width
- * canvas at 2x on a 2560-pixel display needs about 4500 at density 1.
+ * The longest side the field texture may have, in texels. Every desktop GPU
+ * allows at least 4096, and a full-width canvas at 2x on a 2560-pixel
+ * display needs about 4500 at density 1. WebGL2 promises only 2048, so the
+ * texture pass clamps each side again to the device's own limit.
  */
 const MAX_FIELD_SIDE = 4096;
 
