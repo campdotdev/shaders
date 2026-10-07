@@ -1,83 +1,111 @@
 ---
 title: Performance
-description: What Shaders does automatically and what you can tune for offscreen pausing, DPR, reduced motion, and static renders.
+description: How a scene saves GPU work on its own, and how to cut its cost further with maxDPR, maxFPS, idle votes, and reduced motion.
 section: guides
 order: 20
 ---
 
 # Performance
 
-Shaders applies five engine-level defaults you don't have to wire up yourself. This page covers what's automatic, what's tunable, and how to opt out when you need to.
+A scene's GPU cost is the work each pixel does, times the pixels the scene draws, times the frames it draws each second. `<ShaderScene>` stops drawing when no one can see the scene. Its props cut pixels and frames further, and `<ShaderMonitor>` shows what each change saves.
 
-## Pause when offscreen
+## What a scene does on its own
 
-Every `<ShaderScene>` registers an `IntersectionObserver` on its canvas. When the canvas leaves the viewport, the scheduler unsubscribes the scene — no GPU frames are produced. When the canvas re-enters, rendering resumes from where it left off.
+A scene pauses while its canvas is out of view and while its tab is hidden. A paused scene draws no new frames. Time stops while it is paused, so it resumes on the frame it stopped on. Every `<ShaderScene>` pauses this way, and no prop turns it off.
 
-This is on by default and applies to all Shaders components without per-component code. You don't need to do anything.
-
-<Callout>
-  If you depend on continuous rendering — for example, you're capturing the canvas as a texture for another effect — opt out of offscreen pause by setting `pauseOffscreen={false}` on `<ShaderScene>`.
-</Callout>
-
-## DPR clamping
-
-WebGPU honors `window.devicePixelRatio` by default, so a Retina display at DPR 3 means rendering 9× the pixels of DPR 1. That's overkill for most shader work.
-
-`<ShaderScene>` clamps DPR to a sensible ceiling (currently 2.0). You can override it:
+To pause a scene yourself, set `paused`:
 
 ```tsx
-<ShaderScene dprMax={1.5}>
+<ShaderScene paused={!isOpen}>
   <Aurora />
 </ShaderScene>
 ```
 
-Drop to `dprMax={1}` for the cheapest possible render, or set `dprMax={Infinity}` if you need full native resolution.
+A scene also renders on demand. It draws every frame until its components' idle votes let it park, and a parked scene does no GPU work. A component votes idle while nothing it draws can change, as `<LinearGradient speed={0} />` does. A prop change or an Input, such as the cursor, asks a parked scene for frames until its value settles. The scene stays parked between those frames.
 
-## Reduced motion
+## Park a still scene with `useStaticSceneHint`
 
-Shaders reads `prefers-reduced-motion: reduce` on mount and respects the user's choice automatically. Three policies are available via `setReducedMotionPolicy`:
-
-- `'respect'` (default) — when the user prefers reduced motion, animation time scales by `0` (effectively pausing time).
-- `'slow'` — time scales by `0.3`.
-- `'ignore'` — Shaders ignores the OS hint entirely.
-
-```ts
-import { setReducedMotionPolicy } from '@camp-dev/shaders'
-
-setReducedMotionPolicy('slow')
-```
-
-This is global to the page and runs once at module init. The hook `useStaticSceneHint` from `@camp-dev/shaders` can read the current scale per-render if you need to swap visuals based on it.
-
-## Static / render-on-demand
-
-For decorative shaders that don't actually need to animate every frame, you can hint to Shaders that the scene is "static" — it renders once on mount, then only on prop / signal changes.
+Aurora, DotField, and WaveLines cast no idle vote. A scene of only these components draws every frame, even at `speed={0}`, where every frame is the same. To let that scene park, cast an idle vote from a component inside it:
 
 ```tsx
-import { ShaderScene, useStaticSceneHint } from '@camp-dev/shaders'
+import { Aurora, ShaderScene, useStaticSceneHint } from '@camp-dev/shaders'
 
-function Hero() {
+function StillScene() {
   useStaticSceneHint(true)
+  return null
+}
+
+export function Hero() {
   return (
     <ShaderScene>
-      <LinearGradient />
+      <Aurora speed={0} />
+      <StillScene />
     </ShaderScene>
   )
 }
 ```
 
-Use this for hero backgrounds where the gradient doesn't need a `time` uniform. Removes the per-frame redraw cost entirely.
+The hook votes for the scene it renders in, so call it from a component inside `<ShaderScene>`. Outside a scene it does nothing. A scene parks while at least one component votes idle and none votes animated. A component that casts no vote cannot keep the scene drawing, so vote idle only while nothing in the scene moves. Aurora at a nonzero `speed` freezes when its scene parks.
 
-## Visibility watcher
+## Draw fewer pixels with `maxDPR`
 
-Beyond intersection-based pausing, `<ShaderScene>` also listens to `document.visibilitychange` — when the tab is backgrounded, rendering stops; when it comes back, it resumes. Combined with offscreen pause, this means an inactive shader effectively costs zero GPU time.
+A display's pixel ratio is the number of device pixels along one side of a CSS pixel. A scene's pixel count grows with the square of the ratio, so a canvas at a ratio of 2 draws four times the pixels of the same canvas at 1. A full-width canvas of 1636 by 696 CSS pixels draws 3272 by 1392 pixels at a ratio of 2.
 
-## Monitoring at dev time
+`maxDPR` caps the ratio the scene draws at. The scene draws at the display's ratio or at `maxDPR`, whichever is lower. When `maxDPR` is lower, the browser scales the canvas up to fill its box. `maxDPR` defaults to 2, so a display with a ratio of 3 draws at 2.
 
-Drop `<ShaderMonitor />` inside a `<ShaderScene>` on your dev pages to get a corner overlay with the scene's frame rate, its GPU time per frame, and a tick count. The GPU time is how long the GPU spent drawing each frame, averaged over half a second, so it shows how close a scene is to its frame budget while the frame rate still reads 60. The monitor turns GPU timing on for its scene while it is mounted. The GPU readout shows a dash on the WebGL2 fallback, and on a GPU without timestamp queries. It's a dev tool — not for production — and tree-shakes out when guarded behind `import.meta.env.DEV` or similar.
+```tsx
+<ShaderScene maxDPR={1}>
+  <Aurora />
+</ShaderScene>
+```
+
+A lower ratio softens thin, sharp detail, such as Aurora's curtain filaments, more than it softens a smooth gradient. Changing `maxDPR` on a mounted scene rebuilds its renderer, so set it once rather than animating it.
+
+## Draw fewer frames with `maxFPS`
+
+`maxFPS` sets the scene's frame cap, the most frames it draws each second. With no frame cap, a scene draws on every frame the display shows, so a 120 Hz display gets 120 frames a second.
+
+```tsx
+<ShaderScene maxFPS={60}>
+  <Aurora />
+</ShaderScene>
+```
+
+A scene can draw only when the display shows a frame, so pick a cap that divides the display's refresh rate. `maxFPS={60}` on a 120 Hz display draws every other frame. Any other cap waits for the first frame after its interval, so it draws less often than the cap. `maxFPS={60}` on a 144 Hz display draws every third frame, 48 times a second. The one exception is a cap up to a tenth below a divisor of the refresh rate, which draws at the divisor. `maxFPS={110}` on a 120 Hz display draws on every frame. Visitors bring displays at many refresh rates, and a cap that divides one rate may not divide another.
+
+The cap changes how often the scene draws, not how fast it moves. Each frame moves the animation by the time since the last frame the scene drew, so a capped scene keeps its pace in fewer, larger steps. Two kinds of motion limit how large a step can be. A `speed` prop moves at most 0.1 seconds of motion per frame, so it slows under a cap below 10. CursorRipple's ripples move at most a thirtieth of a second per frame, so they slow under a cap below 30.
+
+Frames that a prop change asks for count against the cap, so a slider drag draws no faster than the cap allows. A resize still redraws at once, because a resize clears the canvas, and without the redraw the browser would show the cleared canvas.
+
+A frame cap only limits how often a running scene draws. It never wakes a parked scene or resumes a paused one. A new `maxFPS` applies from the next frame, without rebuilding the renderer, and `maxFPS={undefined}` removes the cap.
+
+## Honor reduced motion with `setReducedMotionPolicy`
+
+Shaders reads the `prefers-reduced-motion` media query, which reports whether the visitor asked their system for reduced motion. `setReducedMotionPolicy` picks what Shaders does with the answer:
+
+- `'auto'`, the default, follows the setting. Motion runs at 30% speed when the visitor asks for reduced motion, and at full speed otherwise.
+- `'off'` runs motion at full speed whatever the setting says.
+- `'slow'` runs motion at 30% speed whatever the setting says.
+- `'paused'` stops motion whatever the setting says.
+
+```ts
+import { setReducedMotionPolicy } from '@camp-dev/shaders'
+
+setReducedMotionPolicy('paused')
+```
+
+The policy applies to every scene at once, whenever you call it. It scales the clock that every `speed` prop and the `elapsedTime` node run on. It changes how fast motion runs, not how often the scene draws. A scene under `'paused'` keeps drawing the same frame until an idle vote parks it. To stop drawing, set `paused` on the scene.
+
+## Measure a scene with `<ShaderMonitor>`
+
+Mount `<ShaderMonitor />` inside a `<ShaderScene>` to show a corner readout of the scene's frame rate, its GPU time per frame, and a count of the frames it has drawn. The frame rate and the GPU time are averages over half a second.
 
 ```tsx
 import { ShaderMonitor } from '@camp-dev/shaders'
 
 {process.env.NODE_ENV === 'development' && <ShaderMonitor anchor="bottom-right" />}
 ```
+
+The GPU time is how long the GPU spent drawing each frame. It covers the scene's pass and the pass that writes the canvas, but not a pass that a component draws on its own, such as CursorRipple's wave field. At 120 Hz a frame lasts 8.3 ms, and at 60 Hz it lasts 16.7 ms. A GPU time close to the frame's length means the GPU is nearly full, even while the frame rate still reads 120 or 60. Under a frame cap, the frame rate counts only the frames the scene draws.
+
+The monitor turns GPU timing on for its scene while it is mounted, and off when it unmounts. The GPU readout shows a dash on the WebGL2 fallback, and on a GPU without timestamp queries. The monitor is a development tool. Keep it out of production builds, as the condition above does.

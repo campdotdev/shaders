@@ -18,8 +18,8 @@ import { ShaderScene } from '@camp-dev/shaders'
 
 <ShaderScene
   style={{ height: '100vh' }}
-  dprMax={2}
-  pauseOffscreen
+  maxDPR={2}
+  maxFPS={60}
 >
   <Aurora />
 </ShaderScene>
@@ -29,9 +29,9 @@ import { ShaderScene } from '@camp-dev/shaders'
 
 | Prop | Type | Default | Description |
 | --- | --- | --- | --- |
-| `dprMax` | `number` | `2` | Maximum device pixel ratio to render at. |
+| `maxDPR` | `number` | `2` | The most canvas pixels the scene draws along each side of a CSS pixel. A change rebuilds the renderer. See [the performance guide](/guides/perf#draw-fewer-pixels-with-maxdpr). |
+| `maxFPS` | `number` | — | Sets the frame cap, the most frames per second the scene draws. With no frame cap, the scene draws at the display's refresh rate. Zero, a negative number, or a non-finite number sets no frame cap. A change applies from the next frame. See [the performance guide](/guides/perf#draw-fewer-frames-with-maxfps). |
 | `gamut` | `'auto' \| 'srgb' \| 'p3'` | `'auto'` | Output color gamut. `'auto'` detects via `(color-gamut: p3)` and re-resolves when the window moves to another display. See [the color guide](/guides/color#gamut--what-the-output-can-hold). |
-| `pauseOffscreen` | `boolean` | `true` | Whether to pause rendering when the canvas leaves the viewport. |
 | `paused` | `boolean` | `false` | Freezes the scene on its current frame. Time stops while it is paused, so it resumes on the frame it stopped on. |
 | `style` | `CSSProperties` | — | Forwarded to the canvas container. |
 | `className` | `string` | — | Forwarded to the canvas container. |
@@ -158,13 +158,18 @@ Also on its own three-free entry point — the hook only asks `matchMedia` a que
 
 ## `useStaticSceneHint`
 
-Marks the scene as static — renders once on mount, then only on prop / signal changes. Use for decorative shaders without time-based animation.
+Casts an idle vote for the scene it renders in. The scene parks while at least one component votes idle and none votes animated. Call it from a component inside a `<ShaderScene>`. Outside a scene it does nothing. See [the performance guide](/guides/perf#park-a-still-scene-with-usestaticscenehint).
 
 ```tsx
-function Hero() {
+function StillScene() {
   useStaticSceneHint(true)
-  return <LinearGradient />
+  return null
 }
+
+<ShaderScene>
+  <Aurora speed={0} />
+  <StillScene />
+</ShaderScene>
 ```
 
 ## `useShaderContext`

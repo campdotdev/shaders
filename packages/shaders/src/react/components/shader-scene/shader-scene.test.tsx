@@ -450,6 +450,92 @@ describe('ShaderScene', () => {
   });
 
   // ---------------------------------------------
+  // maxFPS
+  // ---------------------------------------------
+
+  describe('maxFPS', () => {
+    // Animation frame timestamps of a 120 Hz display, in milliseconds.
+    const at120Hz = (frameNumber: number) => 1000 + (frameNumber * 1000) / 120;
+
+    function drawsAcross120HzFrames(
+      frames: FrameRequestCallback[],
+      gpuRenderer: GpuRenderer,
+      frameNumbers: number[],
+    ): boolean[] {
+      return frameNumbers.map((frameNumber) => {
+        vi.mocked(gpuRenderer.three.render).mockClear();
+        runFrames(frames, at120Hz(frameNumber));
+
+        return vi.mocked(gpuRenderer.three.render).mock.calls.length > 0;
+      });
+    }
+
+    it('draws on every other animation frame at 120 Hz with maxFPS={60}', async () => {
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      const { getByTestId } = render(
+        <ShaderScene maxFPS={60}>
+          <MeshChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+
+      expect(drawsAcross120HzFrames(frames, gpuRenderer, [0, 1, 2, 3, 4])).toEqual([
+        true,
+        false,
+        true,
+        false,
+        true,
+      ]);
+    });
+
+    it('applies a new maxFPS on the next frame, without rebuilding the renderer', async () => {
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+
+      vi.mocked(createRenderer).mockClear();
+      const { getByTestId, rerender } = render(
+        <ShaderScene>
+          <MeshChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      expect(drawsAcross120HzFrames(frames, gpuRenderer, [0, 1])).toEqual([true, true]);
+
+      rerender(
+        <ShaderScene maxFPS={60}>
+          <MeshChild />
+        </ShaderScene>,
+      );
+
+      expect(drawsAcross120HzFrames(frames, gpuRenderer, [2, 3, 4])).toEqual([false, true, false]);
+      expect(createRenderer).toHaveBeenCalledTimes(1);
+    });
+
+    // A resize clears the canvas, and the redraw is what keeps the browser
+    // from painting it cleared, so the frame cap never holds the redraw back.
+    it('redraws straight after a resize, however soon after the last frame', async () => {
+      const fireResize = stubResizeObserver();
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      const { getByTestId } = render(
+        <ShaderScene maxFPS={30}>
+          <MeshChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, at120Hz(0));
+      vi.mocked(gpuRenderer.three.render).mockClear();
+      fireResize();
+
+      expect(gpuRenderer.three.render).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  // ---------------------------------------------
   // resize
   // ---------------------------------------------
 

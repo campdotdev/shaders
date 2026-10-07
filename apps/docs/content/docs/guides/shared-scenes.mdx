@@ -56,7 +56,7 @@ Children render back-to-front in JSX order. The first child is the background; l
 Each component renders to its own quad in the scene — there's no built-in blend-mode prop yet, so visual mixing happens by virtue of transparent pixels at the edges of each layer.
 
 <Callout>
-  Heavy multi-component compositions can saturate the GPU on mobile. If you're stacking three or more effects in one scene, run the [ShaderMonitor](/guides/perf#monitoring-at-dev-time) overlay on a slow device before shipping.
+  Heavy multi-component compositions can saturate the GPU on mobile. If you're stacking three or more effects in one scene, run the [ShaderMonitor](/guides/perf#measure-a-scene-with-shadermonitor) overlay on a slow device before shipping.
 </Callout>
 
 ## Multiple scenes on one page
