@@ -15,7 +15,7 @@ import type { Locator, Page } from '@playwright/test';
 test.use({ launchOptions: { args: ['--enable-unsafe-webgpu'] } });
 
 const favoritesList = (page: Page) =>
-  page.getByRole('list', { name: 'Start with one of our favorites' });
+  page.getByRole('list', { name: 'Add some fun to your website' });
 
 const favorites = (page: Page) => favoritesList(page).getByRole('link');
 
@@ -156,7 +156,7 @@ test('leaving a favorite pauses its scene, and coming back resumes the same one'
   });
 
   // The heading sits outside every card.
-  await page.getByRole('heading', { name: 'Start with one of our favorites' }).hover();
+  await page.getByRole('heading', { name: 'Add some fun to your website' }).hover();
   await expect(scene(favorite)).toHaveAttribute('data-paused');
   await expect(favorite.locator('canvas')).toHaveCount(1);
 
@@ -251,7 +251,7 @@ test('the hero pauses while a favorite plays, and plays again once it is let go'
   await favorite.hover();
   await expect(hero).toHaveAttribute('data-paused');
 
-  await page.getByRole('heading', { name: 'Start with one of our favorites' }).hover();
+  await page.getByRole('heading', { name: 'Add some fun to your website' }).hover();
   await expect(hero).not.toHaveAttribute('data-paused');
 });
 

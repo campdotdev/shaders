@@ -2,11 +2,10 @@ import { expect, test } from '@playwright/test';
 import type { Page } from '@playwright/test';
 
 /**
- * The homepage layout with no motion (SHA-181): the intro, the Aurora hero,
- * the favorites, and the homepage-only footer, asserted through roles, hrefs,
- * and image sources so a restyle cannot break this file. FAVORITES is listed
- * by hand rather than read from the content module, so a reshuffle there
- * fails here for review.
+ * The homepage layout with no motion (SHA-181 and SHA-213): the intro, the
+ * hero, the favorites, the features section, and the footer, asserted through
+ * roles, hrefs, and image sources so a restyle cannot break this file. The
+ * lists are written by hand, so a reshuffle in the content module fails here.
  */
 
 const FAVORITES = [
@@ -19,8 +18,40 @@ const FAVORITES = [
   'led-wall',
 ];
 
-const favorites = (page: Page) =>
-  page.getByRole('list', { name: 'Start with one of our favorites' }).getByRole('link');
+// Each feature card's title, its description, and its illustration's URL.
+const FEATURE_CARDS = [
+  {
+    title: 'Composable',
+    description: 'Stack shaders in a single scene to build the exact effect you want.',
+    illustration: '/features/composable.png',
+  },
+  {
+    title: 'Performant',
+    description: 'Reduce browser overhead for your users with WebGPU rendering.',
+    illustration: '/features/performant.png',
+  },
+  {
+    title: 'Reactive',
+    description: 'Bring shaders to life with animation, cursor, and scroll inputs.',
+    illustration: '/features/reactive.png',
+  },
+  {
+    title: 'Extensible',
+    description: 'Write your own shaders with the same TSL primitives our components use.',
+    illustration: '/features/extensible.png',
+  },
+];
+
+const FAVORITES_HEADING = 'Add some fun to your website';
+const FEATURES_HEADING = 'We’ll handle the complex stuff';
+
+const favoritesList = (page: Page) => page.getByRole('list', { name: FAVORITES_HEADING });
+
+const favorites = (page: Page) => favoritesList(page).getByRole('link');
+
+const featuresList = (page: Page) => page.getByRole('list', { name: FEATURES_HEADING });
+
+const featureCards = (page: Page) => featuresList(page).getByRole('listitem');
 
 async function open(page: Page): Promise<void> {
   await page.goto('/');
@@ -43,7 +74,9 @@ test('the heading and description introduce the library', async ({ page }) => {
     page.getByRole('heading', { level: 1, name: 'Shader components for the modern web' }),
   ).toBeVisible();
   await expect(
-    page.getByText('A growing library for React, written in TSL and rendered with WebGPU.'),
+    page.getByText(
+      'A growing library for React, written in Three.js Shading Language and rendered with WebGPU.',
+    ),
   ).toBeVisible();
 });
 
@@ -171,13 +204,84 @@ test('with no WebGPU, a hovered or focused favorite stays a poster and the hero 
   // the time a favorite with WebGPU takes to mount its canvas.
   await page.waitForTimeout(1_000);
 
-  await expect(
-    page.getByRole('list', { name: 'Start with one of our favorites' }).locator('canvas'),
-  ).toHaveCount(0);
+  await expect(favoritesList(page).locator('canvas')).toHaveCount(0);
   await expect(favorite.getByRole('img')).toBeVisible();
   // The hero falls back to WebGL2 and keeps drawing, and a favorite that
   // stays a poster costs no GPU time, so the hero has nothing to pause for.
   await expect(page.locator('[data-home-hero]')).not.toHaveAttribute('data-paused');
+});
+
+// ---------------------------------------------
+// Features
+// ---------------------------------------------
+
+// Document order rather than boxes: the section rides in the hero's pin, so
+// where it sits on screen depends on the scroll.
+test('the features section sits between the favorites and the footer', async ({ page }) => {
+  await open(page);
+
+  const heading = page.getByRole('heading', { level: 2, name: FEATURES_HEADING });
+
+  await expect(heading).toBeVisible();
+
+  const favoritesHandle = await favoritesList(page).elementHandle();
+  const footerHandle = await page.locator('footer').elementHandle();
+  const order = await heading.evaluate(
+    (element, [favoritesElement, footer]) => ({
+      afterFavorites: !!(
+        favoritesElement!.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING
+      ),
+      beforeFooter: !!(element.compareDocumentPosition(footer!) & Node.DOCUMENT_POSITION_FOLLOWING),
+    }),
+    [favoritesHandle, footerHandle] as const,
+  );
+
+  expect(order).toEqual({ afterFavorites: true, beforeFooter: true });
+});
+
+test('four feature cards show their titles and descriptions, in order', async ({ page }) => {
+  await open(page);
+  await expect(featureCards(page)).toHaveCount(FEATURE_CARDS.length);
+
+  for (const [index, card] of FEATURE_CARDS.entries()) {
+    const item = featureCards(page).nth(index);
+
+    await expect(item.getByRole('heading', { level: 3 })).toHaveText(card.title);
+    await expect(item.getByText(card.description, { exact: true })).toBeVisible();
+  }
+});
+
+// The illustration is decoration: the card's title and description carry
+// its message, so a screen reader skips the image.
+test('each feature card shows its illustration, hidden from screen readers', async ({ page }) => {
+  await open(page);
+  // The illustrations load lazily, so the cards are brought on screen first.
+  await featureCards(page).last().scrollIntoViewIfNeeded();
+
+  for (const [index, card] of FEATURE_CARDS.entries()) {
+    const item = featureCards(page).nth(index);
+    const image = item.locator('img');
+
+    await expect(item.getByRole('img')).toHaveCount(0);
+    await expect(image).toHaveAttribute('aria-hidden', 'true');
+    await expect(image).toHaveAttribute('src', card.illustration);
+    await expect
+      .poll(() =>
+        image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0),
+      )
+      .toBe(true);
+  }
+});
+
+test('no feature card is a link or takes focus', async ({ page }) => {
+  await open(page);
+  await expect(featureCards(page)).toHaveCount(FEATURE_CARDS.length);
+
+  await expect(featuresList(page).getByRole('link')).toHaveCount(0);
+  // Anything a Tab press could land on.
+  await expect(
+    featuresList(page).locator('a, button, input, select, textarea, [tabindex]'),
+  ).toHaveCount(0);
 });
 
 // ---------------------------------------------

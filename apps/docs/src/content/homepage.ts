@@ -1,13 +1,15 @@
 /**
- * The homepage's content: the favorites, hand-picked in the Figma mock's
- * order, read row by row after the heading cell. The list is typed against
- * the slugs in components.ts, so a renamed or removed component fails the
- * type check here, and the live scenes in components/favorites/ are typed
- * against this list. The catalog itself carries no favorite flag.
+ * The homepage's content: the favorites in the Figma mock's order, read row
+ * by row after the heading cell, then the feature cards. The favorites are
+ * typed against the slugs in components.ts, so a renamed or removed
+ * component fails the type check here. The catalog carries no favorite flag.
  */
 import { type ComponentCatalogRecord, getComponentsCatalog } from './catalog';
 import type { ComponentSlug } from './components';
 
+// ---- Favorites
+
+// The live scenes in components/favorites/ are typed against this list.
 const FAVORITES = [
   'simplex-noise',
   'mesh-gradient',
@@ -74,3 +76,40 @@ export async function getFavorites(): Promise<Favorite[]> {
     return { ...record, slug, poster: CARD_POSTERS[slug], shortName: SHORT_NAMES[slug] };
   });
 }
+
+// ---- Feature cards
+
+/** A feature card's copy and its illustration. */
+export interface FeatureCard {
+  title: string;
+  description: string;
+  /**
+   * The URL of the card's illustration, exported from the Figma mock at 2x
+   * into public/features. Each card's own issue rebuilds it in code.
+   */
+  illustration: string;
+}
+
+/** The feature cards, in the mock's order, with the mock's copy. */
+export const FEATURE_CARDS: readonly FeatureCard[] = [
+  {
+    title: 'Composable',
+    description: 'Stack shaders in a single scene to build the exact effect you want.',
+    illustration: '/features/composable.png',
+  },
+  {
+    title: 'Performant',
+    description: 'Reduce browser overhead for your users with WebGPU rendering.',
+    illustration: '/features/performant.png',
+  },
+  {
+    title: 'Reactive',
+    description: 'Bring shaders to life with animation, cursor, and scroll inputs.',
+    illustration: '/features/reactive.png',
+  },
+  {
+    title: 'Extensible',
+    description: 'Write your own shaders with the same TSL primitives our components use.',
+    illustration: '/features/extensible.png',
+  },
+];

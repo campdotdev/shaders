@@ -46,13 +46,13 @@
 }
 
 /* The heading sits at the bottom of its cell, level with the bottom of the
-   first row of cards. The mock breaks it as "Start with one of / our
-   favorites". At 36px "Start with one of" is about 7.8em wide and "Start
-   with one of our" about 9.6em, so a greedy wrap inside 8.5em breaks it
-   there, and a narrower cell wraps it sooner. */
+   first row of cards. The mock breaks it as "Add some fun / to your
+   website". At 36px "Add some fun" is about 6.5em wide, "Add some fun to"
+   about 7.7em, and "to your website" about 7.2em, so a greedy wrap inside
+   7.5em breaks it there, and a narrower cell wraps it sooner. */
 .heading {
   align-self: end;
-  max-width: 8.5em;
+  max-width: 7.5em;
   font-size: var(--font-size-4xl);
   font-weight: var(--font-weight-semibold);
   line-height: var(--leading-10);

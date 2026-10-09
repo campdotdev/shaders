@@ -20,12 +20,11 @@ test.use({ launchOptions: { args: ['--disable-webgl'] } });
 const SHORT_NAMES = ['Simplex', 'Mesh', 'Waves', 'Voronoi', 'Dither', 'God Rays', 'LED Wall'];
 
 const favoritesList = (page: Page) =>
-  page.getByRole('list', { name: 'Start with one of our favorites' });
+  page.getByRole('list', { name: 'Add some fun to your website' });
 
 const favorites = (page: Page) => favoritesList(page).getByRole('link');
 
-const heading = (page: Page) =>
-  page.getByRole('heading', { name: 'Start with one of our favorites' });
+const heading = (page: Page) => page.getByRole('heading', { name: 'Add some fun to your website' });
 
 const cardTab = (favorite: Locator) => favorite.locator('[data-card-tab]');
 
