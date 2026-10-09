@@ -4,7 +4,8 @@ import type { Locator, Page } from '@playwright/test';
 /**
  * The homepage favorites come alive on hover (SHA-183): the scene mounts under
  * its poster on hover or focus, pauses when the visitor leaves, stays paused
- * when another favorite plays, and never mounts on touch. The no-WebGPU case
+ * when another favorite plays, and never mounts on touch. At the mock's
+ * width, the scene renders at its window's size (SHA-220). The no-WebGPU case
  * is in homepage.spec.ts, which runs without the adapter this file turns on.
  */
 
@@ -131,6 +132,38 @@ test('focusing a favorite mounts its scene behind the poster until the first fra
   expect(await readCanvasMount()).toEqual({ scene: 'loading', posterOpacity: '1' });
   await expect(scene(favorite)).toHaveAttribute('data-scene', 'painted', { timeout: 30_000 });
   await expect(poster(favorite)).toHaveCSS('opacity', '0');
+});
+
+// ---------------------------------------------
+// The scene's size
+// ---------------------------------------------
+
+// At the mock's 1728px the grid is at its full 1440px, and a card's window
+// is 320 by 233. The scene renders at that size, so useCoverScale
+// (favorites-list.tsx) leaves it at a scale of 1. A larger scene, scaled
+// down to fit, draws pixels the window never shows, and shrinks the cells
+// that Dither and LED Wall size in CSS pixels.
+test.describe('at the mock’s 1728px width', () => {
+  test.use({ viewport: { width: 1728, height: 1117 } });
+
+  test('a favorite’s scene renders at its window’s size, with no scale', async ({ page }) => {
+    await open(page);
+
+    const favorite = favorites(page).first();
+
+    await favorite.hover();
+    // useCoverScale writes the scale once it learns the window's size.
+    await expect(scene(favorite)).toHaveCSS('scale', '1');
+    expect(
+      await scene(favorite).evaluate((sceneLayer: HTMLElement) => ({
+        scene: [sceneLayer.offsetWidth, sceneLayer.offsetHeight],
+        sceneWindow: [
+          sceneLayer.parentElement!.clientWidth,
+          sceneLayer.parentElement!.clientHeight,
+        ],
+      })),
+    ).toEqual({ scene: [320, 233], sceneWindow: [320, 233] });
+  });
 });
 
 // ---------------------------------------------

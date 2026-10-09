@@ -222,14 +222,16 @@ function LiveScene({ slug, paused }: { slug: FavoriteSlug; paused: boolean }) {
 
 // The size every favorite renders at, in CSS pixels, and the size
 // scripts/build-posters.sh captures every favorite's card poster at. It is
-// the card window's size on a 1664px grid, 17.5% larger than the 320 by 233
-// window at the grid's full 1440px, so useCoverScale scales the scene down
-// to cover the window, as it does at every narrower width. Larger draws
-// more pixels than the window shows, and shrinks patterns sized in CSS
-// pixels, such as Dither's and LED Wall's cells. Smaller than the window
-// makes useCoverScale scale the scene up, which blurs it. SHA-220 sets it
-// to the window's size.
-const SCENE_SIZE = { width: 376, height: 275 };
+// the card window's size at the grid's full 1440px, where useCoverScale
+// leaves the scene at a scale of 1, so Dither's and LED Wall's cells, which
+// are sized in CSS pixels, show at their real size. Four narrower columns
+// scale it down. Larger would draw more pixels than the window shows, and
+// smaller would scale the scene up, which softens it. The two-column and
+// one-column grids already scale it up at their wider widths, as far as
+// about 1.8 times for the 579 by 427 window at 639px. A change to the
+// grid's width or the card's padding moves the window, so change this with
+// it and recapture the card posters.
+const SCENE_SIZE = { width: 320, height: 233 };
 
 /**
  * Scales the scene to cover its window, the way `object-fit: cover` scales
