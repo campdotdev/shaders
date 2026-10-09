@@ -75,7 +75,7 @@ test('the heading and description introduce the library', async ({ page }) => {
   ).toBeVisible();
   await expect(
     page.getByText(
-      'A growing library for React, written in Three.js Shader Language and rendered with WebGPU.',
+      'A growing library for React, written in Three.js Shading Language and rendered with WebGPU.',
     ),
   ).toBeVisible();
 });

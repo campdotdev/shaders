@@ -27,7 +27,7 @@ export default async function Home() {
           <h1 className={styles.title}>Shader components for the modern web</h1>
           <div className={styles.lede}>
             <p className={styles.description}>
-              A growing library for React, written in Three.js Shader Language and rendered with
+              A growing library for React, written in Three.js Shading Language and rendered with
               WebGPU.
             </p>
             <Link
