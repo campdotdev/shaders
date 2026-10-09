@@ -1,13 +1,14 @@
 /**
  * The homepage, after the Figma mock: the heading, description, and Get
  * started button, then the live Aurora hero that turns into Aurora's demo on
- * scroll, the favorites grid, and the footer, which no other page renders.
- * With no sidebar or section banner, it renders straight into the root
- * layout.
+ * scroll, the favorites grid, the features section, and the footer, which no
+ * other page renders. With no sidebar or section banner, it renders straight
+ * into the root layout.
  */
 import Link from 'next/link';
 
 import { Favorites } from '@/components/favorites/favorites';
+import { Features } from '@/components/features/features';
 import { HomeFooter } from '@/components/home-footer/home-footer';
 import { HomeHero } from '@/components/home-hero/home-hero';
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
@@ -26,7 +27,8 @@ export default async function Home() {
           <h1 className={styles.title}>Shader components for the modern web</h1>
           <div className={styles.lede}>
             <p className={styles.description}>
-              A growing library for React, written in TSL and rendered with WebGPU.
+              A growing library for React, written in Three.js Shader Language and rendered with
+              WebGPU.
             </p>
             <Link
               className={`${textButtonStyles.box} ${textButtonStyles.button} ${styles.getStarted}`}
@@ -43,6 +45,7 @@ export default async function Home() {
           always reaches past the viewport's bottom. */}
       <HomeHero>
         <Favorites favorites={favorites} />
+        <Features />
         <HomeFooter />
       </HomeHero>
     </>

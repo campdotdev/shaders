@@ -161,7 +161,7 @@ test.describe('on a wide window', () => {
       await page.mouse.wheel(0, 400);
 
       const favorite = page
-        .getByRole('list', { name: 'Start with one of our favorites' })
+        .getByRole('list', { name: 'Add some fun to your website' })
         .getByRole('link')
         .first();
 

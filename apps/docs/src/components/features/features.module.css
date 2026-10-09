@@ -1,0 +1,118 @@
+/* The features section, after the Figma mock: the heading 40px over a grid
+   of four feature cards, in a 1440px container, narrower than the 1664px
+   the favorites span. The section's own 48px sits above and below it. */
+.section {
+  padding-block: var(--spacing-12);
+}
+
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-10);
+  max-width: var(--container-8xl);
+  margin-inline: auto;
+}
+
+/* The mock sets the heading at 48px in a 768px column, with the line as
+   tall as the type, as the intro's heading is. */
+.heading {
+  max-width: var(--container-3xl);
+  font-size: var(--font-size-5xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
+
+/* ---- The grid ----
+   Four columns at full width, two from 64rem of the site container down,
+   and one on a phone under 40rem: the favorites' steps. Below 1504px of
+   site, where the 1440px cap and the two 32px gutters meet, both sections
+   fill the same width, so the cards sit under the favorites' columns. The
+   mock draws only the full width. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--spacing-4);
+  padding: 0;
+  list-style: none;
+}
+
+@container site (width < 64rem) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container site (width < 40rem) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* ---- The card ----
+   The mock's card is 348 by 435 with a 2px border, 24px corners, and 16px
+   inside the border: the illustration's window on top, then 12px, then the
+   title and description. The illustration keeps the mock's 312 by 309
+   shape at any width, so the card's height follows its column and its
+   copy. In a row whose copy wraps unevenly, the windows and titles still
+   line up, and the shorter cards end in space below their description. */
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-3);
+  padding: var(--spacing-4);
+  border: var(--border-width-2) solid var(--white-a5);
+  border-radius: var(--radius-3xl);
+  background: var(--bg-muted);
+}
+
+/* The window's gray is the mock's, and the exported image carries it too,
+   so the window reads as finished while the image loads. */
+.window {
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  background: var(--gray-800);
+}
+
+/* The width and height attributes set the 312 by 309 shape, and this scales
+   it to the window's width. */
+.illustration {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-0-5);
+}
+
+.title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-semibold);
+  line-height: var(--leading-7);
+}
+
+.description {
+  color: var(--fg-muted);
+  font-size: var(--font-size-base);
+  line-height: var(--leading-6);
+}
+
+/* On a phone the section tightens to the favorites' phone rhythm, 16px
+   above and 24px below, and the heading drops to the favorites' phone
+   heading size: 24px type on a 32px line. */
+@container site (width < 40rem) {
+  .section {
+    padding-block: var(--spacing-4) var(--spacing-6);
+  }
+
+  .container {
+    gap: var(--spacing-4);
+  }
+
+  .heading {
+    font-size: var(--font-size-2xl);
+    line-height: var(--leading-8);
+  }
+}

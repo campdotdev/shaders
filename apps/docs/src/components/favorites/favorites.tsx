@@ -22,7 +22,7 @@ export function Favorites({ favorites }: { favorites: Favorite[] }) {
     <section className={`site-gutter ${styles.section}`} data-pagefind-ignore="all">
       <FavoritesReveal className={`site-container ${styles.grid}`}>
         <h2 className={styles.heading} id={headingId}>
-          Start with one of our favorites
+          Add some fun to your website
         </h2>
         <FavoritesList favorites={favorites} labelledBy={headingId} />
       </FavoritesReveal>
