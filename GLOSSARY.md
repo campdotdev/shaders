@@ -83,3 +83,15 @@ _Avoid_: Featured component, highlight
 **Card tab**:
 The strip that cuts into a favorite's edge to show the favorite's short name, such as "Simplex" for Simplex Noise, when the card is hovered or focused.
 _Avoid_: Tab, name tab, label tab
+
+**Feature card**:
+A card in the homepage's features section that illustrates one quality of the library, such as "Composable" or "Reactive". Unlike a favorite, a feature card shows no component.
+_Avoid_: Benefit card, value prop, pillar, featured card
+
+**Story**:
+The animation a feature card plays when the pointer moves over it. Once started, a story always finishes, and the card returns to its still frame.
+_Avoid_: Intro, entrance, demo, hover effect
+
+**Still frame**:
+The one frame a feature card shows whenever its story is not playing. It need not be the story's first or last frame.
+_Avoid_: End frame, rest state, poster
