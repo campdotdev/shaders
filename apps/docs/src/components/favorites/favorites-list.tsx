@@ -28,10 +28,6 @@ import { CardTab } from './card-tab';
 import { favoriteSceneBackdrop, preloadFavoriteScenes, useFavoriteScene } from './favorite-scenes';
 import styles from './favorites.module.css';
 
-// The width each poster renders at, per the grid's columns in
-// favorites.module.css, so next/image picks a file no larger than it needs.
-const POSTER_SIZES = '(width < 40rem) 100vw, (width < 64rem) 50vw, 25vw';
-
 // A card's place in the grid's reveal (favorites.module.css): the heading
 // goes first, at 0, so the cards count from 1.
 type RevealStyle = CSSProperties & { '--reveal-index': number };
@@ -163,13 +159,12 @@ function FavoriteCard({
     >
       <div className={styles.window}>
         {sceneMounted && <LiveScene paused={!playing} slug={favorite.slug} />}
-        <Image
-          alt={favorite.label}
-          className={styles.poster}
-          fill
-          sizes={POSTER_SIZES}
-          src={favorite.poster}
-        />
+        {/* No `sizes`: next.config.ts turns image optimization off for the
+            static export, so next/image renders a plain `<img>` with no
+            srcset for `sizes` to pick from. If optimization comes on, add
+            `sizes` to match the grid's columns in favorites.module.css. */}
+        {/* react-doctor-disable-next-line react-doctor/nextjs-image-missing-sizes */}
+        <Image alt={favorite.label} className={styles.poster} fill src={favorite.poster} />
         {cardTabMounted && <CardTab shortName={favorite.shortName} shown={engaged} />}
       </div>
     </Link>
