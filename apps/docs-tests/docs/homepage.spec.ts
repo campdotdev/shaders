@@ -160,7 +160,6 @@ test('each favorite shows its poster', async ({ page }) => {
           href: link.getAttribute('href') ?? '',
           src: decodeURIComponent(image?.currentSrc ?? ''),
           loaded: !!image && image.complete && image.naturalWidth > 0,
-          // next/image may serve a resized file, which keeps the shape.
           shape: image ? image.naturalWidth / image.naturalHeight : 0,
         };
       }),
