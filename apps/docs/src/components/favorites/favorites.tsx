@@ -20,7 +20,7 @@ export function Favorites({ favorites }: { favorites: Favorite[] }) {
     // Out of the search index, like the components index: each card only
     // repeats a name its component page is already indexed under.
     <section className={`site-gutter ${styles.section}`} data-pagefind-ignore="all">
-      <FavoritesReveal className={`site-container ${styles.grid}`}>
+      <FavoritesReveal className={styles.grid}>
         <h2 className={styles.heading} id={headingId}>
           Add some fun to your website
         </h2>

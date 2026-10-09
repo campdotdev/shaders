@@ -122,8 +122,7 @@ $CLI \
   --height 696 \
   --background "#0b0f1a"
 
-# The homepage favorites render every live scene at the card window's size
-# at the site container's full width, 376 by 275 (SCENE_SIZE in
+# The homepage favorites render every live scene at 376 by 275 (SCENE_SIZE in
 # apps/docs/src/components/favorites/favorites-list.tsx), and scale it with
 # the card. Each favorite's card poster is captured at that size, over the
 # ground its scene sits on there, so the poster frames and crops the scene

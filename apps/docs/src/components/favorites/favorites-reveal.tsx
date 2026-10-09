@@ -28,7 +28,7 @@ export function FavoritesReveal({
   className,
   children,
 }: {
-  className: string;
+  className?: string;
   children: ReactNode;
 }) {
   const gridRef = useRef<HTMLDivElement>(null);

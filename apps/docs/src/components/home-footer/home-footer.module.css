@@ -1,14 +1,16 @@
-/* The homepage footer, after the Figma mock: 32px around a container whose
-   own 32px on top and at the sides frame the wordmark. With the wordmark's
-   240px line, that makes the mock's 336px footer. */
+/* The homepage footer, after the Figma mock: 96px above a container whose
+   own 32px at the sides frame the wordmark, and 32px under the wordmark.
+   With the wordmark's 240px line, that makes the mock's 368px footer. The
+   features section's 48px below its grid and these 96px put 144px between
+   the grid and the wordmark. */
 .footer {
-  padding-block: var(--spacing-8);
+  padding-block: var(--spacing-24) var(--spacing-8);
 }
 
 .row {
   display: flex;
   justify-content: center;
-  padding: var(--spacing-8) var(--spacing-8) 0;
+  padding-inline: var(--spacing-8);
 }
 
 /* The mock sets the wordmark at 239.593px on its 1728px artboard, with the
