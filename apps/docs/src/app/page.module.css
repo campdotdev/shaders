@@ -10,13 +10,14 @@
   padding-block: var(--spacing-16) var(--spacing-8);
 }
 
-/* The mock caps the intro at 1280px, narrower than the 1664px the hero and
-   the favorites span, with the heading's 768px on the left and the
-   description and button bottom-aligned beside it. */
+/* The mock caps the intro at 1440px, as it does the favorites and the
+   features, narrower than the 1664px the hero spans, with the heading's
+   768px on the left and the description and button bottom-aligned beside
+   it. */
 .introRow {
   display: flex;
   align-items: flex-end;
-  max-width: var(--container-7xl);
+  max-width: var(--container-8xl);
   margin-inline: auto;
 }
 
@@ -33,7 +34,9 @@
 }
 
 /* The description takes what the heading leaves, 16px in from it and 16px
-   from the button, and the button sits on the description's last line. */
+   from the button, and the button sits on the description's last line. At
+   the full 1440px that leaves the description 523px, which wraps it to two
+   lines with the break between "Shading" and "Language", as in the mock. */
 .lede {
   display: flex;
   flex: 1;

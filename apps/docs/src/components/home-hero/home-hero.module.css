@@ -39,11 +39,11 @@
 
 /* ---- Hero ---- */
 
-/* 32px above and below the stage, the hero section's padding, which keeps
-   64px between the intro and the hero's frame, and 64px between the frame
-   and the favorites with their own 32px. */
+/* 32px above the stage and 48px below it, the hero section's padding,
+   which keeps 64px between the intro and the hero's frame, and 96px
+   between the frame and the favorites with their own 48px. */
 .hero {
-  padding-block: var(--spacing-8);
+  padding-block: var(--spacing-8) var(--spacing-12);
 }
 
 /* On a phone the intro's own 24px is the space above the hero, and 24px

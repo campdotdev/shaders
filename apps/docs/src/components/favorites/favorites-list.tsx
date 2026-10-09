@@ -220,9 +220,15 @@ function LiveScene({ slug, paused }: { slug: FavoriteSlug; paused: boolean }) {
   );
 }
 
-// The card window's size at the site container's full width, in CSS pixels.
-// Every favorite renders at this size, and scripts/build-posters.sh captures
-// every favorite's card poster at it.
+// The size every favorite renders at, in CSS pixels, and the size
+// scripts/build-posters.sh captures every favorite's card poster at. It is
+// the card window's size on a 1664px grid, 17.5% larger than the 320 by 233
+// window at the grid's full 1440px, so useCoverScale scales the scene down
+// to cover the window, as it does at every narrower width. Larger draws
+// more pixels than the window shows, and shrinks patterns sized in CSS
+// pixels, such as Dither's and LED Wall's cells. Smaller than the window
+// makes useCoverScale scale the scene up, which blurs it. SHA-220 sets it
+// to the window's size.
 const SCENE_SIZE = { width: 376, height: 275 };
 
 /**

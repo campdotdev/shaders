@@ -1,6 +1,6 @@
 /* The features section, after the Figma mock: the heading 40px over a grid
-   of four feature cards, in a 1440px container, narrower than the 1664px
-   the favorites span. The section's own 48px sits above and below it. */
+   of four feature cards, in a 1440px container, the width the favorites
+   span. The section's own 48px sits above and below it. */
 .section {
   padding-block: var(--spacing-12);
 }
@@ -24,10 +24,9 @@
 
 /* ---- The grid ----
    Four columns at full width, two from 64rem of the site container down,
-   and one on a phone under 40rem: the favorites' steps. Below 1504px of
-   site, where the 1440px cap and the two 32px gutters meet, both sections
-   fill the same width, so the cards sit under the favorites' columns. The
-   mock draws only the full width. */
+   and one on a phone under 40rem: the favorites' steps. Both sections
+   share the 1440px cap and the gap, so at every width the cards sit under
+   the favorites' columns. The mock draws only the full width. */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));

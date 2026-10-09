@@ -1,10 +1,12 @@
 /* The favorites section, after the Figma mocks: one grid holding the
    heading and seven cards, four across at full width, with the heading in
-   the first cell so the cards fill the two rows evenly. 64px of space sits
-   above it, 32 from this section and 32 from the hero's. The phone mock
-   tightens that to 40px, 16 here and 24 under the hero. */
+   the first cell so the cards fill the two rows evenly. 96px of space sits
+   above it, 48 from this section and 48 from the hero's, and the section's
+   48px below meets the features section's 48px above to make 96 again.
+   The phone mock tightens the space above to 40px, 16 here and 24 under
+   the hero. */
 .section {
-  padding-block: var(--spacing-8);
+  padding-block: var(--spacing-12);
 }
 
 @container site (width < 40rem) {
@@ -14,14 +16,18 @@
 }
 
 /* ---- The grid ----
-   Four columns at full width, two from 64rem of the site container down,
-   and one on a phone under 40rem. Eight cells divide evenly into four or
-   two columns, so no row is left with a gap. The one column matches the
-   phone mock. The two-column band has no mock. */
+   The mock caps it at 1440px, the features section's width, so the two
+   sections' columns line up at every width. Four columns at full width,
+   two from 64rem of the site container down, and one on a phone under
+   40rem. Eight cells divide evenly into four or two columns, so no row is
+   left with a gap. The one column matches the phone mock. The two-column
+   band has no mock. */
 .grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: var(--spacing-4);
+  max-width: var(--container-8xl);
+  margin-inline: auto;
 }
 
 @container site (width < 64rem) {
@@ -132,10 +138,11 @@
    (card-tab.tsx), placed as in the mock: on the window's right edge, its
    foot 16px above the window's bottom, clear of the 12px corner. Its size
    is the outline's, CARD_TAB_PATH's 24 by 168 CSS pixels, on a window at
-   least 200px tall. A shorter window would clip the strip's head, such as
-   the 143px window each of four columns gets at a 1024px viewport. There
-   the strip shortens to keep 16px clear at the top, as at the foot, and
-   the outline stretches to fit (card-tab.tsx). It comes after the
+   least 200px tall. Four columns give a 233px window at the grid's full
+   1440px, but under 1328px of site the window drops below 200px and would
+   clip the strip's head, such as the 143px window at a 1024px viewport.
+   There the strip shortens to keep 16px clear at the top, as at the foot,
+   and the outline stretches to fit (card-tab.tsx). It comes after the
    poster and the scene in the window, so it paints over both. Its slide
    and its name's fade are Motion's, set inline from card-tab.tsx, and the
    window's overflow clips the strip while it is out past the edge.
