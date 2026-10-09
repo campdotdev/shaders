@@ -122,7 +122,8 @@ $CLI \
   --height 696 \
   --background "#0b0f1a"
 
-# The homepage favorites render every live scene at 376 by 275 (SCENE_SIZE in
+# The homepage favorites render every live scene at 320 by 233, the card
+# window's size at the grid's full 1440px (SCENE_SIZE in
 # apps/docs/src/components/favorites/favorites-list.tsx), and scale it with
 # the card. Each favorite's card poster is captured at that size, over the
 # ground its scene sits on there, so the poster frames and crops the scene
@@ -140,13 +141,13 @@ for pair in \
   "god-rays:jpg:linear-gradient(to top, #131b31, #0b0f1a)" \
   "led-wall:jpg:#0b0f0d"; do
   IFS=':' read -r name format background <<< "$pair"
-  echo "==> ${name}-card ($format, 376x275)"
+  echo "==> ${name}-card ($format, 320x233)"
   card_args=(
     --source "${COMPONENTS_DIR}/${name}/scene.tsx"
     --output "${OUT_DIR}/${name}-card.${format}"
     --format "$format"
-    --width 376
-    --height 275
+    --width 320
+    --height 233
   )
   if [ -n "$background" ]; then
     card_args+=(--background "$background")

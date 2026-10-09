@@ -144,7 +144,7 @@ test('a favorite is named for its component', async ({ page }) => {
 
 // Each favorite shows its card poster, not the small square the components
 // index uses, and every one has loaded. A card poster is captured at the live
-// scene's shape, 376 by 275, so the spec checks the file's shape too.
+// scene's shape, 320 by 233, so the spec checks the file's shape too.
 test('each favorite shows its poster', async ({ page }) => {
   await open(page);
   await expect(favorites(page)).toHaveCount(FAVORITES.length);
@@ -174,7 +174,7 @@ test('each favorite shows its poster', async ({ page }) => {
     expect(image.src, image.href).toMatch(
       new RegExp(`/posters/${FAVORITES[index]}-card\\.(jpg|png)`),
     );
-    expect(image.shape, image.href).toBeCloseTo(376 / 275, 2);
+    expect(image.shape, image.href).toBeCloseTo(320 / 233, 2);
   }
 });
 
