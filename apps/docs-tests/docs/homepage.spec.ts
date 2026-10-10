@@ -18,8 +18,15 @@ const FAVORITES = [
   'led-wall',
 ];
 
-// Each feature card's title, its description, and its illustration's URL.
-const FEATURE_CARDS = [
+// Each feature card's title, its description, and its illustration's URL,
+// or null for an illustration built in code.
+interface FeatureCard {
+  title: string;
+  description: string;
+  illustration: string | null;
+}
+
+const FEATURE_CARDS: FeatureCard[] = [
   {
     title: 'Composable',
     description: 'Stack shaders in a single scene to build the exact effect you want.',
@@ -38,7 +45,7 @@ const FEATURE_CARDS = [
   {
     title: 'Extensible',
     description: 'Write your own shaders with the same TSL primitives our components use.',
-    illustration: '/features/extensible.png',
+    illustration: null,
   },
 ];
 
@@ -259,9 +266,22 @@ test('each feature card shows its illustration, hidden from screen readers', asy
 
   for (const [index, card] of FEATURE_CARDS.entries()) {
     const item = featureCards(page).nth(index);
-    const image = item.locator('img');
 
     await expect(item.getByRole('img')).toHaveCount(0);
+
+    // Extensible's code window: its header shows, inside a hidden subtree.
+    if (card.illustration === null) {
+      const header = item.getByText('<shaders>', { exact: true });
+
+      await expect(header).toBeVisible();
+      expect(await header.evaluate((element) => !!element.closest('[aria-hidden="true"]'))).toBe(
+        true,
+      );
+      continue;
+    }
+
+    const image = item.locator('img');
+
     await expect(image).toHaveAttribute('aria-hidden', 'true');
     await expect(image).toHaveAttribute('src', card.illustration);
     await expect

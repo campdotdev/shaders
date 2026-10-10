@@ -1,0 +1,99 @@
+/* The Extensible illustration, after the Figma mock's node 939:966. Every
+   length is in the mock's pixels times --mock-px, one mock pixel at the
+   card window's current width. The window is 312 mock pixels wide, and
+   features.module.css makes it the container that `cqw` measures, so the
+   illustration scales like the image it replaced at every column width. */
+.illustration {
+  --mock-px: calc(100cqw / 312);
+
+  display: grid;
+  place-items: center;
+  aspect-ratio: 312 / 309;
+}
+
+/* The code window's frame: the mock's 220 by 143.7 outline, with the code
+   block 5px inside it on each side and centered top to bottom. */
+.codeWindow {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: calc(220 * var(--mock-px));
+  height: calc(143.673 * var(--mock-px));
+  padding-inline: calc(5 * var(--mock-px));
+}
+
+/* The frame's color is the mock's: 90% white laid over the window's gray
+   with an overlay blend, which lifts the gray a few steps. */
+.codeWindow::before {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(10.776 * var(--mock-px));
+  background: var(--white-a90);
+  content: '';
+  mix-blend-mode: overlay;
+}
+
+/* The code block clips its lines. The mock's ten lines run past its bottom
+   padding, so the last one ends just inside the bottom edge. */
+.code {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: calc(10 * var(--mock-px));
+  height: calc(133 * var(--mock-px));
+  padding: calc(10 * var(--mock-px));
+  overflow: clip;
+  border-radius: calc(5.388 * var(--mock-px));
+  background: var(--black);
+}
+
+/* The mock trims the header's line box to its capitals, which leaves it 8px
+   tall, so the lines start 10px below the capitals' baseline. A box that
+   tall, with the line height to match, puts the text there without
+   text-box-trim, which Firefox lacks. */
+.header {
+  flex: none;
+  height: calc(8 * var(--mock-px));
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: calc(12 * var(--mock-px));
+  line-height: calc(8 * var(--mock-px));
+  white-space: nowrap;
+}
+
+/* Lines 5px tall, 6px apart, in a 190px column. */
+.lines {
+  display: flex;
+  flex: none;
+  flex-direction: column;
+  gap: calc(6 * var(--mock-px));
+  width: calc(190 * var(--mock-px));
+}
+
+.line {
+  display: flex;
+  flex: none;
+  gap: calc(8 * var(--mock-px));
+  height: calc(5 * var(--mock-px));
+}
+
+.line[data-align='end'] {
+  justify-content: flex-end;
+}
+
+.bar {
+  flex: none;
+  width: calc(var(--bar-width) * var(--mock-px));
+  background: var(--bar-color);
+}
+
+/* The mock's fade over the bottom edge: 17px from clear to the code block's
+   black. It hides most of the last line and touches the one above. */
+.fade {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: calc(17 * var(--mock-px));
+  background: linear-gradient(transparent, var(--black));
+}
