@@ -12,6 +12,8 @@
 // focus.
 import { domMin, LazyMotion, m, useReducedMotion, type Variants } from 'motion/react';
 
+import { EASE_OUT } from '@/lib/easing';
+
 import styles from './favorites.module.css';
 
 // ---------------------------------------------
@@ -41,10 +43,8 @@ const CARD_TAB_PATH = 'M24 168C24 145.417 0 123.022 0 83.98C0 44.937 24 22.542 2
 // back rather than finish its slide first.
 //
 // Every curve is the site's --ease-out (tokens.css): fast off the mark,
-// with a long settle. Durations are in seconds, as Motion takes them.
-
-/** The site's --ease-out, as Motion takes a cubic-bezier. */
-const EASE_OUT = [0.32, 0.72, 0, 1] as const;
+// with a long settle (lib/easing.ts). Durations are in seconds, as Motion
+// takes them.
 
 // How long the strip takes to slide in, as --duration-md does. Longer reads
 // heavier. The curve's steep start shows most of the strip within the

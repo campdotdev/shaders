@@ -65,11 +65,14 @@
 }
 
 /* The window's gray is the mock's, and the exported image carries it too,
-   so the window reads as finished while the image loads. */
+   so the window reads as finished while the image loads. The window is the
+   container an illustration built in code measures with `cqw`, so it scales
+   with the column the way an image does. */
 .window {
   overflow: hidden;
   border-radius: var(--radius-lg);
   background: var(--gray-800);
+  container-type: inline-size;
 }
 
 /* The width and height attributes set the 312 by 309 shape, and this scales

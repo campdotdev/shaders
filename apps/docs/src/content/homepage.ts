@@ -1,8 +1,9 @@
 /**
  * The homepage's content: the favorites in the Figma mock's order, read row
- * by row after the heading cell, then the feature cards. The favorites are
- * typed against the slugs in components.ts, so a renamed or removed
- * component fails the type check here. The catalog carries no favorite flag.
+ * by row after the heading cell, then the feature cards' copy. The
+ * favorites are typed against the slugs in components.ts, so a renamed or
+ * removed component fails the type check here. The catalog carries no
+ * favorite flag.
  */
 import { type ComponentCatalogRecord, getComponentsCatalog } from './catalog';
 import type { ComponentSlug } from './components';
@@ -79,37 +80,36 @@ export async function getFavorites(): Promise<Favorite[]> {
 
 // ---- Feature cards
 
-/** A feature card's copy and its illustration. */
+/** Names a feature card. components/features picks its illustration by it. */
+export type FeatureCardId = 'composable' | 'performant' | 'reactive' | 'extensible';
+
+/** A feature card's copy. */
 export interface FeatureCard {
+  id: FeatureCardId;
   title: string;
   description: string;
-  /**
-   * The URL of the card's illustration, exported from the Figma mock at 2x
-   * into public/features. Each card's own issue rebuilds it in code.
-   */
-  illustration: string;
 }
 
 /** The feature cards, in the mock's order, with the mock's copy. */
 export const FEATURE_CARDS: readonly FeatureCard[] = [
   {
+    id: 'composable',
     title: 'Composable',
     description: 'Stack shaders in a single scene to build the exact effect you want.',
-    illustration: '/features/composable.png',
   },
   {
+    id: 'performant',
     title: 'Performant',
     description: 'Reduce browser overhead for your users with WebGPU rendering.',
-    illustration: '/features/performant.png',
   },
   {
+    id: 'reactive',
     title: 'Reactive',
     description: 'Bring shaders to life with animation, cursor, and scroll inputs.',
-    illustration: '/features/reactive.png',
   },
   {
+    id: 'extensible',
     title: 'Extensible',
     description: 'Write your own shaders with the same TSL primitives our components use.',
-    illustration: '/features/extensible.png',
   },
 ];
