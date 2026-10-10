@@ -33,8 +33,10 @@
   mix-blend-mode: overlay;
 }
 
-/* The code block clips its lines. The mock's ten lines run past its bottom
-   padding, so the last one ends just inside the bottom edge. */
+/* The code block, 10px inside on three sides. The mock's ten lines run
+   past its bottom padding, so the last one ends just inside the bottom
+   edge, and the block has none. Positioned, so it paints over the frame's
+   ::before. */
 .code {
   position: relative;
   display: flex;
@@ -42,7 +44,7 @@
   flex-direction: column;
   gap: calc(10 * var(--mock-px));
   height: calc(133 * var(--mock-px));
-  padding: calc(10 * var(--mock-px));
+  padding: calc(10 * var(--mock-px)) calc(10 * var(--mock-px)) 0;
   overflow: clip;
   border-radius: calc(5.388 * var(--mock-px));
   background: var(--black);
@@ -62,38 +64,56 @@
   white-space: nowrap;
 }
 
-/* Lines 5px tall, 6px apart, in a 190px column. */
-.lines {
-  display: flex;
-  flex: none;
-  flex-direction: column;
-  gap: calc(6 * var(--mock-px));
+/* The window the lines scroll through, from 10px under the header to the
+   code block's bottom edge. A line the story scrolls up past its top edge
+   is cut off there, before it reaches the header. Its min-height lets it
+   end at the code block's edge rather than grow to hold the whole column:
+   `overflow: clip`, unlike a scroll container, keeps a flex item's
+   automatic minimum. */
+.viewport {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: clip;
+}
+
+/* The mock's fade over the bottom edge: 17px from clear to the code block's
+   black. It all but hides the empty last slot and dims the line above it a
+   little. */
+.viewport::after {
+  position: absolute;
+  inset-inline: 0;
+  bottom: 0;
+  height: calc(17 * var(--mock-px));
+  background: linear-gradient(transparent, var(--black));
+  content: '';
+}
+
+/* Every line the story passes through, in a 190px column. The still
+   frame's nine and its empty slot fill the viewport, and the story's seven
+   wait below. */
+.column {
   width: calc(190 * var(--mock-px));
 }
 
+/* Each line takes 11px: its 5px bars, then the mock's 6px gap below them,
+   so the story's step of one line is one line's height. */
 .line {
   display: flex;
-  flex: none;
   gap: calc(8 * var(--mock-px));
-  height: calc(5 * var(--mock-px));
+  height: calc(11 * var(--mock-px));
 }
 
 .line[data-align='end'] {
   justify-content: flex-end;
 }
 
+/* A bar grows up from its baseline in the story, so it scales from its
+   bottom edge. */
 .bar {
   flex: none;
   width: calc(var(--bar-width) * var(--mock-px));
+  height: calc(5 * var(--mock-px));
   background: var(--bar-color);
-}
-
-/* The mock's fade over the bottom edge: 17px from clear to the code block's
-   black. It hides most of the last line and touches the one above. */
-.fade {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: calc(17 * var(--mock-px));
-  background: linear-gradient(transparent, var(--black));
+  transform-origin: bottom;
 }
