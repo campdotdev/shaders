@@ -89,7 +89,7 @@
 }
 
 /* Every line the story passes through, in a 190px column. The still
-   frame's ten fill the viewport, and the rest of the story's lines wait
+   frame's ten fill the viewport, and the seven a play brings up wait
    below. */
 .column {
   width: calc(190 * var(--mock-px));

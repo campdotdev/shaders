@@ -93,21 +93,22 @@ const CODE: readonly CodeLine[] = [
 const WINDOW_LINES = 10;
 
 // The first line the story types, counting from 0: the still frame's faint
-// tenth. The story types each line in the ninth slot, where the fade has
-// barely begun, so a play starts with that tenth line blank, and the first
-// step lifts it into the ninth slot to type.
+// tenth. The tenth slot always holds the next line, faint under the fade, as
+// a hint of the code to come. The story types each line once a step lifts
+// it into the ninth slot, where the fade has barely begun.
 const FIRST_STORY_LINE = 9;
 
-// Every line the story passes through, top to bottom: the still frame's
-// first nine, then the seven the story types, starting with the still
-// frame's tenth. The still frame's last three repeat its first three, where
-// the mock drew lines of its own. They sit at the bottom, by the fade, which
-// keeps the repeat from showing. After seven lines of scrolling, the window
-// shows lines 8 to 16, which are the still frame's first nine again.
-const LINES = [...CODE, ...CODE, ...CODE.slice(0, FIRST_STORY_LINE - CODE.length)];
+// Every line the story passes through, top to bottom: the still frame's ten,
+// then the seven that rise into the tenth slot during a play. The still
+// frame's last three repeat its first three, where the mock drew lines of
+// its own. They sit at the bottom, by the fade, which keeps the repeat from
+// showing. After seven lines of scrolling, the window shows lines 8 to 17,
+// which are the still frame's ten again.
+const LINES = [...CODE, ...CODE, ...CODE.slice(0, WINDOW_LINES - CODE.length)];
 
-// The lines the story types.
-const STORY_LINES = LINES.slice(FIRST_STORY_LINE);
+// The lines the story types: the still frame's tenth, and the six below it
+// that pass through the ninth slot. The last line only reaches the tenth.
+const STORY_LINES = LINES.slice(FIRST_STORY_LINE, FIRST_STORY_LINE + CODE.length);
 
 // A bar's width and color, which extensible-illustration.module.css reads.
 type BarStyle = CSSProperties & { '--bar-width': number; '--bar-color': string };
@@ -203,42 +204,50 @@ function scrollAnimation() {
   };
 }
 
-// Every play, and the end of the story, mounts a fresh column (see the
-// illustration below), so nothing ever animates back to `still` or `start`:
-// a column starts at one of them. `still` is the still frame. `start` is
-// where a play begins: the still frame with the lines the story types blank,
-// which leaves the tenth slot empty.
+// Every play, and the end of the story, mounts a fresh column at the still
+// frame (see the illustration below), so nothing ever animates back to
+// `still`: a column starts there.
 const COLUMN_VARIANTS: Variants = {
   still: { y: '0%' },
-  start: { y: '0%' },
   story: scrollAnimation(),
 };
 
-/** What a story line's bar needs from Motion's `custom`. */
+/** Which story line a bar is on, counting from 0, and its place in the line. */
 interface StoryBar {
-  /** Whether the still frame shows the bar: true for the faint tenth line. */
-  inStillFrame: boolean;
-  /** When the bar starts to grow in a play, from growDelay. */
-  delay: number;
+  storyLine: number;
+  barIndex: number;
 }
 
-// A story line's bars sit flat on their baseline until the story types
-// them, except the still frame's tenth line, whose bars are up at rest.
-const BAR_VARIANTS: Variants = {
-  still: ({ inStillFrame }: StoryBar) => ({ scaleY: inStillFrame ? 1 : 0 }),
-  start: { scaleY: 0 },
-  story: ({ delay }: StoryBar) => ({
-    scaleY: 1,
-    transition: { delay, duration: GROW_SECONDS, ease: EASE_OUT },
-  }),
-};
+/**
+ * A story line's bar across one play. It stays up, faint under the fade,
+ * until its line starts to rise out of the tenth slot. It drops flat at
+ * that moment, while the fade still hides most of it, and grows back once
+ * the line lands in the ninth slot. A drop and a hold that share a moment
+ * make a jump, with no motion between them.
+ */
+function typingAnimation({ storyLine, barIndex }: StoryBar) {
+  const rises = storyLine * LINE_SECONDS;
+  const grows = growDelay(storyLine, barIndex);
+  const grown = grows + GROW_SECONDS;
+  // Only the growth eases. The hold, the drop, and the wait have no motion.
+  const ease: Easing[] = ['linear', 'linear', 'linear', EASE_OUT];
 
-function storyBar(lineIndex: number, barIndex: number): StoryBar {
   return {
-    inStillFrame: lineIndex < WINDOW_LINES,
-    delay: growDelay(lineIndex - FIRST_STORY_LINE, barIndex),
+    scaleY: [1, 1, 0, 0, 1],
+    transition: {
+      duration: grown,
+      times: [0, rises, rises, grows, grown].map((seconds) => seconds / grown),
+      ease,
+    },
   };
 }
+
+// Every bar is up at rest. A story line's bars take their place through
+// Motion's `custom`.
+const BAR_VARIANTS: Variants = {
+  still: { scaleY: 1 },
+  story: (storyBar: StoryBar) => typingAnimation(storyBar),
+};
 
 // ---------------------------------------------
 // The illustration
@@ -248,13 +257,10 @@ function storyBar(lineIndex: number, barIndex: number): StoryBar {
 // message. `data-lines` marks the column the story scrolls, for the
 // Playwright spec. The lines never reorder, so their places serve as keys.
 //
-// Each play mounts a fresh column at `start`, keyed by the play's count, and
-// the end of the story mounts one at `still`, keyed `still`. A finished
-// play's column shows the still frame's first nine lines, because its last
-// seven lines repeat the seven above them, over an empty tenth slot. So the
-// swap to the next play's `start` shows no seam. The swap at either end of
-// the story only blanks or restores the faint tenth line, under the darkest
-// part of the fade.
+// Each play mounts a fresh column, keyed by the play's count, and the end of
+// the story mounts one keyed `still`. A fresh column starts at the still
+// frame. A finished play's column shows the still frame too, because its
+// last seven lines repeat the seven above them, so the swap shows no seam.
 //
 // `m` under LazyMotion rather than `motion`, as in the favorites' card tab:
 // the column and the bars only animate to their variants, which domMin
@@ -273,30 +279,35 @@ export function ExtensibleIllustration() {
                 animate={playing ? 'story' : 'still'}
                 className={styles.column}
                 data-lines
-                initial={playing ? 'start' : 'still'}
+                initial="still"
                 key={playing ? plays : 'still'}
                 onAnimationComplete={(definition) => {
                   if (definition === 'story') onStoryEnd();
                 }}
                 variants={COLUMN_VARIANTS}
               >
-                {LINES.map((line, lineIndex) => (
-                  <div className={styles.line} data-align={line.align} key={lineIndex}>
-                    {line.bars.map((bar, barIndex) =>
-                      lineIndex < FIRST_STORY_LINE ? (
-                        <span className={styles.bar} key={barIndex} style={barStyle(bar)} />
-                      ) : (
-                        <m.span
-                          className={styles.bar}
-                          custom={storyBar(lineIndex, barIndex)}
-                          key={barIndex}
-                          style={barStyle(bar)}
-                          variants={BAR_VARIANTS}
-                        />
-                      ),
-                    )}
-                  </div>
-                ))}
+                {LINES.map((line, lineIndex) => {
+                  const storyLine = lineIndex - FIRST_STORY_LINE;
+                  const typed = storyLine >= 0 && storyLine < STORY_LINES.length;
+
+                  return (
+                    <div className={styles.line} data-align={line.align} key={lineIndex}>
+                      {line.bars.map((bar, barIndex) =>
+                        typed ? (
+                          <m.span
+                            className={styles.bar}
+                            custom={{ storyLine, barIndex } satisfies StoryBar}
+                            key={barIndex}
+                            style={barStyle(bar)}
+                            variants={BAR_VARIANTS}
+                          />
+                        ) : (
+                          <span className={styles.bar} key={barIndex} style={barStyle(bar)} />
+                        ),
+                      )}
+                    </div>
+                  );
+                })}
               </m.div>
             </LazyMotion>
           </div>
