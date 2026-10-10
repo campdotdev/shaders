@@ -335,7 +335,7 @@ function useBandFlow(
 // ---------------------------------------------
 
 // Hidden from screen readers: the card's title and description carry its
-// message.
+// message. `data-band` marks the band of work, for the Playwright spec.
 //
 // `m` under LazyMotion rather than `motion`, as in the Extensible card: the
 // particles and the chip only bind motion values to style, which domMin
@@ -355,7 +355,7 @@ export function PerformantIllustration() {
   return (
     <div aria-hidden className={styles.illustration}>
       <LazyMotion features={domMin} strict>
-        <div className={styles.band}>
+        <div className={styles.band} data-band>
           {band.map(({ particle, trips }) => (
             <WorkParticle key={particle.id} particle={particle} trips={trips} />
           ))}
