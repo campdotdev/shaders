@@ -5,8 +5,8 @@
  * the story, and a story under way always finishes after the pointer leaves.
  * Touch, keyboard, and reduced motion leave the card on its still frame.
  * StoryCard is the card. An illustration takes one of two story shapes:
- * useStory repeats a play while the pointer stays, and useHeldStory opens,
- * holds while the pointer stays, then ends.
+ * useStory repeats a play while the pointer stays, and useHeldStory holds
+ * while the pointer stays, then plays its ending.
  */
 import {
   createContext,
@@ -159,32 +159,29 @@ export function useStory(): Story {
 // ---------------------------------------------
 
 /**
- * Where a held story is. It rests on the still frame, plays its opening on a
- * hover, holds while the pointer stays, and plays its ending back to the
- * still frame once the pointer leaves.
+ * Where a held story is. It rests on the still frame, holds from a hover
+ * for as long as the pointer stays, and plays its ending back to the still
+ * frame once the pointer leaves.
  */
-export type HeldStage = 'still' | 'opening' | 'holding' | 'ending';
+export type HeldStage = 'still' | 'holding' | 'ending';
 
-/** Where an illustration's held story is, which play, and how to end each part. */
+/** Where an illustration's held story is, which play, and how to end it. */
 export interface HeldStory {
   stage: HeldStage;
   /**
-   * Counts the story's openings. An illustration keys its animation by it,
-   * so every play starts from the still frame.
+   * Counts the story's plays. An illustration keys its animation by it, so
+   * every play starts from the still frame.
    */
   plays: number;
-  /** Called by the illustration when its opening lands on the hold. */
-  onOpeningEnd: () => void;
   /** Called by the illustration when its ending lands on the still frame. */
   onStoryEnd: () => void;
 }
 
 /**
  * The held story of the illustration that calls it, played by a hover on
- * its StoryCard. Each part runs to its end once it starts. A pointer that
- * leaves during the opening lets it land, then the ending plays with no
- * hold. A pointer that comes back during the ending lets it land on the
- * still frame, then a fresh opening plays.
+ * its StoryCard. Its ending runs to the still frame once it starts. A
+ * pointer that comes back during the ending lets it land, then a fresh play
+ * starts.
  */
 export function useHeldStory(): HeldStory {
   const [story, setStory] = useState<{ stage: HeldStage; plays: number }>({
@@ -192,41 +189,32 @@ export function useHeldStory(): HeldStory {
     plays: 0,
   });
   const pointerOnCardRef = useCardPointer(
-    // Only the still frame opens the story. A hover during the opening or
-    // the ending waits for that part to land.
+    // Only the still frame starts the story. A hover during the ending waits
+    // for it to land.
     () =>
       setStory((current) =>
-        current.stage === 'still' ? { stage: 'opening', plays: current.plays + 1 } : current,
+        current.stage === 'still' ? { stage: 'holding', plays: current.plays + 1 } : current,
       ),
-    // Leaving during the hold ends the story. Leaving during the opening
-    // waits for it to land.
+    // Leaving during the hold ends the story.
     () =>
       setStory((current) =>
         current.stage === 'holding' ? { ...current, stage: 'ending' } : current,
       ),
   );
 
-  // Stable, so an illustration can list them in an effect's deps without
-  // restarting the part under way on every render.
-  const onOpeningEnd = useCallback(() => {
-    const holding = pointerOnCardRef.current;
-
-    setStory((current) =>
-      current.stage === 'opening' ? { ...current, stage: holding ? 'holding' : 'ending' } : current,
-    );
-  }, [pointerOnCardRef]);
-
+  // Stable, so an illustration can list it in an effect's deps without
+  // restarting the play under way on every render.
   const onStoryEnd = useCallback(() => {
-    const reopening = pointerOnCardRef.current;
+    const replaying = pointerOnCardRef.current;
 
     setStory((current) => {
       if (current.stage !== 'ending') return current;
 
-      return reopening
-        ? { stage: 'opening', plays: current.plays + 1 }
+      return replaying
+        ? { stage: 'holding', plays: current.plays + 1 }
         : { ...current, stage: 'still' };
     });
   }, [pointerOnCardRef]);
 
-  return { ...story, onOpeningEnd, onStoryEnd };
+  return { ...story, onStoryEnd };
 }
