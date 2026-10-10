@@ -1,92 +1,212 @@
-/* The Performant illustration, after the Figma mock's node 939:962. Every
+/* The Performant illustration, after the Figma mock's node 939:962: its
+   GPU chip, alone and half again its size, centered in the window. Every
    length is in the mock's pixels times --mock-px, one mock pixel at the
    card window's current width. The window is 312 mock pixels wide, and
    features.module.css makes it the container that `cqw` measures, so the
-   illustration scales like the image it replaced at every column width. */
+   illustration scales like the image it replaced at every column width.
+   The chip's own lengths are the mock's chip pixels times --chip-px, 1.5
+   mock pixels, so the mock's 100px chip draws 150px wide.
+
+   The pinks are the mock's: --glow lights the chip and the large
+   particles, and --glow-text, a deeper pink, the chip's name and the small
+   particles. */
 .illustration {
   --mock-px: calc(100cqw / 312);
+  --chip-px: calc(1.5 * var(--mock-px));
+  --glow: #fd73d5;
+  --glow-text: #fc40c6;
 
+  position: relative;
   display: grid;
   place-items: center;
   aspect-ratio: 312 / 309;
 }
 
-/* The two chips side by side, 24px apart, centered in the window. */
-.chips {
-  display: flex;
-  gap: calc(24 * var(--mock-px));
-}
+/* ---- The chip ----
+   100 chip pixels wide: a 100px body with a row of pins above and below
+   it. Its --lit, which the story sets, runs from 0, the mock's gray GPU
+   chip, to 1, the mock's glowing CPU chip, and every layer below mixes by
+   it. A layer of the gray look fades out as its lit counterpart fades in.
 
-/* ---- A chip ----
-   100px wide: a 100px body with a row of pins above and below it. */
+   Several layers blend with what lies beneath them, so nothing from the
+   chip up to the card's window may set opacity, a transform, or anything
+   else that would isolate them from the window's gray. */
 .chip {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: calc(100 * var(--mock-px));
+  width: calc(100 * var(--chip-px));
 }
 
 /* Four pins, 6.67 by 8.89 with 8.89 between them, their outer ends
-   rounded. The bottom row turns over, so its rounded ends point down. */
+   rounded. Gray pins are 70% white. Lit pins are full white laid over the
+   glow with an overlay blend, which picks up its pink. */
 .pins {
   display: flex;
-  gap: calc(8.889 * var(--mock-px));
-}
-
-.pins[data-edge='bottom'] {
-  rotate: 180deg;
+  gap: calc(8.889 * var(--chip-px));
 }
 
 .pin {
-  width: calc(6.667 * var(--mock-px));
-  height: calc(8.889 * var(--mock-px));
-  border-radius: calc(8.889 * var(--mock-px)) calc(8.889 * var(--mock-px)) 0 0;
-  background: var(--white-a70);
+  --pin-radius: calc(8.889 * var(--chip-px)) calc(8.889 * var(--chip-px)) 0 0;
+
+  position: relative;
+  width: calc(6.667 * var(--chip-px));
+  height: calc(8.889 * var(--chip-px));
 }
 
-/* The body's outer square. Its color is the mock's: 90% white laid over
-   the window's gray with an overlay blend, as the Extensible code window's
-   frame is. The blend layer sits under the inner squares, which are
-   positioned so they paint over it. */
+.pins[data-edge='bottom'] .pin {
+  --pin-radius: 0 0 calc(8.889 * var(--chip-px)) calc(8.889 * var(--chip-px));
+}
+
+.pin::before,
+.pin::after {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--pin-radius);
+  content: '';
+}
+
+.pin::before {
+  background: var(--white-a70);
+  opacity: calc(1 - var(--lit, 0));
+}
+
+.pin::after {
+  background: var(--white);
+  mix-blend-mode: overlay;
+  opacity: var(--lit, 0);
+}
+
+/* The body's outer square. Gray, it is 90% white laid over the window's
+   gray with an overlay blend, as the Extensible code window's frame is.
+   The blend layer sits under the inner squares, which are positioned so
+   they paint over it. */
 .body {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
-  padding: calc(3.333 * var(--mock-px));
+  padding: calc(3.333 * var(--chip-px));
 }
 
 .body::before {
   position: absolute;
   inset: 0;
-  border-radius: calc(8.889 * var(--mock-px));
+  border-radius: calc(8.889 * var(--chip-px));
   background: var(--white-a90);
   content: '';
   mix-blend-mode: overlay;
+  opacity: calc(1 - var(--lit, 0));
 }
 
-/* The middle square, 3.33px inside the outer one, at 20% white. */
+/* Lit, the outer square glows: the mock's pink halo, white close to the
+   edge, and pink under the body, with the outer square's 20% white over
+   it. It sits on the body's square, under the top pins' 8.89px, and paints
+   first, under the pins and the body. */
+.glow {
+  position: absolute;
+  top: calc(8.889 * var(--chip-px));
+  left: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: calc(8.889 * var(--chip-px));
+  background: color-mix(in srgb, var(--glow), var(--white) 20%);
+  box-shadow:
+    0 0 calc(50.4 * var(--chip-px)) color-mix(in srgb, var(--glow) 50%, transparent),
+    0 0 calc(28.8 * var(--chip-px)) var(--glow),
+    0 0 calc(16.8 * var(--chip-px)) var(--glow),
+    0 0 calc(8.4 * var(--chip-px)) var(--white),
+    0 0 calc(2.4 * var(--chip-px)) var(--white),
+    0 0 calc(1.2 * var(--chip-px)) var(--white);
+  opacity: var(--lit, 0);
+}
+
+/* The middle square, 3.33px inside the outer one, at 20% white in both
+   looks. */
 .ring {
   position: relative;
   height: 100%;
-  padding: calc(3.333 * var(--mock-px));
-  border-radius: calc(5.556 * var(--mock-px));
+  padding: calc(3.333 * var(--chip-px));
+  border-radius: calc(5.556 * var(--chip-px));
   background: var(--white-a20);
 }
 
-/* The center square, 3.33px inside the middle one, at 30% white, with the
-   chip's name centered in it. */
+/* The center square, 3.33px inside the middle one, with the chip's name
+   centered in it. Gray, it is 30% white. Lit, it is 40% white with a
+   screen blend, which lightens the pink under it toward white. */
 .core {
+  position: relative;
   display: grid;
   place-items: center;
   height: 100%;
-  border-radius: calc(2.222 * var(--mock-px));
-  background: var(--white-a30);
 }
 
+.core::before,
+.coreLit {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(2.222 * var(--chip-px));
+}
+
+.core::before {
+  background: var(--white-a30);
+  content: '';
+  opacity: calc(1 - var(--lit, 0));
+}
+
+.coreLit {
+  background: var(--white-a40);
+  mix-blend-mode: screen;
+  opacity: var(--lit, 0);
+}
+
+/* Positioned, so it paints over the center square's layers. */
 .name {
-  color: var(--black-a60);
+  position: relative;
+  color: color-mix(in srgb, var(--black-a60), var(--glow-text) calc(var(--lit, 0) * 100%));
   font-family: var(--font-mono);
-  font-size: calc(21.756 * var(--mock-px));
+  font-size: calc(21.756 * var(--chip-px));
   font-weight: var(--font-weight-semibold);
   line-height: 1;
+}
+
+/* ---- The band of work ----
+   A column of particles under the chip, as wide as the chip's 56px middle,
+   from the tips of its bottom pins to 8px past the window's bottom edge,
+   where the window clips it. The chip sits centered, so its pins end half
+   its 117.78px height below the window's middle. The mask fades a particle
+   out over the 16px under the pins, so it dissolves into the chip rather
+   than stopping at a hard edge. */
+.band {
+  position: absolute;
+  top: calc(50% + 58.889 * var(--chip-px));
+  bottom: calc(-8 * var(--mock-px));
+  left: calc(50% - 28 * var(--chip-px));
+  width: calc(56 * var(--chip-px));
+  mask-image: linear-gradient(to bottom, transparent, black calc(16 * var(--mock-px)));
+}
+
+/* A particle's lane: a strip the band's full height, starting a particle's
+   height above it, so a particle at the top of its trip sits wholly above
+   the band. The story moves it down by a share of its own height. */
+.lane {
+  position: absolute;
+  top: calc(-8 * var(--mock-px));
+  height: 100%;
+}
+
+.particle {
+  display: block;
+}
+
+.particle[data-size='large'] {
+  width: calc(6 * var(--mock-px));
+  height: calc(8 * var(--mock-px));
+  background: var(--glow);
+}
+
+.particle[data-size='small'] {
+  width: calc(4 * var(--mock-px));
+  height: calc(5 * var(--mock-px));
+  background: var(--glow-text);
 }
