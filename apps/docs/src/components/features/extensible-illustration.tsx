@@ -88,18 +88,21 @@ const CODE: readonly CodeLine[] = [
   },
 ];
 
-// How many lines the window shows, all of them written in the still frame.
-const WINDOW_LINES = 10;
+// The window has room for ten lines, and the still frame writes nine. The
+// tenth slot stays empty, so the code stops short of the code block's
+// bottom edge. The story steps each new line up out of it, blank, and types
+// the line in the ninth.
+const WRITTEN_LINES = 9;
 
-// Every line the story passes through, top to bottom: the still frame's ten,
-// then the seven the story types into the bottom slot. The still frame's
-// last three repeat its first three, where the mock drew lines of its own.
-// After seven lines of scrolling, the window shows lines 8 to 17, which are
-// the still frame's ten again.
-const LINES = [...CODE, ...CODE, ...CODE.slice(0, WINDOW_LINES - CODE.length)];
+// Every line the story passes through, top to bottom: the still frame's
+// nine, then the seven the story types. The still frame's last two repeat
+// its first two, where the mock drew lines of its own. After seven lines of
+// scrolling, the window shows lines 8 to 16, which are the still frame's
+// nine again, over the same empty slot.
+const LINES = [...CODE, ...CODE, ...CODE.slice(0, WRITTEN_LINES - CODE.length)];
 
 // The lines the story types, below the still frame.
-const STORY_LINES = LINES.slice(WINDOW_LINES);
+const STORY_LINES = LINES.slice(WRITTEN_LINES);
 
 // A bar's width and color, which extensible-illustration.module.css reads.
 type BarStyle = CSSProperties & { '--bar-width': number; '--bar-color': string };
@@ -112,9 +115,9 @@ function barStyle({ width, color }: Bar): BarStyle {
 // The story's timing
 // ---------------------------------------------
 
-// From the motion brief on SHA-214. The code steps up one line, then the new
-// line in the bottom slot grows in: its bars grow up from their baseline,
-// one after another, left to right, the way someone types a line.
+// From the motion brief on SHA-214. The code steps up one line, then the
+// line that rose into the ninth slot grows in: its bars grow up from their
+// baseline, one after another, left to right, the way someone types a line.
 // After seven lines the window shows the still frame again, where the next
 // play picks up without a seam if the pointer is still on the card. Every
 // curve is the site's --ease-out (lib/easing.ts): fast off the mark, with a
@@ -203,8 +206,8 @@ const COLUMN_VARIANTS: Variants = {
   story: scrollAnimation(),
 };
 
-// A story line's bars sit flat on their baseline, below the window, until
-// the story types them. Each takes its delay through Motion's `custom`.
+// A story line's bars sit flat on their baseline until the story types
+// them. Each takes its delay through Motion's `custom`.
 const BAR_VARIANTS: Variants = {
   still: { scaleY: 0 },
   story: (delay: number) => ({
@@ -253,12 +256,12 @@ export function ExtensibleIllustration() {
                 {LINES.map((line, lineIndex) => (
                   <div className={styles.line} data-align={line.align} key={lineIndex}>
                     {line.bars.map((bar, barIndex) =>
-                      lineIndex < WINDOW_LINES ? (
+                      lineIndex < WRITTEN_LINES ? (
                         <span className={styles.bar} key={barIndex} style={barStyle(bar)} />
                       ) : (
                         <m.span
                           className={styles.bar}
-                          custom={growDelay(lineIndex - WINDOW_LINES, barIndex)}
+                          custom={growDelay(lineIndex - WRITTEN_LINES, barIndex)}
                           key={barIndex}
                           style={barStyle(bar)}
                           variants={BAR_VARIANTS}

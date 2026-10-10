@@ -78,8 +78,8 @@
 }
 
 /* Every line the story passes through, in a 190px column. The still
-   frame's ten fill the viewport, and the seven the story types wait
-   below. */
+   frame's nine and an empty tenth slot fill the viewport, and the seven the
+   story types wait below. */
 .column {
   width: calc(190 * var(--mock-px));
 }
