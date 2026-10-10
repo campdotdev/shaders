@@ -10,19 +10,13 @@
  */
 import Image from 'next/image';
 import Link from 'next/link';
-import {
-  type CSSProperties,
-  type RefObject,
-  useEffect,
-  useRef,
-  useState,
-  useSyncExternalStore,
-} from 'react';
+import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 'react';
 
 import { ShaderPoster } from '@camp-dev/shaders/poster';
 
 import { useHeroPause } from '@/components/home-hero/hero-pause';
 import type { Favorite, FavoriteSlug } from '@/content/homepage';
+import { useCanHover } from '@/lib/use-can-hover';
 
 import { CardTab } from './card-tab';
 import { favoriteSceneBackdrop, preloadFavoriteScenes, useFavoriteScene } from './favorite-scenes';
@@ -328,36 +322,16 @@ function usePauseHeroWhilePlaying(playing: boolean) {
 // The gate: a mouse or trackpad, and a WebGPU adapter
 // ---------------------------------------------
 
-// The site's hover gate, the same query the stylesheets put hover styles
-// behind. A phone or tablet fails it, so its favorites stay posters.
-const HOVER_QUERY = '(hover: hover) and (pointer: fine)';
-
-function subscribeToHoverQuery(onChange: () => void): () => void {
-  const query = window.matchMedia(HOVER_QUERY);
-
-  query.addEventListener('change', onChange);
-
-  return () => query.removeEventListener('change', onChange);
-}
-
-const readHoverQuery = () => window.matchMedia(HOVER_QUERY).matches;
-
-// The server has no pointer to ask about, and the posters are the safe
-// answer, so it renders every favorite at rest.
-const readServerHoverQuery = () => false;
-
 /**
- * True where a favorite may mount its scene: the device can hover, and the
- * browser hands out a WebGPU adapter. Without one, ShaderScene would fall
- * back to WebGL2, and the favorites stay posters instead. Only a device that
- * can hover asks for the adapter.
+ * True where a favorite may mount its scene: the device passes the site's
+ * hover gate (lib/use-can-hover.ts), and the browser hands out a WebGPU
+ * adapter. A phone or tablet fails the gate, so its favorites stay posters.
+ * Without an adapter, ShaderScene would fall back to WebGL2, and the
+ * favorites stay posters instead. Only a device that can hover asks for the
+ * adapter.
  */
 function useCanGoLive(): boolean {
-  const canHover = useSyncExternalStore(
-    subscribeToHoverQuery,
-    readHoverQuery,
-    readServerHoverQuery,
-  );
+  const canHover = useCanHover();
   const [hasWebGpu, setHasWebGpu] = useState(false);
 
   useEffect(() => {
