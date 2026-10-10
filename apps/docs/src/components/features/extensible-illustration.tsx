@@ -88,27 +88,18 @@ const CODE: readonly CodeLine[] = [
   },
 ];
 
-// How many lines the window shows. The still frame writes all ten, the
-// last one faint under the fade, as the mock draws it.
+// How many lines the window shows, all of them written in the still frame.
 const WINDOW_LINES = 10;
 
-// The first line the story types, counting from 0: the still frame's faint
-// tenth. The tenth slot always holds the next line, faint under the fade, as
-// a hint of the code to come. The story types each line once a step lifts
-// it into the ninth slot, where the fade has barely begun.
-const FIRST_STORY_LINE = 9;
-
 // Every line the story passes through, top to bottom: the still frame's ten,
-// then the seven that rise into the tenth slot during a play. The still
-// frame's last three repeat its first three, where the mock drew lines of
-// its own. They sit at the bottom, by the fade, which keeps the repeat from
-// showing. After seven lines of scrolling, the window shows lines 8 to 17,
-// which are the still frame's ten again.
+// then the seven the story types into the bottom slot. The still frame's
+// last three repeat its first three, where the mock drew lines of its own.
+// After seven lines of scrolling, the window shows lines 8 to 17, which are
+// the still frame's ten again.
 const LINES = [...CODE, ...CODE, ...CODE.slice(0, WINDOW_LINES - CODE.length)];
 
-// The lines the story types: the still frame's tenth, and the six below it
-// that pass through the ninth slot. The last line only reaches the tenth.
-const STORY_LINES = LINES.slice(FIRST_STORY_LINE, FIRST_STORY_LINE + CODE.length);
+// The lines the story types, below the still frame.
+const STORY_LINES = LINES.slice(WINDOW_LINES);
 
 // A bar's width and color, which extensible-illustration.module.css reads.
 type BarStyle = CSSProperties & { '--bar-width': number; '--bar-color': string };
@@ -121,9 +112,9 @@ function barStyle({ width, color }: Bar): BarStyle {
 // The story's timing
 // ---------------------------------------------
 
-// From the motion brief on SHA-214. The code steps up one line, then the
-// line that rose into the ninth slot grows in: its bars grow up from their
-// baseline, one after another, left to right, the way someone types a line.
+// From the motion brief on SHA-214. The code steps up one line, then the new
+// line in the bottom slot grows in: its bars grow up from their baseline,
+// one after another, left to right, the way someone types a line.
 // After seven lines the window shows the still frame again, where the next
 // play picks up without a seam if the pointer is still on the card. Every
 // curve is the site's --ease-out (lib/easing.ts): fast off the mark, with a
@@ -212,41 +203,14 @@ const COLUMN_VARIANTS: Variants = {
   story: scrollAnimation(),
 };
 
-/** Which story line a bar is on, counting from 0, and its place in the line. */
-interface StoryBar {
-  storyLine: number;
-  barIndex: number;
-}
-
-/**
- * A story line's bar across one play. It stays up, faint under the fade,
- * until its line starts to rise out of the tenth slot. It drops flat at
- * that moment, while the fade still hides most of it, and grows back once
- * the line lands in the ninth slot. A drop and a hold that share a moment
- * make a jump, with no motion between them.
- */
-function typingAnimation({ storyLine, barIndex }: StoryBar) {
-  const rises = storyLine * LINE_SECONDS;
-  const grows = growDelay(storyLine, barIndex);
-  const grown = grows + GROW_SECONDS;
-  // Only the growth eases. The hold, the drop, and the wait have no motion.
-  const ease: Easing[] = ['linear', 'linear', 'linear', EASE_OUT];
-
-  return {
-    scaleY: [1, 1, 0, 0, 1],
-    transition: {
-      duration: grown,
-      times: [0, rises, rises, grows, grown].map((seconds) => seconds / grown),
-      ease,
-    },
-  };
-}
-
-// Every bar is up at rest. A story line's bars take their place through
-// Motion's `custom`.
+// A story line's bars sit flat on their baseline, below the window, until
+// the story types them. Each takes its delay through Motion's `custom`.
 const BAR_VARIANTS: Variants = {
-  still: { scaleY: 1 },
-  story: (storyBar: StoryBar) => typingAnimation(storyBar),
+  still: { scaleY: 0 },
+  story: (delay: number) => ({
+    scaleY: 1,
+    transition: { delay, duration: GROW_SECONDS, ease: EASE_OUT },
+  }),
 };
 
 // ---------------------------------------------
@@ -286,28 +250,23 @@ export function ExtensibleIllustration() {
                 }}
                 variants={COLUMN_VARIANTS}
               >
-                {LINES.map((line, lineIndex) => {
-                  const storyLine = lineIndex - FIRST_STORY_LINE;
-                  const typed = storyLine >= 0 && storyLine < STORY_LINES.length;
-
-                  return (
-                    <div className={styles.line} data-align={line.align} key={lineIndex}>
-                      {line.bars.map((bar, barIndex) =>
-                        typed ? (
-                          <m.span
-                            className={styles.bar}
-                            custom={{ storyLine, barIndex } satisfies StoryBar}
-                            key={barIndex}
-                            style={barStyle(bar)}
-                            variants={BAR_VARIANTS}
-                          />
-                        ) : (
-                          <span className={styles.bar} key={barIndex} style={barStyle(bar)} />
-                        ),
-                      )}
-                    </div>
-                  );
-                })}
+                {LINES.map((line, lineIndex) => (
+                  <div className={styles.line} data-align={line.align} key={lineIndex}>
+                    {line.bars.map((bar, barIndex) =>
+                      lineIndex < WINDOW_LINES ? (
+                        <span className={styles.bar} key={barIndex} style={barStyle(bar)} />
+                      ) : (
+                        <m.span
+                          className={styles.bar}
+                          custom={growDelay(lineIndex - WINDOW_LINES, barIndex)}
+                          key={barIndex}
+                          style={barStyle(bar)}
+                          variants={BAR_VARIANTS}
+                        />
+                      ),
+                    )}
+                  </div>
+                ))}
               </m.div>
             </LazyMotion>
           </div>

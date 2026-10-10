@@ -69,27 +69,16 @@
    is cut off there, before it reaches the header. Its min-height lets it
    end at the code block's edge rather than grow to hold the whole column:
    `overflow: clip`, unlike a scroll container, keeps a flex item's
-   automatic minimum. */
+   automatic minimum. The mock's fade over the bottom edge is left out, at
+   the author's call. */
 .viewport {
-  position: relative;
   flex: 1;
   min-height: 0;
   overflow: clip;
 }
 
-/* The mock's fade over the bottom edge: 17px from clear to the code block's
-   black. It all but hides the last line and dims the one above it a little. */
-.viewport::after {
-  position: absolute;
-  inset-inline: 0;
-  bottom: 0;
-  height: calc(17 * var(--mock-px));
-  background: linear-gradient(transparent, var(--black));
-  content: '';
-}
-
 /* Every line the story passes through, in a 190px column. The still
-   frame's ten fill the viewport, and the seven a play brings up wait
+   frame's ten fill the viewport, and the seven the story types wait
    below. */
 .column {
   width: calc(190 * var(--mock-px));
