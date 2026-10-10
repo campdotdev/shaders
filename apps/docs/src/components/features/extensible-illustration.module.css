@@ -78,8 +78,7 @@
 }
 
 /* The mock's fade over the bottom edge: 17px from clear to the code block's
-   black. It all but hides the empty last slot and dims the line above it a
-   little. */
+   black. It all but hides the last line and dims the one above it a little. */
 .viewport::after {
   position: absolute;
   inset-inline: 0;
@@ -90,8 +89,8 @@
 }
 
 /* Every line the story passes through, in a 190px column. The still
-   frame's nine and its empty slot fill the viewport, and the story's seven
-   wait below. */
+   frame's ten fill the viewport, and the rest of the story's lines wait
+   below. */
 .column {
   width: calc(190 * var(--mock-px));
 }
