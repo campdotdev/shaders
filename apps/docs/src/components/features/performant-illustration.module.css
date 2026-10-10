@@ -1,0 +1,92 @@
+/* The Performant illustration, after the Figma mock's node 939:962. Every
+   length is in the mock's pixels times --mock-px, one mock pixel at the
+   card window's current width. The window is 312 mock pixels wide, and
+   features.module.css makes it the container that `cqw` measures, so the
+   illustration scales like the image it replaced at every column width. */
+.illustration {
+  --mock-px: calc(100cqw / 312);
+
+  display: grid;
+  place-items: center;
+  aspect-ratio: 312 / 309;
+}
+
+/* The two chips side by side, 24px apart, centered in the window. */
+.chips {
+  display: flex;
+  gap: calc(24 * var(--mock-px));
+}
+
+/* ---- A chip ----
+   100px wide: a 100px body with a row of pins above and below it. */
+.chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: calc(100 * var(--mock-px));
+}
+
+/* Four pins, 6.67 by 8.89 with 8.89 between them, their outer ends
+   rounded. The bottom row turns over, so its rounded ends point down. */
+.pins {
+  display: flex;
+  gap: calc(8.889 * var(--mock-px));
+}
+
+.pins[data-edge='bottom'] {
+  rotate: 180deg;
+}
+
+.pin {
+  width: calc(6.667 * var(--mock-px));
+  height: calc(8.889 * var(--mock-px));
+  border-radius: calc(8.889 * var(--mock-px)) calc(8.889 * var(--mock-px)) 0 0;
+  background: var(--white-a70);
+}
+
+/* The body's outer square. Its color is the mock's: 90% white laid over
+   the window's gray with an overlay blend, as the Extensible code window's
+   frame is. The blend layer sits under the inner squares, which are
+   positioned so they paint over it. */
+.body {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: calc(3.333 * var(--mock-px));
+}
+
+.body::before {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(8.889 * var(--mock-px));
+  background: var(--white-a90);
+  content: '';
+  mix-blend-mode: overlay;
+}
+
+/* The middle square, 3.33px inside the outer one, at 20% white. */
+.ring {
+  position: relative;
+  height: 100%;
+  padding: calc(3.333 * var(--mock-px));
+  border-radius: calc(5.556 * var(--mock-px));
+  background: var(--white-a20);
+}
+
+/* The center square, 3.33px inside the middle one, at 30% white, with the
+   chip's name centered in it. */
+.core {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  border-radius: calc(2.222 * var(--mock-px));
+  background: var(--white-a30);
+}
+
+.name {
+  color: var(--black-a60);
+  font-family: var(--font-mono);
+  font-size: calc(21.756 * var(--mock-px));
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
