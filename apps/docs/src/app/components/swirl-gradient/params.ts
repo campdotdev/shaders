@@ -12,6 +12,7 @@ export interface Tuning {
   steps: number;
   stepLength: number;
   smallEddies: number;
+  slide: number;
 }
 
 export interface Params {
@@ -19,6 +20,7 @@ export interface Params {
   repeat: number;
   swirl: number;
   scale: number;
+  speed: number;
   seed: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
@@ -36,6 +38,7 @@ export const INITIAL: Params = {
   repeat: 3,
   swirl: 1,
   scale: 2,
+  speed: 0.25,
   seed: 0,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
@@ -48,5 +51,6 @@ export const INITIAL: Params = {
     steps: 24,
     stepLength: 0.05,
     smallEddies: 0.35,
+    slide: 0,
   },
 };

@@ -22,6 +22,7 @@ export default function SwirlGradientScene({
         repeat={params.repeat}
         scale={params.scale}
         seed={params.seed}
+        speed={params.speed}
         stops={params.stops}
         swirl={params.swirl}
         tuning={params.tuning}

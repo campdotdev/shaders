@@ -44,6 +44,12 @@ export interface SwirlGradientProps {
    */
   scale?: AnimatableProp<number>;
   /**
+   * How fast the flow drifts: its eddies form, merge, and dissolve, and the
+   * bands fold along with them. 0 holds the flow still. Defaults to 0.25.
+   * Accepts a static value or an animation signal.
+   */
+  speed?: AnimatableProp<number>;
+  /**
    * Picks a different flow with the same character. Each whole number gives
    * an unrelated flow. Defaults to 0.
    */
@@ -78,6 +84,7 @@ export function SwirlGradient({
   repeat = 3,
   swirl = 1,
   scale = 2,
+  speed = 0.25,
   seed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
@@ -91,6 +98,7 @@ export function SwirlGradient({
       repeat={repeat}
       scale={scale}
       seed={seed}
+      speed={speed}
       stops={stops}
       swirl={swirl}
       tuning={tuning}

@@ -6,10 +6,24 @@
 // find where its color started. Lives beside the component, as stroke.ts
 // does in cursor-ripple/, until a second component needs it.
 import type { ShaderNodeObject } from 'three/tsl';
-import { cos, float, floor, Fn, fract, Loop, sin, texture, uv, vec2, vec4 } from 'three/tsl';
+import {
+  cos,
+  float,
+  floor,
+  Fn,
+  fract,
+  Loop,
+  sign,
+  sin,
+  texture,
+  uint,
+  uv,
+  vec2,
+  vec4,
+} from 'three/tsl';
 import { HalfFloatType, LinearFilter, type Node } from 'three/webgpu';
 
-import { createTexturePass, stableHash, stableHashUint, type TSLNode } from '../../engine.js';
+import { createTexturePass, stableHashUint, type TSLNode } from '../../engine.js';
 import type { ShaderContextValue } from '../../react/context/shader-context.js';
 
 // ---------------------------------------------
@@ -36,6 +50,10 @@ const FLOW_TEXELS = 512;
 // the broad flow.
 const SMALL_EDDY_FREQUENCY = 2;
 
+// The way the flow slides when the tuning rig's slide is above 0: right and
+// a little up, as a unit vector. TEMPORARY with the slide itself.
+const SLIDE_DIRECTION = [0.8, 0.6] as const;
+
 const TWO_PI = Math.PI * 2;
 
 // ---------------------------------------------
@@ -44,11 +62,45 @@ const TWO_PI = Math.PI * 2;
 
 /**
  * The random arrow at one corner of the noise lattice, a unit vector at a
- * hashed angle. `rowWord` is the hash of the corner's row, so the four
- * corners of a cell share two row hashes instead of hashing a row each.
+ * hashed angle that turns as `phase` grows. `rowWord` is the hash of the
+ * corner's row, so the four corners of a cell share two row hashes instead
+ * of hashing a row each.
+ *
+ * The turning is Perlin and Neyret's "flow noise": every arrow spins at its
+ * own rate, so the hills and valleys of the noise swell, shrink, and trade
+ * places, and the eddies around them form, merge, and dissolve where they
+ * stand instead of sliding across the canvas. Each arrow spins between half
+ * and one and a half radians per unit of phase, clockwise or
+ * counterclockwise at random. A rate near 0 would leave patches of the flow
+ * frozen while the rest moved, and arrows all spinning one way would cycle
+ * the whole flow back to its start every turn.
  */
-function cornerArrow(column: ShaderNodeObject<Node>, rowWord: ShaderNodeObject<Node>) {
-  const angle = stableHash(column.toUint().add(rowWord)).mul(TWO_PI);
+function cornerArrow(
+  column: ShaderNodeObject<Node>,
+  rowWord: ShaderNodeObject<Node>,
+  phase: ShaderNodeObject<Node>,
+) {
+  // One 32-bit hash word per corner, split in two: the top 16 bits set the
+  // starting angle and the bottom 16 the spin. Each half is a random whole
+  // number 0..65535, which a float holds exactly on both backends, and
+  // dividing by 65536 turns it into 0..1. One hash serves both because the
+  // flow pass runs this for four corners, two noise layers, and every texel,
+  // each frame the flow moves.
+  const cornerWord = stableHashUint(column.toUint().add(rowWord));
+  const startAngle = cornerWord
+    .shiftRight(uint(16))
+    .toFloat()
+    .mul(TWO_PI / 65536);
+
+  // A random -1..1, then pushed half a unit away from 0 on its own side:
+  // -1.5..-0.5 spins one way, 0.5..1.5 the other.
+  const signedSpin = cornerWord
+    .bitAnd(uint(0xffff))
+    .toFloat()
+    .mul(2 / 65536)
+    .sub(1);
+  const spin = signedSpin.add(sign(signedSpin).mul(0.5));
+  const angle = startAngle.add(phase.mul(spin));
 
   return vec2(cos(angle), sin(angle));
 }
@@ -75,7 +127,11 @@ function wrapCell(index: ShaderNodeObject<Node>) {
  * 2 per lattice cell. Only `slope` feeds the flow, and the GPU compiler drops
  * `value` when nothing reads it.
  */
-function gradientNoise(point: TSLNode, seedWord: ShaderNodeObject<Node>) {
+function gradientNoise(
+  point: TSLNode,
+  seedWord: ShaderNodeObject<Node>,
+  phase: ShaderNodeObject<Node>,
+) {
   // Split the point into its lattice cell (the integer corner below and to
   // its left) and its place inside that cell, 0..1 on each axis.
   const cell = floor(point);
@@ -101,10 +157,10 @@ function gradientNoise(point: TSLNode, seedWord: ShaderNodeObject<Node>) {
   const upperRow = stableHashUint(wrapCell(cell.y.add(1)).toUint().add(seedWord));
   const leftColumn = wrapCell(cell.x);
   const rightColumn = wrapCell(cell.x.add(1));
-  const arrowA = cornerArrow(leftColumn, lowerRow); // corner (0, 0)
-  const arrowB = cornerArrow(rightColumn, lowerRow); // corner (1, 0)
-  const arrowC = cornerArrow(leftColumn, upperRow); // corner (0, 1)
-  const arrowD = cornerArrow(rightColumn, upperRow); // corner (1, 1)
+  const arrowA = cornerArrow(leftColumn, lowerRow, phase); // corner (0, 0)
+  const arrowB = cornerArrow(rightColumn, lowerRow, phase); // corner (1, 0)
+  const arrowC = cornerArrow(leftColumn, upperRow, phase); // corner (0, 1)
+  const arrowD = cornerArrow(rightColumn, upperRow, phase); // corner (1, 1)
 
   // Each corner's vote: how far the point sits along that corner's arrow.
   // The vote is 0 at the corner itself, so the noise is 0 on every lattice
@@ -146,10 +202,21 @@ export interface FlowInputs {
   /** A whole number 0 or above that picks the flow's random layout. */
   seed: TSLNode;
   /**
-   * The smaller eddies' strength, from 0 for the broad flow alone to 1, where
-   * they swirl as hard as the broad eddies do.
+   * The smaller eddies' strength: 0 leaves the broad flow alone, 0.5 swirls
+   * them as hard as the broad eddies, and 1 twice as hard.
    */
   smallEddies: TSLNode;
+  /**
+   * How far the flow has moved: the speed prop summed over time. Each lattice
+   * arrow turns by about this many radians, more or less by its own spin.
+   */
+  phase: TSLNode;
+  /**
+   * TEMPORARY (build-phase tuning only): how far the flow slides per unit
+   * of phase, in lattice cells, on top of the arrows' spin. 0 leaves the
+   * eddies morphing in place.
+   */
+  slide: TSLNode;
 }
 
 /**
@@ -164,14 +231,23 @@ export interface FlowInputs {
  * The flow is two layers of noise, broad eddies and smaller ones at twice
  * the frequency, and the curl of a sum is the sum of the curls.
  */
-function flowVelocity(point: TSLNode, { seed, smallEddies }: FlowInputs) {
+function flowVelocity(point: TSLNode, { seed, smallEddies, phase, slide }: FlowInputs) {
   const broadSeed = stableHashUint(float(seed));
   // A second, unrelated hash stream, so the smaller eddies don't line up
   // with the broad ones.
   const smallSeed = stableHashUint(broadSeed);
+  const phaseNode = float(phase);
 
-  const broadSlope = gradientNoise(point, broadSeed).slope;
-  const smallSlope = gradientNoise(vec2(point).mul(SMALL_EDDY_FREQUENCY), smallSeed).slope;
+  // Reading the flow from a point behind this one, against SLIDE_DIRECTION,
+  // shifts the whole flow forward along it by phase x slide lattice cells.
+  // At a slide of 0 the point is untouched.
+  const slideDistance = phaseNode.mul(slide);
+  const readPoint = vec2(point).sub(
+    vec2(slideDistance.mul(SLIDE_DIRECTION[0]), slideDistance.mul(SLIDE_DIRECTION[1])),
+  );
+
+  const broadSlope = gradientNoise(readPoint, broadSeed, phaseNode).slope;
+  const smallSlope = gradientNoise(readPoint.mul(SMALL_EDDY_FREQUENCY), smallSeed, phaseNode).slope;
 
   // The small layer's slope weight. Read at twice the frequency, its slope
   // comes out twice as steep by the chain rule, so at a strength of 0.5 the

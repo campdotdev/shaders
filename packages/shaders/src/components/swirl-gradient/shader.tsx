@@ -13,6 +13,7 @@ import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { colorRamp, type ColorSpace, type HueInterpolation } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
@@ -35,8 +36,13 @@ const STEP_COUNT = 24;
 const STEP_LENGTH = 0.05;
 
 // The smaller eddies' strength, 0..1. 0 leaves the broad flow alone, with
-// smooth, wide folds. Raising it curls finer swirls into the folds.
+// smooth, wide folds. Raising it curls finer swirls into the folds; at 0.5
+// they swirl as hard as the broad eddies.
 const SMALL_EDDIES = 0.35;
+
+// How far the flow slides per unit of phase, in lattice cells, on top of
+// the eddies morphing in place. 0 keeps the eddies where they are.
+const SLIDE = 0;
 
 /**
  * TEMPORARY (build-phase tuning only): dev overrides for the flow's feel
@@ -52,6 +58,11 @@ export interface SwirlGradientTuning {
   stepLength?: number;
   /** Strength of the smaller eddies, from 0 for none to 1. */
   smallEddies?: number;
+  /**
+   * How far the flow slides per unit of phase, in lattice cells, on top of
+   * the eddies morphing in place.
+   */
+  slide?: number;
 }
 
 export interface SwirlGradientShaderProps {
@@ -85,6 +96,12 @@ export interface SwirlGradientShaderProps {
    */
   scale: AnimatableProp<number>;
   /**
+   * How fast the flow drifts: its eddies form, merge, and dissolve, and the
+   * bands fold along with them. 0 holds the flow still. Accepts a static
+   * value or an animation signal.
+   */
+  speed: AnimatableProp<number>;
+  /**
    * Picks a different flow with the same character. Each whole number gives
    * an unrelated flow.
    */
@@ -103,6 +120,7 @@ export function SwirlGradientShader({
   repeat,
   swirl,
   scale,
+  speed,
   seed,
   colorSpace,
   hueInterpolation,
@@ -110,8 +128,19 @@ export function SwirlGradientShader({
 }: SwirlGradientShaderProps) {
   const shaderContext = useShaderContext();
 
-  // Nothing moves yet, so the scene can render once and park.
-  useStaticSceneHint(true);
+  // A literal speed of 0 holds the flow still, so nothing on screen changes
+  // (an animation signal might move later, so it doesn't count). Telling
+  // the scene lets its frame scheduler park on the still frame instead of
+  // redrawing an unchanging image, as Grain does.
+  const isStatic = typeof speed === 'number' && speed === 0;
+
+  useStaticSceneHint(isStatic);
+
+  // useAnimatableSpeed sums speed x frame time into a phase uniform each
+  // frame. The flow's arrows turn by the phase, so changing speed changes
+  // the tempo without snapping the flow to where a time x speed product
+  // would put it.
+  const phaseUniform = useAnimatableSpeed(speed);
 
   // The animatable dials live in uniforms (values the CPU can update each
   // frame without rebuilding the shader), tracking either a static number or
@@ -146,14 +175,25 @@ export function SwirlGradientShader({
   const stepCount = tuning?.steps ?? STEP_COUNT;
   const stepLength = tuning?.stepLength ?? STEP_LENGTH;
   const smallEddies = tuning?.smallEddies ?? SMALL_EDDIES;
+  const slide = tuning?.slide ?? SLIDE;
   const stepLengthUniform = useMemo(() => uniform(STEP_LENGTH), []);
   const smallEddiesUniform = useMemo(() => uniform(SMALL_EDDIES), []);
+  const slideUniform = useMemo(() => uniform(SLIDE), []);
 
   useEffect(() => {
     stepLengthUniform.value = stepLength;
     smallEddiesUniform.value = smallEddies;
+    slideUniform.value = slide;
     shaderContext?.scheduler.requestRender();
-  }, [shaderContext, stepLengthUniform, smallEddiesUniform, stepLength, smallEddies]);
+  }, [
+    shaderContext,
+    stepLengthUniform,
+    smallEddiesUniform,
+    slideUniform,
+    stepLength,
+    smallEddies,
+    slide,
+  ]);
 
   // Content fingerprint of the stops array (colors + positions). The build
   // effect keys on this string, so a re-render that passes a new array with
@@ -189,7 +229,12 @@ export function SwirlGradientShader({
       // frame, so a step costs one texture read. Where the renderer can't
       // draw half floats, the trace works the velocity out from the noise
       // at every step instead, which looks the same and costs far more.
-      const flowInputs = { seed: seedUniform, smallEddies: smallEddiesUniform };
+      const flowInputs = {
+        seed: seedUniform,
+        smallEddies: smallEddiesUniform,
+        phase: phaseUniform,
+        slide: slideUniform,
+      };
       const flowPass = createFlowPass(shaderContext, flowInputs);
 
       // swirl scales every step, so it sets how far the trace reaches: at 0
@@ -211,8 +256,8 @@ export function SwirlGradientShader({
       // Read the bands where the color started
       // ---------------------------------------------
       // From here on this is LinearGradient's math at its default center and
-      // a speed of 0, read at sourceUv instead of uv, so at swirl 0 the two
-      // draw the same image. The angle becomes a unit direction, and the
+      // its own speed at 0 (here speed moves the flow, not the bands), read
+      // at sourceUv instead of uv, so at swirl 0 the two draw the same image. The angle becomes a unit direction, and the
       // pixel's distance along it, plus 0.5, is its place on the ramp. At
       // angle 0 that is plain u: 0 at the left edge, 1 at the right.
       const angleRadians = angleUniform.mul(Math.PI / 180);
@@ -275,9 +320,11 @@ export function SwirlGradientShader({
       swirlUniform,
       scaleUniform,
       aspectNode,
+      phaseUniform,
       seedUniform,
       stepLengthUniform,
       smallEddiesUniform,
+      slideUniform,
       stepCount,
       stopsKey,
       colorSpace,
