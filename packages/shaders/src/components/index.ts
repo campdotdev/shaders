@@ -61,6 +61,9 @@ export type { RadialWipeProps } from './radial-wipe/radial-wipe.js';
 export { SimplexNoise } from './simplex-noise/simplex-noise.js';
 export type { SimplexNoiseProps } from './simplex-noise/simplex-noise.js';
 
+export { SwirlGradient } from './swirl-gradient/swirl-gradient.js';
+export type { SwirlGradientProps } from './swirl-gradient/swirl-gradient.js';
+
 export { Vignette } from './vignette/vignette.js';
 export type { VignetteProps } from './vignette/vignette.js';
 

@@ -103,6 +103,11 @@ export const COMPONENTS = {
       'Evolving 3D simplex noise with color ramp, contour bands, and brightness/contrast histogram shaping.',
     category: 'noise',
   },
+  'swirl-gradient': {
+    description:
+      'Repeating color bands folded along a drifting flow, like paint swirled on water. Stretches bands into fine threads without bunching them.',
+    category: 'gradients',
+  },
   vignette: {
     description:
       'Radial darkening at the canvas edges. Stacks on top of any base component inside <ShaderScene>.',

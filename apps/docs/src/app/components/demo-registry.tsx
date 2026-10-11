@@ -25,6 +25,7 @@ import { MeshGradientIsland } from './mesh-gradient/demo';
 import { RadialGradientIsland } from './radial-gradient/demo';
 import { RadialWipeIsland } from './radial-wipe/demo';
 import { SimplexNoiseIsland } from './simplex-noise/demo';
+import { SwirlGradientIsland } from './swirl-gradient/demo';
 import { VignetteIsland } from './vignette/demo';
 import { VoronoiIsland } from './voronoi/demo';
 import { WaveLinesIsland } from './wave-lines/demo';
@@ -282,6 +283,12 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     Island: SimplexNoiseIsland,
     usageSnippet: `<ShaderScene>
   <SimplexNoise />
+</ShaderScene>`,
+  },
+  'swirl-gradient': {
+    Island: SwirlGradientIsland,
+    usageSnippet: `<ShaderScene>
+  <SwirlGradient />
 </ShaderScene>`,
   },
   vignette: {
