@@ -8,7 +8,7 @@
  * pointer stays, then lets the band run dry and the glow settle. story.tsx
  * says when each part plays.
  */
-import { type CSSProperties, useEffect, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import {
   cancelFrame,
@@ -246,10 +246,12 @@ function useBandFlow(
   onStoryEnd: () => void,
 ) {
   // The stage as the frame loop sees it, kept current without restarting
-  // the loop.
+  // the loop. A layout effect updates it before the next frame runs, so the
+  // ending starts on the first frame after the leave renders, before a
+  // particle still waiting can enter.
   const stageRef = useRef(stage);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     stageRef.current = stage;
   });
 
