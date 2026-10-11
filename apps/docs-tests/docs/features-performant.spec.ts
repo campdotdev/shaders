@@ -3,12 +3,13 @@ import type { Locator, Page } from '@playwright/test';
 
 /**
  * The Performant feature card's story (SHA-215): a hover streams a band of
- * work in under the chip, which keeps flowing while the pointer stays and
- * runs dry once it leaves, back to the still frame with no work showing. A
- * hover during that ending doesn't cut it short. Touch and reduced motion
- * leave the still frame. Checks count the particles showing and watch them
- * move, never how long anything takes or its curve, so tuning the motion
- * cannot break this.
+ * work in under the chip and brings its glow up to full. The band keeps
+ * flowing while the pointer stays and runs dry once it leaves, back to the
+ * still frame with no work showing. A hover during that ending doesn't cut
+ * it short. Touch and reduced motion leave the still frame. Checks count the
+ * particles showing, watch them move, and read where the glow ends up, never
+ * how long anything takes or its curve, so tuning the motion cannot break
+ * this.
  */
 
 // No check here needs a scene, so this file turns WebGL off, as
@@ -95,6 +96,10 @@ async function recordBand(card: Locator): Promise<BandRecord> {
 
 /** How many particles the band holds once it has filled. */
 const bandSize = (card: Locator) => card.locator('[data-band] > *').count();
+
+/** The chip's glow's strength, from 0, none, to 1, the mock's full glow. */
+const glowStrength = (card: Locator) =>
+  card.locator('[data-halo]').evaluate((halo) => Number(getComputedStyle(halo).opacity));
 
 /**
  * A picture of the illustration, a pixel inside its box, so a box that falls
@@ -207,6 +212,19 @@ test('the story keeps going while the pointer stays', async ({ page }) => {
 
   await expect.poll(async () => (await band.now()).places).not.toBe(before.places);
   expect((await band.now()).showing).toBeGreaterThan(0);
+});
+
+// The first test's final screenshot covers the glow settling back to the
+// still frame's, so this one checks only that it comes up.
+test('a hover brings the glow up to full while the pointer stays', async ({ page }) => {
+  await open(page);
+
+  const card = performantCard(page);
+
+  expect(await glowStrength(card)).toBeLessThan(1);
+
+  await card.hover();
+  await expect.poll(() => glowStrength(card)).toBe(1);
 });
 
 // ---------------------------------------------

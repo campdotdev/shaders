@@ -58,7 +58,7 @@ function Chip({ halo }: { halo: MotionValue<number> }) {
 
   return (
     <m.div className={styles.chip} style={style}>
-      <span className={styles.halo} />
+      <span className={styles.halo} data-halo />
       <span className={styles.fill} />
       <Pins edge="top" />
       <div className={styles.body}>
@@ -343,7 +343,8 @@ function useBandFlow(
 // ---------------------------------------------
 
 // Hidden from screen readers: the card's title and description carry its
-// message. `data-band` marks the band of work, for the Playwright spec.
+// message. `data-band` marks the band of work, and `data-halo` the chip's
+// glow, for the Playwright spec.
 //
 // `m` under LazyMotion rather than `motion`, as in the Extensible card: the
 // particles and the chip only bind motion values to style, which domMin
