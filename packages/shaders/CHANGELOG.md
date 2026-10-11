@@ -1,5 +1,41 @@
 # @camp-dev/shaders
 
+## 0.23.0
+
+### Minor Changes
+
+- 28b02c2: `Aurora` draws its field into a texture once per frame, and each march step reads the texture instead of working out five noise octaves, 60 times for every pixel. The texture stores the field before the shaping that makes the thin filaments, so the texture filter blends a smooth value and the filaments stay sharp. Pixel values shift slightly, but the curtains look the same. At 3272 by 1392 device pixels on an M1 Max, Aurora's GPU time per frame drops from about 14.4 ms to about 5.0 ms. Where the renderer cannot draw into a half-float target, on WebGL2 without `EXT_color_buffer_float`, Aurora works out the field at every step as before.
+
+  `ShaderContextValue` gains `registerPrePass`, which adds a draw that runs before the scene's meshes on every frame, including the redraw after a resize. A hand-built context, such as a fake one in a test, needs `registerPrePass` too, and `() => () => undefined` registers nothing. `ShaderMonitor`'s GPU time counts these draws along with the scene pass and the output quad.
+
+  `TexturePassOptions` gains `format`: `RGBAFormat`, the default, for four channels, or `RedFormat` for one.
+
+- fee293c: Add `createTexturePass` and its `TexturePass` and `TexturePassOptions` types. A texture pass draws a TSL node into a render target of its own, and exposes the texture, `render`, `resize`, and `dispose`. It exposes no texture when the renderer cannot render to or bind the requested texel type: on WebGL2 without `EXT_color_buffer_float`, or for a full float on a WebGPU device without `float32-filterable`. After a lost device, it goes inert.
+
+  `Aurora` draws its 60 slice colors into a texture once per material build, instead of running its color ramp 60 times for every pixel. It also works out its per-pixel constants before its march loop. It looks the same as before. At 3272 by 1392 device pixels on an M1 Max, Aurora's GPU time per frame drops from about 18.4 ms to about 14.4 ms.
+
+- 618e2ad: `<ShaderScene>` takes a `maxFPS` prop, which sets the scene's frame cap, the most frames per second it draws. With no frame cap, a scene draws at the display's refresh rate, as before. `maxFPS={60}` draws every other frame of a 120 Hz display. A new value applies from the next frame without rebuilding the renderer. Frames that a prop change asks for count against the cap, but a resize still redraws at once. A frame cap never wakes a parked scene or resumes a paused one.
+
+  `FrameScheduler.setMaxFPS` sets the cap on a scheduler. The scheduler skips an animation frame that arrives sooner than one interval after its last tick, less a tenth of the interval for timestamp jitter. A tick's `delta` spans the skipped frames. Speed-driven animation keeps its pace while tick intervals stay at or below 0.1 seconds; longer intervals are clamped by `useAnimatableSpeed`, slowing the motion.
+
+- 0af6c42: On WebGPU, a scene no longer keeps MSAA samples or a depth buffer. `createRenderer` defaults `antialias` to false and gives the canvas no depth buffer, and the scene pass inside `<ShaderScene>` renders without one. Every component draws one quad that covers the canvas and smooths its own edges, so neither changed a pixel. At 3272 by 1392 device pixels, a scene's render targets drop from about 400 MB to about 73 MB, and each resize reallocates the smaller set. The WebGL2 fallback renders as before.
+
+  If you call `createRenderer` yourself, pass `antialias: true` to turn MSAA back on. Nothing in a WebGPU scene is depth-tested, so each mesh you draw covers whatever three drew before it.
+
+- 9feeb7d: `<ShaderScene>` takes a `paused` prop, which freezes the scene on its current frame. Time stops while the scene is paused, so it resumes on the frame it stopped on. While paused, a resize draws the frozen frame again at the new size. A scene paused from its mount draws nothing until it resumes.
+
+  Paused time no longer counts anywhere. When a scene resumes after a hidden tab or an off-screen canvas, it now carries on from its last frame rather than jumping ahead by the time away. `FrameScheduler`'s first tick after a resume carries no `delta`, and `elapsed` counts only the time the scheduler ran. `FrameScheduler.onPauseChange` tells a listener when the scheduler pauses or resumes. `holdRendererClock` holds the renderer's clock at its current time and returns the function that puts it back, because three's own animation loop advances that clock on every animation frame, rendered or not. The pause watcher's `setPaused` pauses the loop whatever the visibility.
+
+- 8e52969: `ShaderMonitor` shows the scene's GPU time per frame under its frame rate, averaged over the same half-second window. Mounting the monitor turns on GPU timing for its scene, and unmounting it turns the timing off. The readout shows a dash on the WebGL2 fallback, and on an adapter without timestamp queries. The time covers the scene pass and the output quad. Where the GPU runs the two passes at once, as Apple silicon does, the overlap counts once. A pass that a component draws on its own, such as `CursorRipple`'s wave field, is not counted.
+
+  `ShaderContextValue` gains `timeGpu`, which turns the timing on and returns the off switch. A hand-built context, such as a fake one in a test, needs the field too, and `() => () => undefined` reports nothing.
+
+### Patch Changes
+
+- a29b6da: A running `<ShaderScene>` now redraws straight after its canvas resizes. A resize clears the canvas after the frame loop has drawn, so while a canvas changed size on every frame, such as during a window drag, the browser painted a cleared canvas on almost every frame. The redraw ticks no animation, so a `speed` phase still advances once per frame. A scene out of view, or in a hidden tab, skips the redraw and draws at the new size when it resumes.
+
+  The scene now updates `useResize`'s size before it redraws, so the redrawn frame has the new aspect ratio. `useResize` returns the scene's size signal from its first render, where it used to return a placeholder size of `[0, 0, 1]` for one render. Every `useResize` call in a scene shares that one signal, in place of a resize observer each.
+
 ## 0.22.0
 
 ### Minor Changes
