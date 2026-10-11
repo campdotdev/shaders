@@ -1,0 +1,181 @@
+/* The Performant illustration, after the Figma mock's node 939:962: its
+   GPU chip, alone and half again its size, centered in the window. Every
+   length is in the mock's pixels times --mock-px, one mock pixel at the
+   card window's current width. The window is 312 mock pixels wide, and
+   features.module.css makes it the container that `cqw` measures, so the
+   illustration scales like the image it replaced at every column width.
+   The chip's own lengths are the mock's chip pixels times --chip-px, 1.5
+   mock pixels, so the mock's 100px chip draws 150px wide.
+
+   The pinks are the mock's: --glow lights the chip and the large
+   particles, and --glow-text, a deeper pink, the chip's name and the small
+   particles. */
+.illustration {
+  --mock-px: calc(100cqw / 312);
+  --chip-px: calc(1.5 * var(--mock-px));
+  --glow: #fd73d5;
+  --glow-text: #fc40c6;
+
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 312 / 309;
+}
+
+/* ---- The chip ----
+   100 chip pixels wide: a 100px body with a row of pins above and below
+   it. The mock draws its CPU chip lit and its GPU chip gray, and this GPU
+   chip takes the lit look.
+
+   Several layers blend with what lies beneath them, so nothing from the
+   chip up to the card's window may set opacity, a transform, or anything
+   else that would isolate them from the glow and the window's gray. */
+.chip {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: calc(100 * var(--chip-px));
+}
+
+/* Four pins, 6.67 by 8.89 with 8.89 between them, their outer ends
+   rounded: full white laid over the halo with an overlay blend, which
+   picks up its pink. */
+.pins {
+  display: flex;
+  gap: calc(8.889 * var(--chip-px));
+}
+
+.pin {
+  width: calc(6.667 * var(--chip-px));
+  height: calc(8.889 * var(--chip-px));
+  border-radius: calc(8.889 * var(--chip-px)) calc(8.889 * var(--chip-px)) 0 0;
+  background: var(--white);
+  mix-blend-mode: overlay;
+}
+
+.pins[data-edge='bottom'] .pin {
+  border-radius: 0 0 calc(8.889 * var(--chip-px)) calc(8.889 * var(--chip-px));
+}
+
+/* The glow, in two layers on the body's square, under the top pins'
+   8.89px. Both paint first, under the pins and the body. The fill is the
+   pink under the body, with the body's outer square, 20% white, over it.
+   The halo is the mock's pink glow around the chip, white close to the
+   edge. Its --halo, which the story sets, runs from a soft glow on the
+   still frame to the mock's full glow while the band of work flows. */
+.fill,
+.halo {
+  position: absolute;
+  top: calc(8.889 * var(--chip-px));
+  left: 0;
+  width: 100%;
+  aspect-ratio: 1;
+  border-radius: calc(8.889 * var(--chip-px));
+}
+
+.fill {
+  background: color-mix(in srgb, var(--glow), var(--white) 20%);
+}
+
+.halo {
+  box-shadow:
+    0 0 calc(50.4 * var(--chip-px)) color-mix(in srgb, var(--glow) 50%, transparent),
+    0 0 calc(28.8 * var(--chip-px)) var(--glow),
+    0 0 calc(16.8 * var(--chip-px)) var(--glow),
+    0 0 calc(8.4 * var(--chip-px)) var(--white),
+    0 0 calc(2.4 * var(--chip-px)) var(--white),
+    0 0 calc(1.2 * var(--chip-px)) var(--white);
+  opacity: var(--halo, 1);
+}
+
+/* The body, its outer square drawn by the fill beneath it. */
+.body {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  padding: calc(3.333 * var(--chip-px));
+}
+
+/* The middle square, 3.33px inside the outer one, at 20% white. */
+.ring {
+  height: 100%;
+  padding: calc(3.333 * var(--chip-px));
+  border-radius: calc(5.556 * var(--chip-px));
+  background: var(--white-a20);
+}
+
+/* The center square, 3.33px inside the middle one, with the chip's name
+   centered in it: 40% white with a screen blend, which lightens the pink
+   under it toward white. The blend is a layer of its own, so it leaves the
+   name alone. */
+.core {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 100%;
+}
+
+.core::before {
+  position: absolute;
+  inset: 0;
+  border-radius: calc(2.222 * var(--chip-px));
+  background: var(--white-a40);
+  content: '';
+  mix-blend-mode: screen;
+}
+
+/* Positioned, so it paints over the center square's blend layer. */
+.name {
+  position: relative;
+  color: var(--glow-text);
+  font-family: var(--font-mono);
+  font-size: calc(21.756 * var(--chip-px));
+  font-weight: var(--font-weight-semibold);
+  line-height: 1;
+}
+
+/* ---- The band of work ----
+   A column of particles under the chip, as wide as the chip's middle
+   square, 56 chip pixels, from the tips of its bottom pins to the window's
+   bottom edge. The chip sits centered, so its pins end half its 117.78
+   chip pixels of height below the window's middle. The band clips its own
+   particles, so one waiting at either end stays hidden without leaning on
+   the window's rounded clip, which some browsers skip for moving content.
+   The mask fades a particle out over the 16 mock pixels under the pins, so
+   it dissolves into the chip rather than stopping at a hard edge. */
+.band {
+  position: absolute;
+  top: calc(50% + 58.889 * var(--chip-px));
+  bottom: 0;
+  left: calc(50% - 28 * var(--chip-px));
+  width: calc(56 * var(--chip-px));
+  overflow: clip;
+  mask-image: linear-gradient(to bottom, transparent, black calc(16 * var(--mock-px)));
+}
+
+/* A particle's lane: a strip a particle's height taller than the band,
+   starting that height above it, so a particle at either end of its trip
+   sits wholly outside the band. The story moves it down by a share of the
+   lane's height. */
+.lane {
+  position: absolute;
+  top: calc(-8 * var(--mock-px));
+  height: calc(100% + 8 * var(--mock-px));
+}
+
+.particle {
+  display: block;
+}
+
+.particle[data-size='large'] {
+  width: calc(6 * var(--mock-px));
+  height: calc(8 * var(--mock-px));
+  background: var(--glow);
+}
+
+.particle[data-size='small'] {
+  width: calc(4 * var(--mock-px));
+  height: calc(5 * var(--mock-px));
+  background: var(--glow-text);
+}

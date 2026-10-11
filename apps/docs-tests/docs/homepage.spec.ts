@@ -18,34 +18,35 @@ const FAVORITES = [
   'led-wall',
 ];
 
-// Each feature card's title, its description, and its illustration's URL,
-// or null for an illustration built in code.
+// Each feature card's title, its description, and its illustration: the
+// URL of an image exported from the mock, or, for an illustration built in
+// code, a piece of text it shows.
 interface FeatureCard {
   title: string;
   description: string;
-  illustration: string | null;
+  illustration: { src: string } | { text: string };
 }
 
 const FEATURE_CARDS: FeatureCard[] = [
   {
     title: 'Composable',
     description: 'Stack shaders in a single scene to build the exact effect you want.',
-    illustration: '/features/composable.png',
+    illustration: { src: '/features/composable.png' },
   },
   {
     title: 'Performant',
     description: 'Reduce browser overhead for your users with WebGPU rendering.',
-    illustration: '/features/performant.png',
+    illustration: { text: 'GPU' },
   },
   {
     title: 'Reactive',
     description: 'Bring shaders to life with animation, cursor, and scroll inputs.',
-    illustration: '/features/reactive.png',
+    illustration: { src: '/features/reactive.png' },
   },
   {
     title: 'Extensible',
     description: 'Write your own shaders with the same TSL primitives our components use.',
-    illustration: null,
+    illustration: { text: '<shaders>' },
   },
 ];
 
@@ -269,12 +270,12 @@ test('each feature card shows its illustration, hidden from screen readers', asy
 
     await expect(item.getByRole('img')).toHaveCount(0);
 
-    // Extensible's code window: its header shows, inside a hidden subtree.
-    if (card.illustration === null) {
-      const header = item.getByText('<shaders>', { exact: true });
+    // An illustration built in code: its text shows, inside a hidden subtree.
+    if ('text' in card.illustration) {
+      const text = item.getByText(card.illustration.text, { exact: true });
 
-      await expect(header).toBeVisible();
-      expect(await header.evaluate((element) => !!element.closest('[aria-hidden="true"]'))).toBe(
+      await expect(text).toBeVisible();
+      expect(await text.evaluate((element) => !!element.closest('[aria-hidden="true"]'))).toBe(
         true,
       );
       continue;
@@ -283,7 +284,7 @@ test('each feature card shows its illustration, hidden from screen readers', asy
     const image = item.locator('img');
 
     await expect(image).toHaveAttribute('aria-hidden', 'true');
-    await expect(image).toHaveAttribute('src', card.illustration);
+    await expect(image).toHaveAttribute('src', card.illustration.src);
     await expect
       .poll(() =>
         image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0),
