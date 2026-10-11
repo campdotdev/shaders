@@ -274,7 +274,13 @@ function useBandFlow(
       );
 
       if (stageRef.current === 'ending' && !ending) {
-        const stops = runs.map((run) => (run > 0 ? Math.floor(run) + 1 : 0));
+        // Each stop comes from where its particle last showed, before this
+        // frame's advance, so one whose delay ran out since then never enters.
+        const stops = band.map(({ trips }) => {
+          const shown = trips.get();
+
+          return shown > 0 ? Math.floor(shown) + 1 : 0;
+        });
         const drainSeconds = Math.max(
           0,
           ...band.map(
