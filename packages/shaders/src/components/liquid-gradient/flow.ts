@@ -1,9 +1,9 @@
-// The flow SwirlGradient folds its bands along, and the backward trace
+// The flow LiquidGradient carries its colors along, and the backward trace
 // through it. The flow is the curl of a gradient-noise field: the noise's
 // slope turned 90 degrees, so colors slide along the noise's contour lines
-// and never pile up. The flow pass draws it into a texture once a frame, and
-// the shader (./shader.tsx) traces each pixel back through that texture to
-// find where its color started. Lives beside the component, as stroke.ts
+// and never pile up. The flow pass draws it into a texture whenever it
+// moves, and the shader (./shader.tsx) traces each pixel back through that
+// texture, averaging the colors it passes. Lives beside the component, as stroke.ts
 // does in cursor-ripple/, until a second component needs it.
 import type { ShaderNodeObject } from 'three/tsl';
 import {
@@ -42,11 +42,11 @@ import type { ShaderContextValue } from '../../react/context/shader-context.js';
 // power of two, so dividing a cell index by it stays exact in a float.
 export const FLOW_PERIOD = 8;
 
-// Texels per period on each side. 256 over 8 cells gives 32 texels per
-// eddy, and 16 per smaller eddy, which the texture's linear filter blends
-// into a smooth flow. Half that density drew faster but showed the filter's
-// straight runs between texels: crisp seams came out faceted instead of
-// curved.
+// Texels (pixels of a texture) per period on each side. 256 over 8 cells
+// gives 32 texels per eddy, and 16 per smaller eddy, which the texture's
+// linear filter blends into a smooth flow. Half that density drew faster but
+// showed the filter's straight runs between texels: hard color edges came
+// out faceted instead of curved.
 const FLOW_TEXELS = 256;
 
 // The smaller eddies run at twice the broad flow's frequency, so each one is
@@ -54,8 +54,18 @@ const FLOW_TEXELS = 256;
 // the broad flow.
 const SMALL_EDDY_FREQUENCY = 2;
 
-// The way the flow slides when the tuning rig's slide is above 0: right and
-// a little up, as a unit vector. TEMPORARY with the slide itself.
+// The smaller eddies' strength. 0 would leave the broad currents alone, and
+// at 0.5 the smaller eddies swirl as hard as the broad ones. Higher curls
+// more fine billowing into the broad currents.
+const SMALL_EDDY_STRENGTH = 0.45;
+
+// How far the flow slides per unit of phase, in lattice cells, on top of
+// the eddies morphing in place. With the phase at speed x seconds, the
+// default speed of 0.15 carries the currents across a canvas height in
+// about ten seconds. 0 would leave the eddies morphing where they stand.
+const SLIDE_RATE = 1;
+
+// The way the flow slides: right and a little up, as a unit vector.
 const SLIDE_DIRECTION = [0.8, 0.6] as const;
 
 const TWO_PI = Math.PI * 2;
@@ -212,21 +222,11 @@ export interface FlowInputs {
   /** A whole number 0 or above that picks the flow's random layout. */
   seed: TSLNode;
   /**
-   * The smaller eddies' strength: 0 leaves the broad flow alone, 0.5 swirls
-   * them as hard as the broad eddies, and 1 twice as hard.
-   */
-  smallEddies: TSLNode;
-  /**
    * How far the flow has moved: the speed prop summed over time. Each lattice
-   * arrow turns by about this many radians, more or less by its own spin.
+   * arrow turns by about this many radians, more or less by its own spin,
+   * and the flow slides SLIDE_RATE lattice cells per unit.
    */
   phase: TSLNode;
-  /**
-   * TEMPORARY (build-phase tuning only): how far the flow slides per unit
-   * of phase, in lattice cells, on top of the arrows' spin. 0 leaves the
-   * eddies morphing in place.
-   */
-  slide: TSLNode;
 }
 
 /**
@@ -241,7 +241,7 @@ export interface FlowInputs {
  * The flow is two layers of noise, broad eddies and smaller ones at twice
  * the frequency, and the curl of a sum is the sum of the curls.
  */
-function flowVelocity(point: TSLNode, { seed, smallEddies, phase, slide }: FlowInputs) {
+function flowVelocity(point: TSLNode, { seed, phase }: FlowInputs) {
   const broadSeed = stableHashUint(float(seed));
   // A second, unrelated hash stream, so the smaller eddies don't line up
   // with the broad ones.
@@ -249,9 +249,8 @@ function flowVelocity(point: TSLNode, { seed, smallEddies, phase, slide }: FlowI
   const phaseNode = float(phase);
 
   // Reading the flow from a point behind this one, against SLIDE_DIRECTION,
-  // shifts the whole flow forward along it by phase x slide lattice cells.
-  // At a slide of 0 the point is untouched.
-  const slideDistance = phaseNode.mul(slide);
+  // shifts the whole flow forward along it by phase x SLIDE_RATE lattice cells.
+  const slideDistance = phaseNode.mul(SLIDE_RATE);
   const readPoint = vec2(point).sub(
     vec2(slideDistance.mul(SLIDE_DIRECTION[0]), slideDistance.mul(SLIDE_DIRECTION[1])),
   );
@@ -263,7 +262,7 @@ function flowVelocity(point: TSLNode, { seed, smallEddies, phase, slide }: FlowI
   // comes out twice as steep by the chain rule, so at a strength of 0.5 the
   // small eddies swirl as hard as the broad ones. The strength scales the
   // layer's height, as an fBm octave's gain does.
-  const slope = broadSlope.add(smallSlope.mul(float(smallEddies).mul(SMALL_EDDY_FREQUENCY)));
+  const slope = broadSlope.add(smallSlope.mul(SMALL_EDDY_STRENGTH * SMALL_EDDY_FREQUENCY));
 
   // Curl: the slope turned 90 degrees clockwise.
   return vec2(slope.y, slope.x.negate());
@@ -357,7 +356,7 @@ export function createFlowPass(
   // gotcha in docs/agents/tsl.md). The CPU compares each input with the
   // value it had at the last draw and skips the draw while all of them
   // match. NaN never equals a number, so the first frame always draws.
-  const sources = [inputs.seed, inputs.smallEddies, inputs.phase, inputs.slide];
+  const sources = [inputs.seed, inputs.phase];
   const drawnValues = sources.map(() => Number.NaN);
   const removePrePass = shaderContext.registerPrePass(() => {
     if (sources.every((source, index) => source.value === drawnValues[index])) return;
@@ -408,36 +407,28 @@ export interface TraceFlowOptions {
   /** Where the trace reads the flow's velocity: the flow pass, or inline. */
   velocityAt: VelocityAt;
   /**
-   * What color to read at every point of the path. The trace calls
-   * this inside its shader function before the loop, so it can pin the
-   * values that are the same on every step with .toVar() (the first-use
-   * gotcha in docs/agents/tsl.md), and it returns the reader for one point.
+   * What color to read at every point of the path. The trace calls this
+   * inside its shader function before the loop, so it can pin the values
+   * that are the same on every step with .toVar() (the first-use gotcha in
+   * docs/agents/tsl.md), and it returns the reader for one point.
    */
   sampleAlongPath: () => PathSampler;
-  /**
-   * Combines the final offset and the mean linear RGB after the loop. Runs
-   * inside the same shader function so both answers share one trace.
-   */
-  finishTrace: (
-    offset: ShaderNodeObject<Node>,
-    meanColor: ShaderNodeObject<Node>,
-  ) => ShaderNodeObject<Node>;
 }
 
 /**
- * Trace a point backward along the flow. The pixel at `start` shows
- * whatever color sat at `start + offset` before the flow carried it here.
- * Each step reads the velocity where the trace has reached and steps
- * against it, then reads `sampleAlongPath` at the new point. Averaging those
- * reads gives every color the pixel's path passed through, the way a
- * long-exposure photo of moving liquid streaks it along the current.
+ * Trace a point backward along the flow and return the average linear RGB
+ * color of every point it passed, from the start through each step to the
+ * end. Each step reads the velocity where the trace has reached, steps
+ * against it, toward where the color came from, and reads the color there.
+ * The average streaks every color along the current, the way a long
+ * exposure of moving liquid does.
  *
  * Written with Fn and Loop, so the GPU runs a real loop instead of `steps`
  * copies of the body.
  */
 export function traceFlow(
   start: TSLNode,
-  { steps, stepLength, velocityAt, sampleAlongPath, finishTrace }: TraceFlowOptions,
+  { steps, stepLength, velocityAt, sampleAlongPath }: TraceFlowOptions,
 ): ShaderNodeObject<Node> {
   return Fn(() => {
     // Pin what is the same on every step before the loop. Without .toVar(),
@@ -449,27 +440,19 @@ export function traceFlow(
     const sampleAt = sampleAlongPath();
 
     // The loop's running state: how far the trace has moved from `origin`,
-    // and the sum of what it read along the way. Starting the offset at 0
-    // means a step length of 0 returns exactly 0, so straight bands stay
-    // exactly straight. The sum starts with the pixel's own point.
+    // and the sum of the colors it read. Starting the offset at 0 means a
+    // step length of 0 reads the pixel's own point every time, so straight
+    // bands stay straight. The sum starts with that point.
     const offset = vec2(0, 0).toVar();
-    // Average colors, not their positions on the ramp. Positions on either
-    // side of a seam average to its middle stop, even if the path never
-    // touched that color. Linear RGB mixes the colors the path actually saw.
-    const sampleSum = vec3(sampleAt(offset)).toVar();
+    const colorSum = vec3(sampleAt(offset)).toVar();
 
     Loop(steps, () => {
-      // Midpoint integration: predict a half-step backward, then use the
-      // velocity there for the full step. Following the starting direction
-      // for a whole step cuts across a curved flow and pushes traces across
-      // its contours, creating false edges around tight eddies.
-      const position = origin.add(offset).toVar();
-      const midpoint = position.sub(velocityAt(position).mul(step).mul(0.5)).toVar();
-
-      offset.subAssign(velocityAt(midpoint).mul(step));
-      sampleSum.addAssign(sampleAt(offset));
+      // One velocity read per step. STEP_COUNT in ./shader.tsx says why
+      // midpoint integration's second read isn't worth it here.
+      offset.subAssign(velocityAt(origin.add(offset)).mul(step));
+      colorSum.addAssign(sampleAt(offset));
     });
 
-    return finishTrace(offset, sampleSum.div(steps + 1));
+    return colorSum.div(steps + 1);
   })();
 }

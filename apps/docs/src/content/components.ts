@@ -83,6 +83,11 @@ export const COMPONENTS = {
     description: 'Animated linear gradient. The simplest, foundational Shaders component.',
     category: 'gradients',
   },
+  'liquid-gradient': {
+    description:
+      "Colors streaked along slow, curling currents, like dye in moving water. Takes LinearGradient's stops and angle.",
+    category: 'gradients',
+  },
   'mesh-gradient': {
     description:
       'Warped 4-color fluid gradient with time-cycling palette and film grain. Linear/Stripe marketing-page style.',
@@ -102,11 +107,6 @@ export const COMPONENTS = {
     description:
       'Evolving 3D simplex noise with color ramp, contour bands, and brightness/contrast histogram shaping.',
     category: 'noise',
-  },
-  'swirl-gradient': {
-    description:
-      'Repeating color bands folded along a drifting flow, like paint swirled on water. Stretches bands into fine threads without bunching them.',
-    category: 'gradients',
   },
   vignette: {
     description:

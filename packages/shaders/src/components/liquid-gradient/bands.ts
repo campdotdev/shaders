@@ -1,9 +1,10 @@
-// How SwirlGradient colors each band coordinate along the trace:
-// the stops eased in with smoothstep, the seams smoothed across one pixel,
-// and the bands' average color, which threads thinner than a pixel fade to.
-// A cached palette keeps color-space conversion out of the tracing loop.
-// The shader (./shader.tsx) measures how much of the ramp one pixel spans
-// with fwidth() and hands that footprint to each of these.
+// How LiquidGradient colors each band coordinate along the trace: the
+// stops eased in with smoothstep, and the bands' average color, which
+// streaks thinner than a pixel fade to. A cached palette keeps color-space
+// conversion out of the tracing loop. The shader (./shader.tsx) measures
+// how much of the ramp one pixel spans, its footprint, with fwidth() (how
+// much a value changes between neighboring pixels), and the easing keeps
+// every blend at least that wide.
 import type { ShaderNodeObject } from 'three/tsl';
 import {
   clamp,
@@ -11,7 +12,6 @@ import {
   Fn,
   Loop,
   max,
-  mix,
   smoothstep,
   texture,
   type uniform,
@@ -78,7 +78,7 @@ export interface BandPalette {
  * start_j + span_j x ease(x), and colorRamp turns that back into an eased
  * blend between stop j and stop j + 1.
  */
-export function easeStops(
+function easeStops(
   coordinate: TSLNode,
   stops: ColorRampStop[],
   softness: TSLNode,
@@ -115,7 +115,7 @@ export function easeStops(
 }
 
 /** The color of a band coordinate, its stops eased in. */
-export function bandColor(
+function bandColor(
   coordinate: TSLNode,
   { stops, colorSpace, hueInterpolation }: BandPalette,
   softness: TSLNode,
@@ -133,9 +133,10 @@ export function bandColor(
 // Cache the palette for reads along a trace
 // ---------------------------------------------
 
-// Samples across one pass of the ramp. The endpoints occupy texel centers,
-// so clamped reads preserve the first and last colors. 1024 half-float RGBA
-// texels use 8 KiB. More samples reduce interpolation error between texels.
+// Samples across one pass of the ramp, one per texel (pixel of a texture).
+// The endpoints occupy texel centers, so clamped reads preserve the first
+// and last colors. 1024 RGBA texels of half floats, 16-bit floats, use
+// 8 KiB. More samples reduce interpolation error between texels.
 const RAMP_TEXELS = 1024;
 
 /** A cached ramp, with the same inputs as bandColor and an owned texture. */
@@ -171,21 +172,28 @@ export function createRampPass(shaderContext: ShaderContextValue, palette: BandP
   if (palette.stops.length < 2 || palette.colorSpace === 'linear' || hasNarrowInterval)
     return inline;
 
-  const coordinate = uv()
+  // Each texel's place on the ramp: texel i of n holds the color at i / (n - 1),
+  // so the first and last texels hold the end stops exactly.
+  const texelCoordinate = uv()
     .x.mul(RAMP_TEXELS)
     .sub(0.5)
     .div(RAMP_TEXELS - 1);
   const pass = createTexturePass(
     shaderContext.renderer.three,
-    vec4(colorRamp(coordinate, palette.stops, palette.colorSpace, palette.hueInterpolation), 1),
+    vec4(
+      colorRamp(texelCoordinate, palette.stops, palette.colorSpace, palette.hueInterpolation),
+      1,
+    ),
     { width: RAMP_TEXELS, height: 1, type: HalfFloatType, filter: LinearFilter },
   );
   const rampTexture = pass.texture;
 
   if (rampTexture === null) return inline;
 
-  // Palette edits rebuild the material and this cache together. Draw once,
-  // before the scene first samples it, then reuse it even as softness moves.
+  // Palette edits rebuild the material and this cache together. A pre-pass,
+  // a draw the output stage runs before the scene pass, draws it once,
+  // before the scene first samples it, then reuses it even as softness
+  // moves.
   let drawn = false;
   const removePrePass = shaderContext.registerPrePass(() => {
     if (drawn) return;
@@ -194,8 +202,8 @@ export function createRampPass(shaderContext: ShaderContextValue, palette: BandP
   });
 
   return {
-    colorAt: (position, softness, footprint) => {
-      const eased = easeStops(position, palette.stops, softness, footprint);
+    colorAt: (coordinate, softness, footprint) => {
+      const eased = easeStops(coordinate, palette.stops, softness, footprint);
       const sampleX = clamp(eased, 0, 1)
         .mul(RAMP_TEXELS - 1)
         .add(0.5)
@@ -208,41 +216,6 @@ export function createRampPass(shaderContext: ShaderContextValue, palette: BandP
       pass.dispose();
     },
   };
-}
-
-// ---------------------------------------------
-// The seams, smoothed
-// ---------------------------------------------
-
-/**
- * Smooths the seams, where the repeating coordinate drops from 1 back to 0
- * and the last stop meets the first. A pixel's color comes from one point,
- * its center, so a pixel the seam crosses lands wholly on one side, and a
- * curved seam comes out as a staircase. Here a pixel near the seam takes
- * the share of the other side's color that its footprint covers instead,
- * so the seam spans one pixel and reads as a smooth line.
- *
- * `coordinate` is the repeating 0..1 band coordinate and `footprint` how
- * much of it one pixel spans. Near the top, the part of the footprint past 1
- * belongs to the first stop. Near the bottom, the part below 0 belongs to
- * the last. The blend is in linear light, as light mixes inside one pixel.
- * `seamWeight` turns the smoothing off at a single pass, which has no seam.
- */
-export function smoothSeams(
-  color: TSLNode,
-  coordinate: TSLNode,
-  footprint: TSLNode,
-  { first, last }: { first: TSLNode; last: TSLNode },
-  seamWeight: TSLNode,
-): ShaderNodeObject<Node> {
-  const halfFootprint = float(footprint).mul(0.5);
-  const safeFootprint = max(footprint, 1e-5);
-  const pastTop = clamp(float(coordinate).add(halfFootprint).sub(1).div(safeFootprint), 0, 1);
-  const belowBottom = clamp(halfFootprint.sub(coordinate).div(safeFootprint), 0, 1);
-
-  const withFirst = mix(color, first, pastTop.mul(seamWeight));
-
-  return mix(withFirst, last, belowBottom.mul(seamWeight));
 }
 
 // ---------------------------------------------

@@ -2,11 +2,11 @@
 
 import type { ReactNode } from 'react';
 
-import { ShaderScene, SwirlGradient } from '@camp-dev/shaders';
+import { LiquidGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { INITIAL, type Params } from './params';
 
-export default function SwirlGradientScene({
+export default function LiquidGradientScene({
   params = INITIAL,
   children,
 }: {
@@ -15,7 +15,7 @@ export default function SwirlGradientScene({
 } = {}) {
   return (
     <ShaderScene>
-      <SwirlGradient
+      <LiquidGradient
         angle={params.angle}
         colorSpace={params.colorSpace}
         hueInterpolation={params.hueInterpolation}
@@ -26,7 +26,6 @@ export default function SwirlGradientScene({
         speed={params.speed}
         stops={params.stops}
         swirl={params.swirl}
-        tuning={params.tuning}
       />
       {children}
     </ShaderScene>

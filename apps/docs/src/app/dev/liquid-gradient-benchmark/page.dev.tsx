@@ -7,6 +7,6 @@ import dynamic from 'next/dynamic';
 // builds.
 const BenchmarkScene = dynamic(() => import('./benchmark-scene'), { ssr: false });
 
-export default function SwirlGradientBenchmarkPage() {
+export default function LiquidGradientBenchmarkPage() {
   return <BenchmarkScene />;
 }

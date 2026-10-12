@@ -3,10 +3,10 @@
 // break the bands into blotches, and its fine layers are what the path
 // average draws out into streaks along the current, the way a long exposure
 // streaks a detailed surface. The paint pass draws one period of it into a
-// texture when the seed or the detail changes, so each trace step reads one
-// texel instead of summing the layers.
+// texture when the seed changes, so each trace step reads one texel (one
+// pixel of a texture) instead of summing the layers.
 import type { ShaderNodeObject } from 'three/tsl';
-import { float, floor, Fn, fract, mix, texture, uv, vec2, vec4 } from 'three/tsl';
+import { float, floor, Fn, fract, mix, texture, type uniform, uv, vec2, vec4 } from 'three/tsl';
 import { HalfFloatType, LinearFilter, type Node, RedFormat } from 'three/webgpu';
 
 import { createTexturePass, stableHash, stableHashUint, type TSLNode } from '../../engine.js';
@@ -29,10 +29,17 @@ const PAINT_PERIOD = FLOW_PERIOD;
 const LAYER_FREQUENCIES = [1, 2, 4, 8, 16];
 
 // Texels per period on each side. 1024 over 8 cells gives 128 texels per
-// cell, 8 per wave of the finest layer, which the linear filter blends
-// smoothly. The texture holds one half float per texel, 2 MB, and draws
-// only when the seed or the detail changes.
+// cell, 8 per wave of the finest layer, which the linear filter (a read
+// between texel centers blends the four around it) smooths over. The
+// texture holds one half float, a 16-bit float, per texel, 2 MB, and draws
+// only when the seed changes.
 const PAINT_TEXELS = 1024;
+
+// How loudly the finer layers speak: each layer weighs this much times the
+// one before. Lower leaves soft blotches; higher adds more of the fine
+// detail the path average streaks along the current. At 1 every layer
+// would weigh the same.
+const LAYER_GAIN = 0.6;
 
 // The inline fallback sums only the broadest layers, because every pixel
 // pays for them at every step.
@@ -82,25 +89,19 @@ function valueNoise(
 export interface PaintInputs {
   /** A whole number 0 or above that picks the paint's random layout. */
   seed: TSLNode;
-  /**
-   * How loudly the finer layers speak, 0..1: each layer's weight is this
-   * times the one before. 0 leaves only the broad blotches; 1 gives every
-   * layer the same weight.
-   */
-  detail: TSLNode;
 }
 
 /**
  * The paint at `point`, summed from the first `layerCount` layers and
- * divided by the total weight, so it stays roughly -1..1 at any detail.
+ * divided by the total weight, so it stays roughly -1..1.
  */
-function paintNoise(point: TSLNode, { seed, detail }: PaintInputs, layerCount: number) {
+function paintNoise(point: TSLNode, { seed }: PaintInputs, layerCount: number) {
   // A hash stream of its own, so the paint doesn't line up with the flow,
   // which hashes the seed directly.
   const seedWord = stableHashUint(stableHashUint(float(seed)).add(1));
   let total = float(0);
-  let totalWeight = float(0);
-  let weight = float(1);
+  let totalWeight = 0;
+  let weight = 1;
 
   LAYER_FREQUENCIES.slice(0, layerCount).forEach((frequency, layer) => {
     // Each layer gets its own stream, seedWord + layer, so the layers
@@ -112,8 +113,8 @@ function paintNoise(point: TSLNode, { seed, detail }: PaintInputs, layerCount: n
     );
 
     total = total.add(layerNoise.mul(weight));
-    totalWeight = totalWeight.add(weight);
-    weight = weight.mul(detail);
+    totalWeight += weight;
+    weight *= LAYER_GAIN;
   });
 
   return total.div(totalWeight);
@@ -138,19 +139,16 @@ export interface PaintPass {
  * pass in flow.ts: PAINT_TEXELS + 1 texels a side, the last row and column
  * repeating the first, so the linear filter blends across the period's seam
  * as smoothly as anywhere else. The paint holds still while the flow moves,
- * so the pass draws on the first frame and again only when the seed or the
- * detail changes. Where the renderer can't draw half floats, every read
- * sums the broadest layers inline instead.
+ * so the pass draws on the first frame and again only when the seed
+ * changes. Where the renderer can't draw half floats, every read sums the
+ * broadest layers inline instead.
  *
  * The caller creates and disposes the pass in one effect, so a Strict Mode
  * remount builds a fresh one (the Strict Mode gotcha in docs/agents/tsl.md).
  */
 export function createPaintPass(
   shaderContext: ShaderContextValue,
-  inputs: PaintInputs & {
-    seed: { value: number };
-    detail: { value: number };
-  },
+  inputs: { seed: ReturnType<typeof uniform<number>> },
 ): PaintPass {
   const side = PAINT_TEXELS + 1;
 
@@ -186,16 +184,15 @@ export function createPaintPass(
     };
   }
 
-  // A pre-pass draws before the scene pass in the same frame (the
-  // draw-order gotcha in docs/agents/tsl.md). It compares the seed and the
-  // detail with their values at the last draw and skips the draw while both
-  // match. NaN never equals a number, so the first frame always draws.
+  // A pre-pass is a draw the output stage runs before the scene pass in the
+  // same frame (the draw-order gotcha in docs/agents/tsl.md). This one
+  // compares the seed with its value at the last draw and skips the draw
+  // while it matches. NaN never equals a number, so the first frame always
+  // draws.
   let drawnSeed = Number.NaN;
-  let drawnDetail = Number.NaN;
   const removePrePass = shaderContext.registerPrePass(() => {
-    if (inputs.seed.value === drawnSeed && inputs.detail.value === drawnDetail) return;
+    if (inputs.seed.value === drawnSeed) return;
     drawnSeed = inputs.seed.value;
-    drawnDetail = inputs.detail.value;
     pass.render();
   });
 

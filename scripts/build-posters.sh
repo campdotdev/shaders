@@ -65,6 +65,7 @@ for pair in \
   "radial-gradient:jpg" \
   "god-rays:jpg:#0b0f1a" \
   "conic-gradient:jpg" \
+  "liquid-gradient:jpg" \
   "dither:jpg" \
   "voronoi:jpg" \
   "fractal-noise:jpg" \

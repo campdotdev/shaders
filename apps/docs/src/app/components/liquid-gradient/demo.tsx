@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * SwirlGradient demo island: the interactive slice of the SwirlGradient
+ * LiquidGradient demo island: the interactive slice of the LiquidGradient
  * page — control store, shader preview, and control panel for the bands,
- * the flow that folds them, mixing, and the color stops. The shared
+ * the current that streaks them, mixing, and the color stops. The shared
  * components/[slug] template renders this between its static header and
  * prose sections.
  */
@@ -32,24 +32,24 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 import { INITIAL, MAX_STOPS, MIN_STOPS } from './params';
 import type { Params, Stop } from './params';
 
-const SwirlGradientScene = dynamic(() => import('./scene'), { ssr: false });
+const LiquidGradientScene = dynamic(() => import('./scene'), { ssr: false });
 
-function SwirlGradientDemo() {
+function LiquidGradientDemo() {
   const params = useSnapshot<Params>();
 
   return (
     <DemoPoster
-      alt="Swirl gradient shader preview: blue, violet, and purple bands folded into swirling threads"
-      src="/posters/swirl-gradient.jpg"
+      alt="Liquid gradient shader preview: blue, violet, and purple streaked along curling currents"
+      src="/posters/liquid-gradient.jpg"
     >
-      <SwirlGradientScene params={params}>
+      <LiquidGradientScene params={params}>
         <VisualTestPause />
-      </SwirlGradientScene>
+      </LiquidGradientScene>
     </DemoPoster>
   );
 }
 
-function SwirlGradientControls() {
+function LiquidGradientControls() {
   return (
     <ControlPanel>
       <Section title="Bands">
@@ -58,7 +58,7 @@ function SwirlGradientControls() {
         <SliderInput label="Softness" max={1} min={0} path="softness" step={0.01} />
       </Section>
       <Section title="Flow">
-        <SliderInput label="Swirl" max={3} min={0} path="swirl" step={0.01} />
+        <SliderInput label="Swirl" max={2} min={0} path="swirl" step={0.01} />
         <SliderInput label="Scale" max={4} min={0.5} path="scale" step={0.1} />
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
@@ -66,18 +66,6 @@ function SwirlGradientControls() {
       <Section title="Mixing">
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
         <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
-      </Section>
-      {/* TEMPORARY (build-phase tuning only): stripped at the defaults gate. */}
-      <Section title="Tuning (dev)">
-        <SliderInput label="Steps" max={64} min={1} path="tuning.steps" step={1} />
-        <SliderInput label="Step length" max={0.3} min={0} path="tuning.stepLength" step={0.005} />
-        <SliderInput label="Small eddies" max={1} min={0} path="tuning.smallEddies" step={0.01} />
-        <SliderInput label="Slide" max={3} min={0} path="tuning.slide" step={0.01} />
-        <SliderInput label="Fade from" max={0.95} min={0} path="tuning.fadeStart" step={0.01} />
-        <SliderInput label="Smear" max={1} min={0} path="tuning.smear" step={0.01} />
-        <SliderInput label="Mirror ends" max={1} min={0} path="tuning.mirror" step={1} />
-        <SliderInput label="Paint" max={2} min={0} path="tuning.paint" step={0.01} />
-        <SliderInput label="Paint detail" max={1} min={0} path="tuning.paintDetail" step={0.01} />
       </Section>
       <ListInput<Stop>
         createItem={createStop}
@@ -107,14 +95,14 @@ function SwirlGradientControls() {
   );
 }
 
-export function SwirlGradientIsland() {
+export function LiquidGradientIsland() {
   const store = useMemo(() => createControlStore<Params>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <DemoLayout controls={<SwirlGradientControls />}>
+      <DemoLayout controls={<LiquidGradientControls />}>
         <div data-shader-demo>
-          <SwirlGradientDemo />
+          <LiquidGradientDemo />
         </div>
       </DemoLayout>
     </ControlsProvider>

@@ -49,6 +49,9 @@ export type { LedWallProps } from './led-wall/led-wall.js';
 export { LinearGradient } from './linear-gradient/linear-gradient.js';
 export type { LinearGradientProps } from './linear-gradient/linear-gradient.js';
 
+export { LiquidGradient } from './liquid-gradient/liquid-gradient.js';
+export type { LiquidGradientProps } from './liquid-gradient/liquid-gradient.js';
+
 export { MeshGradient } from './mesh-gradient/mesh-gradient.js';
 export type { MeshGradientProps } from './mesh-gradient/mesh-gradient.js';
 
@@ -60,9 +63,6 @@ export type { RadialWipeProps } from './radial-wipe/radial-wipe.js';
 
 export { SimplexNoise } from './simplex-noise/simplex-noise.js';
 export type { SimplexNoiseProps } from './simplex-noise/simplex-noise.js';
-
-export { SwirlGradient } from './swirl-gradient/swirl-gradient.js';
-export type { SwirlGradientProps } from './swirl-gradient/swirl-gradient.js';
 
 export { Vignette } from './vignette/vignette.js';
 export type { VignetteProps } from './vignette/vignette.js';
