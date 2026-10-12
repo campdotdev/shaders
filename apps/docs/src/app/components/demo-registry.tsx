@@ -21,6 +21,7 @@ import { GodRaysIsland } from './god-rays/demo';
 import { GrainIsland } from './grain/demo';
 import { LedWallIsland } from './led-wall/demo';
 import { LinearGradientIsland } from './linear-gradient/demo';
+import { LiquidGradientIsland } from './liquid-gradient/demo';
 import { MeshGradientIsland } from './mesh-gradient/demo';
 import { RadialGradientIsland } from './radial-gradient/demo';
 import { RadialWipeIsland } from './radial-wipe/demo';
@@ -248,6 +249,12 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     Island: LinearGradientIsland,
     usageSnippet: `<ShaderScene>
   <LinearGradient />
+</ShaderScene>`,
+  },
+  'liquid-gradient': {
+    Island: LiquidGradientIsland,
+    usageSnippet: `<ShaderScene>
+  <LiquidGradient />
 </ShaderScene>`,
   },
   'mesh-gradient': {

@@ -83,6 +83,11 @@ export const COMPONENTS = {
     description: 'Animated linear gradient. The simplest, foundational Shaders component.',
     category: 'gradients',
   },
+  'liquid-gradient': {
+    description:
+      "Colors streaked along slow, curling currents, like dye in moving water. Takes LinearGradient's stops and angle.",
+    category: 'gradients',
+  },
   'mesh-gradient': {
     description:
       'Warped 4-color fluid gradient with time-cycling palette and film grain. Linear/Stripe marketing-page style.',

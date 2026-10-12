@@ -49,6 +49,9 @@ export type { LedWallProps } from './led-wall/led-wall.js';
 export { LinearGradient } from './linear-gradient/linear-gradient.js';
 export type { LinearGradientProps } from './linear-gradient/linear-gradient.js';
 
+export { LiquidGradient } from './liquid-gradient/liquid-gradient.js';
+export type { LiquidGradientProps } from './liquid-gradient/liquid-gradient.js';
+
 export { MeshGradient } from './mesh-gradient/mesh-gradient.js';
 export type { MeshGradientProps } from './mesh-gradient/mesh-gradient.js';
 

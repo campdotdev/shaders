@@ -14,6 +14,10 @@ _Avoid_: Base component, generator, layer
 A component that acts on the image beneath it in a scene rather than drawing its own, such as Grain, Dither, or LedWall. An Effect composes over any Source or Effect mounted before it.
 _Avoid_: Overlay, post-process pass, post-process layer, filter
 
+**UV warp**:
+An Effect's change to where the image beneath it is sampled, such as Dither's pixel snap or CursorRipple's refraction. A UV warp bends only what Sources drew.
+_Avoid_: Warp on its own, base UV transform
+
 **Input**:
 A value that changes over time and is not drawn, such as the cursor, scroll, or canvas size. An Input is fed to a component as an animation signal.
 _Avoid_: Cursor hook, entry point, scene-level field
