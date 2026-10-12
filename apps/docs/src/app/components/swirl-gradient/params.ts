@@ -13,11 +13,17 @@ export interface Tuning {
   stepLength: number;
   smallEddies: number;
   slide: number;
+  fadeStart: number;
+  smear: number;
+  mirror: number;
+  paint: number;
+  paintDetail: number;
 }
 
 export interface Params {
   angle: number;
   repeat: number;
+  softness: number;
   swirl: number;
   scale: number;
   speed: number;
@@ -35,10 +41,11 @@ export const MAX_STOPS = 6;
 // constants in its shader.tsx. Keep them in sync.
 export const INITIAL: Params = {
   angle: 0,
-  repeat: 3,
-  swirl: 1,
-  scale: 2,
-  speed: 0.25,
+  repeat: 2,
+  softness: 1,
+  swirl: 0.9,
+  scale: 1.5,
+  speed: 0.15,
   seed: 0,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
@@ -48,9 +55,14 @@ export const INITIAL: Params = {
     { color: paletteOklch.purple[9], position: 1 },
   ],
   tuning: {
-    steps: 24,
-    stepLength: 0.05,
-    smallEddies: 0.35,
-    slide: 0,
+    steps: 12,
+    stepLength: 0.025,
+    smallEddies: 0.45,
+    slide: 1,
+    fadeStart: 0.25,
+    smear: 1,
+    mirror: 1,
+    paint: 1,
+    paintDetail: 0.6,
   },
 };

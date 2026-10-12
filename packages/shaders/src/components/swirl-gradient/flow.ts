@@ -17,8 +17,10 @@ import {
   sin,
   texture,
   uint,
+  type uniform,
   uv,
   vec2,
+  vec3,
   vec4,
 } from 'three/tsl';
 import { HalfFloatType, LinearFilter, type Node } from 'three/webgpu';
@@ -32,18 +34,20 @@ import type { ShaderContextValue } from '../../react/context/shader-context.js';
 
 // The flow repeats every FLOW_PERIOD lattice cells on both axes, so one
 // period drawn into a texture covers every point a trace can reach. A
-// lattice cell is about one eddy, so at the scale slider's top, 8 eddies
-// per canvas height, a 16:10 canvas spans about 13 cells and no repeat
-// shows. Raising it pushes the repeat further out at the cost of texels.
-// A power of two, so dividing a cell index by it stays exact in a float.
-const FLOW_PERIOD = 16;
+// lattice cell is about one eddy, so at the scale slider's top, 4 eddies
+// per canvas height, a 16:10 canvas spans about 6.4 cells and no repeat
+// shows. Doubling it pushes the repeat out past scale 8, but the flow pass
+// draws four times the texels whenever the flow moves: a period of 16 read
+// 0.45 ms in the Reactive card's window at 2x, against 0.35 ms for 8. A
+// power of two, so dividing a cell index by it stays exact in a float.
+export const FLOW_PERIOD = 8;
 
-// Texels per period on each side. 512 over 16 cells gives 32 texels per
+// Texels per period on each side. 256 over 8 cells gives 32 texels per
 // eddy, and 16 per smaller eddy, which the texture's linear filter blends
-// into a smooth flow. Fewer texels draw faster: 256 took 0.09 ms off the
-// card's 0.36 at 2x, but the filter's straight runs between texels showed,
-// and the crisp seams came out faceted instead of curved.
-const FLOW_TEXELS = 512;
+// into a smooth flow. Half that density drew faster but showed the filter's
+// straight runs between texels: crisp seams came out faceted instead of
+// curved.
+const FLOW_TEXELS = 256;
 
 // The smaller eddies run at twice the broad flow's frequency, so each one is
 // half the size of a broad eddy. 2 divides FLOW_PERIOD, so they repeat with
@@ -106,14 +110,20 @@ function cornerArrow(
 }
 
 /**
- * A lattice index folded into 0..FLOW_PERIOD - 1, so the arrows, and with
- * them the whole flow, repeat every FLOW_PERIOD cells. Written out with
- * floor() rather than mod(), because WGSL's float remainder keeps the sign
- * of a negative index and GLSL's mod() does not. It also keeps the hash's
- * input positive, as stableHash needs.
+ * A lattice index folded into 0..period - 1, so whatever it hashes repeats
+ * every `period` cells. Written out with floor() rather than mod(), because
+ * WGSL's float remainder keeps the sign of a negative index and GLSL's
+ * mod() does not. It also keeps the hash's input positive, as stableHash
+ * needs. The period is a whole number, and a power of two keeps the divide
+ * exact in a float.
  */
+export function wrapIndex(index: ShaderNodeObject<Node>, period: number) {
+  return index.sub(floor(index.div(period)).mul(period));
+}
+
+/** A flow lattice index folded into 0..FLOW_PERIOD - 1, so the flow repeats. */
 function wrapCell(index: ShaderNodeObject<Node>) {
-  return index.sub(floor(index.div(FLOW_PERIOD)).mul(FLOW_PERIOD));
+  return wrapIndex(index, FLOW_PERIOD);
 }
 
 /**
@@ -259,6 +269,12 @@ function flowVelocity(point: TSLNode, { seed, smallEddies, phase, slide }: FlowI
   return vec2(slope.y, slope.x.negate());
 }
 
+/**
+ * FlowInputs as uniforms, whose current values the flow pass can read on
+ * the CPU to tell whether the flow changed since its last draw.
+ */
+export type FlowUniforms = { [Input in keyof FlowInputs]: ReturnType<typeof uniform<number>> };
+
 /** Reads the flow's velocity at a point, in lattice cells. */
 export type VelocityAt = (point: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
@@ -297,12 +313,16 @@ export interface FlowPass {
  * the texture's edge, so the linear filter blends across the period's seam
  * as smoothly as anywhere else.
  *
+ * The pass redraws only on a frame where one of its inputs has changed since
+ * its last draw. While the flow holds still, other layers can keep the scene
+ * drawing, as a cursor effect does, and the texture already holds the flow.
+ *
  * The caller creates and disposes the pass in one effect, so a Strict Mode
  * remount builds a fresh one (the Strict Mode gotcha in docs/agents/tsl.md).
  */
 export function createFlowPass(
   shaderContext: ShaderContextValue,
-  inputs: FlowInputs,
+  inputs: FlowUniforms,
 ): FlowPass | null {
   const side = FLOW_TEXELS + 1;
 
@@ -334,8 +354,18 @@ export function createFlowPass(
 
   // The output stage draws pre-passes ahead of the scene pass in the same
   // frame, so the trace always reads this frame's flow (the draw-order
-  // gotcha in docs/agents/tsl.md).
-  const removePrePass = shaderContext.registerPrePass(pass.render);
+  // gotcha in docs/agents/tsl.md). The CPU compares each input with the
+  // value it had at the last draw and skips the draw while all of them
+  // match. NaN never equals a number, so the first frame always draws.
+  const sources = [inputs.seed, inputs.smallEddies, inputs.phase, inputs.slide];
+  const drawnValues = sources.map(() => Number.NaN);
+  const removePrePass = shaderContext.registerPrePass(() => {
+    if (sources.every((source, index) => source.value === drawnValues[index])) return;
+    sources.forEach((source, index) => {
+      drawnValues[index] = source.value;
+    });
+    pass.render();
+  });
 
   return {
     // Fold the point into the period, then into the texture: f x FLOW_TEXELS
@@ -360,6 +390,9 @@ export function createFlowPass(
 // The backward trace
 // ---------------------------------------------
 
+/** Reads linear RGB at one point of a trace, given its offset from the start. */
+export type PathSampler = (offset: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
+
 /** The options for one backward trace through the flow. */
 export interface TraceFlowOptions {
   /**
@@ -374,20 +407,37 @@ export interface TraceFlowOptions {
   stepLength: TSLNode;
   /** Where the trace reads the flow's velocity: the flow pass, or inline. */
   velocityAt: VelocityAt;
+  /**
+   * What color to read at every point of the path. The trace calls
+   * this inside its shader function before the loop, so it can pin the
+   * values that are the same on every step with .toVar() (the first-use
+   * gotcha in docs/agents/tsl.md), and it returns the reader for one point.
+   */
+  sampleAlongPath: () => PathSampler;
+  /**
+   * Combines the final offset and the mean linear RGB after the loop. Runs
+   * inside the same shader function so both answers share one trace.
+   */
+  finishTrace: (
+    offset: ShaderNodeObject<Node>,
+    meanColor: ShaderNodeObject<Node>,
+  ) => ShaderNodeObject<Node>;
 }
 
 /**
- * Trace a point backward along the flow and return how far it moved, in
- * lattice cells. The pixel at `start` shows whatever color sat at
- * `start + offset` before the flow carried it here. Each step reads the
- * velocity where the trace has reached and steps against it.
+ * Trace a point backward along the flow. The pixel at `start` shows
+ * whatever color sat at `start + offset` before the flow carried it here.
+ * Each step reads the velocity where the trace has reached and steps
+ * against it, then reads `sampleAlongPath` at the new point. Averaging those
+ * reads gives every color the pixel's path passed through, the way a
+ * long-exposure photo of moving liquid streaks it along the current.
  *
  * Written with Fn and Loop, so the GPU runs a real loop instead of `steps`
  * copies of the body.
  */
 export function traceFlow(
   start: TSLNode,
-  { steps, stepLength, velocityAt }: TraceFlowOptions,
+  { steps, stepLength, velocityAt, sampleAlongPath, finishTrace }: TraceFlowOptions,
 ): ShaderNodeObject<Node> {
   return Fn(() => {
     // Pin what is the same on every step before the loop. Without .toVar(),
@@ -396,17 +446,30 @@ export function traceFlow(
     // docs/agents/tsl.md).
     const origin = vec2(start).toVar();
     const step = float(stepLength).toVar();
+    const sampleAt = sampleAlongPath();
 
-    // The loop's running state: how far the trace has moved from `origin`.
-    // Starting at 0 means a step length of 0 returns exactly 0, so straight
-    // bands stay exactly straight.
+    // The loop's running state: how far the trace has moved from `origin`,
+    // and the sum of what it read along the way. Starting the offset at 0
+    // means a step length of 0 returns exactly 0, so straight bands stay
+    // exactly straight. The sum starts with the pixel's own point.
     const offset = vec2(0, 0).toVar();
+    // Average colors, not their positions on the ramp. Positions on either
+    // side of a seam average to its middle stop, even if the path never
+    // touched that color. Linear RGB mixes the colors the path actually saw.
+    const sampleSum = vec3(sampleAt(offset)).toVar();
 
     Loop(steps, () => {
-      // Backward: step against the velocity, toward where the color came from.
-      offset.subAssign(velocityAt(origin.add(offset)).mul(step));
+      // Midpoint integration: predict a half-step backward, then use the
+      // velocity there for the full step. Following the starting direction
+      // for a whole step cuts across a curved flow and pushes traces across
+      // its contours, creating false edges around tight eddies.
+      const position = origin.add(offset).toVar();
+      const midpoint = position.sub(velocityAt(position).mul(step).mul(0.5)).toVar();
+
+      offset.subAssign(velocityAt(midpoint).mul(step));
+      sampleSum.addAssign(sampleAt(offset));
     });
 
-    return offset;
+    return finishTrace(offset, sampleSum.div(steps + 1));
   })();
 }

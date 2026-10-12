@@ -29,23 +29,30 @@ export interface SwirlGradientProps {
    * in the same direction and snaps back to the first, so unless the first
    * and last stop match there is a crisp seam at every band boundary, which
    * the flow draws out into threads. Values at or below 1 render as a single
-   * pass. Defaults to 3. Accepts a static value or an animation signal.
+   * pass. Defaults to 2. Accepts a static value or an animation signal.
    */
   repeat?: AnimatableProp<number>;
   /**
+   * How the colors meet. 0 gives hard bands, one flat band per stop; 1 eases
+   * each stop into the next across the whole space between them. Seams stay
+   * crisp at any softness. Defaults to 1. Accepts a static value or an
+   * animation signal.
+   */
+  softness?: AnimatableProp<number>;
+  /**
    * How far the flow carries the colors. 0 leaves the bands straight; higher
-   * values stretch and fold them further. Defaults to 1. Accepts a static
+   * values stretch and fold them further. Defaults to 0.9. Accepts a static
    * value or an animation signal.
    */
   swirl?: AnimatableProp<number>;
   /**
-   * Roughly how many eddies span the canvas's height. Defaults to 2. Accepts
+   * Roughly how many eddies span the canvas's height. Defaults to 1.5. Accepts
    * a static value or an animation signal.
    */
   scale?: AnimatableProp<number>;
   /**
    * How fast the flow drifts: its eddies form, merge, and dissolve, and the
-   * bands fold along with them. 0 holds the flow still. Defaults to 0.25.
+   * bands fold along with them. 0 holds the flow still. Defaults to 0.15.
    * Accepts a static value or an animation signal.
    */
   speed?: AnimatableProp<number>;
@@ -81,10 +88,11 @@ const DEFAULT_STOPS: ColorStop[] = [
 export function SwirlGradient({
   stops = DEFAULT_STOPS,
   angle = 0,
-  repeat = 3,
-  swirl = 1,
-  scale = 2,
-  speed = 0.25,
+  repeat = 2,
+  softness = 1,
+  swirl = 0.9,
+  scale = 1.5,
+  speed = 0.15,
   seed = 0,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
@@ -98,6 +106,7 @@ export function SwirlGradient({
       repeat={repeat}
       scale={scale}
       seed={seed}
+      softness={softness}
       speed={speed}
       stops={stops}
       swirl={swirl}

@@ -55,10 +55,11 @@ function SwirlGradientControls() {
       <Section title="Bands">
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
         <SliderInput label="Repeat" max={8} min={1} path="repeat" step={0.1} />
+        <SliderInput label="Softness" max={1} min={0} path="softness" step={0.01} />
       </Section>
       <Section title="Flow">
         <SliderInput label="Swirl" max={3} min={0} path="swirl" step={0.01} />
-        <SliderInput label="Scale" max={8} min={0.5} path="scale" step={0.1} />
+        <SliderInput label="Scale" max={4} min={0.5} path="scale" step={0.1} />
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
       </Section>
@@ -71,7 +72,12 @@ function SwirlGradientControls() {
         <SliderInput label="Steps" max={64} min={1} path="tuning.steps" step={1} />
         <SliderInput label="Step length" max={0.3} min={0} path="tuning.stepLength" step={0.005} />
         <SliderInput label="Small eddies" max={1} min={0} path="tuning.smallEddies" step={0.01} />
-        <SliderInput label="Slide" max={1} min={0} path="tuning.slide" step={0.01} />
+        <SliderInput label="Slide" max={3} min={0} path="tuning.slide" step={0.01} />
+        <SliderInput label="Fade from" max={0.95} min={0} path="tuning.fadeStart" step={0.01} />
+        <SliderInput label="Smear" max={1} min={0} path="tuning.smear" step={0.01} />
+        <SliderInput label="Mirror ends" max={1} min={0} path="tuning.mirror" step={1} />
+        <SliderInput label="Paint" max={2} min={0} path="tuning.paint" step={0.01} />
+        <SliderInput label="Paint detail" max={1} min={0} path="tuning.paintDetail" step={0.01} />
       </Section>
       <ListInput<Stop>
         createItem={createStop}
