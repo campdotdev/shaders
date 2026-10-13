@@ -164,6 +164,31 @@ it('parks a persistent smudge and wakes for another stroke', () => {
   expect(scene.parked).toBe(true);
 });
 
+it('pulls a fast swipe as hard after the scene parks as before', () => {
+  const scene = makeScene();
+  // Frames until the pull recovers and the scene parks. A stronger pull
+  // takes longer to fall under the settle threshold.
+  const settle = () => {
+    let frames = 0;
+
+    for (; !scene.parked && frames < 600; frames++) scene.advance();
+
+    return frames;
+  };
+
+  render(<CursorSmudge decay={1} />, { wrapper: scene.Wrapper });
+  move(100);
+  scene.advance();
+  move(200);
+  scene.advance();
+  const pulledRunning = settle();
+
+  scene.advance(600);
+  move(300);
+  scene.advance();
+  expect(settle()).toBe(pulledRunning);
+});
+
 it('starts recovery when decay becomes positive without counting the idle gap', () => {
   const scene = makeScene();
   const { rerender } = render(<CursorSmudge decay={0} />, { wrapper: scene.Wrapper });

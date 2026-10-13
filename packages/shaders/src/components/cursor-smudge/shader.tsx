@@ -22,6 +22,11 @@ import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static
 import type { CursorSmudgeProps } from './cursor-smudge.js';
 import { createSmudgeField } from './field.js';
 
+// Longest a stroke's first frame of travel counts for, in seconds: one
+// frame at 60 Hz. Longer lets a fast first move after the scene parks pull
+// harder than the same move mid-stroke; shorter makes it pull softer.
+const STROKE_START_SECONDS = 1 / 60;
+
 export function CursorSmudgeShader({
   strength = 0.12,
   radius = 0.18,
@@ -63,6 +68,7 @@ export function CursorSmudgeShader({
     let previous: Vector2 | null = null;
     let inside = false;
     let pendingStroke: PushStroke | null = null;
+    let stroking = false;
     let pendingDelta = 0;
     let pendingRecoveryDelta = 0;
     let recovering = decayUniform.value > 0;
@@ -113,7 +119,11 @@ export function CursorSmudgeShader({
 
       pendingStroke = mouse ?? push;
       previous = inside ? current : null;
-      pendingDelta = delta;
+      // A parked scene's first tick reports the whole sleep as its delta,
+      // but the travel it carries took about one frame. Without the cap, the
+      // field's speed limit would see a slow move and let a fast one through.
+      pendingDelta = pendingStroke && !stroking ? Math.min(delta, STROKE_START_SECONDS) : delta;
+      stroking = pendingStroke !== null;
       // A held smudge can sleep for minutes. When recovery is enabled,
       // start its clock now instead of applying the time spent asleep.
       pendingRecoveryDelta = recovering ? delta : 0;
