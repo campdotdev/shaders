@@ -19,8 +19,8 @@ import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspec
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
-import { createSmudgeField } from '../../runtime/smudge-field/smudge-field.js';
 import type { CursorSmudgeProps } from './cursor-smudge.js';
+import { createSmudgeField } from './field.js';
 
 export function CursorSmudgeShader({
   strength = 0.12,

@@ -1,7 +1,9 @@
 // Stores a directional displacement between frames for CursorSmudge. Two
 // textures trade read and write roles, so each pass can shrink the old
 // displacement and add the latest stroke without reading its own output.
-// This fragment pass works on both WebGPU and the WebGL2 fallback.
+// This fragment pass works on both WebGPU and the WebGL2 fallback. Lives
+// beside the component, as stroke.ts does in cursor-ripple/, until a second
+// component needs it.
 import {
   clamp,
   dot,
@@ -17,8 +19,7 @@ import {
 } from 'three/tsl';
 import { HalfFloatType, LinearFilter, Texture, Vector2, type WebGPURenderer } from 'three/webgpu';
 
-import type { PushStroke } from '../../inputs/scroll-push/scroll-push.js';
-import { createTexturePass } from '../texture-pass/texture-pass.js';
+import { createTexturePass, type PushStroke } from '../../engine.js';
 
 export interface SmudgeStep {
   /** Seconds of simulation time since the last frame. */
