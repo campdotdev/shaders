@@ -547,7 +547,7 @@ interface LazyCursorInput {
  * Input once per frame, which works out the frame's push a single time for
  * every reader, and it draws on demand around the push: it wakes when a
  * finger lands, keeps drawing while the touch pushes, and ends the push when
- * the loop pauses.
+ * the loop resumes from a pause.
  */
 function createLazyCursorInput(
   canvas: HTMLCanvasElement,
@@ -566,11 +566,13 @@ function createLazyCursorInput(
   };
 
   // A paused loop stops reading the canvas while the page may keep moving
-  // it, so the first frame after the pause would measure one push across
-  // the whole gap. Ending the push on a pause makes the next touch start a
-  // fresh stroke instead.
+  // it, and a finger can still land on a canvas that the `paused` prop
+  // froze. The first frame after the pause would measure one push across
+  // the whole gap. Ending the push on the resume, whether it began before
+  // the pause or during it, makes the next touch start a fresh stroke
+  // instead.
   const stopWatchingPause = scheduler.onPauseChange((paused) => {
-    if (!paused || !scrollPush || !cursorInput) return;
+    if (paused || !scrollPush || !cursorInput) return;
     cursorInput.setScrollPush(false);
     cursorInput.setScrollPush(true);
   });

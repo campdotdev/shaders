@@ -127,6 +127,17 @@ describe('createPushTracker', () => {
     expect(push.frame(canvasAt(0, 70))).toBeUndefined();
   });
 
+  it('treats a second finger off the canvas as a pinch, seen when the first lifts', () => {
+    const push = setUp();
+    const touch = finger(100, 200, 1);
+    const offCanvas = finger(380, 700, 2);
+
+    push.touchStart({ touches: [touch], changed: [touch] }, canvasAt(0, 100));
+    push.touchEnd({ touches: [offCanvas], changed: [touch] });
+    expect(push.getPhase()).toBe('pinch');
+    expect(push.frame(canvasAt(0, 70))).toBeUndefined();
+  });
+
   it("ignores a resting finger's wobble", () => {
     const push = setUp();
     const touch = finger(100, 200);

@@ -205,10 +205,16 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
 
     touchEnd(snapshot) {
       if (phase === 'pinch' && snapshot.touches.length === 0) reset();
-      if (phase === 'down' && findTracked(snapshot.changed)) {
-        stillFrames = 0;
-        phase = 'fling';
+      if (phase !== 'down' || !findTracked(snapshot.changed)) return;
+      // A finger still on the screen landed off the canvas and has not
+      // moved since, so no move saw it. That makes this a pinch, not a fling.
+      if (snapshot.touches.length > 0) {
+        startPinch();
+
+        return;
       }
+      stillFrames = 0;
+      phase = 'fling';
     },
 
     frame(rect) {

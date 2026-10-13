@@ -948,5 +948,26 @@ describe('ShaderScene', () => {
 
       expect(scene.input().getPush()).toBeNull();
     });
+
+    it('pushes nothing on resume from a touch that landed while the scene was paused', async () => {
+      const scene = await renderScene({ scrollPush: true });
+
+      scene.rerender(
+        <ShaderScene paused scrollPush>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      fireTouch(scene.canvas, 'touchstart');
+      // The page scrolls a long way under the finger while the loop is paused.
+      scene.scrollTo(-400);
+      scene.rerender(
+        <ShaderScene scrollPush>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      scene.runFrame();
+
+      expect(scene.input().getPush()).toBeNull();
+    });
   });
 });
