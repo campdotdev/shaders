@@ -75,10 +75,12 @@ export interface ShaderSceneProps {
   paused?: boolean;
   /**
    * Lets a touch that scrolls the page over the canvas push the scene's
-   * cursor effects, at the finger and on through the fling. The scene only
+   * cursor effects, at the finger and on through the fling. Only effects
+   * that read the push, such as CursorRipple, feel it. The scene only
    * listens: the page scrolls and zooms exactly as it would without it. A
-   * touch then reaches cursor effects only this way, and a mouse works as
-   * before. A change applies straight away. Defaults to false.
+   * touch then reaches cursor effects only as a push, so CursorSpotlight
+   * ignores touch. A mouse works as before. A change applies straight away.
+   * Defaults to false.
    */
   scrollPush?: boolean;
 }
