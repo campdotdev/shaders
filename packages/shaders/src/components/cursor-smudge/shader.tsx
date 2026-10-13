@@ -161,6 +161,9 @@ export function CursorSmudgeShader({
       motion.dispose();
       field.dispose();
       active.value = 0;
+      // A parked scene still shows the last smudged frame. Draw once more
+      // so a held distortion leaves the canvas with the effect.
+      scheduler.requestRender();
     };
   }, [context, fieldTexture, active, strengthUniform, radiusUniform, decayUniform]);
 

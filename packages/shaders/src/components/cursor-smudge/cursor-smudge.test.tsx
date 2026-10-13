@@ -260,6 +260,18 @@ it('survives Strict Mode and releases its scene work on unmount', () => {
   expect(scene.transforms.size).toBe(0);
 });
 
+it('redraws a parked scene once after removing a held smudge', () => {
+  const scene = makeScene();
+  const { unmount } = render(<CursorSmudge decay={0} />, { wrapper: scene.Wrapper });
+
+  stroke(scene);
+  expect(scene.parked).toBe(true);
+  unmount();
+  expect(scene.parked).toBe(false);
+  scene.advance();
+  expect(scene.parked).toBe(true);
+});
+
 it('clears instead of freezing when the reduced-motion policy is paused', () => {
   const scene = makeScene();
 
