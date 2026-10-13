@@ -116,6 +116,39 @@ describe('createPushTracker', () => {
     expect(push.frame(canvasAt(0, 70))).toBeUndefined();
   });
 
+  it('ends a fling when a finger lands off the canvas, so its scroll pushes nothing', () => {
+    const push = setUp();
+    const touch = finger(100, 200, 1);
+    const offCanvas = finger(380, 700, 2);
+
+    push.touchStart({ touches: [touch], changed: [touch] }, canvasAt(0, 100));
+    push.touchEnd({ touches: [], changed: [touch] });
+    push.touchStartAnywhere({ touches: [offCanvas], changed: [offCanvas] });
+    expect(push.getPhase()).toBe('idle');
+    expect(push.frame(canvasAt(0, 70))).toBeUndefined();
+  });
+
+  it('treats a second finger off the canvas as a pinch the moment it lands', () => {
+    const push = setUp();
+    const touch = finger(100, 200, 1);
+    const offCanvas = finger(380, 700, 2);
+
+    push.touchStart({ touches: [touch], changed: [touch] }, canvasAt(0, 100));
+    push.touchStartAnywhere({ touches: [touch, offCanvas], changed: [offCanvas] });
+    expect(push.getPhase()).toBe('pinch');
+    expect(push.frame(canvasAt(0, 70))).toBeUndefined();
+  });
+
+  it('leaves a finger that landed on the canvas to touchStart', () => {
+    const push = setUp();
+    const touch = finger(100, 200, 1);
+
+    push.touchStart({ touches: [touch], changed: [touch] }, canvasAt(0, 100));
+    push.touchStartAnywhere({ touches: [touch], changed: [touch] });
+    expect(push.getPhase()).toBe('down');
+    expect(push.frame(canvasAt(0, 70))).toEqual(stroke([1 / 3, 1 / 3 + 0.1], [1 / 3, 1 / 3]));
+  });
+
   it('treats a second finger off the canvas as a pinch, seen on the next move', () => {
     const push = setUp();
     const touch = finger(100, 200, 1);

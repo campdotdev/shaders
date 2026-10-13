@@ -132,14 +132,12 @@ export class CursorInput {
   private readonly handleTouchEnd = (event: Event) => {
     if (isTouchEvent(event)) this.pushTracker?.touchEnd(toSnapshot(event));
   };
-  // A second finger that lands off the element sends the element no
-  // touchstart, and no touchmove while the first finger holds still. Every
-  // touchstart bubbles to the listen target, so the pinch starts at once. A
-  // second finger on the element has already started it there.
+  // A finger that lands off the element sends the element no touchstart,
+  // but every touchstart bubbles to the listen target, after the element's
+  // own handler has seen one that landed on it. The tracker needs it for a
+  // second finger that holds still, and for a finger that ends a fling.
   private readonly handleAnyTouchStart = (event: Event) => {
-    if (!isTouchEvent(event) || event.touches.length < 2) return;
-    if (this.pushTracker?.getPhase() === 'down')
-      this.pushTracker.touchStart(toSnapshot(event), this.readRect());
+    if (isTouchEvent(event)) this.pushTracker?.touchStartAnywhere(toSnapshot(event));
   };
 
   constructor(opts: CursorInputOptions = {}) {

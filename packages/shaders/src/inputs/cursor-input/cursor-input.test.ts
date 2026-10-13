@@ -389,6 +389,30 @@ describe('CursorInput', () => {
       outside.remove();
     });
 
+    it('ends a fling when the next finger lands off the canvas and scrolls the page', () => {
+      const { canvas, scrollTo } = makeCanvas();
+      const outside = document.createElement('div');
+      const cursor = new CursorInput({ element: canvas });
+      const finger = { id: 1, x: 100, y: 200 };
+      const next = { id: 2, x: 100, y: 450 };
+
+      document.body.append(outside);
+      cursor.setScrollPush(true);
+      fireTouch(canvas, 'touchstart', [finger]);
+      fireTouch(canvas, 'touchend', [], [finger]);
+      scrollTo(70);
+      cursor.tick(1 / 60);
+      expect(cursor.getPush()).not.toBeNull();
+      fireTouch(outside, 'touchstart', [next]);
+      scrollTo(40);
+      cursor.tick(1 / 60);
+
+      expect(cursor.getPush()).toBeNull();
+      expect(cursor.isPushing()).toBe(false);
+      cursor.dispose();
+      outside.remove();
+    });
+
     it('tells a push-start subscriber when a finger lands, so a parked host can wake', () => {
       const { canvas } = makeCanvas();
       const cursor = new CursorInput({ element: canvas });

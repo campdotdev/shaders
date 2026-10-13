@@ -75,6 +75,12 @@ export interface PushTracker {
   getPhase: () => PushPhase;
   touchStart: (snapshot: TouchSnapshot, rect: CanvasRect) => void;
   touchMove: (snapshot: TouchSnapshot, rect: CanvasRect) => void;
+  /**
+   * For every touchstart on the page, wherever the finger landed, after
+   * `touchStart` has seen one that landed on the canvas. A second finger
+   * makes a pinch, and a finger off the canvas ends a fling.
+   */
+  touchStartAnywhere: (snapshot: TouchSnapshot) => void;
   /** For both touchend and touchcancel. */
   touchEnd: (snapshot: TouchSnapshot) => void;
   /** Once per rendered frame: this frame's stroke, or nothing to push. */
@@ -201,6 +207,16 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
       const touch = phase === 'down' ? findTracked(snapshot.changed) : undefined;
 
       if (touch && isMoving(touch)) brush = toCanvas(touch, rect);
+    },
+
+    touchStartAnywhere(snapshot) {
+      // A finger on the canvas has already turned a fling into a new
+      // contact, so a fling still running means this one landed off the
+      // canvas. It stops the page, and the scroll it starts is not a push.
+      if (phase === 'fling') reset();
+      // A second finger off the canvas reaches no canvas listener, so while
+      // the first finger holds still and sends no move, only this sees it.
+      if (phase === 'down' && snapshot.touches.length > 1) startPinch();
     },
 
     touchEnd(snapshot) {
