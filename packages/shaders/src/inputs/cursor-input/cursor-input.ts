@@ -132,6 +132,15 @@ export class CursorInput {
   private readonly handleTouchEnd = (event: Event) => {
     if (isTouchEvent(event)) this.pushTracker?.touchEnd(toSnapshot(event));
   };
+  // A second finger that lands off the element sends the element no
+  // touchstart, and no touchmove while the first finger holds still. Every
+  // touchstart bubbles to the listen target, so the pinch starts at once. A
+  // second finger on the element has already started it there.
+  private readonly handleAnyTouchStart = (event: Event) => {
+    if (!isTouchEvent(event) || event.touches.length < 2) return;
+    if (this.pushTracker?.getPhase() === 'down')
+      this.pushTracker.touchStart(toSnapshot(event), this.readRect());
+  };
 
   constructor(opts: CursorInputOptions = {}) {
     const { smoothing = 0.1, initial = [0.5, 0.5], target, element } = opts;
@@ -235,6 +244,7 @@ export class CursorInput {
       element.removeEventListener('touchmove', this.handleTouchMove);
       element.removeEventListener('touchend', this.handleTouchEnd);
       element.removeEventListener('touchcancel', this.handleTouchEnd);
+      this.eventTarget.removeEventListener('touchstart', this.handleAnyTouchStart);
       this.pushTracker = null;
       this.framePush = null;
 
@@ -247,6 +257,7 @@ export class CursorInput {
     element.addEventListener('touchmove', this.handleTouchMove, PASSIVE);
     element.addEventListener('touchend', this.handleTouchEnd, PASSIVE);
     element.addEventListener('touchcancel', this.handleTouchEnd, PASSIVE);
+    this.eventTarget.addEventListener('touchstart', this.handleAnyTouchStart, PASSIVE);
   }
 
   /**
