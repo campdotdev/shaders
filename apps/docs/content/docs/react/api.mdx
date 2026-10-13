@@ -33,6 +33,7 @@ import { ShaderScene } from '@camp-dev/shaders'
 | `maxFPS` | `number` | — | Sets the frame cap, the most frames per second the scene draws. With no frame cap, the scene draws at the display's refresh rate. Zero, a negative number, or a non-finite number sets no frame cap. A change applies from the next frame. See [the performance guide](/guides/perf#draw-fewer-frames-with-maxfps). |
 | `gamut` | `'auto' \| 'srgb' \| 'p3'` | `'auto'` | Output color gamut. `'auto'` detects via `(color-gamut: p3)` and re-resolves when the window moves to another display. See [the color guide](/guides/color#gamut--what-the-output-can-hold). |
 | `paused` | `boolean` | `false` | Freezes the scene on its current frame. Time stops while it is paused, so it resumes on the frame it stopped on. |
+| `scrollPush` | `boolean` | `false` | Lets a touch that scrolls the page over the canvas push the scene's cursor effects, at the finger and on through the fling. Only effects that read the push, such as `CursorRipple`, feel it. The scene only listens, so the page scrolls and zooms exactly as it would without it. A touch then reaches cursor effects only as a push, so `CursorSpotlight` ignores touch. A mouse works as before. A change applies straight away. |
 | `style` | `CSSProperties` | — | Forwarded to the canvas container. |
 | `className` | `string` | — | Forwarded to the canvas container. |
 | `children` | `ReactNode` | — | One or more Shaders components. |
@@ -59,7 +60,7 @@ function Plane() {
 
 All three return signal-shaped objects compatible with [animation props](/guides/animation):
 
-- **`useCursor()`** → `CursorSignal` with `value` in `[0, 1]` normalized to the canvas bounding rect, plus a `presence` signal from 0 to 1 that eases in after the pointer enters the canvas and out after it leaves. Calls in one scene share one pointer input. Options: `smoothing`, `initial`, `enabled`, `element`, `target`, `onMove`.
+- **`useCursor()`** → `CursorSignal` with `value` in `[0, 1]` normalized to the canvas bounding rect, plus a `presence` signal from 0 to 1 that eases in after the pointer enters the canvas and out after it leaves. Calls in one scene share one pointer input. In a scene with `scrollPush` on, `getPush()` returns the frame's push stroke: a segment in canvas units that ends at the finger, or `null` when no touch pushed. Options: `smoothing`, `initial`, `enabled`, `element`, `target`, `onMove`.
 - **`useScroll()`** → `ScrollSignal` with normalized scroll progress for the page.
 - **`useResize()`** → `ResizeSignal` with current canvas dimensions in pixels.
 

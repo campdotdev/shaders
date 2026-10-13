@@ -32,6 +32,7 @@ import {
   holdRendererClock,
   type OutputStage,
   resetRendererClock,
+  type SchedulerTick,
 } from '../../../engine.js';
 import { createCanvasSize, type ResizeSignal } from '../../../inputs/canvas-size/canvas-size.js';
 import { ShaderContext, type ShaderContextValue } from '../../context/shader-context.js';
@@ -72,6 +73,16 @@ export interface ShaderSceneProps {
    * its first frame draws nothing until it resumes. Defaults to false.
    */
   paused?: boolean;
+  /**
+   * Lets a touch that scrolls the page over the canvas push the scene's
+   * cursor effects, at the finger and on through the fling. Only effects
+   * that read the push, such as CursorRipple, feel it. The scene only
+   * listens: the page scrolls and zooms exactly as it would without it. A
+   * touch then reaches cursor effects only as a push, so CursorSpotlight
+   * ignores touch. A mouse works as before. A change applies straight away.
+   * Defaults to false.
+   */
+  scrollPush?: boolean;
 }
 
 const defaultStyle: CSSProperties = {
@@ -92,6 +103,7 @@ export function ShaderScene({
   onFirstPaint,
   onError,
   paused = false,
+  scrollPush = false,
 }: ShaderSceneProps) {
   const resolvedGamut = useDisplayGamut(gamut);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -104,6 +116,7 @@ export function ShaderScene({
   const errorFiredRef = useRef(false);
   const pausedProp = useLiveProp(paused, applyPaused);
   const maxFPSProp = useLiveProp(maxFPS, applyMaxFPS);
+  const scrollPushProp = useLiveProp(scrollPush, applyScrollPush);
   // Poster boundary controls, when a ShaderPoster wraps this scene. The value
   // is memoized stable by ShaderPoster, so listing it in the setup effect's
   // deps does not cause renderer rebuilds. Null (a no-op below) when the
@@ -178,11 +191,13 @@ export function ShaderScene({
         );
 
         const detachPausedProp = pausedProp.attach(canvasWatch);
-        const cursorInput = createLazyCursorInput(canvas);
+        const cursorInput = createLazyCursorInput(canvas, scheduler);
+        const detachScrollPushProp = scrollPushProp.attach(cursorInput);
 
         cleanup = () => {
           detachMaxFPSProp();
           detachPausedProp();
+          detachScrollPushProp();
           pausedClock.stop();
           canvasWatch.stop();
           cursorInput.dispose();
@@ -226,7 +241,7 @@ export function ShaderScene({
       // so re-arm the enclosing poster until it does.
       posterControls?.setShaderPainted(false);
     };
-  }, [maxDPR, resolvedGamut, posterControls, pausedProp, maxFPSProp]);
+  }, [maxDPR, resolvedGamut, posterControls, pausedProp, maxFPSProp, scrollPushProp]);
 
   // Mount the children as soon as the context exists so the shader can build
   // and paint. The children render no visible DOM of their own (they drive
@@ -250,7 +265,8 @@ export function ShaderScene({
 }
 
 // ----------------------------------------------------------------------------
-// Props the running scene takes without a rebuild: `paused` and `maxFPS`
+// Props the running scene takes without a rebuild: `paused`, `maxFPS`, and
+// `scrollPush`
 // ----------------------------------------------------------------------------
 
 interface LiveProp<Target> {
@@ -296,6 +312,9 @@ const applyPaused = (canvasWatch: CanvasWatch, paused: boolean) => canvasWatch.s
 
 const applyMaxFPS = (scheduler: FrameScheduler, maxFPS: number | undefined) =>
   scheduler.setMaxFPS(maxFPS);
+
+const applyScrollPush = (cursorInput: LazyCursorInput, scrollPush: boolean) =>
+  cursorInput.setScrollPush(scrollPush);
 
 // ----------------------------------------------------------------------------
 // The view: one scene and a camera that frames it edge to edge
@@ -513,25 +532,72 @@ function watchCanvas(
 // The pointer: one cursor Input per scene, built on first ask
 // ----------------------------------------------------------------------------
 
+interface LazyCursorInput {
+  get: () => CursorInput;
+  /** Applies the `scrollPush` prop now, or when the input is created. */
+  setScrollPush: (enabled: boolean) => void;
+  dispose: () => void;
+}
+
 /**
  * The scene's one pointer Input, normalized to this canvas, so every useCursor
  * call inside reads the same pointer. `get` creates it on the first ask, so a
  * scene with no cursor consumer never attaches a window listener. `dispose`
  * releases it if it was ever created.
+ *
+ * Under `scrollPush`, the scene also drives the Input's push. It ticks the
+ * Input once per frame, which works out the frame's push a single time for
+ * every reader, and it draws on demand around the push: it wakes when a
+ * finger lands, keeps drawing while the touch pushes, and ends the push when
+ * the loop resumes from a pause.
  */
-function createLazyCursorInput(canvas: HTMLCanvasElement): {
-  get: () => CursorInput;
-  dispose: () => void;
-} {
+function createLazyCursorInput(
+  canvas: HTMLCanvasElement,
+  scheduler: FrameScheduler,
+): LazyCursorInput {
   let cursorInput: CursorInput | null = null;
+  let scrollPush = false;
+
+  // Added when the Input is created, inside the first reader's setup and
+  // before that reader adds its own client, so the Input always ticks ahead
+  // of the code that reads the push. Without scroll push it does nothing.
+  const tick = ({ delta }: SchedulerTick) => {
+    if (!scrollPush || !cursorInput) return;
+    cursorInput.tick(delta);
+    if (cursorInput.isPushing()) scheduler.requestRender();
+  };
+
+  // A paused loop stops reading the canvas while the page may keep moving
+  // it, and a finger can still land on a canvas that the `paused` prop
+  // froze. The first frame after the pause would measure one push across
+  // the whole gap. Ending the push on the resume, whether it began before
+  // the pause or during it, makes the next touch start a fresh stroke
+  // instead.
+  const stopWatchingPause = scheduler.onPauseChange((paused) => {
+    if (paused || !scrollPush || !cursorInput) return;
+    cursorInput.setScrollPush(false);
+    cursorInput.setScrollPush(true);
+  });
 
   return {
     get: () => {
-      cursorInput ??= new CursorInput({ element: canvas });
+      if (cursorInput) return cursorInput;
+      cursorInput = new CursorInput({ element: canvas });
+      cursorInput.setScrollPush(scrollPush);
+      cursorInput.onPushStart(() => scheduler.requestRender());
+      scheduler.add(tick);
 
       return cursorInput;
     },
-    dispose: () => cursorInput?.dispose(),
+    setScrollPush: (enabled) => {
+      scrollPush = enabled;
+      cursorInput?.setScrollPush(enabled);
+    },
+    dispose: () => {
+      stopWatchingPause();
+      scheduler.remove(tick);
+      cursorInput?.dispose();
+    },
   };
 }
 

@@ -34,6 +34,10 @@ _Avoid_: Interaction, cursor ability, hover effect
 An Effect driven by the cursor Input that works over any scene with no help from the components beneath it. CursorSpotlight and CursorRipple are two.
 _Avoid_: Interactive shader, cursor component, drop-in
 
+**Scroll push**:
+The push a scene's cursor effects feel from a touch that scrolls the page over the canvas, at the finger and on through the fling. A scene opts in, and the page scrolls exactly as it would without it.
+_Avoid_: Hold to interact, touch drag, scroll drag
+
 ### Rendering
 
 **Render on demand**:
