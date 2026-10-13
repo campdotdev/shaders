@@ -3,7 +3,8 @@
 // Records what scroll push did with each touch on the probe's top scene, for
 // the device report (SHA-225). It only watches: it reads the scene's shared
 // cursor Input once per frame, after the Input has worked out the push, and
-// listens passively on the canvas for where each contact starts and lifts.
+// listens passively for where each contact starts, on the canvas, and for
+// second fingers and lifts, on the window.
 import { useEffect, useRef } from 'react';
 
 import { useShaderContext } from '@camp-dev/shaders';
@@ -103,6 +104,14 @@ export function PushRecorder({ onPhaseChange, onContact }: PushRecorderProps) {
       enter(event.touches.length > 1 ? 'pinch' : 'down');
     };
 
+    // A second finger that lands off the canvas sends the canvas no
+    // touchstart, so the window watches for it, as the Input does.
+    const handleAnyTouchStart = (event: TouchEvent) => {
+      if (event.touches.length > 1 && phase === 'down') enter('pinch');
+    };
+
+    // On the window, because a finger's touchend goes where it landed, and
+    // the last finger to lift may have landed off the canvas.
     const handleTouchEnd = (event: TouchEvent) => {
       if (event.touches.length > 0) return;
       if (phase === 'down') enter('fling');
@@ -143,16 +152,18 @@ export function PushRecorder({ onPhaseChange, onContact }: PushRecorderProps) {
     };
 
     canvas.addEventListener('touchstart', handleTouchStart, { passive: true });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: true });
-    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: true });
+    window.addEventListener('touchstart', handleAnyTouchStart, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
     canvas.addEventListener('pointercancel', handlePointerCancel);
     scheduler.add(recordFrame);
 
     return () => {
       scheduler.remove(recordFrame);
       canvas.removeEventListener('touchstart', handleTouchStart);
-      canvas.removeEventListener('touchend', handleTouchEnd);
-      canvas.removeEventListener('touchcancel', handleTouchEnd);
+      window.removeEventListener('touchstart', handleAnyTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('touchcancel', handleTouchEnd);
       canvas.removeEventListener('pointercancel', handlePointerCancel);
     };
   }, [shaderContext]);
