@@ -12,6 +12,7 @@ import { AuroraIsland } from './aurora/demo';
 import { BlobsIsland } from './blobs/demo';
 import { ConicGradientIsland } from './conic-gradient/demo';
 import { CursorRippleIsland } from './cursor-ripple/demo';
+import { CursorSmudgeIsland } from './cursor-smudge/demo';
 import { CursorSpotlightIsland } from './cursor-spotlight/demo';
 import { DissolveIsland } from './dissolve/demo';
 import { DitherIsland } from './dither/demo';
@@ -105,6 +106,40 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
         that spreads and settles. Its refraction bends the image the Sources beneath it drew, and
         not the output of an Effect mounted before it. Mode 1 only: it needs the scene&apos;s output
         stage.
+      </>
+    ),
+  },
+  'cursor-smudge': {
+    Island: CursorSmudgeIsland,
+    copySiblings: ['<LiquidGradient speed={0} />'],
+    usageSnippet: `<ShaderScene scrollPush>
+  <LiquidGradient speed={0} />
+  <CursorSmudge strength={0.12} radius={0.18} decay={0.4} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        <p>
+          Move the pointer over the canvas without pressing. Higher <code>decay</code> values
+          recover faster. A still pointer adds no distortion, and the scene can idle after recovery
+          when its other components are still. Set <code>strength</code> to 0 to disable the effect.
+        </p>
+        <p>
+          Set <code>decay</code> to 0 to keep the distortion after the pointer stops. New strokes
+          keep changing it. Raise decay to resume recovery, or set strength to 0 to clear it.
+          Resizing or remounting the scene also clears the distortion. An animated Source keeps
+          moving beneath the held distortion.
+        </p>
+        <p>
+          Place Cursor Smudge after a Source inside <code>&lt;ShaderScene&gt;</code>. It bends the
+          image drawn by Sources; other Effects keep their own contributions unbent. Sampling past
+          the image extends its edge pixels. Cursor Smudge requires Mode 1.
+        </p>
+        <p>
+          Enable <code>scrollPush</code> on the scene to smudge while a finger scrolls across it,
+          including the fling after release. The page keeps scrolling. Reduced motion slows recovery
+          to 0.3× speed; the explicit <code>paused</code> motion policy clears the effect. An
+          ordinary scene pause preserves the smudge until the scene resumes.
+        </p>
       </>
     ),
   },

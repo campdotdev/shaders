@@ -38,6 +38,11 @@ export const COMPONENTS = {
       'A water surface over the scene. Drag the pointer and it leaves a wake that spreads, catches light, and settles, bending the image beneath it. Stacks on top of any base component inside <ShaderScene>.',
     category: 'cursor',
   },
+  'cursor-smudge': {
+    description:
+      'Pulls the image drawn by Sources along pointer movement, then eases it back without bouncing. Faster swipes pull harder, up to a cap.',
+    category: 'cursor',
+  },
   'cursor-spotlight': {
     description:
       'Brightens the scene around the pointer. Invisible until the first move, it fades out when the pointer leaves the canvas. Stacks on top of any base component inside <ShaderScene>.',
