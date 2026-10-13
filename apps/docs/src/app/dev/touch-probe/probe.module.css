@@ -44,8 +44,10 @@
   pointer-events: none;
 }
 
+/* White text on lime-300 reads at 3.2:1, under AA for 12px. Black reads at 4.9:1. */
 .badge[data-phase='down'] {
   background: var(--lime-300);
+  color: var(--black);
 }
 
 .badge[data-phase='fling'] {
