@@ -1,0 +1,84 @@
+.page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 16px;
+  color: var(--white);
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.steps {
+  padding-left: 20px;
+}
+
+.spacer {
+  height: 40vh;
+}
+
+.endSpacer {
+  height: 100vh;
+}
+
+/* The Reactive card's window: 312 by 309 CSS pixels. */
+.frame {
+  position: relative;
+  width: 312px;
+  height: 309px;
+  margin: 8px 0 24px;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+}
+
+/* Read-only label over the scene. It takes no touches, so a finger on it
+   lands on the canvas. */
+.badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--black-a70);
+  font:
+    600 12px/20px ui-monospace,
+    monospace;
+  pointer-events: none;
+}
+
+.badge[data-phase='down'] {
+  background: var(--lime-300);
+}
+
+.badge[data-phase='fling'] {
+  background: var(--lime-700);
+}
+
+.badge[data-phase='pinch'] {
+  background: var(--gray-500);
+}
+
+/* A real control over the scene: a tap on it must stay a tap, and a swipe
+   starting on it must scroll. */
+.overlayButton {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  padding: 6px 12px;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: var(--white);
+  color: var(--black);
+  font: inherit;
+}
+
+.buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.report {
+  width: 100%;
+  height: 240px;
+  font:
+    11px/1.4 ui-monospace,
+    monospace;
+}
