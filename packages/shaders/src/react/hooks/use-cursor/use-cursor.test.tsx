@@ -705,3 +705,94 @@ describe('useCursor', () => {
     expect(() => unmount()).not.toThrow();
   });
 });
+
+describe('useCursor with scroll push', () => {
+  interface Finger {
+    id: number;
+    x: number;
+    y: number;
+  }
+
+  // Fires a touch event on the canvas: `touches` is every finger still down
+  // after it, `changed` the fingers it is about.
+  const fireTouch = (
+    target: EventTarget,
+    type: 'touchstart' | 'touchend',
+    touches: Finger[],
+    changed: Finger[] = touches,
+  ) => {
+    const toTouch = ({ id, x, y }: Finger) =>
+      new Touch({ identifier: id, target, clientX: x, clientY: y });
+
+    act(() => {
+      target.dispatchEvent(
+        new TouchEvent(type, {
+          touches: touches.map(toTouch),
+          changedTouches: changed.map(toTouch),
+          bubbles: true,
+        }),
+      );
+    });
+  };
+
+  // A scene whose shared input pushes on a real 300 by 300 canvas at
+  // (0, 100), ticked once per frame ahead of every call, as ShaderScene
+  // does. `scrollTo` moves the canvas, standing in for the page scrolling.
+  const makePushScene = (scheduler: FrameScheduler) => {
+    const canvas = document.createElement('canvas');
+    let rect = { left: 0, top: 100, width: 300, height: 300 };
+
+    canvas.getBoundingClientRect = () => ({ ...rect }) as DOMRect;
+    const input = new CursorInput({ element: canvas });
+
+    input.setScrollPush(true);
+    scheduler.add(({ delta }) => input.tick(delta));
+    const shaderContext = {
+      scheduler,
+      getCursorInput: () => input,
+      renderer: { three: { domElement: canvas } },
+    } as unknown as React.ContextType<typeof ShaderContext>;
+
+    function Wrapper({ children }: { children: ReactNode }) {
+      return <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>;
+    }
+
+    return {
+      Wrapper,
+      canvas,
+      input,
+      scrollTo: (top: number) => {
+        rect = { ...rect, top };
+      },
+    };
+  };
+
+  it("hands every call the frame's push stroke", () => {
+    const frames = captureFrames();
+    const runFrame = makeFrameRunner(frames);
+    const scheduler = new FrameScheduler();
+    const scene = makePushScene(scheduler);
+
+    scheduler.start();
+    const { result } = renderHook(
+      () => ({ first: useCursor(), second: useCursor({ smoothing: 0 }) }),
+      { wrapper: scene.Wrapper },
+    );
+
+    runFrame();
+    fireTouch(scene.canvas, 'touchstart', [{ id: 1, x: 100, y: 200 }]);
+    scene.scrollTo(70);
+    runFrame();
+
+    expect(result.current.first.getPush()).not.toBeNull();
+    expect(result.current.first.getPush()).toBe(scene.input.getPush());
+    expect(result.current.second.getPush()).toBe(scene.input.getPush());
+    scene.input.dispose();
+  });
+
+  it('pushes nothing outside a scene', () => {
+    const { result } = renderHook(() => useCursor());
+
+    expect(result.current.getPush()).toBeNull();
+  });
+});

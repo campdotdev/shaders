@@ -10,6 +10,7 @@ import { createRenderer, type CursorInput, type GpuRenderer } from '../../../eng
 import { ShadersError } from '../../errors/shaders-error.js';
 import { useResize } from '../../hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../hooks/use-shader-context/use-shader-context.js';
+import { useStaticSceneHint } from '../../hooks/use-static-hint/use-static-hint.js';
 import { PosterContext } from '../shader-poster/poster-context.js';
 import { ShaderScene } from './shader-scene.js';
 
@@ -755,6 +756,197 @@ describe('ShaderScene', () => {
       runFrames(frames, 32);
 
       expect(gpuRenderer.three.render).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('scrollPush', () => {
+    // Fires a one-finger touch event at the canvas center.
+    const fireTouch = (canvas: HTMLCanvasElement, type: 'touchstart' | 'touchend') => {
+      const touch = new Touch({ identifier: 1, target: canvas, clientX: 500, clientY: 500 });
+      const down = type === 'touchstart' ? [touch] : [];
+
+      canvas.dispatchEvent(
+        new TouchEvent(type, { touches: down, changedTouches: [touch], bubbles: true }),
+      );
+    };
+
+    // A child that reads the shared cursor input into `inputs`. With
+    // `votesIdle`, it also votes the scene static, so the loop can park.
+    function makeReader(inputs: CursorInput[], votesIdle = false) {
+      return function Reader() {
+        const shaderContext = useShaderContext();
+
+        useStaticSceneHint(votesIdle);
+        if (shaderContext) inputs.push(shaderContext.getCursorInput());
+
+        return null;
+      };
+    }
+
+    // Makes a canvas report a rect the test can scroll, starting at `top`.
+    function scrollable(canvas: HTMLCanvasElement, top = 0) {
+      let offset = 0;
+
+      canvas.getBoundingClientRect = () =>
+        ({ left: 0, top: top + offset, width: 1000, height: 1000 }) as DOMRect;
+
+      return (next: number) => {
+        offset = next;
+      };
+    }
+
+    // Renders one scene with a reader, and hands back its canvas, a way to
+    // scroll it, and a frame runner on the captured animation frames.
+    async function renderScene({ scrollPush, votesIdle = false }: SceneOptions = {}) {
+      const frames = captureFrames();
+      const inputs: CursorInput[] = [];
+      const Reader = makeReader(inputs, votesIdle);
+      const view = render(
+        <ShaderScene scrollPush={scrollPush}>
+          <Reader />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(inputs.length).toBeGreaterThan(0));
+      const canvas = view.container.querySelector('canvas')!;
+      const scrollTo = scrollable(canvas);
+      let now = 0;
+      const runFrame = () => {
+        now += 16;
+        runFrames(frames, now);
+      };
+      const runUntilParked = () => {
+        for (let frame = 0; frame < 50 && frames.length > 0; frame += 1) runFrame();
+      };
+
+      // A touch, a still frame, then a 30 pixel scroll and another frame.
+      const touchAndScroll = () => {
+        fireTouch(canvas, 'touchstart');
+        runFrame();
+        scrollTo(-30);
+        runFrame();
+      };
+
+      return {
+        ...view,
+        Reader,
+        canvas,
+        frames,
+        input: () => inputs.at(-1)!,
+        runFrame,
+        runUntilParked,
+        scrollTo,
+        touchAndScroll,
+      };
+    }
+
+    interface SceneOptions {
+      scrollPush?: boolean;
+      votesIdle?: boolean;
+    }
+
+    it('pushes when a touch scrolls the page over the scene', async () => {
+      const scene = await renderScene({ scrollPush: true });
+
+      scene.touchAndScroll();
+
+      expect(scene.input().getPush()).not.toBeNull();
+    });
+
+    it('stays off by default, and turns on without rebuilding the renderer', async () => {
+      vi.mocked(createRenderer).mockClear();
+      const scene = await renderScene();
+
+      scene.touchAndScroll();
+      expect(scene.input().getPush()).toBeNull();
+
+      scene.rerender(
+        <ShaderScene scrollPush>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      scene.scrollTo(0);
+      scene.touchAndScroll();
+
+      expect(scene.input().getPush()).not.toBeNull();
+      expect(createRenderer).toHaveBeenCalledTimes(1);
+    });
+
+    it('wakes a parked scene when a finger lands, and parks once the fling settles', async () => {
+      const scene = await renderScene({ scrollPush: true, votesIdle: true });
+
+      scene.runUntilParked();
+      expect(scene.frames).toHaveLength(0);
+
+      fireTouch(scene.canvas, 'touchstart');
+      expect(scene.frames.length).toBeGreaterThan(0);
+
+      // The finger lifts mid-scroll, and the fling carries the canvas on
+      // for a few frames, then stops.
+      fireTouch(scene.canvas, 'touchend');
+      for (const top of [-20, -35, -45]) {
+        scene.scrollTo(top);
+        scene.runFrame();
+        expect(scene.frames.length).toBeGreaterThan(0);
+      }
+      scene.runUntilParked();
+
+      expect(scene.input().isPushing()).toBe(false);
+      expect(scene.frames).toHaveLength(0);
+    });
+
+    it('never pushes one scene from a touch on another', async () => {
+      const frames = captureFrames();
+      const firstInputs: CursorInput[] = [];
+      const secondInputs: CursorInput[] = [];
+      const FirstReader = makeReader(firstInputs);
+      const SecondReader = makeReader(secondInputs);
+      const { container } = render(
+        <>
+          <ShaderScene scrollPush>
+            <FirstReader />
+          </ShaderScene>
+          <ShaderScene scrollPush>
+            <SecondReader />
+          </ShaderScene>
+        </>,
+      );
+
+      await waitFor(() => expect(secondInputs.length).toBeGreaterThan(0));
+      const [firstCanvas, secondCanvas] = [...container.querySelectorAll('canvas')];
+      const scrollFirst = scrollable(firstCanvas!, 0);
+      const scrollSecond = scrollable(secondCanvas!, 1000);
+
+      fireTouch(firstCanvas!, 'touchstart');
+      runFrames(frames, 16);
+      scrollFirst(-30);
+      scrollSecond(-30);
+      runFrames(frames, 32);
+
+      expect(firstInputs.at(-1)!.getPush()).not.toBeNull();
+      expect(secondInputs.at(-1)!.getPush()).toBeNull();
+    });
+
+    it('ends the push when the scene pauses, so the frame after the pause pushes nothing', async () => {
+      const scene = await renderScene({ scrollPush: true });
+
+      fireTouch(scene.canvas, 'touchstart');
+      scene.runFrame();
+      scene.rerender(
+        <ShaderScene paused scrollPush>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      // The page scrolls a long way while the loop is paused.
+      scene.scrollTo(-400);
+      scene.rerender(
+        <ShaderScene scrollPush>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      scene.runFrame();
+
+      expect(scene.input().getPush()).toBeNull();
     });
   });
 });

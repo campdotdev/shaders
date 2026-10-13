@@ -7,7 +7,12 @@
 // or with a caller-supplied element, the call owns a private input.
 import { useEffect, useRef, useState } from 'react';
 
-import { CursorInput, type CursorInputOptions, type Vector2 } from '../../../engine.js';
+import {
+  CursorInput,
+  type CursorInputOptions,
+  type PushStroke,
+  type Vector2,
+} from '../../../engine.js';
 import { POSITION_SETTLE_THRESHOLD } from '../../../inputs/cursor-input/cursor-input.js';
 import { Smoother } from '../../../inputs/cursor-input/smoother.js';
 import { createSignal } from '../../internal/create-signal.js';
@@ -38,6 +43,16 @@ export interface CursorSignal extends AnimatableSignal<Vector2> {
    * rather than freezing there.
    */
   presence: AnimatableSignal<number>;
+  /**
+   * This frame's scroll-push stroke, or null when no touch pushed. Only a
+   * ShaderScene with `scrollPush` on pushes: a finger that scrolls the page
+   * over the canvas strokes at the finger, through the fling. The stroke is
+   * a segment in 0..1 canvas units ending at the finger, with the presence
+   * that gates it, the shape a wave field's stroke takes. Read it once per
+   * frame, from the scene's frame loop. The scene keeps drawing while a
+   * touch pushes, so the stroke keeps arriving.
+   */
+  getPush: () => PushStroke | null;
 }
 
 // ----------------------------------------------------------------------------
@@ -75,6 +90,7 @@ const createStubSignal = (initial: Vector2): CursorSignal => ({
     get: () => 0,
     on: () => () => undefined,
   },
+  getPush: () => null,
 });
 
 const noop = () => undefined;
@@ -211,7 +227,11 @@ export function useCursor(opts: CursorOptions = {}): CursorSignal {
       if (cursorBurstActive) scheduler?.requestRender();
     };
 
-    setSignal({ ...positionChannel.signal, presence: presenceChannel.signal });
+    setSignal({
+      ...positionChannel.signal,
+      presence: presenceChannel.signal,
+      getPush: () => input.getPush(),
+    });
 
     // The easing needs a steady tick. Inside a ShaderScene, ride the scene's
     // frame scheduler; outside one (Mode 2), run a private rAF loop.

@@ -62,8 +62,10 @@ function makeRenderer({ floatTargets = true }: StubOptions = {}) {
 
 // A scene whose scheduler hands its clients back, so a test can tick the
 // Effect's drive by hand, and whose register functions count what the
-// Effect puts on the output stage.
-function makeScene(renderer: WebGPURenderer) {
+// Effect puts on the output stage. With `scrollPush`, the shared input
+// pushes and ticks once per frame ahead of every client, as ShaderScene's
+// does.
+function makeScene(renderer: WebGPURenderer, { scrollPush = false } = {}) {
   const clients: SchedulerClient[] = [];
   const uvTransforms: UvTransform[] = [];
   const overlays: PostProcessTransform[] = [];
@@ -100,9 +102,14 @@ function makeScene(renderer: WebGPURenderer) {
       };
     },
     getCursorInput: () => {
-      sharedInput ??= new CursorInput({ element: renderer.domElement });
+      if (sharedInput) return sharedInput;
+      const input = new CursorInput({ element: renderer.domElement });
 
-      return sharedInput;
+      sharedInput = input;
+      input.setScrollPush(scrollPush);
+      if (scrollPush) clients.push(({ delta }) => input.tick(delta));
+
+      return input;
     },
   } as unknown as ShaderContextValue;
 
@@ -391,5 +398,61 @@ describe('CursorRipple with an inert field', () => {
     act(() => scene.tick());
 
     expect(scene.unregisters).toEqual({ uv: 1, overlay: 1 });
+  });
+});
+
+describe('CursorRipple and scroll push', () => {
+  // Puts one finger down on the canvas at its center.
+  const touchDown = (canvas: HTMLCanvasElement) => {
+    const touch = new Touch({ identifier: 1, target: canvas, clientX: 500, clientY: 500 });
+
+    act(() => {
+      canvas.dispatchEvent(
+        new TouchEvent('touchstart', { touches: [touch], changedTouches: [touch], bubbles: true }),
+      );
+    });
+  };
+
+  // Lets the test scroll the canvas, which the shared input reads each tick.
+  const makeScrollableRenderer = () => {
+    const renderer = makeRenderer();
+    const canvas = renderer.domElement;
+    let top = 0;
+
+    canvas.getBoundingClientRect = () => ({ left: 0, top, width: 1000, height: 1000 }) as DOMRect;
+
+    return {
+      renderer,
+      canvas,
+      scrollTo: (next: number) => {
+        top = next;
+      },
+    };
+  };
+
+  it('stirs the water when a touch scrolls the page over it', () => {
+    const { renderer, canvas, scrollTo } = makeScrollableRenderer();
+    const scene = makeScene(renderer, { scrollPush: true });
+
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    touchDown(canvas);
+    scene.tick();
+    scrollTo(-30);
+    scene.tick();
+
+    expect(renderer.render).toHaveBeenCalled();
+  });
+
+  it('leaves the water still under the same touch without scroll push', () => {
+    const { renderer, canvas, scrollTo } = makeScrollableRenderer();
+    const scene = makeScene(renderer);
+
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    touchDown(canvas);
+    scene.tick();
+    scrollTo(-30);
+    scene.tick();
+
+    expect(renderer.render).not.toHaveBeenCalled();
   });
 });

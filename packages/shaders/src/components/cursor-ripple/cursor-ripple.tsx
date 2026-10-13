@@ -182,7 +182,12 @@ export function CursorRipple({
 
     const drive = ({ delta }: SchedulerTick) => {
       const current = cursor.get();
-      const stroke = deriveStroke(previous, current, cursor.presence.get());
+      // The pointer's stroke, or else this frame's scroll push: under the
+      // scene's `scrollPush`, a touch reaches the water only that way. The
+      // field takes one stroke a frame, so on the rare frame where a mouse
+      // and a touch both move, as on a touchscreen laptop, the mouse wins.
+      const stroke =
+        deriveStroke(previous, current, cursor.presence.get()) ?? cursor.getPush() ?? undefined;
       const wasAwake = !field.atRest;
 
       previous = current;

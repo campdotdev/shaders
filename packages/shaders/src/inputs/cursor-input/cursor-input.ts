@@ -1,8 +1,15 @@
-// The pointer as a framework-free Input. It listens on the window for
-// pointermove, normalizes each move to an element's rect, and records the
-// raw target and whether the pointer is inside. It also carries its own
-// smoothed position, so it stands alone as an animation signal outside
-// React, and a ShaderScene owns one that every useCursor call reads raw.
+// The pointer as a framework-free Input: it normalizes window pointer moves
+// to an element's rect and keeps the raw target, presence, and its own
+// smoothed position. A ShaderScene owns one that every useCursor call reads.
+// With scroll push on, it also turns a touch that scrolls the page over the
+// element into one push stroke per tick, which every reader shares.
+import {
+  type CanvasRect,
+  createPushTracker,
+  type PushStroke,
+  type PushTracker,
+  type TouchPoint,
+} from '../scroll-push/scroll-push.js';
 import { Smoother } from './smoother.js';
 
 // ----------------------------------------------------------------------------
@@ -52,6 +59,46 @@ export interface CursorInputOptions {
 export const POSITION_SETTLE_THRESHOLD = 1e-4;
 
 // ----------------------------------------------------------------------------
+// Touch events into scroll push
+// ----------------------------------------------------------------------------
+
+// Desktop Safari and Firefox define no TouchEvent global, so the handlers
+// read the lists off the event instead of checking its class.
+interface TouchListLike {
+  readonly length: number;
+  [index: number]: { identifier: number; clientX: number; clientY: number };
+}
+
+interface TouchEventLike extends Event {
+  touches: TouchListLike;
+  changedTouches: TouchListLike;
+}
+
+const isTouchEvent = (event: Event): event is TouchEventLike => 'touches' in event;
+
+const isEventTarget = (value: unknown): value is EventTarget =>
+  typeof value === 'object' &&
+  value !== null &&
+  'addEventListener' in value &&
+  typeof value.addEventListener === 'function';
+
+const toPoints = (list: TouchListLike): TouchPoint[] =>
+  Array.from({ length: list.length }, (_, index) => {
+    const touch = list[index];
+
+    return { id: touch?.identifier ?? -1, x: touch?.clientX ?? 0, y: touch?.clientY ?? 0 };
+  });
+
+const toSnapshot = (event: TouchEventLike) => ({
+  touches: toPoints(event.touches),
+  changed: toPoints(event.changedTouches),
+});
+
+// Passive, so the page scrolls and zooms without waiting on the scene.
+// Scroll push never cancels a touch.
+const PASSIVE = { passive: true } as const;
+
+// ----------------------------------------------------------------------------
 // The input: listen, normalize, smooth, dispose
 // ----------------------------------------------------------------------------
 
@@ -71,6 +118,20 @@ export class CursorInput {
   private readonly element: CursorInputOptions['element'];
   private readonly handlePointerMove: (e: Event) => void;
   private disposed = false;
+  // Scroll push: the tracker exists while it is on, and the stroke is the
+  // one the last tick worked out.
+  private pushTracker: PushTracker | null = null;
+  private framePush: PushStroke | null = null;
+  private readonly pushStartListeners = new Set<() => void>();
+  private readonly handleTouchStart = (event: Event) => {
+    if (isTouchEvent(event)) this.pushTracker?.touchStart(toSnapshot(event), this.readRect());
+  };
+  private readonly handleTouchMove = (event: Event) => {
+    if (isTouchEvent(event)) this.pushTracker?.touchMove(toSnapshot(event), this.readRect());
+  };
+  private readonly handleTouchEnd = (event: Event) => {
+    if (isTouchEvent(event)) this.pushTracker?.touchEnd(toSnapshot(event));
+  };
 
   constructor(opts: CursorInputOptions = {}) {
     const { smoothing = 0.1, initial = [0.5, 0.5], target, element } = opts;
@@ -85,6 +146,8 @@ export class CursorInput {
     this.handlePointerMove = (e: Event) => {
       if (!(e instanceof MouseEvent)) return;
       const pointerEvent = e;
+
+      if (this.isPushedTouch(pointerEvent)) return;
 
       if (this.element) {
         // Normalize to 0..1 across the element's bounding rect. Reading the
@@ -152,6 +215,72 @@ export class CursorInput {
     return this.inside;
   }
 
+  /**
+   * Turns scroll push on or off. While on, a finger that lands on the
+   * element and scrolls the page pushes once per tick at the finger, a
+   * fling keeps pushing until the element stops, and `getPush` reads the
+   * stroke. Touch pointer moves stop moving the target. Needs an element
+   * that takes event listeners, such as the scene's canvas, and does
+   * nothing without one.
+   */
+  setScrollPush(enabled: boolean): void {
+    const element = this.element;
+
+    if (this.disposed || enabled === (this.pushTracker !== null)) return;
+    // Checked by shape rather than class, so an element from another
+    // realm, such as an iframe, still counts.
+    if (!isEventTarget(element)) return;
+    if (!enabled) {
+      element.removeEventListener('touchstart', this.handleTouchStart);
+      element.removeEventListener('touchmove', this.handleTouchMove);
+      element.removeEventListener('touchend', this.handleTouchEnd);
+      element.removeEventListener('touchcancel', this.handleTouchEnd);
+      this.pushTracker = null;
+      this.framePush = null;
+
+      return;
+    }
+    this.pushTracker = createPushTracker(() => {
+      for (const listener of this.pushStartListeners) listener();
+    });
+    element.addEventListener('touchstart', this.handleTouchStart, PASSIVE);
+    element.addEventListener('touchmove', this.handleTouchMove, PASSIVE);
+    element.addEventListener('touchend', this.handleTouchEnd, PASSIVE);
+    element.addEventListener('touchcancel', this.handleTouchEnd, PASSIVE);
+  }
+
+  /**
+   * The push stroke from the last tick, or null when nothing pushed. Every
+   * reader in a frame gets the same stroke, because only `tick` changes it.
+   */
+  getPush(): PushStroke | null {
+    return this.framePush;
+  }
+
+  /**
+   * Whether a touch is pushing or may push on the next tick: a finger down
+   * on the element, or a fling still running. A host that draws on demand
+   * keeps drawing while this is true, so the push keeps arriving.
+   */
+  isPushing(): boolean {
+    const phase = this.pushTracker?.getPhase();
+
+    return phase === 'down' || phase === 'fling';
+  }
+
+  /**
+   * Subscribe to the start of each scroll-push contact, when a lone finger
+   * lands on the element. A parked host uses it to start drawing again, as
+   * it uses `onMove` for the pointer. Returns an unsubscribe function.
+   */
+  onPushStart(listener: () => void): () => void {
+    this.pushStartListeners.add(listener);
+
+    return () => {
+      this.pushStartListeners.delete(listener);
+    };
+  }
+
   /** Subscribe to change events. Returns an unsubscribe function. */
   on(_eventType: 'change', changeListener: (value: Vector2) => void): () => void {
     this.listeners.add(changeListener);
@@ -184,6 +313,9 @@ export class CursorInput {
    */
   tick(delta: number, afterIdle = false): boolean {
     if (this.disposed) return false;
+    // One push per tick, read from where the element sits now, so a host
+    // that ticks once per frame gives every reader the same stroke.
+    this.framePush = this.pushTracker?.frame(this.readRect()) ?? null;
     const moved = this.position.tick(delta, afterIdle);
 
     if (!moved && !this.targetDirty) return false;
@@ -199,9 +331,26 @@ export class CursorInput {
   /** Tear down listeners. */
   dispose(): void {
     if (this.disposed) return;
+    this.setScrollPush(false);
+    this.pushStartListeners.clear();
     this.disposed = true;
     this.eventTarget.removeEventListener('pointermove', this.handlePointerMove);
     this.listeners.clear();
     this.moveListeners.clear();
+  }
+
+  // Under scroll push, touch reaches cursor effects only as push strokes. A
+  // finger's own pointer moves would also drag the cursor until the browser
+  // took the scroll.
+  private isPushedTouch(event: MouseEvent): boolean {
+    return this.pushTracker !== null && 'pointerType' in event && event.pointerType === 'touch';
+  }
+
+  // The element's rect, with a zero size read as 1 so a collapsed element
+  // never divides by zero. Without an element there is nothing to push on.
+  private readRect(): CanvasRect {
+    const rect = this.element?.getBoundingClientRect() ?? { left: 0, top: 0, width: 1, height: 1 };
+
+    return { left: rect.left, top: rect.top, width: rect.width || 1, height: rect.height || 1 };
   }
 }

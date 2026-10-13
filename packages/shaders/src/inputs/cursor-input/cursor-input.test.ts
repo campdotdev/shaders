@@ -257,4 +257,147 @@ describe('CursorInput', () => {
     expect(staying).toHaveBeenCalledTimes(2);
     cursor.dispose();
   });
+
+  describe('scroll push', () => {
+    // A 300 by 300 canvas at (0, 100) whose rect the test moves, standing
+    // in for the page scrolling it. A 30 pixel scroll is a tenth of it.
+    const makeCanvas = () => {
+      const canvas = document.createElement('canvas');
+      let rect = { left: 0, top: 100, width: 300, height: 300 };
+
+      canvas.getBoundingClientRect = () => ({ ...rect }) as DOMRect;
+      document.body.append(canvas);
+
+      return {
+        canvas,
+        scrollTo: (top: number) => {
+          rect = { ...rect, top };
+        },
+      };
+    };
+
+    interface Finger {
+      id: number;
+      x: number;
+      y: number;
+    }
+
+    // Fires a touch event on the canvas: `touches` is every finger still
+    // down after it, `changed` the fingers it is about.
+    const fireTouch = (
+      target: EventTarget,
+      type: 'touchstart' | 'touchmove' | 'touchend',
+      touches: Finger[],
+      changed: Finger[] = touches,
+    ) => {
+      const toTouch = ({ id, x, y }: Finger) =>
+        new Touch({ identifier: id, target, clientX: x, clientY: y });
+
+      target.dispatchEvent(
+        new TouchEvent(type, {
+          touches: touches.map(toTouch),
+          changedTouches: changed.map(toTouch),
+          bubbles: true,
+        }),
+      );
+    };
+
+    const near = (value: number) => expect.closeTo(value, 9);
+
+    it('pushes at the finger once the page scrolls the canvas under it', () => {
+      const { canvas, scrollTo } = makeCanvas();
+      const cursor = new CursorInput({ element: canvas });
+
+      cursor.setScrollPush(true);
+      fireTouch(canvas, 'touchstart', [{ id: 1, x: 100, y: 200 }]);
+      scrollTo(70);
+      cursor.tick(1 / 60);
+
+      expect(cursor.getPush()).toEqual({
+        from: [near(1 / 3), near(1 / 3 + 0.1)],
+        to: [near(1 / 3), near(1 / 3)],
+        presence: 1,
+      });
+      cursor.dispose();
+    });
+
+    it('stays off until a host turns it on', () => {
+      const { canvas, scrollTo } = makeCanvas();
+      const cursor = new CursorInput({ element: canvas });
+
+      fireTouch(canvas, 'touchstart', [{ id: 1, x: 100, y: 200 }]);
+      scrollTo(70);
+      cursor.tick(1 / 60);
+
+      expect(cursor.getPush()).toBeNull();
+      expect(cursor.isPushing()).toBe(false);
+      cursor.dispose();
+    });
+
+    it('leaves the cursor to the mouse, and touch to the push', () => {
+      const { canvas } = makeCanvas();
+      const cursor = new CursorInput({ element: canvas });
+
+      cursor.setScrollPush(true);
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 150, clientY: 250, pointerType: 'touch' }),
+      );
+      expect(cursor.getTarget()).toBeNull();
+      window.dispatchEvent(
+        new PointerEvent('pointermove', { clientX: 150, clientY: 250, pointerType: 'mouse' }),
+      );
+      expect(cursor.getTarget()).toEqual([0.5, 0.5]);
+      cursor.dispose();
+    });
+
+    it('reports pushing from the touch until a fling settles', () => {
+      const { canvas, scrollTo } = makeCanvas();
+      const cursor = new CursorInput({ element: canvas });
+      const finger = { id: 1, x: 100, y: 200 };
+
+      cursor.setScrollPush(true);
+      fireTouch(canvas, 'touchstart', [finger]);
+      expect(cursor.isPushing()).toBe(true);
+      fireTouch(canvas, 'touchend', [], [finger]);
+      scrollTo(40);
+      cursor.tick(1 / 60);
+      expect(cursor.isPushing()).toBe(true);
+      expect(cursor.getPush()).not.toBeNull();
+      for (let frame = 0; frame < 3; frame += 1) cursor.tick(1 / 60);
+      expect(cursor.isPushing()).toBe(false);
+      expect(cursor.getPush()).toBeNull();
+      cursor.dispose();
+    });
+
+    it('tells a push-start subscriber when a finger lands, so a parked host can wake', () => {
+      const { canvas } = makeCanvas();
+      const cursor = new CursorInput({ element: canvas });
+      const onPushStart = vi.fn();
+
+      cursor.setScrollPush(true);
+      cursor.onPushStart(onPushStart);
+      fireTouch(canvas, 'touchstart', [{ id: 1, x: 100, y: 200 }]);
+      expect(onPushStart).toHaveBeenCalledTimes(1);
+      cursor.dispose();
+    });
+
+    it('stops listening when turned off or disposed', () => {
+      const { canvas, scrollTo } = makeCanvas();
+      const cursor = new CursorInput({ element: canvas });
+      const onPushStart = vi.fn();
+
+      cursor.onPushStart(onPushStart);
+      cursor.setScrollPush(true);
+      cursor.setScrollPush(false);
+      fireTouch(canvas, 'touchstart', [{ id: 1, x: 100, y: 200 }]);
+      scrollTo(70);
+      cursor.tick(1 / 60);
+      expect(cursor.getPush()).toBeNull();
+
+      cursor.setScrollPush(true);
+      cursor.dispose();
+      fireTouch(canvas, 'touchstart', [{ id: 2, x: 100, y: 200 }]);
+      expect(onPushStart).not.toHaveBeenCalled();
+    });
+  });
 });
