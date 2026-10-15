@@ -10,6 +10,7 @@ const routes = [
   '/components/mesh-gradient',
   '/components/aurora',
   '/components/blobs',
+  '/components/cursor-smudge',
   '/components/dot-field',
   '/components/fractal-noise',
   '/components/god-rays',
