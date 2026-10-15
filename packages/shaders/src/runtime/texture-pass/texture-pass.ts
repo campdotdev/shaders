@@ -66,7 +66,8 @@ export interface TexturePass {
   /**
    * Change the texture's size in texels, clamped as the options' width and
    * height are. The texture object stays the same, so a texture node bound
-   * to it stays bound, but its contents are gone until the next render.
+   * to it stays bound. A new size throws away the contents until the next
+   * render, and the same size changes nothing.
    */
   resize: (width: number, height: number) => void;
   /** Release the texture and the material. The renderer stays the caller's. */
@@ -191,10 +192,17 @@ export function createTexturePass(
     },
 
     // setSize keeps the texture object and frees its GPU memory, which three
-    // reallocates at the new size on the next draw.
+    // allocates again at the new size on the next draw into it. Marking the
+    // texture for update lets a shader that samples it before that draw bind
+    // the new allocation (the resize-rebind gotcha in docs/agents/tsl.md).
     resize(nextWidth, nextHeight) {
-      if (!alive()) return;
-      target?.setSize(clampSide(nextWidth), clampSide(nextHeight));
+      if (!alive() || target === null) return;
+      const sideX = clampSide(nextWidth);
+      const sideY = clampSide(nextHeight);
+
+      if (sideX === target.width && sideY === target.height) return;
+      target.setSize(sideX, sideY);
+      target.texture.needsUpdate = true;
     },
 
     dispose() {
