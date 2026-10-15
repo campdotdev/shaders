@@ -4,14 +4,16 @@
  * The Reactive card's live scene: its LiquidGradient, held still, and a
  * CursorSmudge that holds a smudge along the J path (reactive-smudge.ts).
  * After the scene's first frame, a scripted stroke lays the J, and the
- * still frame is ready once it lands. reactive-illustration.tsx loads this
- * module with import() from an effect, which keeps three out of the server
- * render (the SSR gotcha in docs/agents/docs-site.md).
+ * still frame is ready once it lands. The illustration sets the smudge's
+ * decay for its story, and can stroke it too, as the arrow glides.
+ * reactive-illustration.tsx loads this module with import() from an
+ * effect, which keeps three out of the server render (the SSR gotcha in
+ * docs/agents/docs-site.md).
  */
 import { useEffect, useRef, useState } from 'react';
 
 import { CursorSmudge, LiquidGradient, ShaderScene } from '@camp-dev/shaders';
-import { animate, useMotionValue, useTransform } from 'motion/react';
+import { animate, type MotionValue, useMotionValue, useTransform } from 'motion/react';
 
 import { EASE_OUT } from '@/lib/easing';
 
@@ -21,9 +23,16 @@ import { pointOnJ, REACTIVE_SMUDGE } from './reactive-smudge';
 export interface ReactiveSceneProps {
   /** Fires once the J's smudge is laid and the scene shows the still frame. */
   onStillFrame: () => void;
+  /** CursorSmudge's decay. 0 holds the smudge, as the still frame does. */
+  decay: number;
+  /**
+   * A point that strokes the smudge, in 0..1 canvas units, or null while
+   * nothing scripted strokes. The J's own stroke takes over while it lays.
+   */
+  strokeAt: MotionValue<[number, number]> | null;
 }
 
-export default function ReactiveScene({ onStillFrame }: ReactiveSceneProps) {
+export default function ReactiveScene({ onStillFrame, decay, strokeAt }: ReactiveSceneProps) {
   const progress = useMotionValue(0);
   const point = useTransform(progress, pointOnJ);
   const [laying, setLaying] = useState(false);
@@ -61,12 +70,15 @@ export default function ReactiveScene({ onStillFrame }: ReactiveSceneProps) {
   };
 
   return (
-    <ShaderScene onFirstPaint={layJ} strokeAt={laying ? point : null}>
+    <ShaderScene onFirstPaint={layJ} strokeAt={laying ? point : strokeAt}>
       {/* A literal 0 holds the flow still, so the scene parks whenever
           nothing strokes. */}
       <LiquidGradient {...REACTIVE_GRADIENT} speed={0} />
-      {/* Decay 0 holds the smudge for good. */}
-      <CursorSmudge decay={0} radius={REACTIVE_SMUDGE.radius} strength={REACTIVE_SMUDGE.strength} />
+      <CursorSmudge
+        decay={decay}
+        radius={REACTIVE_SMUDGE.radius}
+        strength={REACTIVE_SMUDGE.strength}
+      />
     </ShaderScene>
   );
 }
