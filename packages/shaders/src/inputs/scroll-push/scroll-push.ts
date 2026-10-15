@@ -51,9 +51,10 @@ export interface CanvasRect {
 }
 
 /**
- * One frame's push: the segment the brush swept, in 0..1 canvas units with
- * [0, 0] at the top-left and the segment ending at the brush, plus the
- * presence that gates it. The shape the wave field's stroke already has.
+ * One frame's stroke, from a push or a scripted stroke: the segment the
+ * brush swept, in 0..1 canvas units with [0, 0] at the top-left and the
+ * segment ending at the brush, plus the presence that gates it. The shape
+ * the wave field's stroke already has.
  */
 export interface PushStroke {
   from: readonly [number, number];

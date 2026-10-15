@@ -1015,6 +1015,7 @@ describe('ShaderScene', () => {
           value = next;
           for (const listener of listeners) listener(next);
         },
+        listenerCount: () => listeners.size,
       };
     };
 
@@ -1148,6 +1149,39 @@ describe('ShaderScene', () => {
       expect(scene.input().isScripting()).toBe(false);
       expect(scene.frames).toHaveLength(0);
       expect(createRenderer).toHaveBeenCalledTimes(1);
+    });
+
+    it('follows a new point from where it is, and stops listening to the old one', async () => {
+      const first = createPoint([0.2, 0.8]);
+      const second = createPoint([0.6, 0.4]);
+      const scene = await renderScene(first);
+
+      scene.runFrame();
+      scene.rerender(
+        <ShaderScene strokeAt={second}>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      second.set([0.7, 0.3]);
+      scene.runFrame();
+
+      expect(scene.input().getScriptedStroke()).toEqual({
+        from: [0.6, 0.4],
+        to: [0.7, 0.3],
+        presence: 1,
+      });
+      expect(first.listenerCount()).toBe(0);
+      expect(second.listenerCount()).toBe(1);
+    });
+
+    it('stops listening to the point when the scene unmounts', async () => {
+      const point = createPoint([0.2, 0.8]);
+      const scene = await renderScene(point);
+
+      expect(point.listenerCount()).toBe(1);
+      scene.unmount();
+
+      expect(point.listenerCount()).toBe(0);
     });
   });
 });

@@ -15,7 +15,7 @@ export type {
 export { CursorInput } from './inputs/cursor-input/cursor-input.js';
 export type {
   CursorInputOptions,
-  StrokeSource,
+  StrokePoint,
   Vector2,
 } from './inputs/cursor-input/cursor-input.js';
 export type { PushStroke } from './inputs/scroll-push/scroll-push.js';

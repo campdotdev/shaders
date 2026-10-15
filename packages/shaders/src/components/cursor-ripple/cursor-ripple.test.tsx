@@ -8,7 +8,7 @@ import {
   createWaveField,
   CursorInput,
   setReducedMotionPolicy,
-  type StrokeSource,
+  type StrokePoint,
 } from '../../engine.js';
 import {
   type PostProcessTransform,
@@ -75,7 +75,7 @@ function makeScene(
   {
     scrollPush = false,
     strokeAt = null,
-  }: { scrollPush?: boolean; strokeAt?: StrokeSource | null } = {},
+  }: { scrollPush?: boolean; strokeAt?: StrokePoint | null } = {},
 ) {
   const clients: SchedulerClient[] = [];
   const uvTransforms: UvTransform[] = [];
@@ -118,7 +118,7 @@ function makeScene(
 
       sharedInput = input;
       input.setScrollPush(scrollPush);
-      input.setStrokeSource(strokeAt);
+      input.setStrokePoint(strokeAt);
       if (scrollPush || strokeAt) clients.push(({ delta }) => input.tick(delta));
 
       return input;
@@ -495,6 +495,28 @@ describe('CursorRipple and scripted strokes', () => {
     scene.tick();
 
     expect(renderer.render).toHaveBeenCalled();
+  });
+
+  it('leaves the water still under a scroll push while a scripted stroke is attached', () => {
+    const renderer = makeRenderer();
+    const canvas = renderer.domElement;
+    let top = 0;
+
+    canvas.getBoundingClientRect = () => ({ left: 0, top, width: 1000, height: 1000 }) as DOMRect;
+    const scene = makeScene(renderer, { scrollPush: true, strokeAt: createPoint([0.2, 0.5]) });
+    const touch = new Touch({ identifier: 1, target: canvas, clientX: 500, clientY: 500 });
+
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    act(() => {
+      canvas.dispatchEvent(
+        new TouchEvent('touchstart', { touches: [touch], changedTouches: [touch], bubbles: true }),
+      );
+    });
+    scene.tick();
+    top = -30;
+    scene.tick();
+
+    expect(renderer.render).not.toHaveBeenCalled();
   });
 
   it('leaves the water still under the mouse while a scripted stroke is attached', () => {

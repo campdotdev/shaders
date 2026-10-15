@@ -2,7 +2,9 @@
 // to an element's rect and keeps the raw target, presence, and its own
 // smoothed position. A ShaderScene owns one that every useCursor call reads.
 // With scroll push on, it also turns a touch that scrolls the page over the
-// element into one push stroke per tick, which every reader shares.
+// element into one push stroke per tick, which every reader shares. With a
+// stroke point attached, it turns the point's moves into a scripted stroke
+// per tick the same way.
 import {
   type CanvasRect,
   createPushTracker,
@@ -63,7 +65,7 @@ export const POSITION_SETTLE_THRESHOLD = 1e-4;
  * `getTarget()` and unclamped. Anything with `get` and `on('change')`
  * qualifies, such as Motion's MotionValue.
  */
-export interface StrokeSource {
+export interface StrokePoint {
   get(): Vector2;
   on(event: 'change', listener: (value: Vector2) => void): () => void;
 }
@@ -104,12 +106,16 @@ const toSnapshot = (event: TouchEventLike) => ({
   changed: toPoints(event.changedTouches),
 });
 
-// A source may hand back one array it mutates, so keep a copy of each point.
-const copy = ([x, y]: Vector2): Vector2 => [x, y];
-
 // Passive, so the page scrolls and zooms without waiting on the scene.
 // Scroll push never cancels a touch.
 const PASSIVE = { passive: true } as const;
+
+// ----------------------------------------------------------------------------
+// Points into scripted strokes
+// ----------------------------------------------------------------------------
+
+// A point's signal may hand back one array it mutates, so keep a copy of each.
+const copy = ([x, y]: Vector2): Vector2 => [x, y];
 
 // ----------------------------------------------------------------------------
 // The input: listen, normalize, smooth, dispose
@@ -137,11 +143,11 @@ export class CursorInput {
   private framePush: PushStroke | null = null;
   private readonly pushStartListeners = new Set<() => void>();
   private readonly pushEndListeners = new Set<() => void>();
-  // Scripted stroke: the attached source, where its stroke goes on from,
+  // Scripted stroke: the attached point, where its stroke goes on from,
   // and the stroke the last tick worked out.
-  private strokeSource: StrokeSource | null = null;
+  private strokePoint: StrokePoint | null = null;
   private strokeFrom: Vector2 | null = null;
-  private frameScripted: PushStroke | null = null;
+  private frameScriptedStroke: PushStroke | null = null;
   private readonly handleTouchStart = (event: Event) => {
     if (isTouchEvent(event)) this.pushTracker?.touchStart(toSnapshot(event), this.readRect());
   };
@@ -299,26 +305,26 @@ export class CursorInput {
    * After that, each tick strokes from the last point to the current one.
    * Works with or without scroll push.
    */
-  setStrokeSource(source: StrokeSource | null): void {
+  setStrokePoint(point: StrokePoint | null): void {
     if (this.disposed) return;
-    this.strokeSource = source;
-    this.strokeFrom = source ? copy(source.get()) : null;
-    this.frameScripted = null;
+    this.strokePoint = point;
+    this.strokeFrom = point ? copy(point.get()) : null;
+    this.frameScriptedStroke = null;
   }
 
   /**
-   * The scripted stroke from the last tick, or null when the source did not
+   * The scripted stroke from the last tick, or null when the point did not
    * move or none is attached. A reader that strokes takes it first: while a
-   * source is attached (`isScripting`), the reader ignores the mouse and the
+   * point is attached (`isScripting`), the reader ignores the mouse and the
    * scroll push, and takes the mouse before the push otherwise.
    */
   getScriptedStroke(): PushStroke | null {
-    return this.frameScripted;
+    return this.frameScriptedStroke;
   }
 
-  /** Whether a scripted stroke's source is attached, moving or not. */
+  /** Whether a scripted stroke's point is attached, moving or not. */
   isScripting(): boolean {
-    return this.strokeSource !== null;
+    return this.strokePoint !== null;
   }
 
   /**
@@ -402,7 +408,7 @@ export class CursorInput {
     // One push per tick, read from where the element sits now, so a host
     // that ticks once per frame gives every reader the same stroke.
     this.framePush = this.pushTracker?.frame(this.readRect()) ?? null;
-    this.frameScripted = this.readScriptedStroke();
+    this.frameScriptedStroke = this.readScriptedStroke();
     const moved = this.position.tick(delta, afterIdle);
 
     if (!moved && !this.targetDirty) return false;
@@ -423,21 +429,21 @@ export class CursorInput {
     this.setScrollPush(false);
     this.pushStartListeners.clear();
     this.disposed = true;
-    this.strokeSource = null;
+    this.strokePoint = null;
     this.strokeFrom = null;
-    this.frameScripted = null;
+    this.frameScriptedStroke = null;
     this.eventTarget.removeEventListener('pointermove', this.handlePointerMove);
     this.listeners.clear();
     this.moveListeners.clear();
   }
 
-  // The segment from where the scripted stroke left off to where its source
-  // is now. A source that has not moved strokes nothing.
+  // The segment from where the scripted stroke left off to where its point
+  // is now. A point that has not moved strokes nothing.
   private readScriptedStroke(): PushStroke | null {
     const from = this.strokeFrom;
 
-    if (!this.strokeSource || !from) return null;
-    const to = copy(this.strokeSource.get());
+    if (!this.strokePoint || !from) return null;
+    const to = copy(this.strokePoint.get());
 
     if (to[0] === from[0] && to[1] === from[1]) return null;
     this.strokeFrom = to;
