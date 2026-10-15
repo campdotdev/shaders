@@ -38,6 +38,10 @@ _Avoid_: Interactive shader, cursor component, drop-in
 The push a scene's cursor effects feel from a touch that scrolls the page over the canvas, at the finger and on through the fling. A scene opts in, and the page scrolls exactly as it would without it.
 _Avoid_: Hold to interact, touch drag, scroll drag
 
+**Scripted stroke**:
+A stroke code draws across a scene's cursor effects by moving a point. While code strokes, the effects ignore the mouse and scroll push.
+_Avoid_: Virtual pointer, fake cursor, brush
+
 ### Rendering
 
 **Render on demand**:
