@@ -44,3 +44,19 @@ export function pointOnJ(t: number): [number, number] {
     weights[0] * p0[1] + weights[1] * p1[1] + weights[2] * p2[1] + weights[3] * p3[1],
   ];
 }
+
+/**
+ * The way the J runs at `t`, in degrees with y down, measured in mock
+ * pixels: straight up at its foot, and to the right at the arrow.
+ */
+export function headingOnJ(t: number): number {
+  const [p0, p1, p2, p3] = J_PATH;
+  const u = 1 - t;
+  const weights = [3 * u * u, 6 * u * t, 3 * t * t] as const;
+  const dx =
+    weights[0] * (p1[0] - p0[0]) + weights[1] * (p2[0] - p1[0]) + weights[2] * (p3[0] - p2[0]);
+  const dy =
+    weights[0] * (p1[1] - p0[1]) + weights[1] * (p2[1] - p1[1]) + weights[2] * (p3[1] - p2[1]);
+
+  return (Math.atan2(dy * 309, dx * 312) * 180) / Math.PI;
+}
