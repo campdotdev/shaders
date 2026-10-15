@@ -1,0 +1,55 @@
+/* The Reactive illustration, after the Figma mock's node 939:964: a pointer
+   arrow over a live gradient. Every length is in the mock's pixels times
+   --mock-px, one mock pixel at the card window's current width. The window
+   is 312 mock pixels wide, and features.module.css makes it the container
+   that `cqw` measures, so the illustration scales like the image it
+   replaced at every column width. */
+.illustration {
+  --mock-px: calc(100cqw / 312);
+
+  position: relative;
+  aspect-ratio: 312 / 309;
+}
+
+/* The image exported from the mock at 2x. It covers the scene until the
+   scene's first frame, and stands in for it without WebGPU. */
+.still {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---- The arrow ----
+   The mock's pointer, 71.6 by 87.9, turned 76.89 degrees so it points up
+   and to the right. --arrow-x and --arrow-y place the point the arrow's body
+   trails from, and the pointer's box sits 31.56 to its left and 35.3 above
+   it.
+
+   Both parts carry the whole placement themselves. A transform on a shared
+   parent would make that parent a group of its own, and the halo's overlay
+   blend would then have nothing under it to blend with. */
+.pointer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: calc(71.595 * var(--mock-px));
+  height: calc(87.924 * var(--mock-px));
+  rotate: 76.89deg;
+  translate: calc((var(--arrow-x) - 31.56) * var(--mock-px))
+    calc((var(--arrow-y) - 35.3) * var(--mock-px));
+}
+
+/* The halo, the pointer's full box, in light gray with an overlay blend,
+   which lightens it over bright color and keeps it dim over dark. */
+.pointer[data-part='halo'] {
+  mix-blend-mode: overlay;
+}
+
+/* The body, 58.9 by 75.2, inset in the halo's box as the mock draws it. */
+.pointer[data-part='body'] {
+  padding: calc(6.489 * var(--mock-px)) calc(6.49 * var(--mock-px)) calc(6.198 * var(--mock-px))
+    calc(6.198 * var(--mock-px));
+}
