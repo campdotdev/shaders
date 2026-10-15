@@ -30,6 +30,7 @@ import {
   type MotionValue,
   useMotionValue,
   useMotionValueEvent,
+  useReducedMotion,
   useSpring,
   useTransform,
 } from 'motion/react';
@@ -59,7 +60,7 @@ import {
 import styles from './reactive-illustration.module.css';
 import type { ReactiveSceneProps } from './reactive-scene';
 import { pointOnJ, REACTIVE_SMUDGE } from './reactive-smudge';
-import { type HeldStage, useHeldStory } from './story';
+import { type HeldBy, type HeldStage, type HeldStory, useHeldStory } from './story';
 
 // ---------------------------------------------
 // Loading the scene
@@ -265,26 +266,30 @@ function useCardPointer(illustrationRef: RefObject<HTMLDivElement | null>) {
 }
 
 /**
- * Where the arrow is in a hover. It rests in the still frame, flies out,
- * flies back in, and follows the pointer. Once the pointer leaves, it
- * follows the pointer's way off the window, waits off it while the
- * visitor's smudges clear, then swoops back along the J.
+ * Where the arrow is in the story. It rests in the still frame. A hover
+ * sends it out, back in, and following the pointer. A scroll push hides it
+ * where it rests while the touch stirs the smudge. Once the hover or the
+ * push ends, it leaves the way the pointer did, if it was following, waits
+ * off the window while the smudges clear, then swoops back along the J.
  */
-type Leg = 'resting' | 'out' | 'in' | 'following' | 'leaving' | 'clearing' | 'swooping';
+type Leg = 'resting' | 'out' | 'in' | 'following' | 'pushing' | 'leaving' | 'clearing' | 'swooping';
 
 /** A leg that ends when a flight or a wait does, which moves the play to the next leg. */
 type TimedLeg = 'out' | 'in' | 'leaving' | 'clearing';
 
-function legOf(stage: HeldStage, finished: TimedLeg | null): Leg {
+function legOf(stage: HeldStage, heldBy: HeldBy, finished: TimedLeg | null): Leg {
   if (stage === 'still') return 'resting';
   if (stage === 'holding') {
+    if (heldBy === 'push') return 'pushing';
     if (finished === null) return 'out';
 
     return finished === 'out' ? 'in' : 'following';
   }
-  if (finished === 'leaving') return 'clearing';
+  if (finished === 'clearing') return 'swooping';
+  // A push ending skips the flight off: the arrow is already hidden.
+  if (finished === 'leaving' || heldBy === 'push') return 'clearing';
 
-  return finished === 'clearing' ? 'swooping' : 'leaving';
+  return 'leaving';
 }
 
 function decayOf(leg: Leg): number {
@@ -308,15 +313,13 @@ const canvasTip = (pose: ArrowPose): [number, number] => {
  * strokes.
  */
 function useArrow(
-  stage: HeldStage,
-  plays: number,
-  onStoryEnd: () => void,
+  { stage, plays, heldBy, onStoryEnd }: HeldStory,
   pointer: CardPointer,
   resetPointer: () => void,
 ) {
   // The last timed leg this play finished.
   const [finished, setFinished] = useState<{ play: number; leg: TimedLeg } | null>(null);
-  const leg = legOf(stage, finished?.play === plays ? finished.leg : null);
+  const leg = legOf(stage, heldBy, finished?.play === plays ? finished.leg : null);
 
   const out = useMotionValue(0);
   const flightIn = useMotionValue(0);
@@ -378,8 +381,11 @@ function useArrow(
       case 'following':
         return followPose.get();
       case 'leaving':
-      case 'clearing':
         return leavePose.get();
+      case 'clearing':
+        // After a push the arrow waits hidden in its spot, and after a
+        // hover it waits where it left the window.
+        return heldBy === 'push' ? STILL_FRAME_ARROW : leavePose.get();
       case 'swooping':
         return swoopPoseValue.get();
       default:
@@ -484,7 +490,11 @@ function useArrow(
   else if (leg === 'in') strokeAt = inTip;
   else if (leg === 'swooping') strokeAt = jPoint;
 
-  return { leg, decay: decayOf(leg), style, strokeAt };
+  // Hidden while a push stirs the smudge and while it clears after, so the
+  // arrow only shows again as it swoops back in.
+  const hidden = leg === 'pushing' || (leg === 'clearing' && heldBy === 'push');
+
+  return { leg, hidden, decay: decayOf(leg), style, strokeAt };
 }
 
 // ---------------------------------------------
@@ -493,8 +503,8 @@ function useArrow(
 
 // Hidden from screen readers: the card's title and description carry its
 // message. `data-scene` says whether the live scene shows the still frame
-// yet, `data-stage` where the story is, and `data-arrow` where the arrow is
-// in it.
+// yet, `data-stage` where the story is, `data-arrow` where the arrow is in
+// it, and `data-arrow-hidden` whether a push has hidden it.
 //
 // `m` under LazyMotion rather than `motion`, as in the other feature cards:
 // the illustration only binds motion values to style, which domMin covers.
@@ -505,10 +515,13 @@ export function ReactiveIllustration() {
   const { pointer, onPointerMove, reset } = useCardPointer(illustrationRef);
   // The story waits for the live scene's still frame, so a card showing the
   // image, as it does without WebGPU, stays still.
-  const { stage, plays, onStoryEnd } = useHeldStory({ enabled: laid, onPointerMove });
-  const arrow = useArrow(stage, plays, onStoryEnd, pointer, reset);
+  const story = useHeldStory({ enabled: laid, onPointerMove });
+  const arrow = useArrow(story, pointer, reset);
+  // A touch can only stir the smudge with motion allowed, so under reduced
+  // motion it can't leave a smudge for the decay-0 still frame to hold.
+  const reducedMotion = useReducedMotion() === true;
 
-  usePauseHeroWhile(stage !== 'still');
+  usePauseHeroWhile(story.stage !== 'still');
 
   return (
     <LazyMotion features={domMin} strict>
@@ -516,14 +529,22 @@ export function ReactiveIllustration() {
         aria-hidden
         className={styles.illustration}
         data-arrow={arrow.leg}
+        data-arrow-hidden={arrow.hidden || undefined}
         data-scene={laid ? 'laid' : 'still'}
-        data-stage={stage}
+        data-stage={story.stage}
         ref={illustrationRef}
       >
         {/* ShaderScene fills the illustration by itself. The arrow follows
             it in the DOM, so it paints on top. */}
         {Scene && (
-          <Scene decay={arrow.decay} onStillFrame={() => setLaid(true)} strokeAt={arrow.strokeAt} />
+          <Scene
+            decay={arrow.decay}
+            onPushEnd={story.onPushEnd}
+            onPushStart={story.onPushStart}
+            onStillFrame={() => setLaid(true)}
+            scrollPush={!reducedMotion}
+            strokeAt={arrow.strokeAt}
+          />
         )}
         <Arrow style={arrow.style} />
         {!laid && (

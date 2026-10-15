@@ -40,6 +40,7 @@
    blend would then have nothing under it to blend with. */
 .pointer {
   position: absolute;
+  transition: opacity var(--fade-sm) var(--ease-out);
   top: 0;
   left: 0;
   box-sizing: border-box;
@@ -47,6 +48,12 @@
   height: calc(87.924 * var(--mock-px));
   rotate: calc(var(--arrow-angle) * 1deg);
   translate: calc(var(--arrow-x) * var(--mock-px)) calc(var(--arrow-y) * var(--mock-px));
+}
+
+/* A scroll push hides the arrow while the touch stirs the smudge. It shows
+   again as it swoops back in from off the window. */
+.illustration[data-arrow-hidden] .pointer {
+  opacity: 0;
 }
 
 /* The halo, the pointer's full box, in light gray with an overlay blend,
