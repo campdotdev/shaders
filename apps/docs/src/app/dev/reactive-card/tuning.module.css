@@ -1,0 +1,25 @@
+.page {
+  padding: var(--spacing-6);
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-6);
+  align-items: flex-start;
+}
+
+/* The card's window at the mock's 312 CSS pixels. */
+.window {
+  width: 312px;
+}
+
+/* The settings as JSON, to paste back into reactive-gradient.ts. */
+.values {
+  margin: 0;
+  color: var(--white);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-xs);
+  line-height: 1.5;
+  user-select: all;
+}

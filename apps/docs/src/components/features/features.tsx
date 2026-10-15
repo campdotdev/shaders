@@ -12,6 +12,7 @@ import { FEATURE_CARDS, type FeatureCardId } from '@/content/homepage';
 import { ExtensibleIllustration } from './extensible-illustration';
 import styles from './features.module.css';
 import { PerformantIllustration } from './performant-illustration';
+import { ReactiveIllustration } from './reactive-illustration';
 import { StoryCard } from './story';
 
 // The illustration's size in the mock, in CSS pixels. The exported files are
@@ -36,14 +37,14 @@ function StaticIllustration({ src }: { src: string }) {
   );
 }
 
-// Each card's illustration. Extensible's and Performant's are built in code.
-// The others are the images exported from the mock until each card's own
-// issue rebuilds its illustration in code and gives the card its story. A
-// complete record, so a card with no illustration fails the type check.
+// Each card's illustration. Extensible's, Performant's, and Reactive's are
+// built in code. Composable's is the image exported from the mock until its
+// own issue rebuilds it in code and gives the card its story. A complete
+// record, so a card with no illustration fails the type check.
 const ILLUSTRATIONS: Record<FeatureCardId, ReactNode> = {
   composable: <StaticIllustration src="/features/composable.png" />,
   performant: <PerformantIllustration />,
-  reactive: <StaticIllustration src="/features/reactive.png" />,
+  reactive: <ReactiveIllustration />,
   extensible: <ExtensibleIllustration />,
 };
 
