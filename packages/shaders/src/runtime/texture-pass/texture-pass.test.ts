@@ -228,6 +228,28 @@ describe('resize', () => {
     expect(renderer.render).not.toHaveBeenCalled();
   });
 
+  // The resize-rebind gotcha in docs/agents/tsl.md.
+  it('marks the texture for update when its size changes, and only then', () => {
+    const pass = createTexturePass(makeRenderer({ maxTextureSide: 4096 }), red, floatSlices);
+    const texture = pass.texture!;
+    const versionBefore = texture.version;
+
+    pass.resize(120, 2);
+    expect(texture.version).toBeGreaterThan(versionBefore);
+
+    const versionAfterResize = texture.version;
+
+    pass.resize(120, 2);
+    expect(texture.version).toBe(versionAfterResize);
+
+    // Two sizes past the device's limit clamp to the same size.
+    pass.resize(5000, 2);
+    const versionAtLimit = texture.version;
+
+    pass.resize(6000, 2);
+    expect(texture.version).toBe(versionAtLimit);
+  });
+
   // Past the device's limit the allocation fails and the texture reads back
   // as nothing. WebGL2 lets a device stop at 2048 texels a side.
   it.each([
