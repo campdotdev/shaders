@@ -5,7 +5,7 @@
  * still frame.
  */
 
-export interface ReactiveSmudge {
+interface ReactiveSmudge {
   /** CursorSmudge's strength: the furthest the stroke pulls, in canvas heights. */
   strength: number;
   /** CursorSmudge's radius: how wide the stroke pulls, in canvas heights. */
@@ -14,11 +14,12 @@ export interface ReactiveSmudge {
   laySeconds: number;
 }
 
-// Assumed until the author tunes them at phase 1b on /dev/reactive-card.
-// 0.85 s is the ending's swoop, which lays the same smudge.
+// The author picked this strength and radius at phase 1b, about twice
+// CursorSmudge's defaults, so the streak reads as the mock's trail. 0.85 s
+// is the ending's swoop, which lays the same smudge.
 export const REACTIVE_SMUDGE: ReactiveSmudge = {
-  strength: 0.12,
-  radius: 0.18,
+  strength: 0.25,
+  radius: 0.24,
   laySeconds: 0.85,
 };
 
