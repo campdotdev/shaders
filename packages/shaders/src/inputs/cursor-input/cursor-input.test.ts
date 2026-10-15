@@ -425,6 +425,89 @@ describe('CursorInput', () => {
       cursor.dispose();
     });
 
+    it('tells a push-end subscriber once, when the fling settles', () => {
+      const { canvas, scrollTo } = makeCanvas();
+      const cursor = new CursorInput({ element: canvas });
+      const finger = { id: 1, x: 100, y: 200 };
+      const onPushEnd = vi.fn();
+
+      cursor.setScrollPush(true);
+      cursor.onPushEnd(onPushEnd);
+      fireTouch(canvas, 'touchstart', [finger]);
+      fireTouch(canvas, 'touchend', [], [finger]);
+      scrollTo(70);
+      cursor.tick(1 / 60);
+      expect(onPushEnd).not.toHaveBeenCalled();
+
+      // The page stops, and the fling settles after its still frames.
+      for (let frame = 0; frame < 5; frame += 1) cursor.tick(1 / 60);
+
+      expect(cursor.isPushing()).toBe(false);
+      expect(onPushEnd).toHaveBeenCalledTimes(1);
+      cursor.dispose();
+    });
+
+    it('ends a pinch whose last finger lifts off the canvas', () => {
+      const { canvas } = makeCanvas();
+      const outside = document.createElement('div');
+      const cursor = new CursorInput({ element: canvas });
+      const onCanvas = { id: 1, x: 100, y: 200 };
+      const offCanvas = { id: 2, x: 100, y: 450 };
+      const onPushEnd = vi.fn();
+
+      document.body.append(outside);
+      cursor.setScrollPush(true);
+      cursor.onPushEnd(onPushEnd);
+      fireTouch(canvas, 'touchstart', [onCanvas]);
+      fireTouch(outside, 'touchstart', [onCanvas, offCanvas], [offCanvas]);
+      fireTouch(canvas, 'touchend', [offCanvas], [onCanvas]);
+      expect(onPushEnd).not.toHaveBeenCalled();
+
+      fireTouch(outside, 'touchend', [], [offCanvas]);
+
+      expect(onPushEnd).toHaveBeenCalledTimes(1);
+      cursor.dispose();
+      outside.remove();
+    });
+
+    it('ends each contact once, however it ends, and never on dispose', () => {
+      const { canvas, scrollTo } = makeCanvas();
+      const cursor = new CursorInput({ element: canvas });
+      const events: string[] = [];
+      const first = { id: 1, x: 100, y: 200 };
+      const second = { id: 2, x: 150, y: 250 };
+
+      cursor.setScrollPush(true);
+      cursor.onPushStart(() => events.push('start'));
+      cursor.onPushEnd(() => events.push('end'));
+
+      // A finger lands mid-fling: the fling's contact ends, then the new one starts.
+      fireTouch(canvas, 'touchstart', [first]);
+      fireTouch(canvas, 'touchend', [], [first]);
+      scrollTo(70);
+      cursor.tick(1 / 60);
+      fireTouch(canvas, 'touchstart', [second]);
+      expect(events).toEqual(['start', 'end', 'start']);
+
+      // A second finger makes a pinch, which ends once every finger lifts.
+      fireTouch(canvas, 'touchstart', [second, first], [first]);
+      fireTouch(canvas, 'touchend', [first], [second]);
+      expect(events).toEqual(['start', 'end', 'start']);
+      fireTouch(canvas, 'touchend', [], [first]);
+      expect(events).toEqual(['start', 'end', 'start', 'end']);
+
+      // Scroll push turned off mid-push ends the contact.
+      fireTouch(canvas, 'touchstart', [first]);
+      cursor.setScrollPush(false);
+      expect(events).toEqual(['start', 'end', 'start', 'end', 'start', 'end']);
+
+      // Dispose tears the listeners down without telling them.
+      cursor.setScrollPush(true);
+      fireTouch(canvas, 'touchstart', [second]);
+      cursor.dispose();
+      expect(events).toEqual(['start', 'end', 'start', 'end', 'start', 'end', 'start']);
+    });
+
     it('stops listening when turned off or disposed', () => {
       const { canvas, scrollTo } = makeCanvas();
       const cursor = new CursorInput({ element: canvas });
