@@ -45,6 +45,14 @@ These rules cover component defaults, demo palettes, and any gradient on the sit
 - Build depth from lightness, not hue. Keep at least 0.10 of OKLCH lightness between stops.
 - Keep backgrounds subtle and accents bold. Check text contrast at the lightest point and at the darkest point.
 
+## Motion
+
+For motion and interaction polish, load the `design-engineering` skill first. The gotcha below is about Motion's API, not taste.
+
+### The time-defined-spring gotcha: a spring that follows a live value needs stiffness and damping
+
+`useSpring(source, options)` starts a fresh spring each time `source` changes. Motion drops the current speed of a spring defined by `visualDuration` or `duration`, so each new target starts the spring from rest. A spring that follows a value changing on every pointer event then stalls and restarts on each one, and the motion lags and stutters. With `visualDuration` 0.12, the Reactive card's arrow turned a sharp corner in about 220 ms, against 135 ms for the same spring set as `stiffness` 1900 and `damping` 87, which keeps its speed. A critically damped spring with `visualDuration` v works out to `stiffness` (2π / 1.2v)² and `damping` 2√stiffness, at `mass` 1. A spring that only runs to a fixed target can keep `visualDuration`.
+
 ## Dev-only routes
 
 Name a debugging or probe page `page.dev.tsx`. The site is a static export, so every page the router sees lands in `out/`, and pagefind then indexes it for site search. `next.config.ts` adds `dev.tsx` and `dev.ts` to `pageExtensions` only when `INCLUDE_DEV_ROUTES=1`, so a plain `next build` never sees these pages.

@@ -1,10 +1,12 @@
 /**
  * The Reactive card's arrow (SHA-216): its pose in the still frame, its
  * pose while it follows the pointer, pointing the way the pointer moves,
- * and where its tip is in any pose. Lengths are mock pixels in the 312 by
- * 309 illustration, angles are degrees clockwise, as CSS turns them, and
+ * its flights off and back on the window, its swoop back along the J, and
+ * where its tip is in any pose. Lengths are mock pixels in the 312 by 309
+ * illustration, angles are degrees clockwise, as CSS turns them, and
  * reactive-illustration.module.css draws the arrow from a pose.
  */
+import { headingOnJ, pointOnJ } from './reactive-smudge';
 
 /** The illustration's size in mock pixels, which everything here measures in. */
 export const MOCK_WIDTH = 312;
@@ -50,31 +52,44 @@ export function angleForHeading(heading: number): number {
 /** The still frame's heading: up and to the right, as the mock draws it. */
 export const STILL_FRAME_HEADING = STILL_FRAME_ARROW.angle + UNTURNED_HEADING;
 
-// Where the tip sits from the box's center once the box turns by `angle`.
-function tipFromCenter(angle: number): [number, number] {
-  const fromCenterX = TIP[0] - BOX[0] / 2;
-  const fromCenterY = TIP[1] - BOX[1] / 2;
+/** The way an arrow turned by `angle` points. */
+export function headingForAngle(angle: number): number {
+  return angle + UNTURNED_HEADING;
+}
+
+// Where a point of the unturned box sits from the box's center once the
+// box turns by `angle`.
+function fromCenter([pointX, pointY]: readonly [number, number], angle: number): [number, number] {
+  const offsetX = pointX - BOX[0] / 2;
+  const offsetY = pointY - BOX[1] / 2;
   const turn = toRadians(angle);
 
   return [
-    fromCenterX * Math.cos(turn) - fromCenterY * Math.sin(turn),
-    fromCenterX * Math.sin(turn) + fromCenterY * Math.cos(turn),
+    offsetX * Math.cos(turn) - offsetY * Math.sin(turn),
+    offsetX * Math.sin(turn) + offsetY * Math.cos(turn),
   ];
 }
 
-/** The pose that turns the arrow by `angle` with its tip on `pointer`. */
-export function arrowAtPointer(
-  [pointerX, pointerY]: readonly [number, number],
+// The pose that turns the arrow by `angle` with its point `local`, in the
+// unturned box, on `at`.
+function arrowWithPointAt(
+  local: readonly [number, number],
+  [atX, atY]: readonly [number, number],
   angle: number,
 ): ArrowPose {
-  const [tipX, tipY] = tipFromCenter(angle);
+  const [offsetX, offsetY] = fromCenter(local, angle);
 
-  return { x: pointerX - BOX[0] / 2 - tipX, y: pointerY - BOX[1] / 2 - tipY, angle };
+  return { x: atX - BOX[0] / 2 - offsetX, y: atY - BOX[1] / 2 - offsetY, angle };
+}
+
+/** The pose that turns the arrow by `angle` with its tip on `pointer`. */
+export function arrowAtPointer(pointer: readonly [number, number], angle: number): ArrowPose {
+  return arrowWithPointAt(TIP, pointer, angle);
 }
 
 /** Where the tip is in `pose`. */
 export function arrowTip({ x, y, angle }: ArrowPose): [number, number] {
-  const [tipX, tipY] = tipFromCenter(angle);
+  const [tipX, tipY] = fromCenter(TIP, angle);
 
   return [x + BOX[0] / 2 + tipX, y + BOX[1] / 2 + tipY];
 }
@@ -85,10 +100,7 @@ export function arrowTip({ x, y, angle }: ArrowPose): [number, number] {
  * so a spring that follows it always turns the short way round.
  */
 export function headingToward(current: number, dx: number, dy: number): number {
-  const target = (Math.atan2(dy, dx) * 180) / Math.PI;
-  const turn = ((((target - current) % 360) + 540) % 360) - 180;
-
-  return current + turn;
+  return current + shortestTurn(current, (Math.atan2(dy, dx) * 180) / Math.PI);
 }
 
 /**
@@ -112,6 +124,25 @@ export function entryPoint([x, y]: readonly [number, number]): [number, number] 
   return [nearest.point[0], nearest.point[1]];
 }
 
+/**
+ * How far along `heading` the arrow flies from `point` to leave the window
+ * and ENTRY_MARGIN past it, out of sight, or 0 from there already.
+ */
+export function exitDistance([x, y]: readonly [number, number], heading: number): number {
+  const turn = toRadians(heading);
+  const across = (from: number, step: number, size: number) => {
+    if (step > 1e-9) return (size + ENTRY_MARGIN - from) / step;
+    if (step < -1e-9) return (-ENTRY_MARGIN - from) / step;
+
+    return Infinity;
+  };
+
+  return Math.max(
+    0,
+    Math.min(across(x, Math.cos(turn), MOCK_WIDTH), across(y, Math.sin(turn), MOCK_HEIGHT)),
+  );
+}
+
 /** The point `distance` on from `from` along `heading`. */
 export function pointAlong(
   [x, y]: readonly [number, number],
@@ -125,3 +156,46 @@ export function pointAlong(
 
 /** Where the tip sits in the still frame. */
 export const STILL_FRAME_TIP = arrowTip(STILL_FRAME_ARROW);
+
+/** The turn from `from` to `to`, in degrees, the short way round. */
+export function shortestTurn(from: number, to: number): number {
+  return ((((to - from) % 360) + 540) % 360) - 180;
+}
+
+// The J's end, in mock pixels: where the still frame's smudge meets the
+// arrow.
+const J_END: readonly [number, number] = [
+  pointOnJ(1)[0] * MOCK_WIDTH,
+  pointOnJ(1)[1] * MOCK_HEIGHT,
+];
+
+// The point of the unturned box the J's end meets in the still frame, so
+// the swoop can carry that point along the J and land on the still frame.
+const TRAIL = (() => {
+  const { x, y, angle } = STILL_FRAME_ARROW;
+  const turn = toRadians(-angle);
+  const offsetX = J_END[0] - (x + BOX[0] / 2);
+  const offsetY = J_END[1] - (y + BOX[1] / 2);
+
+  return [
+    BOX[0] / 2 + offsetX * Math.cos(turn) - offsetY * Math.sin(turn),
+    BOX[1] / 2 + offsetX * Math.sin(turn) + offsetY * Math.cos(turn),
+  ] as const;
+})();
+
+/**
+ * The arrow `t` of the way along its swoop back in along the J: from below
+ * the window's bottom-left, pointing the way the J runs, easing round to
+ * the still frame's heading as it lands on the still frame.
+ */
+export function swoopPose(t: number): ArrowPose {
+  const [x, y] = pointOnJ(t);
+  const pathHeading = headingOnJ(t);
+  // Smoothstep from 0.55 to 1, so the turn to the still frame's heading
+  // starts past halfway and settles as the arrow lands.
+  const settle = Math.min(Math.max((t - 0.55) / 0.45, 0), 1);
+  const blend = settle * settle * (3 - 2 * settle);
+  const heading = pathHeading + shortestTurn(pathHeading, STILL_FRAME_HEADING) * blend;
+
+  return arrowWithPointAt(TRAIL, [x * MOCK_WIDTH, y * MOCK_HEIGHT], angleForHeading(heading));
+}

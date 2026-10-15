@@ -6,8 +6,10 @@ import {
   arrowAtPointer,
   arrowTip,
   entryPoint,
+  exitDistance,
   headingToward,
   STILL_FRAME_ARROW,
+  swoopPose,
 } from './reactive-arrow';
 
 describe('the Reactive arrow', () => {
@@ -66,6 +68,34 @@ describe('the Reactive arrow', () => {
 
     it('slides along the edge for a pointer that came in past a corner', () => {
       expect(entryPoint([-40, -10])).toEqual([-90, 0]);
+    });
+  });
+
+  describe('flying off the window', () => {
+    // From the middle of the 312 by 309 window, heading right, the arrow
+    // clears the right edge and the 90 pixels past it.
+    it('flies far enough along its heading to leave the window out of sight', () => {
+      expect(exitDistance([156, 150], 0)).toBeCloseTo(312 + 90 - 156);
+      expect(exitDistance([156, 150], 90)).toBeCloseTo(309 + 90 - 150);
+      expect(exitDistance([156, 150], 180)).toBeCloseTo(156 + 90);
+    });
+
+    it('is out of sight already from past the margin', () => {
+      expect(exitDistance([500, 150], 0)).toBe(0);
+    });
+  });
+
+  describe('the swoop back in along the J', () => {
+    it('lands exactly on the still frame', () => {
+      const pose = swoopPose(1);
+
+      expect(pose.x).toBeCloseTo(STILL_FRAME_ARROW.x);
+      expect(pose.y).toBeCloseTo(STILL_FRAME_ARROW.y);
+      expect(pose.angle).toBeCloseTo(STILL_FRAME_ARROW.angle);
+    });
+
+    it('starts with its tip below the window, out of sight', () => {
+      expect(arrowTip(swoopPose(0))[1]).toBeGreaterThan(309);
     });
   });
 });
