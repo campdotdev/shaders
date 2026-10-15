@@ -6,7 +6,8 @@
  * Touch, keyboard, and reduced motion leave the card on its still frame.
  * StoryCard is the card. An illustration takes one of two story shapes:
  * useStory repeats a play while the pointer stays, and useHeldStory holds
- * while the pointer stays, then plays its ending.
+ * while the pointer stays, then plays its ending. A held story can follow
+ * the pointer, and can wait for its live scene.
  */
 import {
   createContext,
@@ -52,23 +53,29 @@ export function StoryCard({ className, children }: { className?: string; childre
 
 /**
  * Follows the pointer on the illustration's StoryCard, behind the site's
- * hover gate, and calls `onEnter` and any `onLeave` as it comes and goes. Only a
- * pointer that passes the gate counts, and a touch never does, even on a
- * touch-screen laptop that passes the gate. Under reduced motion nothing
- * counts. Returns whether the pointer is on the card now, which only the
- * ends of a story's parts read, so it lives in a ref rather than in state.
+ * hover gate, and calls `onEnter` and any `onLeave` as it comes and goes,
+ * and any `onMove` with each move over the card, starting with the move
+ * the pointer enters on. Only a pointer that passes the gate counts, and a
+ * touch never does, even on a touch-screen laptop that passes the gate.
+ * Under reduced motion, or while `enabled` is false, nothing counts.
+ * Returns whether the pointer is on the card now, which only the ends of a
+ * story's parts read, so it lives in a ref rather than in state.
  */
-function useCardPointer(onEnter: () => void, onLeave?: () => void): RefObject<boolean> {
+function useCardPointer(
+  onEnter: () => void,
+  onLeave?: () => void,
+  { enabled = true, onMove }: { enabled?: boolean; onMove?: (event: PointerEvent) => void } = {},
+): RefObject<boolean> {
   const cardRef = useContext(CardContext);
   const canHover = useCanHover();
   const reducedMotion = useReducedMotion() === true;
   const pointerOnCardRef = useRef(false);
   // The latest callbacks, so the listeners below call the current ones
   // without being added again on every render.
-  const callbacksRef = useRef({ onEnter, onLeave });
+  const callbacksRef = useRef({ onEnter, onLeave, onMove });
 
   useEffect(() => {
-    callbacksRef.current = { onEnter, onLeave };
+    callbacksRef.current = { onEnter, onLeave, onMove };
   });
 
   // Listens to the card itself, so the whole card is the hover target, not
@@ -76,12 +83,17 @@ function useCardPointer(onEnter: () => void, onLeave?: () => void): RefObject<bo
   useEffect(() => {
     const card = cardRef?.current;
 
-    if (!card || !canHover || reducedMotion) return undefined;
+    if (!card || !canHover || reducedMotion || !enabled) return undefined;
 
     const onPointerEnter = (event: PointerEvent) => {
       if (event.pointerType === 'touch') return;
       pointerOnCardRef.current = true;
+      callbacksRef.current.onMove?.(event);
       callbacksRef.current.onEnter();
+    };
+    const onPointerMove = (event: PointerEvent) => {
+      if (event.pointerType === 'touch') return;
+      callbacksRef.current.onMove?.(event);
     };
     const onPointerLeave = (event: PointerEvent) => {
       if (event.pointerType === 'touch') return;
@@ -90,12 +102,14 @@ function useCardPointer(onEnter: () => void, onLeave?: () => void): RefObject<bo
     };
 
     card.addEventListener('pointerenter', onPointerEnter);
+    card.addEventListener('pointermove', onPointerMove);
     card.addEventListener('pointerleave', onPointerLeave);
 
     // The gate closing counts as the pointer leaving, so a held story ends
     // rather than holding with no pointer to release it.
     return () => {
       card.removeEventListener('pointerenter', onPointerEnter);
+      card.removeEventListener('pointermove', onPointerMove);
       card.removeEventListener('pointerleave', onPointerLeave);
 
       if (pointerOnCardRef.current) {
@@ -103,7 +117,7 @@ function useCardPointer(onEnter: () => void, onLeave?: () => void): RefObject<bo
         callbacksRef.current.onLeave?.();
       }
     };
-  }, [cardRef, canHover, reducedMotion]);
+  }, [cardRef, canHover, reducedMotion, enabled]);
 
   return pointerOnCardRef;
 }
@@ -177,13 +191,27 @@ export interface HeldStory {
   onStoryEnd: () => void;
 }
 
+/** How an illustration with a held story takes part in it. */
+export interface HeldStoryOptions {
+  /**
+   * False keeps the card on its still frame, ignoring the pointer, as a
+   * card does until its live scene shows the still frame. Defaults to true.
+   */
+  enabled?: boolean;
+  /**
+   * Called with each pointer move over the card, starting with the move the
+   * pointer enters on, for a story that follows the pointer.
+   */
+  onPointerMove?: (event: PointerEvent) => void;
+}
+
 /**
  * The held story of the illustration that calls it, played by a hover on
  * its StoryCard. Its ending runs to the still frame once it starts. A
  * pointer that comes back during the ending lets it land, then a fresh play
  * starts.
  */
-export function useHeldStory(): HeldStory {
+export function useHeldStory({ enabled, onPointerMove }: HeldStoryOptions = {}): HeldStory {
   const [story, setStory] = useState<{ stage: HeldStage; plays: number }>({
     stage: 'still',
     plays: 0,
@@ -200,6 +228,7 @@ export function useHeldStory(): HeldStory {
       setStory((current) =>
         current.stage === 'holding' ? { ...current, stage: 'ending' } : current,
       ),
+    { enabled, onMove: onPointerMove },
   );
 
   // Stable, so an illustration can list it in an effect's deps without

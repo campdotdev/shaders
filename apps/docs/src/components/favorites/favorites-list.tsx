@@ -14,7 +14,7 @@ import { type CSSProperties, type RefObject, useEffect, useRef, useState } from 
 
 import { ShaderPoster } from '@camp-dev/shaders/poster';
 
-import { useHeroPause } from '@/components/home-hero/hero-pause';
+import { usePauseHeroWhile } from '@/components/home-hero/hero-pause';
 import type { Favorite, FavoriteSlug } from '@/content/homepage';
 import { useCanHover } from '@/lib/use-can-hover';
 import { useHasWebGpu } from '@/lib/use-has-webgpu';
@@ -73,7 +73,9 @@ export function FavoritesList({
       : (hoveredSlug ?? focusedSlug);
 
   usePreloadScenesNearView(listRef, canGoLive);
-  usePauseHeroWhilePlaying(canGoLive && playingSlug !== null);
+  // A favorite plays only once the gate below opens, so with no WebGPU the
+  // hero keeps drawing.
+  usePauseHeroWhile(canGoLive && playingSlug !== null);
 
   const setEngaged = (slug: FavoriteSlug, engagement: Engagement, engaged: boolean) => {
     const setSlug = engagement === 'pointer' ? setHoveredSlug : setFocusedSlug;
@@ -297,26 +299,6 @@ function usePreloadScenesNearView(listRef: RefObject<HTMLUListElement | null>, e
 
     return () => observer.disconnect();
   }, [listRef, enabled]);
-}
-
-// ---------------------------------------------
-// Pausing the hero while a favorite plays
-// ---------------------------------------------
-
-/**
- * Pauses the homepage hero while a favorite plays, for the reason
- * components/home-hero/hero-pause.ts gives. A favorite plays only once the
- * gate below opens, so with no WebGPU the hero keeps drawing.
- */
-function usePauseHeroWhilePlaying(playing: boolean) {
-  const heroPause = useHeroPause();
-
-  useEffect(() => {
-    if (!playing || !heroPause) return undefined;
-    heroPause.setPaused(true);
-
-    return () => heroPause.setPaused(false);
-  }, [playing, heroPause]);
 }
 
 // ---------------------------------------------
