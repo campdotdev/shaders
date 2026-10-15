@@ -65,6 +65,10 @@ test('a drag on an opted-in scene scrolls the page and pushes the scene', async 
 
   await expect.poll(() => scrollY(page)).toBeGreaterThan(before + 50);
   await expect.poll(() => firstContactPushFrames(page), { timeout: 30_000 }).toBeGreaterThan(0);
+  // The Input ends the push once the fling settles (SHA-229).
+  await expect(page.locator('[data-push-count]')).toHaveText('Input pushes: 1 started, 1 ended', {
+    timeout: 30_000,
+  });
 });
 
 test('a tap on an opted-in scene pushes nothing', async ({ page }) => {

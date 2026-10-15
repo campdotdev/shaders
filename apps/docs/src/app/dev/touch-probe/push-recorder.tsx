@@ -38,6 +38,8 @@ export interface PushContactRecord {
 interface PushRecorderProps {
   onPhaseChange: (phase: PushPhase) => void;
   onContact: (record: PushContactRecord) => void;
+  /** Called with each push start and push end the Input reports (SHA-229). */
+  onInputPush: (event: 'start' | 'end') => void;
 }
 
 const createRecord = (index: number): PushContactRecord => ({
@@ -51,16 +53,18 @@ const createRecord = (index: number): PushContactRecord => ({
   pointerCancel: false,
 });
 
-export function PushRecorder({ onPhaseChange, onContact }: PushRecorderProps) {
+export function PushRecorder({ onPhaseChange, onContact, onInputPush }: PushRecorderProps) {
   const shaderContext = useShaderContext();
   const onPhaseChangeRef = useRef(onPhaseChange);
   const onContactRef = useRef(onContact);
+  const onInputPushRef = useRef(onInputPush);
   const contactCountRef = useRef(0);
 
   useEffect(() => {
     onPhaseChangeRef.current = onPhaseChange;
     onContactRef.current = onContact;
-  }, [onPhaseChange, onContact]);
+    onInputPushRef.current = onInputPush;
+  }, [onPhaseChange, onContact, onInputPush]);
 
   useEffect(() => {
     const canvas = shaderContext?.renderer.three.domElement;
@@ -157,8 +161,14 @@ export function PushRecorder({ onPhaseChange, onContact }: PushRecorderProps) {
     window.addEventListener('touchcancel', handleTouchEnd, { passive: true });
     canvas.addEventListener('pointercancel', handlePointerCancel);
     scheduler.add(recordFrame);
+    // The Input's own account of each contact, which the page shows as a
+    // count so a tester can see every start get its end.
+    const stopWatchingStart = input.onPushStart(() => onInputPushRef.current('start'));
+    const stopWatchingEnd = input.onPushEnd(() => onInputPushRef.current('end'));
 
     return () => {
+      stopWatchingStart();
+      stopWatchingEnd();
       scheduler.remove(recordFrame);
       canvas.removeEventListener('touchstart', handleTouchStart);
       window.removeEventListener('touchstart', handleAnyTouchStart);
