@@ -12,7 +12,7 @@
 }
 
 /* The image exported from the mock at 2x. It covers the scene until the
-   scene's first frame, and stands in for it without WebGPU. */
+   scene has laid its smudge, and stands in for it without WebGPU. */
 .still {
   position: absolute;
   inset: 0;
