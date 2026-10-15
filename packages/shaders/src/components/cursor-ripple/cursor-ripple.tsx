@@ -182,12 +182,15 @@ export function CursorRipple({
 
     const drive = ({ delta }: SchedulerTick) => {
       const current = cursor.get();
-      // The pointer's stroke, or else this frame's scroll push: under the
-      // scene's `scrollPush`, a touch reaches the water only that way. The
-      // field takes one stroke a frame, so on the rare frame where a mouse
-      // and a touch both move, as on a touchscreen laptop, the mouse wins.
-      const stroke =
-        deriveStroke(previous, current, cursor.presence.get()) ?? cursor.getPush() ?? undefined;
+      // A scripted stroke while the scene's `strokeAt` point is attached,
+      // ignoring the pointer and the push. Otherwise the pointer's stroke,
+      // or else this frame's scroll push: under the scene's `scrollPush`, a
+      // touch reaches the water only that way. The field takes one stroke a
+      // frame, so on the rare frame where a mouse and a touch both move, as
+      // on a touchscreen laptop, the mouse wins.
+      const stroke = cursor.isScripting()
+        ? (cursor.getScriptedStroke() ?? undefined)
+        : (deriveStroke(previous, current, cursor.presence.get()) ?? cursor.getPush() ?? undefined);
       const wasAwake = !field.atRest;
 
       previous = current;
