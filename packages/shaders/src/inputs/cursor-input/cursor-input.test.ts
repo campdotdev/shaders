@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { CursorInput } from './cursor-input.js';
+import { CursorInput, type Vector2 } from './cursor-input.js';
 
 function simulateMouseAt(x: number, y: number, size = 1000) {
   Object.defineProperty(window, 'innerWidth', {
@@ -442,6 +442,101 @@ describe('CursorInput', () => {
       cursor.dispose();
       fireTouch(canvas, 'touchstart', [{ id: 2, x: 100, y: 200 }]);
       expect(onPushStart).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('scripted strokes', () => {
+    // A point code moves, shaped like an animation signal such as Motion's
+    // MotionValue.
+    const createPoint = (initial: Vector2) => {
+      let value = initial;
+      const listeners = new Set<(next: Vector2) => void>();
+
+      return {
+        get: () => value,
+        on: (_event: 'change', listener: (next: Vector2) => void) => {
+          listeners.add(listener);
+
+          return () => listeners.delete(listener);
+        },
+        set: (next: Vector2) => {
+          value = next;
+          for (const listener of listeners) listener(next);
+        },
+      };
+    };
+
+    it('strokes from where the source was attached to each point it moves to, once per tick', () => {
+      const cursor = new CursorInput({ element: fakeElement });
+      const point = createPoint([0.2, 0.8]);
+
+      cursor.setStrokeSource(point);
+      cursor.tick(1 / 60);
+      expect(cursor.getScriptedStroke()).toBeNull();
+
+      point.set([0.3, 0.7]);
+      cursor.tick(1 / 60);
+      expect(cursor.getScriptedStroke()).toEqual({ from: [0.2, 0.8], to: [0.3, 0.7], presence: 1 });
+
+      point.set([0.5, 0.4]);
+      cursor.tick(1 / 60);
+      expect(cursor.getScriptedStroke()).toEqual({ from: [0.3, 0.7], to: [0.5, 0.4], presence: 1 });
+
+      cursor.tick(1 / 60);
+      expect(cursor.getScriptedStroke()).toBeNull();
+      cursor.dispose();
+    });
+
+    it('ends the stroke on detach, and starts afresh from wherever the source is when re-attached', () => {
+      const cursor = new CursorInput({ element: fakeElement });
+      const point = createPoint([0.2, 0.8]);
+
+      cursor.setStrokeSource(point);
+      point.set([0.3, 0.7]);
+      cursor.tick(1 / 60);
+      cursor.setStrokeSource(null);
+      point.set([0.9, 0.1]);
+      cursor.tick(1 / 60);
+      expect(cursor.getScriptedStroke()).toBeNull();
+
+      cursor.setStrokeSource(point);
+      cursor.tick(1 / 60);
+      expect(cursor.getScriptedStroke()).toBeNull();
+
+      point.set([0.8, 0.2]);
+      cursor.tick(1 / 60);
+      expect(cursor.getScriptedStroke()).toEqual({ from: [0.9, 0.1], to: [0.8, 0.2], presence: 1 });
+      cursor.dispose();
+    });
+
+    // A script that holds still draws nothing, but readers still ignore the
+    // mouse and the push while it is attached.
+    it('reports a script as attached whether or not it moved this tick', () => {
+      const cursor = new CursorInput({ element: fakeElement });
+      const point = createPoint([0.2, 0.8]);
+
+      expect(cursor.isScripting()).toBe(false);
+
+      cursor.setStrokeSource(point);
+      cursor.tick(1 / 60);
+      expect(cursor.isScripting()).toBe(true);
+
+      cursor.setStrokeSource(null);
+      expect(cursor.isScripting()).toBe(false);
+      cursor.dispose();
+    });
+
+    it('lets go of its source on dispose', () => {
+      const cursor = new CursorInput({ element: fakeElement });
+      const point = createPoint([0.2, 0.8]);
+
+      cursor.setStrokeSource(point);
+      point.set([0.3, 0.7]);
+      cursor.tick(1 / 60);
+      cursor.dispose();
+
+      expect(cursor.isScripting()).toBe(false);
+      expect(cursor.getScriptedStroke()).toBeNull();
     });
   });
 });

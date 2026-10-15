@@ -58,6 +58,16 @@ export interface CursorInputOptions {
  */
 export const POSITION_SETTLE_THRESHOLD = 1e-4;
 
+/**
+ * A point code moves to draw a scripted stroke, in the same 0..1 frame as
+ * `getTarget()` and unclamped. Anything with `get` and `on('change')`
+ * qualifies, such as Motion's MotionValue.
+ */
+export interface StrokeSource {
+  get(): Vector2;
+  on(event: 'change', listener: (value: Vector2) => void): () => void;
+}
+
 // ----------------------------------------------------------------------------
 // Touch events into scroll push
 // ----------------------------------------------------------------------------
@@ -94,6 +104,9 @@ const toSnapshot = (event: TouchEventLike) => ({
   changed: toPoints(event.changedTouches),
 });
 
+// A source may hand back one array it mutates, so keep a copy of each point.
+const copy = ([x, y]: Vector2): Vector2 => [x, y];
+
 // Passive, so the page scrolls and zooms without waiting on the scene.
 // Scroll push never cancels a touch.
 const PASSIVE = { passive: true } as const;
@@ -123,6 +136,11 @@ export class CursorInput {
   private pushTracker: PushTracker | null = null;
   private framePush: PushStroke | null = null;
   private readonly pushStartListeners = new Set<() => void>();
+  // Scripted stroke: the attached source, where its stroke goes on from,
+  // and the stroke the last tick worked out.
+  private strokeSource: StrokeSource | null = null;
+  private strokeFrom: Vector2 | null = null;
+  private frameScripted: PushStroke | null = null;
   private readonly handleTouchStart = (event: Event) => {
     if (isTouchEvent(event)) this.pushTracker?.touchStart(toSnapshot(event), this.readRect());
   };
@@ -259,6 +277,35 @@ export class CursorInput {
   }
 
   /**
+   * Attaches the point a scripted stroke follows, or detaches it with null.
+   * Attaching reads the point where it is now as the stroke's start and
+   * draws nothing, so a point that jumped while detached starts afresh.
+   * After that, each tick strokes from the last point to the current one.
+   * Works with or without scroll push.
+   */
+  setStrokeSource(source: StrokeSource | null): void {
+    if (this.disposed) return;
+    this.strokeSource = source;
+    this.strokeFrom = source ? copy(source.get()) : null;
+    this.frameScripted = null;
+  }
+
+  /**
+   * The scripted stroke from the last tick, or null when the source did not
+   * move or none is attached. A reader that strokes takes it first: while a
+   * source is attached (`isScripting`), the reader ignores the mouse and the
+   * scroll push, and takes the mouse before the push otherwise.
+   */
+  getScriptedStroke(): PushStroke | null {
+    return this.frameScripted;
+  }
+
+  /** Whether a scripted stroke's source is attached, moving or not. */
+  isScripting(): boolean {
+    return this.strokeSource !== null;
+  }
+
+  /**
    * The push stroke from the last tick, or null when nothing pushed. Every
    * reader in a frame gets the same stroke, because only `tick` changes it.
    */
@@ -325,6 +372,7 @@ export class CursorInput {
     // One push per tick, read from where the element sits now, so a host
     // that ticks once per frame gives every reader the same stroke.
     this.framePush = this.pushTracker?.frame(this.readRect()) ?? null;
+    this.frameScripted = this.readScriptedStroke();
     const moved = this.position.tick(delta, afterIdle);
 
     if (!moved && !this.targetDirty) return false;
@@ -343,9 +391,26 @@ export class CursorInput {
     this.setScrollPush(false);
     this.pushStartListeners.clear();
     this.disposed = true;
+    this.strokeSource = null;
+    this.strokeFrom = null;
+    this.frameScripted = null;
     this.eventTarget.removeEventListener('pointermove', this.handlePointerMove);
     this.listeners.clear();
     this.moveListeners.clear();
+  }
+
+  // The segment from where the scripted stroke left off to where its source
+  // is now. A source that has not moved strokes nothing.
+  private readScriptedStroke(): PushStroke | null {
+    const from = this.strokeFrom;
+
+    if (!this.strokeSource || !from) return null;
+    const to = copy(this.strokeSource.get());
+
+    if (to[0] === from[0] && to[1] === from[1]) return null;
+    this.strokeFrom = to;
+
+    return { from, to, presence: 1 };
   }
 
   // Under scroll push, touch reaches cursor effects only as push strokes. A
