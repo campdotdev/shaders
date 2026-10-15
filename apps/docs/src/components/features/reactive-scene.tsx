@@ -15,23 +15,15 @@ import { animate, useMotionValue, useTransform } from 'motion/react';
 
 import { EASE_OUT } from '@/lib/easing';
 
-import { REACTIVE_GRADIENT, type ReactiveGradient } from './reactive-gradient';
-import { pointOnJ, REACTIVE_SMUDGE, type ReactiveSmudge } from './reactive-smudge';
+import { REACTIVE_GRADIENT } from './reactive-gradient';
+import { pointOnJ, REACTIVE_SMUDGE } from './reactive-smudge';
 
 export interface ReactiveSceneProps {
   /** Fires once the J's smudge is laid and the scene shows the still frame. */
   onStillFrame: () => void;
-  /** Settings in place of the card's, from the /dev/reactive-card tuning route. */
-  gradient?: ReactiveGradient;
-  /** Settings in place of the card's, from the /dev/reactive-card tuning route. */
-  smudge?: ReactiveSmudge;
 }
 
-export default function ReactiveScene({
-  onStillFrame,
-  gradient = REACTIVE_GRADIENT,
-  smudge = REACTIVE_SMUDGE,
-}: ReactiveSceneProps) {
+export default function ReactiveScene({ onStillFrame }: ReactiveSceneProps) {
   const progress = useMotionValue(0);
   const point = useTransform(progress, pointOnJ);
   const [laying, setLaying] = useState(false);
@@ -47,7 +39,10 @@ export default function ReactiveScene({
   // run before its parent's, so the stroke never runs ahead of the attach.
   useEffect(() => {
     if (!laying) return undefined;
-    const controls = animate(progress, 1, { duration: smudge.laySeconds, ease: EASE_OUT });
+    const controls = animate(progress, 1, {
+      duration: REACTIVE_SMUDGE.laySeconds,
+      ease: EASE_OUT,
+    });
 
     void controls.then(() => {
       setLaying(false);
@@ -55,7 +50,7 @@ export default function ReactiveScene({
     });
 
     return () => controls.stop();
-  }, [laying, progress, smudge.laySeconds]);
+  }, [laying, progress]);
 
   // The stroke starts on the first frame, once the scene and its cursor
   // input exist, so none of it is lost to the renderer starting up. A
@@ -69,9 +64,9 @@ export default function ReactiveScene({
     <ShaderScene onFirstPaint={layJ} strokeAt={laying ? point : null}>
       {/* A literal 0 holds the flow still, so the scene parks whenever
           nothing strokes. */}
-      <LiquidGradient {...gradient} speed={0} />
+      <LiquidGradient {...REACTIVE_GRADIENT} speed={0} />
       {/* Decay 0 holds the smudge for good. */}
-      <CursorSmudge decay={0} radius={smudge.radius} strength={smudge.strength} />
+      <CursorSmudge decay={0} radius={REACTIVE_SMUDGE.radius} strength={REACTIVE_SMUDGE.strength} />
     </ShaderScene>
   );
 }

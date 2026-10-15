@@ -12,10 +12,8 @@ import { type ComponentType, type CSSProperties, useEffect, useState } from 'rea
 
 import { useHasWebGpu } from '@/lib/use-has-webgpu';
 
-import type { ReactiveGradient } from './reactive-gradient';
 import styles from './reactive-illustration.module.css';
 import type { ReactiveSceneProps } from './reactive-scene';
-import type { ReactiveSmudge } from './reactive-smudge';
 
 // ---------------------------------------------
 // Loading the scene
@@ -105,15 +103,8 @@ function Arrow() {
 
 // Hidden from screen readers: the card's title and description carry its
 // message. `data-scene` says whether the live scene shows the still frame
-// yet. `gradient` and `smudge` replace the card's settings, for the tuning
-// route only.
-export function ReactiveIllustration({
-  gradient,
-  smudge,
-}: {
-  gradient?: ReactiveGradient;
-  smudge?: ReactiveSmudge;
-}) {
+// yet.
+export function ReactiveIllustration() {
   const Scene = useReactiveScene(useHasWebGpu());
   const [laid, setLaid] = useState(false);
 
@@ -126,7 +117,7 @@ export function ReactiveIllustration({
     >
       {/* ShaderScene fills the illustration by itself. The arrow follows it
           in the DOM, so it paints on top. */}
-      {Scene && <Scene gradient={gradient} onStillFrame={() => setLaid(true)} smudge={smudge} />}
+      {Scene && <Scene onStillFrame={() => setLaid(true)} />}
       <Arrow />
       {!laid && (
         <Image

@@ -9,7 +9,7 @@
 import { paletteOklch } from '@/lib/palette';
 import type { PositionedStop } from '@/lib/stops';
 
-export interface ReactiveGradient {
+interface ReactiveGradient {
   angle: number;
   repeat: number;
   softness: number;
@@ -19,9 +19,8 @@ export interface ReactiveGradient {
   stops: PositionedStop[];
 }
 
-// Assumed until the author tunes them at phase 1 on /dev/reactive-card.
-// 50 degrees of hue, with 0.14 to 0.26 of lightness between stops. The
-// darkest stop sits at the window's own lightness.
+// 50 degrees of hue across the stops, with 0.14 to 0.26 of lightness
+// between each pair. The darkest stop sits at the window's own lightness.
 export const REACTIVE_GRADIENT: ReactiveGradient = {
   // 225 runs the stops from the upper right to the lower left.
   angle: 225,
