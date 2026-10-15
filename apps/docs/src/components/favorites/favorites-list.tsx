@@ -17,6 +17,7 @@ import { ShaderPoster } from '@camp-dev/shaders/poster';
 import { useHeroPause } from '@/components/home-hero/hero-pause';
 import type { Favorite, FavoriteSlug } from '@/content/homepage';
 import { useCanHover } from '@/lib/use-can-hover';
+import { useHasWebGpu } from '@/lib/use-has-webgpu';
 
 import { CardTab } from './card-tab';
 import { favoriteSceneBackdrop, preloadFavoriteScenes, useFavoriteScene } from './favorite-scenes';
@@ -325,34 +326,11 @@ function usePauseHeroWhilePlaying(playing: boolean) {
 /**
  * True where a favorite may mount its scene: the device passes the site's
  * hover gate (lib/use-can-hover.ts), and the browser hands out a WebGPU
- * adapter. A phone or tablet fails the gate, so its favorites stay posters.
- * Without an adapter, ShaderScene would fall back to WebGL2, and the
- * favorites stay posters instead. Only a device that can hover asks for the
- * adapter.
+ * adapter (lib/use-has-webgpu.ts). A phone or tablet fails the gate, so its
+ * favorites stay posters. Only a device that can hover asks for the adapter.
  */
 function useCanGoLive(): boolean {
   const canHover = useCanHover();
-  const [hasWebGpu, setHasWebGpu] = useState(false);
 
-  useEffect(() => {
-    // navigator.gpu is typed as always present, but it is missing in a
-    // browser without WebGPU and outside a secure context, so probe with `in`.
-    if (!canHover || !('gpu' in navigator)) return;
-
-    let cancelled = false;
-
-    void navigator.gpu
-      .requestAdapter()
-      // A browser that refuses the request has no WebGPU to offer either.
-      .catch(() => null)
-      .then((adapter) => {
-        if (!cancelled) setHasWebGpu(adapter !== null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [canHover]);
-
-  return canHover && hasWebGpu;
+  return useHasWebGpu(canHover);
 }
