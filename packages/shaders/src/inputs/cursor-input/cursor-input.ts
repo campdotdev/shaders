@@ -136,6 +136,7 @@ export class CursorInput {
   private pushTracker: PushTracker | null = null;
   private framePush: PushStroke | null = null;
   private readonly pushStartListeners = new Set<() => void>();
+  private readonly pushEndListeners = new Set<() => void>();
   // Scripted stroke: the attached source, where its stroke goes on from,
   // and the stroke the last tick worked out.
   private strokeSource: StrokeSource | null = null;
@@ -156,6 +157,11 @@ export class CursorInput {
   // second finger that holds still, and for a finger that ends a fling.
   private readonly handleAnyTouchStart = (event: Event) => {
     if (isTouchEvent(event)) this.pushTracker?.touchStartAnywhere(toSnapshot(event));
+  };
+  // Every touchend bubbles to the listen target too, so it sees the last
+  // finger of a pinch lift even when that finger landed off the element.
+  private readonly handleAnyTouchEnd = (event: Event) => {
+    if (isTouchEvent(event)) this.pushTracker?.touchEndAnywhere(toSnapshot(event));
   };
 
   constructor(opts: CursorInputOptions = {}) {
@@ -261,19 +267,29 @@ export class CursorInput {
       element.removeEventListener('touchend', this.handleTouchEnd);
       element.removeEventListener('touchcancel', this.handleTouchEnd);
       this.eventTarget.removeEventListener('touchstart', this.handleAnyTouchStart);
+      this.eventTarget.removeEventListener('touchend', this.handleAnyTouchEnd);
+      this.eventTarget.removeEventListener('touchcancel', this.handleAnyTouchEnd);
+      this.pushTracker?.cancel();
       this.pushTracker = null;
       this.framePush = null;
 
       return;
     }
-    this.pushTracker = createPushTracker(() => {
-      for (const listener of this.pushStartListeners) listener();
-    });
+    this.pushTracker = createPushTracker(
+      () => {
+        for (const listener of this.pushStartListeners) listener();
+      },
+      () => {
+        for (const listener of this.pushEndListeners) listener();
+      },
+    );
     element.addEventListener('touchstart', this.handleTouchStart, PASSIVE);
     element.addEventListener('touchmove', this.handleTouchMove, PASSIVE);
     element.addEventListener('touchend', this.handleTouchEnd, PASSIVE);
     element.addEventListener('touchcancel', this.handleTouchEnd, PASSIVE);
     this.eventTarget.addEventListener('touchstart', this.handleAnyTouchStart, PASSIVE);
+    this.eventTarget.addEventListener('touchend', this.handleAnyTouchEnd, PASSIVE);
+    this.eventTarget.addEventListener('touchcancel', this.handleAnyTouchEnd, PASSIVE);
   }
 
   /**
@@ -337,6 +353,20 @@ export class CursorInput {
     };
   }
 
+  /**
+   * Subscribe to the end of each scroll-push contact: once for every push
+   * start, when the fling settles or the contact ends any other way. A
+   * scripted stroke never starts or ends a push. Returns an unsubscribe
+   * function.
+   */
+  onPushEnd(listener: () => void): () => void {
+    this.pushEndListeners.add(listener);
+
+    return () => {
+      this.pushEndListeners.delete(listener);
+    };
+  }
+
   /** Subscribe to change events. Returns an unsubscribe function. */
   on(_eventType: 'change', changeListener: (value: Vector2) => void): () => void {
     this.listeners.add(changeListener);
@@ -388,6 +418,8 @@ export class CursorInput {
   /** Tear down listeners. */
   dispose(): void {
     if (this.disposed) return;
+    // Cleared first, so turning scroll push off here ends a contact silently.
+    this.pushEndListeners.clear();
     this.setScrollPush(false);
     this.pushStartListeners.clear();
     this.disposed = true;

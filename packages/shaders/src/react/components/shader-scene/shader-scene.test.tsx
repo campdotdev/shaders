@@ -954,6 +954,27 @@ describe('ShaderScene', () => {
       expect(scene.input().getPush()).toBeNull();
     });
 
+    it('tells a push-end subscriber when a resume ends the push', async () => {
+      const scene = await renderScene({ scrollPush: true });
+      const onPushEnd = vi.fn();
+
+      scene.input().onPushEnd(onPushEnd);
+      fireTouch(scene.canvas, 'touchstart');
+      scene.rerender(
+        <ShaderScene paused scrollPush>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      expect(onPushEnd).not.toHaveBeenCalled();
+      scene.rerender(
+        <ShaderScene scrollPush>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+
+      expect(onPushEnd).toHaveBeenCalledTimes(1);
+    });
+
     it('pushes nothing on resume from a touch that landed while the scene was paused', async () => {
       const scene = await renderScene({ scrollPush: true });
 
