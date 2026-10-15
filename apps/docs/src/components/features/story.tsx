@@ -3,7 +3,8 @@
 /**
  * The lifecycle every feature card's story shares (SHA-178): a hover plays
  * the story, and a story under way always finishes after the pointer leaves.
- * Touch, keyboard, and reduced motion leave the card on its still frame.
+ * Keyboard and reduced motion leave the card on its still frame, and so does
+ * touch, unless the illustration passes a scroll push to a held story.
  * StoryCard is the card. An illustration takes one of two story shapes:
  * useStory repeats a play while the pointer stays, and useHeldStory holds
  * while the pointer stays, then plays its ending. A held story can follow
@@ -16,6 +17,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useReducer,
   useRef,
   useState,
 } from 'react';
@@ -23,6 +25,8 @@ import {
 import { useReducedMotion } from 'motion/react';
 
 import { useCanHover } from '@/lib/use-can-hover';
+
+import { type HeldBy, type HeldStage, heldStoryReducer, STILL } from './story-state';
 
 // ---------------------------------------------
 // The card
@@ -172,12 +176,7 @@ export function useStory(): Story {
 // A story that holds
 // ---------------------------------------------
 
-/**
- * Where a held story is. It rests on the still frame, holds from a hover
- * for as long as the pointer stays, and plays its ending back to the still
- * frame once the pointer leaves.
- */
-export type HeldStage = 'still' | 'holding' | 'ending';
+export type { HeldBy, HeldStage } from './story-state';
 
 /** Where an illustration's held story is, which play, and how to end it. */
 export interface HeldStory {
@@ -187,15 +186,26 @@ export interface HeldStory {
    * every play starts from the still frame.
    */
   plays: number;
+  /** What holds the current play, or held the last one. */
+  heldBy: HeldBy;
   /** Called by the illustration when its ending lands on the still frame. */
   onStoryEnd: () => void;
+  /**
+   * For an illustration whose scene has scroll push on: holds the story
+   * from the touch's first push, as a hover does, and ends it once the
+   * fling settles. Stable. Under reduced motion, or while the story isn't
+   * enabled, a push holds nothing.
+   */
+  onPushStart: () => void;
+  onPushEnd: () => void;
 }
 
 /** How an illustration with a held story takes part in it. */
 export interface HeldStoryOptions {
   /**
-   * False keeps the card on its still frame, ignoring the pointer, as a
-   * card does until its live scene shows the still frame. Defaults to true.
+   * False keeps the card on its still frame, ignoring the pointer and any
+   * push, as a card does until its live scene shows the still frame.
+   * Defaults to true.
    */
   enabled?: boolean;
   /**
@@ -207,43 +217,43 @@ export interface HeldStoryOptions {
 
 /**
  * The held story of the illustration that calls it, played by a hover on
- * its StoryCard. Its ending runs to the still frame once it starts. A
- * pointer that comes back during the ending lets it land, then a fresh play
- * starts.
+ * its StoryCard or by a scroll push the illustration passes on. Its ending
+ * runs to the still frame once it starts. A pointer or a push that comes
+ * back during the ending lets it land, then a fresh play starts
+ * (story-state.ts has the rules).
  */
-export function useHeldStory({ enabled, onPointerMove }: HeldStoryOptions = {}): HeldStory {
-  const [story, setStory] = useState<{ stage: HeldStage; plays: number }>({
-    stage: 'still',
-    plays: 0,
-  });
+export function useHeldStory({ enabled = true, onPointerMove }: HeldStoryOptions = {}): HeldStory {
+  const [story, dispatch] = useReducer(heldStoryReducer, STILL);
+  const reducedMotion = useReducedMotion() === true;
+  // Whether a push runs now, which only the ending's landing reads.
+  const pushingRef = useRef(false);
   const pointerOnCardRef = useCardPointer(
-    // Only the still frame starts the story. A hover during the ending waits
-    // for it to land.
-    () =>
-      setStory((current) =>
-        current.stage === 'still' ? { stage: 'holding', plays: current.plays + 1 } : current,
-      ),
-    // Leaving during the hold ends the story.
-    () =>
-      setStory((current) =>
-        current.stage === 'holding' ? { ...current, stage: 'ending' } : current,
-      ),
+    () => dispatch({ type: 'pointer-enter' }),
+    () => dispatch({ type: 'pointer-leave' }),
     { enabled, onMove: onPointerMove },
   );
+  const canPush = enabled && !reducedMotion;
+
+  const onPushStart = useCallback(() => {
+    if (!canPush) return;
+    pushingRef.current = true;
+    dispatch({ type: 'push-start' });
+  }, [canPush]);
+
+  const onPushEnd = useCallback(() => {
+    pushingRef.current = false;
+    dispatch({ type: 'push-end' });
+  }, []);
 
   // Stable, so an illustration can list it in an effect's deps without
   // restarting the play under way on every render.
   const onStoryEnd = useCallback(() => {
-    const replaying = pointerOnCardRef.current;
-
-    setStory((current) => {
-      if (current.stage !== 'ending') return current;
-
-      return replaying
-        ? { stage: 'holding', plays: current.plays + 1 }
-        : { ...current, stage: 'still' };
+    dispatch({
+      type: 'ending-landed',
+      pointerOnCard: pointerOnCardRef.current,
+      pushing: pushingRef.current,
     });
   }, [pointerOnCardRef]);
 
-  return { ...story, onStoryEnd };
+  return { ...story, onStoryEnd, onPushStart, onPushEnd };
 }
