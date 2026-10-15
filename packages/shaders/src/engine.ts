@@ -13,7 +13,11 @@ export type {
 } from './runtime/create-renderer/create-renderer.js';
 
 export { CursorInput } from './inputs/cursor-input/cursor-input.js';
-export type { CursorInputOptions, Vector2 } from './inputs/cursor-input/cursor-input.js';
+export type {
+  CursorInputOptions,
+  StrokeSource,
+  Vector2,
+} from './inputs/cursor-input/cursor-input.js';
 export type { PushStroke } from './inputs/scroll-push/scroll-push.js';
 
 export { colorRamp } from './primitives/color-ramp/color-ramp.js';

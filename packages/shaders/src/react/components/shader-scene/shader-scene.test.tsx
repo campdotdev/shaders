@@ -6,7 +6,12 @@ import type { QuadMesh } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type * as ShadersModule from '../../../engine.js';
-import { createRenderer, type CursorInput, type GpuRenderer } from '../../../engine.js';
+import {
+  createRenderer,
+  type CursorInput,
+  type GpuRenderer,
+  type Vector2,
+} from '../../../engine.js';
 import { ShadersError } from '../../errors/shaders-error.js';
 import { useResize } from '../../hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../hooks/use-shader-context/use-shader-context.js';
@@ -968,6 +973,160 @@ describe('ShaderScene', () => {
       scene.runFrame();
 
       expect(scene.input().getPush()).toBeNull();
+    });
+  });
+
+  describe('strokeAt', () => {
+    // A point code moves, shaped like an animation signal such as Motion's
+    // MotionValue.
+    const createPoint = (initial: Vector2) => {
+      let value = initial;
+      const listeners = new Set<(next: Vector2) => void>();
+
+      return {
+        get: () => value,
+        on: (_event: 'change', listener: (next: Vector2) => void) => {
+          listeners.add(listener);
+
+          return () => listeners.delete(listener);
+        },
+        set: (next: Vector2) => {
+          value = next;
+          for (const listener of listeners) listener(next);
+        },
+      };
+    };
+
+    type Point = ReturnType<typeof createPoint>;
+
+    // Renders one scene that strokes along `point`, with a child that reads
+    // the shared cursor input. With `votesIdle`, the child also votes the
+    // scene static, so the loop can park.
+    async function renderScene(point: Point | null, { votesIdle = false } = {}) {
+      const frames = captureFrames();
+      const inputs: CursorInput[] = [];
+
+      function Reader() {
+        const shaderContext = useShaderContext();
+
+        useStaticSceneHint(votesIdle);
+        if (shaderContext) inputs.push(shaderContext.getCursorInput());
+
+        return null;
+      }
+
+      const view = render(
+        <ShaderScene strokeAt={point}>
+          <Reader />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(inputs.length).toBeGreaterThan(0));
+      let now = 0;
+      const runFrame = () => {
+        now += 16;
+        runFrames(frames, now);
+      };
+      const runUntilParked = () => {
+        for (let frame = 0; frame < 50 && frames.length > 0; frame += 1) runFrame();
+      };
+
+      return { ...view, Reader, frames, input: () => inputs.at(-1)!, runFrame, runUntilParked };
+    }
+
+    it('strokes the cursor input along the point, without scrollPush', async () => {
+      const point = createPoint([0.2, 0.8]);
+      const scene = await renderScene(point);
+
+      scene.runFrame();
+      point.set([0.3, 0.7]);
+      scene.runFrame();
+
+      expect(scene.input().getScriptedStroke()).toEqual({
+        from: [0.2, 0.8],
+        to: [0.3, 0.7],
+        presence: 1,
+      });
+    });
+
+    it('wakes a parked scene when the point moves, and parks once it rests', async () => {
+      const point = createPoint([0.2, 0.8]);
+      const scene = await renderScene(point, { votesIdle: true });
+
+      scene.runUntilParked();
+      expect(scene.frames).toHaveLength(0);
+
+      point.set([0.3, 0.7]);
+      expect(scene.frames.length).toBeGreaterThan(0);
+      scene.runFrame();
+      expect(scene.input().getScriptedStroke()).not.toBeNull();
+
+      scene.runUntilParked();
+      expect(scene.frames).toHaveLength(0);
+    });
+
+    it('starts a fresh stroke on resume, so no segment spans the pause', async () => {
+      const point = createPoint([0.2, 0.8]);
+      const scene = await renderScene(point);
+
+      scene.runFrame();
+      scene.rerender(
+        <ShaderScene paused strokeAt={point}>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      // The point travels a long way while the loop is paused.
+      point.set([0.9, 0.1]);
+      scene.rerender(
+        <ShaderScene strokeAt={point}>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      scene.runFrame();
+      expect(scene.input().getScriptedStroke()).toBeNull();
+
+      point.set([0.8, 0.2]);
+      scene.runFrame();
+      expect(scene.input().getScriptedStroke()).toEqual({
+        from: [0.9, 0.1],
+        to: [0.8, 0.2],
+        presence: 1,
+      });
+    });
+
+    // A resize clears what the stroke drew, such as CursorSmudge's field,
+    // so a segment that started before it would land in a fresh field.
+    it('starts a fresh stroke after the canvas resizes', async () => {
+      const fireResize = stubResizeObserver();
+      const point = createPoint([0.2, 0.8]);
+      const scene = await renderScene(point);
+      const canvas = scene.container.querySelector('canvas')!;
+
+      scene.runFrame();
+      point.set([0.3, 0.7]);
+      Object.defineProperty(canvas, 'clientWidth', { value: 640, configurable: true });
+      fireResize();
+      scene.runFrame();
+
+      expect(scene.input().getScriptedStroke()).toBeNull();
+    });
+
+    it('lifts the stroke when the point goes, without rebuilding the renderer', async () => {
+      vi.mocked(createRenderer).mockClear();
+      const point = createPoint([0.2, 0.8]);
+      const scene = await renderScene(point, { votesIdle: true });
+
+      scene.runUntilParked();
+      scene.rerender(
+        <ShaderScene strokeAt={null}>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      point.set([0.3, 0.7]);
+
+      expect(scene.input().isScripting()).toBe(false);
+      expect(scene.frames).toHaveLength(0);
+      expect(createRenderer).toHaveBeenCalledTimes(1);
     });
   });
 });
