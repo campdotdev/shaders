@@ -549,11 +549,11 @@ describe('CursorInput', () => {
       };
     };
 
-    it('strokes from where the source was attached to each point it moves to, once per tick', () => {
+    it('strokes from where the point was attached to each point it moves to, once per tick', () => {
       const cursor = new CursorInput({ element: fakeElement });
       const point = createPoint([0.2, 0.8]);
 
-      cursor.setStrokeSource(point);
+      cursor.setStrokePoint(point);
       cursor.tick(1 / 60);
       expect(cursor.getScriptedStroke()).toBeNull();
 
@@ -570,19 +570,19 @@ describe('CursorInput', () => {
       cursor.dispose();
     });
 
-    it('ends the stroke on detach, and starts afresh from wherever the source is when re-attached', () => {
+    it('ends the stroke on detach, and starts afresh from wherever the point is when re-attached', () => {
       const cursor = new CursorInput({ element: fakeElement });
       const point = createPoint([0.2, 0.8]);
 
-      cursor.setStrokeSource(point);
+      cursor.setStrokePoint(point);
       point.set([0.3, 0.7]);
       cursor.tick(1 / 60);
-      cursor.setStrokeSource(null);
+      cursor.setStrokePoint(null);
       point.set([0.9, 0.1]);
       cursor.tick(1 / 60);
       expect(cursor.getScriptedStroke()).toBeNull();
 
-      cursor.setStrokeSource(point);
+      cursor.setStrokePoint(point);
       cursor.tick(1 / 60);
       expect(cursor.getScriptedStroke()).toBeNull();
 
@@ -600,20 +600,20 @@ describe('CursorInput', () => {
 
       expect(cursor.isScripting()).toBe(false);
 
-      cursor.setStrokeSource(point);
+      cursor.setStrokePoint(point);
       cursor.tick(1 / 60);
       expect(cursor.isScripting()).toBe(true);
 
-      cursor.setStrokeSource(null);
+      cursor.setStrokePoint(null);
       expect(cursor.isScripting()).toBe(false);
       cursor.dispose();
     });
 
-    it('lets go of its source on dispose', () => {
+    it('lets go of its point on dispose', () => {
       const cursor = new CursorInput({ element: fakeElement });
       const point = createPoint([0.2, 0.8]);
 
-      cursor.setStrokeSource(point);
+      cursor.setStrokePoint(point);
       point.set([0.3, 0.7]);
       cursor.tick(1 / 60);
       cursor.dispose();

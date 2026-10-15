@@ -12,7 +12,7 @@ import {
   FrameScheduler,
   type PrePass,
   setReducedMotionPolicy,
-  type StrokeSource,
+  type StrokePoint,
 } from '../../engine.js';
 import {
   ShaderContext,
@@ -39,7 +39,7 @@ function makeScene({
   scrollPush = false,
   floatTargets = true,
   strokeAt = null,
-}: { scrollPush?: boolean; floatTargets?: boolean; strokeAt?: StrokeSource | null } = {}) {
+}: { scrollPush?: boolean; floatTargets?: boolean; strokeAt?: StrokePoint | null } = {}) {
   let now = 1000;
   let nextFrame = 0;
   const frames = new Map<number, FrameRequestCallback>();
@@ -76,7 +76,7 @@ function makeScene({
   const input = new CursorInput({ element: canvas });
 
   input.setScrollPush(scrollPush);
-  input.setStrokeSource(strokeAt);
+  input.setStrokePoint(strokeAt);
   input.onPushStart(() => scheduler.requestRender());
   const stopWatchingPoint = strokeAt?.on('change', () => scheduler.requestRender());
 
@@ -424,6 +424,24 @@ it('ignores the mouse while a scripted stroke is attached', () => {
   const drawsAtRest = scene.draw.mock.calls.length;
 
   stroke(scene);
+
+  expect(scene.draw).toHaveBeenCalledTimes(drawsAtRest);
+});
+
+it('ignores a scroll push while a scripted stroke is attached', () => {
+  const scene = makeScene({ scrollPush: true, strokeAt: createPoint([0.1, 0.5]) });
+
+  render(<CursorSmudge decay={0} />, { wrapper: scene.Wrapper });
+  scene.advance(3);
+  const drawsAtRest = scene.draw.mock.calls.length;
+  const touch = new Touch({ identifier: 1, target: scene.canvas, clientX: 500, clientY: 500 });
+
+  scene.canvas.dispatchEvent(
+    new TouchEvent('touchstart', { touches: [touch], changedTouches: [touch], bubbles: true }),
+  );
+  scene.advance();
+  scene.scrollTo(-30);
+  scene.advance(3);
 
   expect(scene.draw).toHaveBeenCalledTimes(drawsAtRest);
 });
