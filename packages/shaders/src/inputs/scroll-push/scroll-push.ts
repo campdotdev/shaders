@@ -51,9 +51,10 @@ export interface CanvasRect {
 }
 
 /**
- * One frame's push: the segment the brush swept, in 0..1 canvas units with
- * [0, 0] at the top-left and the segment ending at the brush, plus the
- * presence that gates it. The shape the wave field's stroke already has.
+ * One frame's stroke, from a push or a scripted stroke: the segment the
+ * brush swept, in 0..1 canvas units with [0, 0] at the top-left and the
+ * segment ending at the brush, plus the presence that gates it. The shape
+ * the wave field's stroke already has.
  */
 export interface PushStroke {
   from: readonly [number, number];
@@ -83,8 +84,16 @@ export interface PushTracker {
   touchStartAnywhere: (snapshot: TouchSnapshot) => void;
   /** For both touchend and touchcancel. */
   touchEnd: (snapshot: TouchSnapshot) => void;
+  /**
+   * For every touchend and touchcancel on the page, wherever the finger
+   * lifted. A pinch's last finger may have landed off the canvas, so only
+   * this sees it lift.
+   */
+  touchEndAnywhere: (snapshot: TouchSnapshot) => void;
   /** Once per rendered frame: this frame's stroke, or nothing to push. */
   frame: (rect: CanvasRect) => PushStroke | undefined;
+  /** Ends the contact now, for a host that stops tracking mid-push. */
+  cancel: () => void;
 }
 
 interface Point {
@@ -120,10 +129,16 @@ function toStroke(brush: Point, push: Point, rect: CanvasRect): PushStroke {
 
 /**
  * `onContactStart` runs when a lone finger lands, so a host that draws on
- * demand can start drawing again.
+ * demand can start drawing again. `onContactEnd` runs once for each start,
+ * when that contact is over and nothing more will push.
  */
-export function createPushTracker(onContactStart?: () => void): PushTracker {
+export function createPushTracker(
+  onContactStart?: () => void,
+  onContactEnd?: () => void,
+): PushTracker {
   let phase: PushPhase = 'idle';
+  // Whether a contact that `onContactStart` announced is still going.
+  let inContact = false;
   let fingerId: number | null = null;
   // The brush, in CSS pixels from the canvas's top-left corner, and where
   // the brush and the canvas were on the last frame.
@@ -142,6 +157,9 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
     previousBrush = null;
     previousRect = null;
     restingAt = null;
+    if (!inContact) return;
+    inContact = false;
+    onContactEnd?.();
   };
 
   // A second finger, anywhere on the screen, makes this a pinch or some
@@ -161,6 +179,11 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
     restingAt = null;
 
     return true;
+  };
+
+  // A pinch ends once every finger has lifted, whichever lifted last.
+  const endPinchOnLastLift = (snapshot: TouchSnapshot) => {
+    if (phase === 'pinch' && snapshot.touches.length === 0) reset();
   };
 
   const findTracked = (points: readonly TouchPoint[]) =>
@@ -192,6 +215,7 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
       // touch stops the page, and its brush must not join the old one. The
       // rect is read as the event arrives, so the brush lands where the
       // finger is on the canvas even mid-scroll.
+      reset();
       fingerId = touch.id;
       restingAt = touch;
       brush = toCanvas(touch, rect);
@@ -199,6 +223,7 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
       previousRect = rect;
       stillFrames = 0;
       phase = 'down';
+      inContact = true;
       onContactStart?.();
     },
 
@@ -220,7 +245,7 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
     },
 
     touchEnd(snapshot) {
-      if (phase === 'pinch' && snapshot.touches.length === 0) reset();
+      endPinchOnLastLift(snapshot);
       if (phase !== 'down' || !findTracked(snapshot.changed)) return;
       // A finger still on the screen landed off the canvas and has not
       // moved since, so no move saw it. That makes this a pinch, not a fling.
@@ -232,6 +257,8 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
       stillFrames = 0;
       phase = 'fling';
     },
+
+    touchEndAnywhere: endPinchOnLastLift,
 
     frame(rect) {
       if (!brush || !previousBrush || !previousRect) return undefined;
@@ -255,5 +282,7 @@ export function createPushTracker(onContactStart?: () => void): PushTracker {
 
       return toStroke(pushingBrush, push, rect);
     },
+
+    cancel: reset,
   };
 }

@@ -53,6 +53,16 @@ export interface CursorSignal extends AnimatableSignal<Vector2> {
    * touch pushes, so the stroke keeps arriving.
    */
   getPush: () => PushStroke | null;
+  /**
+   * This frame's scripted stroke, or null when the `strokeAt` point did not
+   * move or none is attached. A scripted stroke beats the pointer, and the
+   * pointer beats the push: while a point is attached (`isScripting`), a
+   * stroke reader ignores the pointer and the push. Read it once per frame,
+   * from the scene's frame loop.
+   */
+  getScriptedStroke: () => PushStroke | null;
+  /** Whether the scene's `strokeAt` point is attached, moving or not. */
+  isScripting: () => boolean;
 }
 
 // ----------------------------------------------------------------------------
@@ -91,6 +101,8 @@ const createStubSignal = (initial: Vector2): CursorSignal => ({
     on: () => () => undefined,
   },
   getPush: () => null,
+  getScriptedStroke: () => null,
+  isScripting: () => false,
 });
 
 const noop = () => undefined;
@@ -231,6 +243,8 @@ export function useCursor(opts: CursorOptions = {}): CursorSignal {
       ...positionChannel.signal,
       presence: presenceChannel.signal,
       getPush: () => input.getPush(),
+      getScriptedStroke: () => input.getScriptedStroke(),
+      isScripting: () => input.isScripting(),
     });
 
     // The easing needs a steady tick. Inside a ShaderScene, ride the scene's

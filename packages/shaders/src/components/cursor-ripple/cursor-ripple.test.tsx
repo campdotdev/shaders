@@ -4,7 +4,12 @@ import { act, render } from '@testing-library/react';
 import type { RenderTarget, WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { createWaveField, CursorInput, setReducedMotionPolicy } from '../../engine.js';
+import {
+  createWaveField,
+  CursorInput,
+  setReducedMotionPolicy,
+  type StrokePoint,
+} from '../../engine.js';
 import {
   type PostProcessTransform,
   ShaderContext,
@@ -62,10 +67,16 @@ function makeRenderer({ floatTargets = true }: StubOptions = {}) {
 
 // A scene whose scheduler hands its clients back, so a test can tick the
 // Effect's drive by hand, and whose register functions count what the
-// Effect puts on the output stage. With `scrollPush`, the shared input
-// pushes and ticks once per frame ahead of every client, as ShaderScene's
-// does.
-function makeScene(renderer: WebGPURenderer, { scrollPush = false } = {}) {
+// Effect puts on the output stage. With `scrollPush` or a `strokeAt`
+// point, the shared input ticks once per frame ahead of every client, as
+// ShaderScene's does.
+function makeScene(
+  renderer: WebGPURenderer,
+  {
+    scrollPush = false,
+    strokeAt = null,
+  }: { scrollPush?: boolean; strokeAt?: StrokePoint | null } = {},
+) {
   const clients: SchedulerClient[] = [];
   const uvTransforms: UvTransform[] = [];
   const overlays: PostProcessTransform[] = [];
@@ -107,7 +118,8 @@ function makeScene(renderer: WebGPURenderer, { scrollPush = false } = {}) {
 
       sharedInput = input;
       input.setScrollPush(scrollPush);
-      if (scrollPush) clients.push(({ delta }) => input.tick(delta));
+      input.setStrokePoint(strokeAt);
+      if (scrollPush || strokeAt) clients.push(({ delta }) => input.tick(delta));
 
       return input;
     },
@@ -451,6 +463,70 @@ describe('CursorRipple and scroll push', () => {
     touchDown(canvas);
     scene.tick();
     scrollTo(-30);
+    scene.tick();
+
+    expect(renderer.render).not.toHaveBeenCalled();
+  });
+});
+
+describe('CursorRipple and scripted strokes', () => {
+  // A point code moves, shaped like an animation signal such as Motion's
+  // MotionValue.
+  const createPoint = (initial: readonly [number, number]) => {
+    let value = initial;
+
+    return {
+      get: () => value,
+      on: () => () => undefined,
+      set: (next: readonly [number, number]) => {
+        value = next;
+      },
+    };
+  };
+
+  it('stirs the water along a scripted stroke, with no pointer', () => {
+    const renderer = makeRenderer();
+    const point = createPoint([0.2, 0.5]);
+    const scene = makeScene(renderer, { strokeAt: point });
+
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    scene.tick();
+    point.set([0.4, 0.5]);
+    scene.tick();
+
+    expect(renderer.render).toHaveBeenCalled();
+  });
+
+  it('leaves the water still under a scroll push while a scripted stroke is attached', () => {
+    const renderer = makeRenderer();
+    const canvas = renderer.domElement;
+    let top = 0;
+
+    canvas.getBoundingClientRect = () => ({ left: 0, top, width: 1000, height: 1000 }) as DOMRect;
+    const scene = makeScene(renderer, { scrollPush: true, strokeAt: createPoint([0.2, 0.5]) });
+    const touch = new Touch({ identifier: 1, target: canvas, clientX: 500, clientY: 500 });
+
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    act(() => {
+      canvas.dispatchEvent(
+        new TouchEvent('touchstart', { touches: [touch], changedTouches: [touch], bubbles: true }),
+      );
+    });
+    scene.tick();
+    top = -30;
+    scene.tick();
+
+    expect(renderer.render).not.toHaveBeenCalled();
+  });
+
+  it('leaves the water still under the mouse while a scripted stroke is attached', () => {
+    const renderer = makeRenderer();
+    const scene = makeScene(renderer, { strokeAt: createPoint([0.2, 0.5]) });
+
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    fireMoveOnWindow(100, 100);
+    scene.tick();
+    fireMoveOnWindow(300, 100);
     scene.tick();
 
     expect(renderer.render).not.toHaveBeenCalled();

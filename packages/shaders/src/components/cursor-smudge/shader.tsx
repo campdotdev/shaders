@@ -115,9 +115,10 @@ export function CursorSmudgeShader({
         from !== null &&
         (current[0] !== from[0] || current[1] !== from[1]);
       const mouse = moved ? { from, to: current, presence: 1 } : null;
-      const push = input.getPush();
 
-      pendingStroke = mouse ?? push;
+      // A scripted stroke beats the mouse, and the mouse beats the push.
+      // While a script is attached, the mouse and the push count for nothing.
+      pendingStroke = input.isScripting() ? input.getScriptedStroke() : (mouse ?? input.getPush());
       previous = inside ? current : null;
       // A parked scene's first tick reports the whole sleep as its delta,
       // but the travel it carries took about one frame. Without the cap, the
