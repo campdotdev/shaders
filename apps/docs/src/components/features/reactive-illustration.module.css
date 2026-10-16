@@ -11,12 +11,12 @@
   aspect-ratio: 312 / 309;
 }
 
-/* The image exported from the mock at 2x. It covers the scene until the
-   scene has laid its smudge, and stands in for it without WebGPU. */
+/* The still frame, captured from the live scene at 2x with its arrow. It
+   covers the scene until the scene has laid its smudge, and stands in for
+   it without WebGPU and under reduced motion. */
 .still {
   position: absolute;
   inset: 0;
-  display: block;
   width: 100%;
   height: 100%;
 }

@@ -32,8 +32,6 @@ export interface ReactiveSceneProps {
    * nothing scripted strokes. The J's own stroke takes over while it lays.
    */
   strokeAt: MotionValue<[number, number]> | null;
-  /** Whether a touch that scrolls the page over the card stirs the smudge. */
-  scrollPush: boolean;
   /** Fires when a touch's push starts, and when its fling settles. */
   onPushStart: () => void;
   onPushEnd: () => void;
@@ -70,7 +68,6 @@ export default function ReactiveScene({
   onStillFrame,
   decay,
   strokeAt,
-  scrollPush,
   onPushStart,
   onPushEnd,
 }: ReactiveSceneProps) {
@@ -111,7 +108,7 @@ export default function ReactiveScene({
   };
 
   return (
-    <ShaderScene onFirstPaint={layJ} scrollPush={scrollPush} strokeAt={laying ? point : strokeAt}>
+    <ShaderScene onFirstPaint={layJ} scrollPush strokeAt={laying ? point : strokeAt}>
       {/* A literal 0 holds the flow still, so the scene parks whenever
           nothing strokes. */}
       <LiquidGradient {...REACTIVE_GRADIENT} speed={0} />

@@ -3,9 +3,9 @@
 /**
  * The Reactive feature card's illustration (SHA-216): the mock's pointer
  * arrow over a live LiquidGradient with a smudge held along the J path
- * (reactive-scene.tsx), where the browser has WebGPU. Anywhere else, and
- * until the scene has laid the smudge, the card shows the image exported
- * from the mock. A hover sends the arrow off the window and back in to the
+ * (reactive-scene.tsx), where the browser has WebGPU and motion is allowed.
+ * Anywhere else, and until the scene has laid the smudge, the card shows an
+ * image captured from that still frame. A hover sends the arrow off the window and back in to the
  * visitor's pointer, which it then follows, pointing the way the pointer
  * moves, while the pointer smudges the gradient. When the pointer leaves,
  * the arrow follows it off, then swoops back along the J and lays the
@@ -526,7 +526,10 @@ function useArrow(
 // `m` under LazyMotion rather than `motion`, as in the other feature cards:
 // the illustration only binds motion values to style, which domMin covers.
 export function ReactiveIllustration() {
-  const Scene = useReactiveScene(useHasWebGpu());
+  // Under reduced motion the card shows only the image, with no live scene
+  // behind it, so neither a hover nor a touch can stir it.
+  const reducedMotion = useReducedMotion() === true;
+  const Scene = useReactiveScene(useHasWebGpu() && !reducedMotion);
   const [laid, setLaid] = useState(false);
   const illustrationRef = useRef<HTMLDivElement>(null);
   const { pointer, onPointerMove, reset } = useCardPointer(illustrationRef);
@@ -534,9 +537,6 @@ export function ReactiveIllustration() {
   // image, as it does without WebGPU, stays still.
   const story = useHeldStory({ enabled: laid, onPointerMove });
   const arrow = useArrow(story, pointer, reset);
-  // A touch can only stir the smudge with motion allowed, so under reduced
-  // motion it can't leave a smudge for the decay-0 still frame to hold.
-  const reducedMotion = useReducedMotion() === true;
 
   usePauseHeroWhile(story.stage !== 'still');
 
@@ -559,7 +559,6 @@ export function ReactiveIllustration() {
             onPushEnd={story.onPushEnd}
             onPushStart={story.onPushStart}
             onStillFrame={() => setLaid(true)}
-            scrollPush={!reducedMotion}
             strokeAt={arrow.strokeAt}
           />
         )}
