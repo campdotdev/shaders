@@ -182,9 +182,16 @@ const TURN_SMOOTHING = 0.025;
 //
 // Stiffness and damping rather than visualDuration, which would stall the
 // turn on every pointer event (the time-defined-spring gotcha in
-// docs/agents/docs-site.md). These are what visualDuration 0.12 with no
-// bounce works out to: critically damped, settling in about 120 ms.
-const TURN_SPRING = { stiffness: 1900, damping: 87, mass: 1 };
+// docs/agents/docs-site.md). Critical damping keeps the turn bounce-free.
+// A turn from rest covers about 95% in 240 ms, then eases through its last
+// few degrees. Lower stiffness stretches that settle; damping is twice
+// the square root of stiffness at mass 1 to keep the same response.
+const TURN_SPRING = { stiffness: 400, damping: 40, mass: 1 };
+
+// Smooth the pointer's position between mouse events. At mass 1, damping
+// 50 critically damps stiffness 625: about 95% of a move in 190 ms, with
+// no bounce. Position catches up a little sooner than the arrow's turn.
+const FOLLOW_SPRING = { stiffness: 625, damping: 50, mass: 1 };
 
 // The slowest the pointer can move, in mock pixels a second, and still
 // turn the arrow. Slower is a tremble, not a direction.
@@ -197,7 +204,7 @@ const HOLD_DECAY = 0;
 const STORY_DECAY = 0.4;
 const CLEAR_DECAY = 1;
 
-/** The pointer over the card, in mock pixels, and the way it heads. */
+/** The eased pointer over the card, in mock pixels, and the way the mouse heads. */
 interface CardPointer {
   x: MotionValue<number>;
   y: MotionValue<number>;
@@ -208,13 +215,15 @@ interface CardPointer {
 }
 
 /**
- * Tracks the pointer over the card from its moves. The heading follows the
- * pointer's velocity through a smoothing filter, so it turns smoothly on
- * every move, and a still or trembling pointer keeps it.
+ * Eases the pointer's position toward each mouse move without restarting
+ * its velocity. The heading follows the raw mouse velocity through a
+ * smoothing filter, and a still or trembling mouse keeps its heading.
  */
 function useCardPointer(illustrationRef: RefObject<HTMLDivElement | null>) {
-  const x = useMotionValue(0);
-  const y = useMotionValue(0);
+  const targetX = useMotionValue(0);
+  const targetY = useMotionValue(0);
+  const x = useSpring(targetX, FOLLOW_SPRING);
+  const y = useSpring(targetY, FOLLOW_SPRING);
   const heading = useMotionValue(STILL_FRAME_HEADING);
   const enteredAt = useRef<[number, number] | null>(null);
   // The last move, in mock pixels and seconds, and the filtered velocity,
@@ -231,10 +240,14 @@ function useCardPointer(illustrationRef: RefObject<HTMLDivElement | null>) {
     const time = event.timeStamp / 1000;
     const last = lastMoveRef.current;
 
-    x.set(nextX);
-    y.set(nextY);
+    targetX.set(nextX);
+    targetY.set(nextY);
     lastMoveRef.current = { x: nextX, y: nextY, time };
     if (!last) {
+      // Start each hover at its entry point, without carrying motion from
+      // the previous hover into the arrow's flight back in.
+      x.jump(nextX);
+      y.jump(nextY);
       enteredAt.current = [nextX, nextY];
       velocityRef.current = [0, 0];
 
@@ -396,6 +409,7 @@ function useArrow(
   // rather than drawing one across the window from where the last left off.
   const outTip = useTransform(outPose, canvasTip);
   const inTip = useTransform(inPose, canvasTip);
+  const followTip = useTransform(followPose, canvasTip);
   const jPoint = useTransform(swoop, pointOnJ);
 
   // While the visitor hovers, keep where the arrow is, so it leaves from
@@ -488,6 +502,9 @@ function useArrow(
 
   if (leg === 'out') strokeAt = outTip;
   else if (leg === 'in') strokeAt = inTip;
+  // The smudge follows the eased tip too, rather than the raw mouse ahead
+  // of it. A scripted stroke takes precedence over mouse input.
+  else if (leg === 'following') strokeAt = followTip;
   else if (leg === 'swooping') strokeAt = jPoint;
 
   // Hidden while a push stirs the smudge and while it clears after, so the
