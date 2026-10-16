@@ -11,6 +11,7 @@
  * the pointer, and can wait for its live scene.
  */
 import {
+  type ComponentType,
   createContext,
   type ReactNode,
   type RefObject,
@@ -24,7 +25,9 @@ import {
 
 import { useReducedMotion } from 'motion/react';
 
+import { usePauseHeroWhile } from '@/components/home-hero/hero-pause';
 import { useCanHover } from '@/lib/use-can-hover';
+import { useHasWebGpu } from '@/lib/use-has-webgpu';
 
 import { type HeldBy, type HeldStage, heldStoryReducer, STILL } from './story-state';
 
@@ -108,6 +111,14 @@ function useCardPointer(
     card.addEventListener('pointerenter', onPointerEnter);
     card.addEventListener('pointermove', onPointerMove);
     card.addEventListener('pointerleave', onPointerLeave);
+
+    // A pointer already on the card as the gate opens sends no
+    // pointerenter, so it counts as entering now. Its first move tells
+    // `onMove` where it is.
+    if (card.matches(':hover')) {
+      pointerOnCardRef.current = true;
+      callbacksRef.current.onEnter();
+    }
 
     // The gate closing counts as the pointer leaving, so a held story ends
     // rather than holding with no pointer to release it.
@@ -201,7 +212,7 @@ export interface HeldStory {
 }
 
 /** How an illustration with a held story takes part in it. */
-export interface HeldStoryOptions {
+interface HeldStoryOptions {
   /**
    * False keeps the card on its still frame, ignoring the pointer and any
    * push, as a card does until its live scene shows the still frame.
@@ -213,6 +224,33 @@ export interface HeldStoryOptions {
    * pointer enters on, for a story that follows the pointer.
    */
   onPointerMove?: (event: PointerEvent) => void;
+  /**
+   * Pauses the homepage hero while the story plays and the card is in view,
+   * for a story with a live scene, as a playing favorite does. Off screen
+   * the card's scene pauses, so the hero can draw. Defaults to false.
+   */
+  pausesHero?: boolean;
+}
+
+/** Whether the illustration's StoryCard is on screen, which only a live story's hero pause reads. */
+function useCardInView(watching: boolean): boolean {
+  const cardRef = useContext(CardContext);
+  const [inView, setInView] = useState(false);
+
+  useEffect(() => {
+    const card = cardRef?.current;
+
+    if (!watching || !card) return undefined;
+    const observer = new IntersectionObserver(([entry]) =>
+      setInView(entry?.isIntersecting ?? false),
+    );
+
+    observer.observe(card);
+
+    return () => observer.disconnect();
+  }, [cardRef, watching]);
+
+  return watching && inView;
 }
 
 /**
@@ -222,7 +260,11 @@ export interface HeldStoryOptions {
  * back during the ending lets it land, then a fresh play starts
  * (story-state.ts has the rules).
  */
-export function useHeldStory({ enabled = true, onPointerMove }: HeldStoryOptions = {}): HeldStory {
+export function useHeldStory({
+  enabled = true,
+  onPointerMove,
+  pausesHero = false,
+}: HeldStoryOptions = {}): HeldStory {
   const [story, dispatch] = useReducer(heldStoryReducer, STILL);
   const reducedMotion = useReducedMotion() === true;
   // Whether a push runs now, which only the ending's landing reads.
@@ -245,6 +287,19 @@ export function useHeldStory({ enabled = true, onPointerMove }: HeldStoryOptions
     dispatch({ type: 'push-end' });
   }, []);
 
+  // Pushes stopping counts as the push ending, as the hover gate closing
+  // counts as the pointer leaving, so a push hold never outlives them.
+  useEffect(
+    () => () => {
+      if (!pushingRef.current) return;
+      pushingRef.current = false;
+      dispatch({ type: 'push-end' });
+    },
+    [canPush],
+  );
+
+  usePauseHeroWhile(useCardInView(pausesHero) && story.stage !== 'still');
+
   // Stable, so an illustration can list it in an effect's deps without
   // restarting the play under way on every render.
   const onStoryEnd = useCallback(() => {
@@ -256,4 +311,55 @@ export function useHeldStory({ enabled = true, onPointerMove }: HeldStoryOptions
   }, [pointerOnCardRef]);
 
   return { ...story, onStoryEnd, onPushStart, onPushEnd };
+}
+
+// ---------------------------------------------
+// A live scene
+// ---------------------------------------------
+
+/**
+ * A live scene for an illustration's story: `load` imports its module. The
+ * returned hook gives the scene's component where the scene may run, a
+ * browser with a WebGPU adapter and motion allowed, once its module has
+ * loaded, and null until then and anywhere else, where the card shows its
+ * still frame as an image. The module loads as the card mounts, so the
+ * scene mounts before the card scrolls into view. It loads through a plain
+ * import() from an effect rather than next/dynamic, for the reason
+ * favorite-scenes.tsx gives, which also keeps three out of the server
+ * render.
+ */
+export function createLiveScene<Props extends object>(
+  load: () => Promise<{ default: ComponentType<Props> }>,
+): () => ComponentType<Props> | null {
+  // The component once its module has loaded, so a later mount reads it
+  // straight away.
+  let loaded: ComponentType<Props> | null = null;
+
+  return function useLiveScene() {
+    const hasWebGpu = useHasWebGpu();
+    const reducedMotion = useReducedMotion() === true;
+    const enabled = hasWebGpu && !reducedMotion;
+    const [scene, setScene] = useState(() => loaded);
+
+    useEffect(() => {
+      if (!enabled || scene) return undefined;
+
+      let cancelled = false;
+
+      load()
+        .then((module) => {
+          loaded = module.default;
+          if (!cancelled) setScene(() => module.default);
+        })
+        .catch(() => {
+          // A module that fails to load leaves the card on its image.
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }, [enabled, scene]);
+
+    return enabled ? scene : null;
+  };
 }

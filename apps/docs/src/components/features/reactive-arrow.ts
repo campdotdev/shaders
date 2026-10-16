@@ -6,11 +6,7 @@
  * illustration, angles are degrees clockwise, as CSS turns them, and
  * reactive-illustration.module.css draws the arrow from a pose.
  */
-import { headingOnJ, pointOnJ } from './reactive-smudge';
-
-/** The illustration's size in mock pixels, which everything here measures in. */
-export const MOCK_WIDTH = 312;
-export const MOCK_HEIGHT = 309;
+import { headingOnJ, MOCK_HEIGHT, MOCK_WIDTH, pointOnJ } from './reactive-smudge';
 
 // How far past the window's edge the arrow starts its flight back in: far
 // enough that none of it shows.
@@ -41,6 +37,13 @@ const UNTURNED_HEADING = (Math.atan2(TIP[1] - NOTCH[1], TIP[0] - NOTCH[0]) * 180
 
 const toRadians = (degrees: number) => (degrees * Math.PI) / 180;
 
+// The offset (`x`, `y`) turned clockwise by `angle`, as CSS turns it.
+function rotate(x: number, y: number, angle: number): [number, number] {
+  const turn = toRadians(angle);
+
+  return [x * Math.cos(turn) - y * Math.sin(turn), x * Math.sin(turn) + y * Math.cos(turn)];
+}
+
 /** The mock's pose: at the upper right, turned to point up and to the right. */
 export const STILL_FRAME_ARROW: ArrowPose = { x: 208.44, y: 65.7, angle: 76.89 };
 
@@ -49,25 +52,18 @@ export function angleForHeading(heading: number): number {
   return heading - UNTURNED_HEADING;
 }
 
-/** The still frame's heading: up and to the right, as the mock draws it. */
-export const STILL_FRAME_HEADING = STILL_FRAME_ARROW.angle + UNTURNED_HEADING;
-
 /** The way an arrow turned by `angle` points. */
 export function headingForAngle(angle: number): number {
   return angle + UNTURNED_HEADING;
 }
 
+/** The still frame's heading: up and to the right, as the mock draws it. */
+export const STILL_FRAME_HEADING = headingForAngle(STILL_FRAME_ARROW.angle);
+
 // Where a point of the unturned box sits from the box's center once the
 // box turns by `angle`.
 function fromCenter([pointX, pointY]: readonly [number, number], angle: number): [number, number] {
-  const offsetX = pointX - BOX[0] / 2;
-  const offsetY = pointY - BOX[1] / 2;
-  const turn = toRadians(angle);
-
-  return [
-    offsetX * Math.cos(turn) - offsetY * Math.sin(turn),
-    offsetX * Math.sin(turn) + offsetY * Math.cos(turn),
-  ];
+  return rotate(pointX - BOX[0] / 2, pointY - BOX[1] / 2, angle);
 }
 
 // The pose that turns the arrow by `angle` with its point `local`, in the
@@ -130,9 +126,13 @@ export function entryPoint([x, y]: readonly [number, number]): [number, number] 
  */
 export function exitDistance([x, y]: readonly [number, number], heading: number): number {
   const turn = toRadians(heading);
+  // How far along the heading the arrow crosses the far side of one axis.
+  // A heading straight along the other axis never crosses it. Its step
+  // along this axis comes out of cos or sin as a rounding error, about
+  // 1e-16 rather than 0, so anything under STRAIGHT counts as 0.
   const across = (from: number, step: number, size: number) => {
-    if (step > 1e-9) return (size + ENTRY_MARGIN - from) / step;
-    if (step < -1e-9) return (-ENTRY_MARGIN - from) / step;
+    if (step > STRAIGHT) return (size + ENTRY_MARGIN - from) / step;
+    if (step < -STRAIGHT) return (-ENTRY_MARGIN - from) / step;
 
     return Infinity;
   };
@@ -142,6 +142,9 @@ export function exitDistance([x, y]: readonly [number, number], heading: number)
     Math.min(across(x, Math.cos(turn), MOCK_WIDTH), across(y, Math.sin(turn), MOCK_HEIGHT)),
   );
 }
+
+// A step along an axis small enough to be a rounding error (exitDistance).
+const STRAIGHT = 1e-9;
 
 /** The point `distance` on from `from` along `heading`. */
 export function pointAlong(
@@ -173,14 +176,14 @@ const J_END: readonly [number, number] = [
 // the swoop can carry that point along the J and land on the still frame.
 const TRAIL = (() => {
   const { x, y, angle } = STILL_FRAME_ARROW;
-  const turn = toRadians(-angle);
-  const offsetX = J_END[0] - (x + BOX[0] / 2);
-  const offsetY = J_END[1] - (y + BOX[1] / 2);
+  // Turn the J's end back by the still frame's angle about the box's center.
+  const [offsetX, offsetY] = rotate(
+    J_END[0] - (x + BOX[0] / 2),
+    J_END[1] - (y + BOX[1] / 2),
+    -angle,
+  );
 
-  return [
-    BOX[0] / 2 + offsetX * Math.cos(turn) - offsetY * Math.sin(turn),
-    BOX[1] / 2 + offsetX * Math.sin(turn) + offsetY * Math.cos(turn),
-  ] as const;
+  return [BOX[0] / 2 + offsetX, BOX[1] / 2 + offsetY] as const;
 })();
 
 /**

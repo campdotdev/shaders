@@ -5,6 +5,10 @@
  * still frame.
  */
 
+/** The illustration's size in mock pixels, which the arrow and the J measure in. */
+export const MOCK_WIDTH = 312;
+export const MOCK_HEIGHT = 309;
+
 interface ReactiveSmudge {
   /** CursorSmudge's strength: the furthest the stroke pulls, in canvas heights. */
   strength: number;
@@ -14,9 +18,9 @@ interface ReactiveSmudge {
   laySeconds: number;
 }
 
-// The author picked this strength and radius at phase 1b, about twice
-// CursorSmudge's defaults, so the streak reads as the mock's trail. 0.85 s
-// is the ending's swoop, which lays the same smudge.
+// About twice CursorSmudge's default strength and radius, so the streak
+// reads as the mock's trail. 0.85 s is the ending's swoop, which lays the
+// same smudge.
 export const REACTIVE_SMUDGE: ReactiveSmudge = {
   strength: 0.25,
   radius: 0.24,
@@ -25,12 +29,12 @@ export const REACTIVE_SMUDGE: ReactiveSmudge = {
 
 // The J, as a cubic Bézier in 0..1 canvas units from the top-left: up from
 // below the bottom edge near the left corner, bending over to the arrow at
-// (240, 101) of the mock's 312 by 309.
+// (240, 101) in mock pixels.
 const J_PATH = [
   [0.12, 1.15],
   [0.15, 0.55],
   [0.45, 0.35],
-  [240 / 312, 101 / 309],
+  [240 / MOCK_WIDTH, 101 / MOCK_HEIGHT],
 ] as const;
 
 /** The point `t` of the way along the J, from 0 at its foot to 1 at the arrow. */
@@ -58,5 +62,5 @@ export function headingOnJ(t: number): number {
   const dy =
     weights[0] * (p1[1] - p0[1]) + weights[1] * (p2[1] - p1[1]) + weights[2] * (p3[1] - p2[1]);
 
-  return (Math.atan2(dy * 309, dx * 312) * 180) / Math.PI;
+  return (Math.atan2(dy * MOCK_HEIGHT, dx * MOCK_WIDTH) * 180) / Math.PI;
 }
