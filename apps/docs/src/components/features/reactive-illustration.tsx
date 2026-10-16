@@ -5,21 +5,16 @@
  * arrow over a live LiquidGradient with a smudge held along the J path
  * (reactive-scene.tsx), where the browser has WebGPU and motion is allowed.
  * Anywhere else, and until the scene has laid the smudge, the card shows an
- * image captured from that still frame. A hover sends the arrow off the window and back in to the
- * visitor's pointer, which it then follows, pointing the way the pointer
- * moves, while the pointer smudges the gradient. When the pointer leaves,
- * the arrow follows it off, then swoops back along the J and lays the
- * still frame's smudge again (story.tsx's held story).
+ * image captured from that still frame. A hover sends the arrow off the
+ * window and back in to the visitor's pointer, which it then follows,
+ * pointing the way the pointer moves, while its tip smudges the gradient.
+ * When the pointer leaves, the arrow follows it off, then swoops back along
+ * the J and lays the still frame's smudge again. A touch that scrolls the
+ * page over the card hides the arrow and stirs the smudge until the page
+ * stops (story.tsx's held story).
  */
 import Image from 'next/image';
-import {
-  type ComponentType,
-  type RefObject,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { type RefObject, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   animate,
@@ -30,14 +25,11 @@ import {
   type MotionValue,
   useMotionValue,
   useMotionValueEvent,
-  useReducedMotion,
   useSpring,
   useTransform,
 } from 'motion/react';
 
-import { usePauseHeroWhile } from '@/components/home-hero/hero-pause';
 import { EASE_OUT } from '@/lib/easing';
-import { useHasWebGpu } from '@/lib/use-has-webgpu';
 
 import {
   angleForHeading,
@@ -48,8 +40,6 @@ import {
   exitDistance,
   headingForAngle,
   headingToward,
-  MOCK_HEIGHT,
-  MOCK_WIDTH,
   pointAlong,
   shortestTurn,
   STILL_FRAME_ARROW,
@@ -58,54 +48,21 @@ import {
   swoopPose,
 } from './reactive-arrow';
 import styles from './reactive-illustration.module.css';
-import type { ReactiveSceneProps } from './reactive-scene';
-import { pointOnJ, REACTIVE_SMUDGE } from './reactive-smudge';
-import { type HeldBy, type HeldStage, type HeldStory, useHeldStory } from './story';
+import { MOCK_HEIGHT, MOCK_WIDTH, pointOnJ, REACTIVE_SMUDGE } from './reactive-smudge';
+import {
+  createLiveScene,
+  type HeldBy,
+  type HeldStage,
+  type HeldStory,
+  useHeldStory,
+} from './story';
 
 // ---------------------------------------------
-// Loading the scene
+// The scene
 // ---------------------------------------------
 
-type Scene = ComponentType<ReactiveSceneProps>;
-
-// The scene's component once its module has loaded, so a later mount reads
-// it straight away. The module loads through a plain import() from an
-// effect rather than next/dynamic, for the reason favorite-scenes.tsx gives,
-// which also keeps three out of the server render.
-let loadedScene: Scene | null = null;
-
-function loadScene(): Promise<Scene> {
-  return import('./reactive-scene').then((module) => {
-    loadedScene = module.default;
-
-    return module.default;
-  });
-}
-
-/** The scene's component once `enabled` and its module has loaded, otherwise null. */
-function useReactiveScene(enabled: boolean): Scene | null {
-  const [scene, setScene] = useState(() => loadedScene);
-
-  useEffect(() => {
-    if (!enabled || scene) return undefined;
-
-    let cancelled = false;
-
-    loadScene()
-      .then((loaded) => {
-        if (!cancelled) setScene(() => loaded);
-      })
-      .catch(() => {
-        // A module that fails to load leaves the card on its image.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [enabled, scene]);
-
-  return enabled ? scene : null;
-}
+// The live scene, where it may run (story.tsx's createLiveScene).
+const useReactiveScene = createLiveScene(() => import('./reactive-scene'));
 
 // ---------------------------------------------
 // The arrow
@@ -157,7 +114,8 @@ function Arrow({ style }: { style: ArrowStyle }) {
 
 // How long the hover's flights take, in seconds: the arrow flicks off the
 // window along its heading, then flies back in to the pointer. Leaving
-// sends it off the same way.
+// sends it off the same way. Longer reads as a lazier handoff, shorter as a
+// snap.
 const OUT_SECONDS = 0.25;
 const IN_SECONDS = 0.35;
 
@@ -165,14 +123,22 @@ const IN_SECONDS = 0.35;
 // mock pixels: past the window's edge from the still frame's spot.
 const OUT_DISTANCE = 260;
 
-// After the arrow leaves, how long the visitor's smudges clear before it
-// swoops back in, in seconds. With the flight off, about 0.6 s at decay 1,
-// which brings a full pull down to nothing.
+// How long the visitor's smudges clear at decay 1 once the arrow is off the
+// window, before it swoops back in, in seconds. A hover's flight off adds
+// OUT_SECONDS first, and a push, whose arrow is already hidden, waits both,
+// so a full pull always has about 0.6 s to clear to nothing. Shorter
+// leaves a faint smudge for the swoop's decay 0 to hold.
 const CLEAR_SECONDS = 0.35;
 
 // How quickly the heading follows the way the pointer moves: the time
 // constant of a smoothing filter on the pointer's velocity, in seconds.
+// Longer steadies the heading against a trembling mouse and turns later.
 const TURN_SMOOTHING = 0.025;
+
+// The shortest gap between two pointer events the velocity counts, in
+// seconds. A browser can deliver two events at the same timestamp, and the
+// velocity would then divide by zero.
+const MIN_EVENT_GAP = 1 / 240;
 
 // How the arrow turns to the heading: a spring with no bounce, so the
 // turning speed builds and settles rather than starting at full speed. The
@@ -194,15 +160,9 @@ const TURN_SPRING = { stiffness: 400, damping: 40, mass: 1 };
 const FOLLOW_SPRING = { stiffness: 625, damping: 50, mass: 1 };
 
 // The slowest the pointer can move, in mock pixels a second, and still
-// turn the arrow. Slower is a tremble, not a direction.
+// turn the arrow. Slower is a tremble, not a direction. Higher holds the
+// heading through slow drags too.
 const MIN_TURN_SPEED = 40;
-
-// CursorSmudge's decay on each leg. 0 holds the J. While the visitor
-// smudges, a pull loses 90% in about 1.2 s, so the J ages out and each
-// stroke eases back. Once they leave, their smudges clear fast.
-const HOLD_DECAY = 0;
-const STORY_DECAY = 0.4;
-const CLEAR_DECAY = 1;
 
 /** The eased pointer over the card, in mock pixels, and the way the mouse heads. */
 interface CardPointer {
@@ -219,13 +179,15 @@ interface CardPointer {
  * its velocity. The heading follows the raw mouse velocity through a
  * smoothing filter, and a still or trembling mouse keeps its heading.
  */
-function useCardPointer(illustrationRef: RefObject<HTMLDivElement | null>) {
+function useEasedPointer(illustrationRef: RefObject<HTMLDivElement | null>) {
   const targetX = useMotionValue(0);
   const targetY = useMotionValue(0);
   const x = useSpring(targetX, FOLLOW_SPRING);
   const y = useSpring(targetY, FOLLOW_SPRING);
   const heading = useMotionValue(STILL_FRAME_HEADING);
   const enteredAt = useRef<[number, number] | null>(null);
+  // Stable, so a re-render never restarts a leg that lists it in its deps.
+  const pointer = useMemo<CardPointer>(() => ({ x, y, heading, enteredAt }), [x, y, heading]);
   // The last move, in mock pixels and seconds, and the filtered velocity,
   // in mock pixels a second. Null before the first move of a hover.
   const lastMoveRef = useRef<{ x: number; y: number; time: number } | null>(null);
@@ -253,7 +215,7 @@ function useCardPointer(illustrationRef: RefObject<HTMLDivElement | null>) {
 
       return;
     }
-    const elapsed = Math.max(time - last.time, 1 / 240);
+    const elapsed = Math.max(time - last.time, MIN_EVENT_GAP);
     const keep = Math.exp(-elapsed / TURN_SMOOTHING);
     const [velocityX, velocityY] = velocityRef.current;
     const nextVelocity: [number, number] = [
@@ -275,7 +237,7 @@ function useCardPointer(illustrationRef: RefObject<HTMLDivElement | null>) {
     heading.jump(STILL_FRAME_HEADING);
   }, [heading]);
 
-  return { pointer: { x, y, heading, enteredAt } satisfies CardPointer, onPointerMove, reset };
+  return { pointer, onPointerMove, reset };
 }
 
 /**
@@ -305,11 +267,20 @@ function legOf(stage: HeldStage, heldBy: HeldBy, finished: TimedLeg | null): Leg
   return 'leaving';
 }
 
-function decayOf(leg: Leg): number {
-  if (leg === 'resting' || leg === 'swooping') return HOLD_DECAY;
-
-  return leg === 'leaving' || leg === 'clearing' ? CLEAR_DECAY : STORY_DECAY;
-}
+// CursorSmudge's decay on each leg. 0 holds the J, at rest and as the
+// swoop lays it again. While the visitor smudges, 0.4 takes 90% of a pull
+// away in about 1.2 s, so the J ages out and each stroke eases back. Once
+// they leave, 1 clears their smudges fast.
+const DECAY: Record<Leg, number> = {
+  resting: 0,
+  out: 0.4,
+  in: 0.4,
+  following: 0.4,
+  pushing: 0.4,
+  leaving: 1,
+  clearing: 1,
+  swooping: 0,
+};
 
 // The tip of `pose`, in 0..1 canvas units, for a scripted stroke.
 const canvasTip = (pose: ArrowPose): [number, number] => {
@@ -318,36 +289,44 @@ const canvasTip = (pose: ArrowPose): [number, number] => {
   return [x / MOCK_WIDTH, y / MOCK_HEIGHT];
 };
 
-/**
- * The arrow's part in the held story, leg by leg (Leg says what each does).
- * The tip lays a scripted stroke on the flights in and out of a hover, and
- * the swoop lays the J again. Returns the leg, the smudge's decay, the
- * pose's CSS variables, and the point a scripted stroke follows, if one
- * strokes.
- */
-function useArrow(
-  { stage, plays, heldBy, onStoryEnd }: HeldStory,
-  pointer: CardPointer,
-  resetPointer: () => void,
-) {
-  // The last timed leg this play finished.
-  const [finished, setFinished] = useState<{ play: number; leg: TimedLeg } | null>(null);
-  const leg = legOf(stage, heldBy, finished?.play === plays ? finished.leg : null);
+/** The progress of each leg's flight, from 0 to 1, and the points the flights start from. */
+interface Flights {
+  out: MotionValue<number>;
+  flightIn: MotionValue<number>;
+  leave: MotionValue<number>;
+  swoop: MotionValue<number>;
+  entryX: MotionValue<number>;
+  entryY: MotionValue<number>;
+  /** Where the arrow's tip is and the way it points, while the story holds. */
+  leftX: MotionValue<number>;
+  leftY: MotionValue<number>;
+  leftHeading: MotionValue<number>;
+}
 
+// Stable, so a re-render never restarts a leg that lists it in its deps.
+function useFlights(): Flights {
   const out = useMotionValue(0);
   const flightIn = useMotionValue(0);
   const leave = useMotionValue(0);
   const swoop = useMotionValue(0);
   const entryX = useMotionValue(0);
   const entryY = useMotionValue(0);
-  // Where the arrow's tip was and the way it pointed when the pointer left,
-  // kept up to date while the visitor hovers, for the flight off.
   const leftX = useMotionValue(STILL_FRAME_TIP[0]);
   const leftY = useMotionValue(STILL_FRAME_TIP[1]);
   const leftHeading = useMotionValue(STILL_FRAME_HEADING);
-  // The heading the arrow shows, which turns toward the pointer's.
-  const turn = useSpring(pointer.heading, TURN_SPRING);
 
+  return useMemo(
+    () => ({ out, flightIn, leave, swoop, entryX, entryY, leftX, leftY, leftHeading }),
+    [out, flightIn, leave, swoop, entryX, entryY, leftX, leftY, leftHeading],
+  );
+}
+
+/**
+ * The arrow's pose on each leg that moves it, and the point each stroking
+ * leg's scripted stroke follows. `turn` is the heading the arrow shows.
+ */
+function useArrowPoses(pointer: CardPointer, turn: MotionValue<number>, flights: Flights) {
+  const { out, flightIn, leave, swoop, entryX, entryY, leftX, leftY, leftHeading } = flights;
   const outPose = useTransform(out, (progress) =>
     arrowAtPointer(
       pointAlong(STILL_FRAME_TIP, STILL_FRAME_HEADING, progress * OUT_DISTANCE),
@@ -382,59 +361,49 @@ function useArrow(
       angleForHeading(heading),
     );
   });
-  const swoopPoseValue = useTransform(swoop, swoopPose);
-  // A computed motion value collects what it reads on each render, so this
-  // follows only the leg the arrow is on.
-  const pose = useTransform((): ArrowPose => {
-    switch (leg) {
-      case 'out':
-        return outPose.get();
-      case 'in':
-        return inPose.get();
-      case 'following':
-        return followPose.get();
-      case 'leaving':
-        return leavePose.get();
-      case 'clearing':
-        // After a push the arrow waits hidden in its spot, and after a
-        // hover it waits where it left the window.
-        return heldBy === 'push' ? STILL_FRAME_ARROW : leavePose.get();
-      case 'swooping':
-        return swoopPoseValue.get();
-      default:
-        return STILL_FRAME_ARROW;
-    }
-  });
-  // One point per stroking leg, so the scene starts a fresh stroke on each
-  // rather than drawing one across the window from where the last left off.
-  const outTip = useTransform(outPose, canvasTip);
-  const inTip = useTransform(inPose, canvasTip);
-  const followTip = useTransform(followPose, canvasTip);
-  const jPoint = useTransform(swoop, pointOnJ);
+  const swoopingPose = useTransform(swoop, swoopPose);
 
-  // While the visitor hovers, keep where the arrow is, so it leaves from
-  // there whichever leg it was on.
-  const hoveringRef = useRef(false);
+  return {
+    poses: { outPose, inPose, followPose, leavePose, swoopingPose },
+    // One point per stroking leg, so the scene starts a fresh stroke on each
+    // rather than drawing one across the window from where the last left
+    // off. The smudge follows the eased tip while the arrow follows the
+    // pointer, rather than the raw mouse ahead of it.
+    tips: {
+      outTip: useTransform(outPose, canvasTip),
+      inTip: useTransform(inPose, canvasTip),
+      followTip: useTransform(followPose, canvasTip),
+      jPoint: useTransform(swoop, pointOnJ),
+    },
+  };
+}
 
+/**
+ * Runs each timed leg's flight or wait, then moves the play on, and ends
+ * the story once the swoop lands. The scene attaches a stroking leg's point
+ * in an effect of its own, in the render where the leg starts, reading
+ * where the point is as the stroke's start. A child's effects run before
+ * its parent's, so a flight never runs ahead of the attach, and each leg's
+ * point is set up before its leg starts.
+ */
+function useLegTimeline(
+  leg: Leg,
+  { plays, heldBy, onStoryEnd }: HeldStory,
+  finish: (timed: TimedLeg) => void,
+  {
+    pointer,
+    flights,
+    turn,
+    resetPointer,
+  }: {
+    pointer: CardPointer;
+    flights: Flights;
+    turn: MotionValue<number>;
+    resetPointer: () => void;
+  },
+) {
   useEffect(() => {
-    hoveringRef.current = stage === 'holding';
-  }, [stage]);
-  useMotionValueEvent(pose, 'change', (current) => {
-    if (!hoveringRef.current) return;
-    const [tipX, tipY] = arrowTip(current);
-
-    leftX.set(tipX);
-    leftY.set(tipY);
-    leftHeading.set(headingForAngle(current.angle));
-  });
-
-  // The scene attaches a stroking leg's point in an effect of its own, in
-  // the render where the leg starts, reading where the point is as the
-  // stroke's start. A child's effects run before its parent's, so a flight
-  // never runs ahead of the attach. Each leg's point is set up before its
-  // leg starts.
-  useEffect(() => {
-    const finish = (timed: TimedLeg) => setFinished({ play: plays, leg: timed });
+    const { out, flightIn, leave, swoop, entryX, entryY } = flights;
     const run = (value: MotionValue<number>, duration: number, then: () => void) => {
       const controls = animate(value, 1, { duration, ease: EASE_OUT });
 
@@ -442,10 +411,9 @@ function useArrow(
 
       return () => controls.stop();
     };
-
-    switch (leg) {
-      case 'out':
-        return run(out, OUT_SECONDS, () => {
+    const steps: Partial<Record<Leg, () => () => void>> = {
+      out: () =>
+        run(out, OUT_SECONDS, () => {
           const [fromX, fromY] = entryPoint(
             pointer.enteredAt.current ?? [pointer.x.get(), pointer.y.get()],
           );
@@ -454,64 +422,137 @@ function useArrow(
           entryY.jump(fromY);
           flightIn.jump(0);
           finish('out');
-        });
-      case 'in':
-        return run(flightIn, IN_SECONDS, () => finish('in'));
-      case 'leaving':
-        return run(leave, OUT_SECONDS, () => finish('leaving'));
-      case 'clearing': {
+        }),
+      in: () => run(flightIn, IN_SECONDS, () => finish('in')),
+      leaving: () => run(leave, OUT_SECONDS, () => finish('leaving')),
+      clearing: () => {
+        const seconds = heldBy === 'push' ? OUT_SECONDS + CLEAR_SECONDS : CLEAR_SECONDS;
         const wait = window.setTimeout(() => {
           swoop.jump(0);
           finish('clearing');
-        }, CLEAR_SECONDS * 1000);
+        }, seconds * 1000);
 
         return () => window.clearTimeout(wait);
-      }
-      case 'swooping':
-        return run(swoop, REACTIVE_SMUDGE.laySeconds, () => {
+      },
+      swooping: () =>
+        run(swoop, REACTIVE_SMUDGE.laySeconds, () => {
           out.jump(0);
           leave.jump(0);
           resetPointer();
           turn.jump(STILL_FRAME_HEADING);
           onStoryEnd();
-        });
-      default:
-        return undefined;
-    }
-  }, [
-    leg,
-    plays,
-    out,
-    flightIn,
-    leave,
-    swoop,
-    entryX,
-    entryY,
-    pointer,
-    resetPointer,
-    turn,
-    onStoryEnd,
-  ]);
+        }),
+    };
 
+    return steps[leg]?.();
+  }, [leg, plays, heldBy, finish, pointer, flights, turn, resetPointer, onStoryEnd]);
+}
+
+// After a push the arrow waits hidden in its spot while the smudges clear,
+// so it shows again only as it swoops back in.
+const isHidden = (leg: Leg, heldBy: HeldBy) =>
+  leg === 'pushing' || (leg === 'clearing' && heldBy === 'push');
+
+/** The arrow's pose on the leg it is on, or the still frame's on a leg that doesn't move it. */
+function useLegPose(
+  leg: Leg,
+  heldBy: HeldBy,
+  poses: ReturnType<typeof useArrowPoses>['poses'],
+): MotionValue<ArrowPose> {
+  // After a hover the arrow waits where it left the window. After a push it
+  // waits hidden in its spot.
+  const clearingPose = heldBy === 'push' ? null : poses.leavePose;
+  const poseOn: Record<Leg, MotionValue<ArrowPose> | null> = {
+    resting: null,
+    out: poses.outPose,
+    in: poses.inPose,
+    following: poses.followPose,
+    pushing: null,
+    leaving: poses.leavePose,
+    clearing: clearingPose,
+    swooping: poses.swoopingPose,
+  };
+  const legPose = poseOn[leg];
+
+  // A computed motion value collects what it reads on each render, so this
+  // follows only the leg the arrow is on.
+  return useTransform((): ArrowPose => legPose?.get() ?? STILL_FRAME_ARROW);
+}
+
+/**
+ * While the story holds, keeps where the arrow's tip is and the way it
+ * points, so it leaves from there whichever leg it was on.
+ */
+function useHeldTip(pose: MotionValue<ArrowPose>, stage: HeldStage, flights: Flights) {
+  const holdingRef = useRef(false);
+
+  useEffect(() => {
+    holdingRef.current = stage === 'holding';
+  }, [stage]);
+  useMotionValueEvent(pose, 'change', (current) => {
+    if (!holdingRef.current) return;
+    const [tipX, tipY] = arrowTip(current);
+
+    flights.leftX.set(tipX);
+    flights.leftY.set(tipY);
+    flights.leftHeading.set(headingForAngle(current.angle));
+  });
+}
+
+/**
+ * The arrow's part in the held story, leg by leg (Leg says what each does).
+ * The tip lays a scripted stroke on the flights in and out of a hover and
+ * while the arrow follows the pointer, and the swoop lays the J again.
+ * Returns the leg, whether a push hides the arrow, the smudge's decay, the
+ * pose's CSS variables, and the point a scripted stroke follows, if one
+ * strokes.
+ */
+function useArrow(story: HeldStory, pointer: CardPointer, resetPointer: () => void) {
+  const { stage, plays, heldBy } = story;
+  // The last timed leg this play finished.
+  const [finished, setFinished] = useState<{ play: number; leg: TimedLeg } | null>(null);
+  const leg = legOf(stage, heldBy, finished?.play === plays ? finished.leg : null);
+  const finish = useCallback(
+    (timed: TimedLeg) => setFinished({ play: plays, leg: timed }),
+    [plays],
+  );
+  const flights = useFlights();
+  // The heading the arrow shows, which turns toward the pointer's.
+  const turn = useSpring(pointer.heading, TURN_SPRING);
+  const { poses, tips } = useArrowPoses(pointer, turn, flights);
+  const pose = useLegPose(leg, heldBy, poses);
+  // A point that never moves, attached while the card rests: a scripted
+  // stroke beats the mouse and the push, so a pointer on the card before
+  // the story starts, or a mouse that fails the hover gate, can't smudge
+  // the still frame its decay 0 holds.
+  const stillPoint = useMotionValue<[number, number]>([0.5, 0.5]);
+
+  useHeldTip(pose, stage, flights);
+  useLegTimeline(leg, story, finish, { pointer, flights, turn, resetPointer });
+
+  const strokeOn: Record<Leg, MotionValue<[number, number]> | null> = {
+    resting: stillPoint,
+    out: tips.outTip,
+    in: tips.inTip,
+    following: tips.followTip,
+    pushing: null,
+    leaving: null,
+    clearing: null,
+    swooping: tips.jPoint,
+  };
   const style: ArrowStyle = {
     '--arrow-x': useTransform(pose, ({ x }) => x),
     '--arrow-y': useTransform(pose, ({ y }) => y),
     '--arrow-angle': useTransform(pose, ({ angle }) => angle),
   };
-  let strokeAt: MotionValue<[number, number]> | null = null;
 
-  if (leg === 'out') strokeAt = outTip;
-  else if (leg === 'in') strokeAt = inTip;
-  // The smudge follows the eased tip too, rather than the raw mouse ahead
-  // of it. A scripted stroke takes precedence over mouse input.
-  else if (leg === 'following') strokeAt = followTip;
-  else if (leg === 'swooping') strokeAt = jPoint;
-
-  // Hidden while a push stirs the smudge and while it clears after, so the
-  // arrow only shows again as it swoops back in.
-  const hidden = leg === 'pushing' || (leg === 'clearing' && heldBy === 'push');
-
-  return { leg, hidden, decay: decayOf(leg), style, strokeAt };
+  return {
+    leg,
+    hidden: isHidden(leg, heldBy),
+    decay: DECAY[leg],
+    style,
+    strokeAt: strokeOn[leg],
+  };
 }
 
 // ---------------------------------------------
@@ -519,26 +560,24 @@ function useArrow(
 // ---------------------------------------------
 
 // Hidden from screen readers: the card's title and description carry its
-// message. `data-scene` says whether the live scene shows the still frame
-// yet, `data-stage` where the story is, `data-arrow` where the arrow is in
-// it, and `data-arrow-hidden` whether a push has hidden it.
+// message. `data-scene` says whether the live scene shows the still frame,
+// `data-stage` where the story is, `data-arrow` where the arrow is in it,
+// and `data-arrow-hidden` whether a push has hidden it.
 //
 // `m` under LazyMotion rather than `motion`, as in the other feature cards:
 // the illustration only binds motion values to style, which domMin covers.
 export function ReactiveIllustration() {
-  // Under reduced motion the card shows only the image, with no live scene
-  // behind it, so neither a hover nor a touch can stir it.
-  const reducedMotion = useReducedMotion() === true;
-  const Scene = useReactiveScene(useHasWebGpu() && !reducedMotion);
-  const [laid, setLaid] = useState(false);
+  const Scene = useReactiveScene();
+  // Whether the live scene shows the still frame. It doesn't until the J is
+  // laid, nor while a new renderer or a resize lays it again.
+  const [stillFrameReady, setStillFrameReady] = useState(false);
+  const live = Scene !== null && stillFrameReady;
   const illustrationRef = useRef<HTMLDivElement>(null);
-  const { pointer, onPointerMove, reset } = useCardPointer(illustrationRef);
-  // The story waits for the live scene's still frame, so a card showing the
-  // image, as it does without WebGPU, stays still.
-  const story = useHeldStory({ enabled: laid, onPointerMove });
+  const { pointer, onPointerMove, reset } = useEasedPointer(illustrationRef);
+  // The story waits for the live still frame, so a card showing the image,
+  // as it does without WebGPU and under reduced motion, stays still.
+  const story = useHeldStory({ enabled: live, onPointerMove, pausesHero: true });
   const arrow = useArrow(story, pointer, reset);
-
-  usePauseHeroWhile(story.stage !== 'still');
 
   return (
     <LazyMotion features={domMin} strict>
@@ -547,7 +586,7 @@ export function ReactiveIllustration() {
         className={styles.illustration}
         data-arrow={arrow.leg}
         data-arrow-hidden={arrow.hidden || undefined}
-        data-scene={laid ? 'laid' : 'still'}
+        data-scene={live ? 'laid' : 'still'}
         data-stage={story.stage}
         ref={illustrationRef}
       >
@@ -558,18 +597,19 @@ export function ReactiveIllustration() {
             decay={arrow.decay}
             onPushEnd={story.onPushEnd}
             onPushStart={story.onPushStart}
-            onStillFrame={() => setLaid(true)}
+            onStillFrameChange={setStillFrameReady}
+            resting={arrow.leg === 'resting'}
             strokeAt={arrow.strokeAt}
           />
         )}
         <Arrow style={arrow.style} />
-        {!laid && (
+        {!live && (
           <Image
             alt=""
             className={styles.still}
-            height={309}
+            height={MOCK_HEIGHT}
             src="/features/reactive.png"
-            width={312}
+            width={MOCK_WIDTH}
           />
         )}
       </div>

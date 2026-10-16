@@ -7,7 +7,8 @@
  * still frame is ready once it lands. The illustration sets the smudge's
  * decay for its story, and can stroke it too, as the arrow flies. With
  * scroll push on, a touch that scrolls the page over the card stirs the
- * smudge, and the scene reports each push's start and end.
+ * smudge, and the scene reports each push's start and end. A resize while
+ * the card rests lays the J again.
  * reactive-illustration.tsx loads this module with import() from an
  * effect, which keeps three out of the server render (the SSR gotcha in
  * docs/agents/docs-site.md).
@@ -23,8 +24,12 @@ import { REACTIVE_GRADIENT } from './reactive-gradient';
 import { pointOnJ, REACTIVE_SMUDGE } from './reactive-smudge';
 
 export interface ReactiveSceneProps {
-  /** Fires once the J's smudge is laid and the scene shows the still frame. */
-  onStillFrame: () => void;
+  /**
+   * Fires with true once the J's smudge is laid and the scene shows the
+   * still frame, and with false whenever it lays the J again: after a new
+   * renderer's first frame, or a resize while the card rests.
+   */
+  onStillFrameChange: (ready: boolean) => void;
   /** CursorSmudge's decay. 0 holds the smudge, as the still frame does. */
   decay: number;
   /**
@@ -32,14 +37,22 @@ export interface ReactiveSceneProps {
    * nothing scripted strokes. The J's own stroke takes over while it lays.
    */
   strokeAt: MotionValue<[number, number]> | null;
-  /** Fires when a touch's push starts, and when its fling settles. */
+  /** Whether the card rests on its still frame, so a resize lays the J again. */
+  resting: boolean;
+  /**
+   * Fire when a touch that scrolls the page over the card first pushes the
+   * smudge, and when its fling settles. A tap that never scrolls fires
+   * neither.
+   */
   onPushStart: () => void;
   onPushEnd: () => void;
 }
 
 /**
- * Passes the scene's scroll-push starts and ends on. A child of the scene,
- * because only the scene's own context reaches its cursor input.
+ * Passes the scene's scroll pushes on, from a push's first stroke to its
+ * end. A child of the scene, because only the scene's own context reaches
+ * its cursor input. A push under way when the scene goes, as a renderer
+ * rebuild takes it, ends with it.
  */
 function PushEvents({ onStart, onEnd }: { onStart: () => void; onEnd: () => void }) {
   const context = useShaderContext();
@@ -51,23 +64,68 @@ function PushEvents({ onStart, onEnd }: { onStart: () => void; onEnd: () => void
 
   useEffect(() => {
     if (!context) return undefined;
+    const { scheduler } = context;
     const input = context.getCursorInput();
-    const stopWatchingStart = input.onPushStart(() => callbacksRef.current.onStart());
-    const stopWatchingEnd = input.onPushEnd(() => callbacksRef.current.onEnd());
+    let contact = false;
+    let pushing = false;
+    const end = () => {
+      contact = false;
+      if (!pushing) return;
+      pushing = false;
+      callbacksRef.current.onEnd();
+    };
+    // Runs after the input's own tick, which works out the frame's push.
+    const watch = () => {
+      if (!contact || pushing || !input.getPush()) return;
+      pushing = true;
+      callbacksRef.current.onStart();
+    };
+    const stopWatchingStart = input.onPushStart(() => {
+      contact = true;
+    });
+    const stopWatchingEnd = input.onPushEnd(end);
+
+    scheduler.add(watch);
 
     return () => {
       stopWatchingStart();
       stopWatchingEnd();
+      scheduler.remove(watch);
+      end();
     };
   }, [context]);
 
   return null;
 }
 
+/**
+ * Lays the J again when the canvas resizes while the card rests: a resize
+ * clears CursorSmudge's field, and with it the still frame's smudge.
+ */
+function RelayOnResize({ resting, relay }: { resting: boolean; relay: () => void }) {
+  const context = useShaderContext();
+  const latestRef = useRef({ resting, relay });
+
+  useEffect(() => {
+    latestRef.current = { resting, relay };
+  });
+
+  useEffect(() => {
+    if (!context) return undefined;
+
+    return context.canvasSize.on('change', () => {
+      if (latestRef.current.resting) latestRef.current.relay();
+    });
+  }, [context]);
+
+  return null;
+}
+
 export default function ReactiveScene({
-  onStillFrame,
+  onStillFrameChange,
   decay,
   strokeAt,
+  resting,
   onPushStart,
   onPushEnd,
 }: ReactiveSceneProps) {
@@ -75,10 +133,10 @@ export default function ReactiveScene({
   const point = useTransform(progress, pointOnJ);
   const [laying, setLaying] = useState(false);
   // The latest callback, so a new one from the parent doesn't restart the stroke.
-  const onStillFrameRef = useRef(onStillFrame);
+  const onStillFrameChangeRef = useRef(onStillFrameChange);
 
   useEffect(() => {
-    onStillFrameRef.current = onStillFrame;
+    onStillFrameChangeRef.current = onStillFrameChange;
   });
 
   // The scene attaches the point in an effect of its own when `laying`
@@ -93,7 +151,7 @@ export default function ReactiveScene({
 
     void controls.then(() => {
       setLaying(false);
-      onStillFrameRef.current();
+      onStillFrameChangeRef.current(true);
     });
 
     return () => controls.stop();
@@ -101,8 +159,10 @@ export default function ReactiveScene({
 
   // The stroke starts on the first frame, once the scene and its cursor
   // input exist, so none of it is lost to the renderer starting up. A
-  // rebuilt renderer draws a first frame of its own, and lays the J again.
+  // rebuilt renderer draws a first frame of its own, and lays the J again,
+  // as a resize does while the card rests.
   const layJ = () => {
+    onStillFrameChangeRef.current(false);
     progress.set(0);
     setLaying(true);
   };
@@ -118,6 +178,7 @@ export default function ReactiveScene({
         strength={REACTIVE_SMUDGE.strength}
       />
       <PushEvents onEnd={onPushEnd} onStart={onPushStart} />
+      <RelayOnResize relay={layJ} resting={resting && !laying} />
     </ShaderScene>
   );
 }
