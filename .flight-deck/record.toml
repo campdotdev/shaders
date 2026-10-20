@@ -1,0 +1,9 @@
+# PROTOTYPE repo record for campdotdev/shaders, hand-written for FLD-28. Not the real schema.
+version = 1
+
+[commands]
+install = "pnpm install --frozen-lockfile"
+
+[[conflicts]]
+rule = "AGENTS.md: the main checkout is a GitButler workspace. Make every commit, branch, and push through `but`, never `git commit` or `git checkout`."
+answer = "A factory session works in a Flight Deck worktree, not in the GitButler workspace. Commit with plain `git add` and `git commit`. Never run `but`."
