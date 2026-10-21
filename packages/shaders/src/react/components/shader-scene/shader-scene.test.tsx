@@ -1116,6 +1116,54 @@ describe('ShaderScene', () => {
       });
     });
 
+    // The first tick has a delta of 0, and a reader drops a segment with no
+    // time in it.
+    it('strokes a move made before the first tick on the tick after', async () => {
+      const point = createPoint([0.2, 0.8]);
+      const scene = await renderScene(point, { votesIdle: true });
+
+      point.set([0.3, 0.7]);
+      scene.runFrame();
+      expect(scene.input().getScriptedStroke()).toBeNull();
+
+      scene.runFrame();
+      expect(scene.input().getScriptedStroke()).toEqual({
+        from: [0.2, 0.8],
+        to: [0.3, 0.7],
+        presence: 1,
+      });
+    });
+
+    // The first tick after a resume has a delta of 0 too. A parked scene
+    // draws no frame after it unless the scene asks for one.
+    it('wakes a parked scene to stroke a move made before the first tick after a resume', async () => {
+      const point = createPoint([0.2, 0.8]);
+      const scene = await renderScene(point, { votesIdle: true });
+
+      scene.runUntilParked();
+      scene.rerender(
+        <ShaderScene paused strokeAt={point}>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      scene.rerender(
+        <ShaderScene strokeAt={point}>
+          <scene.Reader />
+        </ShaderScene>,
+      );
+      point.set([0.3, 0.7]);
+      scene.runFrame();
+      expect(scene.input().getScriptedStroke()).toBeNull();
+      expect(scene.frames.length).toBeGreaterThan(0);
+
+      scene.runFrame();
+      expect(scene.input().getScriptedStroke()).toEqual({
+        from: [0.2, 0.8],
+        to: [0.3, 0.7],
+        presence: 1,
+      });
+    });
+
     // A resize clears what the stroke drew, such as CursorSmudge's field,
     // so a segment that started before it would land in a fresh field.
     it('starts a fresh stroke after the canvas resizes', async () => {

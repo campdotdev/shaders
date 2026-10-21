@@ -591,11 +591,14 @@ function createLazyCursorInput(
   // Added when the Input is created, inside the first reader's setup and
   // before that reader adds its own client, so the Input always ticks ahead
   // of the code that reads the push or the scripted stroke. Without either
-  // it does nothing.
+  // it does nothing. The first tick after a start or a resume has a delta of
+  // 0, so the Input holds any scripted travel for the next tick. Ask for
+  // that tick, or a parked scene would hold the travel until the point
+  // moves again.
   const tick = ({ delta }: SchedulerTick) => {
     if ((!scrollPush && !strokePoint) || !cursorInput) return;
     cursorInput.tick(delta);
-    if (cursorInput.isPushing()) scheduler.requestRender();
+    if (cursorInput.isPushing() || (strokePoint && delta === 0)) scheduler.requestRender();
   };
 
   // A paused loop stops reading the canvas while the page may keep moving

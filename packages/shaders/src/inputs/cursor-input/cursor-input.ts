@@ -303,7 +303,8 @@ export class CursorInput {
    * Attaching reads the point where it is now as the stroke's start and
    * draws nothing, so a point that jumped while detached starts afresh.
    * After that, each tick strokes from the last point to the current one.
-   * Works with or without scroll push.
+   * A tick with a delta of 0 strokes nothing and keeps the last point, so
+   * the next tick strokes the whole way. Works with or without scroll push.
    */
   setStrokePoint(point: StrokePoint | null): void {
     if (this.disposed) return;
@@ -314,9 +315,10 @@ export class CursorInput {
 
   /**
    * The scripted stroke from the last tick, or null when the point did not
-   * move or none is attached. A reader that strokes takes it first: while a
-   * point is attached (`isScripting`), the reader ignores the mouse and the
-   * scroll push, and takes the mouse before the push otherwise.
+   * move, the tick's delta was 0, or none is attached. A reader that strokes
+   * takes it first: while a point is attached (`isScripting`), the reader
+   * ignores the mouse and the scroll push, and takes the mouse before the
+   * push otherwise.
    */
   getScriptedStroke(): PushStroke | null {
     return this.frameScriptedStroke;
@@ -408,7 +410,11 @@ export class CursorInput {
     // One push per tick, read from where the element sits now, so a host
     // that ticks once per frame gives every reader the same stroke.
     this.framePush = this.pushTracker?.frame(this.readRect()) ?? null;
-    this.frameScriptedStroke = this.readScriptedStroke();
+    // A scheduler's first tick after a start or a resume has a delta of 0.
+    // A reader turns a stroke's length over the delta into speed, so it
+    // would drop a segment with no time in it. Keep the segment's start for
+    // the next tick, which strokes the whole way.
+    this.frameScriptedStroke = delta > 0 ? this.readScriptedStroke() : null;
     const moved = this.position.tick(delta, afterIdle);
 
     if (!moved && !this.targetDirty) return false;

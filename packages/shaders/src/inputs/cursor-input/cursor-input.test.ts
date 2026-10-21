@@ -570,6 +570,21 @@ describe('CursorInput', () => {
       cursor.dispose();
     });
 
+    // A scheduler's first tick after a start or a resume has a delta of 0.
+    it('holds the travel through a tick with no delta, and strokes it on the next', () => {
+      const cursor = new CursorInput({ element: fakeElement });
+      const point = createPoint([0.2, 0.8]);
+
+      cursor.setStrokePoint(point);
+      point.set([0.3, 0.7]);
+      cursor.tick(0);
+      expect(cursor.getScriptedStroke()).toBeNull();
+
+      cursor.tick(1 / 60);
+      expect(cursor.getScriptedStroke()).toEqual({ from: [0.2, 0.8], to: [0.3, 0.7], presence: 1 });
+      cursor.dispose();
+    });
+
     it('ends the stroke on detach, and starts afresh from wherever the point is when re-attached', () => {
       const cursor = new CursorInput({ element: fakeElement });
       const point = createPoint([0.2, 0.8]);
