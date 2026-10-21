@@ -8,10 +8,9 @@
  * StoryCard is the card. An illustration takes one of two story shapes:
  * useStory repeats a play while the pointer stays, and useHeldStory holds
  * while the pointer stays, then plays its ending. A held story can follow
- * the pointer, and can wait for its live scene.
+ * the pointer, and can wait for its live scene (live-scene.ts).
  */
 import {
-  type ComponentType,
   createContext,
   type ReactNode,
   type RefObject,
@@ -27,7 +26,6 @@ import { useReducedMotion } from 'motion/react';
 
 import { usePauseHeroWhile } from '@/components/home-hero/hero-pause';
 import { useCanHover } from '@/lib/use-can-hover';
-import { useHasWebGpu } from '@/lib/use-has-webgpu';
 
 import { type HeldBy, type HeldStage, heldStoryReducer, STILL } from './story-state';
 
@@ -311,55 +309,4 @@ export function useHeldStory({
   }, [pointerOnCardRef]);
 
   return { ...story, onStoryEnd, onPushStart, onPushEnd };
-}
-
-// ---------------------------------------------
-// A live scene
-// ---------------------------------------------
-
-/**
- * A live scene for an illustration's story: `load` imports its module. The
- * returned hook gives the scene's component where the scene may run, a
- * browser with a WebGPU adapter and motion allowed, once its module has
- * loaded, and null until then and anywhere else, where the card shows its
- * still frame as an image. The module loads as the card mounts, so the
- * scene mounts before the card scrolls into view. It loads through a plain
- * import() from an effect rather than next/dynamic, for the reason
- * favorite-scenes.tsx gives, which also keeps three out of the server
- * render.
- */
-export function createLiveScene<Props extends object>(
-  load: () => Promise<{ default: ComponentType<Props> }>,
-): () => ComponentType<Props> | null {
-  // The component once its module has loaded, so a later mount reads it
-  // straight away.
-  let loaded: ComponentType<Props> | null = null;
-
-  return function useLiveScene() {
-    const hasWebGpu = useHasWebGpu();
-    const reducedMotion = useReducedMotion() === true;
-    const enabled = hasWebGpu && !reducedMotion;
-    const [scene, setScene] = useState(() => loaded);
-
-    useEffect(() => {
-      if (!enabled || scene) return undefined;
-
-      let cancelled = false;
-
-      load()
-        .then((module) => {
-          loaded = module.default;
-          if (!cancelled) setScene(() => module.default);
-        })
-        .catch(() => {
-          // A module that fails to load leaves the card on its image.
-        });
-
-      return () => {
-        cancelled = true;
-      };
-    }, [enabled, scene]);
-
-    return enabled ? scene : null;
-  };
 }

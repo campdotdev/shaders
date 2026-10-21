@@ -31,6 +31,7 @@ import {
 
 import { EASE_OUT } from '@/lib/easing';
 
+import { createLiveScene } from './live-scene';
 import {
   angleForHeading,
   arrowAtPointer,
@@ -49,19 +50,13 @@ import {
 } from './reactive-arrow';
 import styles from './reactive-illustration.module.css';
 import { MOCK_HEIGHT, MOCK_WIDTH, pointOnJ, REACTIVE_SMUDGE } from './reactive-smudge';
-import {
-  createLiveScene,
-  type HeldBy,
-  type HeldStage,
-  type HeldStory,
-  useHeldStory,
-} from './story';
+import { type HeldBy, type HeldStage, type HeldStory, useHeldStory } from './story';
 
 // ---------------------------------------------
 // The scene
 // ---------------------------------------------
 
-// The live scene, where it may run (story.tsx's createLiveScene).
+// The live scene, where it may run (live-scene.ts).
 const useReactiveScene = createLiveScene(() => import('./reactive-scene'));
 
 // ---------------------------------------------
