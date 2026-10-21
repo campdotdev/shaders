@@ -34,6 +34,7 @@ import { ShaderScene } from '@camp-dev/shaders'
 | `gamut` | `'auto' \| 'srgb' \| 'p3'` | `'auto'` | Output color gamut. `'auto'` detects via `(color-gamut: p3)` and re-resolves when the window moves to another display. See [the color guide](/guides/color#gamut--what-the-output-can-hold). |
 | `paused` | `boolean` | `false` | Freezes the scene on its current frame. Time stops while it is paused, so it resumes on the frame it stopped on. |
 | `scrollPush` | `boolean` | `false` | Lets a touch that scrolls the page over the canvas push the scene's cursor effects, at the finger and on through the fling. Only effects that read the push, such as `CursorRipple`, feel it. The scene only listens, so the page scrolls and zooms exactly as it would without it. A touch then reaches cursor effects only as a push, so `CursorSpotlight` ignores touch. A mouse works as before. A change applies straight away. |
+| `strokeAt` | `AnimatableSignal<[number, number]> \| null` | `null` | A point that strokes the scene's cursor effects as code moves it: a scripted stroke. Pass an animation signal, such as Motion's `MotionValue`, whose value runs from 0 to 1 across the canvas from the top-left and may go past the edges. Each frame strokes from where the point was to where it is. Attaching a point starts a fresh stroke where it is, and `null` lifts it, so pass the same signal on every render: a new one restarts the stroke. While a point is attached, effects that read strokes, such as `CursorSmudge` and `CursorRipple`, ignore the mouse and scroll push. Works with or without `scrollPush`. A change applies straight away. |
 | `style` | `CSSProperties` | — | Forwarded to the canvas container. |
 | `className` | `string` | — | Forwarded to the canvas container. |
 | `children` | `ReactNode` | — | One or more Shaders components. |
@@ -60,7 +61,7 @@ function Plane() {
 
 All three return signal-shaped objects compatible with [animation props](/guides/animation):
 
-- **`useCursor()`** → `CursorSignal` with `value` in `[0, 1]` normalized to the canvas bounding rect, plus a `presence` signal from 0 to 1 that eases in after the pointer enters the canvas and out after it leaves. Calls in one scene share one pointer input. In a scene with `scrollPush` on, `getPush()` returns the frame's push stroke: a segment in canvas units that ends at the finger, or `null` when no touch pushed. Options: `smoothing`, `initial`, `enabled`, `element`, `target`, `onMove`.
+- **`useCursor()`** → `CursorSignal` with `value` in `[0, 1]` normalized to the canvas bounding rect, plus a `presence` signal from 0 to 1 that eases in after the pointer enters the canvas and out after it leaves. Calls in one scene share one pointer input. In a scene with `scrollPush` on, `getPush()` returns the frame's push stroke: a segment in canvas units that ends at the finger, or `null` when no touch pushed. In a scene with a `strokeAt` point, `getScriptedStroke()` returns the frame's scripted stroke, and `isScripting()` says whether a point is attached. Options: `smoothing`, `initial`, `enabled`, `element`, `target`, `onMove`.
 - **`useScroll()`** → `ScrollSignal` with normalized scroll progress for the page.
 - **`useResize()`** → `ResizeSignal` with current canvas dimensions in pixels.
 
@@ -176,6 +177,8 @@ function StillScene() {
 ## `useShaderContext`
 
 Returns the current `ShaderContextValue` — renderer, scheduler, canvas refs. Internal-ish; you rarely need it directly. Tier 1 components use it under the hood.
+
+To follow a scene's scroll push, call `getCursorInput()` on the context. The input's `onPushStart` and `onPushEnd` each take a listener and return an unsubscribe function. `onPushEnd` fires once for every `onPushStart`, when the fling settles or the contact ends another way, and `isPushing()` says whether a contact is under way. A scripted stroke never starts or ends a push.
 
 ## `<ShaderMonitor>`
 

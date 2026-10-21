@@ -33,10 +33,13 @@ import {
   type OutputStage,
   resetRendererClock,
   type SchedulerTick,
+  type StrokePoint,
+  type Vector2,
 } from '../../../engine.js';
 import { createCanvasSize, type ResizeSignal } from '../../../inputs/canvas-size/canvas-size.js';
 import { ShaderContext, type ShaderContextValue } from '../../context/shader-context.js';
 import { ShadersError } from '../../errors/shaders-error.js';
+import type { AnimatableSignal } from '../../hooks/animatable-signal/animatable-signal.js';
 import {
   type GamutPreference,
   useDisplayGamut,
@@ -83,6 +86,18 @@ export interface ShaderSceneProps {
    * Defaults to false.
    */
   scrollPush?: boolean;
+  /**
+   * A point that strokes the scene's cursor effects as code moves it: a
+   * scripted stroke. Pass an animation signal, such as Motion's MotionValue,
+   * whose value is 0..1 across the canvas from the top-left, unclamped. Each
+   * frame strokes from where the point was to where it is. Attaching a point
+   * starts a fresh stroke where it is, and null lifts it, so pass the same
+   * signal on every render: a new one restarts the stroke. While a point is
+   * attached, effects that read strokes, such as CursorSmudge, ignore the
+   * mouse and scroll push. Works with or without `scrollPush`. A change
+   * applies straight away. Defaults to null.
+   */
+  strokeAt?: AnimatableSignal<Vector2> | null;
 }
 
 const defaultStyle: CSSProperties = {
@@ -104,6 +119,7 @@ export function ShaderScene({
   onError,
   paused = false,
   scrollPush = false,
+  strokeAt = null,
 }: ShaderSceneProps) {
   const resolvedGamut = useDisplayGamut(gamut);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -117,6 +133,7 @@ export function ShaderScene({
   const pausedProp = useLiveProp(paused, applyPaused);
   const maxFPSProp = useLiveProp(maxFPS, applyMaxFPS);
   const scrollPushProp = useLiveProp(scrollPush, applyScrollPush);
+  const strokeAtProp = useLiveProp(strokeAt, applyStrokeAt);
   // Poster boundary controls, when a ShaderPoster wraps this scene. The value
   // is memoized stable by ShaderPoster, so listing it in the setup effect's
   // deps does not cause renderer rebuilds. Null (a no-op below) when the
@@ -191,13 +208,15 @@ export function ShaderScene({
         );
 
         const detachPausedProp = pausedProp.attach(canvasWatch);
-        const cursorInput = createLazyCursorInput(canvas, scheduler);
+        const cursorInput = createLazyCursorInput(canvas, scheduler, canvasWatch.canvasSize);
         const detachScrollPushProp = scrollPushProp.attach(cursorInput);
+        const detachStrokeAtProp = strokeAtProp.attach(cursorInput);
 
         cleanup = () => {
           detachMaxFPSProp();
           detachPausedProp();
           detachScrollPushProp();
+          detachStrokeAtProp();
           pausedClock.stop();
           canvasWatch.stop();
           cursorInput.dispose();
@@ -241,7 +260,7 @@ export function ShaderScene({
       // so re-arm the enclosing poster until it does.
       posterControls?.setShaderPainted(false);
     };
-  }, [maxDPR, resolvedGamut, posterControls, pausedProp, maxFPSProp, scrollPushProp]);
+  }, [maxDPR, resolvedGamut, posterControls, pausedProp, maxFPSProp, scrollPushProp, strokeAtProp]);
 
   // Mount the children as soon as the context exists so the shader can build
   // and paint. The children render no visible DOM of their own (they drive
@@ -265,8 +284,8 @@ export function ShaderScene({
 }
 
 // ----------------------------------------------------------------------------
-// Props the running scene takes without a rebuild: `paused`, `maxFPS`, and
-// `scrollPush`
+// Props the running scene takes without a rebuild: `paused`, `maxFPS`,
+// `scrollPush`, and `strokeAt`
 // ----------------------------------------------------------------------------
 
 interface LiveProp<Target> {
@@ -315,6 +334,9 @@ const applyMaxFPS = (scheduler: FrameScheduler, maxFPS: number | undefined) =>
 
 const applyScrollPush = (cursorInput: LazyCursorInput, scrollPush: boolean) =>
   cursorInput.setScrollPush(scrollPush);
+
+const applyStrokeAt = (cursorInput: LazyCursorInput, strokeAt: StrokePoint | null) =>
+  cursorInput.setStrokePoint(strokeAt);
 
 // ----------------------------------------------------------------------------
 // The view: one scene and a camera that frames it edge to edge
@@ -536,6 +558,8 @@ interface LazyCursorInput {
   get: () => CursorInput;
   /** Applies the `scrollPush` prop now, or when the input is created. */
   setScrollPush: (enabled: boolean) => void;
+  /** Applies the `strokeAt` prop now, or when the input is created. */
+  setStrokePoint: (point: StrokePoint | null) => void;
   dispose: () => void;
 }
 
@@ -549,22 +573,32 @@ interface LazyCursorInput {
  * Input once per frame, which works out the frame's push a single time for
  * every reader, and it draws on demand around the push: it wakes when a
  * finger lands, keeps drawing while the touch pushes, and ends the push when
- * the loop resumes from a pause.
+ * the loop resumes from a pause. Under `strokeAt`, it ticks the Input the
+ * same way for the scripted stroke, wakes when the point moves, and starts
+ * the stroke afresh on a resume or a resize.
  */
 function createLazyCursorInput(
   canvas: HTMLCanvasElement,
   scheduler: FrameScheduler,
+  canvasSize: ResizeSignal,
 ): LazyCursorInput {
   let cursorInput: CursorInput | null = null;
   let scrollPush = false;
+  let strokePoint: StrokePoint | null = null;
+  // A parked scene draws again when the scripted point moves.
+  let stopWatchingPoint: (() => void) | null = null;
 
   // Added when the Input is created, inside the first reader's setup and
   // before that reader adds its own client, so the Input always ticks ahead
-  // of the code that reads the push. Without scroll push it does nothing.
+  // of the code that reads the push or the scripted stroke. Without either
+  // it does nothing. The first tick after a start or a resume has a delta of
+  // 0, so the Input holds any scripted travel for the next tick. Ask for
+  // that tick, or a parked scene would hold the travel until the point
+  // moves again.
   const tick = ({ delta }: SchedulerTick) => {
-    if (!scrollPush || !cursorInput) return;
+    if ((!scrollPush && !strokePoint) || !cursorInput) return;
     cursorInput.tick(delta);
-    if (cursorInput.isPushing()) scheduler.requestRender();
+    if (cursorInput.isPushing() || (strokePoint && delta === 0)) scheduler.requestRender();
   };
 
   // A paused loop stops reading the canvas while the page may keep moving
@@ -572,18 +606,33 @@ function createLazyCursorInput(
   // froze. The first frame after the pause would measure one push across
   // the whole gap. Ending the push on the resume, whether it began before
   // the pause or during it, makes the next touch start a fresh stroke
-  // instead.
+  // instead. A scripted point may travel during the pause too, so its
+  // stroke starts afresh from wherever the point is.
+  // Attaching the same point again starts its stroke afresh from wherever
+  // the point is now.
+  const restartScriptedStroke = () => {
+    if (strokePoint) cursorInput?.setStrokePoint(strokePoint);
+  };
+
   const stopWatchingPause = scheduler.onPauseChange((paused) => {
-    if (paused || !scrollPush || !cursorInput) return;
-    cursorInput.setScrollPush(false);
-    cursorInput.setScrollPush(true);
+    if (paused || !cursorInput) return;
+    if (scrollPush) {
+      cursorInput.setScrollPush(false);
+      cursorInput.setScrollPush(true);
+    }
+    restartScriptedStroke();
   });
+
+  // A resize clears what a stroke drew, such as CursorSmudge's field, so the
+  // scripted stroke starts afresh rather than finish a segment from before.
+  const stopWatchingSize = canvasSize.on('change', restartScriptedStroke);
 
   return {
     get: () => {
       if (cursorInput) return cursorInput;
       cursorInput = new CursorInput({ element: canvas });
       cursorInput.setScrollPush(scrollPush);
+      cursorInput.setStrokePoint(strokePoint);
       cursorInput.onPushStart(() => scheduler.requestRender());
       scheduler.add(tick);
 
@@ -593,8 +642,16 @@ function createLazyCursorInput(
       scrollPush = enabled;
       cursorInput?.setScrollPush(enabled);
     },
+    setStrokePoint: (point) => {
+      stopWatchingPoint?.();
+      strokePoint = point;
+      stopWatchingPoint = point?.on('change', () => scheduler.requestRender()) ?? null;
+      cursorInput?.setStrokePoint(point);
+    },
     dispose: () => {
+      stopWatchingPoint?.();
       stopWatchingPause();
+      stopWatchingSize();
       scheduler.remove(tick);
       cursorInput?.dispose();
     },

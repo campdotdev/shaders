@@ -73,10 +73,13 @@ export function CursorSmudgeShader({
     let pendingRecoveryDelta = 0;
     let recovering = decayUniform.value > 0;
 
+    // A pointer boundary ends a pointer stroke, but not a scripted one. The
+    // Input has already moved past a gathered scripted segment, so dropping
+    // it here would leave a gap in the scripted path.
     const endStroke = () => {
       previous = null;
       inside = false;
-      pendingStroke = null;
+      if (!input.isScripting()) pendingStroke = null;
     };
 
     const canvas = context.renderer.three.domElement;
@@ -115,9 +118,10 @@ export function CursorSmudgeShader({
         from !== null &&
         (current[0] !== from[0] || current[1] !== from[1]);
       const mouse = moved ? { from, to: current, presence: 1 } : null;
-      const push = input.getPush();
 
-      pendingStroke = mouse ?? push;
+      // A scripted stroke beats the mouse, and the mouse beats the push.
+      // While a script is attached, the mouse and the push count for nothing.
+      pendingStroke = input.isScripting() ? input.getScriptedStroke() : (mouse ?? input.getPush());
       previous = inside ? current : null;
       // A parked scene's first tick reports the whole sleep as its delta,
       // but the travel it carries took about one frame. Without the cap, the
@@ -152,9 +156,16 @@ export function CursorSmudgeShader({
       active.value = current && strengthUniform.value > 0 && scale > 0 ? 1 : 0;
       if (current) fieldTexture.value = current;
     });
-    const stopResize = context.canvasSize.on('change', ([width, height]) =>
-      field.resize(width, height),
-    );
+    // A resize clears the field, and the scene redraws it before the next
+    // gather. Drop the stroke gathered for the old field, so the redraw
+    // leaves the new field clear and the next stroke starts afresh.
+    const stopResize = context.canvasSize.on('change', ([width, height]) => {
+      pendingStroke = null;
+      stroking = false;
+      pendingDelta = 0;
+      pendingRecoveryDelta = 0;
+      field.resize(width, height);
+    });
 
     scheduler.requestRender();
 

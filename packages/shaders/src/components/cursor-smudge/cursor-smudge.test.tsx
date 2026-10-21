@@ -7,7 +7,13 @@ import { cleanup, render } from '@testing-library/react';
 import type { RenderTarget, WebGPURenderer } from 'three/webgpu';
 import { afterEach, expect, it, vi } from 'vitest';
 
-import { CursorInput, FrameScheduler, type PrePass, setReducedMotionPolicy } from '../../engine.js';
+import {
+  CursorInput,
+  FrameScheduler,
+  type PrePass,
+  setReducedMotionPolicy,
+  type StrokePoint,
+} from '../../engine.js';
 import {
   ShaderContext,
   type ShaderContextValue,
@@ -27,8 +33,15 @@ afterEach(() => {
 });
 
 // A still Source supplies its idle vote. The host draws pre-passes before
-// ticking the shared cursor, in the same order as ShaderScene.
-function makeScene({ scrollPush = false, floatTargets = true } = {}) {
+// ticking the shared cursor, in the same order as ShaderScene, and wakes
+// when a `strokeAt` point moves, as ShaderScene does. A resize restarts the
+// scripted stroke, then redraws the pre-passes without ticking any client,
+// as ShaderScene's canvas watcher does.
+function makeScene({
+  scrollPush = false,
+  floatTargets = true,
+  strokeAt = null,
+}: { scrollPush?: boolean; floatTargets?: boolean; strokeAt?: StrokePoint | null } = {}) {
   let now = 1000;
   let nextFrame = 0;
   const frames = new Map<number, FrameRequestCallback>();
@@ -63,15 +76,20 @@ function makeScene({ scrollPush = false, floatTargets = true } = {}) {
   const prePasses = new Set<PrePass>();
   const transforms = new Set<UvTransform>();
   const input = new CursorInput({ element: canvas });
+  const sizeListeners = new Set<(value: readonly [number, number, number]) => void>();
 
+  sizeListeners.add(() => input.setStrokePoint(strokeAt));
   input.setScrollPush(scrollPush);
+  input.setStrokePoint(strokeAt);
   input.onPushStart(() => scheduler.requestRender());
+  const stopWatchingPoint = strokeAt?.on('change', () => scheduler.requestRender());
+
   scheduler.setIdle(true);
   scheduler.add(() => {
     for (const pass of prePasses) pass();
   });
   scheduler.add(({ delta }) => {
-    if (!scrollPush) return;
+    if (!scrollPush && !strokeAt) return;
     input.tick(delta);
     if (input.isPushing()) scheduler.requestRender();
   });
@@ -94,7 +112,14 @@ function makeScene({ scrollPush = false, floatTargets = true } = {}) {
         prePasses.delete(pass);
       };
     },
-    canvasSize: { get: () => [1000, 1000, 1] as const, on: () => () => undefined },
+    canvasSize: {
+      get: () => [1000, 1000, 1] as const,
+      on: (_event: 'change', listener: (value: readonly [number, number, number]) => void) => {
+        sizeListeners.add(listener);
+
+        return () => sizeListeners.delete(listener);
+      },
+    },
   } as unknown as ShaderContextValue;
 
   function Wrapper({ children }: { children: ReactNode }) {
@@ -103,6 +128,7 @@ function makeScene({ scrollPush = false, floatTargets = true } = {}) {
 
   scheduler.start();
   disposers.push(() => {
+    stopWatchingPoint?.();
     scheduler.dispose();
     input.dispose();
     canvas.remove();
@@ -118,6 +144,10 @@ function makeScene({ scrollPush = false, floatTargets = true } = {}) {
     registerTransform,
     scrollTo: (next: number) => {
       top = next;
+    },
+    resize(width: number, height: number) {
+      for (const listener of sizeListeners) listener([width, height, 1]);
+      for (const pass of prePasses) pass();
     },
     get parked() {
       return frames.size === 0;
@@ -138,6 +168,26 @@ function move(x: number, y = 500) {
   window.dispatchEvent(
     new PointerEvent('pointermove', { clientX: x, clientY: y, pointerType: 'mouse' }),
   );
+}
+
+// A point code moves, shaped like an animation signal such as Motion's
+// MotionValue.
+function createPoint(initial: readonly [number, number]) {
+  let value = initial;
+  const listeners = new Set<(next: readonly [number, number]) => void>();
+
+  return {
+    get: () => value,
+    on: (_event: 'change', listener: (next: readonly [number, number]) => void) => {
+      listeners.add(listener);
+
+      return () => listeners.delete(listener);
+    },
+    set: (next: readonly [number, number]) => {
+      value = next;
+      for (const listener of listeners) listener(next);
+    },
+  };
 }
 
 function stroke(scene: ReturnType<typeof makeScene>) {
@@ -363,6 +413,88 @@ it.each([true, false])(
     expect(scene.parked).toBe(true);
   },
 );
+
+// ---- Scripted strokes
+it('smudges along a scripted stroke, with no pointer and no scrollPush', () => {
+  const point = createPoint([0.1, 0.5]);
+  const scene = makeScene({ strokeAt: point });
+
+  render(<CursorSmudge decay={0} />, { wrapper: scene.Wrapper });
+  scene.advance(3);
+  const drawsAtRest = scene.draw.mock.calls.length;
+
+  point.set([0.3, 0.5]);
+  scene.advance(3);
+
+  expect(scene.draw.mock.calls.length).toBeGreaterThan(drawsAtRest);
+  expect(scene.parked).toBe(true);
+});
+
+// The segment is gathered on one frame and drawn on the next, so these
+// events land between the two.
+it.each(['blur', 'pointerleave', 'pointercancel'])(
+  'draws a gathered scripted segment after %s',
+  (event) => {
+    const point = createPoint([0.1, 0.5]);
+    const scene = makeScene({ strokeAt: point });
+
+    render(<CursorSmudge decay={0} />, { wrapper: scene.Wrapper });
+    scene.advance(3);
+    const drawsAtRest = scene.draw.mock.calls.length;
+
+    point.set([0.3, 0.5]);
+    scene.advance();
+    (event === 'blur' ? window : scene.canvas).dispatchEvent(new Event(event));
+    scene.advance();
+
+    expect(scene.draw.mock.calls.length).toBeGreaterThan(drawsAtRest);
+  },
+);
+
+it('leaves the field clear when a resize lands after a scripted segment is gathered', () => {
+  const point = createPoint([0.1, 0.5]);
+  const scene = makeScene({ strokeAt: point });
+
+  render(<CursorSmudge />, { wrapper: scene.Wrapper });
+  scene.advance(3);
+  point.set([0.3, 0.5]);
+  scene.advance();
+  scene.resize(800, 600);
+  scene.advance();
+
+  expect(scene.parked).toBe(true);
+});
+
+it('ignores the mouse while a scripted stroke is attached', () => {
+  const point = createPoint([0.1, 0.5]);
+  const scene = makeScene({ strokeAt: point });
+
+  render(<CursorSmudge decay={0} />, { wrapper: scene.Wrapper });
+  scene.advance(3);
+  const drawsAtRest = scene.draw.mock.calls.length;
+
+  stroke(scene);
+
+  expect(scene.draw).toHaveBeenCalledTimes(drawsAtRest);
+});
+
+it('ignores a scroll push while a scripted stroke is attached', () => {
+  const scene = makeScene({ scrollPush: true, strokeAt: createPoint([0.1, 0.5]) });
+
+  render(<CursorSmudge decay={0} />, { wrapper: scene.Wrapper });
+  scene.advance(3);
+  const drawsAtRest = scene.draw.mock.calls.length;
+  const touch = new Touch({ identifier: 1, target: scene.canvas, clientX: 500, clientY: 500 });
+
+  scene.canvas.dispatchEvent(
+    new TouchEvent('touchstart', { touches: [touch], changedTouches: [touch], bubbles: true }),
+  );
+  scene.advance();
+  scene.scrollTo(-30);
+  scene.advance(3);
+
+  expect(scene.draw).toHaveBeenCalledTimes(drawsAtRest);
+});
 
 it('stays inert when floating-point render targets are unavailable', () => {
   const scene = makeScene({ floatTargets: false });

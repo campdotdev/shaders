@@ -31,6 +31,7 @@ export default function ProbeScene() {
   const [phase, setPhase] = useState<PushPhase>('idle');
   const [lines, setLines] = useState<string[]>([]);
   const [taps, setTaps] = useState(0);
+  const [inputPushes, setInputPushes] = useState({ starts: 0, ends: 0 });
   // Set once the top scene has drawn, so a test knows its input is live.
   const [ready, setReady] = useState(false);
   const [device] = useState(describeDevice);
@@ -40,7 +41,19 @@ export default function ProbeScene() {
     setLines((previous) => [...previous, formatPushContact(record)].slice(-MAX_CONTACTS));
   }, []);
 
-  const report = useMemo(() => [`Device: ${device}`, '', ...lines].join('\n'), [device, lines]);
+  const handleInputPush = useCallback((event: 'start' | 'end') => {
+    setInputPushes((previous) =>
+      event === 'start'
+        ? { ...previous, starts: previous.starts + 1 }
+        : { ...previous, ends: previous.ends + 1 },
+    );
+  }, []);
+
+  const pushCount = `Input pushes: ${inputPushes.starts} started, ${inputPushes.ends} ended`;
+  const report = useMemo(
+    () => [`Device: ${device}`, pushCount, '', ...lines].join('\n'),
+    [device, pushCount, lines],
+  );
 
   // The page may be served over plain HTTP on the local network, where the
   // clipboard API does not exist, so selecting the text for the system copy
@@ -69,6 +82,9 @@ export default function ProbeScene() {
           Touch the lower scene, which keeps today&apos;s behavior. Neither scene should react to a
           finger on the other.
         </li>
+        <li>
+          Once the page stops, the push count under the scene should show as many ended as started.
+        </li>
       </ol>
       <p>Then select the report and paste it into SHA-225.</p>
       <div className={styles.spacer} />
@@ -77,7 +93,11 @@ export default function ProbeScene() {
         <ShaderScene onFirstPaint={() => setReady(true)} scrollPush>
           <LiquidGradient />
           <CursorRipple />
-          <PushRecorder onContact={handleContact} onPhaseChange={setPhase} />
+          <PushRecorder
+            onContact={handleContact}
+            onInputPush={handleInputPush}
+            onPhaseChange={setPhase}
+          />
         </ShaderScene>
         <span className={styles.badge} data-phase={phase}>
           {phase}
@@ -90,6 +110,7 @@ export default function ProbeScene() {
           Taps: {taps}
         </button>
       </div>
+      <p data-push-count="">{pushCount}</p>
       <h2>Today&apos;s behavior</h2>
       <div className={styles.frame}>
         <ShaderScene>
