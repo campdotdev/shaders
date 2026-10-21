@@ -50,6 +50,7 @@ import {
 } from './reactive-arrow';
 import styles from './reactive-illustration.module.css';
 import { MOCK_HEIGHT, MOCK_WIDTH, pointOnJ, REACTIVE_SMUDGE } from './reactive-smudge';
+import { createScenePause, type ScenePause } from './scene-pause';
 import { type HeldBy, type HeldStage, type HeldStory, useHeldStory } from './story';
 
 // ---------------------------------------------
@@ -379,7 +380,9 @@ function useArrowPoses(pointer: CardPointer, turn: MotionValue<number>, flights:
  * in an effect of its own, in the render where the leg starts, reading
  * where the point is as the stroke's start. A child's effects run before
  * its parent's, so a flight never runs ahead of the attach, and each leg's
- * point is set up before its leg starts.
+ * point is set up before its leg starts. Every flight and wait pauses with
+ * the scene (scene-pause.ts), so the strokes it lays and the smudges it
+ * waits on to clear keep the scene's time.
  */
 function useLegTimeline(
   leg: Leg,
@@ -390,11 +393,13 @@ function useLegTimeline(
     flights,
     turn,
     resetPointer,
+    scenePause,
   }: {
     pointer: CardPointer;
     flights: Flights;
     turn: MotionValue<number>;
     resetPointer: () => void;
+    scenePause: ScenePause;
   },
 ) {
   useEffect(() => {
@@ -404,7 +409,7 @@ function useLegTimeline(
 
       void controls.then(then);
 
-      return () => controls.stop();
+      return scenePause.hold(controls);
     };
     const steps: Partial<Record<Leg, () => () => void>> = {
       out: () =>
@@ -422,12 +427,16 @@ function useLegTimeline(
       leaving: () => run(leave, OUT_SECONDS, () => finish('leaving')),
       clearing: () => {
         const seconds = heldBy === 'push' ? OUT_SECONDS + CLEAR_SECONDS : CLEAR_SECONDS;
-        const wait = window.setTimeout(() => {
+        // A wait rather than a flight, as an animation of nothing, so it
+        // pauses with the scene while the smudges clear.
+        const wait = animate(0, 1, { duration: seconds });
+
+        void wait.then(() => {
           swoop.jump(0);
           finish('clearing');
-        }, seconds * 1000);
+        });
 
-        return () => window.clearTimeout(wait);
+        return scenePause.hold(wait);
       },
       swooping: () =>
         run(swoop, REACTIVE_SMUDGE.laySeconds, () => {
@@ -440,7 +449,7 @@ function useLegTimeline(
     };
 
     return steps[leg]?.();
-  }, [leg, plays, heldBy, finish, pointer, flights, turn, resetPointer, onStoryEnd]);
+  }, [leg, plays, heldBy, finish, pointer, flights, turn, resetPointer, scenePause, onStoryEnd]);
 }
 
 // After a push the arrow waits hidden in its spot while the smudges clear,
@@ -502,7 +511,12 @@ function useHeldTip(pose: MotionValue<ArrowPose>, stage: HeldStage, flights: Fli
  * pose's CSS variables, and the point a scripted stroke follows, if one
  * strokes.
  */
-function useArrow(story: HeldStory, pointer: CardPointer, resetPointer: () => void) {
+function useArrow(
+  story: HeldStory,
+  pointer: CardPointer,
+  resetPointer: () => void,
+  scenePause: ScenePause,
+) {
   const { stage, plays, heldBy } = story;
   // The last timed leg this play finished.
   const [finished, setFinished] = useState<{ play: number; leg: TimedLeg } | null>(null);
@@ -519,11 +533,13 @@ function useArrow(story: HeldStory, pointer: CardPointer, resetPointer: () => vo
   // A point that never moves, attached while the card rests: a scripted
   // stroke beats the mouse and the push, so a pointer on the card before
   // the story starts, or a mouse that fails the hover gate, can't smudge
-  // the still frame its decay 0 holds.
+  // the still frame its decay 0 holds. The ending attaches it too while
+  // the smudges clear, so a pointer or a push that comes back then can't
+  // lay a stroke for the swoop's decay 0 to keep.
   const stillPoint = useMotionValue<[number, number]>([0.5, 0.5]);
 
   useHeldTip(pose, stage, flights);
-  useLegTimeline(leg, story, finish, { pointer, flights, turn, resetPointer });
+  useLegTimeline(leg, story, finish, { pointer, flights, turn, resetPointer, scenePause });
 
   const strokeOn: Record<Leg, MotionValue<[number, number]> | null> = {
     resting: stillPoint,
@@ -531,8 +547,8 @@ function useArrow(story: HeldStory, pointer: CardPointer, resetPointer: () => vo
     in: tips.inTip,
     following: tips.followTip,
     pushing: null,
-    leaving: null,
-    clearing: null,
+    leaving: stillPoint,
+    clearing: stillPoint,
     swooping: tips.jPoint,
   };
   const style: ArrowStyle = {
@@ -567,12 +583,14 @@ export function ReactiveIllustration() {
   // laid, nor while a new renderer or a resize lays it again.
   const [stillFrameReady, setStillFrameReady] = useState(false);
   const live = Scene !== null && stillFrameReady;
+  // The story's timed legs pause with the scene's loop.
+  const [scenePause] = useState(createScenePause);
   const illustrationRef = useRef<HTMLDivElement>(null);
   const { pointer, onPointerMove, reset } = useEasedPointer(illustrationRef);
   // The story waits for the live still frame, so a card showing the image,
   // as it does without WebGPU and under reduced motion, stays still.
   const story = useHeldStory({ enabled: live, onPointerMove, pausesHero: true });
-  const arrow = useArrow(story, pointer, reset);
+  const arrow = useArrow(story, pointer, reset, scenePause);
 
   return (
     <LazyMotion features={domMin} strict>
@@ -590,6 +608,7 @@ export function ReactiveIllustration() {
         {Scene && (
           <Scene
             decay={arrow.decay}
+            onPausedChange={scenePause.setPaused}
             onPushEnd={story.onPushEnd}
             onPushStart={story.onPushStart}
             onStillFrameChange={setStillFrameReady}

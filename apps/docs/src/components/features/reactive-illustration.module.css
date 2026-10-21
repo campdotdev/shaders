@@ -37,9 +37,13 @@
 
    Both parts carry the whole placement themselves. A transform on a shared
    parent would make that parent a group of its own, and the halo's overlay
-   blend would then have nothing under it to blend with. */
+   blend would then have nothing under it to blend with.
+
+   Touches pass through to the canvas, whose own touchstart starts a scroll
+   push, even while a push hides the arrow. */
 .pointer {
   position: absolute;
+  pointer-events: none;
   transition: opacity var(--fade-sm) var(--ease-out);
   top: 0;
   left: 0;

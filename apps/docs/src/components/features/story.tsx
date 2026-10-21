@@ -60,7 +60,8 @@ export function StoryCard({ className, children }: { className?: string; childre
  * Follows the pointer on the illustration's StoryCard, behind the site's
  * hover gate, and calls `onEnter` and any `onLeave` as it comes and goes,
  * and any `onMove` with each move over the card, starting with the move
- * the pointer enters on. Only a pointer that passes the gate counts, and a
+ * the pointer enters on, so `onEnter` never comes before the pointer's
+ * first position. Only a pointer that passes the gate counts, and a
  * touch never does, even on a touch-screen laptop that passes the gate.
  * Under reduced motion, or while `enabled` is false, nothing counts.
  * Returns whether the pointer is on the card now, which only the ends of a
@@ -90,6 +91,9 @@ function useCardPointer(
 
     if (!card || !canHover || reducedMotion || !enabled) return undefined;
 
+    // Whether a pointer that was on the card as the gate opened still waits
+    // for its first move to enter (below).
+    let entersOnMove = false;
     const onPointerEnter = (event: PointerEvent) => {
       if (event.pointerType === 'touch') return;
       pointerOnCardRef.current = true;
@@ -99,9 +103,13 @@ function useCardPointer(
     const onPointerMove = (event: PointerEvent) => {
       if (event.pointerType === 'touch') return;
       callbacksRef.current.onMove?.(event);
+      if (!entersOnMove) return;
+      entersOnMove = false;
+      callbacksRef.current.onEnter();
     };
     const onPointerLeave = (event: PointerEvent) => {
       if (event.pointerType === 'touch') return;
+      entersOnMove = false;
       pointerOnCardRef.current = false;
       callbacksRef.current.onLeave?.();
     };
@@ -111,11 +119,13 @@ function useCardPointer(
     card.addEventListener('pointerleave', onPointerLeave);
 
     // A pointer already on the card as the gate opens sends no
-    // pointerenter, so it counts as entering now. Its first move tells
-    // `onMove` where it is.
+    // pointerenter, so it counts as entering now. A story that follows the
+    // pointer has no position for it until it moves, so there it enters on
+    // its first move instead.
     if (card.matches(':hover')) {
       pointerOnCardRef.current = true;
-      callbacksRef.current.onEnter();
+      if (callbacksRef.current.onMove) entersOnMove = true;
+      else callbacksRef.current.onEnter();
     }
 
     // The gate closing counts as the pointer leaving, so a held story ends
