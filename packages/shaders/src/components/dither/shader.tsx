@@ -70,9 +70,9 @@ export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: 
   // ---------------------------------------------
   // pixelSize is specified in CSS pixels so the look matches across 1x and
   // 3x displays, but screenCoordinate below counts device pixels. The
-  // scene's pixelRatio uniform holds the renderer's ratio (which respects
-  // maxDPR clamping) and follows monitor moves and browser zoom. Outside a
-  // scene no pass registers, so the 1 fallback never draws.
+  // scene's pixelRatio uniform holds the renderer's ratio, which respects
+  // maxDPR clamping. Outside a scene no pass registers, so the 1 fallback
+  // never draws.
   const pixelRatio = useShaderContext()?.canvasSize.pixelRatio ?? 1;
 
   // ---------------------------------------------

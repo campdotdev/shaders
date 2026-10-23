@@ -81,10 +81,9 @@ export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
   // ---------------------------------------------
   // pixelSize is in CSS pixels so the grain matches on 1x and 3x displays,
   // but screenSize below counts device pixels. The scene's pixelRatio
-  // uniform holds the renderer's ratio and follows monitor moves and browser
-  // zoom. The scene never replaces it, so the pass can depend on it without
-  // re-registering. Outside a scene no pass registers, so the 1 fallback
-  // never draws.
+  // uniform holds the renderer's ratio. The scene never replaces it, so the
+  // pass can depend on it without re-registering. Outside a scene no pass
+  // registers, so the 1 fallback never draws.
   const pixelRatio = useShaderContext()?.canvasSize.pixelRatio ?? 1;
 
   // ---------------------------------------------
