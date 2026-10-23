@@ -4,32 +4,32 @@ import { cleanup, render } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
-  type PostProcessTransform,
+  type ColorTransform,
   ShaderContext,
   type ShaderContextValue,
 } from '../../context/shader-context.js';
-import { usePostProcessPass } from './use-overlay-pass.js';
+import { useColorTransform } from './use-color-transform.js';
 
 function makeCtx(): {
   ctx: ShaderContextValue;
-  registered: PostProcessTransform[];
+  registered: ColorTransform[];
   cleanups: number;
 } {
-  const registered: PostProcessTransform[] = [];
+  const registered: ColorTransform[] = [];
   let cleanups = 0;
   const ctx = {
     renderer: {} as ShaderContextValue['renderer'],
     scene: {} as ShaderContextValue['scene'],
     camera: {} as ShaderContextValue['camera'],
     scheduler: {} as ShaderContextValue['scheduler'],
-    registerOverlay: (transform: PostProcessTransform) => {
+    registerColorTransform: (transform: ColorTransform) => {
       registered.push(transform);
 
       return () => {
         cleanups++;
       };
     },
-    registerBaseUvTransform: () => () => undefined,
+    registerUvWarp: () => () => undefined,
     registerPrePass: () => () => undefined,
     getCursorInput: () => {
       throw new Error('not used by this hook');
@@ -45,14 +45,14 @@ function Wrapper({ ctx, children }: { ctx: ShaderContextValue | null; children: 
   return <ShaderContext.Provider value={ctx}>{children}</ShaderContext.Provider>;
 }
 
-const identityTransform: PostProcessTransform = (input) => input;
+const identityTransform: ColorTransform = (input) => input;
 
-describe('usePostProcessPass', () => {
-  it('registers the transform on mount', () => {
+describe('useColorTransform', () => {
+  it('registers the color transform on mount', () => {
     const { ctx, registered } = makeCtx();
 
     function Probe() {
-      usePostProcessPass(identityTransform, []);
+      useColorTransform(identityTransform, []);
 
       return null;
     }
@@ -66,18 +66,18 @@ describe('usePostProcessPass', () => {
     cleanup();
   });
 
-  it('calls the cleanup returned by registerOverlay on unmount', () => {
+  it('calls the cleanup returned by registerColorTransform on unmount', () => {
     const cleanupFn = vi.fn();
     const ctx = {
       renderer: {} as ShaderContextValue['renderer'],
       scene: {} as ShaderContextValue['scene'],
       camera: {} as ShaderContextValue['camera'],
       scheduler: {} as ShaderContextValue['scheduler'],
-      registerOverlay: () => cleanupFn,
+      registerColorTransform: () => cleanupFn,
     } as unknown as ShaderContextValue;
 
     function Probe() {
-      usePostProcessPass(identityTransform, []);
+      useColorTransform(identityTransform, []);
 
       return null;
     }
@@ -96,7 +96,7 @@ describe('usePostProcessPass', () => {
     const { ctx, registered } = makeCtx();
 
     function Probe({ mode }: { mode: 'a' | 'b' }) {
-      usePostProcessPass(identityTransform, [mode]);
+      useColorTransform(identityTransform, [mode]);
 
       return null;
     }
@@ -119,7 +119,7 @@ describe('usePostProcessPass', () => {
 
   it('is a no-op when called outside a ShaderScene provider', () => {
     function Probe() {
-      usePostProcessPass(identityTransform, []);
+      useColorTransform(identityTransform, []);
 
       return null;
     }
