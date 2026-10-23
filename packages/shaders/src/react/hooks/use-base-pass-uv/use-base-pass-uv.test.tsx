@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 
 import { cleanup, render } from '@testing-library/react';
+import { uniform } from 'three/tsl';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
@@ -30,7 +31,10 @@ function makeCtx(): {
     getCursorInput: () => {
       throw new Error('not used by this hook');
     },
-    canvasSize: { get: () => [0, 0, 1] as const, on: () => () => undefined },
+    canvasSize: {
+      signal: { get: () => [0, 0, 1] as const, on: () => () => undefined },
+      pixelRatio: uniform(1),
+    },
     timeGpu: () => () => undefined,
   };
 

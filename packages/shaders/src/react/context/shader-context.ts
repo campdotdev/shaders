@@ -1,6 +1,7 @@
 import { createContext } from 'react';
 
 import type { Camera, Scene } from 'three';
+import type { uniform } from 'three/tsl';
 
 import type {
   CursorInput,
@@ -44,9 +45,15 @@ export interface ShaderContextValue {
   getCursorInput: () => CursorInput;
   /**
    * The canvas size, which the scene updates before it redraws a resized
-   * canvas. useResize hands it to components.
+   * canvas. useResize hands `signal` to components. `pixelRatio` is the
+   * renderer's device pixels per CSS pixel, after any maxDPR cap, for
+   * components that size things in CSS pixels. The scene creates it once and
+   * writes it with each size update.
    */
-  canvasSize: ResizeSignal;
+  canvasSize: {
+    signal: ResizeSignal;
+    pixelRatio: ReturnType<typeof uniform<number>>;
+  };
   /**
    * Turns on GPU timing for every pass the scene draws each frame: the
    * pre-passes, the meshes, and the output quad. ShaderMonitor holds it on

@@ -123,6 +123,7 @@ function makeScene(
 
       return input;
     },
+    canvasSize: { signal: { get: () => [0, 0, 1] as const, on: () => () => undefined } },
   } as unknown as ShaderContextValue;
 
   function Wrapper({ children }: { children: ReactNode }) {

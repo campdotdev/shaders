@@ -18,5 +18,5 @@ const STUB_SIGNAL: ResizeSignal = {
 };
 
 export function useResize(): ResizeSignal {
-  return useShaderContext()?.canvasSize ?? STUB_SIGNAL;
+  return useShaderContext()?.canvasSize.signal ?? STUB_SIGNAL;
 }

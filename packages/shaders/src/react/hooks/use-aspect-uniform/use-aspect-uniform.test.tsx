@@ -29,7 +29,7 @@ const makeWrapper = (scheduler: FrameScheduler, canvasSize: CanvasSize) => {
         value={
           {
             scheduler,
-            canvasSize: canvasSize.signal,
+            canvasSize: { signal: canvasSize.signal },
           } as unknown as React.ContextType<typeof ShaderContext>
         }
       >

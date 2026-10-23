@@ -21,6 +21,7 @@ import {
 } from 'react';
 
 import { OrthographicCamera, Scene } from 'three';
+import { uniform } from 'three/tsl';
 
 import {
   createOutputStage,
@@ -208,7 +209,11 @@ export function ShaderScene({
         );
 
         const detachPausedProp = pausedProp.attach(canvasWatch);
-        const cursorInput = createLazyCursorInput(canvas, scheduler, canvasWatch.canvasSize);
+        const cursorInput = createLazyCursorInput(
+          canvas,
+          scheduler,
+          canvasWatch.canvasSize.signal,
+        );
         const detachScrollPushProp = scrollPushProp.attach(cursorInput);
         const detachStrokeAtProp = strokeAtProp.attach(cursorInput);
 
@@ -471,7 +476,7 @@ function createRedrawer(
 
 interface CanvasWatch {
   /** The canvas size, updated before each redraw, for the shader context. */
-  canvasSize: ResizeSignal;
+  canvasSize: ShaderContextValue['canvasSize'];
   /** Pause the loop for the `paused` prop, or hand it back to visibility. */
   setPaused: (paused: boolean) => void;
   /** Stop watching visibility and size, and drop the size's listeners. */
@@ -491,6 +496,7 @@ function watchCanvas(
   redraw: () => void,
 ): CanvasWatch {
   const canvasSize = createCanvasSize(canvas);
+  const pixelRatio = uniform(1);
   // Subscribed before the pause watcher exists, because it pauses the loop
   // as it starts when the canvas is already out of view.
   let loopPaused = false;
@@ -536,7 +542,7 @@ function watchCanvas(
   resizeObserver.observe(canvas);
 
   return {
-    canvasSize: canvasSize.signal,
+    canvasSize: { signal: canvasSize.signal, pixelRatio },
     setPaused(paused) {
       pausedByProp = paused;
       pauseWatcher.setPaused(paused);

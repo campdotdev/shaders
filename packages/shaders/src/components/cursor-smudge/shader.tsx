@@ -159,7 +159,7 @@ export function CursorSmudgeShader({
     // A resize clears the field, and the scene redraws it before the next
     // gather. Drop the stroke gathered for the old field, so the redraw
     // leaves the new field clear and the next stroke starts afresh.
-    const stopResize = context.canvasSize.on('change', ([width, height]) => {
+    const stopResize = context.canvasSize.signal.on('change', ([width, height]) => {
       pendingStroke = null;
       stroking = false;
       pendingDelta = 0;

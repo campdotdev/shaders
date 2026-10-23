@@ -83,8 +83,10 @@ function makeScene(renderer: WebGPURenderer) {
       };
     },
     canvasSize: {
-      get: () => [800, 400, 2],
-      on: () => () => undefined,
+      signal: {
+        get: () => [800, 400, 2],
+        on: () => () => undefined,
+      },
     },
     timeGpu: () => () => undefined,
   } as unknown as ShaderContextValue;

@@ -94,13 +94,15 @@ function makeScene(renderer: WebGPURenderer) {
       };
     },
     canvasSize: {
-      get: () => size,
-      on: (_event: 'change', listener: (value: ResizeValue) => void) => {
-        sizeListeners.add(listener);
+      signal: {
+        get: () => size,
+        on: (_event: 'change', listener: (value: ResizeValue) => void) => {
+          sizeListeners.add(listener);
 
-        return () => {
-          sizeListeners.delete(listener);
-        };
+          return () => {
+            sizeListeners.delete(listener);
+          };
+        },
       },
     },
     timeGpu: () => () => undefined,

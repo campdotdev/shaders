@@ -113,11 +113,13 @@ function makeScene({
       };
     },
     canvasSize: {
-      get: () => [1000, 1000, 1] as const,
-      on: (_event: 'change', listener: (value: readonly [number, number, number]) => void) => {
-        sizeListeners.add(listener);
+      signal: {
+        get: () => [1000, 1000, 1] as const,
+        on: (_event: 'change', listener: (value: readonly [number, number, number]) => void) => {
+          sizeListeners.add(listener);
 
-        return () => sizeListeners.delete(listener);
+          return () => sizeListeners.delete(listener);
+        },
       },
     },
   } as unknown as ShaderContextValue;
