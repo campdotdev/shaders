@@ -1,6 +1,7 @@
 import { createElement, type ReactNode } from 'react';
 
 import { renderHook } from '@testing-library/react';
+import { uniform } from 'three/tsl';
 import { describe, expect, it } from 'vitest';
 
 import type { ResizeSignal } from '../../../inputs/canvas-size/canvas-size.js';
@@ -11,17 +12,19 @@ describe('useResize', () => {
   // The scene owns the one size signal per canvas, so the hook hands that
   // signal over on its first render, with no observer of its own.
   it("returns the enclosing scene's size signal", () => {
-    const canvasSize: ResizeSignal = {
+    const signal: ResizeSignal = {
       get: () => [800, 400, 2] as const,
       on: () => () => undefined,
     };
-    const context = { canvasSize } as unknown as ShaderContextValue;
+    const context = {
+      canvasSize: { signal, pixelRatio: uniform(2) },
+    } as unknown as ShaderContextValue;
     const wrapper = ({ children }: { children: ReactNode }) =>
       createElement(ShaderContext.Provider, { value: context }, children);
 
     const { result } = renderHook(() => useResize(), { wrapper });
 
-    expect(result.current).toBe(canvasSize);
+    expect(result.current).toBe(signal);
   });
 
   it('reads as a zero size outside a scene', () => {
