@@ -63,6 +63,11 @@ export const COMPONENTS = {
       'Tiled dot field with center-anchored ripple displacement. The architecturally-validating Shaders component.',
     category: 'patterns',
   },
+  'fluted-glass': {
+    description:
+      'Shows the scene through ribbed glass: each flute bends the image beneath it and catches a highlight, and the flutes can sway and drift. Stacks on top of any base component inside <ShaderScene>.',
+    category: 'warp',
+  },
   'fractal-noise': {
     description:
       'Layered fractal noise. Multi-octave texture with a style dial from soft clouds to crisp vein networks.',

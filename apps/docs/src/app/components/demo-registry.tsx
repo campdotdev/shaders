@@ -17,6 +17,7 @@ import { CursorSpotlightIsland } from './cursor-spotlight/demo';
 import { DissolveIsland } from './dissolve/demo';
 import { DitherIsland } from './dither/demo';
 import { DotFieldIsland } from './dot-field/demo';
+import { FlutedGlassIsland } from './fluted-glass/demo';
 import { FractalNoiseIsland } from './fractal-noise/demo';
 import { GodRaysIsland } from './god-rays/demo';
 import { GrainIsland } from './grain/demo';
@@ -232,6 +233,21 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
       <>
         Light rays radiate from <code>center</code> — park it off-canvas for a top-of-page sun. The
         rays emit over a transparent background; stack them above a dark layer.
+      </>
+    ),
+  },
+  'fluted-glass': {
+    Island: FlutedGlassIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <FlutedGlass />
+  <Grain />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        FlutedGlass bends only what Sources drew, so an Effect mounted before it draws over the
+        glass unbent: mount it straight after the Source, then the other Effects, such as Grain.
       </>
     ),
   },
