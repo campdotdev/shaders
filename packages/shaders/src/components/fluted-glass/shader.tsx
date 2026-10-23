@@ -30,6 +30,7 @@ import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-a
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
+import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { useUvWarp } from '../../react/hooks/use-uv-warp/use-uv-warp.js';
 
 export interface FlutedGlassShaderProps {
@@ -143,6 +144,11 @@ export function FlutedGlassShader({
   // tempo without jumping the flutes to a new place. The phase counts flute
   // widths of drift.
   const phaseUniform = useAnimatableSpeed(speed);
+
+  // The render-on-demand vote. A literal speed of 0 freezes the phase, and
+  // every other dial changes only when its own write repaints the scene, so
+  // the scene may go idle. A speed signal might move later and doesn't count.
+  useStaticSceneHint(typeof speed === 'number' && speed === 0);
 
   // width is in CSS pixels, but screenSize below counts device pixels. The
   // scene's pixelRatio uniform holds the renderer's ratio and is never
