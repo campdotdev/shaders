@@ -496,7 +496,10 @@ function watchCanvas(
   redraw: () => void,
 ): CanvasWatch {
   const canvasSize = createCanvasSize(canvas);
-  const pixelRatio = uniform(1);
+  // Created once and never replaced, because the compiled shaders capture
+  // it. Written on every resize, which is also how a monitor move or a
+  // browser zoom arrives.
+  const pixelRatio = uniform(renderer.three.getPixelRatio());
   // Subscribed before the pause watcher exists, because it pauses the loop
   // as it starts when the canvas is already out of view.
   let loopPaused = false;
@@ -520,7 +523,8 @@ function watchCanvas(
   // drag or a scroll-driven size change, paints one on every frame. So the
   // scene redraws straight away, running or paused. canvasSize updates
   // first: the children's size and aspect uniforms are written from it, so
-  // the redraw has them at the new size.
+  // the redraw has them at the new size. The pixel ratio comes from the
+  // renderer, which caps it at maxDPR.
   //
   // A loop paused only because the canvas is out of view or the tab is
   // hidden skips the redraw, since no one can see it. It asks for a frame
@@ -530,6 +534,7 @@ function watchCanvas(
   // view.
   const resizeObserver = new ResizeObserver(() => {
     renderer.resize();
+    pixelRatio.value = renderer.three.getPixelRatio();
     canvasSize.update();
     if (loopPaused && !pausedByProp) {
       scheduler.requestRender();
