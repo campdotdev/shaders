@@ -42,6 +42,7 @@ function makeScene() {
     },
     requestRender: vi.fn(() => true),
     setIdle: vi.fn(() => () => undefined),
+    onPhaseReset: vi.fn(() => () => undefined),
   };
   const shaderContext = {
     renderer: { three: { domElement: document.createElement('canvas') } },
