@@ -175,6 +175,36 @@ describe('FlutedGlass', () => {
     expect(scene.transforms).toHaveLength(1);
   });
 
+  // Only speed moves the glass on its own, and a signal may move later.
+  it('votes the scene idle at a literal speed of 0', () => {
+    const scene = makeScene();
+
+    render(<FlutedGlass speed={0} />, { wrapper: scene.Wrapper });
+
+    expect(scene.scheduler.setIdle).toHaveBeenCalledWith(true);
+    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
+  });
+
+  it('votes the scene animated at any other speed', () => {
+    for (const speed of [1, -0.5]) {
+      const scene = makeScene();
+
+      render(<FlutedGlass speed={speed} />, { wrapper: scene.Wrapper });
+
+      expect(scene.scheduler.setIdle).toHaveBeenCalledWith(false);
+      expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(true);
+    }
+  });
+
+  it('votes the scene animated at a speed signal, even one reading 0', () => {
+    const scene = makeScene();
+
+    render(<FlutedGlass speed={makeSignal(0).signal} />, { wrapper: scene.Wrapper });
+
+    expect(scene.scheduler.setIdle).toHaveBeenCalledWith(false);
+    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(true);
+  });
+
   // Mode 1 only: outside a scene there is no output stage to bend.
   it('renders nothing and does not throw outside a ShaderScene', () => {
     const { container } = render(<FlutedGlass speed={1} />);
