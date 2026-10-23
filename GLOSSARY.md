@@ -16,7 +16,7 @@ _Avoid_: Overlay, post-process pass, post-process layer, filter
 
 **UV warp**:
 An Effect's change to where the image beneath it is sampled, such as Dither's pixel snap or CursorRipple's refraction. A UV warp bends only what Sources drew.
-_Avoid_: Warp on its own, base UV transform
+_Avoid_: Warp on its own, except as the name of the Warp category, base UV transform
 
 **Color transform**:
 An Effect's change to the color of each pixel in the image beneath it, such as Grain's noise or Vignette's darkening.
