@@ -218,6 +218,9 @@ export function FlutedGlassShader({
     (coordinate) => {
       const { lean, widthPx, cosAngle, sinAngle } = fluteAt(coordinate);
       const shiftPx = lean.mul(refractionUniform).mul(widthPx);
+      // shortcut: the shift and the highlight's normal point straight across
+      // the unswayed flute, so a steep sway bends the image a little off its
+      // curve; tilt both by the sway's slope if a large sway looks wrong.
 
       return coordinate.add(vec2(cosAngle, sinAngle).mul(shiftPx).div(screenSize));
     },
