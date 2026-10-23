@@ -48,7 +48,8 @@ export interface ShaderContextValue {
    * canvas. useResize hands `signal` to components. `pixelRatio` is the
    * renderer's device pixels per CSS pixel, after any maxDPR cap, for
    * components that size things in CSS pixels. The scene creates it once and
-   * writes it with each size update.
+   * writes it each time its ResizeObserver fires. The renderer sets its ratio
+   * once, at creation.
    */
   canvasSize: {
     signal: ResizeSignal;

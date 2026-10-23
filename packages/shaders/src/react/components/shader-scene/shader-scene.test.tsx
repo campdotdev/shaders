@@ -673,9 +673,9 @@ describe('ShaderScene', () => {
       expect(widthAtRender).toEqual([800]);
     });
 
-    // A move to another monitor or a browser zoom resizes the canvas and
-    // changes the renderer's ratio. Components that size things in CSS
-    // pixels read the one uniform, so it has to hold the new ratio by the
+    // The scene copies the renderer's ratio into the uniform on each
+    // ResizeObserver callback. Components that size things in CSS pixels
+    // read the one uniform, so it has to hold the renderer's ratio by the
     // redraw, and stay the same object the compiled shaders captured.
     it('writes the renderer pixel ratio into one pixelRatio uniform before it redraws', async () => {
       const fireResize = stubResizeObserver();

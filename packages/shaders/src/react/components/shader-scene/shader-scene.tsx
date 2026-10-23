@@ -493,8 +493,8 @@ function watchCanvas(
 ): CanvasWatch {
   const canvasSize = createCanvasSize(canvas);
   // Created once and never replaced, because the compiled shaders capture
-  // it. Written on every resize, which is also how a monitor move or a
-  // browser zoom arrives.
+  // it. Written from the renderer's ratio in the ResizeObserver callback
+  // below. The renderer sets that ratio once, when it is created.
   const pixelRatio = uniform(renderer.three.getPixelRatio());
   // Subscribed before the pause watcher exists, because it pauses the loop
   // as it starts when the canvas is already out of view.
