@@ -1,7 +1,7 @@
 'use client';
 
-// How an Effect joins its <ShaderScene> and leaves it again. usePostProcessPass
-// and useBasePassUv each pick which list the Effect joins, and this hook owns
+// How an Effect joins its <ShaderScene> and leaves it again. useColorTransform
+// and useUvWarp each pick which list the Effect joins, and this hook owns
 // the rest: register on mount, unregister on unmount, and swap registrations
 // when a dependency changes. A change to that lifecycle lands here once.
 import { type DependencyList, useEffect } from 'react';

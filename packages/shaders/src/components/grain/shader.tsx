@@ -10,7 +10,7 @@ import { grain } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
-import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 
 export type GrainBlend = 'additive' | 'subtractive';
@@ -55,7 +55,7 @@ export function GrainShader({ intensity, speed, blend }: GrainShaderProps) {
   // A post-process pass: the callback receives each already-rendered pixel
   // (`input`, rgba) and returns a replacement. Everything drawn by earlier
   // layers in the scene flows through here.
-  usePostProcessPass(
+  useColorTransform(
     (input) => {
       // Quantize the phase into whole steps so the pattern re-rolls in
       // discrete ticks instead of shifting continuously. floor(phase * 60)

@@ -20,7 +20,7 @@ import {
 } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
-import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
@@ -124,7 +124,7 @@ export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
   // ---------------------------------------------
   // A post-process pass: the callback receives each already-rendered pixel
   // (`input`, rgba) and returns a replacement.
-  usePostProcessPass(
+  useColorTransform(
     (input) => {
       // Which block is this pixel in? uv() in a post-process pass is
       // screen-oriented, (0, 0) at the top-left with y growing downward, so

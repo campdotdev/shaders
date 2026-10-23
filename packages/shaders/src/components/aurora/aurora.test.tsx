@@ -84,8 +84,8 @@ function makeScene(renderer: WebGPURenderer) {
     scene,
     camera: {},
     scheduler,
-    registerOverlay: () => () => undefined,
-    registerBaseUvTransform: () => () => undefined,
+    registerColorTransform: () => () => undefined,
+    registerUvWarp: () => () => undefined,
     registerPrePass: (prePass: PrePass) => {
       prePasses.push(prePass);
 

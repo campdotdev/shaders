@@ -19,9 +19,9 @@ import type { WaveField } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
-import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
-import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
+import { useUvWarp } from '../../react/hooks/use-uv-warp/use-uv-warp.js';
 
 // ----------------------------------------------------------------------------
 // The light
@@ -198,7 +198,7 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
   // canvas width, so the x component is divided by the aspect to land the
   // same distance on screen as the y component (the same aspect correction
   // every round-shape shader uses).
-  useBasePassUv(
+  useUvWarp(
     (coordinate) => {
       const slope = slopeAt(coordinate);
 
@@ -218,7 +218,7 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
   // (`input`, rgba) and returns a replacement. A flank facing the light
   // brightens; a flank facing away, or flat water, adds nothing, which is
   // what keeps a fresh page identical to one without the ripple.
-  usePostProcessPass(
+  useColorTransform(
     (input) => {
       const slope = slopeAt(uv());
 

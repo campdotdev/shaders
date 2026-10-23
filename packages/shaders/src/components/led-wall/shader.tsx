@@ -36,11 +36,11 @@ import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-a
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
-import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
-import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
+import { useUvWarp } from '../../react/hooks/use-uv-warp/use-uv-warp.js';
 import { isLedWallStatic } from './static.js';
 
 export interface LedWallShaderProps {
@@ -218,7 +218,7 @@ export function LedWallShader({
   // the same screen-oriented uv the color pass reads, (0, 0) at the
   // top-left, so the grid anchors there in both passes and the sampled
   // cells and the drawn dots never drift apart.
-  useBasePassUv(
+  useUvWarp(
     (coordinate) => {
       const cellPx = spacingUniform.mul(dprUniform).max(1);
       const pixel = coordinate.mul(screenSize);
@@ -235,7 +235,7 @@ export function LedWallShader({
   // A post-process pass: the callback receives each already-rendered pixel
   // (`input`, rgba, already snapped to its cell's color) and returns a
   // replacement.
-  usePostProcessPass(
+  useColorTransform(
     (input) => {
       // Which cell is this pixel in, and where inside it? uv() in a
       // post-process pass is screen-oriented: (0, 0) is the top-left corner

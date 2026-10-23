@@ -18,7 +18,7 @@ import type {
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
-import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 import { parseColor } from '../shared/color.js';
 
 export interface VignetteShaderProps {
@@ -110,7 +110,7 @@ export function VignetteShader({
   // ---------------------------------------------
   // A post-process pass: the callback receives each already-rendered pixel
   // (`input`, rgba) and returns a replacement.
-  usePostProcessPass(
+  useColorTransform(
     (input) => {
       // How far is this pixel from the focal point? uv() is the pixel's
       // 0..1 position on the canvas. Multiplying the horizontal offset by

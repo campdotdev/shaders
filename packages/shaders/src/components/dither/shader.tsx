@@ -12,10 +12,10 @@ import { floor, mix, screenCoordinate, screenSize, step, uniform, vec3, vec4 } f
 import { type DitherPattern, ditherThreshold, quantize } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
-import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
-import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
+import { useUvWarp } from '../../react/hooks/use-uv-warp/use-uv-warp.js';
 
 export type { DitherPattern } from '../../engine.js';
 
@@ -112,7 +112,7 @@ export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: 
   // (+0.5), so every native pixel in a cell reads the same scene color. The
   // grid is anchored top-left like screenCoordinate, keeping these cells
   // aligned with the threshold cells in the color pass.
-  useBasePassUv(
+  useUvWarp(
     (coordinate) => {
       const devicePixel = pixelSizeUniform.mul(dprUniform).max(1);
       const pixel = coordinate.mul(screenSize);
@@ -128,7 +128,7 @@ export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: 
   // ---------------------------------------------
   // A post-process pass: the callback receives each already-rendered pixel
   // (`input`, rgba) and returns a replacement.
-  usePostProcessPass(
+  useColorTransform(
     (input) => {
       // Which dither cell is this pixel in? screenCoordinate counts device
       // pixels from the top-left; dividing by the cell edge puts every pixel

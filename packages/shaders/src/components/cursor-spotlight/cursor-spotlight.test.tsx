@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { CursorInput } from '../../engine.js';
 import {
-  type PostProcessTransform,
+  type ColorTransform,
   ShaderContext,
   type ShaderContextValue,
 } from '../../react/context/shader-context.js';
@@ -28,7 +28,7 @@ afterEach(() => {
 
 function makeScene() {
   const clients: SchedulerClient[] = [];
-  const overlays: PostProcessTransform[] = [];
+  const overlays: ColorTransform[] = [];
   const unregisters = { overlay: 0 };
   const canvas = document.createElement('canvas');
   const renderer = {
@@ -52,14 +52,14 @@ function makeScene() {
     scene: {},
     camera: {},
     scheduler,
-    registerOverlay: (transform: PostProcessTransform) => {
+    registerColorTransform: (transform: ColorTransform) => {
       overlays.push(transform);
 
       return () => {
         unregisters.overlay += 1;
       };
     },
-    registerBaseUvTransform: () => () => undefined,
+    registerUvWarp: () => () => undefined,
     getCursorInput: () => {
       sharedInput ??= new CursorInput({ element: canvas });
 
