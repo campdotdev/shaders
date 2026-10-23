@@ -12,6 +12,7 @@ import {
   type GpuRenderer,
   type Vector2,
 } from '../../../engine.js';
+import type { ShaderContextValue } from '../../context/shader-context.js';
 import { ShadersError } from '../../errors/shaders-error.js';
 import { useResize } from '../../hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../hooks/use-shader-context/use-shader-context.js';
@@ -670,6 +671,51 @@ describe('ShaderScene', () => {
       fireResize();
 
       expect(widthAtRender).toEqual([800]);
+    });
+
+    // A move to another monitor or a browser zoom resizes the canvas and
+    // changes the renderer's ratio. Components that size things in CSS
+    // pixels read the one uniform, so it has to hold the new ratio by the
+    // redraw, and stay the same object the compiled shaders captured.
+    it('writes the renderer pixel ratio into one pixelRatio uniform before it redraws', async () => {
+      const fireResize = stubResizeObserver();
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      let rendererRatio = 1;
+      const pixelRatios = new Set<ShaderContextValue['canvasSize']['pixelRatio']>();
+      const ratioAtRender: number[] = [];
+
+      gpuRenderer.three.getPixelRatio = () => rendererRatio;
+
+      function RatioChild() {
+        const shaderContext = useShaderContext();
+
+        if (shaderContext) pixelRatios.add(shaderContext.canvasSize.pixelRatio);
+
+        return <MeshChild />;
+      }
+
+      const { getByTestId } = render(
+        <ShaderScene>
+          <RatioChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, 16);
+      vi.mocked(gpuRenderer.three.render).mockImplementation(async () => {
+        const [pixelRatio] = pixelRatios;
+
+        if (pixelRatio) ratioAtRender.push(pixelRatio.value);
+      });
+
+      rendererRatio = 2;
+      fireResize();
+      rendererRatio = 1.5;
+      fireResize();
+
+      expect(ratioAtRender).toEqual([2, 1.5]);
+      expect(pixelRatios.size).toBe(1);
     });
 
     // The loop is paused while the canvas is out of view, and a redraw no
