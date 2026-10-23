@@ -209,11 +209,7 @@ export function ShaderScene({
         );
 
         const detachPausedProp = pausedProp.attach(canvasWatch);
-        const cursorInput = createLazyCursorInput(
-          canvas,
-          scheduler,
-          canvasWatch.canvasSize.signal,
-        );
+        const cursorInput = createLazyCursorInput(canvas, scheduler, canvasWatch.canvasSize.signal);
         const detachScrollPushProp = scrollPushProp.attach(cursorInput);
         const detachStrokeAtProp = strokeAtProp.attach(cursorInput);
 
