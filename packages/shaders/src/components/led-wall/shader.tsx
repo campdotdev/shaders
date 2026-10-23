@@ -8,8 +8,6 @@
 // that masks each cell down to its dot, breathes its brightness with a
 // per-dot flicker, swells it toward `swellCenter`, and scales the gaps by
 // `bleed`.
-import { useEffect, useMemo } from 'react';
-
 import {
   abs,
   float,
@@ -20,7 +18,6 @@ import {
   screenSize,
   sin,
   smoothstep,
-  uniform,
   uv,
   vec2,
   vec3,
@@ -38,7 +35,6 @@ import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/u
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { isLedWallStatic } from './static.js';
@@ -173,33 +169,12 @@ export function LedWallShader({
   // CSS pixels -> device pixels
   // ---------------------------------------------
   // spacing and dotSize are in CSS pixels so the look matches on 1x and 3x
-  // displays, but screenSize below counts device pixels. The renderer's
-  // pixel ratio converts between them; useResize re-fires on monitor moves
-  // and browser zoom, when that ratio changes. Created once and never
-  // replaced, so the passes can depend on it without re-registering.
-  const shaderContext = useShaderContext();
-  const resize = useResize();
-  const dprUniform = useMemo(
-    () => uniform(resize.get()[2] || 1),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const apply = () => {
-      const rendererRatio = shaderContext?.renderer.three.getPixelRatio();
-
-      dprUniform.value =
-        rendererRatio !== undefined && rendererRatio > 0 ? rendererRatio : resize.get()[2] || 1;
-      // A bare uniform write repaints nothing on a static scene, so ask for
-      // a frame; requestRender returns at once unless the scene is idle.
-      shaderContext?.scheduler.requestRender();
-    };
-
-    apply();
-
-    return resize.on('change', apply);
-  }, [resize, dprUniform, shaderContext]);
+  // displays, but screenSize below counts device pixels. The scene's
+  // pixelRatio uniform holds the renderer's ratio and follows monitor moves
+  // and browser zoom. The scene never replaces it, so the passes can depend
+  // on it without re-registering. Outside a scene no pass registers, so the
+  // 1 fallback never draws.
+  const pixelRatio = useShaderContext()?.canvasSize.pixelRatio ?? 1;
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -220,13 +195,13 @@ export function LedWallShader({
   // cells and the drawn dots never drift apart.
   useBasePassUv(
     (coordinate) => {
-      const cellPx = spacingUniform.mul(dprUniform).max(1);
+      const cellPx = spacingUniform.mul(pixelRatio).max(1);
       const pixel = coordinate.mul(screenSize);
       const snapped = floor(pixel.div(cellPx)).add(0.5).mul(cellPx);
 
       return snapped.div(screenSize);
     },
-    [spacingUniform, dprUniform],
+    [spacingUniform, pixelRatio],
   );
 
   // ---------------------------------------------
@@ -244,7 +219,7 @@ export function LedWallShader({
       // which is why this file never flips y and never passes screenOrigin
       // to useAnimatablePoint, unlike DotField. Vignette is the model.
       // cellLocal runs -0.5..0.5 across the cell with 0 at its center.
-      const cellPx = spacingUniform.mul(dprUniform).max(1);
+      const cellPx = spacingUniform.mul(pixelRatio).max(1);
       const pixel = uv().mul(screenSize);
       const cellCoord = pixel.div(cellPx);
       const cellIndex = floor(cellCoord);
@@ -323,7 +298,7 @@ export function LedWallShader({
       // so a dot never crosses into the next cell, whether it got there from
       // a large dotSize or from a strong swell.
       const halfEdge = dotSizeUniform
-        .mul(dprUniform)
+        .mul(pixelRatio)
         .div(cellPx)
         .mul(0.5)
         .mul(nearSwellCenter.mul(swellUniform).add(1))
@@ -364,7 +339,7 @@ export function LedWallShader({
       swellCenterUniform,
       swellRadiusUniform,
       aspectUniform,
-      dprUniform,
+      pixelRatio,
     ],
   );
 

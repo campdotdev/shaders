@@ -9,9 +9,7 @@
 // turning the smooth edge into a ragged scatter of grain, which is what
 // makes a ragged edge out of two components that share no code. The
 // wrapper (./dissolve.tsx) supplies the props.
-import { useEffect, useMemo } from 'react';
-
-import { floor, mix, saturate, screenSize, smoothstep, uniform, uv, vec3, vec4 } from 'three/tsl';
+import { floor, mix, saturate, screenSize, smoothstep, uv, vec3, vec4 } from 'three/tsl';
 
 import { fractalNoise, stableHash, stableHashUint } from '../../engine.js';
 import {
@@ -21,7 +19,6 @@ import {
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 
@@ -83,33 +80,12 @@ export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
   // CSS pixels -> device pixels
   // ---------------------------------------------
   // pixelSize is in CSS pixels so the grain matches on 1x and 3x displays,
-  // but screenSize below counts device pixels. The renderer's pixel ratio
-  // converts between them; useResize re-fires on monitor moves and browser
-  // zoom, when that ratio changes. Created once and never replaced, so the
-  // pass can depend on it without re-registering.
-  const shaderContext = useShaderContext();
-  const resize = useResize();
-  const dprUniform = useMemo(
-    () => uniform(resize.get()[2] || 1),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const apply = () => {
-      const rendererRatio = shaderContext?.renderer.three.getPixelRatio();
-
-      dprUniform.value =
-        rendererRatio !== undefined && rendererRatio > 0 ? rendererRatio : resize.get()[2] || 1;
-      // A bare uniform write repaints nothing on a static scene, so ask for
-      // a frame; requestRender returns at once unless the scene is idle.
-      shaderContext?.scheduler.requestRender();
-    };
-
-    apply();
-
-    return resize.on('change', apply);
-  }, [resize, dprUniform, shaderContext]);
+  // but screenSize below counts device pixels. The scene's pixelRatio
+  // uniform holds the renderer's ratio and follows monitor moves and browser
+  // zoom. The scene never replaces it, so the pass can depend on it without
+  // re-registering. Outside a scene no pass registers, so the 1 fallback
+  // never draws.
+  const pixelRatio = useShaderContext()?.canvasSize.pixelRatio ?? 1;
 
   // ---------------------------------------------
   // Track the canvas aspect ratio
@@ -135,7 +111,7 @@ export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
       // locally uniform alpha the block therefore arrives as one piece, but
       // over a soft edge the block's reveal ramps with the alpha across it,
       // so the ragged edge is softer than pure blocks.
-      const blockPx = pixelSizeUniform.mul(dprUniform).max(1);
+      const blockPx = pixelSizeUniform.mul(pixelRatio).max(1);
       const pixel = uv().mul(screenSize);
       const blockIndex = floor(pixel.div(blockPx));
       const blockCenterPx = blockIndex.add(0.5).mul(blockPx);
@@ -196,7 +172,7 @@ export function DissolveShader({ progress, pixelSize }: DissolveShaderProps) {
 
       return vec4(restoredRgb.mul(reveal), reveal);
     },
-    [progressUniform, pixelSizeUniform, aspectUniform, dprUniform],
+    [progressUniform, pixelSizeUniform, aspectUniform, pixelRatio],
   );
 
   return null;

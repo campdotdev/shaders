@@ -5,16 +5,13 @@
 // through an ordered threshold map (the engine's ditherThreshold — Bayer and
 // friends). The wrapper (./dither.tsx) supplies the props; quantize() does
 // the level math.
-import { useEffect, useMemo } from 'react';
-
-import { floor, mix, screenCoordinate, screenSize, step, uniform, vec3, vec4 } from 'three/tsl';
+import { floor, mix, screenCoordinate, screenSize, step, vec3, vec4 } from 'three/tsl';
 
 import { type DitherPattern, ditherThreshold, quantize } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
-import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 
 export type { DitherPattern } from '../../engine.js';
@@ -73,34 +70,10 @@ export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: 
   // ---------------------------------------------
   // pixelSize is specified in CSS pixels so the look matches across 1x and
   // 3x displays, but screenCoordinate below counts device pixels. The
-  // renderer's pixel ratio (which respects maxDPR clamping) converts between
-  // them; useResize re-fires on monitor moves and browser zoom, when that
-  // ratio changes.
-  const shaderContext = useShaderContext();
-  const resize = useResize();
-  // Created once and never replaced (vignette's aspect-uniform pattern): the
-  // effect below writes into it, and the pass depends on the stable wrapper.
-  const dprUniform = useMemo(
-    () => uniform(resize.get()[2] || 1),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  useEffect(() => {
-    const apply = () => {
-      const rendererRatio = shaderContext?.renderer.three.getPixelRatio();
-
-      dprUniform.value =
-        rendererRatio !== undefined && rendererRatio > 0 ? rendererRatio : resize.get()[2] || 1;
-      // A bare uniform write repaints nothing on a static scene, so ask for
-      // a frame; requestRender returns at once unless the scene is idle.
-      shaderContext?.scheduler.requestRender();
-    };
-
-    apply();
-
-    return resize.on('change', apply);
-  }, [resize, dprUniform, shaderContext]);
+  // scene's pixelRatio uniform holds the renderer's ratio (which respects
+  // maxDPR clamping) and follows monitor moves and browser zoom. Outside a
+  // scene no pass registers, so the 1 fallback never draws.
+  const pixelRatio = useShaderContext()?.canvasSize.pixelRatio ?? 1;
 
   // ---------------------------------------------
   // True pixelation: snap the scene sample to the cell grid
@@ -114,13 +87,13 @@ export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: 
   // aligned with the threshold cells in the color pass.
   useBasePassUv(
     (coordinate) => {
-      const devicePixel = pixelSizeUniform.mul(dprUniform).max(1);
+      const devicePixel = pixelSizeUniform.mul(pixelRatio).max(1);
       const pixel = coordinate.mul(screenSize);
       const snapped = floor(pixel.div(devicePixel)).add(0.5).mul(devicePixel);
 
       return snapped.div(screenSize);
     },
-    [pixelSizeUniform, dprUniform],
+    [pixelSizeUniform, pixelRatio],
   );
 
   // ---------------------------------------------
@@ -134,7 +107,7 @@ export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: 
       // pixels from the top-left; dividing by the cell edge puts every pixel
       // of a cell at the same integer part. max(1) guards a zero-sized cell
       // (division by zero) if pixelSize animates through 0.
-      const devicePixel = pixelSizeUniform.mul(dprUniform).max(1);
+      const devicePixel = pixelSizeUniform.mul(pixelRatio).max(1);
       const cellCoord = screenCoordinate.xy.div(devicePixel);
 
       // The cell's map value in [0, 1): where between two quantization
@@ -176,7 +149,7 @@ export function DitherShader({ pixelSize, levels, spread, threshold, pattern }: 
       // transparent frames).
       return vec4(outputRgb, input.a);
     },
-    [pixelSizeUniform, levelsUniform, spreadUniform, thresholdUniform, dprUniform, pattern],
+    [pixelSizeUniform, levelsUniform, spreadUniform, thresholdUniform, pixelRatio, pattern],
   );
 
   return null;

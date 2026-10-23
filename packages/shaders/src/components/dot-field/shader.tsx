@@ -178,7 +178,7 @@ interface DotFieldMaterialInputs {
    */
   atlasNode: ShaderNodeObject<TextureNode>;
   spacingUniform: TSLNode;
-  dprUniform: TSLNode;
+  pixelRatio: TSLNode;
   dotSizeUniform: TSLNode;
   phaseUniform: TSLNode;
   amplitudeUniform: TSLNode;
@@ -195,7 +195,7 @@ function buildDotFieldMaterial({
   plan,
   atlasNode,
   spacingUniform,
-  dprUniform,
+  pixelRatio,
   dotSizeUniform,
   phaseUniform,
   amplitudeUniform,
@@ -279,7 +279,7 @@ function buildDotFieldMaterial({
   // The band converted into cell units, the sdf's units: a cell is
   // `spacing` CSS pixels, or `spacing` times the pixel ratio device pixels,
   // so dividing the band by that is its width as a fraction of a cell.
-  const cellDevicePixels = zeroScalar.add(spacingUniform).mul(dprUniform);
+  const cellDevicePixels = zeroScalar.add(spacingUniform).mul(pixelRatio);
   const antialiasWidth = zeroScalar.add(RIM_SOFTNESS_PX).div(cellDevicePixels);
 
   // Coverage of one built-in mark at this pixel. Signed distance to the
@@ -349,7 +349,7 @@ function buildDotFieldMaterial({
   // it reads the mark's center texel, much as a built-in mark at size 0
   // still shades its center pixel through the anti-aliasing band.
   const inner = MARK_TILE_SIZE - MARK_TILE_PADDING * 2;
-  const boxDevicePixels = zeroScalar.add(dotSizeUniform).mul(dprUniform).max(1e-6);
+  const boxDevicePixels = zeroScalar.add(dotSizeUniform).mul(pixelRatio).max(1e-6);
   const atlasLevel = log2(float(inner).div(boxDevicePixels)).clamp(0, MARK_TILE_MAX_MIP_LEVEL);
   const customMask = (tile: MarkTile | null): TSLNode => {
     if (tile === null) return float(0);
@@ -626,27 +626,12 @@ export function DotFieldShader({
   const resVec = useMemo(() => new Vector2(1920, 1080), []);
   const resUniform = useMemo(() => uniform(resVec), [resVec]);
 
-  // The device pixels per CSS pixel, so the anti-aliasing band can be sized
-  // in device pixels. The renderer's own ratio (which respects any maxDPR
-  // clamp) is the truth once it exists, and the resize signal's reading
-  // stands in until then. Created once and written into below, so the
-  // material effect can depend on the stable wrapper.
-  const dprUniform = useMemo(
-    () => uniform(resize.get()[2] || 1),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
   // Each write is followed by a scheduler poke: a bare write into the
-  // Vector2 or the ratio repaints nothing on a static scene, the trap
-  // useAspectUniform exists for. The zero guard skips a collapsed canvas.
+  // Vector2 repaints nothing on a static scene, the trap useAspectUniform
+  // exists for. The zero guard skips a collapsed canvas.
   useEffect(() => {
     const scheduler = shaderContext?.scheduler;
-    const write = ([width, height, dpr]: ResizeValue) => {
-      const rendererRatio = shaderContext?.renderer.three.getPixelRatio();
-
-      dprUniform.value =
-        rendererRatio !== undefined && rendererRatio > 0 ? rendererRatio : dpr || 1;
+    const write = ([width, height]: ResizeValue) => {
       if (width > 0 && height > 0) resVec.set(width, height);
       scheduler?.requestRender();
     };
@@ -654,7 +639,7 @@ export function DotFieldShader({
     write(resize.get());
 
     return resize.on('change', write);
-  }, [shaderContext, resize, resVec, dprUniform]);
+  }, [shaderContext, resize, resVec]);
 
   // ---------------------------------------------
   // Build the material and mount the mesh
@@ -672,7 +657,10 @@ export function DotFieldShader({
       plan,
       atlasNode,
       spacingUniform,
-      dprUniform,
+      // The device pixels per CSS pixel, so the anti-aliasing band can be
+      // sized in device pixels: the scene's one uniform, which follows the
+      // renderer's ratio after any maxDPR clamp.
+      pixelRatio: shaderContext.canvasSize.pixelRatio,
       dotSizeUniform,
       phaseUniform,
       amplitudeUniform,
@@ -714,7 +702,6 @@ export function DotFieldShader({
     atlasNode,
     parsedColor,
     spacingUniform,
-    dprUniform,
     dotSizeUniform,
     phaseUniform,
     amplitudeUniform,
