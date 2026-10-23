@@ -16,7 +16,7 @@ import {
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
-import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 
 export interface RadialWipeShaderProps {
@@ -78,7 +78,7 @@ export function RadialWipeShader({ progress, center, feather }: RadialWipeShader
   // ---------------------------------------------
   // A post-process pass: the callback receives each already-rendered pixel
   // (`input`, rgba) and returns a replacement.
-  usePostProcessPass(
+  useColorTransform(
     (input) => {
       // Aspect-corrected distance from center. The far corner then measures
       // 1 wherever the center sits: the farthest corner from a point in the

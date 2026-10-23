@@ -18,6 +18,10 @@ _Avoid_: Overlay, post-process pass, post-process layer, filter
 An Effect's change to where the image beneath it is sampled, such as Dither's pixel snap or CursorRipple's refraction. A UV warp bends only what Sources drew.
 _Avoid_: Warp on its own, base UV transform
 
+**Color transform**:
+An Effect's change to the color of each pixel in the image beneath it, such as Grain's noise or Vignette's darkening.
+_Avoid_: Overlay, post-process step
+
 **Input**:
 A value that changes over time and is not drawn, such as the cursor, scroll, or canvas size. An Input is fed to a component as an animation signal.
 _Avoid_: Cursor hook, entry point, scene-level field

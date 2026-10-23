@@ -4,32 +4,32 @@ import type { Camera, Scene } from 'three';
 import type { uniform } from 'three/tsl';
 
 import type {
+  ColorTransform,
   CursorInput,
   FrameScheduler,
   GpuRenderer,
-  PostProcessTransform,
   PrePass,
   TimeGpu,
-  UvTransform,
+  UvWarp,
 } from '../../engine.js';
 import type { ResizeSignal } from '../../inputs/canvas-size/canvas-size.js';
 
 // The contract between <ShaderScene> and everything rendered inside it:
 // the scene fills this in once its renderer is up, and every child hook
-// (useShaderContext, usePostProcessPass, useResize, ...) reads from it.
+// (useShaderContext, useColorTransform, useResize, ...) reads from it.
 // Null means "not inside a mounted scene" — hooks stub themselves out.
 
 // The two transform shapes are defined with the output stage in the runtime
 // and re-exported here, so hooks keep importing them from the context.
-export type { PostProcessTransform, UvTransform };
+export type { ColorTransform, UvWarp };
 
 export interface ShaderContextValue {
   renderer: GpuRenderer;
   scene: Scene;
   camera: Camera;
   scheduler: FrameScheduler;
-  registerOverlay: (transform: PostProcessTransform) => () => void;
-  registerBaseUvTransform: (transform: UvTransform) => () => void;
+  registerColorTransform: (transform: ColorTransform) => () => void;
+  registerUvWarp: (transform: UvWarp) => () => void;
   /**
    * Adds a draw that runs before the scene's meshes on every frame the scene
    * draws, including the redraw after a resize, such as Aurora's field pass.

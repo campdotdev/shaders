@@ -17,7 +17,7 @@ import {
 import {
   ShaderContext,
   type ShaderContextValue,
-  type UvTransform,
+  type UvWarp,
 } from '../../react/context/shader-context.js';
 import { CursorSmudge } from './cursor-smudge.js';
 
@@ -74,7 +74,7 @@ function makeScene({
   } as unknown as WebGPURenderer;
   const scheduler = new FrameScheduler();
   const prePasses = new Set<PrePass>();
-  const transforms = new Set<UvTransform>();
+  const transforms = new Set<UvWarp>();
   const input = new CursorInput({ element: canvas });
   const sizeListeners = new Set<(value: readonly [number, number, number]) => void>();
 
@@ -93,7 +93,7 @@ function makeScene({
     input.tick(delta);
     if (input.isPushing()) scheduler.requestRender();
   });
-  const registerTransform = vi.fn((transform: UvTransform) => {
+  const registerTransform = vi.fn((transform: UvWarp) => {
     transforms.add(transform);
 
     return () => {
@@ -104,7 +104,7 @@ function makeScene({
     renderer: { three: renderer },
     scheduler,
     getCursorInput: () => input,
-    registerBaseUvTransform: registerTransform,
+    registerUvWarp: registerTransform,
     registerPrePass: (pass: PrePass) => {
       prePasses.add(pass);
 

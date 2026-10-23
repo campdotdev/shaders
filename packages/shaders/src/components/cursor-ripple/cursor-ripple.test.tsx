@@ -11,10 +11,10 @@ import {
   type StrokePoint,
 } from '../../engine.js';
 import {
-  type PostProcessTransform,
+  type ColorTransform,
   ShaderContext,
   type ShaderContextValue,
-  type UvTransform,
+  type UvWarp,
 } from '../../react/context/shader-context.js';
 import type { SchedulerClient } from '../../runtime/frame-scheduler/frame-scheduler.js';
 import { CursorRipple } from './cursor-ripple.js';
@@ -78,8 +78,8 @@ function makeScene(
   }: { scrollPush?: boolean; strokeAt?: StrokePoint | null } = {},
 ) {
   const clients: SchedulerClient[] = [];
-  const uvTransforms: UvTransform[] = [];
-  const overlays: PostProcessTransform[] = [];
+  const uvTransforms: UvWarp[] = [];
+  const overlays: ColorTransform[] = [];
   const unregisters = { uv: 0, overlay: 0 };
   const scheduler = {
     idle: true,
@@ -98,14 +98,14 @@ function makeScene(
     scene: {},
     camera: {},
     scheduler,
-    registerOverlay: (transform: PostProcessTransform) => {
+    registerColorTransform: (transform: ColorTransform) => {
       overlays.push(transform);
 
       return () => {
         unregisters.overlay += 1;
       };
     },
-    registerBaseUvTransform: (transform: UvTransform) => {
+    registerUvWarp: (transform: UvWarp) => {
       uvTransforms.push(transform);
 
       return () => {

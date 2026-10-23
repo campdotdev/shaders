@@ -104,9 +104,9 @@ export { createOutputStage } from './runtime/output-stage/output-stage.js';
 export type { TimeGpu } from './runtime/gpu-timer/gpu-timer.js';
 export type {
   OutputStage,
-  PostProcessTransform,
+  ColorTransform,
   PrePass,
-  UvTransform,
+  UvWarp,
 } from './runtime/output-stage/output-stage.js';
 
 export { createWaveField, dampingForLifetime } from './runtime/wave-field/wave-field.js';

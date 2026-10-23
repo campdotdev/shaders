@@ -22,16 +22,16 @@ import { NodeMaterial, QuadMesh } from 'three/webgpu';
 import { dither } from '../../primitives/dither/dither.js';
 import { createGpuTimer, type TimeGpu } from '../gpu-timer/gpu-timer.js';
 
-/** A post-process step: takes the composed pixel (rgba), returns its replacement. */
-export type PostProcessTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
+/** A color transform: takes the composed pixel (rgba), returns its replacement. */
+export type ColorTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
 /**
- * A base-pass UV warp: takes the coordinate the scene texture is about to be
+ * A UV warp: takes the coordinate the scene texture is about to be
  * sampled at (0..1 across the canvas) and returns a replacement. Lets an
- * overlay resample the rendered scene, such as snapping to a grid for
- * pixelation, which a color-only PostProcessTransform cannot express.
+ * Effect resample the rendered scene, such as snapping to a grid for
+ * pixelation, which a color-only ColorTransform cannot express.
  */
-export type UvTransform = (uv: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
+export type UvWarp = (uv: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
 /**
  * A draw into a texture that the scene's meshes read, such as Aurora's field.
@@ -43,18 +43,18 @@ export type PrePass = () => void;
 // Function-typed properties rather than methods, because ShaderScene hands
 // the register functions to its context detached from this object.
 export interface OutputStage {
-  /** Add a post-process step after the ones already registered. Returns its remover. */
-  registerOverlay: (transform: PostProcessTransform) => () => void;
-  /** Add a base-pass UV warp after the ones already registered. Returns its remover. */
-  registerBaseUvTransform: (transform: UvTransform) => () => void;
+  /** Add a color transform after the ones already registered. Returns its remover. */
+  registerColorTransform: (transform: ColorTransform) => () => void;
+  /** Add a UV warp after the ones already registered. Returns its remover. */
+  registerUvWarp: (transform: UvWarp) => () => void;
   /**
    * Add a draw that runs before the scene pass, after the ones already
    * registered, on every frame and on the redraw after a resize. Returns its
    * remover.
    */
   registerPrePass: (prePass: PrePass) => () => void;
-  /** True while at least one overlay is registered, which counts as something to draw. */
-  hasOverlays: () => boolean;
+  /** True while at least one color transform is registered, which counts as something to draw. */
+  hasColorTransforms: () => boolean;
   /** Turn on GPU timing for every pass render() draws: the pre-passes, the scene pass, and the output quad. */
   timeGpu: TimeGpu;
   /** Draw the composed scene to the canvas. */
@@ -82,8 +82,8 @@ export function createOutputStage(
   // insertion order, so <Grain> after <Vignette> grains the vignetted image.
   // UV transforms warp where the base pass texture is sampled (<Dither>'s
   // pixel snap, say) and compose in mount order too.
-  const overlays = new Map<symbol, PostProcessTransform>();
-  const uvTransforms = new Map<symbol, UvTransform>();
+  const overlays = new Map<symbol, ColorTransform>();
+  const uvTransforms = new Map<symbol, UvWarp>();
   // Pre-passes draw before the chain, in mount order too. They change no
   // node in the output graph, so registering one rebuilds nothing.
   const prePasses = new Map<symbol, PrePass>();
@@ -144,7 +144,7 @@ export function createOutputStage(
   rebuildOutputNode();
 
   return {
-    registerOverlay(transform) {
+    registerColorTransform(transform) {
       const key = Symbol('overlay');
 
       overlays.set(key, transform);
@@ -156,7 +156,7 @@ export function createOutputStage(
       };
     },
 
-    registerBaseUvTransform(transform) {
+    registerUvWarp(transform) {
       const key = Symbol('uv-transform');
 
       uvTransforms.set(key, transform);
@@ -178,7 +178,7 @@ export function createOutputStage(
       };
     },
 
-    hasOverlays: () => overlays.size > 0,
+    hasColorTransforms: () => overlays.size > 0,
 
     timeGpu: gpuTimer.start,
 

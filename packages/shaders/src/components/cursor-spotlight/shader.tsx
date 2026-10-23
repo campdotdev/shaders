@@ -12,7 +12,7 @@ import type { AnimatableProp } from '../../react/hooks/animatable-signal/animata
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
-import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useColorTransform } from '../../react/hooks/use-color-transform/use-color-transform.js';
 
 // ----------------------------------------------------------------------------
 // Constants
@@ -82,7 +82,7 @@ export function CursorSpotlightShader({
 
   // A post-process pass: the callback receives each already-rendered pixel
   // (`input`, rgba) and returns a replacement.
-  usePostProcessPass(
+  useColorTransform(
     (input) => {
       // ---------------------------------------------
       // Distance from the light, in canvas heights

@@ -233,8 +233,8 @@ export function ShaderScene({
           scene,
           camera,
           scheduler,
-          registerOverlay: outputStage.registerOverlay,
-          registerBaseUvTransform: outputStage.registerBaseUvTransform,
+          registerColorTransform: outputStage.registerColorTransform,
+          registerUvWarp: outputStage.registerUvWarp,
           registerPrePass: outputStage.registerPrePass,
           getCursorInput: cursorInput.get,
           canvasSize: canvasWatch.canvasSize,
@@ -388,7 +388,7 @@ function createFrameRenderer(
   let firstPaintSignaled = false;
 
   const render = () => {
-    const hasContent = scene.children.length > 0 || outputStage.hasOverlays();
+    const hasContent = scene.children.length > 0 || outputStage.hasColorTransforms();
 
     // On the frame that first has something to draw, rewind BOTH time
     // sources BEFORE rendering so the frame the user first sees (once

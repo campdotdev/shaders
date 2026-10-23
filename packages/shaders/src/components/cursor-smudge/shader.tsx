@@ -16,9 +16,9 @@ import {
 } from '../../engine.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
-import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
+import { useUvWarp } from '../../react/hooks/use-uv-warp/use-uv-warp.js';
 import type { CursorSmudgeProps } from './cursor-smudge.js';
 import { createSmudgeField } from './field.js';
 
@@ -46,7 +46,7 @@ export function CursorSmudgeShader({
   // Pass coordinates start at the top-left; the field starts at the
   // bottom-left, so flip y both when reading and when applying the vector.
   // Subtract the pull: to move the image right, show the pixel to the left.
-  useBasePassUv(
+  useUvWarp(
     (coordinate) => {
       const pull = fieldTexture.uv(vec2(coordinate.x, oneMinus(coordinate.y))).rg;
 

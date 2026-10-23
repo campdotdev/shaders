@@ -7,23 +7,23 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   ShaderContext,
   type ShaderContextValue,
-  type UvTransform,
+  type UvWarp,
 } from '../../context/shader-context.js';
-import { useBasePassUv } from './use-base-pass-uv.js';
+import { useUvWarp } from './use-uv-warp.js';
 
 function makeCtx(): {
   ctx: ShaderContextValue;
-  registered: UvTransform[];
+  registered: UvWarp[];
 } {
-  const registered: UvTransform[] = [];
+  const registered: UvWarp[] = [];
   const ctx = {
     renderer: {} as ShaderContextValue['renderer'],
     scene: {} as ShaderContextValue['scene'],
     camera: {} as ShaderContextValue['camera'],
     scheduler: {} as ShaderContextValue['scheduler'],
-    registerOverlay: () => () => undefined,
-    registerBaseUvTransform: (transform: UvTransform) => {
-      registered.push(transform);
+    registerColorTransform: () => () => undefined,
+    registerUvWarp: (warp: UvWarp) => {
+      registered.push(warp);
 
       return () => undefined;
     },
@@ -45,14 +45,14 @@ function Wrapper({ ctx, children }: { ctx: ShaderContextValue | null; children: 
   return <ShaderContext.Provider value={ctx}>{children}</ShaderContext.Provider>;
 }
 
-const identityTransform: UvTransform = (uvInput) => uvInput;
+const identityWarp: UvWarp = (uvInput) => uvInput;
 
-describe('useBasePassUv', () => {
-  it('registers the transform on mount', () => {
+describe('useUvWarp', () => {
+  it('registers the UV warp on mount', () => {
     const { ctx, registered } = makeCtx();
 
     function Probe() {
-      useBasePassUv(identityTransform, []);
+      useUvWarp(identityWarp, []);
 
       return null;
     }
@@ -66,19 +66,19 @@ describe('useBasePassUv', () => {
     cleanup();
   });
 
-  it('calls the cleanup returned by registerBaseUvTransform on unmount', () => {
+  it('calls the cleanup returned by registerUvWarp on unmount', () => {
     const cleanupFn = vi.fn();
     const ctx = {
       renderer: {} as ShaderContextValue['renderer'],
       scene: {} as ShaderContextValue['scene'],
       camera: {} as ShaderContextValue['camera'],
       scheduler: {} as ShaderContextValue['scheduler'],
-      registerOverlay: () => () => undefined,
-      registerBaseUvTransform: () => cleanupFn,
+      registerColorTransform: () => () => undefined,
+      registerUvWarp: () => cleanupFn,
     } as unknown as ShaderContextValue;
 
     function Probe() {
-      useBasePassUv(identityTransform, []);
+      useUvWarp(identityWarp, []);
 
       return null;
     }
@@ -97,7 +97,7 @@ describe('useBasePassUv', () => {
     const { ctx, registered } = makeCtx();
 
     function Probe({ mode }: { mode: 'a' | 'b' }) {
-      useBasePassUv(identityTransform, [mode]);
+      useUvWarp(identityWarp, [mode]);
 
       return null;
     }
@@ -120,7 +120,7 @@ describe('useBasePassUv', () => {
 
   it('is a no-op when called outside a ShaderScene provider', () => {
     function Probe() {
-      useBasePassUv(identityTransform, []);
+      useUvWarp(identityWarp, []);
 
       return null;
     }

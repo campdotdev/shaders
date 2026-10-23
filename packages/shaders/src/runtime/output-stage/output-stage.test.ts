@@ -59,7 +59,7 @@ describe('createOutputStage', () => {
     expect(firstQuad?.material).not.toBe(secondQuad?.material);
   });
 
-  it('counts overlays and rebuilds the output when one registers or leaves', () => {
+  it('counts color transforms and rebuilds the output when one registers or leaves', () => {
     const renderer = makeRenderer();
     const stage = createOutputStage(renderer, new Scene(), new OrthographicCamera());
 
@@ -67,18 +67,18 @@ describe('createOutputStage', () => {
     const material = drawnQuad(renderer)?.material as { version: number };
     const versionBefore = material.version;
 
-    expect(stage.hasOverlays()).toBe(false);
+    expect(stage.hasColorTransforms()).toBe(false);
 
-    const remove = stage.registerOverlay((input) => input);
+    const remove = stage.registerColorTransform((input) => input);
 
-    expect(stage.hasOverlays()).toBe(true);
+    expect(stage.hasColorTransforms()).toBe(true);
     expect(material.version).toBeGreaterThan(versionBefore);
 
-    const versionWithOverlay = material.version;
+    const versionWithTransform = material.version;
 
     remove();
-    expect(stage.hasOverlays()).toBe(false);
-    expect(material.version).toBeGreaterThan(versionWithOverlay);
+    expect(stage.hasColorTransforms()).toBe(false);
+    expect(material.version).toBeGreaterThan(versionWithTransform);
   });
 
   // A pre-pass draws something the scene's meshes read, such as Aurora's

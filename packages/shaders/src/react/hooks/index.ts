@@ -16,9 +16,9 @@ export type { GamutPreference } from './use-display-gamut/use-display-gamut.js';
 
 export { useShaderContext } from './use-shader-context/use-shader-context.js';
 
-export { usePostProcessPass } from './use-overlay-pass/use-overlay-pass.js';
+export { useColorTransform } from './use-color-transform/use-color-transform.js';
 
-export { useBasePassUv } from './use-base-pass-uv/use-base-pass-uv.js';
+export { useUvWarp } from './use-uv-warp/use-uv-warp.js';
 
 export { useResize } from './use-resize/use-resize.js';
 export type { ResizeSignal, ResizeValue } from './use-resize/use-resize.js';
