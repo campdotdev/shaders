@@ -13,10 +13,12 @@ import styles from './text-button.module.css';
 const textButtonClassName = (className?: string) =>
   [styles.box, styles.button, className].filter(Boolean).join(' ');
 
+/** A `<button type="button">` drawn as the boxed text button. */
 export function TextButton({ className, ...props }: ComponentProps<'button'>) {
   return <button className={textButtonClassName(className)} type="button" {...props} />;
 }
 
+/** A Next `<Link>` drawn as the boxed text button. */
 export function TextButtonLink({ className, ...props }: ComponentProps<typeof Link>) {
   return <Link className={textButtonClassName(className)} {...props} />;
 }
