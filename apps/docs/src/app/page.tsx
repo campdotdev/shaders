@@ -5,14 +5,12 @@
  * other page renders. With no sidebar or section banner, it renders straight
  * into the root layout.
  */
-import Link from 'next/link';
-
 import { Favorites } from '@/components/favorites/favorites';
 import { Features } from '@/components/features/features';
 import { HomeFooter } from '@/components/home-footer/home-footer';
 import { HomeHero } from '@/components/home-hero/home-hero';
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
-import textButtonStyles from '@/components/text-button/text-button.module.css';
+import { TextButtonLink } from '@/components/text-button/text-button';
 import { getFavorites } from '@/content/homepage';
 
 import styles from './page.module.css';
@@ -30,13 +28,10 @@ export default async function Home() {
               A growing library for React, written in Three.js Shading Language and rendered with
               WebGPU.
             </p>
-            <Link
-              className={`${textButtonStyles.box} ${textButtonStyles.button} ${styles.getStarted}`}
-              href="/getting-started"
-            >
+            <TextButtonLink className={styles.getStarted} href="/getting-started">
               Get started
               <ChevronDownIcon className={styles.chevron} />
-            </Link>
+            </TextButtonLink>
           </div>
         </div>
       </section>

@@ -7,10 +7,8 @@
  * the nav tree — and both hand over the same DocsNeighbor shape, so this
  * file owns the look for every page.
  */
-import Link from 'next/link';
-
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
-import textButtonStyles from '@/components/text-button/text-button.module.css';
+import { TextButtonLink } from '@/components/text-button/text-button';
 import type { DocsNeighbor } from '@/content/types';
 
 import styles from './pagination.module.css';
@@ -37,18 +35,18 @@ export function Pagination({ prev, next, className }: PaginationProps) {
           single button on a section's first or last page would slide over
           to the side it does not belong on. */}
       {prev ? (
-        <Link className={join(textButtonStyles.box, textButtonStyles.button)} href={prev.url}>
+        <TextButtonLink href={prev.url}>
           <ChevronDownIcon className={styles.chevronPrevious} />
           {prev.label}
-        </Link>
+        </TextButtonLink>
       ) : (
         <span />
       )}
       {next ? (
-        <Link className={join(textButtonStyles.box, textButtonStyles.button)} href={next.url}>
+        <TextButtonLink href={next.url}>
           {next.label}
           <ChevronDownIcon className={styles.chevronNext} />
-        </Link>
+        </TextButtonLink>
       ) : (
         <span />
       )}

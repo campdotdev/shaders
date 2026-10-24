@@ -1,6 +1,7 @@
 /* The foot-of-page prev and next nav. The mock draws the buttons as the
    page header's Copy React button, so each is the site's boxed text button
-   (text-button.module.css), the one the control panel's Reset uses too. */
+   (TextButtonLink, from text-button/), the one the control panel's Reset
+   uses too. */
 
 /* Previous against the left edge, next against the right. */
 .pagination {

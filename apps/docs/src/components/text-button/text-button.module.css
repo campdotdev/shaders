@@ -2,8 +2,9 @@
    Copy React button: the control panel's Reset (controls/), the prev and
    next links at the foot of a page (pagination/), the homepage's Get
    started link (app/page.tsx), and, as a box only, the header's search
-   trigger (search/). Each component applies classes from
-   here beside its own. No property is set both here and in a local class
+   trigger (search/). TextButton and TextButtonLink (text-button.tsx) apply
+   .box and .button for the first three, and the search trigger applies .box
+   itself, each beside its own classes. No property is set both here and in a local class
    at the same specificity, so the result does not depend on which
    stylesheet the bundle emits first. The split Copy
    React box itself (page-actions/) is two buttons inside one border, so it
