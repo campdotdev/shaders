@@ -18,6 +18,10 @@ _Avoid_: Overlay, post-process pass, post-process layer, filter
 An Effect's change to where the image beneath it is sampled, such as Dither's pixel snap or CursorRipple's refraction. A UV warp bends only what Sources drew.
 _Avoid_: Warp on its own, base UV transform
 
+**Resample**:
+An Effect's rule for building each pixel from samples of what the Sources beneath it drew, such as FlutedGlass's color split. A UV warp is a resample that takes one sample.
+_Avoid_: Gather, sampler transform, tap stage
+
 **Input**:
 A value that changes over time and is not drawn, such as the cursor, scroll, or canvas size. An Input is fed to a component as an animation signal.
 _Avoid_: Cursor hook, entry point, scene-level field
@@ -73,6 +77,20 @@ _Avoid_: Preset shape, default shape
 **Custom mark**:
 A mark the caller supplies as inline SVG markup. Only its coverage is read, so it takes the field's color like any other mark.
 _Avoid_: Custom shape, user shape, icon
+
+### Fluted glass
+
+**Flute**:
+One ridge of FlutedGlass: a strip of glass with a fixed width in CSS pixels that shows a squeezed copy of the image beneath it. Flutes repeat side by side across the glass.
+_Avoid_: Reed, rib, bar, stripe, cell
+
+**Cross-section**:
+The shape of one flute seen from its end, on a scale from a pointed prism through a round lens to a flat top with steep walls.
+_Avoid_: Profile, distortion shape, preset
+
+**Groove**:
+The line where two neighboring flutes meet, where the glass is steepest.
+_Avoid_: Seam, edge, crease
 
 ### Docs site
 
