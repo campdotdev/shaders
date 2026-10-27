@@ -1,8 +1,8 @@
 // The surface of fluted glass: rows of identical flutes laid side by side,
 // each a strip of glass that bends what is under it. For a point, this works
 // out how steep the glass is there and how far it moves the image. Both come
-// from one call, so anything that reads the slope agrees with the bend on
-// where the glass curves. FlutedGlass (components/fluted-glass) bends the
+// from one call, so light read from the slope agrees with the bend on where
+// the glass curves. FlutedGlass (components/fluted-glass) bends the
 // scene with it, and Mode 2 users call it on their own texture coordinates.
 import type { ShaderNodeObject } from 'three/tsl';
 import {
@@ -83,6 +83,13 @@ export interface FluteSurfaceResult {
    * runs from 0 at the center to 1 at a groove.
    */
   slope: ShaderNodeObject<Node>;
+  /**
+   * How far the point sits from its flute's center, from 0 at the center to
+   * 1 at a groove, whatever the cross-section. Unlike the slope it skips the
+   * groove smoothing, so it reaches 1 at a groove from both sides with no
+   * dip. Shading meant to be darkest on the groove reads this.
+   */
+  fromCenter: ShaderNodeObject<Node>;
 }
 
 // ---------------------------------------------
@@ -147,6 +154,12 @@ export function fluteSurface(
   // strips.
   const flutePhase = dot(position, across).div(fluteWidth);
   const ramp = fract(flutePhase.add(0.5));
+
+  // The distance from the center, before any smoothing. ramp*2-1 runs from
+  // -1 at one groove to 1 at the other, and abs() folds it to run 0 to 1
+  // from the center out on both sides. Where the ramp jumps from 1 to 0 at a
+  // groove, this goes from 1 to 1, so it has no jump to smooth.
+  const fromCenter = abs(ramp.mul(2).sub(1));
 
   // ---------------------------------------------
   // Clean grooves: antialiasing from the screen-space rate of change
@@ -250,5 +263,5 @@ export function fluteSurface(
   // middle and crams the rest against the walls.
   const bend = slope.mul(refraction).mul(fluteWidth.mul(0.5));
 
-  return { bend, slope };
+  return { bend, slope, fromCenter };
 }

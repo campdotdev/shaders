@@ -4,7 +4,7 @@
 // defaults, then delegates to FlutedGlassShader (./shader.tsx). FlutedGlass
 // is an Effect: stack it after a Source inside a <ShaderScene> and it shows
 // that Source through a pane of fluted glass, each flute bending the image
-// beneath it into a squeezed copy.
+// beneath it into a squeezed copy and catching the light along one wall.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { FlutedGlassShader, type FlutedGlassTuning } from './shader.js';
@@ -52,6 +52,32 @@ export interface FlutedGlassProps {
    */
   crossSection?: AnimatableProp<number> | CrossSectionName;
   /**
+   * Where the light comes from, as a compass angle in degrees on screen: 0
+   * from the right, 90 from below, 180 from the left, and 270 from above.
+   * The light stays put on screen while `angle` turns the glass beneath it,
+   * and the flute wall that faces it catches the highlight. A light that
+   * runs along the flutes catches neither wall. Defaults to 225, the upper
+   * left. Accepts a static value or an animation signal.
+   */
+  lightAngle?: AnimatableProp<number>;
+  /**
+   * How bright the highlight along each lit wall is, from 0 to 1, where 1
+   * adds the full `highlightColor` at the brightest point. 0 turns it off.
+   * Defaults to 0.45. Accepts a static value or an animation signal.
+   */
+  highlight?: AnimatableProp<number>;
+  /**
+   * The highlight's color: hex, `oklch()`, or `oklab()`. Defaults to
+   * `'#ffffff'`.
+   */
+  highlightColor?: string;
+  /**
+   * How dark the glass gets at each groove, from 0 to 1, where 1 is black
+   * right on the groove. 0 turns it off. Defaults to 0.2. Accepts a static
+   * value or an animation signal.
+   */
+  shadow?: AnimatableProp<number>;
+  /**
    * TEMPORARY (build-phase tuning only): dev overrides for the feel
    * constants. Stripped at the defaults-tuning gate, so do not use.
    */
@@ -59,7 +85,8 @@ export interface FlutedGlassProps {
 }
 
 /**
- * Shows the image beneath it through repeating flutes of glass. Mount it
+ * Shows the image beneath it through repeating flutes of glass, lit from one
+ * side with a shadow at each groove. Mount it
  * inside a `<ShaderScene>` after the Sources it should bend. It bends only
  * what Sources drew, never the output of an Effect such as Grain, so mount
  * such Effects after it, where the order you write matches what you see.
@@ -71,6 +98,10 @@ export function FlutedGlass({
   angle = 90,
   refraction = 1,
   crossSection = 'round',
+  lightAngle = 225,
+  highlight = 0.45,
+  highlightColor = '#ffffff',
+  shadow = 0.2,
   tuning,
 }: FlutedGlassProps) {
   // The render-on-demand vote. Still glass draws nothing that changes over
@@ -85,7 +116,11 @@ export function FlutedGlass({
         typeof crossSection === 'string' ? CROSS_SECTION_DIAL[crossSection] : crossSection
       }
       fluteWidth={fluteWidth}
+      highlight={highlight}
+      highlightColor={highlightColor}
+      lightAngle={lightAngle}
       refraction={refraction}
+      shadow={shadow}
       tuning={tuning}
     />
   );
