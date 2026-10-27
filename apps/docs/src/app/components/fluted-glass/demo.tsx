@@ -52,6 +52,17 @@ function FlutedGlassControls() {
         <SliderInput label="Flute width" max={160} min={4} path="fluteWidth" step={1} />
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
         <SliderInput label="Refraction" max={3} min={0} path="refraction" step={0.01} />
+        <SliderInput label="Cross-section" max={1} min={0} path="crossSection" step={0.01} />
+      </Section>
+      <Section title="Tuning (dev)">
+        <SliderInput
+          label="Prism exponent"
+          max={0.5}
+          min={0.01}
+          path="tuning.prismExponent"
+          step={0.005}
+        />
+        <SliderInput label="Flat exponent" max={64} min={2} path="tuning.flatExponent" step={0.5} />
       </Section>
     </ControlPanel>
   );

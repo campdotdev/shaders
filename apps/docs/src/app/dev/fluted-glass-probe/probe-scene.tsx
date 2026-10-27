@@ -5,9 +5,9 @@
 // the glass does, but stripes show it plainly: each flute holds a squeezed
 // copy of the stripes under it, and the stripes jump sideways at every
 // groove. Inert glass would leave them straight and unbroken. Query params
-// override the glass's dials, such as ?refraction=0&angle=30, for checking
-// one by eye.
-import { FlutedGlass, LinearGradient, ShaderScene } from '@camp-dev/shaders';
+// override the glass's dials, such as ?refraction=0&angle=30 or
+// ?crossSection=prism, for checking one by eye.
+import { type CrossSectionName, FlutedGlass, LinearGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
@@ -29,6 +29,20 @@ function queryNumber(name: string): number | undefined {
   return raw === null ? undefined : Number(raw);
 }
 
+/** Narrows a query string value to one of the cross-section's names. */
+function isCrossSectionName(value: string): value is CrossSectionName {
+  return value === 'prism' || value === 'round' || value === 'flat';
+}
+
+/** The cross-section from the query string, as a name or a number. */
+function queryCrossSection(): CrossSectionName | number | undefined {
+  const raw = new URLSearchParams(window.location.search).get('crossSection');
+
+  if (raw === null) return undefined;
+
+  return isCrossSectionName(raw) ? raw : Number(raw);
+}
+
 export default function ProbeScene() {
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
@@ -36,6 +50,7 @@ export default function ProbeScene() {
         <LinearGradient angle={45} repeat={16} speed={0} stops={STRIPE_STOPS} />
         <FlutedGlass
           angle={queryNumber('angle')}
+          crossSection={queryCrossSection()}
           fluteWidth={queryNumber('fluteWidth')}
           refraction={queryNumber('refraction')}
         />

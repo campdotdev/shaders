@@ -18,8 +18,10 @@ export default function FlutedGlassScene({
       <MeshGradient />
       <FlutedGlass
         angle={params.angle}
+        crossSection={params.crossSection}
         fluteWidth={params.fluteWidth}
         refraction={params.refraction}
+        tuning={params.tuning}
       />
       {children}
     </ShaderScene>
