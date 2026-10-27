@@ -4,7 +4,12 @@ import { render } from '@testing-library/react';
 import type { WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import { FlutedGlass, type FlutedGlassProps } from '../../index.js';
+import {
+  type CrossSectionName,
+  FlutedGlass,
+  type FlutedGlassProps,
+  type FlutedGlassTuning,
+} from '../../index.js';
 import {
   type PostProcessTransform,
   ShaderContext,
@@ -88,14 +93,18 @@ function makeSignal(initial: number) {
 }
 
 describe('FlutedGlass', () => {
-  // The public shape: three optional dials, each a number or an animation
-  // signal. pnpm typecheck runs this file too, so a missing export or a
-  // narrowed prop fails there as well as here.
-  it('takes three animatable number props from the package root', () => {
+  // The public shape: four optional dials, each a number or an animation
+  // signal, where the cross-section also takes a name for a point on its
+  // dial, plus the temporary tuning rig. pnpm typecheck runs this file too,
+  // so a missing export or a narrowed prop fails there as well as here.
+  it('takes four animatable dials from the package root', () => {
+    expectTypeOf<CrossSectionName>().toEqualTypeOf<'prism' | 'round' | 'flat'>();
     expectTypeOf<FlutedGlassProps>().toEqualTypeOf<{
       fluteWidth?: AnimatableProp<number>;
       angle?: AnimatableProp<number>;
       refraction?: AnimatableProp<number>;
+      crossSection?: AnimatableProp<number> | CrossSectionName;
+      tuning?: FlutedGlassTuning;
     }>();
   });
 
@@ -144,10 +153,12 @@ describe('FlutedGlass', () => {
     const fluteWidth = makeSignal(40);
     const angle = makeSignal(90);
     const refraction = makeSignal(1);
+    const crossSection = makeSignal(0.5);
 
     render(
       <FlutedGlass
         angle={angle.signal}
+        crossSection={crossSection.signal}
         fluteWidth={fluteWidth.signal}
         refraction={refraction.signal}
       />,
@@ -161,9 +172,43 @@ describe('FlutedGlass', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(2);
     refraction.set(0);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(3);
+    crossSection.set(0.2);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(4);
 
     expect(scene.uvTransforms).toHaveLength(1);
     expect(scene.unregisters.uv).toBe(0);
+  });
+
+  // A name is a point on the cross-section dial, not a formula of its own,
+  // so switching names writes the same uniform a number would.
+  it('switches cross-section names without re-registering the UV warp', () => {
+    const scene = makeScene();
+    const { rerender } = render(<FlutedGlass crossSection="prism" />, {
+      wrapper: scene.Wrapper,
+    });
+
+    for (const name of ['round', 'flat', 'prism'] as const) {
+      scene.scheduler.requestRender.mockClear();
+      rerender(<FlutedGlass crossSection={name} />);
+      expect(scene.scheduler.requestRender).toHaveBeenCalled();
+    }
+
+    expect(scene.uvTransforms).toHaveLength(1);
+    expect(scene.unregisters.uv).toBe(0);
+  });
+
+  it('changes its tuning without re-registering the UV warp', () => {
+    const scene = makeScene();
+    const { rerender } = render(<FlutedGlass tuning={{ prismExponent: 0.1, flatExponent: 8 }} />, {
+      wrapper: scene.Wrapper,
+    });
+
+    scene.scheduler.requestRender.mockClear();
+    rerender(<FlutedGlass tuning={{ prismExponent: 0.05, flatExponent: 24 }} />);
+
+    expect(scene.uvTransforms).toHaveLength(1);
+    expect(scene.unregisters.uv).toBe(0);
+    expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
   // Still glass draws nothing that changes over time, so a scene of still

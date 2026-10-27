@@ -28,6 +28,27 @@ describe('fluteSurface', () => {
     expect(surface.slope).toBeDefined();
   });
 
+  it('accepts a cross-section at either end of the dial and between', () => {
+    for (const crossSection of [0, 0.25, 0.5, 1]) {
+      expect(fluteSurface(uv().mul(400), { crossSection }).slope).toBeDefined();
+    }
+  });
+
+  it('accepts a node cross-section and node exponent ends', () => {
+    const surface = fluteSurface(uv().mul(400), {
+      crossSection: uniform(0.5),
+      prismExponent: uniform(1 / 16),
+      flatExponent: uniform(16),
+    });
+
+    expect(surface.bend).toBeDefined();
+  });
+
+  it('accepts a cross-section outside 0 to 1 without throwing', () => {
+    expect(() => fluteSurface(uv(), { crossSection: -1 })).not.toThrow();
+    expect(() => fluteSurface(uv(), { crossSection: 2 })).not.toThrow();
+  });
+
   it('accepts a flute width of 0 without throwing', () => {
     expect(() => fluteSurface(uv(), { fluteWidth: 0 })).not.toThrow();
   });

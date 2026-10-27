@@ -7,7 +7,20 @@
 // beneath it into a squeezed copy.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
-import { FlutedGlassShader } from './shader.js';
+import { FlutedGlassShader, type FlutedGlassTuning } from './shader.js';
+
+export type { FlutedGlassTuning } from './shader.js';
+
+/** The names for three points on the `crossSection` dial. */
+export type CrossSectionName = 'prism' | 'round' | 'flat';
+
+// Where each name sits on the dial. A name is only a point on the dial, so
+// it rides the same uniform as a number and animates like one.
+const CROSS_SECTION_DIAL: Record<CrossSectionName, number> = {
+  prism: 0,
+  round: 0.5,
+  flat: 1,
+};
 
 export interface FlutedGlassProps {
   /**
@@ -30,6 +43,19 @@ export interface FlutedGlassProps {
    * Accepts a static value or an animation signal.
    */
   refraction?: AnimatableProp<number>;
+  /**
+   * The shape of each flute seen from its end, from 0 to 1. `'prism'` (0) is
+   * two flat faces meeting at a ridge, `'round'` (0.5) is a lens, and
+   * `'flat'` (1) is a flat top with steep walls. Numbers between give the
+   * shapes between, so a signal can morph one shape into another. Defaults
+   * to `'round'`. Accepts a static value or an animation signal.
+   */
+  crossSection?: AnimatableProp<number> | CrossSectionName;
+  /**
+   * TEMPORARY (build-phase tuning only): dev overrides for the feel
+   * constants. Stripped at the defaults-tuning gate, so do not use.
+   */
+  tuning?: FlutedGlassTuning;
 }
 
 /**
@@ -40,11 +66,27 @@ export interface FlutedGlassProps {
  * Mode 1 only, because it needs the scene's output stage; Mode 2 users get
  * the flute math as the `fluteSurface` primitive.
  */
-export function FlutedGlass({ fluteWidth = 40, angle = 90, refraction = 1 }: FlutedGlassProps) {
+export function FlutedGlass({
+  fluteWidth = 40,
+  angle = 90,
+  refraction = 1,
+  crossSection = 'round',
+  tuning,
+}: FlutedGlassProps) {
   // The render-on-demand vote. Still glass draws nothing that changes over
   // time, and every dial repaints through its uniform when it moves, so the
   // vote is static and a scene of still Sources under the glass parks.
   useStaticSceneHint(true);
 
-  return <FlutedGlassShader angle={angle} fluteWidth={fluteWidth} refraction={refraction} />;
+  return (
+    <FlutedGlassShader
+      angle={angle}
+      crossSection={
+        typeof crossSection === 'string' ? CROSS_SECTION_DIAL[crossSection] : crossSection
+      }
+      fluteWidth={fluteWidth}
+      refraction={refraction}
+      tuning={tuning}
+    />
+  );
 }

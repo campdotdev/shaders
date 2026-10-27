@@ -5,7 +5,7 @@
 // where the glass curves. FlutedGlass (components/fluted-glass) bends the
 // scene with it, and Mode 2 users call it on their own texture coordinates.
 import type { ShaderNodeObject } from 'three/tsl';
-import { cos, dot, float, fract, max, sin, vec2 } from 'three/tsl';
+import { abs, clamp, cos, dot, float, fract, max, pow, select, sign, sin, vec2 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
@@ -30,6 +30,23 @@ export interface FluteSurfaceOptions {
    * Default 1.
    */
   refraction?: TSLNode | number;
+  /**
+   * The shape of each flute seen from its end, from 0 to 1. 0 is a pointed
+   * prism, two flat faces meeting at a ridge. 0.5 is a round lens. 1 is a
+   * flat top with steep walls. Values between give the shapes between, and
+   * values outside 0 to 1 clamp. Default 0.5.
+   */
+  crossSection?: TSLNode | number;
+  /**
+   * TEMPORARY (build-phase tuning only): the slope's exponent at a
+   * cross-section of 0. Baked into PRISM_EXPONENT at the defaults gate.
+   */
+  prismExponent?: TSLNode | number;
+  /**
+   * TEMPORARY (build-phase tuning only): the slope's exponent at a
+   * cross-section of 1. Baked into FLAT_EXPONENT at the defaults gate.
+   */
+  flatExponent?: TSLNode | number;
 }
 
 export interface FluteSurfaceResult {
@@ -46,6 +63,16 @@ export interface FluteSurfaceResult {
   slope: ShaderNodeObject<Node>;
 }
 
+// ---------------------------------------------
+// Feel constants (tuned by eye at the build's visual gates)
+// ---------------------------------------------
+// The slope's exponent at each end of the cross-section dial. A cross-section
+// of 0.5 always has an exponent of 1. Lower PRISM_EXPONENT sharpens the
+// prism's faces toward perfectly flat, and higher FLAT_EXPONENT flattens the
+// top and steepens the walls.
+export const PRISM_EXPONENT = 1 / 16;
+export const FLAT_EXPONENT = 16;
+
 /**
  * The bend and slope of fluted glass at `position`. A flute's center sits on
  * the position's origin, so center the position where the middle flute
@@ -61,6 +88,9 @@ export function fluteSurface(
   const fluteWidth = max(float(options.fluteWidth ?? 40), 1e-4);
   const angle = float(options.angle ?? 90);
   const refraction = float(options.refraction ?? 1);
+  const crossSection = clamp(float(options.crossSection ?? 0.5), 0, 1);
+  const prismExponent = float(options.prismExponent ?? PRISM_EXPONENT);
+  const flatExponent = float(options.flatExponent ?? FLAT_EXPONENT);
 
   // ---------------------------------------------
   // The direction across the flutes
@@ -91,26 +121,61 @@ export function fluteSurface(
   const fluteOffset = fract(flutePhase.add(0.5)).mul(2).sub(1);
 
   // ---------------------------------------------
-  // The slope: how steep the glass is
+  // The cross-section: picking an exponent from the dial
   // ---------------------------------------------
-  // A round flute's slope grows in step with the distance from its center:
-  // flat on top, steepest at the grooves. Strictly, a slope that grows in
-  // step draws a parabola, a shallow stand-in for a circular lens, whose
-  // slope would shoot up near the grooves. Pointing it along `across` turns
-  // that amount into a vector. The sign comes from the offset, so on either
-  // side of the center the slope points toward the nearer groove.
-  const slope = across.mul(fluteOffset);
+  // The dial picks the exponent that shapes the slope below, on a doubling
+  // scale. dialFromRound runs from -1 at a prism, through 0 at round, to 1 at
+  // flat. The prism half raises PRISM_EXPONENT to its distance from round,
+  // and the flat half raises FLAT_EXPONENT the same way. At round both give
+  // 1, since anything to the power 0 is 1, so 0.5 is exactly round whatever
+  // the ends are. Each equal step of the dial multiplies the exponent by the
+  // same factor, so a sweep morphs the shape evenly. With ends of 1/16 and
+  // 16, the exponent doubles every eighth of the dial.
+  const dialFromRound = crossSection.mul(2).sub(1);
+  const exponentEnd = select(dialFromRound.lessThan(0), prismExponent, flatExponent);
+  const exponent = pow(exponentEnd, abs(dialFromRound));
+
+  // ---------------------------------------------
+  // The slope: shaping a curve with an exponent
+  // ---------------------------------------------
+  // The slope's size is the distance from the flute's center, |offset|,
+  // raised to the exponent. Because that distance runs from 0 to 1, a power
+  // bends the curve between without moving its ends: the center stays flat
+  // and the groove stays steepest.
+  //
+  // - An exponent of 1 leaves a straight line, so the slope grows in step
+  //   with the distance: a round lens. Strictly that draws a parabola, a
+  //   shallow stand-in for a circular arc, whose slope would shoot up near
+  //   the grooves.
+  // - Below 1 the power lifts small values toward 1. x^(1/16) is already
+  //   0.65 at x = 0.001 and 0.96 at 0.5, so the slope jumps to nearly full
+  //   just off the center and stays there: two flat faces meeting at a
+  //   ridge, a prism.
+  // - Above 1 the power presses small values toward 0. x^16 is 0.00002 at
+  //   0.5 and reaches 0.5 only at 0.96, so the glass stays flat across the
+  //   top and turns steep right at each groove.
+  //
+  // pow() needs a base of 0 or more, so it takes the distance, and sign()
+  // puts the offset's sign back afterward, -1 left of the center and 1
+  // right of it. Pointing the result along `across` turns it into a vector,
+  // so on either side of the center the slope points toward the nearer
+  // groove.
+  const slopeAmount = sign(fluteOffset).mul(pow(abs(fluteOffset), exponent));
+  const slope = across.mul(slopeAmount);
 
   // ---------------------------------------------
   // The bend: refraction as a sample offset
   // ---------------------------------------------
   // Glass doesn't move pixels. It changes which point of the image behind it
   // reaches the eye, so a shader bends an image by sampling it somewhere
-  // else. The bend is the slope times the dial, in half flute widths. At a
-  // refraction of 1, a point at offset x from the center samples at 2x, so
-  // the flute's own width shows twice that width of image: a squeezed copy
-  // of what lies right under it. The bend points away from the center on
-  // both sides, which is what squeezes rather than stretches.
+  // else. The bend is the slope times the dial, in half flute widths. On a
+  // round flute at a refraction of 1, a point at offset x from the center
+  // samples at 2x, so the flute's own width shows twice that width of image:
+  // a squeezed copy of what lies right under it. The bend points away from
+  // the center on both sides, which is what squeezes rather than stretches.
+  // Other cross-sections spread the same span unevenly. A prism shifts each
+  // face's half of the copy outward whole, and a flat top barely moves its
+  // middle and crams the rest against the walls.
   const bend = slope.mul(refraction).mul(fluteWidth.mul(0.5));
 
   return { bend, slope };

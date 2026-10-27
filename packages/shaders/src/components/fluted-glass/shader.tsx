@@ -13,6 +13,7 @@ import { abs, fract, screenSize, uniform, vec2 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import { fluteSurface } from '../../engine.js';
+import { FLAT_EXPONENT, PRISM_EXPONENT } from '../../primitives/flute-surface/flute-surface.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
@@ -37,6 +38,30 @@ export interface FlutedGlassShaderProps {
    * static value or an animation signal.
    */
   refraction: AnimatableProp<number>;
+  /**
+   * The shape of each flute seen from its end, from 0 to 1: 0 is a prism,
+   * 0.5 is round, and 1 is a flat top with steep walls. The wrapper turns a
+   * name into its point on this dial. Accepts a static value or an animation
+   * signal.
+   */
+  crossSection: AnimatableProp<number>;
+  /**
+   * TEMPORARY (build-phase tuning only): dev overrides for the feel
+   * constants. Stripped at the defaults-tuning gate.
+   */
+  tuning: FlutedGlassTuning | undefined;
+}
+
+/**
+ * TEMPORARY (build-phase tuning only): dev overrides for the feel constants,
+ * wired to the docs panel's "Tuning (dev)" section. Stripped at the
+ * defaults-tuning gate, when the landed values are baked into constants.
+ */
+export interface FlutedGlassTuning {
+  /** The slope's exponent at a cross-section of 0, the prism. */
+  prismExponent?: number;
+  /** The slope's exponent at a cross-section of 1, the flat top. */
+  flatExponent?: number;
 }
 
 // ---------------------------------------------
@@ -57,12 +82,41 @@ function mirrorOntoCanvas(coordinate: ShaderNodeObject<Node>): ShaderNodeObject<
   return abs(fract(coordinate.div(2)).mul(2).sub(1)).oneMinus();
 }
 
-export function FlutedGlassShader({ fluteWidth, angle, refraction }: FlutedGlassShaderProps) {
+export function FlutedGlassShader({
+  fluteWidth,
+  angle,
+  refraction,
+  crossSection,
+  tuning,
+}: FlutedGlassShaderProps) {
+  const shaderContext = useShaderContext();
+
   // The dials live in uniforms, values the CPU writes and the GPU reads at
   // each draw, so changing them never rebuilds the output chain.
   const fluteWidthUniform = useAnimatableUniform(fluteWidth);
   const angleUniform = useAnimatableUniform(angle);
   const refractionUniform = useAnimatableUniform(refraction);
+  const crossSectionUniform = useAnimatableUniform(crossSection);
+
+  // ---------------------------------------------
+  // Tuning (dev): stripped at the defaults gate
+  // ---------------------------------------------
+  // The feel constants ride uniforms too, so the panel's tuning sliders move
+  // the glass without a rebuild. Each falls back to the primitive's constant
+  // when the panel leaves it unset. The effect keys on the two numbers, not
+  // the tuning object, which the panel rebuilds on every write.
+  const prismExponentUniform = useMemo(() => uniform(PRISM_EXPONENT), []);
+  const flatExponentUniform = useMemo(() => uniform(FLAT_EXPONENT), []);
+  const prismExponent = tuning?.prismExponent ?? PRISM_EXPONENT;
+  const flatExponent = tuning?.flatExponent ?? FLAT_EXPONENT;
+
+  useEffect(() => {
+    prismExponentUniform.value = prismExponent;
+    flatExponentUniform.value = flatExponent;
+    // A bare uniform write repaints nothing on a static scene (the
+    // bare-uniform-write gotcha in docs/agents/tsl.md).
+    shaderContext?.scheduler.requestRender();
+  }, [prismExponent, flatExponent, prismExponentUniform, flatExponentUniform, shaderContext]);
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
@@ -72,7 +126,6 @@ export function FlutedGlassShader({ fluteWidth, angle, refraction }: FlutedGlass
   // ratio, which respects maxDPR clamping, converts between them; useResize
   // fires again on monitor moves and browser zoom, when that ratio changes.
   // Dither builds its ratio the same way.
-  const shaderContext = useShaderContext();
   const resize = useResize();
   // Created once and never replaced: the effect below writes into it, and
   // the warp depends on the stable wrapper.
@@ -120,6 +173,9 @@ export function FlutedGlassShader({ fluteWidth, angle, refraction }: FlutedGlass
         fluteWidth: fluteWidthUniform.mul(pixelRatioUniform),
         angle: angleUniform,
         refraction: refractionUniform,
+        crossSection: crossSectionUniform,
+        prismExponent: prismExponentUniform,
+        flatExponent: flatExponentUniform,
       });
 
       // Back out: the bend comes back in device pixels with y up. Flip y
@@ -129,7 +185,15 @@ export function FlutedGlassShader({ fluteWidth, angle, refraction }: FlutedGlass
 
       return mirrorOntoCanvas(bent);
     },
-    [fluteWidthUniform, angleUniform, refractionUniform, pixelRatioUniform],
+    [
+      fluteWidthUniform,
+      angleUniform,
+      refractionUniform,
+      crossSectionUniform,
+      prismExponentUniform,
+      flatExponentUniform,
+      pixelRatioUniform,
+    ],
   );
 
   return null;
