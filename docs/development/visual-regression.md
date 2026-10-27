@@ -69,14 +69,12 @@ open apps/docs-tests/visual/<spec>.spec.ts-snapshots/<snapshot>-chromium-linux.p
 
 Look at the PNG. It should show the new visual you intended, not a black canvas, a half-compiled frame, or a startup artifact. The test cannot check what the baseline contains. It can only check that future runs match it.
 
-Commit both baselines together, so CI passes on Linux and local runs pass on macOS. `but diff` lists each PNG with an ID. Pass both IDs to `but commit`:
+Commit both baselines together, so CI passes on Linux and local runs pass on macOS:
 
 ```bash
-but diff
-but commit -b <branch> -m "test(docs-tests): regenerate <spec> baselines after <reason>" <linux-png-id> <darwin-png-id>
+git add apps/docs-tests/visual/<spec>.spec.ts-snapshots/
+git commit -m "test(docs-tests): regenerate <spec> baselines after <reason>"
 ```
-
-In a separate worktree, commit with `git add` and `git commit` instead. `docs/agents/version-control.md` says when baselines need a worktree.
 
 ## Restart the dev server after any Playwright run
 

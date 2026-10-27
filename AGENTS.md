@@ -38,7 +38,7 @@ Shaders doubles as the author's shader-learning project. When you build or rebui
 
 ## Git
 
-- The main checkout is a GitButler workspace that several agents share. Make every commit, branch, and push through `but`, never `git commit` or `git checkout`. `docs/agents/version-control.md` has the rules.
+- Every session works in its own worktree, on a branch from `origin/main`. The main checkout stays on `main`, and nobody edits there. `docs/agents/version-control.md` has the rules.
 - Put every change on its own branch and open a PR, including a one-line doc fix. `main` changes only through merged PRs.
 - When you finish a branch, push it and open a PR. Don't merge or land it locally, and don't ask which integration option to use.
 - Write commit messages as Conventional Commits, such as `feat(shaders): …` or `docs: …`. The scope is the package name without `@camp-dev/`. Use no emojis.
