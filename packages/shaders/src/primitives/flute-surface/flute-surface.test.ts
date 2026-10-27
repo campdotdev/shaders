@@ -39,6 +39,7 @@ describe('fluteSurface', () => {
       crossSection: uniform(0.5),
       prismExponent: uniform(1 / 16),
       flatExponent: uniform(16),
+      grooveSmoothing: uniform(1),
     });
 
     expect(surface.bend).toBeDefined();
@@ -47,6 +48,10 @@ describe('fluteSurface', () => {
   it('accepts a cross-section outside 0 to 1 without throwing', () => {
     expect(() => fluteSurface(uv(), { crossSection: -1 })).not.toThrow();
     expect(() => fluteSurface(uv(), { crossSection: 2 })).not.toThrow();
+  });
+
+  it('accepts a groove smoothing of 0 without throwing', () => {
+    expect(() => fluteSurface(uv(), { grooveSmoothing: 0 })).not.toThrow();
   });
 
   it('accepts a flute width of 0 without throwing', () => {

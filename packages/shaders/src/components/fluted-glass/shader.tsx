@@ -13,7 +13,11 @@ import { abs, fract, screenSize, uniform, vec2 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import { fluteSurface } from '../../engine.js';
-import { FLAT_EXPONENT, PRISM_EXPONENT } from '../../primitives/flute-surface/flute-surface.js';
+import {
+  FLAT_EXPONENT,
+  GROOVE_SMOOTHING,
+  PRISM_EXPONENT,
+} from '../../primitives/flute-surface/flute-surface.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
@@ -62,6 +66,8 @@ export interface FlutedGlassTuning {
   prismExponent?: number;
   /** The slope's exponent at a cross-section of 1, the flat top. */
   flatExponent?: number;
+  /** How many screen pixels each groove and the prism's ridge smooth over. */
+  grooveSmoothing?: number;
 }
 
 // ---------------------------------------------
@@ -107,16 +113,27 @@ export function FlutedGlassShader({
   // the tuning object, which the panel rebuilds on every write.
   const prismExponentUniform = useMemo(() => uniform(PRISM_EXPONENT), []);
   const flatExponentUniform = useMemo(() => uniform(FLAT_EXPONENT), []);
+  const grooveSmoothingUniform = useMemo(() => uniform(GROOVE_SMOOTHING), []);
   const prismExponent = tuning?.prismExponent ?? PRISM_EXPONENT;
   const flatExponent = tuning?.flatExponent ?? FLAT_EXPONENT;
+  const grooveSmoothing = tuning?.grooveSmoothing ?? GROOVE_SMOOTHING;
 
   useEffect(() => {
     prismExponentUniform.value = prismExponent;
     flatExponentUniform.value = flatExponent;
+    grooveSmoothingUniform.value = grooveSmoothing;
     // A bare uniform write repaints nothing on a static scene (the
     // bare-uniform-write gotcha in docs/agents/tsl.md).
     shaderContext?.scheduler.requestRender();
-  }, [prismExponent, flatExponent, prismExponentUniform, flatExponentUniform, shaderContext]);
+  }, [
+    prismExponent,
+    flatExponent,
+    grooveSmoothing,
+    prismExponentUniform,
+    flatExponentUniform,
+    grooveSmoothingUniform,
+    shaderContext,
+  ]);
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
@@ -176,6 +193,7 @@ export function FlutedGlassShader({
         crossSection: crossSectionUniform,
         prismExponent: prismExponentUniform,
         flatExponent: flatExponentUniform,
+        grooveSmoothing: grooveSmoothingUniform,
       });
 
       // Back out: the bend comes back in device pixels with y up. Flip y
@@ -192,6 +210,7 @@ export function FlutedGlassShader({
       crossSectionUniform,
       prismExponentUniform,
       flatExponentUniform,
+      grooveSmoothingUniform,
       pixelRatioUniform,
     ],
   );

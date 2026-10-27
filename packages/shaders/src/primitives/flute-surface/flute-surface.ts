@@ -5,7 +5,23 @@
 // where the glass curves. FlutedGlass (components/fluted-glass) bends the
 // scene with it, and Mode 2 users call it on their own texture coordinates.
 import type { ShaderNodeObject } from 'three/tsl';
-import { abs, clamp, cos, dot, float, fract, max, pow, select, sign, sin, vec2 } from 'three/tsl';
+import {
+  abs,
+  clamp,
+  cos,
+  dot,
+  float,
+  fract,
+  fwidth,
+  max,
+  mix,
+  pow,
+  select,
+  sign,
+  sin,
+  smoothstep,
+  vec2,
+} from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { TSLNode } from '../color-ramp/color-ramp.js';
@@ -47,6 +63,12 @@ export interface FluteSurfaceOptions {
    * cross-section of 1. Baked into FLAT_EXPONENT at the defaults gate.
    */
   flatExponent?: TSLNode | number;
+  /**
+   * TEMPORARY (build-phase tuning only): how many screen pixels each groove,
+   * and the prism's ridge, smooth over on either side. Baked into
+   * GROOVE_SMOOTHING at the defaults gate.
+   */
+  grooveSmoothing?: TSLNode | number;
 }
 
 export interface FluteSurfaceResult {
@@ -72,11 +94,17 @@ export interface FluteSurfaceResult {
 // top and steepens the walls.
 export const PRISM_EXPONENT = 1 / 16;
 export const FLAT_EXPONENT = 16;
+// How many screen pixels each groove and the prism's ridge smooth over on
+// either side. 0 brings back the stair steps; above about 2 the grooves read
+// as soft seams rather than sharp breaks.
+export const GROOVE_SMOOTHING = 1;
 
 /**
  * The bend and slope of fluted glass at `position`. A flute's center sits on
  * the position's origin, so center the position where the middle flute
- * should go.
+ * should go. Call it from a fragment shader: it smooths each groove over the
+ * screen-space rate of change of `position`, which only a fragment shader
+ * can measure.
  *
  * @param position — Vec2 TSL node in any units with y up, such as `uv()`
  *   scaled to pixels. `fluteWidth` and the returned bend share its units.
@@ -91,6 +119,7 @@ export function fluteSurface(
   const crossSection = clamp(float(options.crossSection ?? 0.5), 0, 1);
   const prismExponent = float(options.prismExponent ?? PRISM_EXPONENT);
   const flatExponent = float(options.flatExponent ?? FLAT_EXPONENT);
+  const grooveSmoothing = float(options.grooveSmoothing ?? GROOVE_SMOOTHING);
 
   // ---------------------------------------------
   // The direction across the flutes
@@ -113,12 +142,44 @@ export function fluteSurface(
   // fract() keeps only the part after the decimal point, which is how a
   // shader repeats space: every flute gets the same 0-to-1 ramp, whatever
   // its number. The +0.5 shifts the ramp so its middle, not its start, lands
-  // on the origin, which puts a flute's center there. Then *2-1 stretches the
-  // ramp to run from -1 at one groove, through 0 at the center, to 1 at the
-  // other groove. At each groove the ramp jumps from 1 back to -1, and that
-  // jump is what breaks the image into strips.
+  // on the origin, which puts a flute's center there. At each groove the
+  // ramp jumps from 1 back to 0, and that jump is what breaks the image into
+  // strips.
   const flutePhase = dot(position, across).div(fluteWidth);
-  const fluteOffset = fract(flutePhase.add(0.5)).mul(2).sub(1);
+  const ramp = fract(flutePhase.add(0.5));
+
+  // ---------------------------------------------
+  // Clean grooves: antialiasing from the screen-space rate of change
+  // ---------------------------------------------
+  // The scene has no MSAA, the GPU's own edge smoothing, so a jump in the
+  // ramp lands on whole pixels and a slanted groove draws a staircase. The
+  // fix is to replace the jump with a slope exactly one pixel wide, and to
+  // know how wide a pixel is in flutes, the shader asks the GPU.
+  //
+  // The GPU shades pixels in 2x2 blocks, so each pixel can read how much a
+  // value changes to its neighbor. fwidth() adds that change across and
+  // down, so fwidth(flutePhase) is how many flutes one pixel spans: 0.025 for
+  // a 40-pixel flute, and 0.125 for an 8-pixel one. It is taken of the phase
+  // before fract(), which has no jump in it to throw the measure off. The max
+  // keeps the band from shrinking to nothing, which would divide by zero in
+  // smoothstep() when a flute is very wide.
+  const rampPerPixel = max(fwidth(flutePhase).mul(grooveSmoothing), 1e-5);
+
+  // Paper's smoothFract. distanceToGroove is 0 at a groove and falls to -0.5
+  // at the flute's center. smoothstep() turns the last pixel before a groove
+  // into a blend that climbs from 0 to 0.5, so mix() eases the ramp toward
+  // its mirror image, 1 - ramp, and the two meet at 0.5. Both sides of a
+  // groove now arrive at 0.5, the flute's center, where the glass is flat, so
+  // the groove pixel shows the image right at the groove instead of either
+  // flute's bent copy. Away from the grooves the blend is 0 and the ramp is
+  // unchanged.
+  const distanceToGroove = abs(ramp.sub(0.5)).sub(0.5);
+  const grooveBlend = smoothstep(rampPerPixel.negate(), rampPerPixel, distanceToGroove);
+  const smoothRamp = mix(ramp, ramp.oneMinus(), grooveBlend);
+
+  // *2-1 stretches the ramp to run from -1 at one groove, through 0 at the
+  // center, to 1 at the other groove.
+  const fluteOffset = smoothRamp.mul(2).sub(1);
 
   // ---------------------------------------------
   // The cross-section: picking an exponent from the dial
@@ -160,7 +221,18 @@ export function fluteSurface(
   // right of it. Pointing the result along `across` turns it into a vector,
   // so on either side of the center the slope points toward the nearer
   // groove.
-  const slopeAmount = sign(fluteOffset).mul(pow(abs(fluteOffset), exponent));
+  const shapedSlope = sign(fluteOffset).mul(pow(abs(fluteOffset), exponent));
+
+  // A prism's ridge jumps too. Just off the center x^(1/16) leaps from 0 to
+  // about 0.65 inside a sliver much thinner than a pixel, so the two faces
+  // meet in a staircase of their own. The same pixel width, doubled because
+  // the offset runs twice as fast as the ramp, fades the slope in over the
+  // first pixel either side of the center. On a round or flat flute the
+  // slope there is already close to 0, so the fade changes nothing you can
+  // see. It also softens the groove pixel, where the smoothed offset passes
+  // through 0 on its way between flutes.
+  const ridgeBlend = smoothstep(0, rampPerPixel.mul(2), abs(fluteOffset));
+  const slopeAmount = shapedSlope.mul(ridgeBlend);
   const slope = across.mul(slopeAmount);
 
   // ---------------------------------------------
