@@ -108,7 +108,7 @@ function compatibleMod(a: TSLNode, b: number): TSLNode {
 }
 
 /** Blender's snoise(float3): Perlin noise scaled to roughly [-1, 1]. */
-const snoise3 = gpuFunction('blenderSnoise3', 'float', [['p', 'vec3']], ([p]) => {
+export const snoise3 = gpuFunction('blenderSnoise3', 'float', [['p', 'vec3']], ([p]) => {
   // Past a million, a float's spacing is coarser than a lattice cell. Blender
   // repeats the noise every 100000 on each axis and nudges such coordinates
   // half a cell, and the port does the same so its far octaves match.

@@ -29,6 +29,8 @@ Git ignores `apps/docs/public/blender-probe/`. A material from an asset library,
 
 Start the dev server with `pnpm dev:docs` and open `/dev/blender-probe`. To pick an export, add `?material=<name>`. To see where the port differs, select **Difference**: matching pixels cancel to black, and **Gain** brightens what's left.
 
+To bring the material to life, check **Animate**. The slice drifts through Blender's 3D textures, so the veins form and dissolve in place, and **Swirl** carries them along a slow flow around eddies. The sliders' units and defaults are in the `Motion` comments in `probe-scene.tsx`. **Difference** puts the marble back where Blender rendered it: still, unswirled, at depth 0.
+
 ## Measure the difference
 
 With the dev server running, capture the canvas and compare it with the reference:

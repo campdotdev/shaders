@@ -19,12 +19,14 @@ import {
   ShaderMonitor,
   ShaderScene,
   useAnimatableSpeed,
+  useAnimatableUniform,
   useShaderContext,
   useStaticSceneHint,
 } from '@camp-dev/shaders';
 import { positionLocal, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
+import { swirl } from './flow';
 import { buildMaterialColor } from './graph/evaluate';
 import { parseTap, tapSlug } from './graph/tap';
 import type { MaterialGraph } from './graph/types';
@@ -37,11 +39,32 @@ const MATERIAL_ROOT = '/blender-probe';
 const SIZE = 1024;
 // ShaderScene's own cap on canvas pixels per CSS pixel.
 const MAX_DPR = 2;
-// How fast the slice drifts through the marble, in object units per second.
-// The plane spans 2 units, and the marble's Voronoi cells are about 0.17
-// across, so the default renews a cell about every 11 seconds. Higher churns
-// faster; 0 holds the marble still.
-const DEFAULT_SPEED = 0.015;
+
+// ----------------------------------------------------------------------------
+// Motion
+// ----------------------------------------------------------------------------
+// Every motion setting rides a uniform, so the sliders move without
+// rebuilding the shader.
+
+interface Motion {
+  // How fast the slice drifts through the marble, in object units per
+  // second. The plane spans 2 units and the Voronoi cells are about 0.17
+  // across, so 0.015 renews a cell about every 11 seconds. 0 holds still.
+  speed: number;
+  // How far each point is carried back along the flow, in object units. 0
+  // is Blender's marble untouched. 0.06 bends the veins along the flow and
+  // keeps them marble; by 0.4 they smear into brushed streaks.
+  swirl: number;
+  // Eddies per object unit. At 1.2, the 2-unit plane holds two or three
+  // eddies across. Higher makes smaller, tighter eddies.
+  eddies: number;
+  // How fast the eddies reshape, as flow time per unit of slice depth, so
+  // the swirl and the drift keep their tempo together as speed changes. At
+  // 6 and the default speed, an eddy reshapes over about 10 seconds.
+  pace: number;
+}
+
+const DEFAULT_MOTION: Motion = { speed: 0.015, swirl: 0.06, eddies: 1.2, pace: 6 };
 
 // ----------------------------------------------------------------------------
 // The TSL side
@@ -50,19 +73,37 @@ const DEFAULT_SPEED = 0.015;
 function MaterialMesh({
   graph,
   tap,
-  speed,
+  motion,
+  comparing,
 }: {
   graph: MaterialGraph;
   tap: string | null;
-  speed: number;
+  motion: Motion;
+  // True while the page compares with Blender's render, which shows the
+  // marble unmoved and unswirled.
+  comparing: boolean;
 }) {
   const shaderContext = useShaderContext();
+  const speed = comparing ? 0 : motion.speed;
   // The depth the slice has drifted to: speed x frame time, summed on the
   // CPU every frame and handed to the shader as one uniform.
   const depthUniform = useAnimatableSpeed(speed);
+  const swirlUniform = useAnimatableUniform(comparing ? 0 : motion.swirl);
+  const eddiesUniform = useAnimatableUniform(motion.eddies);
+  const paceUniform = useAnimatableUniform(motion.pace);
 
   // At speed 0 the marble holds still, so the scene draws once and parks.
   useStaticSceneHint(speed === 0);
+
+  // A comparison puts the slice back at depth 0, where Blender rendered it.
+  // A raw uniform write repaints nothing on a parked scene, so it asks for a
+  // frame (the bare-uniform-write gotcha in docs/agents/tsl.md).
+  useEffect(() => {
+    if (!comparing || !shaderContext) return;
+
+    depthUniform.value = 0;
+    shaderContext.scheduler.requestRender();
+  }, [comparing, depthUniform, shaderContext]);
 
   useEffect(() => {
     if (!shaderContext) return;
@@ -70,9 +111,15 @@ function MaterialMesh({
     const material = new MeshBasicNodeMaterial();
     // Blender's noise fills a 3D volume, and the plane is a slice through
     // it at depth z. Moving the slice along z makes the veins form and
-    // dissolve in place, and every frame stays a true slice of the Blender
-    // material. At depth 0 it is the slice Blender rendered.
-    const objectCoordinate = positionLocal.add(vec3(0, 0, depthUniform));
+    // dissolve in place. The swirl first carries each point back along a
+    // slow flow, so the veins also stream around eddies. With depth 0 and
+    // swirl 0, the slice is the one Blender rendered.
+    const swirled = swirl(positionLocal.xy, {
+      amount: swirlUniform,
+      eddiesPerUnit: eddiesUniform,
+      time: depthUniform.mul(paceUniform),
+    });
+    const objectCoordinate = vec3(swirled, depthUniform);
 
     // The graph evaluates to scene-linear color, the same space Blender
     // renders in. The scene's output stage applies the sRGB transfer, as
@@ -100,7 +147,7 @@ function MaterialMesh({
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
     };
-  }, [shaderContext, graph, tap, depthUniform]);
+  }, [shaderContext, graph, tap, depthUniform, swirlUniform, eddiesUniform, paceUniform]);
 
   return null;
 }
@@ -185,38 +232,55 @@ const pageStyle: CSSProperties = {
 function MaterialScene({
   graph,
   tap,
-  speed,
+  motion,
+  comparing,
   monitor,
   onFirstPaint,
 }: {
   graph: MaterialGraph;
   tap: string | null;
-  speed: number;
+  motion: Motion;
+  comparing: boolean;
   monitor: boolean;
   onFirstPaint: () => void;
 }) {
   return (
     <ShaderScene gamut="srgb" maxDPR={MAX_DPR} onFirstPaint={onFirstPaint}>
-      <MaterialMesh graph={graph} speed={speed} tap={tap} />
+      <MaterialMesh comparing={comparing} graph={graph} motion={motion} tap={tap} />
       {monitor && <ShaderMonitor />}
     </ShaderScene>
   );
 }
 
-// Turns the drift on and off and sets its speed.
+// The tuning sliders, one per Motion setting.
+const SLIDERS: Array<{
+  key: keyof Motion;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  unit: string;
+}> = [
+  { key: 'speed', label: 'Speed', min: 0.005, max: 0.3, step: 0.005, unit: 'units/s' },
+  { key: 'swirl', label: 'Swirl', min: 0, max: 1, step: 0.01, unit: 'units' },
+  { key: 'eddies', label: 'Eddies', min: 0.25, max: 4, step: 0.05, unit: 'per unit' },
+  { key: 'pace', label: 'Flow pace', min: 0, max: 20, step: 0.5, unit: 'x drift' },
+];
+
+// Turns the motion on and off and tunes it.
 function MotionControls({
   animate,
-  speed,
+  motion,
   onAnimateChange,
-  onSpeedChange,
+  onMotionChange,
 }: {
   animate: boolean;
-  speed: number;
+  motion: Motion;
   onAnimateChange: (animate: boolean) => void;
-  onSpeedChange: (speed: number) => void;
+  onMotionChange: (motion: Motion) => void;
 }) {
   return (
-    <div style={{ display: 'flex', gap: 12, marginTop: 8, alignItems: 'center' }}>
+    <div style={{ display: 'grid', gap: 6, marginTop: 8 }}>
       <label>
         <input
           checked={animate}
@@ -225,18 +289,20 @@ function MotionControls({
         />{' '}
         Animate
       </label>
-      <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-        Speed
-        <input
-          max={0.3}
-          min={0.005}
-          onChange={(event) => onSpeedChange(Number(event.target.value))}
-          step={0.005}
-          type="range"
-          value={speed}
-        />
-        {speed.toFixed(3)} units/s
-      </label>
+      {SLIDERS.map(({ key, label, min, max, step, unit }) => (
+        <label key={key} style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span style={{ width: 72 }}>{label}</span>
+          <input
+            max={max}
+            min={min}
+            onChange={(event) => onMotionChange({ ...motion, [key]: Number(event.target.value) })}
+            step={step}
+            type="range"
+            value={motion[key]}
+          />
+          {motion[key]} {unit}
+        </label>
+      ))}
     </div>
   );
 }
@@ -256,15 +322,18 @@ function TslPanel({
   reference,
   size,
   ready,
+  view,
+  onViewChange,
   children,
 }: {
   canvas: ReactNode;
   reference: string;
   size: number;
   ready: boolean;
+  view: View;
+  onViewChange: (view: View) => void;
   children: ReactNode;
 }) {
-  const [view, setView] = useState<View>('tsl');
   const [gain, setGain] = useState(8);
 
   return (
@@ -298,7 +367,7 @@ function TslPanel({
           <input
             checked={view === 'tsl'}
             name="probe-view"
-            onChange={() => setView('tsl')}
+            onChange={() => onViewChange('tsl')}
             type="radio"
           />{' '}
           TSL
@@ -307,7 +376,7 @@ function TslPanel({
           <input
             checked={view === 'difference'}
             name="probe-view"
-            onChange={() => setView('difference')}
+            onChange={() => onViewChange('difference')}
             type="radio"
           />{' '}
           Difference
@@ -333,50 +402,34 @@ function TslPanel({
 // snapshots are what a server render would see.
 const subscribeNever = () => () => undefined;
 
-export default function ProbeScene() {
-  const search = useSyncExternalStore(
-    subscribeNever,
-    () => window.location.search,
-    () => '',
-  );
-  const pixelRatio = useSyncExternalStore(
-    subscribeNever,
-    () => window.devicePixelRatio,
-    () => 1,
-  );
-  const params = useMemo(() => new URLSearchParams(search), [search]);
-  const load = useExport(params.get('material'));
+// One loaded export: the comparison, the live canvas, and its controls.
+function LoadedProbe({
+  load,
+  params,
+  size,
+}: {
+  load: Extract<Load, { status: 'ready' }>;
+  params: URLSearchParams;
+  size: number;
+}) {
   const [ready, setReady] = useState(false);
+  const [view, setView] = useState<View>('tsl');
   const [animate, setAnimate] = useState(false);
-  const [speed, setSpeed] = useState(DEFAULT_SPEED);
-  // CSS pixels that hold SIZE device pixels on this display.
-  const size = SIZE / Math.min(pixelRatio, MAX_DPR);
-
-  if (load.status === 'loading') return <main style={pageStyle}>Loading the export...</main>;
-  if (load.status === 'failed') {
-    return <main style={pageStyle}>Loading the export failed: {load.message}</main>;
-  }
-  if (load.status === 'missing') {
-    return (
-      <main style={pageStyle}>
-        No export named {`"${load.name}"`} in public{MATERIAL_ROOT}. Run blender/export_material.py,
-        as this route&apos;s README describes.
-      </main>
-    );
-  }
-
+  const [motion, setMotion] = useState(DEFAULT_MOTION);
   const { name, graph, materials } = load;
   const tap = params.get('tap');
   const stem = tap === null ? name : `${name}@${tapSlug(tap)}`;
   const reference = `${MATERIAL_ROOT}/${stem}.reference.png`;
-  // The capture view stays still and unmonitored, at the depth Blender rendered.
+  // The capture view and the difference view compare with Blender, so they
+  // show the marble still, unswirled, at the depth Blender rendered.
   const captureView = params.get('view') === 'tsl';
   const canvas = (
     <MaterialScene
+      comparing={captureView || view === 'difference'}
       graph={graph}
       monitor={!captureView}
+      motion={animate ? motion : { ...motion, speed: 0 }}
       onFirstPaint={() => setReady(true)}
-      speed={animate && !captureView ? speed : 0}
       tap={tap}
     />
   );
@@ -416,12 +469,19 @@ export default function ProbeScene() {
             width={size}
           />
         </Panel>
-        <TslPanel canvas={canvas} ready={ready} reference={reference} size={size}>
+        <TslPanel
+          canvas={canvas}
+          onViewChange={setView}
+          ready={ready}
+          reference={reference}
+          size={size}
+          view={view}
+        >
           <MotionControls
             animate={animate}
+            motion={motion}
             onAnimateChange={setAnimate}
-            onSpeedChange={setSpeed}
-            speed={speed}
+            onMotionChange={setMotion}
           />
         </TslPanel>
         <Panel title="Lit in Blender, for context (not ported)">
@@ -436,4 +496,35 @@ export default function ProbeScene() {
       </div>
     </main>
   );
+}
+
+export default function ProbeScene() {
+  const search = useSyncExternalStore(
+    subscribeNever,
+    () => window.location.search,
+    () => '',
+  );
+  const pixelRatio = useSyncExternalStore(
+    subscribeNever,
+    () => window.devicePixelRatio,
+    () => 1,
+  );
+  const params = useMemo(() => new URLSearchParams(search), [search]);
+  const load = useExport(params.get('material'));
+
+  if (load.status === 'loading') return <main style={pageStyle}>Loading the export...</main>;
+  if (load.status === 'failed') {
+    return <main style={pageStyle}>Loading the export failed: {load.message}</main>;
+  }
+  if (load.status === 'missing') {
+    return (
+      <main style={pageStyle}>
+        No export named {`"${load.name}"`} in public{MATERIAL_ROOT}. Run blender/export_material.py,
+        as this route&apos;s README describes.
+      </main>
+    );
+  }
+
+  // CSS pixels that hold SIZE device pixels on this display.
+  return <LoadedProbe load={load} params={params} size={SIZE / Math.min(pixelRatio, MAX_DPR)} />;
 }
