@@ -65,7 +65,7 @@ export const COMPONENTS = {
   },
   'fluted-glass': {
     description:
-      'A pane of fluted glass over the scene. Each flute bends the image beneath it into a squeezed copy of what lies right under it. Stacks on top of any Source inside <ShaderScene>.',
+      'A pane of fluted glass over the scene. Each flute bends the image beneath it into a squeezed copy and catches the light along one wall. Stacks on top of any Source inside <ShaderScene>.',
     category: 'warp',
   },
   'fractal-noise': {

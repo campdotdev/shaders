@@ -61,38 +61,6 @@ function FlutedGlassControls() {
         <ColorInput label="Highlight color" path="highlightColor" />
         <SliderInput label="Shadow" max={1} min={0} path="shadow" step={0.01} />
       </Section>
-      <Section title="Tuning (dev)">
-        <SliderInput
-          label="Prism exponent"
-          max={0.5}
-          min={0.01}
-          path="tuning.prismExponent"
-          step={0.005}
-        />
-        <SliderInput label="Flat exponent" max={64} min={2} path="tuning.flatExponent" step={0.5} />
-        <SliderInput
-          label="Groove smoothing"
-          max={4}
-          min={0}
-          path="tuning.grooveSmoothing"
-          step={0.05}
-        />
-        <SliderInput label="Light height" max={85} min={5} path="tuning.lightHeight" step={1} />
-        <SliderInput
-          label="Highlight sharpness"
-          max={256}
-          min={1}
-          path="tuning.highlightSharpness"
-          step={1}
-        />
-        <SliderInput
-          label="Shadow width"
-          max={1}
-          min={0.05}
-          path="tuning.shadowWidth"
-          step={0.01}
-        />
-      </Section>
     </ControlPanel>
   );
 }

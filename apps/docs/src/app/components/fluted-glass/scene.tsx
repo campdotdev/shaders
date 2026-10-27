@@ -25,7 +25,6 @@ export default function FlutedGlassScene({
         lightAngle={params.lightAngle}
         refraction={params.refraction}
         shadow={params.shadow}
-        tuning={params.tuning}
       />
       {children}
     </ShaderScene>
