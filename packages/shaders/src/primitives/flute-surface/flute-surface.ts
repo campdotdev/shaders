@@ -1,9 +1,8 @@
-// The surface of fluted glass: rows of identical flutes laid side by side,
-// each a strip of glass that bends what is under it. For a point, this works
-// out how steep the glass is there and how far it moves the image. Both come
-// from one call, so light read from the slope agrees with the bend on where
-// the glass curves. FlutedGlass (components/fluted-glass) bends the
-// scene with it, and Mode 2 users call it on their own texture coordinates.
+// The surface of fluted glass: identical flutes side by side, each a strip
+// of glass that bends what is under it. For a point, this works out how
+// steep the glass is and how far it moves the image, in one call, so light
+// read from the slope lands where the image bends. FlutedGlass bends and
+// lights the scene with it, and Mode 2 users call it on their own coordinates.
 import type { ShaderNodeObject } from 'three/tsl';
 import {
   abs,
@@ -53,22 +52,6 @@ export interface FluteSurfaceOptions {
    * values outside 0 to 1 clamp. Default 0.5.
    */
   crossSection?: TSLNode | number;
-  /**
-   * TEMPORARY (build-phase tuning only): the slope's exponent at a
-   * cross-section of 0. Baked into PRISM_EXPONENT at the defaults gate.
-   */
-  prismExponent?: TSLNode | number;
-  /**
-   * TEMPORARY (build-phase tuning only): the slope's exponent at a
-   * cross-section of 1. Baked into FLAT_EXPONENT at the defaults gate.
-   */
-  flatExponent?: TSLNode | number;
-  /**
-   * TEMPORARY (build-phase tuning only): how many screen pixels each groove,
-   * and the prism's ridge, smooth over on either side. Baked into
-   * GROOVE_SMOOTHING at the defaults gate.
-   */
-  grooveSmoothing?: TSLNode | number;
 }
 
 export interface FluteSurfaceResult {
@@ -99,12 +82,12 @@ export interface FluteSurfaceResult {
 // of 0.5 always has an exponent of 1. Lower PRISM_EXPONENT sharpens the
 // prism's faces toward perfectly flat, and higher FLAT_EXPONENT flattens the
 // top and steepens the walls.
-export const PRISM_EXPONENT = 1 / 16;
-export const FLAT_EXPONENT = 16;
+const PRISM_EXPONENT = 1 / 16;
+const FLAT_EXPONENT = 16;
 // How many screen pixels each groove and the prism's ridge smooth over on
 // either side. 0 brings back the stair steps; above about 2 the grooves read
-// as soft seams rather than sharp breaks.
-export const GROOVE_SMOOTHING = 1;
+// as soft blurs rather than sharp breaks.
+const GROOVE_SMOOTHING = 1;
 
 /**
  * The bend and slope of fluted glass at `position`. A flute's center sits on
@@ -124,9 +107,6 @@ export function fluteSurface(
   const angle = float(options.angle ?? 90);
   const refraction = float(options.refraction ?? 1);
   const crossSection = clamp(float(options.crossSection ?? 0.5), 0, 1);
-  const prismExponent = float(options.prismExponent ?? PRISM_EXPONENT);
-  const flatExponent = float(options.flatExponent ?? FLAT_EXPONENT);
-  const grooveSmoothing = float(options.grooveSmoothing ?? GROOVE_SMOOTHING);
 
   // ---------------------------------------------
   // The direction across the flutes
@@ -176,7 +156,7 @@ export function fluteSurface(
   // before fract(), which has no jump in it to throw the measure off. The max
   // keeps the band from shrinking to nothing, which would divide by zero in
   // smoothstep() when a flute is very wide.
-  const rampPerPixel = max(fwidth(flutePhase).mul(grooveSmoothing), 1e-5);
+  const rampPerPixel = max(fwidth(flutePhase).mul(GROOVE_SMOOTHING), 1e-5);
 
   // Paper's smoothFract. distanceToGroove is 0 at a groove and falls to -0.5
   // at the flute's center. smoothstep() turns the last pixel before a groove
@@ -206,7 +186,11 @@ export function fluteSurface(
   // same factor, so a sweep morphs the shape evenly. With ends of 1/16 and
   // 16, the exponent doubles every eighth of the dial.
   const dialFromRound = crossSection.mul(2).sub(1);
-  const exponentEnd = select(dialFromRound.lessThan(0), prismExponent, flatExponent);
+  const exponentEnd = select(
+    dialFromRound.lessThan(0),
+    float(PRISM_EXPONENT),
+    float(FLAT_EXPONENT),
+  );
   const exponent = pow(exponentEnd, abs(dialFromRound));
 
   // ---------------------------------------------

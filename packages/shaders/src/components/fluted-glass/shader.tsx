@@ -1,13 +1,10 @@
 'use client';
 
-// The fluted glass's GPU half, in two passes that read the same glass. A
-// base-pass UV warp moves where the scene texture is sampled, so the image
-// beneath the glass bends through repeating flutes. A post-process color
-// transform then lights the glass: a highlight on the walls that face the
-// light, and a shadow at the grooves. The flute math lives in the engine's
-// fluteSurface primitive; this file converts the pass's coordinate into the
-// pixels the primitive works in, and what it returns back out. The wrapper
-// (./fluted-glass.tsx) supplies the props.
+// The fluted glass's GPU half: a UV warp that bends the image beneath the
+// glass, and a color transform that lights it, both reading one surface from
+// the engine's fluteSurface primitive. This file converts between the pass's
+// coordinate and the primitive's pixels. The wrapper (./fluted-glass.tsx)
+// supplies the props.
 import { useEffect, useMemo } from 'react';
 
 import type { ShaderNodeObject } from 'three/tsl';
@@ -31,11 +28,6 @@ import {
 import { type Node, Vector3 } from 'three/webgpu';
 
 import { fluteSurface } from '../../engine.js';
-import {
-  FLAT_EXPONENT,
-  GROOVE_SMOOTHING,
-  PRISM_EXPONENT,
-} from '../../primitives/flute-surface/flute-surface.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
@@ -70,9 +62,9 @@ export interface FlutedGlassShaderProps {
    */
   crossSection: AnimatableProp<number>;
   /**
-   * Where the light comes from, as a compass angle in degrees on screen: 0
-   * from the right, 90 from below, 180 from the left, and 270 from above.
-   * Accepts a static value or an animation signal.
+   * Where the light comes from, in degrees counterclockwise on screen, the
+   * way `angle` turns: 0 from the right, 90 from above, 180 from the left,
+   * and 270 from below. Accepts a static value or an animation signal.
    */
   lightAngle: AnimatableProp<number>;
   /**
@@ -88,31 +80,6 @@ export interface FlutedGlassShaderProps {
    * right on the groove. Accepts a static value or an animation signal.
    */
   shadow: AnimatableProp<number>;
-  /**
-   * TEMPORARY (build-phase tuning only): dev overrides for the feel
-   * constants. Stripped at the defaults-tuning gate.
-   */
-  tuning: FlutedGlassTuning | undefined;
-}
-
-/**
- * TEMPORARY (build-phase tuning only): dev overrides for the feel constants,
- * wired to the docs panel's "Tuning (dev)" section. Stripped at the
- * defaults-tuning gate, when the landed values are baked into constants.
- */
-export interface FlutedGlassTuning {
-  /** The slope's exponent at a cross-section of 0, the prism. */
-  prismExponent?: number;
-  /** The slope's exponent at a cross-section of 1, the flat top. */
-  flatExponent?: number;
-  /** How many screen pixels each groove and the prism's ridge smooth over. */
-  grooveSmoothing?: number;
-  /** How high the light sits above the glass, in degrees. */
-  lightHeight?: number;
-  /** The specular exponent: higher draws a thinner, harder highlight. */
-  highlightSharpness?: number;
-  /** How far the shadow reaches in from each groove, as a share of half a flute. */
-  shadowWidth?: number;
 }
 
 // ---------------------------------------------
@@ -122,6 +89,7 @@ export interface FlutedGlassTuning {
 // and 90 shines straight down. A lower light catches walls that lean
 // further over, so it moves the highlight out toward the grooves.
 const LIGHT_HEIGHT = 30;
+const LIGHT_HEIGHT_RADIANS = (LIGHT_HEIGHT * Math.PI) / 180;
 // The specular exponent. Higher draws a thinner, harder highlight, and
 // lower spreads it into a soft sheen across the wall.
 const HIGHLIGHT_SHARPNESS = 32;
@@ -162,7 +130,6 @@ export function FlutedGlassShader({
   highlight,
   highlightColor,
   shadow,
-  tuning,
 }: FlutedGlassShaderProps) {
   const shaderContext = useShaderContext();
 
@@ -192,52 +159,6 @@ export function FlutedGlassShader({
     // Vector3 repaints nothing on a static scene by itself.
     shaderContext?.scheduler.requestRender();
   }, [highlightColor, highlightColorVector, shaderContext]);
-
-  // ---------------------------------------------
-  // Tuning (dev): stripped at the defaults gate
-  // ---------------------------------------------
-  // The feel constants ride uniforms too, so the panel's tuning sliders move
-  // the glass without a rebuild. Each falls back to the primitive's constant
-  // when the panel leaves it unset. The effect keys on the two numbers, not
-  // the tuning object, which the panel rebuilds on every write.
-  const prismExponentUniform = useMemo(() => uniform(PRISM_EXPONENT), []);
-  const flatExponentUniform = useMemo(() => uniform(FLAT_EXPONENT), []);
-  const grooveSmoothingUniform = useMemo(() => uniform(GROOVE_SMOOTHING), []);
-  const lightHeightUniform = useMemo(() => uniform(LIGHT_HEIGHT), []);
-  const highlightSharpnessUniform = useMemo(() => uniform(HIGHLIGHT_SHARPNESS), []);
-  const shadowWidthUniform = useMemo(() => uniform(SHADOW_WIDTH), []);
-  const prismExponent = tuning?.prismExponent ?? PRISM_EXPONENT;
-  const flatExponent = tuning?.flatExponent ?? FLAT_EXPONENT;
-  const grooveSmoothing = tuning?.grooveSmoothing ?? GROOVE_SMOOTHING;
-  const lightHeight = tuning?.lightHeight ?? LIGHT_HEIGHT;
-  const highlightSharpness = tuning?.highlightSharpness ?? HIGHLIGHT_SHARPNESS;
-  const shadowWidth = tuning?.shadowWidth ?? SHADOW_WIDTH;
-
-  useEffect(() => {
-    prismExponentUniform.value = prismExponent;
-    flatExponentUniform.value = flatExponent;
-    grooveSmoothingUniform.value = grooveSmoothing;
-    lightHeightUniform.value = lightHeight;
-    highlightSharpnessUniform.value = highlightSharpness;
-    shadowWidthUniform.value = shadowWidth;
-    // A bare uniform write repaints nothing on a static scene (the
-    // bare-uniform-write gotcha in docs/agents/tsl.md).
-    shaderContext?.scheduler.requestRender();
-  }, [
-    prismExponent,
-    flatExponent,
-    grooveSmoothing,
-    lightHeight,
-    highlightSharpness,
-    shadowWidth,
-    prismExponentUniform,
-    flatExponentUniform,
-    grooveSmoothingUniform,
-    lightHeightUniform,
-    highlightSharpnessUniform,
-    shadowWidthUniform,
-    shaderContext,
-  ]);
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
@@ -289,9 +210,6 @@ export function FlutedGlassShader({
       angle: angleUniform,
       refraction: refractionUniform,
       crossSection: crossSectionUniform,
-      prismExponent: prismExponentUniform,
-      flatExponent: flatExponentUniform,
-      grooveSmoothing: grooveSmoothingUniform,
     });
 
   // ---------------------------------------------
@@ -310,16 +228,7 @@ export function FlutedGlassShader({
 
       return mirrorOntoCanvas(bent);
     },
-    [
-      fluteWidthUniform,
-      angleUniform,
-      refractionUniform,
-      crossSectionUniform,
-      prismExponentUniform,
-      flatExponentUniform,
-      grooveSmoothingUniform,
-      pixelRatioUniform,
-    ],
+    [fluteWidthUniform, angleUniform, refractionUniform, crossSectionUniform, pixelRatioUniform],
   );
 
   // ---------------------------------------------
@@ -328,40 +237,48 @@ export function FlutedGlassShader({
   // A post-process pass: the callback receives each pixel the scene drew,
   // already bent by the warp above (`input`, rgba), and returns a
   // replacement. The warp and this pass draw in the same output quad, and
-  // uv() here is the same pass coordinate the warp started from, so
-  // surfaceAt(uv()) is the glass at this very pixel.
+  // uv() is the pixel's own pass coordinate, so surfaceAt(uv()) is the glass
+  // at this pixel. The warp starts from uv() too while it runs first. A UV
+  // warp mounted before FlutedGlass, such as Dither's, hands the glass its
+  // moved coordinate instead, so there the bend and the light read the
+  // surface at slightly different points. SHA-267 reworks how warps stack.
   usePostProcessPass(
     (input) => {
       const { slope, fromCenter } = surfaceAt(uv());
 
       // The shadow. smoothstep() climbs from 0 to 1 over the outer
-      // shadowWidth of the way from the center to the groove, so the shade
+      // SHADOW_WIDTH of the way from the center to the groove, so the shade
       // is 0 across the middle of the flute and full right on the groove.
       // It reads fromCenter rather than the slope: the groove smoothing
       // pulls the slope to 0 on the groove's own pixel, which would leave a
       // bright line down the middle of the dark one. Multiplying darkens
       // without moving alpha, and a transparent pixel, which holds no color
       // here, stays transparent.
-      const shade = smoothstep(shadowWidthUniform.oneMinus(), 1, fromCenter).mul(shadowUniform);
+      const shade = smoothstep(1 - SHADOW_WIDTH, 1, fromCenter).mul(shadowUniform);
       const shaded = input.rgb.mul(shade.oneMinus());
 
+      // The light works in the primitive's frame, y up, where the slope
+      // already is and where `angle` turns. Only directions meet in the math
+      // below, so the frame changes nothing but which way the angles run.
+      //
       // The surface normal: the direction the glass faces, one unit long.
       // Flat glass faces straight out of the screen, (0, 0, 1). Tilt it by
-      // the slope, turned into the pass's frame, and a wall's normal leans
-      // the way the wall faces. At a slope of 1, at a groove, it leans 45
-      // degrees. normalize() scales the vector back to one unit long.
-      const normal = normalize(vec3(flipY(slope), 1));
+      // the slope, and a wall's normal leans the way the wall faces. At a
+      // slope of 1, at a groove, it leans 45 degrees. normalize() scales the
+      // vector back to one unit long.
+      const normal = normalize(vec3(slope, 1));
 
       // The direction toward the light, one unit long. lightAngle turns it
-      // around the screen by CursorRipple's compass, and the light's height
-      // lifts it off the glass: cos(height) of it lies along the screen and
-      // sin(height) points out of it.
+      // counterclockwise around the screen, the way `angle` turns the
+      // flutes, and LIGHT_HEIGHT lifts it off the glass: cos(height) of it
+      // lies along the screen and sin(height) points out of it. The height
+      // is fixed, so its cosine and sine are worked out once here rather
+      // than per pixel.
       const lightRadians = lightAngleUniform.mul(Math.PI / 180);
-      const heightRadians = lightHeightUniform.mul(Math.PI / 180);
       const toLight = vec3(
-        cos(lightRadians).mul(cos(heightRadians)),
-        sin(lightRadians).mul(cos(heightRadians)),
-        sin(heightRadians),
+        cos(lightRadians).mul(Math.cos(LIGHT_HEIGHT_RADIANS)),
+        sin(lightRadians).mul(Math.cos(LIGHT_HEIGHT_RADIANS)),
+        Math.sin(LIGHT_HEIGHT_RADIANS),
       );
 
       // Specular light, the Blinn-Phong way. A mirror sends light from the
@@ -370,13 +287,13 @@ export function FlutedGlassShader({
       // halfway vector is the normalized sum of that and toLight. dot()
       // of two unit vectors is the cosine of the angle between them: 1
       // where the normal points exactly halfway, and lower as it turns
-      // away. pow() raises that to the sharpness, which keeps values near 1
-      // and crushes the rest, so the highlight narrows to a bright line on
-      // the part of each wall that leans toward the light by the right
-      // amount. Flat glass and walls that face away stay dark. max() keeps
-      // pow()'s base from going below 0.
+      // away. pow() raises that to HIGHLIGHT_SHARPNESS, which keeps values
+      // near 1 and crushes the rest, so the highlight narrows to a bright
+      // band on the part of each wall that leans toward the light by the
+      // right amount. Flat glass and walls that face away stay dark. max()
+      // keeps pow()'s base from going below 0.
       const halfway = normalize(toLight.add(vec3(0, 0, 1)));
-      const specular = pow(max(dot(normal, halfway), 0), highlightSharpnessUniform);
+      const specular = pow(max(dot(normal, halfway), 0), HIGHLIGHT_SHARPNESS);
 
       // Added light, scaled by the dial and by the pixel's alpha, as
       // CursorRipple's shine is: a transparent pixel has nothing for light
@@ -391,17 +308,11 @@ export function FlutedGlassShader({
       angleUniform,
       refractionUniform,
       crossSectionUniform,
-      prismExponentUniform,
-      flatExponentUniform,
-      grooveSmoothingUniform,
       pixelRatioUniform,
       lightAngleUniform,
       highlightUniform,
       highlightColorUniform,
       shadowUniform,
-      lightHeightUniform,
-      highlightSharpnessUniform,
-      shadowWidthUniform,
     ],
   );
 

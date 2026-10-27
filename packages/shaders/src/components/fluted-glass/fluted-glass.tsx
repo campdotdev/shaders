@@ -7,9 +7,7 @@
 // beneath it into a squeezed copy and catching the light along one wall.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
-import { FlutedGlassShader, type FlutedGlassTuning } from './shader.js';
-
-export type { FlutedGlassTuning } from './shader.js';
+import { FlutedGlassShader } from './shader.js';
 
 /** The names for three points on the `crossSection` dial. */
 export type CrossSectionName = 'prism' | 'round' | 'flat';
@@ -52,11 +50,12 @@ export interface FlutedGlassProps {
    */
   crossSection?: AnimatableProp<number> | CrossSectionName;
   /**
-   * Where the light comes from, as a compass angle in degrees on screen: 0
-   * from the right, 90 from below, 180 from the left, and 270 from above.
+   * Where the light comes from, in degrees counterclockwise on screen, the
+   * way `angle` turns: 0 from the right, 90 from above, 180 from the left,
+   * and 270 from below.
    * The light stays put on screen while `angle` turns the glass beneath it,
    * and the flute wall that faces it catches the highlight. A light that
-   * runs along the flutes catches neither wall. Defaults to 225, the upper
+   * runs along the flutes catches neither wall. Defaults to 135, the upper
    * left. Accepts a static value or an animation signal.
    */
   lightAngle?: AnimatableProp<number>;
@@ -67,8 +66,8 @@ export interface FlutedGlassProps {
    */
   highlight?: AnimatableProp<number>;
   /**
-   * The highlight's color: hex, `oklch()`, or `oklab()`. Defaults to
-   * `'#ffffff'`.
+   * The highlight's color: hex, `oklch()`, or `oklab()`. Defaults to white,
+   * `'oklch(1 0 0)'`.
    */
   highlightColor?: string;
   /**
@@ -77,36 +76,30 @@ export interface FlutedGlassProps {
    * value or an animation signal.
    */
   shadow?: AnimatableProp<number>;
-  /**
-   * TEMPORARY (build-phase tuning only): dev overrides for the feel
-   * constants. Stripped at the defaults-tuning gate, so do not use.
-   */
-  tuning?: FlutedGlassTuning;
 }
 
 /**
  * Shows the image beneath it through repeating flutes of glass, lit from one
- * side with a shadow at each groove. Mount it
- * inside a `<ShaderScene>` after the Sources it should bend. It bends only
- * what Sources drew, never the output of an Effect such as Grain, so mount
- * such Effects after it, where the order you write matches what you see.
- * Mode 1 only, because it needs the scene's output stage; Mode 2 users get
- * the flute math as the `fluteSurface` primitive.
+ * side with a shadow at each groove. Mount it inside a `<ShaderScene>` after
+ * the Sources it should bend. It bends only what Sources drew, never the
+ * output of an Effect such as Grain, so mount such Effects after it, where
+ * the order you write matches what you see. Mode 1 only, because it needs
+ * the scene's output stage; Mode 2 users get the flute math as the
+ * `fluteSurface` primitive.
  */
 export function FlutedGlass({
   fluteWidth = 40,
   angle = 90,
   refraction = 1,
   crossSection = 'round',
-  lightAngle = 225,
+  lightAngle = 135,
   highlight = 0.45,
-  highlightColor = '#ffffff',
+  highlightColor = 'oklch(1 0 0)',
   shadow = 0.2,
-  tuning,
 }: FlutedGlassProps) {
-  // The render-on-demand vote. Still glass draws nothing that changes over
-  // time, and every dial repaints through its uniform when it moves, so the
-  // vote is static and a scene of still Sources under the glass parks.
+  // The idle vote. Still glass draws nothing that changes over time, and
+  // every dial repaints through its uniform when it moves, so the glass
+  // votes idle and a scene of still Sources under the glass parks.
   useStaticSceneHint(true);
 
   return (
@@ -121,7 +114,6 @@ export function FlutedGlass({
       lightAngle={lightAngle}
       refraction={refraction}
       shadow={shadow}
-      tuning={tuning}
     />
   );
 }

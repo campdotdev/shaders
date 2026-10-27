@@ -4,12 +4,7 @@ import { render } from '@testing-library/react';
 import type { WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import {
-  type CrossSectionName,
-  FlutedGlass,
-  type FlutedGlassProps,
-  type FlutedGlassTuning,
-} from '../../index.js';
+import { type CrossSectionName, FlutedGlass, type FlutedGlassProps } from '../../index.js';
 import {
   type PostProcessTransform,
   ShaderContext,
@@ -104,9 +99,8 @@ function makeSignal(initial: number) {
 describe('FlutedGlass', () => {
   // The public shape: seven optional dials, each a number or an animation
   // signal, where the cross-section also takes a name for a point on its
-  // dial, plus a highlight color and the temporary tuning rig. pnpm
-  // typecheck runs this file too, so a missing export or a narrowed prop
-  // fails there as well as here.
+  // dial, plus a highlight color. pnpm typecheck runs this file too, so a
+  // missing export or a narrowed prop fails there as well as here.
   it('takes seven animatable dials and a highlight color from the package root', () => {
     expectTypeOf<CrossSectionName>().toEqualTypeOf<'prism' | 'round' | 'flat'>();
     expectTypeOf<FlutedGlassProps>().toEqualTypeOf<{
@@ -118,7 +112,6 @@ describe('FlutedGlass', () => {
       highlight?: AnimatableProp<number>;
       highlightColor?: string;
       shadow?: AnimatableProp<number>;
-      tuning?: FlutedGlassTuning;
     }>();
   });
 
@@ -156,7 +149,7 @@ describe('FlutedGlass', () => {
         angle={90}
         fluteWidth={40}
         highlight={0.5}
-        lightAngle={225}
+        lightAngle={135}
         refraction={1}
         shadow={0.3}
       />,
@@ -185,7 +178,7 @@ describe('FlutedGlass', () => {
     const angle = makeSignal(90);
     const refraction = makeSignal(1);
     const crossSection = makeSignal(0.5);
-    const lightAngle = makeSignal(225);
+    const lightAngle = makeSignal(135);
     const highlight = makeSignal(0.5);
     const shadow = makeSignal(0.3);
 
@@ -255,32 +248,9 @@ describe('FlutedGlass', () => {
     expectOneOfEach(scene);
   });
 
-  it('changes its tuning without re-registering either pass', () => {
-    const scene = makeScene();
-    const { rerender } = render(
-      <FlutedGlass
-        tuning={{ prismExponent: 0.1, flatExponent: 8, lightHeight: 30, shadowWidth: 0.5 }}
-      />,
-      { wrapper: scene.Wrapper },
-    );
-
-    for (const tuning of [
-      { prismExponent: 0.05, flatExponent: 24, lightHeight: 30, shadowWidth: 0.5 },
-      { prismExponent: 0.05, flatExponent: 24, lightHeight: 60, shadowWidth: 0.5 },
-      { prismExponent: 0.05, flatExponent: 24, lightHeight: 60, highlightSharpness: 8 },
-      { prismExponent: 0.05, flatExponent: 24, lightHeight: 60, shadowWidth: 0.2 },
-    ]) {
-      scene.scheduler.requestRender.mockClear();
-      rerender(<FlutedGlass tuning={tuning} />);
-      expect(scene.scheduler.requestRender).toHaveBeenCalled();
-    }
-
-    expectOneOfEach(scene);
-  });
-
   // Still glass draws nothing that changes over time, so a scene of still
   // Sources under it can park.
-  it('votes the scene static and never animated', () => {
+  it('votes idle and never animated', () => {
     const scene = makeScene();
 
     render(<FlutedGlass />, { wrapper: scene.Wrapper });
