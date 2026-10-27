@@ -58,3 +58,7 @@ MEMORY.md
 
 # Machine-local Claude Code permission state
 .claude/settings.local.json
+
+# Blender probe exports. Asset-library materials often forbid redistribution,
+# as apps/docs/src/app/dev/blender-probe/README.md explains.
+apps/docs/public/blender-probe/
