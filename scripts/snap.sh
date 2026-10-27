@@ -81,11 +81,5 @@ git -C "$REPO_ROOT" status --short apps/docs-tests/visual/ || true
 echo
 echo "Eyeball them, then commit:"
 MSG="test(docs-tests): regenerate ${NAME:-all} visual baselines"
-# The GitButler workspace rejects git commit. A plain worktree has no but commit.
-if [ "$(git -C "$REPO_ROOT" symbolic-ref -q --short HEAD)" = "gitbutler/workspace" ]; then
-  echo "  but diff"
-  echo "  but commit -b <branch> -m \"$MSG\" <png-ids>"
-else
-  echo "  git add apps/docs-tests/visual/"
-  echo "  git commit -m \"$MSG\""
-fi
+echo "  git add apps/docs-tests/visual/"
+echo "  git commit -m \"$MSG\""

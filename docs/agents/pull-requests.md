@@ -10,6 +10,8 @@ Structure the body with real markdown headings, so a reviewer can find the part 
 - `## What changes`: the changes, grouped by concept rather than by commit. With more than one concept, give each its own `###` and one paragraph. A concept that needs two paragraphs is two concepts, or one of the paragraphs is history.
 - `## Known limitations`, only when there are some.
 
+When the PR has a Linear ticket, end the body with a line that links it, such as `Closes SHA-266`. Linear reads that line, links the PR to the issue, and closes the issue when the PR merges. If the PR finishes only part of the ticket, write `Refs SHA-266` instead.
+
 Frame each change by why it matters. Use bullets only where the items really are a list. Leave out test plans, follow-up lists, and links to planning artifacts such as `.planning/` or memory files. The prose should sound like a person wrote it.
 
 The body you write has a ceiling of 400 words, and a typical feature PR wants about 250. A review bot's summary comment doesn't count. The ceiling is not a target and 250 is not a floor: a one-line doc fix can take forty words. Past 400, something in the body is not for the reviewer. Two cuts keep it under:
@@ -35,13 +37,11 @@ Five reviewers run on every change: one locally before the push, and four on the
 
 The `implement` skill runs `/code-review` after it commits. The order matters: `/code-review` resolves git refs, so running it before the commit reviews the previous state and misses the new work.
 
-In the shared GitButler workspace, `HEAD` holds every applied branch. Give `/code-review` your branch name as the ref to review, not `HEAD`. `docs/agents/version-control.md` explains the workspace.
-
 ## Run Fallow before the push
 
 The `fallow` CLI is a root devDependency, pinned so CI and every machine run the same analyzer. The `fallow` and `fallow-review` skills and the `fallow-mcp` server are installed at user scope. Fallow's config is `.fallowrc.json` at the repo root, and each exception in it carries its reason. Fallow is a deterministic check, not a reviewer, so `implement` does not run it.
 
-- Before the push, run `pnpm exec fallow audit --base <base>` from an isolated worktree at your branch, where `<base>` is `origin/main` or the branch directly below yours in a stack. It reports the dead code, complexity, and duplication that branch adds, and exits 1 on a fail verdict. The shared workspace contains every applied branch, so its audit result cannot reliably evaluate one branch.
+- Before the push, run `pnpm exec fallow audit --base origin/main` in your worktree. It reports the dead code, complexity, and duplication that your branch adds, and exits 1 on a fail verdict.
 - CI runs the same audit on every pull request, in the `Fallow audit` job. The job posts findings as annotations and a job summary without failing, and it fails only when fallow itself breaks.
 - To review a diff or a pull request, load the `fallow-review` skill.
 - Before you delete code that Fallow reports as unused, run `pnpm exec fallow dead-code --trace <file>:<export>` to confirm nothing reaches it.
@@ -50,6 +50,6 @@ The `fallow` CLI is a root devDependency, pinned so CI and every machine run the
 
 After the bots post, run the `resolve-pr-feedback` skill rather than reading comments by hand. The bots split their findings across inline threads, issue comments, and review bodies, and the skill's registry knows where each one puts them. It proposes each fix for approval, applies and validates the approved ones, then commits, pushes, and resolves the threads. Check every finding against the gotchas in `docs/agents/` before you accept it. Run it again on each new review until the latest one has no finding in the bot's top two severities, such as Copilot's high and medium. Copilot's "Previously missed" entries count too. They have no inline thread, but they sit in the PR's own lines. A finding you verified as false, or declined with a reason, doesn't count. Low-severity findings never hold the PR: fix the quick ones, and file the rest in Linear or decline them with a reason. If top-severity findings still appear after three runs, stop and ask the author.
 
-To skip waiting on Copilot, run `/watch-pr <number>` after the push. It waits for each Copilot review, then runs `resolve-pr-feedback` unattended to fix the high- and medium-severity findings and push. It stops when a round has nothing left to fix or after three rounds, then reports the findings it held for you. It covers Copilot only. In the shared GitButler workspace, it commits only its own fixes to the PR's branch, so leave that PR's files alone until it reports.
+To skip waiting on Copilot, run `/watch-pr <number>` after the push. It waits for each Copilot review, then runs `resolve-pr-feedback` unattended to fix the high- and medium-severity findings and push. It stops when a round has nothing left to fix or after three rounds, then reports the findings it held for you. It covers Copilot only.
 
 `resolve-pr-feedback` and `watch-pr` are installed at user scope, not in the repo. `docs/development/agent-setup.md` lists them.
