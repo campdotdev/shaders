@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "INCLUDE_DEV_ROUTES=1 next dev -p 3000",
+    "dev": "INCLUDE_DEV_ROUTES=1 next dev -p ${PORT:-3000}",
     "build": "next build && pagefind --site out",
-    "preview": "serve out -p 3000",
+    "preview": "serve out",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "vitest run",

@@ -51,6 +51,8 @@ pnpm test        # Vitest across the workspace
 pnpm dev:docs    # docs site at http://localhost:3000
 ```
 
+To run the docs site on another port, set `PORT`, as in `PORT=3001 pnpm dev:docs`.
+
 ## Releasing
 
 Releases go through [Changesets](https://github.com/changesets/changesets). Add a changeset with `pnpm changeset` in the PR that makes the change. Merging to `main` opens or updates a "chore: version packages" PR, and merging that PR publishes both packages to npm and tags the release.

@@ -61,7 +61,7 @@ To verify a change here, build both ways and check whether `apps/docs/out/dev/` 
 
 A local Playwright run or `pnpm snap` corrupts a running dev server, as `docs/development/visual-regression.md` explains. `next dev` can also wedge at full CPU after a batch of edits to `apps/docs/src/content`, stop answering every route, and ignore SIGTERM. To restart it:
 
-1. Find the listener with `lsof -ti tcp:3000 -sTCP:LISTEN` and kill it. `next dev` spawns a child worker that holds the port and survives a kill of its parent. Keep the `-sTCP:LISTEN` filter, because without it `lsof` also returns the browser helper for any open tab on the port, and killing that crashes the tab.
+1. Find the listener with `lsof -ti tcp:<port> -sTCP:LISTEN` and kill it. The port is 3000 unless you started the server with `PORT`. `next dev` spawns a child worker that holds the port and survives a kill of its parent. Keep the `-sTCP:LISTEN` filter, because without it `lsof` also returns the browser helper for any open tab on the port, and killing that crashes the tab.
 2. Confirm the port has no listener. If one survives, `kill -9` it.
 3. Delete `apps/docs/.next`.
 4. Start the server. If you delete `.next` while a server boots, it answers 500 on a missing `routes-manifest.json`.

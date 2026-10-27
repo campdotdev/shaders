@@ -82,7 +82,7 @@ In a separate worktree, commit with `git add` and `git commit` instead. `docs/ag
 
 The Playwright `webServer` builds the production bundle into the same `apps/docs/.next` directory a running dev server serves from, and the Docker leg of `pnpm snap` does the same through the repo mount. The dev server then answers 500 for every chunk, with `Cannot find module './NNN.js'` from `webpack-runtime.js`.
 
-Locally, `reuseExistingServer` is on, so the next Playwright run reuses that broken server, and every spec times out in `waitForShader`. That looks like a shader regression, and it is not one. The same happens with a wedged server, because `reuseExistingServer` only checks that the port accepts a connection.
+Playwright never tests that broken server. It serves its own build on `PLAYWRIGHT_PORT`, default 3100, with `reuseExistingServer` off. If the port is taken before the build or when the build finishes, the run fails. Reusing the server on that port would test a broken leftover or another worktree's build, and every spec would time out in `waitForShader` like a shader regression. To run the suites in two worktrees at once, give each worktree its own `PLAYWRIGHT_PORT`.
 
 After any `pnpm snap` or local Playwright run, restart the dev server before you trust the browser or a local test result. `docs/agents/docs-site.md` has the restart procedure.
 

@@ -9,7 +9,8 @@
     },
     "dev": {
       "cache": false,
-      "persistent": true
+      "persistent": true,
+      "passThroughEnv": ["PORT"]
     },
     "typecheck": {
       "dependsOn": ["^build"],
@@ -27,10 +28,12 @@
     },
     "test:visual": {
       "dependsOn": ["^build"],
+      "passThroughEnv": ["PLAYWRIGHT_PORT"],
       "outputs": []
     },
     "test:visual:update": {
       "cache": false,
+      "passThroughEnv": ["PLAYWRIGHT_PORT"],
       "outputs": ["**/snapshots/**"]
     }
   }
