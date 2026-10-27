@@ -10,6 +10,7 @@ import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 
 import {
+  ColorInput,
   ControlPanel,
   ControlsProvider,
   createControlStore,
@@ -54,6 +55,12 @@ function FlutedGlassControls() {
         <SliderInput label="Refraction" max={3} min={0} path="refraction" step={0.01} />
         <SliderInput label="Cross-section" max={1} min={0} path="crossSection" step={0.01} />
       </Section>
+      <Section title="Light">
+        <SliderInput label="Light angle" max={360} min={0} path="lightAngle" step={1} />
+        <SliderInput label="Highlight" max={1} min={0} path="highlight" step={0.01} />
+        <ColorInput label="Highlight color" path="highlightColor" />
+        <SliderInput label="Shadow" max={1} min={0} path="shadow" step={0.01} />
+      </Section>
       <Section title="Tuning (dev)">
         <SliderInput
           label="Prism exponent"
@@ -69,6 +76,21 @@ function FlutedGlassControls() {
           min={0}
           path="tuning.grooveSmoothing"
           step={0.05}
+        />
+        <SliderInput label="Light height" max={85} min={5} path="tuning.lightHeight" step={1} />
+        <SliderInput
+          label="Highlight sharpness"
+          max={256}
+          min={1}
+          path="tuning.highlightSharpness"
+          step={1}
+        />
+        <SliderInput
+          label="Shadow width"
+          max={1}
+          min={0.05}
+          path="tuning.shadowWidth"
+          step={0.01}
         />
       </Section>
     </ControlPanel>

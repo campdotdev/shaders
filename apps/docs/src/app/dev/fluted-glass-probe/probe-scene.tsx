@@ -7,7 +7,8 @@
 // groove. Inert glass would leave them straight and unbroken. Query params
 // override the glass's dials, such as ?refraction=0&angle=30 or
 // ?crossSection=prism, for checking one by eye. ?grooveSmoothing=0 turns
-// the groove antialiasing off, to compare the staircase it removes.
+// the groove antialiasing off, to compare the staircase it removes, and
+// ?highlight=0&shadow=0 turns the light off, to see the bend alone.
 import { type CrossSectionName, FlutedGlass, LinearGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { VisualTestPause } from '@/lib/visualTestHooks';
@@ -53,7 +54,10 @@ export default function ProbeScene() {
           angle={queryNumber('angle')}
           crossSection={queryCrossSection()}
           fluteWidth={queryNumber('fluteWidth')}
+          highlight={queryNumber('highlight')}
+          lightAngle={queryNumber('lightAngle')}
           refraction={queryNumber('refraction')}
+          shadow={queryNumber('shadow')}
           tuning={{ grooveSmoothing: queryNumber('grooveSmoothing') }}
         />
         <VisualTestPause />

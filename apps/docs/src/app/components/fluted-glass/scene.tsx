@@ -20,7 +20,11 @@ export default function FlutedGlassScene({
         angle={params.angle}
         crossSection={params.crossSection}
         fluteWidth={params.fluteWidth}
+        highlight={params.highlight}
+        highlightColor={params.highlightColor}
+        lightAngle={params.lightAngle}
         refraction={params.refraction}
+        shadow={params.shadow}
         tuning={params.tuning}
       />
       {children}
