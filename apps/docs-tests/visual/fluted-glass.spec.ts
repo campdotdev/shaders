@@ -10,15 +10,85 @@ test('FlutedGlass — default story', async ({ page }) => {
 });
 
 // The probe draws hard diagonal stripes under FlutedGlass at its defaults.
+// Query params set the glass's dials, drop the glass with glass=none, or drop
+// the stripes with source=none.
+const PROBE = '/dev/fluted-glass-probe?visualTest=1';
 // FlutedGlass's default flute width in CSS pixels, which is device pixels at
 // the config's deviceScaleFactor of 1. A flute's center sits on the canvas
 // center, so the grooves fall half a flute either side of it and every flute
 // width beyond.
 const FLUTE_WIDTH = 40;
-// How far either side of a groove each sample column sits. Wide enough to
-// step clear of the groove's own pixel, narrow enough that unbroken stripes
-// rarely change between the two columns.
+// How far either side of a groove each sample column sits, in pixels. Wide
+// enough to step clear of the groove's own pixel, narrow enough that
+// unbroken stripes rarely change between the two columns.
 const COLUMN_OFFSET = 3;
+// The least the highlight must brighten the walls that face the light, in
+// brightness levels from 0 to 255, averaged over those walls. The defaults
+// measured about 18 on macOS, so this leaves room for another GPU.
+const GAIN_ON_LIT_WALLS = 6;
+
+/** The probe's canvas as each pixel's brightness, the mean of its channels. */
+interface Brightness {
+  width: number;
+  /** Brightness from 0 to 255 at a pixel. */
+  at: (x: number, y: number) => number;
+  /** The middle band of rows, clear of the site header drawn over the canvas. */
+  rows: number[];
+}
+
+/**
+ * Loads the probe with `query` appended and reads its canvas. The screenshot
+ * decodes in the page, which has the browser's PNG decoder, and comes back
+ * one byte of brightness per pixel.
+ */
+async function probeBrightness(page: Page, query: string): Promise<Brightness> {
+  await page.goto(`${PROBE}${query}`);
+  await page.locator('canvas').first().waitFor();
+  await waitForShader(page);
+
+  const shot = await page.locator('canvas').first().screenshot();
+  const { width, height, bytes } = await page.evaluate(async (pngBase64) => {
+    const response = await fetch(`data:image/png;base64,${pngBase64}`);
+    const bitmap = await createImageBitmap(await response.blob());
+    const canvas = document.createElement('canvas');
+
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d')!;
+
+    context.drawImage(bitmap, 0, 0);
+    const rgba = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
+    let binary = '';
+
+    for (let index = 0; index < rgba.length; index += 4) {
+      const sum = (rgba[index] ?? 0) + (rgba[index + 1] ?? 0) + (rgba[index + 2] ?? 0);
+
+      binary += String.fromCharCode(Math.round(sum / 3));
+    }
+
+    return { width: bitmap.width, height: bitmap.height, bytes: btoa(binary) };
+  }, shot.toString('base64'));
+  const pixels = Buffer.from(bytes, 'base64');
+  const rows: number[] = [];
+
+  for (let y = Math.floor(height * 0.2); y < Math.floor(height * 0.8); y += 1) rows.push(y);
+
+  return { width, at: (x, y) => pixels[y * width + x] ?? 0, rows };
+}
+
+/** The x of every groove on a canvas `width` pixels wide, left to right. */
+function grooves(width: number): number[] {
+  const center = width / 2;
+  const first =
+    center + FLUTE_WIDTH / 2 - Math.floor((center + FLUTE_WIDTH / 2) / FLUTE_WIDTH) * FLUTE_WIDTH;
+  const positions: number[] = [];
+
+  for (let groove = first; groove < width; groove += FLUTE_WIDTH) {
+    positions.push(Math.round(groove));
+  }
+
+  return positions;
+}
 
 /**
  * The share of rows where the pixels just left and just right of a groove
@@ -27,61 +97,62 @@ const COLUMN_OFFSET = 3;
  * between them. Through the glass they read the image from far apart, so
  * they differ far more often.
  */
-async function grooveBreaks(page: Page, url: string): Promise<number> {
-  await page.goto(url);
-  await page.locator('canvas').first().waitFor();
-  await waitForShader(page);
+function grooveBreaks(image: Brightness): number {
+  let pairs = 0;
+  let breaks = 0;
 
-  const shot = await page.locator('canvas').first().screenshot();
+  for (const groove of grooves(image.width)) {
+    const left = groove - COLUMN_OFFSET;
+    const right = groove + COLUMN_OFFSET;
 
-  return page.evaluate(
-    async ({ pngBase64, fluteWidth, columnOffset }) => {
-      const response = await fetch(`data:image/png;base64,${pngBase64}`);
-      const bitmap = await createImageBitmap(await response.blob());
-      const canvas = document.createElement('canvas');
+    if (left < 0 || right >= image.width) continue;
+    for (const y of image.rows) {
+      pairs += 1;
+      if (image.at(left, y) > 128 !== image.at(right, y) > 128) breaks += 1;
+    }
+  }
 
-      canvas.width = bitmap.width;
-      canvas.height = bitmap.height;
-      const context = canvas.getContext('2d')!;
+  return breaks / pairs;
+}
 
-      context.drawImage(bitmap, 0, 0);
-      const pixels = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
-      const isLight = (x: number, y: number) => {
-        const index = (y * bitmap.width + x) * 4;
+/**
+ * How much brighter `lit` is than `unlit` on average, over the left half and
+ * the right half of every whole flute, two pixels clear of the grooves and
+ * the center.
+ */
+function wallGain(lit: Brightness, unlit: Brightness): { left: number; right: number } {
+  let left = 0;
+  let right = 0;
+  let count = 0;
 
-        return (
-          ((pixels[index] ?? 0) + (pixels[index + 1] ?? 0) + (pixels[index + 2] ?? 0)) / 3 > 128
-        );
-      };
+  for (const groove of grooves(lit.width)) {
+    if (groove + FLUTE_WIDTH >= lit.width) continue;
+    for (const y of lit.rows) {
+      for (let step = 2; step <= FLUTE_WIDTH / 2 - 2; step += 1) {
+        const leftX = groove + step;
+        const rightX = groove + FLUTE_WIDTH - step;
 
-      // The first groove right of the canvas's left edge, then every flute
-      // width after it.
-      const center = bitmap.width / 2;
-      const firstGroove =
-        center + fluteWidth / 2 - Math.floor((center + fluteWidth / 2) / fluteWidth) * fluteWidth;
-      // The middle band of rows, clear of the site header drawn over the
-      // top of the canvas.
-      const top = Math.floor(bitmap.height * 0.2);
-      const bottom = Math.floor(bitmap.height * 0.8);
-
-      let pairs = 0;
-      let breaks = 0;
-
-      for (let groove = firstGroove; groove < bitmap.width; groove += fluteWidth) {
-        const left = Math.round(groove) - columnOffset;
-        const right = Math.round(groove) + columnOffset;
-
-        if (left < 0 || right >= bitmap.width) continue;
-        for (let y = top; y < bottom; y += 1) {
-          pairs += 1;
-          if (isLight(left, y) !== isLight(right, y)) breaks += 1;
-        }
+        left += lit.at(leftX, y) - unlit.at(leftX, y);
+        right += lit.at(rightX, y) - unlit.at(rightX, y);
+        count += 1;
       }
+    }
+  }
 
-      return breaks / pairs;
-    },
-    { pngBase64: shot.toString('base64'), fluteWidth: FLUTE_WIDTH, columnOffset: COLUMN_OFFSET },
-  );
+  return { left: left / count, right: right / count };
+}
+
+/** The largest brightness difference between two loads, pixel for pixel. */
+function maxDifference(first: Brightness, second: Brightness): number {
+  let largest = 0;
+
+  for (const y of first.rows) {
+    for (let x = 0; x < first.width; x += 1) {
+      largest = Math.max(largest, Math.abs(first.at(x, y) - second.at(x, y)));
+    }
+  }
+
+  return largest;
 }
 
 // A regenerated baseline of inert glass would pass its own screenshot, so
@@ -93,14 +164,40 @@ async function grooveBreaks(page: Page, url: string): Promise<number> {
 // the glass. Through it, they read the image 28 px apart, and differ on
 // about half.
 test('FlutedGlass — stripes break at the grooves', async ({ page }) => {
-  const inert = await grooveBreaks(
-    page,
-    '/dev/fluted-glass-probe?visualTest=1&highlight=0&shadow=0&refraction=0',
-  );
-  const glass = await grooveBreaks(
-    page,
-    '/dev/fluted-glass-probe?visualTest=1&highlight=0&shadow=0',
-  );
+  const inert = grooveBreaks(await probeBrightness(page, '&highlight=0&shadow=0&refraction=0'));
+  const glass = grooveBreaks(await probeBrightness(page, '&highlight=0&shadow=0'));
 
   expect(glass, `groove breaks: glass ${glass}, inert ${inert}`).toBeGreaterThan(inert + 0.2);
+});
+
+// The default light comes from the upper left, so over vertical flutes the
+// left wall of each flute faces it and catches the highlight, and the right
+// wall faces away. Both loads turn the shadow off, so the highlight is the
+// only difference between them.
+test('FlutedGlass — the highlight lights the walls that face the light', async ({ page }) => {
+  const unlit = await probeBrightness(page, '&highlight=0&shadow=0');
+  const lit = await probeBrightness(page, '&shadow=0');
+  const gain = wallGain(lit, unlit);
+  const message = `brightness gain: left walls ${gain.left}, right walls ${gain.right}`;
+
+  expect(gain.left, message).toBeGreaterThan(GAIN_ON_LIT_WALLS);
+  expect(gain.right, message).toBeLessThan(gain.left / 4);
+});
+
+// With nothing to bend and no light, the glass draws the Source exactly as
+// the Source alone does.
+test('FlutedGlass — inert glass leaves the Source unchanged', async ({ page }) => {
+  const source = await probeBrightness(page, '&glass=none');
+  const inert = await probeBrightness(page, '&refraction=0&highlight=0&shadow=0');
+
+  expect(maxDifference(source, inert)).toBeLessThanOrEqual(1);
+});
+
+// Over a transparent scene the canvas shows the probe page's black
+// background. Light added to a pixel with no coverage would show on it.
+test('FlutedGlass — a transparent pixel gets no highlight', async ({ page }) => {
+  const black = await probeBrightness(page, '&glass=none&source=none');
+  const glass = await probeBrightness(page, '&source=none&highlight=1&shadow=1');
+
+  expect(maxDifference(black, glass)).toBeLessThanOrEqual(1);
 });
