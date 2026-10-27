@@ -3,6 +3,7 @@
 export interface TuningParams {
   prismExponent: number;
   flatExponent: number;
+  grooveSmoothing: number;
 }
 
 export interface FlutedGlassParams {
@@ -21,5 +22,6 @@ export const INITIAL: FlutedGlassParams = {
   tuning: {
     prismExponent: 1 / 16,
     flatExponent: 16,
+    grooveSmoothing: 1,
   },
 };

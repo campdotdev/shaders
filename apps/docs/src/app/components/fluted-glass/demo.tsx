@@ -63,6 +63,13 @@ function FlutedGlassControls() {
           step={0.005}
         />
         <SliderInput label="Flat exponent" max={64} min={2} path="tuning.flatExponent" step={0.5} />
+        <SliderInput
+          label="Groove smoothing"
+          max={4}
+          min={0}
+          path="tuning.grooveSmoothing"
+          step={0.05}
+        />
       </Section>
     </ControlPanel>
   );

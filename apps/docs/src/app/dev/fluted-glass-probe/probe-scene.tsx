@@ -6,7 +6,8 @@
 // copy of the stripes under it, and the stripes jump sideways at every
 // groove. Inert glass would leave them straight and unbroken. Query params
 // override the glass's dials, such as ?refraction=0&angle=30 or
-// ?crossSection=prism, for checking one by eye.
+// ?crossSection=prism, for checking one by eye. ?grooveSmoothing=0 turns
+// the groove antialiasing off, to compare the staircase it removes.
 import { type CrossSectionName, FlutedGlass, LinearGradient, ShaderScene } from '@camp-dev/shaders';
 
 import { VisualTestPause } from '@/lib/visualTestHooks';
@@ -53,6 +54,7 @@ export default function ProbeScene() {
           crossSection={queryCrossSection()}
           fluteWidth={queryNumber('fluteWidth')}
           refraction={queryNumber('refraction')}
+          tuning={{ grooveSmoothing: queryNumber('grooveSmoothing') }}
         />
         <VisualTestPause />
       </ShaderScene>
