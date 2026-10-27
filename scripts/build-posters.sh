@@ -74,6 +74,7 @@ for pair in \
   "cursor-ripple:jpg" \
   "cursor-smudge:jpg" \
   "cursor-spotlight:jpg" \
+  "fluted-glass:jpg" \
   "radial-wipe:jpg:#0b0f0d" \
   "dissolve:jpg:#0b0f0d"; do
   IFS=':' read -r name format background size crop <<< "$pair"
