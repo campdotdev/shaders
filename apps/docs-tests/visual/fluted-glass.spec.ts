@@ -85,14 +85,22 @@ async function grooveBreaks(page: Page, url: string): Promise<number> {
 }
 
 // A regenerated baseline of inert glass would pass its own screenshot, so
-// this checks that the glass breaks the stripes at all. The same probe with
+// this checks that the glass breaks the stripes at all. Both loads turn the
+// light off, since the shadow and highlight also change the columns either
+// side of a groove, and this measures the bend alone. The same probe with
 // refraction 0 is the inert reference. At 1280 px wide a stripe repeats every
 // 113 px across a row, so the two columns differ on about 11% of rows without
 // the glass. Through it, they read the image 28 px apart, and differ on
 // about half.
 test('FlutedGlass — stripes break at the grooves', async ({ page }) => {
-  const inert = await grooveBreaks(page, '/dev/fluted-glass-probe?visualTest=1&refraction=0');
-  const glass = await grooveBreaks(page, '/dev/fluted-glass-probe?visualTest=1');
+  const inert = await grooveBreaks(
+    page,
+    '/dev/fluted-glass-probe?visualTest=1&highlight=0&shadow=0&refraction=0',
+  );
+  const glass = await grooveBreaks(
+    page,
+    '/dev/fluted-glass-probe?visualTest=1&highlight=0&shadow=0',
+  );
 
   expect(glass, `groove breaks: glass ${glass}, inert ${inert}`).toBeGreaterThan(inert + 0.2);
 });
