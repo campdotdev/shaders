@@ -20,6 +20,8 @@ export interface WaveTextureInputs {
   phase: TSLNode;
   // Blender's enum values: BANDS or RINGS; X, Y, Z, DIAGONAL, or
   // SPHERICAL; and SIN, SAW, or TRI.
+  // The highest fBM octave to draw in the distortion, as fbm3's maxOctave.
+  maxOctave: number;
   waveType: string;
   bandsDirection: string;
   ringsDirection: string;
@@ -89,6 +91,7 @@ export function waveTexture(inputs: WaveTextureInputs): { fac: TSLNode; color: T
       inputs.detailRoughness,
       float(2),
       true,
+      inputs.maxOctave,
     );
 
     n.addAssign(inputs.distortion.mul(noise.mul(2).sub(1)));

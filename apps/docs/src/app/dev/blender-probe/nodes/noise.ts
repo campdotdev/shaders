@@ -133,6 +133,11 @@ const fbmFunctions = new Map<string, (...args: TSLNode[]) => TSLNode>();
 /**
  * Blender's noise_fbm(float3). `detail` and `normalize` must be constants;
  * roughness and lacunarity can be any float node.
+ *
+ * `maxOctave` drops every octave above it, counting the first as 0, for
+ * real-time drawing. A dropped octave still adds its amplitude to the
+ * normalization, as if its noise were there and averaged to zero, so the
+ * octaves that stay keep their Blender weights. Infinity keeps them all.
  */
 export function fbm3(
   p: TSLNode,
@@ -140,12 +145,14 @@ export function fbm3(
   roughness: TSLNode,
   lacunarity: TSLNode,
   normalize: boolean,
+  maxOctave = Infinity,
 ): TSLNode {
-  const key = `${detail}|${normalize}`;
+  const key = `${detail}|${normalize}|${maxOctave}`;
   let fn = fbmFunctions.get(key);
 
   if (!fn) {
-    const name = `blenderFbm3_${String(detail).replace('.', '_')}_${normalize ? 'n' : 'r'}`;
+    const cap = Number.isFinite(maxOctave) ? `_max${maxOctave}` : '';
+    const name = `blenderFbm3_${String(detail).replace('.', '_')}_${normalize ? 'n' : 'r'}${cap}`;
 
     fn = gpuFunction(
       name,
@@ -156,7 +163,7 @@ export function fbm3(
         ['lacunarity', 'float'],
       ],
       ([point, octaveRoughness, octaveLacunarity]) =>
-        buildFbm(point, detail, octaveRoughness, octaveLacunarity, normalize),
+        buildFbm(point, { detail, maxOctave, normalize }, octaveRoughness, octaveLacunarity),
     );
     fbmFunctions.set(key, fn);
   }
@@ -164,26 +171,44 @@ export function fbm3(
   return fn(p, roughness, lacunarity);
 }
 
+interface FbmShape {
+  detail: number;
+  maxOctave: number;
+  normalize: boolean;
+}
+
 function buildFbm(
   p: TSLNode,
-  detail: number,
+  { detail, maxOctave, normalize }: FbmShape,
   roughness: TSLNode,
   lacunarity: TSLNode,
-  normalize: boolean,
 ): TSLNode {
   const frequency = float(1).toVar();
   const amplitude = float(1).toVar();
   const maxAmplitude = float(0).toVar();
   const sum = float(0).toVar();
+  const lastOctave = Math.floor(detail);
+  const lastSampled = Math.min(lastOctave, maxOctave);
 
-  Loop({ start: 0, end: Math.floor(detail), condition: '<=' }, () => {
-    const t = snoise3(frequency.mul(p));
+  if (lastSampled >= 0) {
+    Loop({ start: 0, end: lastSampled, condition: '<=' }, () => {
+      const t = snoise3(frequency.mul(p));
 
-    sum.addAssign(t.mul(amplitude));
-    maxAmplitude.addAssign(amplitude);
-    amplitude.mulAssign(roughness);
-    frequency.mulAssign(lacunarity);
-  });
+      sum.addAssign(t.mul(amplitude));
+      maxAmplitude.addAssign(amplitude);
+      amplitude.mulAssign(roughness);
+      frequency.mulAssign(lacunarity);
+    });
+  }
+
+  // Dropped octaves: their weight only, no noise.
+  if (lastSampled < lastOctave) {
+    Loop({ start: lastSampled + 1, end: lastOctave, condition: '<=' }, () => {
+      maxAmplitude.addAssign(amplitude);
+      amplitude.mulAssign(roughness);
+      frequency.mulAssign(lacunarity);
+    });
+  }
 
   // A fractional detail blends in one more octave by its fraction.
   const remainder = detail - Math.floor(detail);
@@ -194,7 +219,8 @@ function buildFbm(
     return normalize ? normalized(sum, maxAmplitude) : sum;
   }
 
-  const sum2 = sum.add(snoise3(frequency.mul(p)).mul(amplitude));
+  const extraOctave = lastOctave + 1 <= maxOctave ? snoise3(frequency.mul(p)) : float(0);
+  const sum2 = sum.add(extraOctave.mul(amplitude));
 
   return normalize
     ? mix(normalized(sum, maxAmplitude), normalized(sum2, maxAmplitude.add(amplitude)), remainder)
@@ -215,6 +241,8 @@ export interface NoiseTexture3DInputs {
   // True when distortion is a constant 0, which skips the distortion noise.
   distortionIsZero: boolean;
   normalize: boolean;
+  // The highest fBM octave to draw, as fbm3's maxOctave. Infinity draws all.
+  maxOctave: number;
 }
 
 /** Blender's node_noise_tex_fbm_3d. Returns Fac and Color. */
@@ -231,7 +259,7 @@ export function noiseTexture3D(inputs: NoiseTexture3DInputs): { fac: TSLNode; co
   }
 
   const fractal = (point: TSLNode) =>
-    fbm3(point, detail, roughness, inputs.lacunarity, inputs.normalize);
+    fbm3(point, detail, roughness, inputs.lacunarity, inputs.normalize, inputs.maxOctave);
   const fac = fractal(p).toVar();
   // The color channels are two more fBM fields at seeded offsets.
   const color = vec4(

@@ -29,7 +29,7 @@ Git ignores `apps/docs/public/blender-probe/`. A material from an asset library,
 
 Start the dev server with `pnpm dev:docs` and open `/dev/blender-probe`. To pick an export, add `?material=<name>`. To see where the port differs, select **Difference**: matching pixels cancel to black, and **Gain** brightens what's left.
 
-To bring the material to life, check **Animate**. The slice drifts through Blender's 3D textures, so the veins form and dissolve in place, and **Swirl** carries them along a slow flow around eddies. The sliders' units and defaults are in the `Motion` comments in `probe-scene.tsx`. **Difference** puts the marble back where Blender rendered it: still, unswirled, at depth 0.
+To bring the material to life, check **Animate**. The slice drifts through Blender's 3D textures, so the veins form and dissolve in place, and **Swirl** carries them along a slow flow around eddies. The sliders' units and defaults are in the `Motion` comments in `probe-scene.tsx`. **Realtime**, on by default, drops the fBM octaves finer than 2 canvas pixels, so the green marble draws a frame in about 11 ms instead of 18 on an M1 Max. The veins stay where Blender puts them, and only the finest grain changes. **Difference** puts the marble back where Blender rendered it: still, unswirled, at full detail, at depth 0.
 
 ## Measure the difference
 

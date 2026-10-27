@@ -30,10 +30,32 @@ type Kind = 'float' | 'vec3' | 'vec4';
 interface SocketValue {
   kind: Kind;
   node: TSLNode;
-  // The number behind a float that no shader math produced: an unlinked
-  // socket, or a group input passed straight through. Loop counts such as
-  // a texture's Detail have to be numbers when the shader is built.
+  // The float's value when the build can know it: an unlinked socket, a
+  // group input passed straight through, or Math on those. Loop counts such
+  // as a texture's Detail have to be numbers when the shader is built, and
+  // the real-time octave cap reads a texture's Scale from here. The shader
+  // still computes the value itself, so Blender's float rounding stays.
   constant?: number;
+}
+
+// Math folded on the CPU, for the constants above. Operations missing here
+// leave their result unknown, which only keeps an octave cap off.
+const FOLD: Record<string, (a: number, b: number, c: number) => number> = {
+  ADD: (a, b) => a + b,
+  SUBTRACT: (a, b) => a - b,
+  MULTIPLY: (a, b) => a * b,
+  DIVIDE: (a, b) => (b === 0 ? 0 : a / b),
+  MULTIPLY_ADD: (a, b, c) => a * b + c,
+  MINIMUM: (a, b) => Math.min(a, b),
+  MAXIMUM: (a, b) => Math.max(a, b),
+  RADIANS: (a) => (a * Math.PI) / 180,
+};
+
+/** How many fBM octaves one texture keeps under a real-time cap. */
+export interface OctavePlan {
+  node: string;
+  kept: number;
+  total: number;
 }
 
 function kindOf(socketType: string): Kind {
@@ -123,6 +145,9 @@ interface NodeContext {
   // Where the pixel sits in the object's space, the Texture Coordinate
   // node's Object output.
   objectCoordinate: TSLNode;
+  // The highest fBM octave worth drawing for a texture whose first octave
+  // runs at `baseFrequency` cycles per object unit. Infinity keeps them all.
+  maxOctave: (detail: number, baseFrequency?: number, lacunarity?: number) => number;
 }
 
 type NodeOutputs = Record<string, TSLNode>;
@@ -135,14 +160,53 @@ class GraphEvaluator {
   // its noise once.
   private readonly nodeOutputs = new Map<string, NodeOutputs>();
   private readonly objectCoordinate: TSLNode;
+  private readonly maxFrequency: number;
+  readonly octaves: OctavePlan[] = [];
 
-  constructor(graph: MaterialGraph, objectCoordinate: TSLNode) {
+  constructor(graph: MaterialGraph, objectCoordinate: TSLNode, maxFrequency: number) {
     // The luma weights in nodes/color.ts are Rec.709's.
     if (graph.workingSpace !== 'Linear Rec.709') {
       throw new Error(`Working space ${graph.workingSpace} is not ported`);
     }
     this.graph = graph;
     this.objectCoordinate = objectCoordinate;
+    this.maxFrequency = maxFrequency;
+  }
+
+  // Octave k of an fBM runs at baseFrequency x lacunarity^k. It is worth
+  // drawing while that stays at or under maxFrequency, the finest pattern
+  // the canvas can show. With the scale unknown, every octave stays.
+  private maxOctaveFor(
+    frame: Frame,
+    node: GraphNode,
+    {
+      detail,
+      baseFrequency,
+      lacunarity,
+    }: { detail: number; baseFrequency?: number; lacunarity?: number },
+  ): number {
+    if (
+      !Number.isFinite(this.maxFrequency) ||
+      baseFrequency === undefined ||
+      lacunarity === undefined ||
+      baseFrequency <= 0 ||
+      lacunarity <= 1
+    ) {
+      return Infinity;
+    }
+
+    const maxOctave = Math.floor(
+      Math.log(this.maxFrequency / baseFrequency) / Math.log(lacunarity),
+    );
+    const total = Math.ceil(detail) + 1;
+
+    this.octaves.push({
+      node: `${frame.key.replace(/^root>?/, '')}/${node.name}`.replace(/^\//, ''),
+      kept: Math.max(0, Math.min(total, maxOctave + 1)),
+      total,
+    });
+
+    return maxOctave;
   }
 
   /** The Base Color input the export tapped, as a vec3 in scene-linear sRGB. */
@@ -268,6 +332,8 @@ class GraphEvaluator {
         option: (name) => optionSetting(node, name),
         flag: (name) => flagSetting(node, name),
         objectCoordinate: this.objectCoordinate,
+        maxOctave: (detail, baseFrequency, lacunarity) =>
+          this.maxOctaveFor(frame, node, { detail, baseFrequency, lacunarity }),
       });
 
     this.nodeOutputs.set(key, outputs);
@@ -276,7 +342,24 @@ class GraphEvaluator {
 
     if (!result) throw new Error(`${node.type} output ${socketId} is not ported`);
 
-    return { kind: kindOf(socket.type), node: result.toVar() };
+    return {
+      kind: kindOf(socket.type),
+      node: result.toVar(),
+      constant: node.type === 'ShaderNodeMath' ? this.foldMath(frame, node) : undefined,
+    };
+  }
+
+  private foldMath(frame: Frame, node: GraphNode): number | undefined {
+    const fold = FOLD[optionSetting(node, 'operation')];
+    const [a, b, c] = ['Value', 'Value_001', 'Value_002'].map(
+      (id) => this.input(frame, node, id).constant,
+    );
+
+    if (!fold || a === undefined || b === undefined || c === undefined) return undefined;
+
+    const result = fold(a, b, c);
+
+    return flagSetting(node, 'use_clamp') ? Math.min(Math.max(result, 0), 1) : result;
   }
 }
 
@@ -331,15 +414,21 @@ const textureBuilders: Record<string, NodeBuilder> = {
 
     return { Object: objectCoordinate };
   },
-  ShaderNodeTexNoise: ({ input, vector, option, flag }) => {
+  ShaderNodeTexNoise: ({ input, vector, option, flag, maxOctave }) => {
     if (option('noise_dimensions') !== '3D' || option('noise_type') !== 'FBM') {
       throw new Error('Only 3D fBM noise is ported');
     }
 
+    const detail = constantOf(input('Detail'), 'Noise detail');
     const { fac, color } = noiseTexture3D({
       vector: vector(),
       scale: input('Scale').node,
-      detail: constantOf(input('Detail'), 'Noise detail'),
+      detail,
+      maxOctave: maxOctave(
+        Math.min(detail, 15),
+        input('Scale').constant,
+        input('Lacunarity').constant,
+      ),
       roughness: input('Roughness').node,
       lacunarity: input('Lacunarity').node,
       distortion: input('Distortion').node,
@@ -367,13 +456,23 @@ const textureBuilders: Record<string, NodeBuilder> = {
       }),
     };
   },
-  ShaderNodeTexWave: ({ input, vector, option }) => {
+  ShaderNodeTexWave: ({ input, vector, option, maxOctave }) => {
+    const detail = constantOf(input('Detail'), 'Wave detail');
+    const scale = input('Scale').constant;
+    const detailScale = input('Detail Scale').constant;
     const { fac, color } = waveTexture({
       vector: vector(),
       scale: input('Scale').node,
       distortion: input('Distortion').node,
       distortionIsZero: input('Distortion').constant === 0,
-      detail: constantOf(input('Detail'), 'Wave detail'),
+      detail,
+      // The distortion's fBM reads the point at Scale x Detail Scale, with a
+      // lacunarity of 2.
+      maxOctave: maxOctave(
+        detail,
+        scale === undefined || detailScale === undefined ? undefined : scale * detailScale,
+        2,
+      ),
       detailScale: input('Detail Scale').node,
       detailRoughness: input('Detail Roughness').node,
       phase: input('Phase Offset').node,
@@ -520,23 +619,40 @@ const NODE_BUILDERS: Record<string, NodeBuilder> = {
   ...colorBuilders,
 };
 
+export interface BuildOptions {
+  /** A node output to build instead of the Base Color. */
+  tap?: TapPath | null;
+  /**
+   * The Texture Coordinate node's Object output. Defaults to the mesh's local
+   * position, which on the probe's 2x2 plane matches the Blender reference
+   * plane's object space, -1..1 on x and y.
+   */
+  objectCoordinate?: TSLNode;
+  /**
+   * The finest pattern worth drawing, in cycles per object unit. fBM octaves
+   * finer than it are dropped. Defaults to Infinity, which keeps every octave,
+   * as Blender does.
+   */
+  maxFrequency?: number;
+  /** Hears which octaves each texture kept, once the shader builds. */
+  onOctaves?: (octaves: OctavePlan[]) => void;
+}
+
 /**
  * Build the material's Base Color, or the output a tap names, as a TSL
  * node. Runs inside an inline Fn so the ports' .toVar() and loops have a
- * statement list to write to.
- *
- * `objectCoordinate` defaults to the mesh's local position, which on the
- * probe's 2x2 plane matches the Blender reference plane's object space,
- * -1..1 on x and y.
+ * statement list to write to. three runs the Fn when it compiles the
+ * material, so the graph is walked then, not here.
  */
-export function buildMaterialColor(
-  graph: MaterialGraph,
-  tap: TapPath | null,
-  objectCoordinate: TSLNode = positionLocal,
-): TSLNode {
-  return Fn(() => {
-    const evaluator = new GraphEvaluator(graph, objectCoordinate);
+export function buildMaterialColor(graph: MaterialGraph, options: BuildOptions = {}): TSLNode {
+  const { tap = null, objectCoordinate = positionLocal, maxFrequency = Infinity } = options;
 
-    return tap ? evaluator.evaluateOutput(tap) : evaluator.evaluateBaseColor();
+  return Fn(() => {
+    const evaluator = new GraphEvaluator(graph, objectCoordinate, maxFrequency);
+    const color = tap ? evaluator.evaluateOutput(tap) : evaluator.evaluateBaseColor();
+
+    options.onOctaves?.(evaluator.octaves);
+
+    return color;
   })();
 }

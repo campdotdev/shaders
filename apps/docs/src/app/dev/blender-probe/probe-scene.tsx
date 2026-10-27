@@ -27,7 +27,7 @@ import { positionLocal, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { swirl } from './flow';
-import { buildMaterialColor } from './graph/evaluate';
+import { buildMaterialColor, type OctavePlan } from './graph/evaluate';
 import { parseTap, tapSlug } from './graph/tap';
 import type { MaterialGraph } from './graph/types';
 
@@ -66,23 +66,33 @@ interface Motion {
 
 const DEFAULT_MOTION: Motion = { speed: 0.015, swirl: 0.06, eddies: 1.2, pace: 6 };
 
+// Real-time mode drops every fBM octave finer than this many canvas pixels
+// per cycle. 2 pixels is the finest pattern a grid of pixels can show, so
+// below it an octave only adds grain that sparkles as the marble moves. On
+// the green marble at 1024px, it cuts a frame from about 18 ms to 11 ms on
+// an M1 Max. 4 pixels saves only another millisecond and softens the grain.
+const MIN_WAVELENGTH_PIXELS = 2;
+// The finest pattern worth drawing in real time, in cycles per object unit.
+// The plane spans 2 object units across SIZE canvas pixels.
+const REALTIME_MAX_FREQUENCY = SIZE / 2 / MIN_WAVELENGTH_PIXELS;
+
 // ----------------------------------------------------------------------------
 // The TSL side
 // ----------------------------------------------------------------------------
 
-function MaterialMesh({
-  graph,
-  tap,
-  motion,
-  comparing,
-}: {
+interface MaterialMeshProps {
   graph: MaterialGraph;
   tap: string | null;
   motion: Motion;
   // True while the page compares with Blender's render, which shows the
   // marble unmoved and unswirled.
   comparing: boolean;
-}) {
+  // True drops the fBM octaves finer than the canvas can show.
+  realtime: boolean;
+  onOctaves: (octaves: OctavePlan[]) => void;
+}
+
+function MaterialMesh({ graph, tap, motion, comparing, realtime, onOctaves }: MaterialMeshProps) {
   const shaderContext = useShaderContext();
   const speed = comparing ? 0 : motion.speed;
   // The depth the slice has drifted to: speed x frame time, summed on the
@@ -125,7 +135,12 @@ function MaterialMesh({
     // renders in. The scene's output stage applies the sRGB transfer, as
     // Blender's Standard view transform does.
     material.colorNode = vec4(
-      buildMaterialColor(graph, tap === null ? null : parseTap(tap), objectCoordinate),
+      buildMaterialColor(graph, {
+        tap: tap === null ? null : parseTap(tap),
+        objectCoordinate,
+        maxFrequency: realtime ? REALTIME_MAX_FREQUENCY : Infinity,
+        onOctaves,
+      }),
       1,
     );
 
@@ -147,7 +162,17 @@ function MaterialMesh({
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
     };
-  }, [shaderContext, graph, tap, depthUniform, swirlUniform, eddiesUniform, paceUniform]);
+  }, [
+    shaderContext,
+    graph,
+    tap,
+    realtime,
+    onOctaves,
+    depthUniform,
+    swirlUniform,
+    eddiesUniform,
+    paceUniform,
+  ]);
 
   return null;
 }
@@ -230,25 +255,48 @@ const pageStyle: CSSProperties = {
 };
 
 function MaterialScene({
-  graph,
-  tap,
-  motion,
-  comparing,
   monitor,
   onFirstPaint,
-}: {
-  graph: MaterialGraph;
-  tap: string | null;
-  motion: Motion;
-  comparing: boolean;
-  monitor: boolean;
-  onFirstPaint: () => void;
-}) {
+  ...meshProps
+}: MaterialMeshProps & { monitor: boolean; onFirstPaint: () => void }) {
   return (
     <ShaderScene gamut="srgb" maxDPR={MAX_DPR} onFirstPaint={onFirstPaint}>
-      <MaterialMesh comparing={comparing} graph={graph} motion={motion} tap={tap} />
+      <MaterialMesh {...meshProps} />
       {monitor && <ShaderMonitor />}
     </ShaderScene>
+  );
+}
+
+// Turns real-time mode on and off and lists what it dropped.
+function RealtimeControls({
+  realtime,
+  octaves,
+  onRealtimeChange,
+}: {
+  realtime: boolean;
+  octaves: OctavePlan[];
+  onRealtimeChange: (realtime: boolean) => void;
+}) {
+  return (
+    <div style={{ marginTop: 8 }}>
+      <label>
+        <input
+          checked={realtime}
+          onChange={(event) => onRealtimeChange(event.target.checked)}
+          type="checkbox"
+        />{' '}
+        Realtime (drop octaves finer than {MIN_WAVELENGTH_PIXELS} pixels)
+      </label>
+      {realtime && octaves.length > 0 && (
+        <ul style={{ margin: '4px 0 0', paddingLeft: 20, color: '#999' }}>
+          {octaves.map(({ node, kept, total }) => (
+            <li key={node}>
+              {node}: {kept} of {total} octaves
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
 
@@ -416,20 +464,26 @@ function LoadedProbe({
   const [view, setView] = useState<View>('tsl');
   const [animate, setAnimate] = useState(false);
   const [motion, setMotion] = useState(DEFAULT_MOTION);
+  const [realtime, setRealtime] = useState(true);
+  const [octaves, setOctaves] = useState<OctavePlan[]>([]);
   const { name, graph, materials } = load;
   const tap = params.get('tap');
   const stem = tap === null ? name : `${name}@${tapSlug(tap)}`;
   const reference = `${MATERIAL_ROOT}/${stem}.reference.png`;
   // The capture view and the difference view compare with Blender, so they
-  // show the marble still, unswirled, at the depth Blender rendered.
+  // show the marble still, unswirled, at full detail, at the depth Blender
+  // rendered. Switching real-time mode recompiles the shader.
   const captureView = params.get('view') === 'tsl';
+  const comparing = captureView || view === 'difference';
   const canvas = (
     <MaterialScene
-      comparing={captureView || view === 'difference'}
+      comparing={comparing}
       graph={graph}
       monitor={!captureView}
       motion={animate ? motion : { ...motion, speed: 0 }}
       onFirstPaint={() => setReady(true)}
+      onOctaves={setOctaves}
+      realtime={realtime && !comparing}
       tap={tap}
     />
   );
@@ -483,6 +537,7 @@ function LoadedProbe({
             onAnimateChange={setAnimate}
             onMotionChange={setMotion}
           />
+          <RealtimeControls octaves={octaves} onRealtimeChange={setRealtime} realtime={realtime} />
         </TslPanel>
         <Panel title="Lit in Blender, for context (not ported)">
           <Image
