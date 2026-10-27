@@ -15,8 +15,14 @@ import {
   useSyncExternalStore,
 } from 'react';
 
-import { ShaderScene, useShaderContext, useStaticSceneHint } from '@camp-dev/shaders';
-import { vec4 } from 'three/tsl';
+import {
+  ShaderMonitor,
+  ShaderScene,
+  useAnimatableSpeed,
+  useShaderContext,
+  useStaticSceneHint,
+} from '@camp-dev/shaders';
+import { positionLocal, vec3, vec4 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import { buildMaterialColor } from './graph/evaluate';
@@ -31,26 +37,50 @@ const MATERIAL_ROOT = '/blender-probe';
 const SIZE = 1024;
 // ShaderScene's own cap on canvas pixels per CSS pixel.
 const MAX_DPR = 2;
+// How fast the slice drifts through the marble, in object units per second.
+// The plane spans 2 units, and the marble's Voronoi cells are about 0.17
+// across, so the default renews a cell about every 11 seconds. Higher churns
+// faster; 0 holds the marble still.
+const DEFAULT_SPEED = 0.015;
 
 // ----------------------------------------------------------------------------
 // The TSL side
 // ----------------------------------------------------------------------------
 
-function MaterialMesh({ graph, tap }: { graph: MaterialGraph; tap: string | null }) {
+function MaterialMesh({
+  graph,
+  tap,
+  speed,
+}: {
+  graph: MaterialGraph;
+  tap: string | null;
+  speed: number;
+}) {
   const shaderContext = useShaderContext();
+  // The depth the slice has drifted to: speed x frame time, summed on the
+  // CPU every frame and handed to the shader as one uniform.
+  const depthUniform = useAnimatableSpeed(speed);
 
-  // The marble never moves, so the scene draws once and parks.
-  useStaticSceneHint(true);
+  // At speed 0 the marble holds still, so the scene draws once and parks.
+  useStaticSceneHint(speed === 0);
 
   useEffect(() => {
     if (!shaderContext) return;
 
     const material = new MeshBasicNodeMaterial();
+    // Blender's noise fills a 3D volume, and the plane is a slice through
+    // it at depth z. Moving the slice along z makes the veins form and
+    // dissolve in place, and every frame stays a true slice of the Blender
+    // material. At depth 0 it is the slice Blender rendered.
+    const objectCoordinate = positionLocal.add(vec3(0, 0, depthUniform));
 
     // The graph evaluates to scene-linear color, the same space Blender
     // renders in. The scene's output stage applies the sRGB transfer, as
     // Blender's Standard view transform does.
-    material.colorNode = vec4(buildMaterialColor(graph, tap === null ? null : parseTap(tap)), 1);
+    material.colorNode = vec4(
+      buildMaterialColor(graph, tap === null ? null : parseTap(tap), objectCoordinate),
+      1,
+    );
 
     // A 2x2 plane fills the scene's -1..1 camera, and its local position is
     // the Object coordinate the graph's Texture Coordinate node reads.
@@ -70,7 +100,7 @@ function MaterialMesh({ graph, tap }: { graph: MaterialGraph; tap: string | null
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
     };
-  }, [shaderContext, graph, tap]);
+  }, [shaderContext, graph, tap, depthUniform]);
 
   return null;
 }
@@ -155,16 +185,59 @@ const pageStyle: CSSProperties = {
 function MaterialScene({
   graph,
   tap,
+  speed,
+  monitor,
   onFirstPaint,
 }: {
   graph: MaterialGraph;
   tap: string | null;
+  speed: number;
+  monitor: boolean;
   onFirstPaint: () => void;
 }) {
   return (
     <ShaderScene gamut="srgb" maxDPR={MAX_DPR} onFirstPaint={onFirstPaint}>
-      <MaterialMesh graph={graph} tap={tap} />
+      <MaterialMesh graph={graph} speed={speed} tap={tap} />
+      {monitor && <ShaderMonitor />}
     </ShaderScene>
+  );
+}
+
+// Turns the drift on and off and sets its speed.
+function MotionControls({
+  animate,
+  speed,
+  onAnimateChange,
+  onSpeedChange,
+}: {
+  animate: boolean;
+  speed: number;
+  onAnimateChange: (animate: boolean) => void;
+  onSpeedChange: (speed: number) => void;
+}) {
+  return (
+    <div style={{ display: 'flex', gap: 12, marginTop: 8, alignItems: 'center' }}>
+      <label>
+        <input
+          checked={animate}
+          onChange={(event) => onAnimateChange(event.target.checked)}
+          type="checkbox"
+        />{' '}
+        Animate
+      </label>
+      <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+        Speed
+        <input
+          max={0.3}
+          min={0.005}
+          onChange={(event) => onSpeedChange(Number(event.target.value))}
+          step={0.005}
+          type="range"
+          value={speed}
+        />
+        {speed.toFixed(3)} units/s
+      </label>
+    </div>
   );
 }
 
@@ -183,11 +256,13 @@ function TslPanel({
   reference,
   size,
   ready,
+  children,
 }: {
   canvas: ReactNode;
   reference: string;
   size: number;
   ready: boolean;
+  children: ReactNode;
 }) {
   const [view, setView] = useState<View>('tsl');
   const [gain, setGain] = useState(8);
@@ -248,6 +323,7 @@ function TslPanel({
           </select>
         </label>
       </div>
+      {children}
     </Panel>
   );
 }
@@ -271,6 +347,8 @@ export default function ProbeScene() {
   const params = useMemo(() => new URLSearchParams(search), [search]);
   const load = useExport(params.get('material'));
   const [ready, setReady] = useState(false);
+  const [animate, setAnimate] = useState(false);
+  const [speed, setSpeed] = useState(DEFAULT_SPEED);
   // CSS pixels that hold SIZE device pixels on this display.
   const size = SIZE / Math.min(pixelRatio, MAX_DPR);
 
@@ -291,9 +369,19 @@ export default function ProbeScene() {
   const tap = params.get('tap');
   const stem = tap === null ? name : `${name}@${tapSlug(tap)}`;
   const reference = `${MATERIAL_ROOT}/${stem}.reference.png`;
-  const canvas = <MaterialScene graph={graph} onFirstPaint={() => setReady(true)} tap={tap} />;
+  // The capture view stays still and unmonitored, at the depth Blender rendered.
+  const captureView = params.get('view') === 'tsl';
+  const canvas = (
+    <MaterialScene
+      graph={graph}
+      monitor={!captureView}
+      onFirstPaint={() => setReady(true)}
+      speed={animate && !captureView ? speed : 0}
+      tap={tap}
+    />
+  );
 
-  if (params.get('view') === 'tsl') {
+  if (captureView) {
     return (
       <div
         data-probe-canvas
@@ -328,7 +416,14 @@ export default function ProbeScene() {
             width={size}
           />
         </Panel>
-        <TslPanel canvas={canvas} ready={ready} reference={reference} size={size} />
+        <TslPanel canvas={canvas} ready={ready} reference={reference} size={size}>
+          <MotionControls
+            animate={animate}
+            onAnimateChange={setAnimate}
+            onSpeedChange={setSpeed}
+            speed={speed}
+          />
+        </TslPanel>
         <Panel title="Lit in Blender, for context (not ported)">
           <Image
             alt={`${graph.material} lit in Blender`}

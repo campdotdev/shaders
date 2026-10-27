@@ -120,6 +120,9 @@ interface NodeContext {
   // A node setting, such as a Math node's operation.
   option: (name: string) => string;
   flag: (name: string) => boolean;
+  // Where the pixel sits in the object's space, the Texture Coordinate
+  // node's Object output.
+  objectCoordinate: TSLNode;
 }
 
 type NodeOutputs = Record<string, TSLNode>;
@@ -131,13 +134,15 @@ class GraphEvaluator {
   // Every output a node builds, so a texture with two linked outputs runs
   // its noise once.
   private readonly nodeOutputs = new Map<string, NodeOutputs>();
+  private readonly objectCoordinate: TSLNode;
 
-  constructor(graph: MaterialGraph) {
+  constructor(graph: MaterialGraph, objectCoordinate: TSLNode) {
     // The luma weights in nodes/color.ts are Rec.709's.
     if (graph.workingSpace !== 'Linear Rec.709') {
       throw new Error(`Working space ${graph.workingSpace} is not ported`);
     }
     this.graph = graph;
+    this.objectCoordinate = objectCoordinate;
   }
 
   /** The Base Color input the export tapped, as a vec3 in scene-linear sRGB. */
@@ -262,6 +267,7 @@ class GraphEvaluator {
         vector: () => this.textureVector(frame, node),
         option: (name) => optionSetting(node, name),
         flag: (name) => flagSetting(node, name),
+        objectCoordinate: this.objectCoordinate,
       });
 
     this.nodeOutputs.set(key, outputs);
@@ -318,14 +324,12 @@ function constantOf(value: SocketValue, what: string): number {
 // ----------------------------------------------------------------------------
 
 const textureBuilders: Record<string, NodeBuilder> = {
-  ShaderNodeTexCoord: ({ node, flag }) => {
+  ShaderNodeTexCoord: ({ node, flag, objectCoordinate }) => {
     if (node.props.object != null || flag('from_instancer')) {
       throw new Error(`${node.name} reads another object's space, which is not ported`);
     }
 
-    // The probe draws on a plane whose local position matches the Blender
-    // reference plane's object space, -1..1 on x and y.
-    return { Object: positionLocal };
+    return { Object: objectCoordinate };
   },
   ShaderNodeTexNoise: ({ input, vector, option, flag }) => {
     if (option('noise_dimensions') !== '3D' || option('noise_type') !== 'FBM') {
@@ -520,10 +524,18 @@ const NODE_BUILDERS: Record<string, NodeBuilder> = {
  * Build the material's Base Color, or the output a tap names, as a TSL
  * node. Runs inside an inline Fn so the ports' .toVar() and loops have a
  * statement list to write to.
+ *
+ * `objectCoordinate` defaults to the mesh's local position, which on the
+ * probe's 2x2 plane matches the Blender reference plane's object space,
+ * -1..1 on x and y.
  */
-export function buildMaterialColor(graph: MaterialGraph, tap: TapPath | null): TSLNode {
+export function buildMaterialColor(
+  graph: MaterialGraph,
+  tap: TapPath | null,
+  objectCoordinate: TSLNode = positionLocal,
+): TSLNode {
   return Fn(() => {
-    const evaluator = new GraphEvaluator(graph);
+    const evaluator = new GraphEvaluator(graph, objectCoordinate);
 
     return tap ? evaluator.evaluateOutput(tap) : evaluator.evaluateBaseColor();
   })();
