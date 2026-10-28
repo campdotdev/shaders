@@ -27,6 +27,15 @@ import { type FlutedGlassParams, INITIAL } from './params';
 const FlutedGlassScene = dynamic(() => import('./scene'), { ssr: false });
 
 /**
+ * The CSS size the poster was captured at in build-posters.sh, the widest
+ * demo box. The flutes are sized in CSS pixels, so DemoPoster's pixel-locked
+ * mode shows the image at this size and lets the box crop it. Cover-scaling
+ * would change the flutes' spacing, and the grooves would jump when the live
+ * scene replaced the poster.
+ */
+const POSTER_SIZE: readonly [number, number] = [896, 598];
+
+/**
  * Reads the live params and renders the scene. Split out from the island so
  * it subscribes to the store on its own: the island never re-renders during
  * a drag, only this and the moved control do.
@@ -37,6 +46,7 @@ function FlutedGlassDemo() {
   return (
     <DemoPoster
       alt="Fluted Glass shader preview: a mesh gradient seen through vertical flutes of glass"
+      pixelSize={POSTER_SIZE}
       src="/posters/fluted-glass.jpg"
     >
       <FlutedGlassScene params={params}>
