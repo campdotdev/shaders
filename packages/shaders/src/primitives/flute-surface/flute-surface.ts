@@ -73,6 +73,13 @@ export interface FluteSurfaceResult {
    * dip. Shading meant to be darkest on the groove reads this.
    */
   fromCenter: ShaderNodeObject<Node>;
+  /**
+   * How steep the glass is, from 0 where it is flat to 1 at a groove. It is
+   * the slope's length without the groove smoothing, so like `fromCenter` it
+   * reaches 1 at a groove from both sides, where the slope dips to 0.
+   * Shading meant to follow the shape of the glass reads this.
+   */
+  steepness: ShaderNodeObject<Node>;
 }
 
 // ---------------------------------------------
@@ -232,6 +239,13 @@ export function fluteSurface(
   const slopeAmount = shapedSlope.mul(ridgeBlend);
   const slope = across.mul(slopeAmount);
 
+  // The steepness takes the same power of fromCenter rather than of the
+  // smoothed offset. Away from the grooves the two are equal, so it is the
+  // slope's length there. On a groove's own pixel, where the smoothing pulls
+  // the slope through 0, it keeps climbing toward 1. The ridge fade reads
+  // fromCenter too, so it fades only at the center and never at a groove.
+  const steepness = pow(fromCenter, exponent).mul(smoothstep(0, rampPerPixel.mul(2), fromCenter));
+
   // ---------------------------------------------
   // The bend: refraction as a sample offset
   // ---------------------------------------------
@@ -247,5 +261,5 @@ export function fluteSurface(
   // middle and crams the rest against the walls.
   const bend = slope.mul(refraction).mul(fluteWidth.mul(0.5));
 
-  return { bend, slope, fromCenter };
+  return { bend, slope, fromCenter, steepness };
 }

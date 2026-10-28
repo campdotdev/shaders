@@ -93,8 +93,9 @@ const LIGHT_HEIGHT_RADIANS = (LIGHT_HEIGHT * Math.PI) / 180;
 // The specular exponent. Higher draws a thinner, harder highlight, and
 // lower spreads it into a soft sheen across the wall.
 const HIGHLIGHT_SHARPNESS = 32;
-// How far the shadow reaches in from each groove, as a share of the way to
-// the flute's center. 1 shades the whole flute, darkest at the grooves.
+// How far the shadow can reach in from each groove, as a share of the way to
+// the flute's center. Within that reach it falls only where the glass is
+// steep. 1 lets it reach the center.
 const SHADOW_WIDTH = 0.5;
 
 // The pass's frame has y down and the primitive's has y up, so a vector
@@ -244,17 +245,22 @@ export function FlutedGlassShader({
   // surface at slightly different points. SHA-267 reworks how warps stack.
   usePostProcessPass(
     (input) => {
-      const { slope, fromCenter } = surfaceAt(uv());
+      const { slope, fromCenter, steepness } = surfaceAt(uv());
 
       // The shadow. smoothstep() climbs from 0 to 1 over the outer
       // SHADOW_WIDTH of the way from the center to the groove, so the shade
       // is 0 across the middle of the flute and full right on the groove.
-      // It reads fromCenter rather than the slope: the groove smoothing
-      // pulls the slope to 0 on the groove's own pixel, which would leave a
-      // bright line down the middle of the dark one. Multiplying darkens
-      // without moving alpha, and a transparent pixel, which holds no color
-      // here, stays transparent.
-      const shade = smoothstep(1 - SHADOW_WIDTH, 1, fromCenter).mul(shadowUniform);
+      // Times the steepness, it falls only where the glass is steep: a flat
+      // top darkens on its walls and not across its flat middle, and a
+      // prism, steep from ridge to groove, keeps the whole band. Both read
+      // the glass without the groove smoothing, which pulls the slope to 0
+      // on the groove's own pixel and would leave a bright line down the
+      // middle of the dark one. Multiplying darkens without moving alpha,
+      // and a transparent pixel, which holds no color here, stays
+      // transparent.
+      const shade = smoothstep(1 - SHADOW_WIDTH, 1, fromCenter)
+        .mul(steepness)
+        .mul(shadowUniform);
       const shaded = input.rgb.mul(shade.oneMinus());
 
       // The light works in the primitive's frame, y up, where the slope

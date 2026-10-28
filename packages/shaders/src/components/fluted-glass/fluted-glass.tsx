@@ -72,8 +72,9 @@ export interface FlutedGlassProps {
   highlightColor?: string;
   /**
    * How dark the glass gets at each groove, from 0 to 1, where 1 is black
-   * right on the groove. 0 turns it off. Defaults to 0.2. Accepts a static
-   * value or an animation signal.
+   * right on the groove. The shadow falls where the glass turns steep, so a
+   * `'flat'` cross-section darkens only along its walls. 0 turns it off.
+   * Defaults to 0.2. Accepts a static value or an animation signal.
    */
   shadow?: AnimatableProp<number>;
 }

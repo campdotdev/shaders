@@ -142,6 +142,41 @@ function wallGain(lit: Brightness, unlit: Brightness): { left: number; right: nu
   return { left: left / count, right: right / count };
 }
 
+/**
+ * The x of every column `near` to `far` pixels out from a groove, on both
+ * sides of every groove on a canvas `width` pixels wide. Column 0 touches
+ * the groove.
+ */
+function columnsNearGrooves(width: number, near: number, far: number): number[] {
+  const columns: number[] = [];
+
+  for (const groove of grooves(width)) {
+    for (let step = near; step <= far; step += 1) {
+      columns.push(groove - 1 - step, groove + step);
+    }
+  }
+
+  return columns.filter((x) => x >= 0 && x < width);
+}
+
+/**
+ * The share of `unshaded`'s brightness that `shaded` loses, over the columns
+ * `near` to `far` pixels out from every groove.
+ */
+function shadowShare(shaded: Brightness, unshaded: Brightness, near: number, far: number): number {
+  let lost = 0;
+  let total = 0;
+
+  for (const x of columnsNearGrooves(shaded.width, near, far)) {
+    for (const y of shaded.rows) {
+      lost += unshaded.at(x, y) - shaded.at(x, y);
+      total += unshaded.at(x, y);
+    }
+  }
+
+  return lost / total;
+}
+
 /** The largest brightness difference between two loads, pixel for pixel. */
 function maxDifference(first: Brightness, second: Brightness): number {
   let largest = 0;
@@ -182,6 +217,22 @@ test('FlutedGlass — the highlight lights the walls that face the light', async
 
   expect(gain.left, message).toBeGreaterThan(GAIN_ON_LIT_WALLS);
   expect(gain.right, message).toBeLessThan(gain.left / 4);
+});
+
+// A flat top is flat across its middle and steep only at its walls, so its
+// shadow belongs on the walls. Both loads turn the highlight off, and only
+// the shadow differs between them. Columns 0 and 1 out from a groove sit on
+// the walls. Columns 4 to 9 sit a fifth to a half of the way to the center:
+// inside the shadow's reach, but on glass that is flat.
+test('FlutedGlass — on a flat top the shadow stays on the walls', async ({ page }) => {
+  const unshaded = await probeBrightness(page, '&crossSection=flat&highlight=0&shadow=0');
+  const shaded = await probeBrightness(page, '&crossSection=flat&highlight=0&shadow=1');
+  const walls = shadowShare(shaded, unshaded, 0, 1);
+  const flatTop = shadowShare(shaded, unshaded, 4, 9);
+  const message = `share of brightness the shadow takes: walls ${walls}, flat top ${flatTop}`;
+
+  expect(walls, message).toBeGreaterThan(0.1);
+  expect(flatTop, message).toBeLessThan(0.02);
 });
 
 // With nothing to bend and no light, the glass draws the Source exactly as

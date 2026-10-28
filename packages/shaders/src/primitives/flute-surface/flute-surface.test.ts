@@ -4,12 +4,13 @@ import { describe, expect, it } from 'vitest';
 import { fluteSurface } from './flute-surface.js';
 
 describe('fluteSurface', () => {
-  it('returns bend, slope, and fromCenter nodes with default options', () => {
+  it('returns bend, slope, fromCenter, and steepness nodes with default options', () => {
     const surface = fluteSurface(uv().mul(400));
 
     expect(surface.bend).toBeDefined();
     expect(surface.slope).toBeDefined();
     expect(surface.fromCenter).toBeDefined();
+    expect(surface.steepness).toBeDefined();
   });
 
   it('accepts numeric options', () => {
