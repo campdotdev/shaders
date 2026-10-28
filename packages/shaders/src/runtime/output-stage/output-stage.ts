@@ -125,10 +125,15 @@ function createOrderedList<T>() {
         nextPlace += 1;
         places.set(slot, place);
       }
-      entries.set(slot, { place, entry });
+      const added = { place, entry };
+
+      entries.set(slot, added);
       reorder();
 
+      // Removes only what this call added, so a remover that runs after
+      // the slot registered again leaves the newer entry in place.
       return () => {
+        if (entries.get(slot) !== added) return;
         entries.delete(slot);
         reorder();
       };

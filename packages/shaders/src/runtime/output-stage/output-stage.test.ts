@@ -235,6 +235,20 @@ describe('createOutputStage', () => {
     expect(calls).toEqual(['first again', 'second']);
   });
 
+  // A caller that registers under a slot directly could run an old remover
+  // after registering again. The old remover must leave the new entry.
+  it('leaves a newer entry under the same slot when an old remover runs', () => {
+    const { stage, material } = renderedMaterial();
+    const slot = {};
+    const passThrough = warpResample((coordinate) => coordinate);
+    const removeOld = stage.registerResample(passThrough, slot);
+
+    stage.registerResample(passThrough, slot);
+    removeOld();
+
+    expect(sceneReads(material)).toHaveLength(1);
+  });
+
   // FlutedGlass's color split takes three samples of the image beneath it.
   // Each sample reruns every UV warp beneath the resample, so a CursorRipple
   // under the glass bends all three.
