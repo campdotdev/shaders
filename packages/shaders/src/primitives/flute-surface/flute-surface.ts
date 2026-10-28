@@ -16,7 +16,6 @@ import {
   mix,
   pow,
   select,
-  sign,
   sin,
   smoothstep,
   vec2,
@@ -220,12 +219,20 @@ export function fluteSurface(
   //   0.5 and reaches 0.5 only at 0.96, so the glass stays flat across the
   //   top and turns steep right at each groove.
   //
-  // pow() needs a base of 0 or more, so it takes the distance, and sign()
-  // puts the offset's sign back afterward, -1 left of the center and 1
-  // right of it. Pointing the result along `across` turns it into a vector,
-  // so on either side of the center the slope points toward the nearer
-  // groove.
-  const shapedSlope = sign(fluteOffset).mul(pow(abs(fluteOffset), exponent));
+  // pow() needs a base of 0 or more, so the power is taken of fromCenter,
+  // the distance without the groove smoothing, and the offset carries the
+  // sign: offset * distance^(exponent - 1). Away from the grooves the offset
+  // is ±distance, so that works out to ±distance^exponent, the curve above.
+  // On a groove's own pixel the distance is about 1, and 1 to any power is
+  // 1, so the slope follows the smoothed offset through 0 over the same
+  // pixel whatever the exponent. Raising the smoothed offset itself would
+  // undo the smoothing on a prism: x^(1/16) is still 0.82 at x = 0.045, so
+  // the slope would stay near full until a sliver from the groove, and the
+  // grooves would staircase again. The max() keeps the base off 0 at the
+  // center, where a prism's negative power, exponent - 1, would shoot to
+  // infinity. Pointing the result along `across` turns it into a vector, so
+  // on either side of the center the slope points toward the nearer groove.
+  const shapedSlope = fluteOffset.mul(pow(max(fromCenter, 1e-5), exponent.sub(1)));
 
   // A prism's ridge jumps too. Just off the center x^(1/16) leaps from 0 to
   // about 0.65 inside a sliver much thinner than a pixel, so the two faces
