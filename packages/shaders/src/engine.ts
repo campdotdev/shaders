@@ -67,6 +67,12 @@ export { signedDistanceFieldCross } from './primitives/sdf-cross/sdf-cross.js';
 
 export { displace } from './primitives/displace/displace.js';
 
+export { fluteSurface } from './primitives/flute-surface/flute-surface.js';
+export type {
+  FluteSurfaceOptions,
+  FluteSurfaceResult,
+} from './primitives/flute-surface/flute-surface.js';
+
 export { cursorRipple } from './primitives/cursor-ripple/cursor-ripple.js';
 export type { CursorRippleOptions } from './primitives/cursor-ripple/cursor-ripple.js';
 

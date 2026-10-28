@@ -17,6 +17,7 @@ import { CursorSpotlightIsland } from './cursor-spotlight/demo';
 import { DissolveIsland } from './dissolve/demo';
 import { DitherIsland } from './dither/demo';
 import { DotFieldIsland } from './dot-field/demo';
+import { FlutedGlassIsland } from './fluted-glass/demo';
 import { FractalNoiseIsland } from './fractal-noise/demo';
 import { GodRaysIsland } from './god-rays/demo';
 import { GrainIsland } from './grain/demo';
@@ -216,6 +217,23 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     usageSnippet: `<ShaderScene>
   <DotField spacing={30} dotSize={3} color="oklch(0.65 0.01 150)" speed={0.45} amplitude={0.15} />
 </ShaderScene>`,
+  },
+  'fluted-glass': {
+    Island: FlutedGlassIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <FlutedGlass />
+  <Grain />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        FlutedGlass bends only what Sources drew, never the output of an Effect such as Grain, so
+        mount Grain after the glass, where the order you write matches what you see. Mode 1 only: it
+        needs the scene&apos;s output stage. In your own r3f <code>&lt;Canvas&gt;</code>, the{' '}
+        <code>fluteSurface</code> primitive gives you the same flute math.
+      </>
+    ),
   },
   'fractal-noise': {
     Island: FractalNoiseIsland,

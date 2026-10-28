@@ -34,6 +34,9 @@ export type { DitherProps } from './dither/dither.js';
 export { DotField } from './dot-field/dot-field.js';
 export type { DotFieldProps, DotShape, SvgMarkup } from './dot-field/dot-field.js';
 
+export { FlutedGlass } from './fluted-glass/fluted-glass.js';
+export type { CrossSectionName, FlutedGlassProps } from './fluted-glass/fluted-glass.js';
+
 export { FractalNoise } from './fractal-noise/fractal-noise.js';
 export type { FractalNoiseProps } from './fractal-noise/fractal-noise.js';
 export type { FractalNoiseStyle } from './fractal-noise/shader.js';

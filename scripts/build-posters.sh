@@ -38,8 +38,15 @@ fi
 # transparent base layer, e.g. aurora, so they flatten onto a sensible color;
 # WxH overrides the default capture size and is only needed for pixel-sized
 # shaders like dot-field, whose posters render pixel-locked in the demo — see
-# DemoPoster's pixelSize prop — and so must be captured larger than any demo
-# box they'll be cropped into)
+# DemoPoster's pixelSize prop — and so must be captured at least as large as
+# any demo box they'll be cropped into)
+#
+# fluted-glass is captured at the widest demo box: the 4xl column's 896px at
+# 3:2, rounded up to 598. Its flutes are sized in CSS pixels, so its poster
+# renders pixel-locked too. The MeshGradient under the glass stretches to the
+# canvas, so a larger capture would zoom the gradient in every box. At this
+# size the poster matches the live scene in the widest box. A narrower box
+# keeps the flutes' spacing but shows only the middle of the gradient.
 #
 # crop is the side, in poster pixels, of the center square the card thumbnail
 # is cut from. Without it the thumbnail keeps the poster's full height. Only a
@@ -74,6 +81,7 @@ for pair in \
   "cursor-ripple:jpg" \
   "cursor-smudge:jpg" \
   "cursor-spotlight:jpg" \
+  "fluted-glass:jpg::896x598" \
   "radial-wipe:jpg:#0b0f0d" \
   "dissolve:jpg:#0b0f0d"; do
   IFS=':' read -r name format background size crop <<< "$pair"
