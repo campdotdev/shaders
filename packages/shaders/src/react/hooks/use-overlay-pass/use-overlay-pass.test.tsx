@@ -29,7 +29,7 @@ function makeCtx(): {
         cleanups++;
       };
     },
-    registerBaseUvTransform: () => () => undefined,
+    registerResample: () => () => undefined,
     registerPrePass: () => () => undefined,
     getCursorInput: () => {
       throw new Error('not used by this hook');

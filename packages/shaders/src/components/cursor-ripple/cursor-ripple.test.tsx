@@ -12,9 +12,9 @@ import {
 } from '../../engine.js';
 import {
   type PostProcessTransform,
+  type Resample,
   ShaderContext,
   type ShaderContextValue,
-  type UvTransform,
 } from '../../react/context/shader-context.js';
 import type { SchedulerClient } from '../../runtime/frame-scheduler/frame-scheduler.js';
 import { CursorRipple } from './cursor-ripple.js';
@@ -78,7 +78,7 @@ function makeScene(
   }: { scrollPush?: boolean; strokeAt?: StrokePoint | null } = {},
 ) {
   const clients: SchedulerClient[] = [];
-  const uvTransforms: UvTransform[] = [];
+  const resamples: Resample[] = [];
   const overlays: PostProcessTransform[] = [];
   const unregisters = { uv: 0, overlay: 0 };
   const scheduler = {
@@ -105,8 +105,8 @@ function makeScene(
         unregisters.overlay += 1;
       };
     },
-    registerBaseUvTransform: (transform: UvTransform) => {
-      uvTransforms.push(transform);
+    registerResample: (resample: Resample) => {
+      resamples.push(resample);
 
       return () => {
         unregisters.uv += 1;
@@ -133,7 +133,7 @@ function makeScene(
     for (const client of [...clients]) client({ delta, elapsed: 0, now: 0 });
   };
 
-  return { Wrapper, scheduler, uvTransforms, overlays, unregisters, tick };
+  return { Wrapper, scheduler, resamples, overlays, unregisters, tick };
 }
 
 const fireMoveOnWindow = (clientX: number, clientY: number) => {
@@ -163,7 +163,7 @@ describe('CursorRipple with a live field', () => {
     const scene = makeScene(makeRenderer());
     const { unmount } = render(<CursorRipple />, { wrapper: scene.Wrapper });
 
-    expect(scene.uvTransforms).toHaveLength(1);
+    expect(scene.resamples).toHaveLength(1);
     expect(scene.overlays).toHaveLength(1);
 
     unmount();
@@ -192,7 +192,7 @@ describe('CursorRipple with a live field', () => {
       { wrapper: scene.Wrapper },
     );
 
-    expect(scene.uvTransforms).toHaveLength(2);
+    expect(scene.resamples).toHaveLength(2);
     expect(scene.overlays).toHaveLength(2);
 
     fireMoveOnWindow(100, 100);
@@ -214,7 +214,7 @@ describe('CursorRipple with a live field', () => {
       { wrapper: scene.Wrapper },
     );
 
-    expect(scene.uvTransforms.length - scene.unregisters.uv).toBe(1);
+    expect(scene.resamples.length - scene.unregisters.uv).toBe(1);
     expect(scene.overlays.length - scene.unregisters.overlay).toBe(1);
   });
 
@@ -364,7 +364,7 @@ describe('CursorRipple props', () => {
 
     rerender(<CursorRipple refraction={0.3} shine={0.9} />);
 
-    expect(scene.uvTransforms).toHaveLength(1);
+    expect(scene.resamples).toHaveLength(1);
     expect(scene.overlays).toHaveLength(1);
     expect(scene.unregisters).toEqual({ uv: 0, overlay: 0 });
   });
@@ -391,7 +391,7 @@ describe('CursorRipple with an inert field', () => {
       scene.tick();
     }).not.toThrow();
 
-    expect(scene.uvTransforms).toHaveLength(0);
+    expect(scene.resamples).toHaveLength(0);
     expect(scene.overlays).toHaveLength(0);
     expect(renderer.render).not.toHaveBeenCalled();
     expect(console.warn).toHaveBeenCalledTimes(1);
@@ -403,7 +403,7 @@ describe('CursorRipple with an inert field', () => {
     const scene = makeScene(renderer);
 
     render(<CursorRipple />, { wrapper: scene.Wrapper });
-    expect(scene.uvTransforms).toHaveLength(1);
+    expect(scene.resamples).toHaveLength(1);
     expect(scene.overlays).toHaveLength(1);
 
     (renderer as unknown as { _isDeviceLost: boolean })._isDeviceLost = true;

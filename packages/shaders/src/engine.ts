@@ -112,6 +112,8 @@ export type {
   OutputStage,
   PostProcessTransform,
   PrePass,
+  Resample,
+  Sampler,
   UvTransform,
 } from './runtime/output-stage/output-stage.js';
 

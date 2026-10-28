@@ -8,6 +8,8 @@ import type {
   GpuRenderer,
   PostProcessTransform,
   PrePass,
+  Resample,
+  Sampler,
   TimeGpu,
   UvTransform,
 } from '../../engine.js';
@@ -18,9 +20,9 @@ import type { ResizeSignal } from '../../inputs/canvas-size/canvas-size.js';
 // (useShaderContext, usePostProcessPass, useResize, ...) reads from it.
 // Null means "not inside a mounted scene" — hooks stub themselves out.
 
-// The two transform shapes are defined with the output stage in the runtime
-// and re-exported here, so hooks keep importing them from the context.
-export type { PostProcessTransform, UvTransform };
+// The transform and resample shapes are defined with the output stage in the
+// runtime and re-exported here, so hooks keep importing them from the context.
+export type { PostProcessTransform, Resample, Sampler, UvTransform };
 
 export interface ShaderContextValue {
   renderer: GpuRenderer;
@@ -28,7 +30,11 @@ export interface ShaderContextValue {
   camera: Camera;
   scheduler: FrameScheduler;
   registerOverlay: (transform: PostProcessTransform) => () => void;
-  registerBaseUvTransform: (transform: UvTransform) => () => void;
+  /**
+   * Adds a resample above the ones already registered, so its sampler wraps
+   * theirs. Returns its remover.
+   */
+  registerResample: (resample: Resample) => () => void;
   /**
    * Adds a draw that runs before the scene's meshes on every frame the scene
    * draws, including the redraw after a resize, such as Aurora's field pass.

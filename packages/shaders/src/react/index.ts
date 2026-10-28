@@ -11,5 +11,7 @@ export * from './errors/index.js';
 export type {
   ShaderContextValue,
   PostProcessTransform,
+  Resample,
+  Sampler,
   UvTransform,
 } from './context/shader-context.js';

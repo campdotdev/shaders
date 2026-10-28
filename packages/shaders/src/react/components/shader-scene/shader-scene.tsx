@@ -233,7 +233,7 @@ export function ShaderScene({
           camera,
           scheduler,
           registerOverlay: outputStage.registerOverlay,
-          registerBaseUvTransform: outputStage.registerBaseUvTransform,
+          registerResample: outputStage.registerResample,
           registerPrePass: outputStage.registerPrePass,
           getCursorInput: cursorInput.get,
           canvasSize: canvasWatch.canvasSize,

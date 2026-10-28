@@ -1,9 +1,9 @@
 // The output stage of a ShaderScene: the base pass that renders the scene's
-// meshes to a texture, the chain of post-process transforms that overlays
-// register, and the full-screen quad that writes the composed result to the
-// canvas, plus the pre-passes that draw before the scene. ShaderScene creates
-// one per mount and hands its register functions and the GPU timer's switch
-// to its children through the context.
+// meshes to a texture, the resamples and post-process transforms that
+// Effects register, and the full-screen quad that writes the composed result
+// to the canvas, plus the pre-passes that draw before the scene. ShaderScene
+// creates one per mount and hands its register functions and the GPU timer's
+// switch to its children through the context.
 // It is written against three's renderer alone, with no React, so the scene
 // component stays readable and this part has its own test.
 //
@@ -26,10 +26,26 @@ import { createGpuTimer, type TimeGpu } from '../gpu-timer/gpu-timer.js';
 export type PostProcessTransform = (input: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
 /**
- * A base-pass UV warp: takes the coordinate the scene texture is about to be
- * sampled at (0..1 across the canvas) and returns a replacement. Lets an
- * overlay resample the rendered scene, such as snapping to a grid for
- * pixelation, which a color-only PostProcessTransform cannot express.
+ * Reads the image beneath an Effect at a coordinate (0..1 across the canvas)
+ * and returns its rgba. It is a function that builds shader nodes, not a GPU
+ * sampler object.
+ */
+export type Sampler = (coordinate: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
+
+/**
+ * An Effect's resample: takes the sampler for everything beneath the Effect
+ * and returns the sampler that replaces it. The new sampler can call the one
+ * beneath more than once, such as three times for a color split. A
+ * PostProcessTransform sees only the composed pixel, so it cannot read the
+ * image anywhere else.
+ */
+export type Resample = (sampleBeneath: Sampler) => Sampler;
+
+/**
+ * A UV warp: takes the coordinate the image beneath an Effect is about to be
+ * sampled at (0..1 across the canvas) and returns a replacement, such as a
+ * coordinate snapped to a grid for pixelation. It is the resample that
+ * samples the image beneath once, at the moved coordinate.
  */
 export type UvTransform = (uv: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
@@ -45,8 +61,11 @@ export type PrePass = () => void;
 export interface OutputStage {
   /** Add a post-process step after the ones already registered. Returns its remover. */
   registerOverlay: (transform: PostProcessTransform) => () => void;
-  /** Add a base-pass UV warp after the ones already registered. Returns its remover. */
-  registerBaseUvTransform: (transform: UvTransform) => () => void;
+  /**
+   * Add a resample above the ones already registered, so its sampler wraps
+   * theirs. Returns its remover.
+   */
+  registerResample: (resample: Resample) => () => void;
   /**
    * Add a draw that runs before the scene pass, after the ones already
    * registered, on every frame and on the redraw after a resize. Returns its
@@ -77,13 +96,13 @@ export function createOutputStage(
   outputMaterial.name = 'ShaderScene output';
   const outputQuad = new QuadMesh(outputMaterial);
 
-  // The chain: base pass first (the scene's meshes rendered to a texture),
-  // then each registered overlay transform in MOUNT ORDER. A Map iterates in
-  // insertion order, so <Grain> after <Vignette> grains the vignetted image.
-  // UV transforms warp where the base pass texture is sampled (<Dither>'s
-  // pixel snap, say) and compose in mount order too.
+  // The chain: base pass first (the scene's meshes rendered to a texture
+  // and read through every resample), then each registered overlay
+  // transform in MOUNT ORDER. A Map iterates in insertion order, so <Grain>
+  // after <Vignette> grains the vignetted image. Resamples stack in mount
+  // order too: each one wraps the samplers registered before it.
   const overlays = new Map<symbol, PostProcessTransform>();
-  const uvTransforms = new Map<symbol, UvTransform>();
+  const resamples = new Map<symbol, Resample>();
   // Pre-passes draw before the chain, in mount order too. They change no
   // node in the output graph, so registering one rebuilds nothing.
   const prePasses = new Map<symbol, PrePass>();
@@ -99,25 +118,26 @@ export function createOutputStage(
   const gpuTimer = createGpuTimer(renderer);
 
   const rebuildOutputNode = () => {
-    // With no UV transforms the pass node samples itself at the screen
-    // coordinate. With any registered, resample its texture at the warped
-    // coordinate, where uv() is the output quad's 0..1 screen position.
+    // With no resample the pass node samples itself at the screen
+    // coordinate. With any registered, each resample wraps the sampler
+    // beneath it, starting from a read of the scene's texture. The
+    // last-registered one is the outermost function, and the stage calls it
+    // once per pixel at uv(), the output quad's 0..1 screen position. So the
+    // last-mounted Effect's UV warp moves the screen coordinate first, and
+    // that Effect acts as the top layer.
     // passTexture wraps the pass's color texture in a sampleable TextureNode
     // (getTextureNode's typing is too loose to chain .uv from); its setup()
     // still builds the pass itself, so the scene renders even though only its
-    // texture appears in the graph.
+    // texture appears in the graph. A pass texture turns the texture matrix
+    // off, and every .uv() read cloned from it keeps it off, so no read pays
+    // the multiply (the texture-matrix gotcha in docs/agents/tsl.md).
     const scenePassTexture = passTexture(scenePass, scenePass.getTexture('output'));
-    const basePassNode =
-      uvTransforms.size === 0
-        ? vec4(scenePass)
-        : vec4(
-            scenePassTexture.uv(
-              Array.from(uvTransforms.values()).reduce<ShaderNodeObject<Node>>(
-                (coordinate, transform) => transform(coordinate),
-                uv(),
-              ),
-            ),
-          );
+    const sampleScene: Sampler = (coordinate) => scenePassTexture.uv(coordinate);
+    const sampleTop = Array.from(resamples.values()).reduce(
+      (sampleBeneath, resample) => resample(sampleBeneath),
+      sampleScene,
+    );
+    const basePassNode = resamples.size === 0 ? vec4(scenePass) : vec4(sampleTop(uv()));
 
     // Overlays (Grain, Vignette, ...) compose in linear working space.
     const composed = Array.from(overlays.values()).reduce(
@@ -156,14 +176,14 @@ export function createOutputStage(
       };
     },
 
-    registerBaseUvTransform(transform) {
-      const key = Symbol('uv-transform');
+    registerResample(resample) {
+      const key = Symbol('resample');
 
-      uvTransforms.set(key, transform);
+      resamples.set(key, resample);
       rebuildOutputNode();
 
       return () => {
-        uvTransforms.delete(key);
+        resamples.delete(key);
         rebuildOutputNode();
       };
     },
