@@ -181,7 +181,7 @@ describe('CursorRipple with a live field', () => {
   // CursorRipple creates its field in an effect, after the commit it mounts
   // in. Its shader half mounts in that commit anyway, as a pass-through, so
   // its UV warp registers beside the Effects mounted with it. When the field
-  // arrives, the warp registers again under the same slot and keeps its
+  // arrives, the UV warp registers again under the same slot and keeps its
   // place, beneath the Effects mounted after it.
   it('stacks where it is mounted, and keeps its place once its field arrives', () => {
     const scene = makeScene(makeRenderer());
