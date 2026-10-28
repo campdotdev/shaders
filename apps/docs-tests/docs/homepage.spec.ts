@@ -281,10 +281,13 @@ test('each feature card shows its illustration, hidden from screen readers', asy
       continue;
     }
 
-    const image = item.locator('img');
+    // An image, alone or under a live illustration's other parts, such as
+    // the Reactive card's arrow. Without WebGPU, as here, the Reactive card
+    // keeps showing its still image.
+    const image = item.locator(`img[src="${card.illustration.src}"]`);
 
-    await expect(image).toHaveAttribute('aria-hidden', 'true');
-    await expect(image).toHaveAttribute('src', card.illustration.src);
+    await expect(image).toBeVisible();
+    expect(await image.evaluate((element) => !!element.closest('[aria-hidden="true"]'))).toBe(true);
     await expect
       .poll(() =>
         image.evaluate((element: HTMLImageElement) => element.complete && element.naturalWidth > 0),

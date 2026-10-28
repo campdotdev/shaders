@@ -1,0 +1,73 @@
+/* The Reactive illustration, after the Figma mock's node 939:964: a pointer
+   arrow over a live gradient. Every length is in the mock's pixels times
+   --mock-px, one mock pixel at the card window's current width. The window
+   is 312 mock pixels wide, and features.module.css makes it the container
+   that `cqw` measures, so the illustration scales like the image it
+   replaced at every column width. */
+.illustration {
+  --mock-px: calc(100cqw / 312);
+
+  position: relative;
+  aspect-ratio: 312 / 309;
+}
+
+/* The still frame, captured from the live scene at 2x with its arrow. It
+   covers the scene until the scene has laid its smudge, and stands in for
+   it without WebGPU and under reduced motion. */
+.still {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Once the arrow lands on the pointer and follows it, it stands in for the
+   cursor, so the real one hides over the illustration. While the arrow is
+   still flying in, the real one stays, so the visitor never loses it. */
+.illustration[data-arrow='following'] {
+  cursor: none;
+}
+
+/* ---- The arrow ----
+   The mock's pointer, 71.6 by 87.9. --arrow-x and --arrow-y place the top
+   left of its box, and --arrow-angle turns the box about its center, in
+   degrees: 76.89 in the still frame points it up and to the right, and
+   while it follows the pointer, it turns to point the way the pointer
+   moves. reactive-arrow.ts works out the pose.
+
+   Both parts carry the whole placement themselves. A transform on a shared
+   parent would make that parent a group of its own, and the halo's overlay
+   blend would then have nothing under it to blend with.
+
+   Touches pass through to the canvas, whose own touchstart starts a scroll
+   push, even while a push hides the arrow. */
+.pointer {
+  position: absolute;
+  pointer-events: none;
+  transition: opacity var(--fade-sm) var(--ease-out);
+  top: 0;
+  left: 0;
+  box-sizing: border-box;
+  width: calc(71.595 * var(--mock-px));
+  height: calc(87.924 * var(--mock-px));
+  rotate: calc(var(--arrow-angle) * 1deg);
+  translate: calc(var(--arrow-x) * var(--mock-px)) calc(var(--arrow-y) * var(--mock-px));
+}
+
+/* A scroll push hides the arrow while the touch stirs the smudge. It shows
+   again as it swoops back in from off the window. */
+.illustration[data-arrow-hidden] .pointer {
+  opacity: 0;
+}
+
+/* The halo, the pointer's full box, in light gray with an overlay blend,
+   which lightens it over bright color and keeps it dim over dark. */
+.pointer[data-part='halo'] {
+  mix-blend-mode: overlay;
+}
+
+/* The body, 58.9 by 75.2, inset in the halo's box as the mock draws it. */
+.pointer[data-part='body'] {
+  padding: calc(6.489 * var(--mock-px)) calc(6.49 * var(--mock-px)) calc(6.198 * var(--mock-px))
+    calc(6.198 * var(--mock-px));
+}

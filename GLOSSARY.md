@@ -119,7 +119,7 @@ A card in the homepage's features section that illustrates one quality of the li
 _Avoid_: Benefit card, value prop, pillar, featured card
 
 **Story**:
-The animation a feature card plays when the pointer moves over it. Once started, a story always finishes, and the card returns to its still frame.
+The animation a feature card plays when the pointer moves over it, or, on the Reactive card, when a scroll push runs over it. Once started, a story always finishes, and the card returns to its still frame.
 _Avoid_: Intro, entrance, demo, hover effect
 
 **Still frame**:
