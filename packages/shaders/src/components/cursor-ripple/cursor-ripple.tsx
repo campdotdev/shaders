@@ -90,9 +90,9 @@ let inertWarned = false;
 /**
  * The one development-only note when the water cannot run (ADR 0003): the
  * WebGL2 fallback without float render targets, or a lost device. The
- * Effect then registers nothing and the scene renders as if it were not
- * there, which is the intended degradation, so this is a warning and not
- * an error.
+ * Effect then unmounts its shader half, which leaves nothing registered,
+ * and the scene renders as if it were not there. That is the intended
+ * degradation, so this is a warning and not an error.
  */
 function warnInertOnce(): void {
   if (inertWarned || process.env.NODE_ENV === 'production') return;
@@ -137,6 +137,9 @@ export function CursorRipple({
   const cursor = useCursor({ smoothing: 0 });
   const resize = useResize();
   const [field, setField] = useState<WaveField | null>(null);
+  // Set once the water cannot run on this renderer. It stays set, because
+  // neither missing float targets nor a lost device comes back.
+  const [inert, setInert] = useState(false);
 
   // One field per instance, created with the renderer at the canvas's
   // current size and released with it. One effect creates and disposes so a
@@ -147,10 +150,14 @@ export function CursorRipple({
     const size = renderer.getSize(new ThreeVector2());
     const created = createWaveField(renderer, size.width, size.height);
 
-    if (created.texture === null) warnInertOnce();
+    if (created.texture === null) {
+      warnInertOnce();
+      setInert(true);
+    }
 
     const stopOnInert = created.onInert(() => {
       warnInertOnce();
+      setInert(true);
       setField(null);
     });
 
@@ -245,7 +252,12 @@ export function CursorRipple({
     });
   }, [field, resize]);
 
-  if (!field?.texture) return null;
+  // The shader half mounts in the same commit as this wrapper, before the
+  // field exists, so its UV warp and shine register beside the Effects
+  // mounted with it and the ripple stacks where it is mounted. Both are
+  // pass-throughs until the field arrives, and then register again in the
+  // same place.
+  if (inert) return null;
 
   return <CursorRippleShader field={field} refraction={refraction} shine={shine} />;
 }

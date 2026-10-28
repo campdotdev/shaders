@@ -50,6 +50,15 @@ export type Resample = (sampleBeneath: Sampler) => Sampler;
 export type UvTransform = (uv: ShaderNodeObject<Node>) => ShaderNodeObject<Node>;
 
 /**
+ * An Effect's place in the stage's list of resamples or overlays. An entry
+ * registered under a slot that registered before goes where the first one
+ * went, not on top, so an Effect that registers again when its dependencies
+ * change keeps its place in the stack. The stage compares slots by
+ * identity, so any object works.
+ */
+export type Slot = object;
+
+/**
  * A draw into a texture that the scene's meshes read, such as Aurora's field.
  * The stage runs it before the scene pass on every frame it draws (the
  * draw-order gotcha in docs/agents/tsl.md).
@@ -59,13 +68,17 @@ export type PrePass = () => void;
 // Function-typed properties rather than methods, because ShaderScene hands
 // the register functions to its context detached from this object.
 export interface OutputStage {
-  /** Add a post-process step after the ones already registered. Returns its remover. */
-  registerOverlay: (transform: PostProcessTransform) => () => void;
+  /**
+   * Add a post-process step after the ones already registered, or in the
+   * place of `slot` if it registered before. Returns its remover.
+   */
+  registerOverlay: (transform: PostProcessTransform, slot?: Slot) => () => void;
   /**
    * Add a resample above the ones already registered, so its sampler wraps
-   * theirs. Returns its remover.
+   * theirs, or in the place of `slot` if it registered before. Returns its
+   * remover.
    */
-  registerResample: (resample: Resample) => () => void;
+  registerResample: (resample: Resample, slot?: Slot) => () => void;
   /**
    * Add a draw that runs before the scene pass, after the ones already
    * registered, on every frame and on the redraw after a resize. Returns its
@@ -80,6 +93,49 @@ export interface OutputStage {
   render: () => void;
   /** Release the quad's material. The renderer stays the caller's to dispose. */
   dispose: () => void;
+}
+
+// ----------------------------------------------------------------------------
+// The ordered lists
+// ----------------------------------------------------------------------------
+
+/**
+ * A list of entries in the order their slots first registered. A slot keeps
+ * its place after its entry is removed, so an entry registered again under
+ * it goes back where the old one was. The places live in a WeakMap, so a
+ * slot nobody holds anymore is collected along with its place.
+ */
+function createOrderedList<T>() {
+  const entries = new Map<Slot, { place: number; entry: T }>();
+  const places = new WeakMap<Slot, number>();
+  let nextPlace = 0;
+  let ordered: T[] = [];
+
+  const reorder = () => {
+    ordered = [...entries.values()].sort((a, b) => a.place - b.place).map(({ entry }) => entry);
+  };
+
+  return {
+    /** Add `entry` in the place of `slot`. Returns its remover. */
+    add(entry: T, slot: Slot): () => void {
+      let place = places.get(slot);
+
+      if (place === undefined) {
+        place = nextPlace;
+        nextPlace += 1;
+        places.set(slot, place);
+      }
+      entries.set(slot, { place, entry });
+      reorder();
+
+      return () => {
+        entries.delete(slot);
+        reorder();
+      };
+    },
+    /** The entries in order, first-registered slot first. */
+    values: () => ordered,
+  };
 }
 
 // ----------------------------------------------------------------------------
@@ -98,11 +154,12 @@ export function createOutputStage(
 
   // The chain: base pass first (the scene's meshes rendered to a texture
   // and read through every resample), then each registered overlay
-  // transform in MOUNT ORDER. A Map iterates in insertion order, so <Grain>
-  // after <Vignette> grains the vignetted image. Resamples stack in mount
-  // order too: each one wraps the samplers registered before it.
-  const overlays = new Map<symbol, PostProcessTransform>();
-  const resamples = new Map<symbol, Resample>();
+  // transform in MOUNT ORDER, so <Grain> after <Vignette> grains the
+  // vignetted image. Resamples stack in mount order too: each one wraps the
+  // samplers registered before it. Both lists order entries by slot, so an
+  // Effect that registers again keeps its place.
+  const overlays = createOrderedList<PostProcessTransform>();
+  const resamples = createOrderedList<Resample>();
   // Pre-passes draw before the chain, in mount order too. They change no
   // node in the output graph, so registering one rebuilds nothing.
   const prePasses = new Map<symbol, PrePass>();
@@ -133,17 +190,15 @@ export function createOutputStage(
     // the multiply (the texture-matrix gotcha in docs/agents/tsl.md).
     const scenePassTexture = passTexture(scenePass, scenePass.getTexture('output'));
     const sampleScene: Sampler = (coordinate) => scenePassTexture.uv(coordinate);
-    const sampleTop = Array.from(resamples.values()).reduce(
-      (sampleBeneath, resample) => resample(sampleBeneath),
-      sampleScene,
-    );
-    const basePassNode = resamples.size === 0 ? vec4(scenePass) : vec4(sampleTop(uv()));
+    const sampleTop = resamples
+      .values()
+      .reduce((sampleBeneath, resample) => resample(sampleBeneath), sampleScene);
+    const basePassNode = resamples.values().length === 0 ? vec4(scenePass) : vec4(sampleTop(uv()));
 
     // Overlays (Grain, Vignette, ...) compose in linear working space.
-    const composed = Array.from(overlays.values()).reduce(
-      (currentPipeline, transform) => transform(currentPipeline),
-      basePassNode,
-    );
+    const composed = overlays
+      .values()
+      .reduce((currentPipeline, transform) => transform(currentPipeline), basePassNode);
 
     // renderOutput applies tone mapping plus the working-to-output color
     // space transfer, reading both from the context set here (the renderer's
@@ -164,26 +219,24 @@ export function createOutputStage(
   rebuildOutputNode();
 
   return {
-    registerOverlay(transform) {
-      const key = Symbol('overlay');
+    registerOverlay(transform, slot = {}) {
+      const remove = overlays.add(transform, slot);
 
-      overlays.set(key, transform);
       rebuildOutputNode();
 
       return () => {
-        overlays.delete(key);
+        remove();
         rebuildOutputNode();
       };
     },
 
-    registerResample(resample) {
-      const key = Symbol('resample');
+    registerResample(resample, slot = {}) {
+      const remove = resamples.add(resample, slot);
 
-      resamples.set(key, resample);
       rebuildOutputNode();
 
       return () => {
-        resamples.delete(key);
+        remove();
         rebuildOutputNode();
       };
     },
@@ -198,7 +251,7 @@ export function createOutputStage(
       };
     },
 
-    hasOverlays: () => overlays.size > 0,
+    hasOverlays: () => overlays.values().length > 0,
 
     timeGpu: gpuTimer.start,
 

@@ -16,6 +16,7 @@ import { useResample } from '../use-resample/use-resample.js';
  * drew. Other Effects' own contributions, such as a vignette's shape or
  * grain's speckle, stay at native resolution. `deps` works like an effect
  * dependency list, so list every non-uniform value the transform closes over.
+ * A change registers the new UV warp in this Effect's place in the stack.
  */
 export function useBasePassUv(transform: UvTransform, deps: DependencyList): void {
   useResample((sampleBeneath) => (coordinate) => sampleBeneath(transform(coordinate)), deps);

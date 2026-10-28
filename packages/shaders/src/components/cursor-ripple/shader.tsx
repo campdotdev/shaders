@@ -73,9 +73,10 @@ export interface CursorRippleShaderProps {
   /**
    * The water surface to read. Its texture holds height in R, in uv space,
    * and swaps every step, so it is re-read every frame rather than captured
-   * once.
+   * once. Null before the wrapper has created it: both passes are then
+   * pass-throughs, registered so the Effect holds its place in the stack.
    */
-  field: WaveField;
+  field: WaveField | null;
   /**
    * How far the water bends the image beneath it, in canvas heights per
    * unit of slope. 0 leaves the image where it is. Accepts a static value
@@ -106,10 +107,11 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
   // output chain compiles against a stable node; the effect below swaps the
   // Texture object it points at, because the field's two targets trade
   // roles on every pass and `field.texture` is whichever was written last.
-  // Null when the field is inert, in which case both passes below are
-  // identity and the wrapper would not have mounted this half at all.
+  // Null before the field exists, or when it is inert, and both passes
+  // below are then pass-throughs. The wrapper unmounts this half once the
+  // field turns out inert.
   const fieldTexture = useMemo(() => {
-    const initial = field.texture;
+    const initial = field?.texture ?? null;
 
     return initial === null ? null : texture(initial);
   }, [field]);
@@ -127,7 +129,7 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
   // the targets between ticks, so bind the new texture and texel size
   // synchronously before the queued resize frame draws.
   useEffect(() => {
-    if (!shaderContext || fieldTexture === null) return;
+    if (!shaderContext || field === null || fieldTexture === null) return;
 
     const follow = () => {
       const current = field.texture;

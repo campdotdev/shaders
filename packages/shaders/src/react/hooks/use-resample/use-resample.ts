@@ -14,8 +14,12 @@ import { useSceneRegistration } from '../use-scene-registration/use-scene-regist
  * stack in mount order, and the last-mounted one acts as the top layer.
  * They read only what Sources drew, because color transforms such as Grain
  * run after every resample. `deps` works like an effect dependency list, so
- * list every non-uniform value the resample closes over.
+ * list every non-uniform value the resample closes over. A change registers
+ * the new resample in this Effect's place in the stack.
  */
 export function useResample(resample: Resample, deps: DependencyList): void {
-  useSceneRegistration((shaderContext) => shaderContext.registerResample(resample), deps);
+  useSceneRegistration(
+    (shaderContext, slot) => shaderContext.registerResample(resample, slot),
+    deps,
+  );
 }

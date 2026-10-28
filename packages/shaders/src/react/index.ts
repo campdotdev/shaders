@@ -13,5 +13,6 @@ export type {
   PostProcessTransform,
   Resample,
   Sampler,
+  Slot,
   UvTransform,
 } from './context/shader-context.js';

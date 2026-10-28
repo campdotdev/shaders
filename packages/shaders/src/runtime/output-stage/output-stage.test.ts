@@ -10,7 +10,12 @@ import type {
 } from 'three/webgpu';
 import { describe, expect, it, vi } from 'vitest';
 
-import { createOutputStage, type Resample, type UvTransform } from './output-stage.js';
+import {
+  createOutputStage,
+  type PostProcessTransform,
+  type Resample,
+  type UvTransform,
+} from './output-stage.js';
 
 // The stage only reads and writes the renderer's tone mapping and output
 // color space, and asks it to draw one object, so a plain object stands in.
@@ -184,6 +189,50 @@ describe('createOutputStage', () => {
     expect(isScreenCoordinate(calls[0]?.coordinate)).toBe(true);
     expect(calls[1]?.coordinate).toBe(secondOutput);
     expect(sceneReads(material).map((read) => read.uvNode)).toEqual([firstOutput]);
+  });
+
+  // An Effect registers again, under the slot it first registered with,
+  // whenever one of its dependencies changes. It keeps its place in the
+  // stack rather than landing on top of the Effects mounted after it.
+  it('puts a resample registered again under its slot back in its place', () => {
+    const { stage } = renderedMaterial();
+    const calls: string[] = [];
+    const recording = (name: string) =>
+      warpResample((coordinate) => {
+        calls.push(name);
+
+        return coordinate;
+      });
+    const firstSlot = {};
+    const removeFirst = stage.registerResample(recording('first'), firstSlot);
+
+    stage.registerResample(recording('second'));
+    removeFirst();
+    calls.length = 0;
+    stage.registerResample(recording('first again'), firstSlot);
+
+    expect(calls).toEqual(['second', 'first again']);
+  });
+
+  it('puts an overlay registered again under its slot back in its place', () => {
+    const { stage } = renderedMaterial();
+    const calls: string[] = [];
+    const recording =
+      (name: string): PostProcessTransform =>
+      (input) => {
+        calls.push(name);
+
+        return input;
+      };
+    const firstSlot = {};
+    const removeFirst = stage.registerOverlay(recording('first'), firstSlot);
+
+    stage.registerOverlay(recording('second'));
+    removeFirst();
+    calls.length = 0;
+    stage.registerOverlay(recording('first again'), firstSlot);
+
+    expect(calls).toEqual(['first again', 'second']);
   });
 
   // FlutedGlass's color split takes three samples of the image beneath it.

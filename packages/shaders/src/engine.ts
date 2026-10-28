@@ -114,6 +114,7 @@ export type {
   PrePass,
   Resample,
   Sampler,
+  Slot,
   UvTransform,
 } from './runtime/output-stage/output-stage.js';
 
