@@ -123,11 +123,14 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
   const texelWidth = useMemo(() => uniform(0), []);
   const texelHeight = useMemo(() => uniform(0), []);
 
-  // Follow the field every frame: the wrapper steps it inside the scene's
-  // scheduler tick, so this runs after that step (it is added later) and
-  // the next frame's draw samples the freshest state. A resize recreates
-  // the targets between ticks, so bind the new texture and texel size
-  // synchronously before the queued resize frame draws.
+  // Follow the field right before every draw, in a pre-pass (the draw-order
+  // gotcha in docs/agents/tsl.md). The wrapper steps the field from a
+  // scheduler client, and after a step with an odd number of passes the
+  // newest water is in the other target. A scheduler client here would run
+  // before that step, because React runs this child's effects before its
+  // parent's, so the next draw would sample the older target. A resize
+  // recreates the targets between ticks, so bind the new texture and texel
+  // size synchronously before the queued resize frame draws.
   useEffect(() => {
     if (!shaderContext || field === null || fieldTexture === null) return;
 
@@ -144,7 +147,7 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
     };
 
     follow();
-    shaderContext.scheduler.add(follow);
+    const stopFollowingDraws = shaderContext.registerPrePass(follow);
     const stopFollowingResizes = field.onResize(() => {
       follow();
       shaderContext.scheduler.requestRender();
@@ -152,7 +155,7 @@ export function CursorRippleShader({ field, refraction, shine }: CursorRippleSha
 
     return () => {
       stopFollowingResizes();
-      shaderContext.scheduler.remove(follow);
+      stopFollowingDraws();
     };
   }, [shaderContext, field, fieldTexture, texelWidth, texelHeight]);
 
