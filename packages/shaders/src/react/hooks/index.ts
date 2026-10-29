@@ -20,6 +20,8 @@ export { usePostProcessPass } from './use-overlay-pass/use-overlay-pass.js';
 
 export { useBasePassUv } from './use-base-pass-uv/use-base-pass-uv.js';
 
+export { useResample } from './use-resample/use-resample.js';
+
 export { useResize } from './use-resize/use-resize.js';
 export type { ResizeSignal, ResizeValue } from './use-resize/use-resize.js';
 

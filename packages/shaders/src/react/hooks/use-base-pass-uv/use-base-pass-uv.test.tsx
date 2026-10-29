@@ -1,9 +1,12 @@
 import type { ReactNode } from 'react';
 
 import { cleanup, render } from '@testing-library/react';
+import { vec2, vec4 } from 'three/tsl';
 import { describe, expect, it, vi } from 'vitest';
 
 import {
+  type Resample,
+  type Sampler,
   ShaderContext,
   type ShaderContextValue,
   type UvTransform,
@@ -12,17 +15,17 @@ import { useBasePassUv } from './use-base-pass-uv.js';
 
 function makeCtx(): {
   ctx: ShaderContextValue;
-  registered: UvTransform[];
+  registered: Resample[];
 } {
-  const registered: UvTransform[] = [];
+  const registered: Resample[] = [];
   const ctx = {
     renderer: {} as ShaderContextValue['renderer'],
     scene: {} as ShaderContextValue['scene'],
     camera: {} as ShaderContextValue['camera'],
     scheduler: {} as ShaderContextValue['scheduler'],
     registerOverlay: () => () => undefined,
-    registerBaseUvTransform: (transform: UvTransform) => {
-      registered.push(transform);
+    registerResample: (resample: Resample) => {
+      registered.push(resample);
 
       return () => undefined;
     },
@@ -44,11 +47,18 @@ function Wrapper({ ctx, children }: { ctx: ShaderContextValue | null; children: 
 const identityTransform: UvTransform = (uvInput) => uvInput;
 
 describe('useBasePassUv', () => {
-  it('registers the transform on mount', () => {
+  // A UV warp is the resample that samples the image beneath it once, at
+  // the moved coordinate.
+  it('registers a resample that samples beneath once, at the warped coordinate', () => {
     const { ctx, registered } = makeCtx();
+    const screenCoordinate = vec2(0.5, 0.5);
+    const warpedCoordinate = vec2(0.25, 0.75);
+    const sample = vec4(0.1, 0.2, 0.3, 1);
+    const warp = vi.fn<UvTransform>(() => warpedCoordinate);
+    const sampleBeneath = vi.fn<Sampler>(() => sample);
 
     function Probe() {
-      useBasePassUv(identityTransform, []);
+      useBasePassUv(warp, []);
 
       return null;
     }
@@ -59,19 +69,21 @@ describe('useBasePassUv', () => {
       </Wrapper>,
     );
     expect(registered).toHaveLength(1);
+
+    const sampled = registered[0]?.(sampleBeneath)(screenCoordinate);
+
+    expect(warp.mock.calls.map(([coordinate]) => coordinate)).toEqual([screenCoordinate]);
+    expect(sampleBeneath.mock.calls.map(([coordinate]) => coordinate)).toEqual([warpedCoordinate]);
+    expect(sampled).toBe(sample);
     cleanup();
   });
 
-  it('calls the cleanup returned by registerBaseUvTransform on unmount', () => {
+  it('calls the cleanup returned by registerResample on unmount', () => {
     const cleanupFn = vi.fn();
     const ctx = {
-      renderer: {} as ShaderContextValue['renderer'],
-      scene: {} as ShaderContextValue['scene'],
-      camera: {} as ShaderContextValue['camera'],
-      scheduler: {} as ShaderContextValue['scheduler'],
-      registerOverlay: () => () => undefined,
-      registerBaseUvTransform: () => cleanupFn,
-    } as unknown as ShaderContextValue;
+      ...makeCtx().ctx,
+      registerResample: () => cleanupFn,
+    };
 
     function Probe() {
       useBasePassUv(identityTransform, []);

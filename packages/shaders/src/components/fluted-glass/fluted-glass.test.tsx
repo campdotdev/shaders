@@ -7,9 +7,9 @@ import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'v
 import { type CrossSectionName, FlutedGlass, type FlutedGlassProps } from '../../index.js';
 import {
   type PostProcessTransform,
+  type Resample,
   ShaderContext,
   type ShaderContextValue,
-  type UvTransform,
 } from '../../react/context/shader-context.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { createSignal } from '../../react/internal/create-signal.js';
@@ -29,7 +29,7 @@ afterEach(() => {
 
 function makeScene() {
   const clients: SchedulerClient[] = [];
-  const uvTransforms: UvTransform[] = [];
+  const resamples: Resample[] = [];
   const overlays: PostProcessTransform[] = [];
   const unregisters = { uv: 0, overlay: 0 };
   const renderer = {
@@ -59,8 +59,8 @@ function makeScene() {
         unregisters.overlay += 1;
       };
     },
-    registerBaseUvTransform: (transform: UvTransform) => {
-      uvTransforms.push(transform);
+    registerResample: (resample: Resample) => {
+      resamples.push(resample);
 
       return () => {
         unregisters.uv += 1;
@@ -72,12 +72,12 @@ function makeScene() {
     return <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>;
   }
 
-  return { Wrapper, scheduler, uvTransforms, overlays, unregisters };
+  return { Wrapper, scheduler, resamples, overlays, unregisters };
 }
 
 /** One UV warp and one color transform, neither removed or registered again. */
 function expectOneOfEach(scene: ReturnType<typeof makeScene>) {
-  expect(scene.uvTransforms).toHaveLength(1);
+  expect(scene.resamples).toHaveLength(1);
   expect(scene.overlays).toHaveLength(1);
   expect(scene.unregisters).toEqual({ uv: 0, overlay: 0 });
 }
@@ -136,7 +136,7 @@ describe('FlutedGlass', () => {
       { wrapper: scene.Wrapper },
     );
 
-    expect(scene.uvTransforms.length - scene.unregisters.uv).toBe(1);
+    expect(scene.resamples.length - scene.unregisters.uv).toBe(1);
     expect(scene.overlays.length - scene.unregisters.overlay).toBe(1);
   });
 

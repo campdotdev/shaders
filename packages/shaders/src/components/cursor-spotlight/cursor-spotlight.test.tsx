@@ -59,7 +59,7 @@ function makeScene() {
         unregisters.overlay += 1;
       };
     },
-    registerBaseUvTransform: () => () => undefined,
+    registerResample: () => () => undefined,
     getCursorInput: () => {
       sharedInput ??= new CursorInput({ element: canvas });
 

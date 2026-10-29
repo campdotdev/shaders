@@ -15,9 +15,9 @@ import {
   type StrokePoint,
 } from '../../engine.js';
 import {
+  type Resample,
   ShaderContext,
   type ShaderContextValue,
-  type UvTransform,
 } from '../../react/context/shader-context.js';
 import { CursorSmudge } from './cursor-smudge.js';
 
@@ -74,7 +74,7 @@ function makeScene({
   } as unknown as WebGPURenderer;
   const scheduler = new FrameScheduler();
   const prePasses = new Set<PrePass>();
-  const transforms = new Set<UvTransform>();
+  const resamples = new Set<Resample>();
   const input = new CursorInput({ element: canvas });
   const sizeListeners = new Set<(value: readonly [number, number, number]) => void>();
 
@@ -93,18 +93,18 @@ function makeScene({
     input.tick(delta);
     if (input.isPushing()) scheduler.requestRender();
   });
-  const registerTransform = vi.fn((transform: UvTransform) => {
-    transforms.add(transform);
+  const registerResample = vi.fn((resample: Resample) => {
+    resamples.add(resample);
 
     return () => {
-      transforms.delete(transform);
+      resamples.delete(resample);
     };
   });
   const context = {
     renderer: { three: renderer },
     scheduler,
     getCursorInput: () => input,
-    registerBaseUvTransform: registerTransform,
+    registerResample,
     registerPrePass: (pass: PrePass) => {
       prePasses.add(pass);
 
@@ -139,9 +139,9 @@ function makeScene({
     canvas,
     scheduler,
     draw,
-    transforms,
+    resamples,
     prePasses,
-    registerTransform,
+    registerResample,
     scrollTo: (next: number) => {
       top = next;
     },
@@ -308,7 +308,7 @@ it('clears a live smudge at zero strength and accepts fresh movement when enable
   expect(scene.parked).toBe(true);
   stroke(scene);
   expect(scene.parked).toBe(false);
-  expect(scene.registerTransform).toHaveBeenCalledTimes(1);
+  expect(scene.registerResample).toHaveBeenCalledTimes(1);
 });
 
 it('survives Strict Mode and releases its scene work on unmount', () => {
@@ -323,7 +323,7 @@ it('survives Strict Mode and releases its scene work on unmount', () => {
   stroke(scene);
   expect(scene.parked).toBe(false);
   expect(scene.prePasses.size).toBe(1);
-  expect(scene.transforms.size).toBe(1);
+  expect(scene.resamples.size).toBe(1);
   unmount();
   scene.advance(3);
   const drawsAfterUnmount = scene.draw.mock.calls.length;
@@ -332,7 +332,7 @@ it('survives Strict Mode and releases its scene work on unmount', () => {
   expect(scene.draw).toHaveBeenCalledTimes(drawsAfterUnmount);
   expect(scene.parked).toBe(true);
   expect(scene.prePasses.size).toBe(0);
-  expect(scene.transforms.size).toBe(0);
+  expect(scene.resamples.size).toBe(0);
 });
 
 it('redraws a parked scene once after removing a held smudge', () => {
@@ -524,7 +524,7 @@ it('updates strength from an animation signal without rebuilding the UV transfor
   for (const listener of listeners) listener(0);
   scene.advance(3);
   expect(scene.parked).toBe(true);
-  expect(scene.registerTransform).toHaveBeenCalledTimes(1);
+  expect(scene.registerResample).toHaveBeenCalledTimes(1);
   unmount();
   expect(listeners.size).toBe(0);
 });

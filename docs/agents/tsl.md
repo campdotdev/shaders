@@ -106,6 +106,8 @@ three 0.170 binds every render target's texture as a filterable float, whatever 
 
 A texture node built without a coordinate, `texture(map)`, runs its coordinate through the texture's offset-and-repeat matrix, a 3x3 multiply. A node made by chaining `.uv(coordinate)` onto it keeps the multiply. Pass the coordinate when you build the node, as in `texture(map, coordinate)`, and three skips the matrix. Inside a loop, the multiply runs on every step.
 
+A pass texture from `passTexture()` is the exception. It turns the matrix off, and every `.uv()` read cloned from it keeps it off. The output stage reads the scene through one, so a stack of resamples pays no multiply per read. `output-stage.test.ts` fails if a three upgrade turns the matrix back on for those reads.
+
 ### The resize-rebind gotcha: a resized target that a shader samples before the next draw into it needs a version bump
 
 `RenderTarget.setSize` frees the target's GPU texture but keeps the texture object, and three allocates it again on the next draw into the target. A shader that samples the texture first finds nothing behind it. `CursorSmudge`'s field does exactly that: it reads one texture pass while it draws into the other. three 0.170 re-creates a sampled texture only when the binding, three's record of which texture a material reads, sees a different texture object or a new version. Each texture pass draws with its own material, so the binding that reads a pass always sees the same object, and `setSize` leaves the version alone. three then logs "Bindings._update: binding should be available" and re-creates the texture itself.

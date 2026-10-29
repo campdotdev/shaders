@@ -3,18 +3,21 @@
 import type { DependencyList } from 'react';
 
 import type { UvTransform } from '../../context/shader-context.js';
-import { useSceneRegistration } from '../use-scene-registration/use-scene-registration.js';
+import { useResample } from '../use-resample/use-resample.js';
 
 /**
- * Register a base-pass UV transform with the enclosing <ShaderScene>:
- * `transform` receives the 0..1 coordinate the rendered scene is about to be
- * sampled at and returns a replacement — resampling the scene itself, which
- * a color-only usePostProcessPass cannot do. Transforms compose in mount
- * order and warp the scene content only; other overlays' own contributions
- * (a vignette's shape, grain's speckle) stay at native resolution. `deps`
- * works like an effect dependency list — list every non-uniform value the
- * transform closes over.
+ * Register a UV warp with the enclosing <ShaderScene>. `transform` receives
+ * the 0..1 coordinate the image beneath this Effect is about to be sampled
+ * at and returns a replacement, such as a coordinate snapped to a grid. A
+ * color-only usePostProcessPass cannot move a sample. The hook registers the
+ * resample that samples the image beneath once, at the warped coordinate.
+ * UV warps stack in mount order, and the last-mounted one moves the screen
+ * coordinate first, so it acts as the top layer. They bend only what Sources
+ * drew. Other Effects' own contributions, such as a vignette's shape or
+ * grain's speckle, stay at native resolution. `deps` works like an effect
+ * dependency list, so list every non-uniform value the transform closes over.
+ * A change registers the new UV warp in this Effect's place in the stack.
  */
 export function useBasePassUv(transform: UvTransform, deps: DependencyList): void {
-  useSceneRegistration((shaderContext) => shaderContext.registerBaseUvTransform(transform), deps);
+  useResample((sampleBeneath) => (coordinate) => sampleBeneath(transform(coordinate)), deps);
 }

@@ -1,24 +1,36 @@
 import { type ReactNode, StrictMode } from 'react';
 
 import { act, render } from '@testing-library/react';
+import { texture } from 'three/tsl';
 import type { RenderTarget, WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   createWaveField,
   CursorInput,
+  type PrePass,
   setReducedMotionPolicy,
   type StrokePoint,
 } from '../../engine.js';
 import {
   type PostProcessTransform,
+  type Resample,
   ShaderContext,
   type ShaderContextValue,
-  type UvTransform,
+  type Slot,
 } from '../../react/context/shader-context.js';
+import { useResample } from '../../react/hooks/use-resample/use-resample.js';
 import type { SchedulerClient } from '../../runtime/frame-scheduler/frame-scheduler.js';
 import { CursorRipple } from './cursor-ripple.js';
 import { CursorRippleShader } from './shader.js';
+
+// Every texture node is built through a spy that keeps three's own
+// behavior, so a test can read which target the ripple samples at a draw.
+vi.mock('three/tsl', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('three/tsl')>();
+
+  return { ...actual, texture: vi.fn(actual.texture) };
+});
 
 // What the Effect asks of the scene, never what the water looks like. The
 // look is the demo page and the probe route's visual spec. A stub renderer
@@ -66,8 +78,8 @@ function makeRenderer({ floatTargets = true }: StubOptions = {}) {
 }
 
 // A scene whose scheduler hands its clients back, so a test can tick the
-// Effect's drive by hand, and whose register functions count what the
-// Effect puts on the output stage. With `scrollPush` or a `strokeAt`
+// Effect's drive by hand, and whose register functions record what the
+// Effect puts on the output stage and under which slot. With `scrollPush` or a `strokeAt`
 // point, the shared input ticks once per frame ahead of every client, as
 // ShaderScene's does.
 function makeScene(
@@ -78,9 +90,16 @@ function makeScene(
   }: { scrollPush?: boolean; strokeAt?: StrokePoint | null } = {},
 ) {
   const clients: SchedulerClient[] = [];
-  const uvTransforms: UvTransform[] = [];
+  const prePasses: PrePass[] = [];
+  const resamples: Resample[] = [];
+  const resampleSlots: Array<Slot | undefined> = [];
   const overlays: PostProcessTransform[] = [];
   const unregisters = { uv: 0, overlay: 0 };
+  // What is still registered: every registration less every removal.
+  const live = () => ({
+    uv: resamples.length - unregisters.uv,
+    overlay: overlays.length - unregisters.overlay,
+  });
   const scheduler = {
     idle: true,
     add: (client: SchedulerClient) => clients.push(client),
@@ -98,6 +117,15 @@ function makeScene(
     scene: {},
     camera: {},
     scheduler,
+    registerPrePass: (prePass: PrePass) => {
+      prePasses.push(prePass);
+
+      return () => {
+        const index = prePasses.indexOf(prePass);
+
+        if (index >= 0) prePasses.splice(index, 1);
+      };
+    },
     registerOverlay: (transform: PostProcessTransform) => {
       overlays.push(transform);
 
@@ -105,8 +133,9 @@ function makeScene(
         unregisters.overlay += 1;
       };
     },
-    registerBaseUvTransform: (transform: UvTransform) => {
-      uvTransforms.push(transform);
+    registerResample: (resample: Resample, slot?: Slot) => {
+      resamples.push(resample);
+      resampleSlots.push(slot);
 
       return () => {
         unregisters.uv += 1;
@@ -129,11 +158,17 @@ function makeScene(
     return <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>;
   }
 
+  // A frame as ShaderScene runs it: its render client goes first and runs
+  // every pre-pass before the scene draws, then the children's clients run.
+  const draw = () => {
+    for (const prePass of [...prePasses]) prePass();
+  };
   const tick = (delta = 1 / 60) => {
+    draw();
     for (const client of [...clients]) client({ delta, elapsed: 0, now: 0 });
   };
 
-  return { Wrapper, scheduler, uvTransforms, overlays, unregisters, tick };
+  return { Wrapper, scheduler, resamples, resampleSlots, overlays, unregisters, live, draw, tick };
 }
 
 const fireMoveOnWindow = (clientX: number, clientY: number) => {
@@ -163,11 +198,38 @@ describe('CursorRipple with a live field', () => {
     const scene = makeScene(makeRenderer());
     const { unmount } = render(<CursorRipple />, { wrapper: scene.Wrapper });
 
-    expect(scene.uvTransforms).toHaveLength(1);
-    expect(scene.overlays).toHaveLength(1);
+    expect(scene.live()).toEqual({ uv: 1, overlay: 1 });
 
     unmount();
-    expect(scene.unregisters).toEqual({ uv: 1, overlay: 1 });
+    expect(scene.live()).toEqual({ uv: 0, overlay: 0 });
+  });
+
+  // CursorRipple creates its field in an effect, after the commit it mounts
+  // in. Its shader half mounts in that commit anyway, as a pass-through, so
+  // its UV warp registers beside the Effects mounted with it. When the field
+  // arrives, the UV warp registers again under the same slot and keeps its
+  // place, beneath the Effects mounted after it.
+  it('stacks where it is mounted, and keeps its place once its field arrives', () => {
+    const scene = makeScene(makeRenderer());
+    const after: Resample = (sampleBeneath) => sampleBeneath;
+
+    function EffectAfter() {
+      useResample(after, []);
+
+      return null;
+    }
+
+    render(
+      <>
+        <CursorRipple />
+        <EffectAfter />
+      </>,
+      { wrapper: scene.Wrapper },
+    );
+
+    expect(scene.resamples.indexOf(after)).toBe(1);
+    expect(scene.resamples).toHaveLength(3);
+    expect(scene.resampleSlots[2]).toBe(scene.resampleSlots[0]);
   });
 
   it('votes the scene static', () => {
@@ -192,8 +254,7 @@ describe('CursorRipple with a live field', () => {
       { wrapper: scene.Wrapper },
     );
 
-    expect(scene.uvTransforms).toHaveLength(2);
-    expect(scene.overlays).toHaveLength(2);
+    expect(scene.live()).toEqual({ uv: 2, overlay: 2 });
 
     fireMoveOnWindow(100, 100);
     scene.tick();
@@ -214,8 +275,7 @@ describe('CursorRipple with a live field', () => {
       { wrapper: scene.Wrapper },
     );
 
-    expect(scene.uvTransforms.length - scene.unregisters.uv).toBe(1);
-    expect(scene.overlays.length - scene.unregisters.overlay).toBe(1);
+    expect(scene.live()).toEqual({ uv: 1, overlay: 1 });
   });
 
   // The field steps inside the scene's tick, and asks for another frame
@@ -240,6 +300,41 @@ describe('CursorRipple with a live field', () => {
     scene.tick();
     expect(vi.mocked(renderer.render).mock.calls.length).toBeGreaterThan(drawsAfterDrag);
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
+  });
+
+  // The field's two targets trade roles on every pass, so after a frame of
+  // odd passes the newest water is in the other target. The drive steps
+  // the field after the shader half's effects have run, so the shader half
+  // binds the target right before each draw rather than from its own
+  // scheduler client, which would run before the step.
+  it('draws the target the last pass wrote, after a frame of odd passes', () => {
+    const renderer = makeRenderer();
+    const scene = makeScene(renderer);
+
+    vi.mocked(texture).mockClear();
+    render(<CursorRipple />, { wrapper: scene.Wrapper });
+    // The field builds its own texture node when it is created, and the
+    // shader half builds the one it draws with once the field arrives.
+    const built = vi.mocked(texture).mock.results.at(-1);
+
+    if (built?.type !== 'return') throw new Error('The ripple built no texture node');
+    const fieldTexture = built.value;
+
+    fireMoveOnWindow(100, 100);
+    scene.tick();
+    fireMoveOnWindow(300, 100);
+    vi.mocked(renderer.render).mockClear();
+    vi.mocked(renderer.setRenderTarget).mockClear();
+    scene.tick();
+
+    // A stamp and two substeps, so the field's targets have swapped.
+    expect(vi.mocked(renderer.render).mock.calls.length % 2).toBe(1);
+    const written = vi
+      .mocked(renderer.setRenderTarget)
+      .mock.calls.flatMap(([target]) => (target ? [target] : []));
+
+    scene.draw();
+    expect(fieldTexture.value).toBe(written.at(-1)?.texture);
   });
 
   // Decay damps height and velocity alike, so at the default the water is
@@ -361,19 +456,24 @@ describe('CursorRipple props', () => {
     const { rerender } = render(<CursorRipple refraction={0.1} shine={0.4} />, {
       wrapper: scene.Wrapper,
     });
+    const resamplesBefore = scene.resamples.length;
+    const overlaysBefore = scene.overlays.length;
+    const unregistersBefore = { ...scene.unregisters };
 
     rerender(<CursorRipple refraction={0.3} shine={0.9} />);
 
-    expect(scene.uvTransforms).toHaveLength(1);
-    expect(scene.overlays).toHaveLength(1);
-    expect(scene.unregisters).toEqual({ uv: 0, overlay: 0 });
+    expect(scene.resamples).toHaveLength(resamplesBefore);
+    expect(scene.overlays).toHaveLength(overlaysBefore);
+    expect(scene.unregisters).toEqual(unregistersBefore);
   });
 });
 
 describe('CursorRipple with an inert field', () => {
-  // ADR 0003: without float render targets the Effect registers nothing,
-  // renders as identity, never throws, and says so once in development.
-  it('registers nothing, never throws, and warns once', () => {
+  // ADR 0003: without float render targets the Effect renders as identity,
+  // never throws, and says so once in development. Its shader half mounts
+  // as a pass-through before the field exists, and unmounts once the field
+  // turns out inert, so nothing stays registered.
+  it('leaves nothing registered, never throws, and warns once', () => {
     const renderer = makeRenderer({ floatTargets: false });
     const scene = makeScene(renderer);
 
@@ -391,8 +491,7 @@ describe('CursorRipple with an inert field', () => {
       scene.tick();
     }).not.toThrow();
 
-    expect(scene.uvTransforms).toHaveLength(0);
-    expect(scene.overlays).toHaveLength(0);
+    expect(scene.live()).toEqual({ uv: 0, overlay: 0 });
     expect(renderer.render).not.toHaveBeenCalled();
     expect(console.warn).toHaveBeenCalledTimes(1);
     expect(vi.mocked(console.warn).mock.calls[0]?.[0]).toContain('[CursorRipple]');
@@ -403,13 +502,12 @@ describe('CursorRipple with an inert field', () => {
     const scene = makeScene(renderer);
 
     render(<CursorRipple />, { wrapper: scene.Wrapper });
-    expect(scene.uvTransforms).toHaveLength(1);
-    expect(scene.overlays).toHaveLength(1);
+    expect(scene.live()).toEqual({ uv: 1, overlay: 1 });
 
     (renderer as unknown as { _isDeviceLost: boolean })._isDeviceLost = true;
     act(() => scene.tick());
 
-    expect(scene.unregisters).toEqual({ uv: 1, overlay: 1 });
+    expect(scene.live()).toEqual({ uv: 0, overlay: 0 });
   });
 });
 
