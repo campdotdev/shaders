@@ -105,6 +105,11 @@ const HIGHLIGHT_SHARPNESS = 32;
 // steep. 1 lets it reach the center.
 const SHADOW_WIDTH = 0.5;
 
+// Floor on a read's alpha before the un-premultiply divide in the resample
+// below. A read this transparent holds next to no color, so the floor only
+// keeps the divide finite.
+const MIN_ALPHA = 0.001;
+
 // The pass's frame has y down and the primitive's has y up, so a vector
 // that crosses between them flips its y.
 function flipY(vector: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
@@ -257,13 +262,26 @@ export function FlutedGlassShader({
       // near an edge the blue read can leave the canvas while the green one
       // stays on it. Each read returns a full rgba, and the pixel keeps one
       // channel from each. Alpha comes from green, the read at the bend
-      // itself. At a dispersion of 0 all three read the same point, so the
-      // pixel is exactly the one bent read the glass took before the split.
+      // itself.
       const red = sampleBeneath(mirrorOntoCanvas(bent.sub(split)));
       const green = sampleBeneath(mirrorOntoCanvas(bent));
       const blue = sampleBeneath(mirrorOntoCanvas(bent.add(split)));
 
-      return vec4(red.r, green.g, blue.b, green.a);
+      // The scene texture is premultiplied: each read's color arrives
+      // already scaled by its own alpha. Near the edge of a transparent
+      // Source, such as a blob's, the red read can land on the blob while
+      // the green one lands past it, which would give the pixel full red at
+      // alpha 0. The canvas is premultiplied too, so that red would add to
+      // the page behind it as a bright fringe. Dividing red and blue by
+      // their own alpha recovers their colors, and scaling them by green's
+      // alpha gives all three channels green's coverage. At a dispersion of
+      // 0 all three read the same point, so the pixel is the one bent read
+      // the glass took before the split, exactly so wherever the image is
+      // opaque.
+      const redColor = red.r.div(max(red.a, MIN_ALPHA)).mul(green.a);
+      const blueColor = blue.b.div(max(blue.a, MIN_ALPHA)).mul(green.a);
+
+      return vec4(redColor, green.g, blueColor, green.a);
     },
     [
       fluteWidthUniform,
