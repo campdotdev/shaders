@@ -45,7 +45,7 @@ function FlutedGlassDemo() {
 
   return (
     <DemoPoster
-      alt="Fluted Glass shader preview: a mesh gradient seen through vertical flutes of glass"
+      alt="Fluted Glass shader preview: a photo of two anthurium flowers in a glass vase, seen through vertical flutes of glass"
       pixelSize={POSTER_SIZE}
       src="/posters/fluted-glass.jpg"
     >
@@ -63,6 +63,7 @@ function FlutedGlassControls() {
         <SliderInput label="Flute width" max={160} min={4} path="fluteWidth" step={1} />
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
         <SliderInput label="Refraction" max={3} min={0} path="refraction" step={0.01} />
+        <SliderInput label="Dispersion" max={1} min={0} path="dispersion" step={0.01} />
         <SliderInput label="Cross-section" max={1} min={0} path="crossSection" step={0.01} />
       </Section>
       <Section title="Light">

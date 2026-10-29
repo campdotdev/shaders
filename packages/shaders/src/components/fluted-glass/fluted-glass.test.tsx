@@ -1,6 +1,7 @@
 import { type ReactNode, StrictMode } from 'react';
 
 import { render } from '@testing-library/react';
+import { uv, vec4 } from 'three/tsl';
 import type { WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
@@ -8,6 +9,7 @@ import { type CrossSectionName, FlutedGlass, type FlutedGlassProps } from '../..
 import {
   type PostProcessTransform,
   type Resample,
+  type Sampler,
   ShaderContext,
   type ShaderContextValue,
 } from '../../react/context/shader-context.js';
@@ -31,7 +33,7 @@ function makeScene() {
   const clients: SchedulerClient[] = [];
   const resamples: Resample[] = [];
   const overlays: PostProcessTransform[] = [];
-  const unregisters = { uv: 0, overlay: 0 };
+  const unregisters = { resample: 0, overlay: 0 };
   const renderer = {
     domElement: document.createElement('canvas'),
     getPixelRatio: () => 2,
@@ -63,7 +65,7 @@ function makeScene() {
       resamples.push(resample);
 
       return () => {
-        unregisters.uv += 1;
+        unregisters.resample += 1;
       };
     },
   } as unknown as ShaderContextValue;
@@ -75,11 +77,11 @@ function makeScene() {
   return { Wrapper, scheduler, resamples, overlays, unregisters };
 }
 
-/** One UV warp and one color transform, neither removed or registered again. */
+/** One resample and one color transform, neither removed or registered again. */
 function expectOneOfEach(scene: ReturnType<typeof makeScene>) {
   expect(scene.resamples).toHaveLength(1);
   expect(scene.overlays).toHaveLength(1);
-  expect(scene.unregisters).toEqual({ uv: 0, overlay: 0 });
+  expect(scene.unregisters).toEqual({ resample: 0, overlay: 0 });
 }
 
 /** A hand-driven animation signal, the shape a MotionValue has. */
@@ -97,16 +99,17 @@ function makeSignal(initial: number) {
 }
 
 describe('FlutedGlass', () => {
-  // The public shape: seven optional dials, each a number or an animation
+  // The public shape: eight optional dials, each a number or an animation
   // signal, where the cross-section also takes a name for a point on its
   // dial, plus a highlight color. pnpm typecheck runs this file too, so a
   // missing export or a narrowed prop fails there as well as here.
-  it('takes seven animatable dials and a highlight color from the package root', () => {
+  it('takes eight animatable dials and a highlight color from the package root', () => {
     expectTypeOf<CrossSectionName>().toEqualTypeOf<'prism' | 'round' | 'flat'>();
     expectTypeOf<FlutedGlassProps>().toEqualTypeOf<{
       fluteWidth?: AnimatableProp<number>;
       angle?: AnimatableProp<number>;
       refraction?: AnimatableProp<number>;
+      dispersion?: AnimatableProp<number>;
       crossSection?: AnimatableProp<number> | CrossSectionName;
       lightAngle?: AnimatableProp<number>;
       highlight?: AnimatableProp<number>;
@@ -115,18 +118,37 @@ describe('FlutedGlass', () => {
     }>();
   });
 
-  // The UV warp bends the image, and the color transform lights the glass.
-  it('registers one UV warp and one color transform, and removes both on unmount', () => {
+  // The resample bends the image and splits its colors, and the color
+  // transform lights the glass.
+  it('registers one resample and one color transform, and removes both on unmount', () => {
     const scene = makeScene();
     const { unmount } = render(<FlutedGlass />, { wrapper: scene.Wrapper });
 
     expectOneOfEach(scene);
 
     unmount();
-    expect(scene.unregisters).toEqual({ uv: 1, overlay: 1 });
+    expect(scene.unregisters).toEqual({ resample: 1, overlay: 1 });
   });
 
-  it('survives Strict Mode with one UV warp and one color transform', () => {
+  // A UV warp samples the image beneath once. The color split reads it three
+  // times, once for each of red, green, and blue, so the glass registers a
+  // resample that calls the sampler beneath it three times per pixel.
+  it('samples the image beneath it three times, once per color', () => {
+    const scene = makeScene();
+    let samples = 0;
+    const sampleBeneath: Sampler = () => {
+      samples += 1;
+
+      return vec4(0, 0, 0, 1);
+    };
+
+    render(<FlutedGlass />, { wrapper: scene.Wrapper });
+    scene.resamples[0]?.(sampleBeneath)(uv());
+
+    expect(samples).toBe(3);
+  });
+
+  it('survives Strict Mode with one resample and one color transform', () => {
     const scene = makeScene();
 
     render(
@@ -136,7 +158,7 @@ describe('FlutedGlass', () => {
       { wrapper: scene.Wrapper },
     );
 
-    expect(scene.resamples.length - scene.unregisters.uv).toBe(1);
+    expect(scene.resamples.length - scene.unregisters.resample).toBe(1);
     expect(scene.overlays.length - scene.unregisters.overlay).toBe(1);
   });
 
@@ -147,6 +169,7 @@ describe('FlutedGlass', () => {
     const { rerender } = render(
       <FlutedGlass
         angle={90}
+        dispersion={0.2}
         fluteWidth={40}
         highlight={0.5}
         lightAngle={135}
@@ -160,6 +183,7 @@ describe('FlutedGlass', () => {
     rerender(
       <FlutedGlass
         angle={45}
+        dispersion={0.6}
         fluteWidth={24}
         highlight={1}
         lightAngle={0}
@@ -177,6 +201,7 @@ describe('FlutedGlass', () => {
     const fluteWidth = makeSignal(40);
     const angle = makeSignal(90);
     const refraction = makeSignal(1);
+    const dispersion = makeSignal(0.2);
     const crossSection = makeSignal(0.5);
     const lightAngle = makeSignal(135);
     const highlight = makeSignal(0.5);
@@ -186,6 +211,7 @@ describe('FlutedGlass', () => {
       <FlutedGlass
         angle={angle.signal}
         crossSection={crossSection.signal}
+        dispersion={dispersion.signal}
         fluteWidth={fluteWidth.signal}
         highlight={highlight.signal}
         lightAngle={lightAngle.signal}
@@ -202,14 +228,16 @@ describe('FlutedGlass', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(2);
     refraction.set(0);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(3);
-    crossSection.set(0.2);
+    dispersion.set(0.5);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(4);
-    lightAngle.set(45);
+    crossSection.set(0.2);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(5);
-    highlight.set(1);
+    lightAngle.set(45);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(6);
-    shadow.set(0);
+    highlight.set(1);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(7);
+    shadow.set(0);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(8);
 
     expectOneOfEach(scene);
   });

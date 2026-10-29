@@ -7,6 +7,7 @@ Add `FlutedGlass`, an Effect that shows the image beneath it through repeating f
 - `fluteWidth` sets each flute's width in CSS pixels.
 - `angle` sets the direction the flutes run, in the degrees `LinearGradient` uses, so the default of 90 gives vertical flutes.
 - `refraction` sets how far the glass bends the image, and `refraction={0}` leaves it unchanged.
+- `dispersion` splits the image's colors where the glass bends, as a share of the bend. Blue bends further than red, as in real glass, so colors fringe near the grooves and the flute centers stay clean. `dispersion={0}` turns the split off.
 - `crossSection` sets each flute's shape, from a pointed `'prism'` through a `'round'` lens to a `'flat'` top with steep walls, or any number from 0 to 1 between them.
 - `lightAngle` sets where the light comes from, in degrees that turn the same way as `angle`: 0 from the right and 90 from above. It defaults to 135, the upper left. The light stays put while `angle` turns the glass.
 - `highlight` and `shadow` set how strong the highlight and the shadow are, from 0 to 1. `highlightColor` tints the highlight.

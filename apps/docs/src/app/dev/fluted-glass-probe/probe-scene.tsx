@@ -19,11 +19,11 @@ const STRIPE_STOPS = [
   { color: 'oklch(0.95 0 0)', position: 1 },
 ];
 
-// Query params override the glass's dials, such as ?refraction=0&angle=30 or
-// ?crossSection=prism, for checking one by eye. ?highlight=0&shadow=0 turns
-// the light off, to see the bend alone. ?glass=none drops the glass, to
-// compare against the Source alone, and ?source=none drops the stripes,
-// leaving the glass over a transparent scene.
+// Query params override the glass's dials, such as ?refraction=0&angle=30,
+// ?dispersion=1, or ?crossSection=prism, for checking one by eye.
+// ?highlight=0&shadow=0 turns the light off, to see the bend alone.
+// ?glass=none drops the glass, to compare against the Source alone, and
+// ?source=none drops the stripes, leaving the glass over a transparent scene.
 
 /** A value from the page's query string, or null when it is absent. */
 function query(name: string): string | null {
@@ -62,6 +62,7 @@ export default function ProbeScene() {
           <FlutedGlass
             angle={queryNumber('angle')}
             crossSection={queryCrossSection()}
+            dispersion={queryNumber('dispersion')}
             fluteWidth={queryNumber('fluteWidth')}
             highlight={queryNumber('highlight')}
             lightAngle={queryNumber('lightAngle')}
