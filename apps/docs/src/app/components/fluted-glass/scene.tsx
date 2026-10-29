@@ -7,6 +7,7 @@ import { FlutedGlass, ShaderScene } from '@camp-dev/shaders';
 import anthurium from './anthurium.webp';
 import { type FlutedGlassParams, INITIAL } from './params';
 import { PhotoSource, usePhoto } from './photo-source';
+import { POSTER_SIZE } from './poster-size';
 
 export default function FlutedGlassScene({
   params = INITIAL,
@@ -23,7 +24,7 @@ export default function FlutedGlassScene({
 
   return (
     <ShaderScene>
-      <PhotoSource photo={photo} />
+      <PhotoSource frame={POSTER_SIZE} photo={photo} />
       <FlutedGlass
         angle={params.angle}
         crossSection={params.crossSection}

@@ -23,17 +23,9 @@ import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { type FlutedGlassParams, INITIAL } from './params';
+import { POSTER_SIZE } from './poster-size';
 
 const FlutedGlassScene = dynamic(() => import('./scene'), { ssr: false });
-
-/**
- * The CSS size the poster was captured at in build-posters.sh, the widest
- * demo box. The flutes are sized in CSS pixels, so DemoPoster's pixel-locked
- * mode shows the image at this size and lets the box crop it. Cover-scaling
- * would change the flutes' spacing, and the grooves would jump when the live
- * scene replaced the poster.
- */
-const POSTER_SIZE: readonly [number, number] = [896, 598];
 
 /**
  * Reads the live params and renders the scene. Split out from the island so

@@ -61,42 +61,67 @@ export function usePhoto(source: StaticImageData | string): HTMLImageElement | n
 // Drawing the photo
 // ---------------------------------------------
 
-/** Draws `photo` across the canvas, cropped to cover it without stretching. */
-export function PhotoSource({ photo }: { photo: HTMLImageElement }) {
+/**
+ * Draws `photo` across the canvas at the scale that covers `frame`, cropped
+ * to the canvas without stretching.
+ */
+export function PhotoSource({
+  photo,
+  frame,
+}: {
+  photo: HTMLImageElement;
+  /**
+   * The CSS size of the box the photo covers, centered on the canvas. The
+   * canvas shows the middle of that box at the canvas's own size.
+   */
+  frame: readonly [number, number];
+}) {
   const shaderContext = useShaderContext();
   const resize = useResize();
+  const [frameWidth, frameHeight] = frame;
 
   // A still photo changes nothing over time, so a scene of it can park.
   useStaticSceneHint(true);
 
   // The share of the photo the canvas shows along x and along y, from 0 to
-  // 1. One of the two is always 1. It lives in a uniform, so a resize moves
-  // the crop without rebuilding the material.
+  // 1. It lives in a uniform, so a resize moves the crop without rebuilding
+  // the material.
   const coverVector = useMemo(() => new Vector2(1, 1), []);
   const coverUniform = useMemo(() => uniform(coverVector), [coverVector]);
 
-  // The cover fit. A canvas wider than the photo shows the photo's full
-  // width and crops its top and bottom, so it shows photoAspect /
-  // canvasAspect of the photo's height. A narrower canvas crops the sides
-  // the same way. The write repaints nothing on a still scene by itself, so
-  // it asks for a frame (the bare-uniform-write gotcha in docs/agents/tsl.md).
+  // The fit. The photo covers the frame, centered, and the canvas shows the
+  // middle of the frame at its own size, the way DemoPoster's pixel-locked
+  // mode crops the poster. So the photo keeps one scale in every box, and
+  // nothing zooms when the scene replaces the poster. To cover a box, a
+  // photo photoAspect times as wide as it is tall must be max(width,
+  // height * photoAspect) CSS pixels wide. The photo takes the larger of
+  // that for the frame and for the canvas, so a canvas bigger than the
+  // frame still reaches no edge of the photo. When the canvas is the frame,
+  // this is a plain cover fit. The write repaints nothing on a still scene
+  // by itself, so it asks for a frame (the bare-uniform-write gotcha in
+  // docs/agents/tsl.md).
   useEffect(() => {
     const apply = () => {
       const [width, height] = resize.get();
 
       if (width <= 0 || height <= 0) return;
-      const canvasAspect = width / height;
       const photoAspect = photo.naturalWidth / photo.naturalHeight;
+      const photoWidth = Math.max(
+        frameWidth,
+        frameHeight * photoAspect,
+        width,
+        height * photoAspect,
+      );
+      const photoHeight = photoWidth / photoAspect;
 
-      if (canvasAspect > photoAspect) coverVector.set(1, photoAspect / canvasAspect);
-      else coverVector.set(canvasAspect / photoAspect, 1);
+      coverVector.set(width / photoWidth, height / photoHeight);
       shaderContext?.scheduler.requestRender();
     };
 
     apply();
 
     return resize.on('change', apply);
-  }, [coverVector, photo, resize, shaderContext]);
+  }, [coverVector, frameHeight, frameWidth, photo, resize, shaderContext]);
 
   // The plane, created, added, and disposed in one effect so it survives
   // Strict Mode's remount (the Strict Mode gotcha in docs/agents/tsl.md).

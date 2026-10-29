@@ -43,10 +43,10 @@ fi
 #
 # fluted-glass is captured at the widest demo box: the 4xl column's 896px at
 # 3:2, rounded up to 598. Its flutes are sized in CSS pixels, so its poster
-# renders pixel-locked too. The photo under the glass is cropped to cover the
-# canvas, so a larger capture would zoom the photo in every box. At this size
-# the poster matches the live scene in the widest box. A narrower box keeps
-# the flutes' spacing but shows only the middle of the photo. The scene
+# renders pixel-locked too. The scene fits the photo under the glass to this
+# size in every box, so a narrower box shows the middle of the poster's
+# framing at the poster's scale, and nothing zooms at the handoff. Keep this
+# size in step with POSTER_SIZE in the demo's poster-size.ts. The scene
 # imports the photo, and the CLI inlines it into the poster's bundle.
 #
 # crop is the side, in poster pixels, of the center square the card thumbnail
