@@ -92,7 +92,25 @@ _Avoid_: Profile, distortion shape, preset
 The line where two neighboring flutes meet, where the glass is steepest.
 _Avoid_: Seam, edge, crease
 
+### Compositions
+
+**Composition**:
+A named stack of Sources and Effects with set props, saved so it can be shown, copied, and edited. A stack written by hand inside a scene is a scene, not a composition.
+_Avoid_: Recipe, piece, template, example, pro shader, background
+
+**Preset**:
+One complete set of a composition's props, which a visitor can pick as a starting point.
+_Avoid_: Variant, theme
+
+**Control**:
+One input in a control panel, such as a demo's or a composition's. A composition's control sets exactly one prop of one Source or Effect in its stack.
+_Avoid_: Knob, setting
+
 ### Docs site
+
+**Gallery**:
+The section of the docs site that shows the art-directed compositions.
+_Avoid_: Showcase, examples, collection
 
 **Search trigger**:
 The button in the site header that opens the search panel and focuses its input. It is not an input itself.
