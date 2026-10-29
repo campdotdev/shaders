@@ -30,6 +30,46 @@ describe('bundlePoster', () => {
   });
 });
 
+// A docs scene can draw a photo, such as FlutedGlass's demo, and the poster
+// server has no route for image files. The bundle carries each imported
+// image inline as a data URL instead.
+describe('bundlePoster — image imports', () => {
+  // Binary, as an image is: a PNG's signature. esbuild writes text-like
+  // bytes percent-encoded rather than as base64.
+  const imageBytes = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0x00, 0xff]);
+  let dir: string;
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'shaders-bundle-image-'));
+  });
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true });
+  });
+
+  it.each(['png', 'jpg', 'jpeg', 'webp'])(
+    'inlines an imported .%s as a data URL',
+    async (extension) => {
+      await writeFile(join(dir, `photo.${extension}`), imageBytes);
+      const scene = join(dir, 'scene.tsx');
+
+      await writeFile(
+        scene,
+        `import photo from './photo.${extension}';\nexport default function Scene() { return <img src={photo} />; }`,
+      );
+
+      const result = await bundlePoster({
+        from: scene,
+        exportName: 'default',
+        projectRoot: new URL('../../', import.meta.url).pathname,
+      });
+
+      expect(result.js).toContain(`data:image/`);
+      expect(result.js).toContain(imageBytes.toString('base64'));
+    },
+  );
+});
+
 describe('bundlePoster — error messages', () => {
   it('surfaces a TS/JSX syntax error with the user file path', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'shaders-bundle-err-'));
