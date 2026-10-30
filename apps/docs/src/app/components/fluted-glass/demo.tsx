@@ -23,17 +23,9 @@ import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { type FlutedGlassParams, INITIAL } from './params';
+import { POSTER_SIZE } from './poster-size';
 
 const FlutedGlassScene = dynamic(() => import('./scene'), { ssr: false });
-
-/**
- * The CSS size the poster was captured at in build-posters.sh, the widest
- * demo box. The flutes are sized in CSS pixels, so DemoPoster's pixel-locked
- * mode shows the image at this size and lets the box crop it. Cover-scaling
- * would change the flutes' spacing, and the grooves would jump when the live
- * scene replaced the poster.
- */
-const POSTER_SIZE: readonly [number, number] = [896, 598];
 
 /**
  * Reads the live params and renders the scene. Split out from the island so
@@ -45,7 +37,7 @@ function FlutedGlassDemo() {
 
   return (
     <DemoPoster
-      alt="Fluted Glass shader preview: a mesh gradient seen through vertical flutes of glass"
+      alt="Fluted Glass shader preview: a photo of two anthurium flowers in a glass vase, seen through vertical flutes of glass"
       pixelSize={POSTER_SIZE}
       src="/posters/fluted-glass.jpg"
     >
@@ -63,6 +55,7 @@ function FlutedGlassControls() {
         <SliderInput label="Flute width" max={160} min={4} path="fluteWidth" step={1} />
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
         <SliderInput label="Refraction" max={3} min={0} path="refraction" step={0.01} />
+        <SliderInput label="Dispersion" max={1} min={0} path="dispersion" step={0.01} />
         <SliderInput label="Cross-section" max={1} min={0} path="crossSection" step={0.01} />
       </Section>
       <Section title="Light">

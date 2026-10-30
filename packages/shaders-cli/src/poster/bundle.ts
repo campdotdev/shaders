@@ -132,7 +132,17 @@ export async function bundlePoster(opts: BundlePosterOpts): Promise<BundlePoster
     platform: 'browser',
     target: 'es2022',
     jsx: 'automatic',
-    loader: { '.tsx': 'tsx', '.ts': 'ts' },
+    // The poster server has routes only for the harness, its bundle, and its
+    // config, so an image the source imports, such as a demo's photo, rides
+    // inside the bundle as a data URL string.
+    loader: {
+      '.tsx': 'tsx',
+      '.ts': 'ts',
+      '.png': 'dataurl',
+      '.jpg': 'dataurl',
+      '.jpeg': 'dataurl',
+      '.webp': 'dataurl',
+    },
     absWorkingDir: opts.projectRoot,
     nodePaths: [join(opts.projectRoot, 'node_modules')],
     define: {

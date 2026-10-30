@@ -9,29 +9,34 @@ test('FlutedGlass — default story', async ({ page }) => {
   await expect(page.locator('canvas').first()).toHaveScreenshot('fluted-glass-default.png');
 });
 
-// The probe draws hard diagonal stripes under FlutedGlass at its defaults.
-// Query params set the glass's dials, drop the glass with glass=none, or drop
-// the stripes with source=none.
-const PROBE = '/dev/fluted-glass-probe?visualTest=1';
-// FlutedGlass's default flute width in CSS pixels, which is device pixels at
-// the config's deviceScaleFactor of 1. A flute's center sits on the canvas
-// center, so the grooves fall half a flute either side of it and every flute
-// width beyond.
+// The flute width every probe load sets, in CSS pixels, which is device
+// pixels at the config's deviceScaleFactor of 1. The checks set it rather than
+// take the default, so their column math holds when the default changes. A
+// flute's center sits on the canvas center, so the grooves fall half a flute
+// either side of it and every flute width beyond.
 const FLUTE_WIDTH = 40;
+// The probe draws hard diagonal stripes under FlutedGlass at its defaults,
+// apart from the flute width above. Query params set the glass's other dials,
+// drop the glass with glass=none, or drop the stripes with source=none.
+const PROBE = `/dev/fluted-glass-probe?visualTest=1&fluteWidth=${FLUTE_WIDTH}`;
 // How far either side of a groove each sample column sits, in pixels. Wide
 // enough to step clear of the groove's own pixel, narrow enough that
 // unbroken stripes rarely change between the two columns.
 const COLUMN_OFFSET = 3;
-// The least the highlight must brighten the walls that face the light, in
-// brightness levels from 0 to 255, averaged over those walls. The defaults
-// measured about 18 on macOS, so this leaves room for another GPU.
+// The least a highlight of 0.45 must brighten the walls that face the light,
+// in brightness levels from 0 to 255, averaged over those walls. It measured
+// about 18 on macOS, so this leaves room for another GPU.
 const GAIN_ON_LIT_WALLS = 6;
 
-/** The probe's canvas as each pixel's brightness, the mean of its channels. */
-interface Brightness {
+/** The probe's canvas, read back pixel by pixel. */
+interface ProbeImage {
   width: number;
-  /** Brightness from 0 to 255 at a pixel. */
-  at: (x: number, y: number) => number;
+  /** Brightness from 0 to 255 at a pixel, the rounded mean of its channels. */
+  brightness: (x: number, y: number) => number;
+  /** Red from 0 to 255 at a pixel. */
+  red: (x: number, y: number) => number;
+  /** Blue from 0 to 255 at a pixel. */
+  blue: (x: number, y: number) => number;
   /** The middle band of rows, clear of the site header drawn over the canvas. */
   rows: number[];
 }
@@ -39,9 +44,9 @@ interface Brightness {
 /**
  * Loads the probe with `query` appended and reads its canvas. The screenshot
  * decodes in the page, which has the browser's PNG decoder, and comes back
- * one byte of brightness per pixel.
+ * as three bytes per pixel: red, green, and blue.
  */
-async function probeBrightness(page: Page, query: string): Promise<Brightness> {
+async function loadProbe(page: Page, query: string): Promise<ProbeImage> {
   await page.goto(`${PROBE}${query}`);
   await page.locator('canvas').first().waitFor();
   await waitForShader(page);
@@ -61,9 +66,7 @@ async function probeBrightness(page: Page, query: string): Promise<Brightness> {
     let binary = '';
 
     for (let index = 0; index < rgba.length; index += 4) {
-      const sum = (rgba[index] ?? 0) + (rgba[index + 1] ?? 0) + (rgba[index + 2] ?? 0);
-
-      binary += String.fromCharCode(Math.round(sum / 3));
+      binary += String.fromCharCode(rgba[index] ?? 0, rgba[index + 1] ?? 0, rgba[index + 2] ?? 0);
     }
 
     return { width: bitmap.width, height: bitmap.height, bytes: btoa(binary) };
@@ -73,7 +76,16 @@ async function probeBrightness(page: Page, query: string): Promise<Brightness> {
 
   for (let y = Math.floor(height * 0.2); y < Math.floor(height * 0.8); y += 1) rows.push(y);
 
-  return { width, at: (x, y) => pixels[y * width + x] ?? 0, rows };
+  const channel = (x: number, y: number, offset: number) =>
+    pixels[(y * width + x) * 3 + offset] ?? 0;
+
+  return {
+    width,
+    brightness: (x, y) => Math.round((channel(x, y, 0) + channel(x, y, 1) + channel(x, y, 2)) / 3),
+    red: (x, y) => channel(x, y, 0),
+    blue: (x, y) => channel(x, y, 2),
+    rows,
+  };
 }
 
 /** The x of every groove on a canvas `width` pixels wide, left to right. */
@@ -97,7 +109,7 @@ function grooves(width: number): number[] {
  * between them. Through the glass they read the image from far apart, so
  * they differ far more often.
  */
-function grooveBreaks(image: Brightness): number {
+function grooveBreaks(image: ProbeImage): number {
   let pairs = 0;
   let breaks = 0;
 
@@ -108,7 +120,7 @@ function grooveBreaks(image: Brightness): number {
     if (left < 0 || right >= image.width) continue;
     for (const y of image.rows) {
       pairs += 1;
-      if (image.at(left, y) > 128 !== image.at(right, y) > 128) breaks += 1;
+      if (image.brightness(left, y) > 128 !== image.brightness(right, y) > 128) breaks += 1;
     }
   }
 
@@ -120,7 +132,7 @@ function grooveBreaks(image: Brightness): number {
  * the right half of every whole flute, two pixels clear of the grooves and
  * the center.
  */
-function wallGain(lit: Brightness, unlit: Brightness): { left: number; right: number } {
+function wallGain(lit: ProbeImage, unlit: ProbeImage): { left: number; right: number } {
   let left = 0;
   let right = 0;
   let count = 0;
@@ -132,8 +144,8 @@ function wallGain(lit: Brightness, unlit: Brightness): { left: number; right: nu
         const leftX = groove + step;
         const rightX = groove + FLUTE_WIDTH - step;
 
-        left += lit.at(leftX, y) - unlit.at(leftX, y);
-        right += lit.at(rightX, y) - unlit.at(rightX, y);
+        left += lit.brightness(leftX, y) - unlit.brightness(leftX, y);
+        right += lit.brightness(rightX, y) - unlit.brightness(rightX, y);
         count += 1;
       }
     }
@@ -163,27 +175,65 @@ function columnsNearGrooves(width: number, near: number, far: number): number[] 
  * The share of `unshaded`'s brightness that `shaded` loses, over the columns
  * `near` to `far` pixels out from every groove.
  */
-function shadowShare(shaded: Brightness, unshaded: Brightness, near: number, far: number): number {
+function shadowShare(shaded: ProbeImage, unshaded: ProbeImage, near: number, far: number): number {
   let lost = 0;
   let total = 0;
 
   for (const x of columnsNearGrooves(shaded.width, near, far)) {
     for (const y of shaded.rows) {
-      lost += unshaded.at(x, y) - shaded.at(x, y);
-      total += unshaded.at(x, y);
+      lost += unshaded.brightness(x, y) - shaded.brightness(x, y);
+      total += unshaded.brightness(x, y);
     }
   }
 
   return lost / total;
 }
 
+/**
+ * The x of every column within `reach` pixels of a flute's center, on a
+ * canvas `width` pixels wide. A flute's center sits half a flute past each
+ * groove.
+ */
+function columnsNearCenters(width: number, reach: number): number[] {
+  const columns: number[] = [];
+
+  for (const groove of grooves(width)) {
+    for (let step = -reach; step <= reach; step += 1) {
+      columns.push(groove + FLUTE_WIDTH / 2 + step);
+    }
+  }
+
+  return columns.filter((x) => x >= 0 && x < width);
+}
+
+/**
+ * The share of pixels in `columns` where red and blue fall on different
+ * sides of mid-gray. The probe's stripes are gray, so red and blue match
+ * wherever the glass splits no color. Where it does, a stripe edge lands in a
+ * different place in each channel, and the pixels between the two places
+ * split.
+ */
+function colorSplit(image: ProbeImage, columns: number[]): number {
+  let pixels = 0;
+  let splits = 0;
+
+  for (const x of columns) {
+    for (const y of image.rows) {
+      pixels += 1;
+      if (image.red(x, y) > 128 !== image.blue(x, y) > 128) splits += 1;
+    }
+  }
+
+  return splits / pixels;
+}
+
 /** The largest brightness difference between two loads, pixel for pixel. */
-function maxDifference(first: Brightness, second: Brightness): number {
+function maxDifference(first: ProbeImage, second: ProbeImage): number {
   let largest = 0;
 
   for (const y of first.rows) {
     for (let x = 0; x < first.width; x += 1) {
-      largest = Math.max(largest, Math.abs(first.at(x, y) - second.at(x, y)));
+      largest = Math.max(largest, Math.abs(first.brightness(x, y) - second.brightness(x, y)));
     }
   }
 
@@ -199,19 +249,43 @@ function maxDifference(first: Brightness, second: Brightness): number {
 // the glass. Through it, they read the image 28 px apart, and differ on
 // about half.
 test('FlutedGlass — stripes break at the grooves', async ({ page }) => {
-  const inert = grooveBreaks(await probeBrightness(page, '&highlight=0&shadow=0&refraction=0'));
-  const glass = grooveBreaks(await probeBrightness(page, '&highlight=0&shadow=0'));
+  const inert = grooveBreaks(await loadProbe(page, '&highlight=0&shadow=0&refraction=0'));
+  const glass = grooveBreaks(await loadProbe(page, '&highlight=0&shadow=0'));
 
   expect(glass, `groove breaks: glass ${glass}, inert ${inert}`).toBeGreaterThan(inert + 0.2);
+});
+
+// Dispersion reads blue one split past the bend and red one split short of
+// it, where the split is a share of the bend. Near a groove the bend is
+// largest, so at the default dispersion a stripe edge lands several pixels
+// apart in red and blue, and the two disagree across the gap. At a flute's
+// center the bend falls to 0, so the colors stay together there: a pixel off
+// center the bend is about a pixel, and the split a fifth of that. Both loads
+// turn the light off, and the reference sets dispersion to 0, the glass
+// without the split. On macOS the split pixels measured 11% near the grooves
+// and 1.1% at the centers.
+test('FlutedGlass — dispersion splits red from blue near the grooves', async ({ page }) => {
+  const unsplit = await loadProbe(page, '&highlight=0&shadow=0&dispersion=0');
+  const split = await loadProbe(page, '&highlight=0&shadow=0');
+  const grooveColumns = columnsNearGrooves(split.width, 1, 6);
+  const centerColumns = columnsNearCenters(split.width, 1);
+  const atGrooves = colorSplit(split, grooveColumns);
+  const atGroovesUnsplit = colorSplit(unsplit, grooveColumns);
+  const atCenters = colorSplit(split, centerColumns);
+  const message = `share of red and blue split: near grooves ${atGrooves} (${atGroovesUnsplit} with no dispersion), at centers ${atCenters}`;
+
+  expect(atGrooves, message).toBeGreaterThan(atGroovesUnsplit + 0.05);
+  expect(atCenters, message).toBeLessThan(atGrooves / 4);
 });
 
 // The default light comes from the upper left, so over vertical flutes the
 // left wall of each flute faces it and catches the highlight, and the right
 // wall faces away. Both loads turn the shadow off, so the highlight is the
-// only difference between them.
+// only difference between them. The lit load sets the highlight to 0.45,
+// bright enough to measure well clear of noise.
 test('FlutedGlass — the highlight lights the walls that face the light', async ({ page }) => {
-  const unlit = await probeBrightness(page, '&highlight=0&shadow=0');
-  const lit = await probeBrightness(page, '&shadow=0');
+  const unlit = await loadProbe(page, '&highlight=0&shadow=0');
+  const lit = await loadProbe(page, '&highlight=0.45&shadow=0');
   const gain = wallGain(lit, unlit);
   const message = `brightness gain: left walls ${gain.left}, right walls ${gain.right}`;
 
@@ -225,8 +299,8 @@ test('FlutedGlass — the highlight lights the walls that face the light', async
 // the walls. Columns 4 to 9 sit a fifth to a half of the way to the center:
 // inside the shadow's reach, but on glass that is flat.
 test('FlutedGlass — on a flat top the shadow stays on the walls', async ({ page }) => {
-  const unshaded = await probeBrightness(page, '&crossSection=flat&highlight=0&shadow=0');
-  const shaded = await probeBrightness(page, '&crossSection=flat&highlight=0&shadow=1');
+  const unshaded = await loadProbe(page, '&crossSection=flat&highlight=0&shadow=0');
+  const shaded = await loadProbe(page, '&crossSection=flat&highlight=0&shadow=1');
   const walls = shadowShare(shaded, unshaded, 0, 1);
   const flatTop = shadowShare(shaded, unshaded, 4, 9);
   const message = `share of brightness the shadow takes: walls ${walls}, flat top ${flatTop}`;
@@ -238,8 +312,8 @@ test('FlutedGlass — on a flat top the shadow stays on the walls', async ({ pag
 // With nothing to bend and no light, the glass draws the Source exactly as
 // the Source alone does.
 test('FlutedGlass — inert glass leaves the Source unchanged', async ({ page }) => {
-  const source = await probeBrightness(page, '&glass=none');
-  const inert = await probeBrightness(page, '&refraction=0&highlight=0&shadow=0');
+  const source = await loadProbe(page, '&glass=none');
+  const inert = await loadProbe(page, '&refraction=0&highlight=0&shadow=0');
 
   expect(maxDifference(source, inert)).toBeLessThanOrEqual(1);
 });
@@ -247,8 +321,8 @@ test('FlutedGlass — inert glass leaves the Source unchanged', async ({ page })
 // Over a transparent scene the canvas shows the probe page's black
 // background. Light added to a pixel with no coverage would show on it.
 test('FlutedGlass — a transparent pixel gets no highlight', async ({ page }) => {
-  const black = await probeBrightness(page, '&glass=none&source=none');
-  const glass = await probeBrightness(page, '&source=none&highlight=1&shadow=1');
+  const black = await loadProbe(page, '&glass=none&source=none');
+  const glass = await loadProbe(page, '&source=none&highlight=1&shadow=1');
 
   expect(maxDifference(black, glass)).toBeLessThanOrEqual(1);
 });

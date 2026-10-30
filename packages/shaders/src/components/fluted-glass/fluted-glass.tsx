@@ -2,9 +2,9 @@
 
 // Public face of the fluted glass: owns the props, their JSDoc, and their
 // defaults, then delegates to FlutedGlassShader (./shader.tsx). FlutedGlass
-// is an Effect: stack it after a Source inside a <ShaderScene> and it shows
-// that Source through a pane of fluted glass, each flute bending the image
-// beneath it into a squeezed copy and catching the light along one wall.
+// is an Effect: stack it after a Source inside a <ShaderScene>, and each
+// flute bends the image beneath it into a squeezed copy, fringes its colors
+// where the glass is steep, and catches the light along one wall.
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { FlutedGlassShader } from './shader.js';
@@ -22,7 +22,7 @@ const CROSS_SECTION_DIAL: Record<CrossSectionName, number> = {
 
 export interface FlutedGlassProps {
   /**
-   * The width of one flute, in CSS pixels. Defaults to 40. Accepts a static
+   * The width of one flute, in CSS pixels. Defaults to 30. Accepts a static
    * value or an animation signal.
    */
   fluteWidth?: AnimatableProp<number>;
@@ -41,6 +41,15 @@ export interface FlutedGlassProps {
    * Accepts a static value or an animation signal.
    */
   refraction?: AnimatableProp<number>;
+  /**
+   * How far the glass splits the image's colors apart, as a share of the
+   * bend: blue bends further than the rest and red less far, as in real
+   * glass, so colors fringe where the glass is steep and the flute centers,
+   * which bend nothing, stay clean. 0 turns the split off. At 1, red shows
+   * the image unbent and blue bends twice as far. Defaults to 0.2. Accepts a
+   * static value or an animation signal.
+   */
+  dispersion?: AnimatableProp<number>;
   /**
    * The shape of each flute seen from its end, from 0 to 1. `'prism'` (0) is
    * two flat faces meeting at a ridge, `'round'` (0.5) is a lens, and
@@ -62,7 +71,7 @@ export interface FlutedGlassProps {
   /**
    * How bright the highlight along each lit wall is, from 0 to 1, where 1
    * adds the full `highlightColor` at the brightest point. 0 turns it off.
-   * Defaults to 0.45. Accepts a static value or an animation signal.
+   * Defaults to 0.15. Accepts a static value or an animation signal.
    */
   highlight?: AnimatableProp<number>;
   /**
@@ -89,12 +98,13 @@ export interface FlutedGlassProps {
  * `fluteSurface` primitive.
  */
 export function FlutedGlass({
-  fluteWidth = 40,
+  fluteWidth = 30,
   angle = 90,
   refraction = 1,
+  dispersion = 0.2,
   crossSection = 'round',
   lightAngle = 135,
-  highlight = 0.45,
+  highlight = 0.15,
   highlightColor = 'oklch(1 0 0)',
   shadow = 0.2,
 }: FlutedGlassProps) {
@@ -109,6 +119,7 @@ export function FlutedGlass({
       crossSection={
         typeof crossSection === 'string' ? CROSS_SECTION_DIAL[crossSection] : crossSection
       }
+      dispersion={dispersion}
       fluteWidth={fluteWidth}
       highlight={highlight}
       highlightColor={highlightColor}

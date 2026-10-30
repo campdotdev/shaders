@@ -1,10 +1,10 @@
 'use client';
 
-// The fluted glass's GPU half: a UV warp that bends the image beneath the
-// glass, and a color transform that lights it, both reading one surface from
-// the engine's fluteSurface primitive. This file converts between the pass's
-// coordinate and the primitive's pixels. The wrapper (./fluted-glass.tsx)
-// supplies the props.
+// The fluted glass's GPU half: a resample that bends the image beneath the
+// glass and splits its colors, and a color transform that lights it. Both
+// read one surface from the engine's fluteSurface primitive, and this file
+// converts between the pass's coordinate and the primitive's pixels. The
+// wrapper (./fluted-glass.tsx) supplies the props.
 import { useEffect, useMemo } from 'react';
 
 import type { ShaderNodeObject } from 'three/tsl';
@@ -30,8 +30,8 @@ import { type Node, Vector3 } from 'three/webgpu';
 import { fluteSurface } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
-import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
+import { useResample } from '../../react/hooks/use-resample/use-resample.js';
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { parseColor } from '../shared/color.js';
@@ -54,6 +54,13 @@ export interface FlutedGlassShaderProps {
    * static value or an animation signal.
    */
   refraction: AnimatableProp<number>;
+  /**
+   * How far the glass splits the image's colors apart, as a share of the
+   * bend: blue bends further than the rest and red less far. 0 turns the
+   * split off. At 1, red shows the image unbent and blue bends twice as far.
+   * Accepts a static value or an animation signal.
+   */
+  dispersion: AnimatableProp<number>;
   /**
    * The shape of each flute seen from its end, from 0 to 1: 0 is a prism,
    * 0.5 is round, and 1 is a flat top with steep walls. The wrapper turns a
@@ -98,6 +105,11 @@ const HIGHLIGHT_SHARPNESS = 32;
 // steep. 1 lets it reach the center.
 const SHADOW_WIDTH = 0.5;
 
+// Floor on a read's alpha before the un-premultiply divide in the resample
+// below. A read this transparent holds next to no color, so the floor only
+// keeps the divide finite.
+const MIN_ALPHA = 0.001;
+
 // The pass's frame has y down and the primitive's has y up, so a vector
 // that crosses between them flips its y.
 function flipY(vector: ShaderNodeObject<Node>): ShaderNodeObject<Node> {
@@ -126,6 +138,7 @@ export function FlutedGlassShader({
   fluteWidth,
   angle,
   refraction,
+  dispersion,
   crossSection,
   lightAngle,
   highlight,
@@ -139,6 +152,7 @@ export function FlutedGlassShader({
   const fluteWidthUniform = useAnimatableUniform(fluteWidth);
   const angleUniform = useAnimatableUniform(angle);
   const refractionUniform = useAnimatableUniform(refraction);
+  const dispersionUniform = useAnimatableUniform(dispersion);
   const crossSectionUniform = useAnimatableUniform(crossSection);
   const lightAngleUniform = useAnimatableUniform(lightAngle);
   const highlightUniform = useAnimatableUniform(highlight);
@@ -165,13 +179,13 @@ export function FlutedGlassShader({
   // CSS pixels -> device pixels
   // ---------------------------------------------
   // fluteWidth is in CSS pixels so a flute keeps its size on a 1x and a 2x
-  // display, but the warp below counts device pixels. The renderer's pixel
+  // display, but the resample below counts device pixels. The renderer's pixel
   // ratio, which respects maxDPR clamping, converts between them; useResize
   // fires again on monitor moves and browser zoom, when that ratio changes.
   // Dither builds its ratio the same way.
   const resize = useResize();
   // Created once and never replaced: the effect below writes into it, and
-  // the warp depends on the stable wrapper.
+  // the resample depends on the stable wrapper.
   const pixelRatioUniform = useMemo(
     () => uniform(resize.get()[2] || 1),
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -214,35 +228,83 @@ export function FlutedGlassShader({
     });
 
   // ---------------------------------------------
-  // Refraction: bend the scene through the flutes
+  // Refraction and dispersion: bend the scene, one color at a time
   // ---------------------------------------------
-  // A base-pass UV warp: the callback receives the 0..1 coordinate the
-  // rendered scene is about to be sampled at and returns a replacement.
-  useBasePassUv(
-    (coordinate) => {
+  // A resample. The callback receives sampleBeneath, a function that reads
+  // the image beneath the glass at a 0..1 coordinate and returns its rgba,
+  // and returns the function that takes its place. The Effect mounted above
+  // the glass calls that function, or the output stage calls it once per
+  // pixel when the glass is on top. A UV warp only moves the coordinate of
+  // its one read, but a resample can call sampleBeneath as often as it
+  // needs. Each call is one more texture fetch, and it runs every resample
+  // mounted beneath the glass again, such as CursorRipple's UV warp
+  // (ADR 0004). The color split below takes three.
+  useResample(
+    (sampleBeneath) => (coordinate) => {
       const { bend } = surfaceAt(coordinate);
 
       // Back out: the bend comes back in device pixels with y up. Flip y
       // again and divide by the buffer size to get a 0..1 offset in the
-      // pass's frame, then fold anything off the canvas back onto it.
-      const bent = coordinate.add(flipY(bend).div(screenSize));
+      // pass's frame.
+      const offset = flipY(bend).div(screenSize);
+      const bent = coordinate.add(offset);
 
-      return mirrorOntoCanvas(bent);
+      // The split is a share of the bend, so it grows and shrinks with the
+      // bend. At a flute's center the bend is 0, so the split is 0 and the
+      // three colors line up. Toward a groove the bend grows and the colors
+      // pull apart along it. Real glass bends short wavelengths more than
+      // long ones, so blue reads one split past the bend and red one split
+      // short of it. At a dispersion of 1, blue bends twice as far and red
+      // not at all.
+      const split = offset.mul(dispersionUniform);
+
+      // Three reads, each folded back onto the canvas on its own, because
+      // near an edge the blue read can leave the canvas while the green one
+      // stays on it. Each read returns a full rgba, and the pixel keeps one
+      // channel from each. Alpha comes from green, the read at the bend
+      // itself.
+      const red = sampleBeneath(mirrorOntoCanvas(bent.sub(split)));
+      const green = sampleBeneath(mirrorOntoCanvas(bent));
+      const blue = sampleBeneath(mirrorOntoCanvas(bent.add(split)));
+
+      // The scene texture is premultiplied: each read's color arrives
+      // already scaled by its own alpha. Near the edge of a transparent
+      // Source, such as a blob's, the red read can land on the blob while
+      // the green one lands past it, which would give the pixel full red at
+      // alpha 0. The canvas is premultiplied too, so that red would add to
+      // the page behind it as a bright fringe. Dividing red and blue by
+      // their own alpha recovers their colors, and scaling them by green's
+      // alpha gives all three channels green's coverage. At a dispersion of
+      // 0 all three read the same point, so the pixel is the one bent read
+      // the glass took before the split, exactly so wherever the image is
+      // opaque.
+      const redColor = red.r.div(max(red.a, MIN_ALPHA)).mul(green.a);
+      const blueColor = blue.b.div(max(blue.a, MIN_ALPHA)).mul(green.a);
+
+      return vec4(redColor, green.g, blueColor, green.a);
     },
-    [fluteWidthUniform, angleUniform, refractionUniform, crossSectionUniform, pixelRatioUniform],
+    [
+      fluteWidthUniform,
+      angleUniform,
+      refractionUniform,
+      dispersionUniform,
+      crossSectionUniform,
+      pixelRatioUniform,
+    ],
   );
 
   // ---------------------------------------------
   // Lighting: a shadow at the grooves, a highlight on the walls
   // ---------------------------------------------
   // A post-process pass: the callback receives each pixel the scene drew,
-  // already bent by the warp above (`input`, rgba), and returns a
-  // replacement. The warp and this pass draw in the same output quad, and
-  // uv() is the pixel's own pass coordinate, so surfaceAt(uv()) is the glass
-  // at this pixel. The warp starts from uv() too while it runs first. A UV
-  // warp mounted before FlutedGlass, such as Dither's, hands the glass its
-  // moved coordinate instead, so there the bend and the light read the
-  // surface at slightly different points. SHA-267 reworks how warps stack.
+  // already bent and split by the resample above (`input`, rgba), and
+  // returns a replacement. The resample and this pass draw in the same
+  // output quad, and uv() is the pixel's own pass coordinate, so
+  // surfaceAt(uv()) is the glass at this pixel. The resample starts from
+  // uv() too, unless an Effect mounted after the glass moves the coordinate
+  // first. Dither's UV warp, mounted after FlutedGlass, hands the glass a
+  // coordinate snapped to its grid, so there the bend and the light read the
+  // surface at slightly different points.
   usePostProcessPass(
     (input) => {
       const { slope, fromCenter, steepness } = surfaceAt(uv());
