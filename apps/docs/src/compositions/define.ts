@@ -147,16 +147,18 @@ type PathsTo<Props, Value> = Extract<PathEntries<Props>, [string, Value]>[0];
 
 /**
  * The paths into `Props` whose value is a union of string literals, which is
- * what a select can offer. A plain `string`, such as a color, has no options.
+ * what a select can offer. A plain `string`, such as a color, has no options,
+ * and a value that can also be a number, such as FlutedGlass's
+ * `crossSection`, belongs to a slider.
  */
 type SelectPaths<Props> =
   PathEntries<Props> extends infer Entry
     ? Entry extends [infer Path, infer Value]
-      ? [Extract<Value, string>] extends [never]
-        ? never
-        : string extends Extract<Value, string>
+      ? [Value] extends [string]
+        ? string extends Value
           ? never
           : Path
+        : never
       : never
     : never;
 

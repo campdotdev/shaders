@@ -358,14 +358,21 @@ function printFlat(value: unknown): string {
 }
 
 // Single quotes, as the repo's Prettier config asks, unless the string holds
-// more single quotes than double ones, where Prettier switches.
+// more single quotes than double ones, where Prettier switches. A line break
+// can't sit inside a quoted string, so it prints as its escape.
 function printString(value: string): string {
   const singles = value.split("'").length - 1;
   const doubles = value.split('"').length - 1;
+  const quote = singles > doubles ? '"' : "'";
+  const escaped = value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('\n', '\\n')
+    .replaceAll('\r', '\\r')
+    .replaceAll('\u2028', '\\u2028')
+    .replaceAll('\u2029', '\\u2029')
+    .replaceAll(quote, `\\${quote}`);
 
-  if (singles > doubles) return `"${value.replaceAll('"', '\\"')}"`;
-
-  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
+  return `${quote}${escaped}${quote}`;
 }
 
 const printKey = (key: string) => (/^[A-Za-z_$][\w$]*$/.test(key) ? key : printString(key));

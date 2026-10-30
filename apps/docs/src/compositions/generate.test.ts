@@ -244,6 +244,29 @@ describe('stop positions', () => {
   });
 });
 
+describe('strings', () => {
+  it('escapes a line break and a backslash inside a nested string', () => {
+    const gradient = defineComposition({
+      slug: 'strings-test',
+      title: 'Strings',
+      description: 'A LinearGradient for the string rule.',
+      stack: [{ id: 'base', component: 'LinearGradient', props: {} }],
+      presets: [],
+      controls: [],
+    });
+
+    const output = generateComposition({
+      composition: gradient,
+      preset: 'Default',
+      state: { base: { stops: [{ color: 'oklch(0.5\n 0.1 250)' }, { color: "it's \\" }] } },
+      defaults: {},
+    });
+
+    expect(output).toContain("{ color: 'oklch(0.5\\n 0.1 250)' }");
+    expect(output).toContain(`{ color: "it's \\\\" }`);
+  });
+});
+
 describe('names', () => {
   it('turns the title into the component name and a preset into a file name', () => {
     expect(pascalCase('Late summer haze')).toBe('LateSummerHaze');

@@ -240,6 +240,18 @@ describe('defineComposition', () => {
     });
   });
 
+  it('rejects a select on a prop that can also be a number', () => {
+    defineComposition({
+      ...base,
+      stack: [{ id: 'glass', component: 'FlutedGlass', props: {} }],
+      presets: [],
+      controls: [
+        // @ts-expect-error -- crossSection is a dial value as well as a name
+        { kind: 'select', entry: 'glass', path: 'crossSection', label: 'Cut', options: [] },
+      ],
+    });
+  });
+
   it('rejects a slider without its range', () => {
     defineComposition({
       ...base,
