@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
-import { extractProps, getComponentProps } from './props';
+import { COMPONENTS } from './components';
+import { extractProps, getComponentDefaults, getComponentProps, parseLiteral } from './props';
 
 describe('extractProps', () => {
   it('extracts name, type text, and description for each interface member', async () => {
@@ -171,5 +172,43 @@ describe('getComponentProps', () => {
     const rows = await getComponentProps('god-rays');
 
     expect(rows.length).toBeGreaterThan(0);
+  });
+});
+
+describe('parseLiteral', () => {
+  it('reads numbers, strings, booleans, and nested arrays and objects', () => {
+    expect(parseLiteral("[\n  { color: 'oklch(0.5 0.1 250)', position: 0.35 },\n]")).toEqual([
+      { color: 'oklch(0.5 0.1 250)', position: 0.35 },
+    ]);
+    expect(parseLiteral('[0.5, -0.05]')).toEqual([0.5, -0.05]);
+    expect(parseLiteral('true')).toBe(true);
+  });
+
+  it('throws on anything that is not a literal', () => {
+    expect(() => parseLiteral('DEFAULT_STOPS')).toThrow(/not a literal/);
+    expect(() => parseLiteral('[...rest]')).toThrow(/not a literal/);
+  });
+});
+
+// A composition's store starts from these values, so a default that isn't a
+// literal would leave its control with nothing to show.
+describe('getComponentDefaults', () => {
+  const isLiteral = (value: unknown): boolean => {
+    if (['number', 'string', 'boolean'].includes(typeof value)) return true;
+    if (Array.isArray(value)) return value.every(isLiteral);
+    if (value !== null && typeof value === 'object') return Object.values(value).every(isLiteral);
+
+    return false;
+  };
+
+  it('turns every component default into a literal value', async () => {
+    for (const slug of Object.keys(COMPONENTS)) {
+      const rows = await getComponentProps(slug);
+      const defaults = await getComponentDefaults(slug);
+
+      for (const row of rows.filter((candidate) => candidate.defaultValue !== undefined)) {
+        expect(isLiteral(defaults[row.name]), `${slug}.${row.name}`).toBe(true);
+      }
+    }
   });
 });

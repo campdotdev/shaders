@@ -38,6 +38,15 @@ function pascalizeSlug(slug: string): string {
   return slug.split('-').map(capitalize).join('');
 }
 
+/**
+ * The slug of the component exported under `componentName`, such as
+ * 'mesh-gradient' for 'MeshGradient': the PascalCase rule above, run
+ * backwards over the known slugs. Undefined for a name no component has.
+ */
+export function slugForComponentName(componentName: string): string | undefined {
+  return Object.keys(COMPONENTS).find((slug) => pascalizeSlug(slug) === componentName);
+}
+
 // scripts/build-posters.sh cuts every component's thumbnail from its poster
 // and writes it beside the poster under the slug, whatever format the poster
 // itself is, so the URL derives from the slug alone.

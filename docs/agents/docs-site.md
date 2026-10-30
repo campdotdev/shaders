@@ -15,6 +15,7 @@ A composition is a typed document, as ADR 0005 decides. Write it at `apps/docs/s
 - `stack` names each Source or Effect by its export name, under an `id` that is unique in the composition. Presets and controls address an entry by its `id`. Never call an entry a layer.
 - Props are literals only. The types reject a component the component map lacks, a prop the component doesn't have, a callback or signal prop, a preset or control that names a missing entry, and a control path whose value doesn't fit its kind.
 - A document imports only types. `compositions/component-map.ts` is the one file that imports the components, and `define.ts` reaches it through `import type`, so server code and the docs' Node vitest can read every document. A test fails when a component in `content/components.ts` is missing from the map.
+- `presets` and `controls` fill the page's Customize panel. A preset is a partial override per entry id, and the picker lists "Default", the stack's own props, before them. Loading a preset starts again from the library defaults with the stack's props on top, then applies the override, and Reset returns to the loaded preset. A control writes `<entry>.<path>` in the panel's store, and sets exactly one prop. The panel needs no other code per composition.
 
 ## The SSR gotcha: keep three out of server code
 
