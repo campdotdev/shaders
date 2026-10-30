@@ -8,6 +8,14 @@ The package ships no manifest. The docs site keeps its own record of each compon
 
 Adding a component takes seven edits: the folder in the package, an export from `packages/shaders/src/components/index.ts`, an entry in `components.ts`, a demo island at `apps/docs/src/app/components/<slug>/demo.tsx`, an entry in `apps/docs/src/app/components/demo-registry.tsx`, an entry in `scripts/build-posters.sh`, and a visual regression spec at `apps/docs-tests/visual/<slug>.spec.ts`, whose baselines `pnpm snap <slug>` generates, as `docs/development/visual-regression.md` describes. The posters script writes the poster the demo shows before its first frame, then cuts the thumbnail for the component's card on `/components` from it. A component with no thumbnail shows a broken image on its card and fails `components-index.spec.ts`. The registry is what generates the page: `[slug]/page.tsx` builds its static params from `COMPONENT_PAGES`, so a component without an entry gets no route. A new sidebar group is one more entry in `taxonomy.ts`.
 
+## Add a composition
+
+A composition is a typed document, as ADR 0005 decides. Write it at `apps/docs/src/compositions/<slug>/composition.ts` with `defineComposition` from `compositions/define.ts`, then add it to the `COMPOSITIONS` array in `compositions/index.ts`. The array's order is the Gallery's order, and `/gallery/<slug>` builds its static params from it.
+
+- `stack` names each Source or Effect by its export name, under an `id` that is unique in the composition. Presets and controls address an entry by its `id`. Never call an entry a layer.
+- Props are literals only. The types reject a component the component map lacks, a prop the component doesn't have, a callback or signal prop, a preset or control that names a missing entry, and a control path whose value doesn't fit its kind.
+- A document imports only types. `compositions/component-map.ts` is the one file that imports the components, and `define.ts` reaches it through `import type`, so server code and the docs' Node vitest can read every document. A test fails when a component in `content/components.ts` is missing from the map.
+
 ## The SSR gotcha: keep three out of server code
 
 `three/webgpu` reads `self` at module load, so any server render that imports it crashes.
