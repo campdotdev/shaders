@@ -14,6 +14,10 @@ _Avoid_: Base component, generator, layer
 A component that acts on the image beneath it in a scene rather than drawing its own, such as Grain, Dither, or LedWall. An Effect composes over any Source or Effect mounted before it.
 _Avoid_: Overlay, post-process pass, post-process layer, filter
 
+**Stack**:
+The ordered Sources and Effects a scene draws, first at the bottom. Each Effect acts on what the stack drew beneath it.
+_Avoid_: Layers, pipeline, chain
+
 **UV warp**:
 An Effect's change to where the image beneath it is sampled, such as Dither's pixel snap or CursorRipple's refraction. A UV warp bends only what Sources drew.
 _Avoid_: Warp on its own, base UV transform
