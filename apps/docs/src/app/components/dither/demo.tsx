@@ -57,9 +57,14 @@ function DitherDemo() {
   );
 }
 
-function DitherControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function DitherFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Dither">
         <SelectInput label="Pattern" options={PATTERN_OPTIONS} path="pattern" />
         <SliderInput label="Pixel size" max={24} min={1} path="pixelSize" step={1} />
@@ -67,6 +72,14 @@ function DitherControls() {
         <SliderInput label="Spread" max={2} min={0} path="spread" step={0.05} />
         <SliderInput label="Threshold" max={1} min={0} path="threshold" step={0.01} />
       </Section>
+    </>
+  );
+}
+
+function DitherControls() {
+  return (
+    <ControlPanel>
+      <DitherFields />
     </ControlPanel>
   );
 }

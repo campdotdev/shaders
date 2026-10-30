@@ -136,6 +136,72 @@ export function GeneratorTest(props: Omit<ShaderSceneProps, 'children'>) {
   });
 });
 
+describe('props with no library default', () => {
+  // FractalNoise's contrast follows its style, so the library has no
+  // default for it. The panel seeds one, and the file prints it only once
+  // a visitor moves it.
+  const noise = defineComposition({
+    slug: 'no-default-test',
+    title: 'No default',
+    description: 'A FractalNoise for the no-default rule.',
+    stack: [{ id: 'noise', component: 'FractalNoise', props: {} }],
+    presets: [],
+    controls: [],
+  });
+  const noiseDefaults = { noise: { style: 'clouds', scale: 3 } };
+  const loaded = { noise: { style: 'clouds', scale: 3, contrast: 1.75 } };
+
+  it('leaves the prop out while it holds the value the preset loaded', () => {
+    const output = generateComposition({
+      composition: noise,
+      preset: 'Default',
+      state: loaded,
+      defaults: noiseDefaults,
+      loaded,
+    });
+
+    expect(output).toContain('<FractalNoise />');
+  });
+
+  it('prints the prop once it moves', () => {
+    const output = generateComposition({
+      composition: noise,
+      preset: 'Default',
+      state: { noise: { ...loaded.noise, contrast: 2 } },
+      defaults: noiseDefaults,
+      loaded,
+    });
+
+    expect(output).toContain('<FractalNoise contrast={2} />');
+  });
+});
+
+describe('stop positions', () => {
+  // The store writes out the positions the library would space a gradient's
+  // stops at, so its fields can show them. Untouched, they still match the
+  // library default.
+  it('leaves untouched gradient stops out', () => {
+    const gradient = defineComposition({
+      slug: 'stops-test',
+      title: 'Stops',
+      description: 'A LinearGradient for the stop-position rule.',
+      stack: [{ id: 'base', component: 'LinearGradient', props: {} }],
+      presets: [],
+      controls: [],
+    });
+    const gradientDefaults = { base: { stops: [{ color: '#000' }, { color: '#fff' }] } };
+
+    const output = generateComposition({
+      composition: gradient,
+      preset: 'Default',
+      state: presetProps(gradient, gradientDefaults, 'Default'),
+      defaults: gradientDefaults,
+    });
+
+    expect(output).toContain('<LinearGradient />');
+  });
+});
+
 describe('names', () => {
   it('turns the title into the component name and a preset into a file name', () => {
     expect(pascalCase('Late summer haze')).toBe('LateSummerHaze');

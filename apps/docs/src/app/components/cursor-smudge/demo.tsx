@@ -39,14 +39,27 @@ function CursorSmudgeDemo() {
 }
 
 // ---- Controls and page layout
-function CursorSmudgeControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function CursorSmudgeFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Smudge">
         <SliderInput label="Strength" max={0.3} min={0} path="strength" step={0.01} />
         <SliderInput label="Radius" max={0.5} min={0} path="radius" step={0.01} />
         <SliderInput label="Decay" max={1} min={0} path="decay" step={0.01} />
       </Section>
+    </>
+  );
+}
+
+function CursorSmudgeControls() {
+  return (
+    <ControlPanel>
+      <CursorSmudgeFields />
     </ControlPanel>
   );
 }

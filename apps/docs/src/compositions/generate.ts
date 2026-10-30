@@ -15,6 +15,8 @@ import {
   type CompositionState,
   type CompositionStore,
   DEFAULT_PRESET,
+  presetProps,
+  withStopPositions,
 } from './store';
 
 /** What the generator reads from the panel: the loaded preset and the props as they stand. */
@@ -26,6 +28,12 @@ export interface GenerateInput {
   state: CompositionState;
   /** The library defaults for each entry's component, keyed by entry id. */
   defaults: CompositionDefaults;
+  /**
+   * Each entry's props as the preset loaded them, before any edit. A prop
+   * with no library default prints once it moves off this. Defaults to what
+   * presetProps builds for the preset.
+   */
+  loaded?: CompositionState;
 }
 
 // Prettier's printWidth in the repo's .prettierrc.
@@ -45,8 +53,9 @@ export function generateComposition({
   preset,
   state,
   defaults,
+  loaded = presetProps(composition, defaults, preset),
 }: GenerateInput): string {
-  const presetProps = composition.presets.find(({ name }) => name === preset)?.props;
+  const presetOverride = composition.presets.find(({ name }) => name === preset)?.props;
   const componentNames = [...new Set(composition.stack.map(({ component }) => component))];
   const sceneAttributes = Object.entries(composition.scene ?? {})
     .filter(([, value]) => value !== undefined)
@@ -57,11 +66,14 @@ export function generateComposition({
   const elementIndent = INDENT.repeat(3);
   const elements = composition.stack.map((entry) => {
     const props: EntryProps = state[entry.id] ?? entry.props;
+    const setBy = { ...entry.props, ...presetOverride?.[entry.id] };
+    // The defaults in the shape the store holds, so stops the library spaces
+    // evenly compare equal to the positions the store wrote out for them.
+    const entryDefaults = withStopPositions(entry.component, defaults[entry.id] ?? {});
+    const entryLoaded = loaded[entry.id] ?? {};
     // Sorted, as the repo's jsx-sort-props rule sorts hand-written JSX.
     const printed = Object.keys(props)
-      .filter((name) =>
-        shouldPrint(name, props, entry.props, presetProps?.[entry.id], defaults[entry.id]),
-      )
+      .filter((name) => shouldPrint(name, props, setBy, entryDefaults, entryLoaded))
       .sort();
 
     return printElement(
@@ -102,24 +114,26 @@ export function generateFromStore(
     preset: store.getPreset(),
     state: store.getSnapshot(),
     defaults,
+    loaded: store.getLoaded(),
   });
 }
 
 /**
  * Whether a prop belongs in the file: the document or the loaded preset sets
  * it, or its value has moved off the library default. A prop with no
- * library default prints whenever it has a value.
+ * library default, such as FractalNoise's contrast, which follows its style,
+ * prints once it moves off the value the preset loaded with.
  */
 function shouldPrint(
   name: string,
   props: EntryProps,
-  documentProps: EntryProps,
-  presetProps: EntryProps | undefined,
-  defaults: EntryProps | undefined,
+  setBy: EntryProps,
+  defaults: EntryProps,
+  loaded: EntryProps,
 ): boolean {
   if (props[name] === undefined) return false;
-  if (name in documentProps || (presetProps !== undefined && name in presetProps)) return true;
-  if (defaults === undefined || !(name in defaults)) return true;
+  if (name in setBy) return true;
+  if (!(name in defaults)) return !sameValue(props[name], loaded[name]);
 
   return !sameValue(props[name], defaults[name]);
 }

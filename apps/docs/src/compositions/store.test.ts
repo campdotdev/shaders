@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { defineComposition } from './define';
-import { createCompositionStore, DEFAULT_PRESET, presetProps } from './store';
+import { createCompositionStore, DEFAULT_PRESET, presetProps, withStopPositions } from './store';
 
 const composition = defineComposition({
   slug: 'store-test',
@@ -100,5 +100,41 @@ describe('createCompositionStore', () => {
     store.loadPreset('Still');
 
     expect(calls).toBe(1);
+  });
+});
+
+describe('withStopPositions', () => {
+  it('writes out the positions the library spaces evenly, for a gradient', () => {
+    const stops = [{ color: '#000' }, { color: '#888', position: 0.2 }, { color: '#fff' }];
+
+    expect(withStopPositions('LinearGradient', { stops })).toEqual({
+      stops: [
+        { color: '#000', position: 0 },
+        { color: '#888', position: 0.2 },
+        { color: '#fff', position: 1 },
+      ],
+    });
+  });
+
+  // Blobs' fields edit colors only, so its stops keep the shape they came in.
+  it('leaves a component whose fields edit no stop position alone', () => {
+    const stops = [{ color: '#000' }, { color: '#fff' }];
+
+    expect(withStopPositions('Blobs', { stops })).toEqual({ stops });
+  });
+});
+
+describe('seeding the fields', () => {
+  const seeded = createCompositionStore(composition, defaults, (entry, props) =>
+    entry.component === 'Grain' ? { grit: 1, ...props } : props,
+  );
+
+  it('seeds every preset it loads, and reports the seeded props as loaded', () => {
+    expect(seeded.getSnapshot().grain).toMatchObject({ grit: 1, intensity: 0.08 });
+
+    seeded.loadPreset('Coarse');
+
+    expect(seeded.getSnapshot().grain).toMatchObject({ grit: 1, intensity: 0.3 });
+    expect(seeded.getLoaded()).toEqual(seeded.getSnapshot());
   });
 });

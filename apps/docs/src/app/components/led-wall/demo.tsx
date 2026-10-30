@@ -45,9 +45,14 @@ function LedWallDemo() {
   );
 }
 
-function LedWallControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function LedWallFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Grid">
         <SliderInput label="Spacing" max={24} min={2} path="spacing" step={1} />
         <SliderInput label="Dot size" max={24} min={1} path="dotSize" step={1} />
@@ -61,6 +66,14 @@ function LedWallControls() {
         <SliderInput label="Radius" max={1} min={0.05} path="swellRadius" step={0.01} />
         <SliderInput label="Swell" max={1.5} min={0} path="swell" step={0.05} />
       </Section>
+    </>
+  );
+}
+
+function LedWallControls() {
+  return (
+    <ControlPanel>
+      <LedWallFields />
     </ControlPanel>
   );
 }

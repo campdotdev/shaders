@@ -52,9 +52,14 @@ function VoronoiDemo() {
   );
 }
 
-function VoronoiControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function VoronoiFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Cells">
         <SliderInput label="Scale" max={20} min={1} path="scale" step={0.1} />
         <SliderInput label="Seed" max={100} min={0} path="seed" step={1} />
@@ -88,6 +93,14 @@ function VoronoiControls() {
       >
         {() => <ColorInput label="Color" path="color" />}
       </ListInput>
+    </>
+  );
+}
+
+function VoronoiControls() {
+  return (
+    <ControlPanel>
+      <VoronoiFields />
     </ControlPanel>
   );
 }

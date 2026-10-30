@@ -13,6 +13,7 @@ import { CopySourceProvider } from '@/components/controls';
 import { PageActions } from '@/components/page-actions/page-actions';
 import { COMPOSITIONS, findComposition } from '@/compositions';
 import { readCompositionDefaults } from '@/compositions/read-defaults';
+import { getComponentsCatalog } from '@/content/catalog';
 
 // The component pages' header styles, so the two kinds of page share one
 // header until the author designs the Gallery.
@@ -42,7 +43,17 @@ export default async function CompositionPage({ params }: PageProps) {
 
   if (!composition) notFound();
 
-  const defaults = await readCompositionDefaults(composition);
+  const [defaults, catalog] = await Promise.all([
+    readCompositionDefaults(composition),
+    getComponentsCatalog(),
+  ]);
+  // All props titles each entry with its component's label from the catalog.
+  const labels = Object.fromEntries(
+    composition.stack.map(({ id, component }) => [
+      id,
+      catalog.find((record) => record.componentName === component)?.label ?? component,
+    ]),
+  );
 
   return (
     <article>
@@ -56,7 +67,7 @@ export default async function CompositionPage({ params }: PageProps) {
           </div>
           <PageActions target={{ kind: 'composition', composition, defaults }} />
         </header>
-        <CompositionIsland composition={composition} defaults={defaults} />
+        <CompositionIsland composition={composition} defaults={defaults} labels={labels} />
       </CopySourceProvider>
     </article>
   );

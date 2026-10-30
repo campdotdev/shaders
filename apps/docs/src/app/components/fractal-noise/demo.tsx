@@ -81,9 +81,15 @@ function FractalNoiseDemo() {
   );
 }
 
-function FractalNoiseControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function FractalNoiseFields() {
   return (
-    <ControlPanel>
+    <>
+      <StyleDialSync />
       <Section title="Texture">
         <SelectInput
           label="Style"
@@ -119,6 +125,14 @@ function FractalNoiseControls() {
       >
         {() => <ColorInput label="Color" path="color" />}
       </ListInput>
+    </>
+  );
+}
+
+function FractalNoiseControls() {
+  return (
+    <ControlPanel>
+      <FractalNoiseFields />
     </ControlPanel>
   );
 }
@@ -128,7 +142,6 @@ export function FractalNoiseIsland() {
 
   return (
     <ControlsProvider store={store}>
-      <StyleDialSync />
       <DemoLayout controls={<FractalNoiseControls />}>
         <div data-shader-demo>
           <FractalNoiseDemo />

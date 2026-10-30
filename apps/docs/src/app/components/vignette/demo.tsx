@@ -44,9 +44,14 @@ function VignetteDemo() {
   );
 }
 
-function VignetteControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function VignetteFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Shape">
         <SliderInput label="Intensity" max={1} min={0} path="intensity" step={0.01} />
         <SliderInput label="Feather" max={1} min={0} path="feather" step={0.01} />
@@ -59,6 +64,14 @@ function VignetteControls() {
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
         <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
       </Section>
+    </>
+  );
+}
+
+function VignetteControls() {
+  return (
+    <ControlPanel>
+      <VignetteFields />
     </ControlPanel>
   );
 }

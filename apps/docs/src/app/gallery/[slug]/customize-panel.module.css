@@ -1,6 +1,16 @@
 /* The Customize panel's own pieces. Everything else comes from the demo
    panels' styles (components/controls/controls.module.css). */
 
+/* An entry's fields under its name in All props: the panel's 16px gap
+   between their groups, as in a demo's own panel, with 8px of air under the
+   name. */
+.entryFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-4);
+  padding: var(--spacing-2) 0 var(--spacing-2);
+}
+
 /* Copy React closes the panel: a hairline and 12px of air, as every group
    opens with, then the site's text button stretched across the panel so it
    reads as the panel's one action rather than one more control. */

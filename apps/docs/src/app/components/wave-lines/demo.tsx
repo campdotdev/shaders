@@ -72,9 +72,14 @@ function WaveLinesDemo() {
   );
 }
 
-function WaveLinesControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function WaveLinesFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Motion">
         <SliderInput label="Speed" max={4} min={0} path="speed" step={0.05} />
         <SliderInput label="Amplitude" max={0.5} min={0} path="amplitude" step={0.005} />
@@ -117,6 +122,14 @@ function WaveLinesControls() {
           </ListInput>
         )}
       </ListInput>
+    </>
+  );
+}
+
+function WaveLinesControls() {
+  return (
+    <ControlPanel>
+      <WaveLinesFields />
     </ControlPanel>
   );
 }
