@@ -17,7 +17,7 @@ import { ShaderPoster } from '@camp-dev/shaders/poster';
 
 import { useHeroPause } from '@/components/home-hero/hero-pause';
 import type { Favorite, FavoriteSlug } from '@/content/homepage';
-import { type Engagement, engagementHandlers, useLiveOnHover } from '@/lib/use-live-on-hover';
+import { engagementHandlers, type OnEngagedChange, useLiveOnHover } from '@/lib/use-live-on-hover';
 
 import { CardTab } from './card-tab';
 import { favoriteSceneBackdrop, preloadFavoriteScenes, useFavoriteScene } from './favorite-scenes';
@@ -94,7 +94,7 @@ function FavoriteCard({
   cardTabMounted: boolean;
   sceneMounted: boolean;
   playing: boolean;
-  onEngagedChange: (engagement: Engagement, engaged: boolean) => void;
+  onEngagedChange: OnEngagedChange;
 }) {
   return (
     <Link className={styles.card} href={favorite.url} {...engagementHandlers(onEngagedChange)}>

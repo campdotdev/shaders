@@ -15,8 +15,9 @@ import { compositionThumbnail } from '@/compositions/posters';
 
 import styles from './used-in.module.css';
 
-// The thumbnail's edge in CSS pixels. scripts/build-thumbnail.mjs cuts it at
-// 124px, twice this, for a 2x screen.
+// The thumbnail's edge in CSS pixels. scripts/build-thumbnail.mjs cuts every
+// thumbnail at 124px for the components index's 62px cards, so this smaller
+// chip stays sharp up to a 3x screen.
 const THUMBNAIL_SIZE = 40;
 
 export function UsedIn({ compositions }: { compositions: readonly Composition[] }) {

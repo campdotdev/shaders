@@ -1,20 +1,15 @@
 /**
  * Turns a composition and its Customize panel's state into the component
- * file that Copy React hands out, as text. Pure and three-free, so the
- * docs' Node vitest runs it, and the golden-file test commits its output
- * for every preset. It grew out of formatValue in controls/copy.ts.
- *
- * The output is already in the repo's Prettier style, without running
- * Prettier: the golden files sit under the repo's format check, and the
- * generator's tests run Prettier over every component's defaults to hold the
- * line-breaking below to Prettier's.
+ * file Copy React hands out, already in the repo's Prettier style. Pure and
+ * three-free, so golden.test.ts commits its output for every preset, and its
+ * own tests hold its line breaking to Prettier's. Grew out of controls/copy.ts.
  */
 import type { Composition, EntryProps } from './define';
 import {
   type CompositionDefaults,
   type CompositionState,
   type CompositionStore,
-  DEFAULT_PRESET,
+  isRecord,
   presetProps,
   withStopPositions,
 } from './store';
@@ -169,11 +164,6 @@ export function kebabCase(name: string): string {
     .filter((word) => word.length > 0)
     .map((word) => word.toLowerCase())
     .join('-');
-}
-
-/** The presets a golden file is written for, Default first. */
-export function presetNames(composition: Composition): string[] {
-  return [DEFAULT_PRESET, ...composition.presets.map(({ name }) => name)];
 }
 
 // ----------------------------------------------------------------------------
@@ -362,7 +352,3 @@ const roundNumber = (value: number) =>
   Math.round(value * 10 ** DECIMAL_PLACES) / 10 ** DECIMAL_PLACES;
 
 const fits = (line: string) => line.length <= PRINT_WIDTH;
-
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
-}

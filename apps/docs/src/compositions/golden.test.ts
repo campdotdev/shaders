@@ -9,10 +9,10 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { generateComposition, kebabCase, presetNames } from './generate';
+import { generateComposition, kebabCase } from './generate';
 import { COMPOSITIONS } from './index';
 import { readCompositionDefaults } from './read-defaults';
-import { presetProps } from './store';
+import { presetNames, presetProps } from './store';
 
 describe.each(COMPOSITIONS.map((composition) => [composition.slug, composition] as const))(
   '%s',

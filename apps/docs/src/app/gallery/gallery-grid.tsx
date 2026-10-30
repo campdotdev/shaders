@@ -1,13 +1,10 @@
 'use client';
 
 /**
- * The Gallery's grid: a card per composition with its poster, title, and
- * description, linking to the composition's page. A card plays its
- * composition live while the pointer or keyboard focus is on it, through the
- * live-on-hover logic the homepage favorites use (lib/use-live-on-hover.ts):
- * one plays at a time, a played scene stays mounted and paused, and a phone
- * or a browser without WebGPU keeps every card a poster. The grid stays
- * plain until the author designs the Gallery.
+ * The Gallery's plain grid, until the author designs it: a card per
+ * composition with its poster, title, and description, linking to its page.
+ * A card plays live under the pointer or keyboard focus, through the hover
+ * logic the homepage favorites share (lib/use-live-on-hover.ts).
  */
 import Image from 'next/image';
 import Link from 'next/link';
@@ -18,7 +15,12 @@ import { ShaderPoster } from '@camp-dev/shaders/poster';
 import type { CompositionScene as CompositionSceneComponent } from '@/compositions/composition-scene';
 import type { Composition } from '@/compositions/define';
 import { compositionPoster } from '@/compositions/posters';
-import { engagementHandlers, useLiveOnHover, useLoadedScene } from '@/lib/use-live-on-hover';
+import {
+  engagementHandlers,
+  type OnEngagedChange,
+  useLiveOnHover,
+  useLoadedScene,
+} from '@/lib/use-live-on-hover';
 
 import styles from './page.module.css';
 
@@ -61,7 +63,7 @@ function GalleryCard({
   composition: Composition;
   sceneMounted: boolean;
   playing: boolean;
-  onEngagedChange: Parameters<typeof engagementHandlers>[0];
+  onEngagedChange: OnEngagedChange;
 }) {
   const id = useId();
   const titleId = `${id}-title`;

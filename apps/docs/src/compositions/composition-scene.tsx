@@ -13,9 +13,7 @@ import { ShaderScene } from '@camp-dev/shaders';
 
 import { COMPONENT_MAP } from './component-map';
 import type { Composition, EntryProps } from './define';
-
-/** Each entry's props, keyed by entry id, as the Customize panel's store holds them. */
-export type CompositionProps = Readonly<Record<string, EntryProps>>;
+import type { CompositionState } from './store';
 
 export interface CompositionSceneProps {
   composition: Composition;
@@ -23,7 +21,7 @@ export interface CompositionSceneProps {
    * The props to draw each entry with, keyed by entry id. Absent, each entry
    * draws with the document's own props, which is the Default preset.
    */
-  props?: CompositionProps;
+  props?: CompositionState;
   /** Freezes the scene on its current frame, passed to ShaderScene. */
   paused?: boolean;
   /** Caps the canvas's pixels per CSS pixel, passed to ShaderScene. The benchmark sets it. */

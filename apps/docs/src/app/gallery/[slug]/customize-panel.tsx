@@ -1,13 +1,10 @@
 'use client';
 
 /**
- * A composition's Customize panel: the preset picker at the top, then the
- * document's curated controls, then All props, then a Copy React button for
- * the generated component file. Each control writes `<entry>.<path>` in the
- * composition's store, so a control on the 'base' entry's speed writes
- * base.speed. All props mounts each component's demo fields under its
- * entry's id to the same end. Every control subscribes to its own leaf, per
- * the demo-store gotcha in docs/agents/docs-site.md.
+ * A composition's Customize panel: the preset picker, the curated controls,
+ * All props, and Copy React. Every control writes `<entry>.<path>` in the
+ * composition's store and subscribes to its own leaf, per the demo-store
+ * gotcha in docs/agents/docs-site.md.
  */
 import { useSyncExternalStore } from 'react';
 
@@ -33,14 +30,11 @@ import textButtonStyles from '@/components/text-button/text-button.module.css';
 import visuallyHiddenStyles from '@/components/visually-hidden/visually-hidden.module.css';
 import type { Composition, CompositionControl, StackEntry } from '@/compositions/define';
 import { generateFromStore } from '@/compositions/generate';
-import {
-  type CompositionDefaults,
-  type CompositionStore,
-  DEFAULT_PRESET,
-} from '@/compositions/store';
+import { type CompositionDefaults, type CompositionStore, presetNames } from '@/compositions/store';
 import { COPY_ANNOUNCEMENTS, useClipboardCopy } from '@/lib/use-clipboard-copy';
 
 import styles from './customize-panel.module.css';
+import { useLoadedPreset } from './use-loaded-preset';
 
 export function CustomizePanel({
   composition,
@@ -66,7 +60,12 @@ export function CustomizePanel({
       )}
       <Section title="All props">
         {composition.stack.map((entry) => (
-          <EntryFields entry={entry} key={entry.id} label={labels[entry.id] ?? entry.component} />
+          <EntryFields
+            entry={entry}
+            key={entry.id}
+            label={labels[entry.id] ?? entry.component}
+            store={store}
+          />
         ))}
       </Section>
       <CopyReact composition={composition} defaults={defaults} store={store} />
@@ -87,8 +86,8 @@ function PresetPicker({
   composition: Composition;
   store: CompositionStore;
 }) {
-  const preset = useSyncExternalStore(store.subscribe, store.getPreset, store.getPreset);
-  const options = [DEFAULT_PRESET, ...composition.presets.map(({ name }) => name)].map((name) => ({
+  const preset = useLoadedPreset(store);
+  const options = presetNames(composition).map((name) => ({
     label: name,
     value: name,
   }));
@@ -141,8 +140,17 @@ function CuratedControl({ control }: { control: CompositionControl }) {
 // fields mount when the entry opens, as ListInput's rows do: a slider that
 // mounts hidden measures a zero-width track and draws nothing.
 
-function EntryFields({ entry, label }: { entry: StackEntry; label: string }) {
+function EntryFields({
+  entry,
+  label,
+  store,
+}: {
+  entry: StackEntry;
+  label: string;
+  store: CompositionStore;
+}) {
   const { Fields } = COMPONENT_FIELDS[entry.component];
+  const pointerProps = usePointerProps(store, entry.id);
 
   return (
     <Collapsible.Root className={controlStyles.disclosure}>
@@ -157,13 +165,37 @@ function EntryFields({ entry, label }: { entry: StackEntry; label: string }) {
       </div>
       <Collapsible.Panel className={controlStyles.disclosurePanel}>
         <div className={styles.entryFields}>
-          <PathPrefixProvider segments={[entry.id]}>
-            <Fields />
-          </PathPrefixProvider>
+          {pointerProps === '' ? (
+            <PathPrefixProvider segments={[entry.id]}>
+              <Fields />
+            </PathPrefixProvider>
+          ) : (
+            <p className={styles.entryNote}>
+              Follows the pointer through {pointerProps}, which these fields edit as a point. Set it
+              to a point in the composition to edit {label} here.
+            </p>
+          )}
         </div>
       </Collapsible.Panel>
     </Collapsible.Root>
   );
+}
+
+/**
+ * The entry's props set to `'cursor'`, the shorthand that follows the
+ * pointer, joined into one string so the subscription compares a primitive.
+ * A demo's fields edit a position as a point, such as `center.0`, and reading
+ * a coordinate out of the string would throw, so the entry shows a note in
+ * their place while any prop follows the pointer.
+ */
+function usePointerProps(store: CompositionStore, entryId: string): string {
+  const read = () =>
+    Object.entries(store.getSnapshot()[entryId] ?? {})
+      .filter(([, value]) => value === 'cursor')
+      .map(([name]) => name)
+      .join(', ');
+
+  return useSyncExternalStore(store.subscribe, read, read);
 }
 
 // ----------------------------------------------------------------------------

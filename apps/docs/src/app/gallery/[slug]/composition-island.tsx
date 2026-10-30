@@ -9,16 +9,16 @@
  * load (the SSR gotcha in docs/agents/docs-site.md).
  */
 import dynamic from 'next/dynamic';
-import { useMemo, useSyncExternalStore } from 'react';
+import { useMemo } from 'react';
 
 import { COMPONENT_FIELDS } from '@/app/components/demo-registry';
 import { ControlsProvider, DemoLayout, useSnapshot } from '@/components/controls';
 import { DemoPoster } from '@/components/DemoPoster';
-import type { CompositionProps } from '@/compositions/composition-scene';
 import type { Composition } from '@/compositions/define';
 import { compositionPoster } from '@/compositions/posters';
 import {
   type CompositionDefaults,
+  type CompositionState,
   type CompositionStore,
   createCompositionStore,
   type SeedFields,
@@ -26,6 +26,7 @@ import {
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { CustomizePanel } from './customize-panel';
+import { useLoadedPreset } from './use-loaded-preset';
 
 const CompositionScene = dynamic(
   () => import('@/compositions/composition-scene').then((module) => module.CompositionScene),
@@ -40,8 +41,8 @@ const CompositionScene = dynamic(
  * preset as a fresh, deterministic frame.
  */
 function LiveScene({ composition, store }: { composition: Composition; store: CompositionStore }) {
-  const props = useSnapshot<CompositionProps>();
-  const preset = useSyncExternalStore(store.subscribe, store.getPreset, store.getPreset);
+  const props = useSnapshot<CompositionState>();
+  const preset = useLoadedPreset(store);
 
   return (
     <DemoPoster

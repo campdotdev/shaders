@@ -1,12 +1,10 @@
 'use client';
 
 /**
- * Every public Source and Effect, keyed by its export name. A composition
- * document names each stack entry's component as one of these keys, and
- * CompositionScene looks the component up here to draw it. Documents reach
- * this file only through `import type` (define.ts), because the components
- * pull in three/webgpu, which a server render or the docs' Node vitest can't
- * load. A test keeps the keys in step with COMPONENTS in content/components.ts.
+ * Every public Source and Effect, keyed by export name, which CompositionScene
+ * draws each stack entry's component from. Documents reach it only through
+ * `import type` (define.ts), because it loads three/webgpu. A test keeps its
+ * keys in step with COMPONENTS in content/components.ts.
  */
 import {
   Aurora,

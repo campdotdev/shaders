@@ -1,13 +1,10 @@
 'use client';
 
 /**
- * Live-on-hover for a grid of cards that each hold a shader scene, which the
- * homepage favorites and the Gallery grid share. Hovering or focusing a card
- * mounts its scene, and the scene then stays mounted, paused on its last
- * frame, after the card is let go. One plays at a time. A device without a
- * hovering pointer, or a browser without a WebGPU adapter, never mounts a
- * scene, so its cards stay posters. The scenes' code loads as the grid comes
- * near the viewport.
+ * Live-on-hover for a grid of shader cards, shared by the homepage favorites
+ * and the Gallery grid. Hovering or focusing a card mounts its scene, which
+ * stays mounted and paused once let go, and one plays at a time. Without a
+ * hovering pointer or a WebGPU adapter, every card stays a poster.
  */
 import { type FocusEvent, type PointerEvent, type RefObject, useEffect, useState } from 'react';
 
@@ -15,6 +12,9 @@ import { useCanHover } from './use-can-hover';
 
 /** What brought a visitor to a card: the pointer, or keyboard focus. */
 export type Engagement = 'pointer' | 'focus';
+
+/** Hears a card gain or lose the pointer or keyboard focus. */
+export type OnEngagedChange = (engagement: Engagement, engaged: boolean) => void;
 
 export interface LiveOnHover<Slug extends string> {
   /** Whether cards may mount scenes at all; see useCanGoLive below. */
@@ -89,9 +89,7 @@ export function useLiveOnHover<Slug extends string>(
  * handler skips the focus a tap or a click gives the link, keeping keyboard
  * focus only.
  */
-export function engagementHandlers(
-  onEngagedChange: (engagement: Engagement, engaged: boolean) => void,
-) {
+export function engagementHandlers(onEngagedChange: OnEngagedChange) {
   return {
     onBlur: () => onEngagedChange('focus', false),
     onFocus: (event: FocusEvent<HTMLElement>) => {

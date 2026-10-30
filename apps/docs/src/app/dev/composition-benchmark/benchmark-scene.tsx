@@ -13,8 +13,8 @@ import { ShaderMonitor, useStaticSceneHint } from '@camp-dev/shaders';
 
 import { COMPOSITIONS } from '@/compositions';
 import { CompositionScene } from '@/compositions/composition-scene';
-import { kebabCase, presetNames } from '@/compositions/generate';
-import { presetProps } from '@/compositions/store';
+import { kebabCase } from '@/compositions/generate';
+import { presetNames, presetProps } from '@/compositions/store';
 
 const WIDTH = 1636;
 const HEIGHT = 696;

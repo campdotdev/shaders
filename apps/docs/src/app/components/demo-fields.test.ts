@@ -1,23 +1,22 @@
 /**
- * Every path a demo's fields write must start with a prop the component has,
- * because a composition's All props section mounts those fields over the
- * component's real props, and the copied file prints whatever they write. A
- * demo-only field, such as a center split into centerX and centerY, would
- * write a prop no component takes.
- *
- * The demos import three, which the docs' Node vitest can't load, so this
- * reads each demo's source with the TypeScript compiler, the way props.ts
- * reads the component wrappers. It collects every `path` attribute and every
- * `setProp('…')` call, and skips what sits inside a ListInput's rows, whose
- * paths are relative to a row of that ListInput's own path.
+ * A composition's All props section mounts each demo's fields over the
+ * component's real props, so every path they write must start with a prop
+ * the component has. The demos load three, which this Node vitest can't, so
+ * it reads their source with the TypeScript compiler, as props.ts does.
  */
 import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 
+import { POSITIONED_STOP_COMPONENTS } from '@/compositions/store';
+import { getComponentsCatalog } from '@/content/catalog';
 import { COMPONENTS } from '@/content/components';
 import { getComponentProps } from '@/content/props';
 
+/**
+ * Every `path` attribute and every `setProp('…')` call in a demo's source,
+ * skipping a ListInput's rows, whose paths are relative to a row.
+ */
 function collectWrittenPaths(source: string): string[] {
   const file = ts.createSourceFile(
     'demo.tsx',
@@ -75,5 +74,26 @@ describe('demo fields', () => {
 
       expect(props, `${slug} writes "${path}"`).toContain(prop);
     }
+  });
+});
+
+// A composition's store writes out the stop positions the library spaces
+// evenly, but only for the components in POSITIONED_STOP_COMPONENTS, because
+// only their fields show a position. A demo that gains or drops a position
+// field has to change that list too.
+describe('stop positions', () => {
+  it('lists exactly the components whose fields edit a stop position', async () => {
+    const editing = await Promise.all(
+      (await getComponentsCatalog()).map(async ({ url, componentName }) => {
+        const source = await readFile(
+          new URL(`.${url.replace('/components', '')}/demo.tsx`, import.meta.url),
+          'utf8',
+        );
+
+        return source.includes('path="position"') ? [componentName] : [];
+      }),
+    );
+
+    expect(editing.flat().sort()).toEqual([...POSITIONED_STOP_COMPONENTS].sort());
   });
 });

@@ -13,6 +13,15 @@ import { waitForShader } from './helpers';
 
 const PRESETS = ['Tight', 'Coarse'];
 
+// A preset's name in its baseline's file name, by the kebab-case rule its
+// golden file takes in apps/docs/src/compositions/generate.ts.
+const fileName = (preset: string) =>
+  preset
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((word) => word.length > 0)
+    .join('-');
+
 // The stack ends in Grain, a noise shader whose SwiftShader precision drifts
 // across arm64 and amd64 past the 0.02 default, as in grain.spec.ts.
 const MAX_DIFF_PIXEL_RATIO = 0.05;
@@ -41,7 +50,7 @@ test('Fixture composition — every preset, on WebGL2', async ({ page }) => {
     await page.getByRole('option', { name: preset }).click();
     await waitForShader(page);
 
-    await expect(canvas).toHaveScreenshot(`gallery-fixture-${preset.toLowerCase()}.png`, {
+    await expect(canvas).toHaveScreenshot(`gallery-fixture-${fileName(preset)}.png`, {
       maxDiffPixelRatio: MAX_DIFF_PIXEL_RATIO,
     });
   }

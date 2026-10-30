@@ -13,6 +13,11 @@ import type { ComponentName, Composition, EntryProps, StackEntry } from './defin
 /** The picker's first choice: the stack's own props, with no preset applied. */
 export const DEFAULT_PRESET = 'Default';
 
+/** Every preset the picker offers, Default first. Each also gets a golden file. */
+export function presetNames(composition: Composition): string[] {
+  return [DEFAULT_PRESET, ...composition.presets.map(({ name }) => name)];
+}
+
 /** Each entry's props, keyed by entry id. */
 export type CompositionState = Record<string, Record<string, unknown>>;
 
@@ -29,7 +34,8 @@ export type CompositionDefaults = Readonly<Record<string, EntryProps>>;
 // packages/shaders/src/components/shared/color.ts spaces them. The picture
 // doesn't change, and the generator compares against the same shape.
 
-const POSITIONED_STOP_COMPONENTS: ReadonlySet<ComponentName> = new Set([
+/** The components whose demo fields edit a stop's position. demo-fields.test.ts keeps it current. */
+export const POSITIONED_STOP_COMPONENTS: ReadonlySet<ComponentName> = new Set([
   'Aurora',
   'ConicGradient',
   'LinearGradient',
@@ -58,7 +64,8 @@ export function withStopPositions(
   };
 }
 
-function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+/** Whether a value is a plain object, as a literal prop's objects are. */
+export function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 

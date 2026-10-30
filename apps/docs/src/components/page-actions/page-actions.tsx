@@ -42,7 +42,7 @@ type CopyTarget =
       kind: 'component';
       /** The component as written in JSX, e.g. 'WaveLines'. */
       componentName: string;
-      /** Layers the demo renders under the component, as JSX, if any. */
+      /** Sources the demo stacks under the component, as JSX, if any. */
       siblings?: readonly string[];
     }
   | {

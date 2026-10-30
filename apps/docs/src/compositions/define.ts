@@ -1,11 +1,8 @@
 /**
- * The composition document: a typed description of one composition, a named
- * stack of public Sources and Effects with set props, as ADR 0005 lays out.
- * Every composition calls defineComposition from its own
- * `<slug>/composition.ts`, and the types below make a wrong component name,
- * an unknown prop, a non-literal value, or a control path that doesn't fit
- * its kind fail to compile. This file imports nothing at runtime that
- * reaches three, so server code and the docs' Node vitest can read documents.
+ * The composition document, as ADR 0005 lays it out: a named stack of public
+ * Sources and Effects with set props, which each `<slug>/composition.ts`
+ * passes to defineComposition. The types make a wrong name, prop, value, or
+ * control path fail to compile, and nothing here reaches three at runtime.
  */
 import type { ComponentProps } from 'react';
 
