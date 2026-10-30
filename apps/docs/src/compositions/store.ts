@@ -53,6 +53,15 @@ export interface CompositionStore extends ControlStore<CompositionState> {
   loadPreset: (presetName: string) => void;
 }
 
+/**
+ * Whether a published control store is a composition's. The page header
+ * reads the island's store through the copy source, which only knows it as a
+ * control store.
+ */
+export function isCompositionStore(store: ControlStore<object>): store is CompositionStore {
+  return 'getPreset' in store && 'loadPreset' in store;
+}
+
 export function createCompositionStore(
   composition: Composition,
   defaults: CompositionDefaults,

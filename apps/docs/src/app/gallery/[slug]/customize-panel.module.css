@@ -1,0 +1,15 @@
+/* The Customize panel's own pieces. Everything else comes from the demo
+   panels' styles (components/controls/controls.module.css). */
+
+/* Copy React closes the panel: a hairline and 12px of air, as every group
+   opens with, then the site's text button stretched across the panel so it
+   reads as the panel's one action rather than one more control. */
+.copyRow {
+  padding-top: var(--spacing-3);
+  border-top: var(--border-width-1) solid var(--white-a5);
+}
+
+.copyButton {
+  justify-content: center;
+  width: 100%;
+}

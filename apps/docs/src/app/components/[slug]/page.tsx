@@ -97,9 +97,12 @@ export default async function ComponentPage({ params }: PageProps) {
               <p className={styles.description}>{record.description}</p>
             </div>
             <PageActions
-              componentName={record.componentName}
               markdownUrl={`/md${record.url}.md`}
-              siblings={entry.copySiblings}
+              target={{
+                kind: 'component',
+                componentName: record.componentName,
+                siblings: entry.copySiblings,
+              }}
             />
           </header>
           <Island />

@@ -1,22 +1,23 @@
 /**
- * One composition's page at /gallery/<slug>: its title and description over
- * the composition and its Customize panel in the demo layout. The registry
- * (compositions/index.ts) supplies the static params and every word on the
- * page. The library defaults for each entry's component are read here, at
- * build, because props.ts reads the component sources from disk, and the
- * island seeds its store from them.
+ * One composition's page at /gallery/<slug>: its title, description, and
+ * Copy React over the composition and its Customize panel in the demo
+ * layout. The registry (compositions/index.ts) supplies the static params
+ * and every word on the page. The library defaults for each entry's
+ * component are read here, at build, because props.ts reads the component
+ * sources from disk, and the island seeds its store from them.
  */
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
+import { CopySourceProvider } from '@/components/controls';
+import { PageActions } from '@/components/page-actions/page-actions';
 import { COMPOSITIONS, findComposition } from '@/compositions';
-import type { Composition } from '@/compositions/define';
-import type { CompositionDefaults } from '@/compositions/store';
-import { slugForComponentName } from '@/content/catalog';
-import { getComponentDefaults } from '@/content/props';
+import { readCompositionDefaults } from '@/compositions/read-defaults';
 
+// The component pages' header styles, so the two kinds of page share one
+// header until the author designs the Gallery.
+import styles from '../../components/[slug]/page.module.css';
 import { CompositionIsland } from './composition-island';
-import styles from './page.module.css';
 
 export const dynamicParams = false;
 
@@ -41,28 +42,22 @@ export default async function CompositionPage({ params }: PageProps) {
 
   if (!composition) notFound();
 
+  const defaults = await readCompositionDefaults(composition);
+
   return (
     <article>
-      <header className={styles.header}>
-        <h1 className={styles.title}>{composition.title}</h1>
-        <p className={styles.description}>{composition.description}</p>
-      </header>
-      <CompositionIsland composition={composition} defaults={await readDefaults(composition)} />
+      {/* The header's Copy React reads the island's store through this
+          provider; see the copy source in controls/context.tsx. */}
+      <CopySourceProvider>
+        <header className={styles.header}>
+          <div className={styles.heading}>
+            <h1 className={styles.title}>{composition.title}</h1>
+            <p className={styles.description}>{composition.description}</p>
+          </div>
+          <PageActions target={{ kind: 'composition', composition, defaults }} />
+        </header>
+        <CompositionIsland composition={composition} defaults={defaults} />
+      </CopySourceProvider>
     </article>
-  );
-}
-
-/** The library defaults for each stack entry's component, keyed by entry id. */
-async function readDefaults(composition: Composition): Promise<CompositionDefaults> {
-  return Object.fromEntries(
-    await Promise.all(
-      composition.stack.map(async ({ id, component }) => {
-        const slug = slugForComponentName(component);
-
-        if (slug === undefined) throw new Error(`No component page for ${component}`);
-
-        return [id, await getComponentDefaults(slug)] as const;
-      }),
-    ),
   );
 }

@@ -1,0 +1,354 @@
+/**
+ * Turns a composition and its Customize panel's state into the component
+ * file that Copy React hands out, as text. Pure and three-free, so the
+ * docs' Node vitest runs it, and the golden-file test commits its output
+ * for every preset. It grew out of formatValue in controls/copy.ts.
+ *
+ * The output is already in the repo's Prettier style, without running
+ * Prettier: the golden files sit under the repo's format check, and the
+ * generator's tests run Prettier over every component's defaults to hold the
+ * line-breaking below to Prettier's.
+ */
+import type { Composition, EntryProps } from './define';
+import {
+  type CompositionDefaults,
+  type CompositionState,
+  type CompositionStore,
+  DEFAULT_PRESET,
+} from './store';
+
+/** What the generator reads from the panel: the loaded preset and the props as they stand. */
+export interface GenerateInput {
+  composition: Composition;
+  /** The picker's loaded preset. Its props print even where they match a library default. */
+  preset: string;
+  /** Each entry's props, keyed by entry id, as the panel's store holds them. */
+  state: CompositionState;
+  /** The library defaults for each entry's component, keyed by entry id. */
+  defaults: CompositionDefaults;
+}
+
+// Prettier's printWidth in the repo's .prettierrc.
+const PRINT_WIDTH = 100;
+const INDENT = '  ';
+
+// Sliders produce float noise such as 0.30000000000000004. Four places is
+// finer than any control's step.
+const DECIMAL_PLACES = 4;
+
+// ----------------------------------------------------------------------------
+// The file
+// ----------------------------------------------------------------------------
+
+export function generateComposition({
+  composition,
+  preset,
+  state,
+  defaults,
+}: GenerateInput): string {
+  const presetProps = composition.presets.find(({ name }) => name === preset)?.props;
+  const componentNames = [...new Set(composition.stack.map(({ component }) => component))];
+  const sceneAttributes = Object.entries(composition.scene ?? {})
+    .filter(([, value]) => value !== undefined)
+    .sort(([a], [b]) => (a < b ? -1 : 1));
+
+  // The stack sits two levels inside the function: under `return (` and
+  // then under <ShaderScene>.
+  const elementIndent = INDENT.repeat(3);
+  const elements = composition.stack.map((entry) => {
+    const props: EntryProps = state[entry.id] ?? entry.props;
+    // Sorted, as the repo's jsx-sort-props rule sorts hand-written JSX.
+    const printed = Object.keys(props)
+      .filter((name) =>
+        shouldPrint(name, props, entry.props, presetProps?.[entry.id], defaults[entry.id]),
+      )
+      .sort();
+
+    return printElement(
+      entry.component,
+      printed.map((name) => [name, props[name]] as const),
+      elementIndent,
+    );
+  });
+
+  return [
+    "'use client';",
+    '',
+    printImport([...componentNames, 'ShaderScene', 'type ShaderSceneProps']),
+    '',
+    `export function ${pascalCase(composition.title)}(props: Omit<ShaderSceneProps, 'children'>) {`,
+    `${INDENT}return (`,
+    printOpeningTag(
+      'ShaderScene',
+      [...sceneAttributes.map(([name, value]) => printAttribute(name, value)), '{...props}'],
+      INDENT.repeat(2),
+    ),
+    ...elements,
+    `${INDENT.repeat(2)}</ShaderScene>`,
+    `${INDENT});`,
+    '}',
+    '',
+  ].join('\n');
+}
+
+/** The file for the panel as it stands: its loaded preset and its current props. */
+export function generateFromStore(
+  composition: Composition,
+  defaults: CompositionDefaults,
+  store: CompositionStore,
+): string {
+  return generateComposition({
+    composition,
+    preset: store.getPreset(),
+    state: store.getSnapshot(),
+    defaults,
+  });
+}
+
+/**
+ * Whether a prop belongs in the file: the document or the loaded preset sets
+ * it, or its value has moved off the library default. A prop with no
+ * library default prints whenever it has a value.
+ */
+function shouldPrint(
+  name: string,
+  props: EntryProps,
+  documentProps: EntryProps,
+  presetProps: EntryProps | undefined,
+  defaults: EntryProps | undefined,
+): boolean {
+  if (props[name] === undefined) return false;
+  if (name in documentProps || (presetProps !== undefined && name in presetProps)) return true;
+  if (defaults === undefined || !(name in defaults)) return true;
+
+  return !sameValue(props[name], defaults[name]);
+}
+
+function sameValue(a: unknown, b: unknown): boolean {
+  if (typeof a === 'number' && typeof b === 'number') return roundNumber(a) === roundNumber(b);
+  if (Array.isArray(a) && Array.isArray(b)) {
+    return a.length === b.length && a.every((item, index) => sameValue(item, b[index]));
+  }
+
+  if (isRecord(a) && isRecord(b)) {
+    const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+
+    return [...keys].every((key) => sameValue(a[key], b[key]));
+  }
+
+  return a === b;
+}
+
+/** "Fixture" → Fixture, "Late summer haze" → LateSummerHaze. */
+export function pascalCase(title: string): string {
+  return title
+    .split(/[^A-Za-z0-9]+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
+}
+
+/** The file name a preset's golden file takes: "Late Summer" → late-summer. */
+export function kebabCase(name: string): string {
+  return name
+    .split(/[^A-Za-z0-9]+/)
+    .filter((word) => word.length > 0)
+    .map((word) => word.toLowerCase())
+    .join('-');
+}
+
+/** The presets a golden file is written for, Default first. */
+export function presetNames(composition: Composition): string[] {
+  return [DEFAULT_PRESET, ...composition.presets.map(({ name }) => name)];
+}
+
+// ----------------------------------------------------------------------------
+// The import line
+// ----------------------------------------------------------------------------
+// The repo's import-sorting Prettier plugin orders specifiers
+// case-insensitively, ignoring `type`, and Prettier breaks the braces one
+// specifier per line once the line passes the print width.
+
+function printImport(specifiers: readonly string[]): string {
+  const sorted = [...specifiers].sort((a, b) =>
+    stripType(a).toLowerCase().localeCompare(stripType(b).toLowerCase()),
+  );
+  const flat = `import { ${sorted.join(', ')} } from '@camp-dev/shaders';`;
+
+  if (flat.length <= PRINT_WIDTH) return flat;
+
+  return [
+    'import {',
+    ...sorted.map((name) => `${INDENT}${name},`),
+    "} from '@camp-dev/shaders';",
+  ].join('\n');
+}
+
+const stripType = (specifier: string) => specifier.replace(/^type /, '');
+
+// ----------------------------------------------------------------------------
+// Elements
+// ----------------------------------------------------------------------------
+// Prettier keeps a JSX element on one line when it fits. Otherwise every
+// attribute takes its own line, and each attribute's value then gets the
+// same choice at its own indent.
+
+function printElement(
+  name: string,
+  props: ReadonlyArray<readonly [string, unknown]>,
+  indent: string,
+): string {
+  if (props.length === 0) return `${indent}<${name} />`;
+
+  const flat = `${indent}<${name} ${props.map(([key, value]) => printAttribute(key, value)).join(' ')} />`;
+
+  if (fits(flat)) return flat;
+
+  const attributeIndent = indent + INDENT;
+
+  return [
+    `${indent}<${name}`,
+    ...props.map(([key, value]) => printAttribute(key, value, attributeIndent)),
+    `${indent}/>`,
+  ].join('\n');
+}
+
+function printOpeningTag(name: string, attributes: readonly string[], indent: string): string {
+  const flat = `${indent}<${name} ${attributes.join(' ')}>`;
+
+  if (fits(flat)) return flat;
+
+  return [
+    `${indent}<${name}`,
+    ...attributes.map((attribute) => `${indent}${INDENT}${attribute}`),
+    `${indent}>`,
+  ].join('\n');
+}
+
+/**
+ * One attribute. Strings print as JSX strings and everything else in braces.
+ * With an indent, the attribute starts its own line, and its value breaks
+ * when that line would pass the print width. Without one, it prints flat for
+ * a one-line element.
+ */
+function printAttribute(name: string, value: unknown, indent?: string): string {
+  if (typeof value === 'string' && !value.includes('"')) return `${indent ?? ''}${name}="${value}"`;
+
+  if (indent === undefined) return `${name}={${printFlat(value)}}`;
+
+  return `${indent}${name}={${printValue(value, indent, `${name}={`.length, '}'.length)}}`;
+}
+
+// ----------------------------------------------------------------------------
+// Values
+// ----------------------------------------------------------------------------
+
+/**
+ * A value at a line's `indent`, after `before` characters and ahead of
+ * `after` characters on the same line. It prints flat when the whole line
+ * fits, and breaks otherwise.
+ */
+function printValue(value: unknown, indent: string, before: number, after: number): string {
+  const flat = printFlat(value);
+
+  if (!mustBreak(value) && indent.length + before + flat.length + after <= PRINT_WIDTH) return flat;
+  if (Array.isArray(value)) return printBrokenArray(value, indent);
+  if (isRecord(value)) return printBrokenObject(value, indent);
+
+  return flat;
+}
+
+function printBrokenArray(items: readonly unknown[], indent: string): string {
+  const inner = indent + INDENT;
+
+  // Prettier fills an array of plain numbers, packing as many per line as fit.
+  if (items.length > 0 && items.every((item) => typeof item === 'number')) {
+    const lines: string[] = [];
+    let line = '';
+
+    for (const item of items) {
+      const next = `${printFlat(item)},`;
+
+      if (line !== '' && inner.length + line.length + 1 + next.length > PRINT_WIDTH) {
+        lines.push(line);
+        line = next;
+      } else {
+        line = line === '' ? next : `${line} ${next}`;
+      }
+    }
+
+    lines.push(line);
+
+    return `[\n${lines.map((text) => inner + text).join('\n')}\n${indent}]`;
+  }
+
+  const lines = items.map((item) => `${inner}${printValue(item, inner, 0, ','.length)},`);
+
+  return `[\n${lines.join('\n')}\n${indent}]`;
+}
+
+function printBrokenObject(record: Readonly<Record<string, unknown>>, indent: string): string {
+  const inner = indent + INDENT;
+  const lines = Object.entries(record)
+    .filter(([, value]) => value !== undefined)
+    .map(([key, value]) => {
+      const printedKey = printKey(key);
+
+      return `${inner}${printedKey}: ${printValue(value, inner, printedKey.length + 2, ','.length)},`;
+    });
+
+  return `{\n${lines.join('\n')}\n${indent}}`;
+}
+
+/**
+ * Prettier always breaks an array of two or more arrays, or of two or more
+ * objects, when each of them holds more than one item. MeshGradient's two
+ * palettes are the case in point.
+ */
+function mustBreak(value: unknown): boolean {
+  if (!Array.isArray(value) || value.length < 2) return false;
+
+  const allArrays = value.every((item) => Array.isArray(item) && item.length > 1);
+  const allObjects = value.every((item) => isRecord(item) && Object.keys(item).length > 1);
+
+  return allArrays || allObjects;
+}
+
+function printFlat(value: unknown): string {
+  if (typeof value === 'number') return String(roundNumber(value));
+  if (typeof value === 'boolean') return String(value);
+  if (typeof value === 'string') return printString(value);
+  if (Array.isArray(value)) return `[${value.map(printFlat).join(', ')}]`;
+
+  if (isRecord(value)) {
+    const entries = Object.entries(value)
+      .filter(([, entryValue]) => entryValue !== undefined)
+      .map(([key, entryValue]) => `${printKey(key)}: ${printFlat(entryValue)}`);
+
+    return entries.length === 0 ? '{}' : `{ ${entries.join(', ')} }`;
+  }
+
+  throw new Error(`A composition prop can only hold literals, not ${String(value)}`);
+}
+
+// Single quotes, as the repo's Prettier config asks, unless the string holds
+// more single quotes than double ones, where Prettier switches.
+function printString(value: string): string {
+  const singles = value.split("'").length - 1;
+  const doubles = value.split('"').length - 1;
+
+  if (singles > doubles) return `"${value.replaceAll('"', '\\"')}"`;
+
+  return `'${value.replaceAll('\\', '\\\\').replaceAll("'", "\\'")}'`;
+}
+
+const printKey = (key: string) => (/^[A-Za-z_$][\w$]*$/.test(key) ? key : printString(key));
+
+const roundNumber = (value: number) =>
+  Math.round(value * 10 ** DECIMAL_PLACES) / 10 ** DECIMAL_PLACES;
+
+const fits = (line: string) => line.length <= PRINT_WIDTH;
+
+function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}

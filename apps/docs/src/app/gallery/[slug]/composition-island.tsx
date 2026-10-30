@@ -53,7 +53,9 @@ export function CompositionIsland({
 
   return (
     <ControlsProvider store={store}>
-      <DemoLayout controls={<CustomizePanel composition={composition} store={store} />}>
+      <DemoLayout
+        controls={<CustomizePanel composition={composition} defaults={defaults} store={store} />}
+      >
         <div data-shader-demo>
           <LiveScene composition={composition} />
         </div>
