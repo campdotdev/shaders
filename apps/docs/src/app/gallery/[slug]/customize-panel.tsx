@@ -6,7 +6,7 @@
  * composition's store and subscribes to its own leaf, per the demo-store
  * gotcha in docs/agents/docs-site.md.
  */
-import { useSyncExternalStore } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 
 import { Collapsible } from '@base-ui/react/collapsible';
 
@@ -22,6 +22,7 @@ import {
 import { PathPrefixProvider } from '@/components/controls/context';
 import controlStyles from '@/components/controls/controls.module.css';
 import { SelectField } from '@/components/controls/SelectInput';
+import { normalizePath } from '@/components/controls/store';
 import { CaretRightIcon } from '@/components/icons/caret-right';
 import { CheckIcon } from '@/components/icons/check';
 import { ChevronDownIcon } from '@/components/icons/chevron-down';
@@ -54,7 +55,11 @@ export function CustomizePanel({
       {composition.controls.length === 0 ? null : (
         <Section title="Controls">
           {composition.controls.map((control) => (
-            <CuratedControl control={control} key={`${control.entry}.${control.path}`} />
+            <CuratedControl
+              control={control}
+              key={JSON.stringify([control.entry, control.path])}
+              store={store}
+            />
           ))}
         </Section>
       )}
@@ -101,8 +106,45 @@ function PresetPicker({
 // Curated controls
 // ----------------------------------------------------------------------------
 
-function CuratedControl({ control }: { control: CompositionControl }) {
-  const path = `${control.entry}.${control.path}`;
+/**
+ * One curated control, under its entry's id as a single path segment, so an
+ * id with a dot in it stays one key. It mounts only while its target exists:
+ * All props can remove the stop a control edits, a preset can load fewer,
+ * and a control that reads a missing path throws.
+ */
+function CuratedControl({
+  control,
+  store,
+}: {
+  control: CompositionControl;
+  store: CompositionStore;
+}) {
+  const target = useMemo(
+    () => [control.entry, ...normalizePath(control.path)],
+    [control.entry, control.path],
+  );
+  const read = () => {
+    try {
+      store.getAtPath(target);
+
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  const present = useSyncExternalStore(store.subscribe, read, read);
+
+  if (!present) return null;
+
+  return (
+    <PathPrefixProvider segments={[control.entry]}>
+      <CuratedInput control={control} />
+    </PathPrefixProvider>
+  );
+}
+
+function CuratedInput({ control }: { control: CompositionControl }) {
+  const { path } = control;
 
   switch (control.kind) {
     case 'slider':
