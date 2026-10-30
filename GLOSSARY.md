@@ -14,6 +14,10 @@ _Avoid_: Base component, generator, layer
 A component that acts on the image beneath it in a scene rather than drawing its own, such as Grain, Dither, or LedWall. An Effect composes over any Source or Effect mounted before it.
 _Avoid_: Overlay, post-process pass, post-process layer, filter
 
+**Stack**:
+The ordered Sources and Effects a scene draws, first at the bottom. Each Effect acts on what the stack drew beneath it.
+_Avoid_: Layers, pipeline, chain
+
 **UV warp**:
 An Effect's change to where the image beneath it is sampled, such as Dither's pixel snap or CursorRipple's refraction. A UV warp bends only what Sources drew.
 _Avoid_: Warp on its own, base UV transform
@@ -92,7 +96,25 @@ _Avoid_: Profile, distortion shape, preset
 The line where two neighboring flutes meet, where the glass is steepest.
 _Avoid_: Seam, edge, crease
 
+### Compositions
+
+**Composition**:
+A named stack of Sources and Effects with set props, saved so it can be shown, copied, and edited. A stack written by hand inside a scene is a scene, not a composition.
+_Avoid_: Recipe, piece, template, example, pro shader, background
+
+**Preset**:
+One complete set of a composition's props, which a visitor can pick as a starting point.
+_Avoid_: Variant, theme
+
+**Control**:
+One input in a control panel, such as a demo's or a composition's. A composition's control sets exactly one prop of one Source or Effect in its stack.
+_Avoid_: Knob, setting
+
 ### Docs site
+
+**Gallery**:
+The section of the docs site that shows the art-directed compositions.
+_Avoid_: Showcase, examples, collection
 
 **Search trigger**:
 The button in the site header that opens the search panel and focuses its input. It is not an input itself.

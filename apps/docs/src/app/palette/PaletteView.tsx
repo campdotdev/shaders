@@ -55,7 +55,7 @@ const ACCENTS: AccentEntry[] = [
 // stops sit at different rungs (green[10], teal[9], sky[9], magenta[8]) and
 // two of the four hues (teal, sky) didn't exist in the old lineup at all. So
 // there's no hue-for-hue pairing to draw anymore, just two independent
-// four-color sets that can be compared as compositions.
+// four-color sets to compare side by side.
 
 /** Aurora's four original hand-picked default hexes. */
 const AURORA_OLD_HEXES = ['#09E24B', '#1837E6', '#661ACC', '#CC1A99'];
@@ -383,11 +383,11 @@ export function PaletteView() {
             </div>
           </div>
         </Section>
-        {/* ── Sample compositions ── */}
+        {/* ── Sample gradients ── */}
         <Section
           bg={bg}
           subtitle="A few useful gradients drawn from the palette."
-          title="Sample compositions"
+          title="Sample gradients"
         >
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 16 }}>
             <GradientBlock
