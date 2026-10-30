@@ -15,7 +15,7 @@ export const fixture = defineComposition({
     { id: 'grain', component: 'Grain', props: { intensity: 0.08 } },
   ],
   presets: [
-    { name: 'Still', props: { base: { speed: 0, cycleSpeed: 0 } } },
+    { name: 'Tight', props: { base: { frequency: 12, amplitude: 15 } } },
     { name: 'Coarse', props: { grain: { intensity: 0.3 } } },
   ],
   controls: [

@@ -26,15 +26,28 @@ export interface CompositionSceneProps {
   props?: CompositionProps;
   /** Freezes the scene on its current frame, passed to ShaderScene. */
   paused?: boolean;
+  /** Caps the canvas's pixels per CSS pixel, passed to ShaderScene. The benchmark sets it. */
+  maxDPR?: number;
   /** Mounted after the stack, such as VisualTestPause or a benchmark's hint. */
   children?: ReactNode;
 }
 
-export function CompositionScene({ composition, props, paused, children }: CompositionSceneProps) {
+export function CompositionScene({
+  composition,
+  props,
+  paused,
+  maxDPR,
+  children,
+}: CompositionSceneProps) {
   const { scene } = composition;
 
   return (
-    <ShaderScene maxFPS={scene?.maxFPS} paused={paused} scrollPush={scene?.scrollPush}>
+    <ShaderScene
+      maxDPR={maxDPR}
+      maxFPS={scene?.maxFPS}
+      paused={paused}
+      scrollPush={scene?.scrollPush}
+    >
       {composition.stack.map((entry) => {
         // Widened to take any entry's props. defineComposition already
         // checked each entry's props against its own component.

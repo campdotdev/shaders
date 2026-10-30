@@ -9,7 +9,7 @@
  * load (the SSR gotcha in docs/agents/docs-site.md).
  */
 import dynamic from 'next/dynamic';
-import { useMemo } from 'react';
+import { useMemo, useSyncExternalStore } from 'react';
 
 import { COMPONENT_FIELDS } from '@/app/components/demo-registry';
 import { ControlsProvider, DemoLayout, useSnapshot } from '@/components/controls';
@@ -17,6 +17,7 @@ import type { CompositionProps } from '@/compositions/composition-scene';
 import type { Composition } from '@/compositions/define';
 import {
   type CompositionDefaults,
+  type CompositionStore,
   createCompositionStore,
   type SeedFields,
 } from '@/compositions/store';
@@ -32,14 +33,17 @@ const CompositionScene = dynamic(
 /**
  * Reads the whole store and draws the scene with it. The one full-snapshot
  * subscription on the page, split out so a drag re-renders only this and the
- * moved control, as controls/README.md describes.
+ * moved control, as controls/README.md describes. VisualTestPause remounts
+ * on every preset the picker loads, so the visual spec can capture each
+ * preset as a fresh, deterministic frame.
  */
-function LiveScene({ composition }: { composition: Composition }) {
+function LiveScene({ composition, store }: { composition: Composition; store: CompositionStore }) {
   const props = useSnapshot<CompositionProps>();
+  const preset = useSyncExternalStore(store.subscribe, store.getPreset, store.getPreset);
 
   return (
     <CompositionScene composition={composition} props={props}>
-      <VisualTestPause />
+      <VisualTestPause key={preset} />
     </CompositionScene>
   );
 }
@@ -77,7 +81,7 @@ export function CompositionIsland({
         }
       >
         <div data-shader-demo>
-          <LiveScene composition={composition} />
+          <LiveScene composition={composition} store={store} />
         </div>
       </DemoLayout>
     </ControlsProvider>
