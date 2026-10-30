@@ -22,6 +22,8 @@ import { PageActions } from '@/components/page-actions/page-actions';
 import { PageToc, type PageTocSection } from '@/components/page-toc/page-toc';
 import { Pagination } from '@/components/pagination/pagination';
 import { PropsTable } from '@/components/props-table/props-table';
+import { UsedIn } from '@/components/used-in/used-in';
+import { compositionsUsing } from '@/compositions';
 import { getComponentsCatalog, getComponentsTree } from '@/content/catalog';
 import { DOCS_TRAIL_ROOT } from '@/content/nav';
 import { getComponentProps } from '@/content/props';
@@ -112,6 +114,9 @@ export default async function ComponentPage({ params }: PageProps) {
           the shader's center; see .dock in page-toc.module.css. */}
       <PageToc sections={sections} />
       <div className={styles.sections}>
+        {/* Provisional: the compositions whose stack holds this component.
+            Renders nothing when none does. */}
+        <UsedIn compositions={compositionsUsing(record.componentName)} />
         <section className={styles.section} id="usage">
           <h2 className={styles.sectionTitle}>Usage</h2>
           {entry.usageNotes === undefined ? null : (
