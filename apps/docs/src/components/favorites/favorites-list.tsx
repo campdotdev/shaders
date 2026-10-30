@@ -6,7 +6,8 @@
  * scene's first frame, and shows its card tab (card-tab.tsx). The scene
  * plays while the pointer or keyboard focus is on its card, then stays
  * paused on its last frame. One plays at a time, and the homepage hero
- * pauses while it does.
+ * pauses while it does. The Gallery grid shares the hover logic, which lives
+ * in lib/use-live-on-hover.ts.
  */
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,7 +17,7 @@ import { ShaderPoster } from '@camp-dev/shaders/poster';
 
 import { useHeroPause } from '@/components/home-hero/hero-pause';
 import type { Favorite, FavoriteSlug } from '@/content/homepage';
-import { useCanHover } from '@/lib/use-can-hover';
+import { type Engagement, engagementHandlers, useLiveOnHover } from '@/lib/use-live-on-hover';
 
 import { CardTab } from './card-tab';
 import { favoriteSceneBackdrop, preloadFavoriteScenes, useFavoriteScene } from './favorite-scenes';
@@ -34,22 +35,10 @@ function revealStyle(index: number): RevealStyle {
 // The list: which favorites are mounted, and which one plays
 // ---------------------------------------------
 
-/** What brought a visitor to a card: the pointer, or keyboard focus. */
-type Engagement = 'pointer' | 'focus';
-
-// Every favorite a visitor has hovered or focused keeps its scene mounted,
-// paused on the frame it stopped on, so its card never falls back to the
-// poster, and coming back resumes it at once. Its card tab mounts on the
-// same first hover or focus, without waiting on the gate below, and stays
-// mounted, so it can slide back out when the card is let go and slide in
-// again from wherever it is. Each mounted scene holds a
-// renderer, so the page can hold one per favorite, but a paused one does no
-// GPU work. Only the most recently engaged favorite plays, and only while
-// the pointer or keyboard focus is still on it. When that one is let go, a
-// favorite the other input is still on plays instead.
-//
-// Engagement is tracked before the gate opens, so a card hovered or focused
-// while the WebGPU adapter is still on its way goes live once it arrives.
+// useLiveOnHover decides which favorites are mounted and which one plays. A
+// favorite's card tab mounts on its first hover or focus too, without
+// waiting on the WebGPU gate, and stays mounted, so it can slide back out
+// when the card is let go and slide in again from wherever it is.
 export function FavoritesList({
   favorites,
   labelledBy,
@@ -57,34 +46,11 @@ export function FavoritesList({
   favorites: Favorite[];
   labelledBy: string;
 }) {
-  const canGoLive = useCanGoLive();
   const listRef = useRef<HTMLUListElement>(null);
-  const [mountedSlugs, setMountedSlugs] = useState<ReadonlySet<FavoriteSlug>>(() => new Set());
-  const [lastEngagedSlug, setLastEngagedSlug] = useState<FavoriteSlug | null>(null);
-  // The favorite under the pointer and the favorite with keyboard focus, each
-  // null when there is none. The last engaged favorite plays while either is
-  // still on it, and otherwise whichever one is still engaged.
-  const [hoveredSlug, setHoveredSlug] = useState<FavoriteSlug | null>(null);
-  const [focusedSlug, setFocusedSlug] = useState<FavoriteSlug | null>(null);
-  const playingSlug =
-    lastEngagedSlug !== null && (hoveredSlug === lastEngagedSlug || focusedSlug === lastEngagedSlug)
-      ? lastEngagedSlug
-      : (hoveredSlug ?? focusedSlug);
+  const { canGoLive, mountedSlugs, playingSlug, isEngaged, setEngaged } =
+    useLiveOnHover<FavoriteSlug>(listRef, preloadFavoriteScenes);
 
-  usePreloadScenesNearView(listRef, canGoLive);
   usePauseHeroWhilePlaying(canGoLive && playingSlug !== null);
-
-  const setEngaged = (slug: FavoriteSlug, engagement: Engagement, engaged: boolean) => {
-    const setSlug = engagement === 'pointer' ? setHoveredSlug : setFocusedSlug;
-
-    if (engaged) {
-      setLastEngagedSlug(slug);
-      setMountedSlugs((current) => (current.has(slug) ? current : new Set(current).add(slug)));
-      setSlug(slug);
-    } else {
-      setSlug((current) => (current === slug ? null : current));
-    }
-  };
 
   return (
     <ul aria-labelledby={labelledBy} className={styles.list} ref={listRef}>
@@ -92,7 +58,7 @@ export function FavoritesList({
         <li key={favorite.url} style={revealStyle(index)}>
           <FavoriteCard
             cardTabMounted={mountedSlugs.has(favorite.slug)}
-            engaged={favorite.slug === hoveredSlug || favorite.slug === focusedSlug}
+            engaged={isEngaged(favorite.slug)}
             favorite={favorite}
             onEngagedChange={(engagement, engaged) =>
               setEngaged(favorite.slug, engagement, engaged)
@@ -113,13 +79,7 @@ export function FavoritesList({
 // The whole card is the link, and the poster's alt is the component's label,
 // so the link's name is the label and a screen reader says "Simplex Noise,
 // link". The poster stays in place, faded, while the scene plays, so the name
-// holds.
-//
-// A tap never takes a card live, even on a touch-screen laptop that passes
-// the hover gate, because the tap is on its way to the component page. The
-// pointer checks skip a touch's pointerenter and pointerleave. The
-// :focus-visible check skips the focus a tap or a click gives the link, and
-// keeps keyboard focus.
+// holds. engagementHandlers keeps a tap from taking the card live.
 function FavoriteCard({
   favorite,
   engaged,
@@ -134,23 +94,10 @@ function FavoriteCard({
   cardTabMounted: boolean;
   sceneMounted: boolean;
   playing: boolean;
-  onEngagedChange: ((engagement: Engagement, engaged: boolean) => void) | undefined;
+  onEngagedChange: (engagement: Engagement, engaged: boolean) => void;
 }) {
   return (
-    <Link
-      className={styles.card}
-      href={favorite.url}
-      onBlur={() => onEngagedChange?.('focus', false)}
-      onFocus={(event) => {
-        if (event.currentTarget.matches(':focus-visible')) onEngagedChange?.('focus', true);
-      }}
-      onPointerEnter={(event) => {
-        if (event.pointerType !== 'touch') onEngagedChange?.('pointer', true);
-      }}
-      onPointerLeave={(event) => {
-        if (event.pointerType !== 'touch') onEngagedChange?.('pointer', false);
-      }}
-    >
+    <Link className={styles.card} href={favorite.url} {...engagementHandlers(onEngagedChange)}>
       <div className={styles.window}>
         {sceneMounted && <LiveScene paused={!playing} slug={favorite.slug} />}
         {/* No `sizes`: next.config.ts turns image optimization off for the
@@ -261,51 +208,13 @@ function UntilFirstPaint({ onPaintedChange }: { onPaintedChange: (painted: boole
 }
 
 // ---------------------------------------------
-// Preloading: the scenes' code, before the first hover
-// ---------------------------------------------
-
-// How far outside the viewport the cards are when their scenes start to
-// load, in CSS pixels. Larger loads them sooner on the way down the page.
-const PRELOAD_MARGIN = '200px';
-
-/**
- * Loads every favorite's scene module once the cards come within
- * PRELOAD_MARGIN of the viewport, the way next/link prefetches a page in
- * view, so a first hover mounts its canvas at once rather than waiting on
- * the code. It loads code only: a renderer starts on a favorite's first
- * hover, so a favorite never hovered costs nothing on the GPU. The list is
- * `display: contents` and has no box to observe, so its first card stands in
- * for it.
- */
-function usePreloadScenesNearView(listRef: RefObject<HTMLUListElement | null>, enabled: boolean) {
-  useEffect(() => {
-    const firstCard = listRef.current?.firstElementChild;
-
-    if (!enabled || !firstCard) return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (!entries.some((entry) => entry.isIntersecting)) return;
-        observer.disconnect();
-        preloadFavoriteScenes();
-      },
-      { rootMargin: PRELOAD_MARGIN },
-    );
-
-    observer.observe(firstCard);
-
-    return () => observer.disconnect();
-  }, [listRef, enabled]);
-}
-
-// ---------------------------------------------
 // Pausing the hero while a favorite plays
 // ---------------------------------------------
 
 /**
  * Pauses the homepage hero while a favorite plays, for the reason
- * components/home-hero/hero-pause.ts gives. A favorite plays only once the
- * gate below opens, so with no WebGPU the hero keeps drawing.
+ * components/home-hero/hero-pause.ts gives. A favorite plays only once
+ * useLiveOnHover's gate opens, so with no WebGPU the hero keeps drawing.
  */
 function usePauseHeroWhilePlaying(playing: boolean) {
   const heroPause = useHeroPause();
@@ -316,43 +225,4 @@ function usePauseHeroWhilePlaying(playing: boolean) {
 
     return () => heroPause.setPaused(false);
   }, [playing, heroPause]);
-}
-
-// ---------------------------------------------
-// The gate: a mouse or trackpad, and a WebGPU adapter
-// ---------------------------------------------
-
-/**
- * True where a favorite may mount its scene: the device passes the site's
- * hover gate (lib/use-can-hover.ts), and the browser hands out a WebGPU
- * adapter. A phone or tablet fails the gate, so its favorites stay posters.
- * Without an adapter, ShaderScene would fall back to WebGL2, and the
- * favorites stay posters instead. Only a device that can hover asks for the
- * adapter.
- */
-function useCanGoLive(): boolean {
-  const canHover = useCanHover();
-  const [hasWebGpu, setHasWebGpu] = useState(false);
-
-  useEffect(() => {
-    // navigator.gpu is typed as always present, but it is missing in a
-    // browser without WebGPU and outside a secure context, so probe with `in`.
-    if (!canHover || !('gpu' in navigator)) return;
-
-    let cancelled = false;
-
-    void navigator.gpu
-      .requestAdapter()
-      // A browser that refuses the request has no WebGPU to offer either.
-      .catch(() => null)
-      .then((adapter) => {
-        if (!cancelled) setHasWebGpu(adapter !== null);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [canHover]);
-
-  return canHover && hasWebGpu;
 }

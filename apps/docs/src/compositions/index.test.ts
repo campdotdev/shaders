@@ -5,9 +5,14 @@
  * document reaches three, so server code can read every composition. The
  * rest covers what the document's types can't: uniqueness across entries.
  */
+import { existsSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { COMPOSITIONS } from './index';
+import { compositionPoster, compositionThumbnail } from './posters';
+
+const PUBLIC_DIR = fileURLToPath(new URL('../../public', import.meta.url));
 
 describe('COMPOSITIONS', () => {
   it('gives every composition its own slug', () => {
@@ -33,5 +38,18 @@ describe('COMPOSITIONS', () => {
       expect(names, composition.slug).not.toContain('default');
       expect(new Set(names).size, composition.slug).toBe(names.length);
     }
+  });
+
+  // The composition page, the Gallery card, and the "Used in" strip show
+  // these before a frame. scripts/build-posters.sh writes them, and a
+  // composition missing its entry there would ship broken images.
+  it('has a poster and a thumbnail for every composition', () => {
+    const missing = COMPOSITIONS.flatMap(({ slug }) =>
+      [compositionPoster(slug), compositionThumbnail(slug)].filter(
+        (url) => !existsSync(`${PUBLIC_DIR}${url}`),
+      ),
+    );
+
+    expect(missing).toEqual([]);
   });
 });

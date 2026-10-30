@@ -1,8 +1,8 @@
 'use client';
 
 /**
- * The interactive half of a composition page: the scene beside the
- * Customize panel, sharing one store. The store starts from the library
+ * The interactive half of a composition page: the scene, behind its poster
+ * until the first frame, beside the Customize panel, sharing one store. The store starts from the library
  * defaults the server page read for each entry, with the stack's props on
  * top. The scene loads through next/dynamic with ssr: false, because the
  * component map behind it reaches three/webgpu, which a server render can't
@@ -13,8 +13,10 @@ import { useMemo, useSyncExternalStore } from 'react';
 
 import { COMPONENT_FIELDS } from '@/app/components/demo-registry';
 import { ControlsProvider, DemoLayout, useSnapshot } from '@/components/controls';
+import { DemoPoster } from '@/components/DemoPoster';
 import type { CompositionProps } from '@/compositions/composition-scene';
 import type { Composition } from '@/compositions/define';
+import { compositionPoster } from '@/compositions/posters';
 import {
   type CompositionDefaults,
   type CompositionStore,
@@ -42,9 +44,14 @@ function LiveScene({ composition, store }: { composition: Composition; store: Co
   const preset = useSyncExternalStore(store.subscribe, store.getPreset, store.getPreset);
 
   return (
-    <CompositionScene composition={composition} props={props}>
-      <VisualTestPause key={preset} />
-    </CompositionScene>
+    <DemoPoster
+      alt={`${composition.title}: ${composition.description}`}
+      src={compositionPoster(composition.slug)}
+    >
+      <CompositionScene composition={composition} props={props}>
+        <VisualTestPause key={preset} />
+      </CompositionScene>
+    </DemoPoster>
   );
 }
 

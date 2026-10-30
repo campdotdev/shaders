@@ -1,0 +1,62 @@
+/* The Gallery's plain grid, until the author designs it: a card per
+   composition, its 3:2 poster over its title and description, as many
+   across as fit at 18rem or wider, capped at the 4xl column the composition
+   pages share. */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: var(--spacing-6);
+  max-width: var(--container-4xl);
+  margin: var(--spacing-6) 0 var(--spacing-16);
+  padding: 0;
+  list-style: none;
+}
+
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-1);
+  color: var(--fg);
+}
+
+/* The site underlines a link on hover (globals.css); a card is a block, not
+   a line of text, so it does not, as on the components index. */
+.card:hover {
+  text-decoration: none;
+}
+
+.card:focus-visible {
+  outline: var(--border-width-2) solid var(--accent);
+  outline-offset: var(--border-width-2);
+  border-radius: var(--radius-xl);
+}
+
+/* The window the poster and the live scene share, at the posters' 3:2. */
+.window {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  margin-bottom: var(--spacing-2);
+  overflow: hidden;
+  border-radius: var(--radius-xl);
+  background: var(--bg-muted);
+}
+
+.poster {
+  object-fit: cover;
+}
+
+/* The live scene fills the window under the poster. ShaderScene's canvas is
+   absolutely positioned, so it needs a positioned box with a size. */
+.scene {
+  position: absolute;
+  inset: 0;
+}
+
+.title {
+  font-weight: var(--font-weight-semibold);
+}
+
+.description {
+  color: var(--fg-muted);
+  line-height: var(--leading-6);
+}
