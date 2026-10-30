@@ -160,6 +160,22 @@ type SelectPaths<Props> =
       : never
     : never;
 
+/**
+ * The paths into `Props` whose value is a plain `string`, which is what a
+ * color control can edit. A union of string literals, such as Grain's
+ * `blend`, belongs to a select.
+ */
+type ColorPaths<Props> =
+  PathEntries<Props> extends infer Entry
+    ? Entry extends [infer Path, infer Value]
+      ? [Value] extends [string]
+        ? string extends Value
+          ? Path
+          : never
+        : never
+      : never
+    : never;
+
 type ValueAt<Props, Path> = Extract<PathEntries<Props>, [Path, unknown]>[1];
 
 // ----------------------------------------------------------------------------
@@ -226,7 +242,7 @@ type SelectControlsOf<Id extends string, Props> = {
 type ControlsOfEntry<Id extends string, Props> =
   | SliderControl<Id, PathsTo<Props, number> & string>
   | NumberControl<Id, PathsTo<Props, number> & string>
-  | ColorControl<Id, PathsTo<Props, string> & string>
+  | ColorControl<Id, ColorPaths<Props> & string>
   | SelectControlsOf<Id, Props>;
 
 type ControlOf<TStack extends readonly StackEntry[]> = TStack[number] extends infer Entry

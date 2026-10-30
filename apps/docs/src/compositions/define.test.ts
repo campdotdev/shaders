@@ -212,6 +212,16 @@ describe('defineComposition', () => {
     });
   });
 
+  it('rejects a color control on a string union', () => {
+    defineComposition({
+      ...base,
+      stack: [{ id: 'grain', component: 'Grain', props: {} }],
+      presets: [],
+      // @ts-expect-error -- blend is a GrainBlend, which a select edits
+      controls: [{ kind: 'color', entry: 'grain', path: 'blend', label: 'Blend' }],
+    });
+  });
+
   it('rejects a select option outside the prop union', () => {
     defineComposition({
       ...base,

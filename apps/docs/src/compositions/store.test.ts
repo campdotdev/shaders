@@ -129,12 +129,16 @@ describe('seeding the fields', () => {
     entry.component === 'Grain' ? { grit: 1, ...props } : props,
   );
 
-  it('seeds every preset it loads, and reports the seeded props as loaded', () => {
+  it('seeds every preset it loads, and Reset returns to the seeded props', () => {
     expect(seeded.getSnapshot().grain).toMatchObject({ grit: 1, intensity: 0.08 });
 
     seeded.loadPreset('Coarse');
 
     expect(seeded.getSnapshot().grain).toMatchObject({ grit: 1, intensity: 0.3 });
-    expect(seeded.getLoaded()).toEqual(seeded.getSnapshot());
+
+    seeded.setAtPath(['grain', 'grit'], 2);
+    seeded.reset();
+
+    expect(seeded.getSnapshot().grain).toMatchObject({ grit: 1, intensity: 0.3 });
   });
 });

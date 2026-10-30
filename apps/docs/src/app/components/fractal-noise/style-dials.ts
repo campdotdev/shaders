@@ -8,7 +8,7 @@
  */
 import { type FractalNoiseStyle, STYLE_DIAL_DEFAULTS } from '@camp-dev/shaders';
 
-const isFractalNoiseStyle = (value: unknown): value is FractalNoiseStyle =>
+export const isFractalNoiseStyle = (value: unknown): value is FractalNoiseStyle =>
   typeof value === 'string' && value in STYLE_DIAL_DEFAULTS;
 
 /**

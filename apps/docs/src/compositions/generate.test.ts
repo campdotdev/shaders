@@ -16,7 +16,7 @@ import { getComponentDefaults } from '@/content/props';
 import type { ComponentName, Composition } from './define';
 import { defineComposition } from './define';
 import { generateComposition, kebabCase, pascalCase } from './generate';
-import { presetProps } from './store';
+import { presetProps, type SeedFields } from './store';
 
 const composition = defineComposition({
   slug: 'generator-test',
@@ -138,8 +138,8 @@ export function GeneratorTest(props: Omit<ShaderSceneProps, 'children'>) {
 
 describe('props with no library default', () => {
   // FractalNoise's contrast follows its style, so the library has no
-  // default for it. The panel seeds one, and the file prints it only once
-  // a visitor moves it.
+  // default for it. The panel seeds one from the style, and the file prints
+  // it once it differs from the style's own.
   const noise = defineComposition({
     slug: 'no-default-test',
     title: 'No default',
@@ -149,15 +149,19 @@ describe('props with no library default', () => {
     controls: [],
   });
   const noiseDefaults = { noise: { style: 'clouds', scale: 3 } };
+  const seed: SeedFields = (_entry, props) => ({
+    contrast: props.style === 'veins' ? 1 : 1.75,
+    ...props,
+  });
   const loaded = { noise: { style: 'clouds', scale: 3, contrast: 1.75 } };
 
-  it('leaves the prop out while it holds the value the preset loaded', () => {
+  it("leaves the prop out while it holds the style's value", () => {
     const output = generateComposition({
       composition: noise,
       preset: 'Default',
       state: loaded,
       defaults: noiseDefaults,
-      loaded,
+      seed,
     });
 
     expect(output).toContain('<FractalNoise />');
@@ -169,10 +173,48 @@ describe('props with no library default', () => {
       preset: 'Default',
       state: { noise: { ...loaded.noise, contrast: 2 } },
       defaults: noiseDefaults,
-      loaded,
+      seed,
     });
 
     expect(output).toContain('<FractalNoise contrast={2} />');
+  });
+
+  it('prints the loaded value once the style it followed changes', () => {
+    const output = generateComposition({
+      composition: noise,
+      preset: 'Default',
+      state: { noise: { ...loaded.noise, style: 'veins' } },
+      defaults: noiseDefaults,
+      seed,
+    });
+
+    expect(output).toContain('<FractalNoise contrast={1.75} style="veins" />');
+  });
+});
+
+describe('seeded library defaults', () => {
+  // FlutedGlass's crossSection defaults to the name 'round', which the panel
+  // seeds as its dial value so the slider can edit it.
+  it('leaves the seeded default out', () => {
+    const glass = defineComposition({
+      slug: 'seeded-default-test',
+      title: 'Seeded default',
+      description: 'A FlutedGlass for the seeded-default rule.',
+      stack: [{ id: 'glass', component: 'FlutedGlass', props: {} }],
+      presets: [],
+      controls: [],
+    });
+
+    const output = generateComposition({
+      composition: glass,
+      preset: 'Default',
+      state: { glass: { crossSection: 0.5 } },
+      defaults: { glass: { crossSection: 'round' } },
+      seed: (_entry, props) =>
+        props.crossSection === 'round' ? { ...props, crossSection: 0.5 } : props,
+    });
+
+    expect(output).toContain('<FlutedGlass />');
   });
 });
 

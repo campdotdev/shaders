@@ -4,13 +4,13 @@
  * three-free, so golden.test.ts commits its output for every preset, and its
  * own tests hold its line breaking to Prettier's. Grew out of controls/copy.ts.
  */
-import type { Composition, EntryProps } from './define';
+import type { Composition, EntryProps, StackEntry } from './define';
 import {
   type CompositionDefaults,
   type CompositionState,
   type CompositionStore,
   isRecord,
-  presetProps,
+  type SeedFields,
   withStopPositions,
 } from './store';
 
@@ -24,11 +24,11 @@ export interface GenerateInput {
   /** The library defaults for each entry's component, keyed by entry id. */
   defaults: CompositionDefaults;
   /**
-   * Each entry's props as the preset loaded them, before any edit. A prop
-   * with no library default prints once it moves off this. Defaults to what
-   * presetProps builds for the preset.
+   * What the panel's store runs on each entry's props when it loads them.
+   * The file runs it too, so a prop prints only where it differs from what
+   * the component renders without it. Defaults to leaving props as they are.
    */
-  loaded?: CompositionState;
+  seed?: SeedFields;
 }
 
 // Prettier's printWidth in the repo's .prettierrc.
@@ -48,7 +48,7 @@ export function generateComposition({
   preset,
   state,
   defaults,
-  loaded = presetProps(composition, defaults, preset),
+  seed = (_entry, props) => props,
 }: GenerateInput): string {
   const presetOverride = composition.presets.find(({ name }) => name === preset)?.props;
   const componentNames = [...new Set(composition.stack.map(({ component }) => component))];
@@ -65,10 +65,10 @@ export function generateComposition({
     // The defaults in the shape the store holds, so stops the library spaces
     // evenly compare equal to the positions the store wrote out for them.
     const entryDefaults = withStopPositions(entry.component, defaults[entry.id] ?? {});
-    const entryLoaded = loaded[entry.id] ?? {};
+    const baseline = renderedWithout(entry, props, entryDefaults, seed);
     // Sorted, as the repo's jsx-sort-props rule sorts hand-written JSX.
     const printed = Object.keys(props)
-      .filter((name) => shouldPrint(name, props, setBy, entryDefaults, entryLoaded))
+      .filter((name) => shouldPrint(name, props, setBy, baseline))
       .sort();
 
     return printElement(
@@ -109,28 +109,50 @@ export function generateFromStore(
     preset: store.getPreset(),
     state: store.getSnapshot(),
     defaults,
-    loaded: store.getLoaded(),
+    seed: store.seed,
   });
 }
 
 /**
+ * What the component renders for each prop the file leaves out. A prop with
+ * a library default gets that default, seeded into the shape the store holds,
+ * so FlutedGlass's `'round'` reads as its dial value. A prop with none, such
+ * as FractalNoise's contrast, gets what the seed picks for the props that
+ * have one, so a contrast that matches the old style prints once the style
+ * changes.
+ */
+function renderedWithout(
+  entry: StackEntry,
+  props: EntryProps,
+  defaults: EntryProps,
+  seed: SeedFields,
+): EntryProps {
+  const defaulted = Object.keys(defaults);
+  const seededDefaults = seed(entry, { ...defaults });
+  const current = Object.fromEntries(
+    defaulted.filter((name) => name in props).map((name) => [name, props[name]]),
+  );
+
+  return {
+    ...seed(entry, current),
+    ...Object.fromEntries(defaulted.map((name) => [name, seededDefaults[name]])),
+  };
+}
+
+/**
  * Whether a prop belongs in the file: the document or the loaded preset sets
- * it, or its value has moved off the library default. A prop with no
- * library default, such as FractalNoise's contrast, which follows its style,
- * prints once it moves off the value the preset loaded with.
+ * it, or its value differs from what the component renders without it.
  */
 function shouldPrint(
   name: string,
   props: EntryProps,
   setBy: EntryProps,
-  defaults: EntryProps,
-  loaded: EntryProps,
+  baseline: EntryProps,
 ): boolean {
   if (props[name] === undefined) return false;
   if (name in setBy) return true;
-  if (!(name in defaults)) return !sameValue(props[name], loaded[name]);
 
-  return !sameValue(props[name], defaults[name]);
+  return !sameValue(props[name], baseline[name]);
 }
 
 function sameValue(a: unknown, b: unknown): boolean {

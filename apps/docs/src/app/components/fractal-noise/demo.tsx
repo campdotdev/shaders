@@ -7,7 +7,7 @@
  * between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
-import { useEffect, useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 
 import { type FractalNoiseStyle, STYLE_DIAL_DEFAULTS } from '@camp-dev/shaders';
 
@@ -27,36 +27,49 @@ import {
   useSetProp,
   useSnapshot,
 } from '@/components/controls';
+import { SelectField } from '@/components/controls/SelectInput';
 import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 import { INITIAL, MAX_STOPS, MIN_STOPS, type Params, type PlainColorStop } from './params';
+import { isFractalNoiseStyle } from './style-dials';
 
 const FractalNoiseScene = dynamic(() => import('./scene'), { ssr: false });
 
+const STYLE_OPTIONS = [
+  { label: 'Clouds', value: 'clouds' },
+  { label: 'Smoke', value: 'smoke' },
+  { label: 'Veins', value: 'veins' },
+];
+
 /**
- * Keeps the Contrast/Balance sliders in step with the component's per-style
- * defaults: switching Style writes that style's dial defaults into the store,
- * so the panel shows what an uncontrolled <FractalNoise style="..."> renders.
+ * The Style select. Picking a style also writes that style's dial defaults
+ * into Contrast and Balance, so the panel shows what an uncontrolled
+ * <FractalNoise style="..."> renders. Only a pick does: a preset load or a
+ * Reset sets the style and the dials together, and keeps the dials it sets.
  * Subscribes to the style leaf only (writing a container path re-renders
  * everything under it — see the demo-store gotcha in docs/agents/docs-site.md).
  */
-function StyleDialSync() {
+function StyleSelect() {
   const style = usePropValue<FractalNoiseStyle>('style');
   const setProp = useSetProp();
-  const previousStyle = useRef(style);
 
-  useEffect(() => {
-    if (previousStyle.current === style) return;
-    previousStyle.current = style;
+  return (
+    <SelectField
+      label="Style"
+      onValueChange={(next) => {
+        if (!isFractalNoiseStyle(next)) return;
 
-    const dials = STYLE_DIAL_DEFAULTS[style];
+        const dials = STYLE_DIAL_DEFAULTS[next];
 
-    setProp('contrast', dials.contrast);
-    setProp('balance', dials.balance);
-  }, [style, setProp]);
-
-  return null;
+        setProp('style', next);
+        setProp('contrast', dials.contrast);
+        setProp('balance', dials.balance);
+      }}
+      options={STYLE_OPTIONS}
+      value={style}
+    />
+  );
 }
 
 /** A new palette color clones the last one so the addition is visible. */
@@ -89,17 +102,8 @@ function FractalNoiseDemo() {
 export function FractalNoiseFields() {
   return (
     <>
-      <StyleDialSync />
       <Section title="Texture">
-        <SelectInput
-          label="Style"
-          options={[
-            { label: 'Clouds', value: 'clouds' },
-            { label: 'Smoke', value: 'smoke' },
-            { label: 'Veins', value: 'veins' },
-          ]}
-          path="style"
-        />
+        <StyleSelect />
         <SliderInput label="Scale" max={10} min={0.5} path="scale" step={0.1} />
         <SliderInput label="Octaves" max={8} min={1} path="octaves" step={1} />
         <SliderInput label="Detail" max={1} min={0} path="detail" step={0.01} />

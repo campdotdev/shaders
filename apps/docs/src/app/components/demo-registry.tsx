@@ -21,6 +21,7 @@ import { CursorSpotlightFields, CursorSpotlightIsland } from './cursor-spotlight
 import { DissolveFields, DissolveIsland } from './dissolve/demo';
 import { DitherFields, DitherIsland } from './dither/demo';
 import { DotFieldFields, DotFieldIsland } from './dot-field/demo';
+import { seedCrossSection } from './fluted-glass/cross-section';
 import { FlutedGlassFields, FlutedGlassIsland } from './fluted-glass/demo';
 import { FractalNoiseFields, FractalNoiseIsland } from './fractal-noise/demo';
 import { seedStyleDials } from './fractal-noise/style-dials';
@@ -36,6 +37,7 @@ import { SimplexNoiseFields, SimplexNoiseIsland } from './simplex-noise/demo';
 import { VignetteFields, VignetteIsland } from './vignette/demo';
 import { VoronoiFields, VoronoiIsland } from './voronoi/demo';
 import { WaveLinesFields, WaveLinesIsland } from './wave-lines/demo';
+import { seedLineColors } from './wave-lines/line-colors';
 
 export interface ComponentPageEntry {
   /** Client island rendering the control store, shader demo, and control panel. */
@@ -398,7 +400,8 @@ export interface ComponentFields {
    */
   Fields: ComponentType;
   /**
-   * Fills in props the fields show that have no library default, for a
+   * Fills in props the fields show that have no library default, and puts
+   * props the fields can't edit as written into a shape they can, for a
    * composition's store, which starts from the library defaults.
    */
   seed?: (props: Record<string, unknown>) => Record<string, unknown>;
@@ -415,7 +418,7 @@ export const COMPONENT_FIELDS: Record<ComponentName, ComponentFields> = {
   Dissolve: { Fields: DissolveFields },
   Dither: { Fields: DitherFields },
   DotField: { Fields: DotFieldFields },
-  FlutedGlass: { Fields: FlutedGlassFields },
+  FlutedGlass: { Fields: FlutedGlassFields, seed: seedCrossSection },
   FractalNoise: { Fields: FractalNoiseFields, seed: seedStyleDials },
   GodRays: { Fields: GodRaysFields },
   Grain: { Fields: GrainFields },
@@ -428,5 +431,5 @@ export const COMPONENT_FIELDS: Record<ComponentName, ComponentFields> = {
   SimplexNoise: { Fields: SimplexNoiseFields },
   Vignette: { Fields: VignetteFields },
   Voronoi: { Fields: VoronoiFields },
-  WaveLines: { Fields: WaveLinesFields },
+  WaveLines: { Fields: WaveLinesFields, seed: seedLineColors },
 };

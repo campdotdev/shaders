@@ -112,8 +112,8 @@ export function presetProps(
 export interface CompositionStore extends ControlStore<CompositionState> {
   /** The name of the loaded preset. An edit doesn't change it. */
   getPreset: () => string;
-  /** Every entry's props as the loaded preset set them, before any edit. */
-  getLoaded: () => CompositionState;
+  /** What the store runs on each entry's props when it loads them. The generator runs it too. */
+  seed: SeedFields;
   /** Loads a preset, which also makes it what Reset returns to. */
   loadPreset: (presetName: string) => void;
 }
@@ -129,9 +129,11 @@ export function isCompositionStore(store: ControlStore<object>): store is Compos
 
 /**
  * Fills in what an entry's fields need beyond the library defaults, such as
- * FractalNoise's contrast and balance, whose defaults follow its style. The
- * page supplies it from the demo registry, because some of those values
- * live in the package root, which the docs' Node vitest can't load.
+ * FractalNoise's contrast and balance, whose defaults follow its style, and
+ * puts a prop the fields can't edit as written, such as FlutedGlass's named
+ * cross-section, into a shape they can. The page supplies it from the demo
+ * registry, because some of those values live in the package root, which the
+ * docs' Node vitest can't load.
  */
 export type SeedFields = (
   entry: StackEntry,
@@ -152,17 +154,17 @@ export function createCompositionStore(
   };
 
   let preset = DEFAULT_PRESET;
-  let loaded = loadedProps(DEFAULT_PRESET);
-  const store = createControlStore(loaded);
+  const store = createControlStore(loadedProps(DEFAULT_PRESET));
 
   return {
     ...store,
     getPreset: () => preset,
-    getLoaded: () => loaded,
+    seed,
     loadPreset: (presetName) => {
-      // Set before load() notifies, so a subscriber reading these sees them
-      // agree with the snapshot.
-      loaded = loadedProps(presetName);
+      const loaded = loadedProps(presetName);
+
+      // Set before load() notifies, so a subscriber reading it sees it agree
+      // with the snapshot.
       preset = presetName;
       store.load(loaded);
     },
