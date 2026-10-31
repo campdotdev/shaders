@@ -49,9 +49,14 @@ function DotFieldDemo() {
   );
 }
 
-function DotFieldControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function DotFieldFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Motion">
         <SliderInput label="Speed" max={4} min={0} path="speed" step={0.05} />
         <SliderInput label="Amplitude" max={0.9} min={0} path="amplitude" step={0.01} />
@@ -68,6 +73,14 @@ function DotFieldControls() {
       <Section title="Color">
         <ColorInput label="Color" path="color" />
       </Section>
+    </>
+  );
+}
+
+function DotFieldControls() {
+  return (
+    <ControlPanel>
+      <DotFieldFields />
     </ControlPanel>
   );
 }

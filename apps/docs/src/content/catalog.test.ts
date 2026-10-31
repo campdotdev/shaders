@@ -2,7 +2,7 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { getComponentsCatalog } from './catalog';
+import { getComponentsCatalog, slugForComponentName } from './catalog';
 
 const POSTERS_DIR = fileURLToPath(new URL('../../public/posters', import.meta.url));
 
@@ -33,5 +33,15 @@ describe('getComponentsCatalog', () => {
       );
 
     expect(missing).toEqual([]);
+  });
+});
+
+// A composition names its components by export name, and the pages that read
+// a component's props or poster need its slug.
+describe('slugForComponentName', () => {
+  it('runs the PascalCase rule backwards', () => {
+    expect(slugForComponentName('LedWall')).toBe('led-wall');
+    expect(slugForComponentName('Grain')).toBe('grain');
+    expect(slugForComponentName('LEDWall')).toBeUndefined();
   });
 });

@@ -49,9 +49,14 @@ function LinearGradientDemo() {
   );
 }
 
-function LinearGradientControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function LinearGradientFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Motion">
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
@@ -87,6 +92,14 @@ function LinearGradientControls() {
           </>
         )}
       </ListInput>
+    </>
+  );
+}
+
+function LinearGradientControls() {
+  return (
+    <ControlPanel>
+      <LinearGradientFields />
     </ControlPanel>
   );
 }

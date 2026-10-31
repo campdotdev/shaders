@@ -24,7 +24,7 @@ export default function GodRaysScene({
     <ShaderScene paused={paused}>
       <GodRays
         angle={params.angle}
-        center={[params.centerX, params.centerY]}
+        center={params.center}
         colors={params.colors}
         density={params.density}
         diffusion={params.diffusion}

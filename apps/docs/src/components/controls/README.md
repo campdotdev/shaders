@@ -8,9 +8,11 @@ the same four-part shape:
 2. **A `*Demo` component** — reads the whole params object with `useSnapshot()` and passes it
    into the scene. This is the one place a full-object subscription belongs. Aurora's moves it
    one level down, into `LiveAuroraScene`, so a second host can reuse it.
-3. **A `*Controls` component** — the JSX tree of `<SliderInput>`/`<NumberInput>`/`<SelectInput>`/
-   `<ColorInput>`/`<ListInput>` inside `<ControlPanel>`. It never calls `useSnapshot()` or reads params itself;
-   each control subscribes to its own leaf path independently via `usePropValue`.
+3. **A `*Fields` export and a `*Controls` component** — `*Fields` is the JSX tree of `<SliderInput>`/
+   `<NumberInput>`/`<SelectInput>`/`<ColorInput>`/`<ListInput>`, and `*Controls` wraps it in `<ControlPanel>`.
+   A composition's All props section mounts `*Fields` under a stack entry's id. Neither calls
+   `useSnapshot()` or reads params itself; each control subscribes to its own leaf path
+   independently via `usePropValue`.
 4. **The `*Island` export** — creates the store with `useMemo(() => createControlStore(INITIAL), [])`
    and wraps both `*Demo` and `*Controls` in one `<ControlsProvider store={store}>` inside
    `<DemoLayout>`. Aurora's does the same through `AuroraControlsProvider`.

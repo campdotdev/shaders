@@ -45,13 +45,26 @@ function CursorSpotlightDemo() {
   );
 }
 
-function CursorSpotlightControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function CursorSpotlightFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Light">
         <SliderInput label="Radius" max={1} min={0} path="radius" step={0.01} />
         <SliderInput label="Intensity" max={2} min={0} path="intensity" step={0.01} />
       </Section>
+    </>
+  );
+}
+
+function CursorSpotlightControls() {
+  return (
+    <ControlPanel>
+      <CursorSpotlightFields />
     </ControlPanel>
   );
 }

@@ -17,6 +17,12 @@ export interface ControlStore<TParams extends object> {
   getAtPath: (path: ControlPath) => unknown;
   setAtPath: (path: ControlPath, value: unknown) => void;
   reset: () => void;
+  /**
+   * Replaces the params and makes them what reset() returns to. A
+   * composition's preset picker loads a preset this way, so Reset goes back
+   * to the preset rather than to the page's first state.
+   */
+  load(params: TParams): void;
 }
 
 // -------------------------------------------------
@@ -122,7 +128,7 @@ function writeAtPath(target: unknown, path: ControlPath, value: unknown): unknow
 export function createControlStore<TParams extends object>(
   initial: TParams,
 ): ControlStore<TParams> {
-  const pristine = structuredClone(initial);
+  let pristine = structuredClone(initial);
   const listeners = new Set<() => void>();
 
   let snapshot: TParams = structuredClone(initial);
@@ -152,6 +158,12 @@ export function createControlStore<TParams extends object>(
 
     reset: () => {
       snapshot = structuredClone(pristine);
+      emit();
+    },
+
+    load: (params) => {
+      pristine = structuredClone(params);
+      snapshot = structuredClone(params);
       emit();
     },
   };

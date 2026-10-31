@@ -94,6 +94,12 @@
   cursor: default;
 }
 
+/* A page with no markdown export has no chevron cell, so the copy action is
+   the whole box and rounds all four corners. */
+.copyAlone {
+  border-radius: var(--radius-md);
+}
+
 /* ---- The copied swap ---- */
 
 /* The glyph is a 16px box with both icons laid over each other, and a

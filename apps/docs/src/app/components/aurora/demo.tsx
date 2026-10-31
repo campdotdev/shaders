@@ -90,9 +90,14 @@ function AuroraDemo() {
   );
 }
 
-export function AuroraControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function AuroraFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Motion">
         <SliderInput label="Speed" max={3} min={0} path="speed" step={0.01} />
         <SliderInput label="Waviness" max={3} min={0} path="waviness" step={0.01} />
@@ -129,6 +134,14 @@ export function AuroraControls() {
           </>
         )}
       </ListInput>
+    </>
+  );
+}
+
+export function AuroraControls() {
+  return (
+    <ControlPanel>
+      <AuroraFields />
     </ControlPanel>
   );
 }

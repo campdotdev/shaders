@@ -48,9 +48,14 @@ function FlutedGlassDemo() {
   );
 }
 
-function FlutedGlassControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function FlutedGlassFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Glass">
         <SliderInput label="Flute width" max={160} min={4} path="fluteWidth" step={1} />
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
@@ -64,6 +69,14 @@ function FlutedGlassControls() {
         <ColorInput label="Highlight color" path="highlightColor" />
         <SliderInput label="Shadow" max={1} min={0} path="shadow" step={0.01} />
       </Section>
+    </>
+  );
+}
+
+function FlutedGlassControls() {
+  return (
+    <ControlPanel>
+      <FlutedGlassFields />
     </ControlPanel>
   );
 }
