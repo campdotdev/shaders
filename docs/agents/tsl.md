@@ -68,11 +68,16 @@ The second trap survives exact constants. `hash(x).mul(0xffffff).toUint()` cross
 
 To verify a change here, diff `/components/voronoi?visualTest=1` captures across both backends. Expect differences only at single vertex specks, never in cell-shaped regions.
 
+### The reversed-clamp gotcha: WGSL rejects a constant clamp() whose low bound is above its high bound
+
+WGSL checks `clamp()` at compile time when both bounds are constants, and a low bound above the high bound fails shader creation. `smoothstep()` fails the same way when its two constant edges are equal. GLSL compiles both calls. A `select()` doesn't help, because the shader still compiles the branch it doesn't pick. Blender's Map Range clamp met it: with To Min 1 and To Max 0, `select(high > low, clamp(v, low, high), clamp(v, high, low))` broke the whole material on WebGPU. Write the clamp as `min(max(v, low), high)`, which compiles in either order, and write out the smoothstep curve when its edges can match. `clampNode` and `smoothstepCurve` in `apps/docs/src/app/dev/blender-probe/nodes/math.ts` are the models.
+
 ### Type notes
 
 - `colorNode` rejects `ShaderNodeObject<unknown>`. Type it as `Node | ShaderNodeObject<Node>`.
 - `uniform(vec2(...))` has no Vector2 mutators. Use `uniform(new Vector2(...))` when you need `.set()`.
 - In three 0.170 and later, `setClearColor` takes only a `Color`. Convert with `new Color(...)`.
+- three 0.170 chains `.notEqual()` on every node, but `@types/three` 0.170 leaves it out. `apps/docs/src/app/dev/blender-probe/nodes/gpu-function.ts` adds the typing. Delete that addition when a types bump includes it.
 
 ## Keep shared work out of per-pixel loops
 

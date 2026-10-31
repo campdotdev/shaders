@@ -8,7 +8,9 @@
     // Run by hand to regenerate blue-noise-tile.ts.
     "scripts/generate-blue-noise.mjs",
     // Run by build-posters.sh after each poster capture.
-    "scripts/build-thumbnail.mjs"
+    "scripts/build-thumbnail.mjs",
+    // Run by hand to compare /dev/blender-probe with Blender's render.
+    "scripts/compare-blender-probe.mjs"
   ],
   // The poster command esbuilds the harness at runtime, from a directory it
   // resolves by path in poster/bundle.ts.
