@@ -23,5 +23,12 @@
       }
     ]
   },
-  "include": ["src", "css.d.ts", "next-env.d.ts", "next.config.ts", ".next/types/**/*.ts"]
+  "include": [
+    "src",
+    "css.d.ts",
+    "image-types.d.ts",
+    "next-env.d.ts",
+    "next.config.ts",
+    ".next/types/**/*.ts"
+  ]
 }
