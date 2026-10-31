@@ -142,8 +142,19 @@ type PathEntriesUnder<Key extends string, Value, Depth extends unknown[]> =
         : never
       : never);
 
-/** The paths into `Props` whose value is a `Value`. */
-type PathsTo<Props, Value> = Extract<PathEntries<Props>, [string, Value]>[0];
+/**
+ * The paths into `Props` whose value can be a number, which is what a slider
+ * or a number input can edit. FlutedGlass's `crossSection` counts, because
+ * the store seeds its names to dial values, so the panel only holds numbers.
+ */
+type NumberPaths<Props> =
+  PathEntries<Props> extends infer Entry
+    ? Entry extends [infer Path, infer Value]
+      ? [Extract<Value, number>] extends [never]
+        ? never
+        : Path
+      : never
+    : never;
 
 /**
  * The paths into `Props` whose value is a union of string literals, which is
@@ -242,8 +253,8 @@ type SelectControlsOf<Id extends string, Props> = {
 }[SelectPaths<Props> & string];
 
 type ControlsOfEntry<Id extends string, Props> =
-  | SliderControl<Id, PathsTo<Props, number> & string>
-  | NumberControl<Id, PathsTo<Props, number> & string>
+  | SliderControl<Id, NumberPaths<Props> & string>
+  | NumberControl<Id, NumberPaths<Props> & string>
   | ColorControl<Id, ColorPaths<Props> & string>
   | SelectControlsOf<Id, Props>;
 

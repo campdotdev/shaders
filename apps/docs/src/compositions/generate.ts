@@ -52,6 +52,11 @@ export function generateComposition({
 }: GenerateInput): string {
   const presetOverride = composition.presets.find(({ name }) => name === preset)?.props;
   const componentNames = [...new Set(composition.stack.map(({ component }) => component))];
+  const exportedName = exportName(composition.title, [
+    ...componentNames,
+    'ShaderScene',
+    'ShaderSceneProps',
+  ]);
   const sceneAttributes = Object.entries(composition.scene ?? {})
     .filter(([, value]) => value !== undefined)
     .sort(([a], [b]) => (a < b ? -1 : 1));
@@ -83,7 +88,7 @@ export function generateComposition({
     '',
     printImport([...componentNames, 'ShaderScene', 'type ShaderSceneProps']),
     '',
-    `export function ${pascalCase(composition.title)}(props: Omit<ShaderSceneProps, 'children'>) {`,
+    `export function ${exportedName}(props: Omit<ShaderSceneProps, 'children'>) {`,
     `${INDENT}return (`,
     printOpeningTag(
       'ShaderScene',
@@ -177,6 +182,17 @@ export function pascalCase(title: string): string {
     .filter((word) => word.length > 0)
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join('');
+}
+
+/**
+ * The copied component's name: the title in PascalCase, with `Composition`
+ * after it when that would repeat a name the file imports, such as a
+ * "Mesh Gradient" title over a MeshGradient entry.
+ */
+function exportName(title: string, imported: readonly string[]): string {
+  const name = pascalCase(title);
+
+  return imported.includes(name) ? `${name}Composition` : name;
 }
 
 /** The file name a preset's golden file takes: "Late Summer" → late-summer. */

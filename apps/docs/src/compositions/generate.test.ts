@@ -272,6 +272,17 @@ describe('names', () => {
     expect(pascalCase('Late summer haze')).toBe('LateSummerHaze');
     expect(kebabCase('Late Summer, Again')).toBe('late-summer-again');
   });
+
+  it('renames the component when the title repeats a name the file imports', () => {
+    const output = generateComposition({
+      composition: { ...composition, title: 'Mesh Gradient' },
+      preset: 'Default',
+      state: presetProps(composition, defaults, 'Default'),
+      defaults,
+    });
+
+    expect(output).toContain('export function MeshGradientComposition(');
+  });
 });
 
 // ----------------------------------------------------------------------------

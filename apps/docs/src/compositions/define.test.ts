@@ -252,6 +252,25 @@ describe('defineComposition', () => {
     });
   });
 
+  it('accepts a slider on a prop that can also be a name', () => {
+    defineComposition({
+      ...base,
+      stack: [{ id: 'glass', component: 'FlutedGlass', props: {} }],
+      presets: [],
+      controls: [
+        {
+          kind: 'slider',
+          entry: 'glass',
+          path: 'crossSection',
+          label: 'Cut',
+          min: 0,
+          max: 1,
+          step: 0.01,
+        },
+      ],
+    });
+  });
+
   it('rejects a slider without its range', () => {
     defineComposition({
       ...base,
