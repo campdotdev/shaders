@@ -3,7 +3,7 @@
  * color can be one string, a list of stops, or left out, and the Colors list
  * edits only a list, so the store needs every line's color as one.
  */
-import { isRecord } from '@/compositions/store';
+import { isRecord } from '@/lib/is-record';
 
 // The color shader.tsx draws a line in when its color is left out. The
 // package doesn't export it.

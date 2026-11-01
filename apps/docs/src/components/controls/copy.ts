@@ -1,9 +1,11 @@
 /**
  * Turns a params snapshot into the ready-to-paste JSX block that the page
  * header's Copy React menu hands out. This works because each page's params
- * object mirrors its component's real prop shape.
+ * object mirrors its component's real prop shape. The component prints
+ * through lib/print-jsx.ts, the composition generator's printer, so its
+ * props break the way Prettier and a composition's copied file break them.
  */
-import { printString, roundNumber } from '@/lib/print-literal';
+import { INDENT, printElement } from '@/lib/print-jsx';
 
 export interface CopyConfig {
   /** Component name as written in JSX, e.g. 'WaveLines'. */
@@ -12,53 +14,14 @@ export interface CopyConfig {
   siblings?: readonly string[];
 }
 
-/** A value as it appears inside a params object literal. */
-function formatValue(value: unknown, indent: string): string {
-  if (typeof value === 'number') return String(roundNumber(value));
-  if (typeof value === 'boolean') return String(value);
-  if (typeof value === 'string') return printString(value);
-
-  if (Array.isArray(value)) {
-    const items = value.map((item) => formatValue(item, `${indent}  `));
-    // Tuples of plain values stay on one line; anything holding objects or
-    // nested arrays breaks so a long stop list stays readable.
-    const isFlat = value.every((item) => typeof item !== 'object' || item === null);
-
-    if (isFlat) return `[${items.join(', ')}]`;
-
-    return `[\n${items.map((item) => `${indent}  ${item}`).join(',\n')},\n${indent}]`;
-  }
-
-  if (value !== null && typeof value === 'object') {
-    const entries = Object.entries(value).map(
-      ([key, entryValue]) => `${key}: ${formatValue(entryValue, `${indent}  `)}`,
-    );
-
-    return `{ ${entries.join(', ')} }`;
-  }
-
-  return String(value);
-}
-
-/** A JSX attribute: strings use quotes unless they hold one, everything else braces. */
-function formatAttribute(key: string, value: unknown, indent: string): string {
-  if (typeof value === 'string' && !value.includes('"')) return `${indent}${key}="${value}"`;
-
-  return `${indent}${key}={${formatValue(value, indent)}}`;
-}
-
 export function formatJsx({ componentName, siblings = [] }: CopyConfig, params: object): string {
-  const attributes = Object.entries(params).map(([key, value]) =>
-    formatAttribute(key, value, '    '),
-  );
-  const before = siblings.map((sibling) => `  ${sibling}`).join('\n');
+  // A prop left undefined is one hand-written JSX would leave out.
+  const props = Object.entries(params).filter(([, value]) => value !== undefined);
 
   return [
     '<ShaderScene>',
-    ...(before.length > 0 ? [before] : []),
-    `  <${componentName}`,
-    ...attributes,
-    '  />',
+    ...siblings.map((sibling) => `${INDENT}${sibling}`),
+    printElement(componentName, props, INDENT),
     '</ShaderScene>',
   ].join('\n');
 }
