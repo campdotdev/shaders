@@ -114,40 +114,35 @@ for pair in \
   node scripts/build-thumbnail.mjs "${thumbnail_args[@]}"
 done
 
-# Each composition's poster is captured from the file Copy React hands out
-# for its Default preset, compositions/<slug>/generated/default.tsx, which
-# golden.test.ts keeps current, so the poster cannot drift from what a
-# visitor copies. The file's named export is the composition's title in
-# PascalCase. The composition page, the Gallery card, and the "Used in"
-# strip on reference pages read the poster and its thumbnail from
-# posters/gallery/. Entries are slug:ExportName[:background].
-mkdir -p "${OUT_DIR}/gallery"
-for entry in \
-  "fixture:Fixture"; do
-  IFS=':' read -r slug export_name background <<< "$entry"
-  poster="${OUT_DIR}/gallery/${slug}.jpg"
-  if [ "$THUMBNAILS_ONLY" = 0 ]; then
-    echo "==> gallery/${slug} (jpg, ${WIDTH}x${HEIGHT})"
-    gallery_args=(
-      --source "apps/docs/src/compositions/${slug}/generated/default.tsx"
-      --export-name "$export_name"
-      --output "$poster"
-      --format jpg
-      --width "$WIDTH"
-      --height "$HEIGHT"
-    )
-    if [ -n "${background:-}" ]; then
-      gallery_args+=(--background "$background")
-    fi
-    $CLI "${gallery_args[@]}"
-  fi
-  node scripts/build-thumbnail.mjs "$poster"
-done
-
 if [ "$THUMBNAILS_ONLY" = 1 ]; then
   echo "All thumbnails regenerated."
   exit 0
 fi
+
+# Each composition's poster is captured from the file Copy React hands out
+# for its Default preset, compositions/<slug>/generated/default.tsx, which
+# golden.test.ts keeps current, so the poster cannot drift from what a
+# visitor copies. The file's named export is the composition's title in
+# PascalCase. The composition page and the Gallery card read the poster
+# from posters/gallery/. Entries are slug:ExportName[:background].
+mkdir -p "${OUT_DIR}/gallery"
+for entry in \
+  "fixture:Fixture"; do
+  IFS=':' read -r slug export_name background <<< "$entry"
+  echo "==> gallery/${slug} (jpg, ${WIDTH}x${HEIGHT})"
+  gallery_args=(
+    --source "apps/docs/src/compositions/${slug}/generated/default.tsx"
+    --export-name "$export_name"
+    --output "${OUT_DIR}/gallery/${slug}.jpg"
+    --format jpg
+    --width "$WIDTH"
+    --height "$HEIGHT"
+  )
+  if [ -n "${background:-}" ]; then
+    gallery_args+=(--background "$background")
+  fi
+  $CLI "${gallery_args[@]}"
+done
 
 # The homepage hero gets its own Aurora poster at the hero's 1636 by 696.
 # Aurora always fits the sky band to the canvas height and widens it at the
