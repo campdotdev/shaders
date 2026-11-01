@@ -10,10 +10,9 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { defineComposition } from './define';
 import { pascalCase } from './generate';
-import { COMPOSITIONS, compositionsUsing } from './index';
-import { compositionPoster, compositionThumbnail } from './posters';
+import { COMPOSITIONS } from './index';
+import { compositionPoster } from './posters';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../public', import.meta.url));
 
@@ -51,44 +50,14 @@ describe('COMPOSITIONS', () => {
     }
   });
 
-  // The composition page, the Gallery card, and the "Used in" strip show
-  // these before a frame. scripts/build-posters.sh writes them, and a
-  // composition missing its entry there would ship broken images.
-  it('has a poster and a thumbnail for every composition', () => {
-    const missing = COMPOSITIONS.flatMap(({ slug }) =>
-      [compositionPoster(slug), compositionThumbnail(slug)].filter(
-        (url) => !existsSync(`${PUBLIC_DIR}${url}`),
-      ),
+  // The composition page and the Gallery card show it before a frame.
+  // scripts/build-posters.sh writes it, and a composition missing its entry
+  // there would ship a broken image.
+  it('has a poster for every composition', () => {
+    const missing = COMPOSITIONS.map(({ slug }) => compositionPoster(slug)).filter(
+      (url) => !existsSync(`${PUBLIC_DIR}${url}`),
     );
 
     expect(missing).toEqual([]);
-  });
-});
-
-describe('compositionsUsing', () => {
-  // A list of its own, so the lookup's test outlives any one composition.
-  const stackOf = (slug: string, ...components: Array<'Grain' | 'MeshGradient' | 'Vignette'>) =>
-    defineComposition({
-      slug,
-      title: slug,
-      description: 'A stack for the lookup test.',
-      stack: components.map((component, index) => ({ id: `entry${index}`, component, props: {} })),
-      presets: [],
-      controls: [],
-    });
-  const compositions = [
-    stackOf('one', 'MeshGradient', 'Grain'),
-    stackOf('two', 'MeshGradient', 'Vignette'),
-  ];
-  const slugsUsing = (componentName: string) =>
-    compositionsUsing(componentName, compositions).map(({ slug }) => slug);
-
-  it('finds every composition whose stack holds the component, in order', () => {
-    expect(slugsUsing('MeshGradient')).toEqual(['one', 'two']);
-    expect(slugsUsing('Vignette')).toEqual(['two']);
-  });
-
-  it('finds none for a component no stack holds', () => {
-    expect(slugsUsing('Aurora')).toEqual([]);
   });
 });
