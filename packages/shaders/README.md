@@ -45,13 +45,14 @@ const color = colorRamp(noise, [
 
 ## Server-safe subpaths
 
-The root entry reaches `three/webgpu`, which reads `self` at module load and so cannot run on a server. Three subpaths carry code that never touches three:
+The root entry reaches `three/webgpu`, which reads `self` at module load and so cannot run on a server. Four subpaths carry code that never touches three:
 
-| Import                     | For                                                             |
-| -------------------------- | --------------------------------------------------------------- |
-| `@camp-dev/shaders/color`  | `parseColorString` and the OKLab, OKLCH, and gamut math         |
-| `@camp-dev/shaders/gamut`  | `useDisplayGamut`                                               |
-| `@camp-dev/shaders/poster` | `<ShaderPoster>`, a static stand-in shown until the first frame |
+| Import                       | For                                                                  |
+| ---------------------------- | -------------------------------------------------------------------- |
+| `@camp-dev/shaders/color`    | `parseColorString` and the OKLab, OKLCH, and gamut math              |
+| `@camp-dev/shaders/defaults` | `STYLE_DIAL_DEFAULTS`, FractalNoise's contrast and balance per style |
+| `@camp-dev/shaders/gamut`    | `useDisplayGamut`                                                    |
+| `@camp-dev/shaders/poster`   | `<ShaderPoster>`, a static stand-in shown until the first frame      |
 
 ## Docs
 

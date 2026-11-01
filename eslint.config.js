@@ -172,6 +172,8 @@ export default defineConfig([
     files: ['packages/shaders/src/**/*.{ts,tsx}'],
     ignores: [
       'packages/shaders/src/index.ts',
+      // Re-exports component defaults, with no React or three behind them.
+      'packages/shaders/src/defaults.ts',
       'packages/shaders/src/gamut.ts',
       'packages/shaders/src/poster.ts',
       'packages/shaders/src/react/**',
