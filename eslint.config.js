@@ -208,8 +208,9 @@ export default defineConfig([
     // The docs site server-renders, and the package's root entry reaches
     // three/webgpu through the renderer and ShaderScene. three/webgpu reads
     // `self` at module load, so the wrong import crashes at render time,
-    // which is far too late to notice. Two three-free subpaths carry the
-    // same code: @camp-dev/shaders/color and @camp-dev/shaders/gamut.
+    // which is far too late to notice. Three three-free subpaths carry the
+    // same code: @camp-dev/shaders/color, @camp-dev/shaders/defaults, and
+    // @camp-dev/shaders/gamut.
     //
     // Banning the names rather than the specifier is deliberate: it lets /dev
     // playgrounds keep importing colorRamp, ShaderScene and friends from the
@@ -234,11 +235,12 @@ export default defineConfig([
                 'parseColorString',
                 'parseOklchString',
                 'srgbChannelToLinear',
+                'STYLE_DIAL_DEFAULTS',
                 'useDisplayGamut',
               ],
               allowTypeImports: true,
               message:
-                "Import CPU color math from '@camp-dev/shaders/color' and useDisplayGamut from '@camp-dev/shaders/gamut'. The root entry pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
+                "Import CPU color math from '@camp-dev/shaders/color', STYLE_DIAL_DEFAULTS from '@camp-dev/shaders/defaults', and useDisplayGamut from '@camp-dev/shaders/gamut'. The root entry pulls in three/webgpu, which reads `self` at module load and crashes any server render.",
             },
           ],
         },
