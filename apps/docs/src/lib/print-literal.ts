@@ -1,7 +1,8 @@
 /**
- * How a literal prop value prints in copied code. The page header's Copy
- * React (components/controls/copy.ts) and the composition generator
- * (compositions/generate.ts) share these, so both escape strings alike.
+ * How a literal prop value prints in copied code. print-jsx.ts prints copied
+ * numbers and quoted strings with these, and the composition generator
+ * (compositions/generate.ts) rounds with roundNumber before it compares a
+ * prop to its default, so a value that prints like its default counts as it.
  */
 
 // Sliders produce float noise such as 0.30000000000000004. Four places is

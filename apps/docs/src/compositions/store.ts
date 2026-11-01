@@ -7,6 +7,7 @@
  * vitest covers it.
  */
 import { type ControlStore, createControlStore } from '@/components/controls/store';
+import { isRecord } from '@/lib/is-record';
 
 import type { ComponentName, Composition, EntryProps, StackEntry } from './define';
 
@@ -62,11 +63,6 @@ export function withStopPositions(
         : stop,
     ),
   };
-}
-
-/** Whether a value is a plain object, as a literal prop's objects are. */
-export function isRecord(value: unknown): value is Readonly<Record<string, unknown>> {
-  return value !== null && typeof value === 'object' && !Array.isArray(value);
 }
 
 // ----------------------------------------------------------------------------
