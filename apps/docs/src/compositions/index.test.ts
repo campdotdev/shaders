@@ -3,13 +3,15 @@
  * Imports the registry in plain Node, where three/webgpu throws at module
  * load because it reads `self`. The import succeeding is the check that no
  * document reaches three, so server code can read every composition. The
- * rest covers what the document's types can't: uniqueness across entries.
+ * rest covers what the document's types can't: uniqueness across entries,
+ * and titles that make a component name.
  */
 import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
 import { defineComposition } from './define';
+import { pascalCase } from './generate';
 import { COMPOSITIONS, compositionsUsing } from './index';
 import { compositionPoster, compositionThumbnail } from './posters';
 
@@ -27,6 +29,14 @@ describe('COMPOSITIONS', () => {
       const ids = composition.stack.map(({ id }) => id);
 
       expect(new Set(ids).size, composition.slug).toBe(ids.length);
+    }
+  });
+
+  // The copied file exports a component named after the title, so a title
+  // such as "3D Haze" would print `function 3DHaze`, which doesn't compile.
+  it('gives every composition a title that makes a component name', () => {
+    for (const composition of COMPOSITIONS) {
+      expect(pascalCase(composition.title), composition.slug).toMatch(/^[A-Z][A-Za-z0-9]*$/);
     }
   });
 
