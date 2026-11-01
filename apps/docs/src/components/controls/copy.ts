@@ -3,6 +3,7 @@
  * header's Copy React menu hands out. This works because each page's params
  * object mirrors its component's real prop shape.
  */
+import { printString, roundNumber } from '@/lib/print-literal';
 
 export interface CopyConfig {
   /** Component name as written in JSX, e.g. 'WaveLines'. */
@@ -11,16 +12,11 @@ export interface CopyConfig {
   siblings?: readonly string[];
 }
 
-const DECIMAL_PLACES = 4;
-
-const formatNumber = (value: number) =>
-  String(Math.round(value * 10 ** DECIMAL_PLACES) / 10 ** DECIMAL_PLACES);
-
-/** A value as it appears inside a params object literal (single-quoted strings). */
+/** A value as it appears inside a params object literal. */
 function formatValue(value: unknown, indent: string): string {
-  if (typeof value === 'number') return formatNumber(value);
+  if (typeof value === 'number') return String(roundNumber(value));
   if (typeof value === 'boolean') return String(value);
-  if (typeof value === 'string') return `'${value}'`;
+  if (typeof value === 'string') return printString(value);
 
   if (Array.isArray(value)) {
     const items = value.map((item) => formatValue(item, `${indent}  `));
@@ -44,9 +40,9 @@ function formatValue(value: unknown, indent: string): string {
   return String(value);
 }
 
-/** A JSX attribute: strings use quotes, everything else braces. */
+/** A JSX attribute: strings use quotes unless they hold one, everything else braces. */
 function formatAttribute(key: string, value: unknown, indent: string): string {
-  if (typeof value === 'string') return `${indent}${key}="${value}"`;
+  if (typeof value === 'string' && !value.includes('"')) return `${indent}${key}="${value}"`;
 
   return `${indent}${key}={${formatValue(value, indent)}}`;
 }

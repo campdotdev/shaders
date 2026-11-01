@@ -4,6 +4,8 @@
  * three-free, so golden.test.ts commits its output for every preset, and its
  * own tests hold its line breaking to Prettier's. Grew out of controls/copy.ts.
  */
+import { printString, roundNumber } from '@/lib/print-literal';
+
 import type { Composition, EntryProps, StackEntry } from './define';
 import {
   type CompositionDefaults,
@@ -34,10 +36,6 @@ export interface GenerateInput {
 // Prettier's printWidth in the repo's .prettierrc.
 const PRINT_WIDTH = 100;
 const INDENT = '  ';
-
-// Sliders produce float noise such as 0.30000000000000004. Four places is
-// finer than any control's step.
-const DECIMAL_PLACES = 4;
 
 // ----------------------------------------------------------------------------
 // The file
@@ -373,27 +371,6 @@ function printFlat(value: unknown): string {
   throw new Error(`A composition prop can only hold literals, not ${String(value)}`);
 }
 
-// Single quotes, as the repo's Prettier config asks, unless the string holds
-// more single quotes than double ones, where Prettier switches. A line break
-// can't sit inside a quoted string, so it prints as its escape.
-function printString(value: string): string {
-  const singles = value.split("'").length - 1;
-  const doubles = value.split('"').length - 1;
-  const quote = singles > doubles ? '"' : "'";
-  const escaped = value
-    .replaceAll('\\', '\\\\')
-    .replaceAll('\n', '\\n')
-    .replaceAll('\r', '\\r')
-    .replaceAll('\u2028', '\\u2028')
-    .replaceAll('\u2029', '\\u2029')
-    .replaceAll(quote, `\\${quote}`);
-
-  return `${quote}${escaped}${quote}`;
-}
-
 const printKey = (key: string) => (/^[A-Za-z_$][\w$]*$/.test(key) ? key : printString(key));
-
-const roundNumber = (value: number) =>
-  Math.round(value * 10 ** DECIMAL_PLACES) / 10 ** DECIMAL_PLACES;
 
 const fits = (line: string) => line.length <= PRINT_WIDTH;
