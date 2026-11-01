@@ -11,17 +11,16 @@
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
 
-import { COMPONENT_FIELDS } from '@/app/components/demo-registry';
 import { ControlsProvider, DemoLayout, useSnapshot } from '@/components/controls';
 import { DemoPoster } from '@/components/DemoPoster';
 import type { Composition } from '@/compositions/define';
 import { compositionPoster } from '@/compositions/posters';
+import { seedFields } from '@/compositions/seed-fields';
 import {
   type CompositionDefaults,
   type CompositionState,
   type CompositionStore,
   createCompositionStore,
-  type SeedFields,
 } from '@/compositions/store';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
@@ -55,11 +54,6 @@ function LiveScene({ composition, store }: { composition: Composition; store: Co
     </DemoPoster>
   );
 }
-
-// Fills in what each entry's All props fields show beyond the library
-// defaults; see `seed` in demo-registry.tsx.
-const seedFields: SeedFields = (entry, props) =>
-  COMPONENT_FIELDS[entry.component].seed?.(props) ?? props;
 
 export function CompositionIsland({
   composition,

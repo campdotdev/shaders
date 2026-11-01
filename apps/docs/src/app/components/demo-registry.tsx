@@ -21,10 +21,8 @@ import { CursorSpotlightFields, CursorSpotlightIsland } from './cursor-spotlight
 import { DissolveFields, DissolveIsland } from './dissolve/demo';
 import { DitherFields, DitherIsland } from './dither/demo';
 import { DotFieldFields, DotFieldIsland } from './dot-field/demo';
-import { seedCrossSection } from './fluted-glass/cross-section';
 import { FlutedGlassFields, FlutedGlassIsland } from './fluted-glass/demo';
 import { FractalNoiseFields, FractalNoiseIsland } from './fractal-noise/demo';
-import { seedStyleDials } from './fractal-noise/style-dials';
 import { GodRaysFields, GodRaysIsland } from './god-rays/demo';
 import { GrainFields, GrainIsland } from './grain/demo';
 import { LedWallFields, LedWallIsland } from './led-wall/demo';
@@ -37,7 +35,6 @@ import { SimplexNoiseFields, SimplexNoiseIsland } from './simplex-noise/demo';
 import { VignetteFields, VignetteIsland } from './vignette/demo';
 import { VoronoiFields, VoronoiIsland } from './voronoi/demo';
 import { WaveLinesFields, WaveLinesIsland } from './wave-lines/demo';
-import { seedLineColors } from './wave-lines/line-colors';
 
 export interface ComponentPageEntry {
   /** Client island rendering the control store, shader demo, and control panel. */
@@ -399,12 +396,6 @@ export interface ComponentFields {
    * under a stack entry's id, so `path="speed"` writes `<entry>.speed`.
    */
   Fields: ComponentType;
-  /**
-   * Fills in props the fields show that have no library default, and puts
-   * props the fields can't edit as written into a shape they can, for a
-   * composition's store, which starts from the library defaults.
-   */
-  seed?: (props: Record<string, unknown>) => Record<string, unknown>;
 }
 
 /** Every component's fields, keyed by export name, so a stack entry's `component` finds them. */
@@ -418,8 +409,8 @@ export const COMPONENT_FIELDS: Record<ComponentName, ComponentFields> = {
   Dissolve: { Fields: DissolveFields },
   Dither: { Fields: DitherFields },
   DotField: { Fields: DotFieldFields },
-  FlutedGlass: { Fields: FlutedGlassFields, seed: seedCrossSection },
-  FractalNoise: { Fields: FractalNoiseFields, seed: seedStyleDials },
+  FlutedGlass: { Fields: FlutedGlassFields },
+  FractalNoise: { Fields: FractalNoiseFields },
   GodRays: { Fields: GodRaysFields },
   Grain: { Fields: GrainFields },
   LedWall: { Fields: LedWallFields },
@@ -431,5 +422,5 @@ export const COMPONENT_FIELDS: Record<ComponentName, ComponentFields> = {
   SimplexNoise: { Fields: SimplexNoiseFields },
   Vignette: { Fields: VignetteFields },
   Voronoi: { Fields: VoronoiFields },
-  WaveLines: { Fields: WaveLinesFields, seed: seedLineColors },
+  WaveLines: { Fields: WaveLinesFields },
 };
