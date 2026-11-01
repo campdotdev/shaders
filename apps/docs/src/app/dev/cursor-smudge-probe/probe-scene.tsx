@@ -175,7 +175,7 @@ export default function ProbeScene() {
   }, []);
 
   return (
-    <main style={{ padding: 24, minHeight: '180vh', background: '#09090b', color: '#fafafa' }}>
+    <div style={{ padding: 24, minHeight: '180vh', background: '#09090b', color: '#fafafa' }}>
       <h1>CursorSmudge probe</h1>
       <p>
         Move over the still gradient. Stop to watch it recover. On a phone, scroll with a finger
@@ -265,6 +265,6 @@ export default function ProbeScene() {
           </div>
         </div>
       </ControlsProvider>
-    </main>
+    </div>
   );
 }
