@@ -63,7 +63,7 @@ export default function BenchmarkScene() {
     `?size=${overrides.size ?? size}&dpr=${overrides.dpr ?? pixelRatio}`;
 
   return (
-    <main style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
+    <div style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
       <p style={{ margin: '0 0 16px', font: '13px ui-monospace, monospace' }}>
         {baseline ? 'LinearGradient baseline' : 'LiquidGradient'}
         {still ? ' (still)' : ''} at {width} × {height} CSS px, pixel ratio capped at {pixelRatio}x.{' '}
@@ -78,6 +78,6 @@ export default function BenchmarkScene() {
           <ShaderMonitor anchor="top-left" />
         </ShaderScene>
       </div>
-    </main>
+    </div>
   );
 }

@@ -60,7 +60,7 @@ export default function BenchmarkScene() {
       : presetNames(composition).find((name) => kebabCase(name) === settings.preset);
 
   return (
-    <main style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
+    <div style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
       <div style={{ margin: '0 0 16px', font: '13px ui-monospace, monospace' }}>
         {COMPOSITIONS.map((candidate) => (
           <p key={candidate.slug} style={{ margin: '0 0 4px' }}>
@@ -98,6 +98,6 @@ export default function BenchmarkScene() {
           </CompositionScene>
         </div>
       )}
-    </main>
+    </div>
   );
 }

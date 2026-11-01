@@ -85,7 +85,7 @@ export default async function ComponentPage({ params }: PageProps) {
   ];
 
   return (
-    <main>
+    <div>
       <Breadcrumbs className={styles.breadcrumbs} crumbs={crumbs} />
       {/* The header's Copy React reads the island's control store through
           this provider; see the copy source in controls/context.tsx. */}
@@ -127,6 +127,6 @@ export default async function ComponentPage({ params }: PageProps) {
         </section>
         <Pagination next={next} prev={previous} />
       </div>
-    </main>
+    </div>
   );
 }

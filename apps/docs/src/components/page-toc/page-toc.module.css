@@ -8,7 +8,7 @@
    whose one job is to give the lines a place that starts beside the shader
    and then follows the page. Sticky lets a box ride with the page until it
    would cross `top` from the viewport's edge, and holds it there from then
-   on, for as long as its parent (the page's <main>) is on screen. The lines
+   on, for as long as its parent (the page's root element) is on screen. The lines
    hang above this block by the distance to the shader's center, so they
    rest on the shader at load and pin to the middle of the viewport once the
    page scrolls that far.

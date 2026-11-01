@@ -55,7 +55,7 @@ export default function BenchmarkScene() {
   };
 
   return (
-    <main style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
+    <div style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
       <p style={{ margin: '0 0 16px', font: '13px ui-monospace, monospace' }}>
         MeshGradient {glass ? 'under FlutedGlass' : 'alone'} at {WIDTH} × {HEIGHT} CSS px, pixel
         ratio capped at {pixelRatio}x. <a href={href({ pixelRatio: 1 })}>1x</a> ·{' '}
@@ -70,6 +70,6 @@ export default function BenchmarkScene() {
           <ShaderMonitor anchor="top-left" />
         </ShaderScene>
       </div>
-    </main>
+    </div>
   );
 }

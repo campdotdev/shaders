@@ -98,7 +98,7 @@ export default function BenchmarkScene() {
   const [compiled, setCompiled] = useState<CompiledAurora | null>(null);
 
   return (
-    <main style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
+    <div style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
       <p style={{ margin: '0 0 16px', font: '13px ui-monospace, monospace' }}>
         Aurora at {HERO_WIDTH} × {HERO_HEIGHT} CSS px, pixel ratio capped at {pixelRatio}x.{' '}
         <a href="?dpr=1">1x</a> · <a href="?dpr=2">2x</a>
@@ -122,6 +122,6 @@ export default function BenchmarkScene() {
             : 'Compiling…'}
         </pre>
       </details>
-    </main>
+    </div>
   );
 }
