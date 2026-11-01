@@ -20,7 +20,7 @@ In a client component, put `'use client'` on line 1 and any comment below it. Wi
 
 ## The docs site compiles the package from source
 
-`apps/docs/next.config.ts` aliases `@camp-dev/shaders` and its `color`, `gamut`, and `poster` subpaths to files under `packages/shaders/src`, in its `webpack()` hook. A module rule scoped to that directory maps the package's `.js` import specifiers onto `.ts`, and `apps/docs/tsconfig.json` mirrors the aliases under `paths`. Shader edits hot-reload in the dev server with no build step.
+`apps/docs/next.config.ts` aliases `@camp-dev/shaders` and its `color`, `defaults`, `gamut`, and `poster` subpaths to files under `packages/shaders/src`, in its `webpack()` hook. A module rule scoped to that directory maps the package's `.js` import specifiers onto `.ts`, and `apps/docs/tsconfig.json` mirrors the aliases under `paths`. Shader edits hot-reload in the dev server with no build step.
 
 The docs site's Vitest run still resolves the package through `dist`, which is why `turbo.json` builds before test. If a package edit shows in the browser but not in the docs tests, or the reverse, run `pnpm --filter @camp-dev/shaders build` to refresh the test side.
 

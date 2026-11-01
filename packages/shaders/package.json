@@ -46,6 +46,11 @@
       "import": "./dist/color.js",
       "require": "./dist/color.cjs"
     },
+    "./defaults": {
+      "types": "./dist/defaults.d.ts",
+      "import": "./dist/defaults.js",
+      "require": "./dist/defaults.cjs"
+    },
     "./gamut": {
       "types": "./dist/gamut.d.ts",
       "import": "./dist/gamut.js",

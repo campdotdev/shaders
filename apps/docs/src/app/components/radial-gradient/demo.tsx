@@ -48,9 +48,14 @@ function RadialGradientDemo() {
   );
 }
 
-function RadialGradientControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function RadialGradientFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Motion">
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
       </Section>
@@ -90,6 +95,14 @@ function RadialGradientControls() {
           </>
         )}
       </ListInput>
+    </>
+  );
+}
+
+function RadialGradientControls() {
+  return (
+    <ControlPanel>
+      <RadialGradientFields />
     </ControlPanel>
   );
 }

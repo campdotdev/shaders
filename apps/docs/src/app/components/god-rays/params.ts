@@ -1,7 +1,7 @@
 export interface GodRaysParams {
   colors: string[];
-  centerX: number;
-  centerY: number;
+  /** The rays' origin, as the component's `center` prop takes it. */
+  center: [number, number];
   angle: number;
   spread: number;
   radius: number;
@@ -21,8 +21,7 @@ export const MAX_COLORS = 5;
 // GodRays defaults.
 export const INITIAL: GodRaysParams = {
   colors: ['oklch(0.80 0.12 250)', 'oklch(0.70 0.16 300)', 'oklch(0.75 0.14 345)'],
-  centerX: 0.5,
-  centerY: -0.05,
+  center: [0.5, -0.05],
   angle: 270,
   spread: 360,
   radius: 2,

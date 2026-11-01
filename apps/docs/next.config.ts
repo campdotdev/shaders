@@ -62,6 +62,7 @@ const nextConfig: NextConfig = {
       'three/tsl$': webgpuBundle,
       '@camp-dev/shaders$': resolve(shadersSrc, 'index.ts'),
       '@camp-dev/shaders/color$': resolve(shadersSrc, 'color.ts'),
+      '@camp-dev/shaders/defaults$': resolve(shadersSrc, 'defaults.ts'),
       '@camp-dev/shaders/gamut$': resolve(shadersSrc, 'gamut.ts'),
       '@camp-dev/shaders/poster$': resolve(shadersSrc, 'poster.ts'),
     };

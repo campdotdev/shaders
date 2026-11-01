@@ -74,7 +74,11 @@
     ".claude/**",
     "apps/docs/content/**",
     "**/*.mdx",
-    "packages/shaders-cli/src/test-fixtures/**"
+    "packages/shaders-cli/src/test-fixtures/**",
+    // Each composition's copied file per preset, written by golden.test.ts
+    // for CI's typecheck, lint, and format check. Nothing imports them, and
+    // every preset's file repeats the stack, by design.
+    "apps/docs/src/compositions/*/generated/**"
   ],
   "ignoreDependencies": ["eslint-import-resolver-typescript", "react"]
 }

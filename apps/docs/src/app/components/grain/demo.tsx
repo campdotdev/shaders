@@ -51,14 +51,27 @@ function GrainDemo() {
   );
 }
 
-function GrainControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function GrainFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Grain">
         <SliderInput label="Intensity" max={1} min={0} path="intensity" step={0.01} />
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
         <SelectInput label="Blend" options={BLEND_OPTIONS} path="blend" />
       </Section>
+    </>
+  );
+}
+
+function GrainControls() {
+  return (
+    <ControlPanel>
+      <GrainFields />
     </ControlPanel>
   );
 }

@@ -45,15 +45,28 @@ function RadialWipeDemo() {
   );
 }
 
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function RadialWipeFields() {
+  return (
+    <>
+      <Section title="Wipe">
+        <SliderInput label="Progress" max={1} min={0} path="progress" step={0.01} />
+        <SliderInput label="Center X" max={1} min={0} path="center.0" step={0.01} />
+        <SliderInput label="Center Y" max={1} min={0} path="center.1" step={0.01} />
+        <SliderInput label="Feather" max={1} min={0} path="feather" step={0.01} />
+      </Section>
+    </>
+  );
+}
+
 function RadialWipeControls() {
   return (
     <ControlPanel>
-      <Section title="Wipe">
-        <SliderInput label="Progress" max={1} min={0} path="progress" step={0.01} />
-        <SliderInput label="Center X" max={1} min={0} path="centerX" step={0.01} />
-        <SliderInput label="Center Y" max={1} min={0} path="centerY" step={0.01} />
-        <SliderInput label="Feather" max={1} min={0} path="feather" step={0.01} />
-      </Section>
+      <RadialWipeFields />
     </ControlPanel>
   );
 }

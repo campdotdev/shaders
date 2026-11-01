@@ -6,11 +6,12 @@
  * content/homepage.ts with no scene here fails the type check. favorites-
  * list.tsx preloads them all and renders one with useFavoriteScene.
  */
-import { type ComponentType, useEffect, useState } from 'react';
+import { type ComponentType, useCallback } from 'react';
 
 import godRaysStyles from '@/app/components/god-rays/demo.module.css';
 import waveLinesStyles from '@/app/components/wave-lines/demo.module.css';
 import type { FavoriteSlug } from '@/content/homepage';
+import { useLoadedScene } from '@/lib/use-live-on-hover';
 
 // What a favorite renders its scene with: no params, so every scene module
 // falls back to its demo defaults, and whether the scene is paused.
@@ -89,24 +90,7 @@ export function favoriteSceneBackdrop(slug: FavoriteSlug): string | undefined {
  */
 export function useFavoriteScene(slug: FavoriteSlug): Scene | null {
   const favoriteScene = FAVORITE_SCENES[slug];
-  const [scene, setScene] = useState(() => loadedScenes.get(favoriteScene) ?? null);
+  const load = useCallback(() => loadScene(favoriteScene), [favoriteScene]);
 
-  useEffect(() => {
-    if (scene) return;
-
-    let cancelled = false;
-
-    void loadScene(favoriteScene)
-      // A module that fails to load leaves the favorite on its poster.
-      .catch(() => null)
-      .then((loaded) => {
-        if (!cancelled && loaded) setScene(() => loaded);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [favoriteScene, scene]);
-
-  return scene;
+  return useLoadedScene(loadedScenes.get(favoriteScene) ?? null, load);
 }

@@ -50,9 +50,14 @@ function MeshGradientDemo() {
   );
 }
 
-function MeshGradientControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function MeshGradientFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Motion">
         <SliderInput label="Speed" max={5} min={0} path="speed" step={0.01} />
         <SliderInput label="Frequency" max={20} min={0.5} path="frequency" step={0.1} />
@@ -86,6 +91,14 @@ function MeshGradientControls() {
       >
         {() => <ColorInput label="Color" path="" />}
       </ListInput>
+    </>
+  );
+}
+
+function MeshGradientControls() {
+  return (
+    <ControlPanel>
+      <MeshGradientFields />
     </ControlPanel>
   );
 }

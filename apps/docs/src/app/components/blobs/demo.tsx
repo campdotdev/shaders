@@ -52,9 +52,14 @@ function BlobsDemo() {
   );
 }
 
-function BlobsControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function BlobsFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Blobs">
         <SliderInput label="Count" max={20} min={1} path="count" step={0.1} />
         <SliderInput label="Size" max={1} min={0} path="size" step={0.01} />
@@ -87,6 +92,14 @@ function BlobsControls() {
       >
         {() => <ColorInput label="Color" path="color" />}
       </ListInput>
+    </>
+  );
+}
+
+function BlobsControls() {
+  return (
+    <ControlPanel>
+      <BlobsFields />
     </ControlPanel>
   );
 }

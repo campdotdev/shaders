@@ -60,6 +60,21 @@ export const getComponentProps = cache(async (slug: string): Promise<PropRow[]> 
   return extractProps(await readFile(wrapperPath, 'utf8'), componentName);
 });
 
+/**
+ * Each prop's default as a value rather than source text, keyed by prop name,
+ * for the props that have one. A composition's Customize panel starts its
+ * store from these, so a control shows the library's default before anyone
+ * moves it.
+ */
+export const getComponentDefaults = cache(
+  async (slug: string): Promise<Record<string, unknown>> =>
+    Object.fromEntries(
+      (await getComponentProps(slug)).flatMap((row) =>
+        row.defaultValue === undefined ? [] : [[row.name, parseLiteral(row.defaultValue)]],
+      ),
+    ),
+);
+
 export async function extractProps(source: string, componentName: string): Promise<PropRow[]> {
   const file = ts.createSourceFile('component.tsx', source, ts.ScriptTarget.Latest, true);
 
@@ -193,4 +208,59 @@ function cleanDescription(raw: string): string {
     .replace(/\s*Accepts a static value or an animation signal\./, '')
     .replace(/\s*Defaults to .*?\.(?=\s+[A-Z`]|\s*$)/, '')
     .trim();
+}
+
+// ---------------------------------------------
+// Default text to values
+// ---------------------------------------------
+// formatDefault prints each default as literal source, so turning it back
+// into a value is a walk over a literal's syntax: numbers, strings, booleans,
+// and arrays or plain objects of those. Anything else throws, because a
+// default that isn't a literal can't seed a control or print in a copied file.
+
+/** Parses a default's source text, such as `[0.5, 0.5]`, into its value. */
+export function parseLiteral(source: string): unknown {
+  const file = ts.createSourceFile('default.ts', `(${source});`, ts.ScriptTarget.Latest, true);
+  const [statement] = file.statements;
+
+  if (statement === undefined || !ts.isExpressionStatement(statement)) {
+    throw new Error(`Default is not an expression: ${source}`);
+  }
+
+  return literalValue(statement.expression);
+}
+
+function literalValue(node: ts.Expression): unknown {
+  if (ts.isParenthesizedExpression(node)) return literalValue(node.expression);
+  if (ts.isNumericLiteral(node)) return Number(node.text);
+  if (ts.isStringLiteral(node) || ts.isNoSubstitutionTemplateLiteral(node)) return node.text;
+  if (node.kind === ts.SyntaxKind.TrueKeyword) return true;
+  if (node.kind === ts.SyntaxKind.FalseKeyword) return false;
+
+  if (
+    ts.isPrefixUnaryExpression(node) &&
+    node.operator === ts.SyntaxKind.MinusToken &&
+    ts.isNumericLiteral(node.operand)
+  ) {
+    return -Number(node.operand.text);
+  }
+
+  if (ts.isArrayLiteralExpression(node)) return node.elements.map(literalValue);
+
+  if (ts.isObjectLiteralExpression(node)) {
+    return Object.fromEntries(
+      node.properties.map((property) => {
+        if (
+          !ts.isPropertyAssignment(property) ||
+          !(ts.isIdentifier(property.name) || ts.isStringLiteral(property.name))
+        ) {
+          throw new Error(`Default has a property that isn't a literal: ${property.getText()}`);
+        }
+
+        return [property.name.text, literalValue(property.initializer)];
+      }),
+    );
+  }
+
+  throw new Error(`Default is not a literal: ${node.getText()}`);
 }

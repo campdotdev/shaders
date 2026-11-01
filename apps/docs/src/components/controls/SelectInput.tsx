@@ -30,7 +30,36 @@ export function SelectInput({ path, label, options }: SelectInputProps) {
   const setProp = useSetProp();
 
   return (
-    <Select.Root items={options} onValueChange={(next) => setProp(path, next)} value={value}>
+    <SelectField
+      label={label}
+      onValueChange={(next) => setProp(path, next)}
+      options={options}
+      value={value}
+    />
+  );
+}
+
+export interface SelectFieldProps {
+  label: string;
+  options: readonly SelectOption[];
+  value: string;
+  onValueChange: (value: string) => void;
+}
+
+/**
+ * The select itself, bound to whatever value its caller holds rather than to
+ * a store path. SelectInput binds it to a prop, and a composition's preset
+ * picker binds it to the loaded preset's name.
+ */
+export function SelectField({ label, options, value, onValueChange }: SelectFieldProps) {
+  return (
+    <Select.Root
+      items={options}
+      onValueChange={(next) => {
+        if (next !== null) onValueChange(next);
+      }}
+      value={value}
+    >
       <div className={styles.field}>
         <Select.Label className={styles.fieldLabel}>{label}</Select.Label>
         <Select.Trigger className={`${styles.textBox} ${styles.selectTrigger}`}>

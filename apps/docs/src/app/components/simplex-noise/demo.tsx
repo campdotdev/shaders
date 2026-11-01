@@ -52,9 +52,14 @@ function SimplexNoiseDemo() {
   );
 }
 
-function SimplexNoiseControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function SimplexNoiseFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Field">
         <SliderInput label="Scale" max={30} min={0.5} path="scale" step={0.1} />
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />
@@ -77,6 +82,14 @@ function SimplexNoiseControls() {
       >
         {() => <ColorInput label="Color" path="color" />}
       </ListInput>
+    </>
+  );
+}
+
+function SimplexNoiseControls() {
+  return (
+    <ControlPanel>
+      <SimplexNoiseFields />
     </ControlPanel>
   );
 }

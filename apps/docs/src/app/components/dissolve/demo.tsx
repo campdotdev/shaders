@@ -45,13 +45,26 @@ function DissolveDemo() {
   );
 }
 
-function DissolveControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function DissolveFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Dissolve">
         <SliderInput label="Progress" max={1} min={0} path="progress" step={0.01} />
         <SliderInput label="Pixel size" max={32} min={1} path="pixelSize" step={1} />
       </Section>
+    </>
+  );
+}
+
+function DissolveControls() {
+  return (
+    <ControlPanel>
+      <DissolveFields />
     </ControlPanel>
   );
 }

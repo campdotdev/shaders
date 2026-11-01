@@ -49,9 +49,14 @@ function LiquidGradientDemo() {
   );
 }
 
-function LiquidGradientControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function LiquidGradientFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Bands">
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
         <SliderInput label="Repeat" max={8} min={1} path="repeat" step={0.1} />
@@ -91,6 +96,14 @@ function LiquidGradientControls() {
           </>
         )}
       </ListInput>
+    </>
+  );
+}
+
+function LiquidGradientControls() {
+  return (
+    <ControlPanel>
+      <LiquidGradientFields />
     </ControlPanel>
   );
 }

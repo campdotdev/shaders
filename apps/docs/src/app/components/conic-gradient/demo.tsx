@@ -48,9 +48,14 @@ function ConicGradientDemo() {
   );
 }
 
-function ConicGradientControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function ConicGradientFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Motion">
         <SliderInput label="Speed" max={2} min={-2} path="speed" step={0.01} />
       </Section>
@@ -88,6 +93,14 @@ function ConicGradientControls() {
           </>
         )}
       </ListInput>
+    </>
+  );
+}
+
+function ConicGradientControls() {
+  return (
+    <ControlPanel>
+      <ConicGradientFields />
     </ControlPanel>
   );
 }

@@ -47,12 +47,17 @@ function GodRaysDemo() {
   );
 }
 
-function GodRaysControls() {
+/**
+ * The panel's controls without the panel around them. A composition's All
+ * props section mounts them under a stack entry's id, so each path lands in
+ * that entry's props.
+ */
+export function GodRaysFields() {
   return (
-    <ControlPanel>
+    <>
       <Section title="Origin">
-        <SliderInput label="Center X" max={1.5} min={-0.5} path="centerX" step={0.01} />
-        <SliderInput label="Center Y" max={1.5} min={-0.5} path="centerY" step={0.01} />
+        <SliderInput label="Center X" max={1.5} min={-0.5} path="center.0" step={0.01} />
+        <SliderInput label="Center Y" max={1.5} min={-0.5} path="center.1" step={0.01} />
         <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
         <SliderInput label="Spread" max={360} min={10} path="spread" step={1} />
       </Section>
@@ -78,6 +83,14 @@ function GodRaysControls() {
       >
         {() => <ColorInput label="Color" path="" />}
       </ListInput>
+    </>
+  );
+}
+
+function GodRaysControls() {
+  return (
+    <ControlPanel>
+      <GodRaysFields />
     </ControlPanel>
   );
 }

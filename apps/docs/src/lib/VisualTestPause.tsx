@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 
 import {
+  type GpuBackend,
   type ReducedMotionPolicy,
   resetRendererClock,
   type SchedulerTick,
@@ -34,6 +35,13 @@ declare global {
   interface Window {
     __shadersTestReady?: boolean;
     /**
+     * The backend the scene's renderer initialized with, set beside
+     * `__shadersTestReady`. A composition's visual spec asserts 'webgl2',
+     * so a runner that gains WebGPU can't drop the fallback's coverage
+     * without a failure.
+     */
+    __shadersBackend?: GpuBackend;
+    /**
      * Set under `?pointer=1` once the scene's cursor listeners are attached,
      * so a spec knows its pointer move will be heard.
      */
@@ -56,6 +64,12 @@ function useVisualTestPause(): void {
       policyParam !== null && isReducedMotionPolicy(policyParam) ? policyParam : 'paused';
 
     setReducedMotionPolicy(policy);
+
+    // A composition page remounts this on every preset it loads, so a spec
+    // can capture each one. An earlier capture left the scheduler paused,
+    // and this capture needs it running again. The first mount finds it
+    // running, and resume() then changes nothing.
+    ctx.scheduler.resume();
 
     const releaseAnimated = ctx.scheduler.setIdle(false);
 
@@ -110,6 +124,7 @@ function useVisualTestPause(): void {
       if (frame > TARGET_FRAME && settled(now)) {
         ctx.scheduler.remove(client);
         ctx.scheduler.pause();
+        window.__shadersBackend = ctx.renderer.backend;
         window.__shadersTestReady = true;
       }
     };
