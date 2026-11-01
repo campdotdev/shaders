@@ -137,7 +137,7 @@ export default function RoughScene() {
   const { gradient, smudge, glass, grain, vignette } = resolve(preset);
 
   return (
-    <main style={{ padding: 24, background: '#000', minHeight: '100vh' }}>
+    <div style={{ padding: 24, background: '#000', minHeight: '100vh' }}>
       <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
         {PRESETS.map((candidate) => (
           <button
@@ -169,6 +169,6 @@ export default function RoughScene() {
           <Vignette {...vignette} />
         </ShaderScene>
       </div>
-    </main>
+    </div>
   );
 }
