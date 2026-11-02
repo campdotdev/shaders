@@ -29,9 +29,8 @@ interface StackProps {
 
 interface Preset {
   name: string;
-  // Stand-in for a gap: LedWall leaves its gutters transparent, so the page
-  // behind the canvas colors them. A composition can't set that, so this
-  // route paints the frame per preset until the gap has an answer.
+  // The color behind the canvas. This route leaves LedWall's panelColor
+  // unset, so the gutters are transparent and this color shows through them.
   backdrop?: string;
   props: { [Id in keyof StackProps]?: Partial<StackProps[Id]> };
 }
@@ -69,8 +68,8 @@ const STACK_PROPS: StackProps = {
   // radius is in canvas heights: 0.14 of the hero's 696 px is about 100 px.
   heat: { intensity: 0.6, radius: 0.14 },
   // One color per 8 CSS px cell with a 1 px gutter, and none of LedWall's
-  // motion: no flicker, no swell. Each dot still keeps a permanent random
-  // brightness of 50 to 100%, which no prop turns off.
+  // motion: no flicker, no swell. variation is left at its default of 0.5,
+  // so each dot keeps a fixed random brightness of 50 to 100%.
   wall: { bleed: 0, dotSize: 7, flicker: 0, spacing: 8, swell: 0 },
 };
 
