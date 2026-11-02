@@ -6,6 +6,9 @@
  */
 import { DOCS_HOME_URL } from '@/content/nav.config';
 
-export const SITE_LINKS = [{ label: 'Docs', href: DOCS_HOME_URL }] as const;
+export const SITE_LINKS = [
+  { label: 'Gallery', href: '/gallery' },
+  { label: 'Docs', href: DOCS_HOME_URL },
+] as const;
 
 export const REPO_URL = 'https://github.com/campdotdev/shaders';
