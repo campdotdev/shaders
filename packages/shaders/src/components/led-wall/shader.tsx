@@ -6,8 +6,8 @@
 // supplies the props. Two overlay hooks do the work: a base-pass uv snap so
 // every pixel in a cell samples the same scene color, then a color pass
 // that masks each cell down to its dot, breathes its brightness with a
-// per-dot flicker, swells it toward `swellCenter`, and scales the gaps by
-// `bleed`.
+// per-dot flicker, swells it toward `swellCenter`, and fills the gaps with
+// the panel color and `bleed`'s share of the scene.
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -23,9 +23,9 @@ import {
   uniform,
   uv,
   vec2,
-  vec3,
   vec4,
 } from 'three/tsl';
+import { Vector4 } from 'three/webgpu';
 
 import { stableHash, stableHashUint } from '../../engine.js';
 import type {
@@ -41,6 +41,7 @@ import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overl
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
+import { parseColor } from '../shared/color.js';
 import { isLedWallStatic } from './static.js';
 
 export interface LedWallShaderProps {
@@ -52,11 +53,24 @@ export interface LedWallShaderProps {
    */
   dotSize: AnimatableProp<number>;
   /**
-   * How much of the scene shows between the dots. 0 leaves the gaps
-   * transparent, 1 leaves the scene untouched there. Accepts a static value
-   * or an animation signal.
+   * How much of the scene shows between the dots. 0 shows only the panel
+   * there, 1 leaves the scene untouched. Accepts a static value or an
+   * animation signal.
    */
   bleed: AnimatableProp<number>;
+  /**
+   * Color of the panel behind the dots (hex, `oklch()`, or `oklab()`). It
+   * fills the gaps, and a dim or flickering dot fades toward it. Unset is a
+   * transparent panel, so the page shows through.
+   */
+  panelColor: string | undefined;
+  /**
+   * How unevenly the dots are lit, 0 to 1. Each dot keeps its own fixed
+   * brightness, up to this fraction below full. 0 lights every dot the same,
+   * 0.5 lets a dot sit anywhere from half to full brightness, and 1 lets a
+   * dot go fully dark. Accepts a static value or an animation signal.
+   */
+  variation: AnimatableProp<number>;
   /**
    * How deep each dot's brightness breathes over time, on its own phase and
    * tempo. 0 holds every dot still, 1 takes each dot all the way to dark at
@@ -100,13 +114,6 @@ export interface LedWallShaderProps {
 // rim actually crosses.
 const RIM_SOFTNESS_PX = 0.7;
 
-// How far a dot's permanent brightness can fall below full, as a fraction.
-// Each dot draws its own share of this from its hash, so the grid never
-// reads as a flat print. 0 makes every dot equal; higher spreads them
-// further apart and reads as a wall with dead pixels.
-// Chosen by eye.
-const VARIANCE = 0.5;
-
 // Smallest reach the swell's smoothstep may use, in canvas units. The
 // smoothstep runs from 0 out to swellRadius, and both GLSL ES and WGSL
 // need that upper edge strictly above the lower one: GLSL ES leaves the
@@ -137,6 +144,8 @@ export function LedWallShader({
   spacing,
   dotSize,
   bleed,
+  panelColor,
+  variation,
   flicker,
   speed,
   swellCenter,
@@ -149,6 +158,7 @@ export function LedWallShader({
   const spacingUniform = useAnimatableUniform(spacing);
   const dotSizeUniform = useAnimatableUniform(dotSize);
   const bleedUniform = useAnimatableUniform(bleed);
+  const variationUniform = useAnimatableUniform(variation);
   const flickerUniform = useAnimatableUniform(flicker);
   // Speed is the exception to the uniform-per-dial pattern: useAnimatableSpeed
   // integrates it into a phase (speed x delta summed on the CPU each frame,
@@ -208,6 +218,32 @@ export function LedWallShader({
   // width/height so the swell's reach stays a circle on a wide canvas.
   // useAspectUniform keeps the ratio current across resizes.
   const aspectUniform = useAspectUniform();
+
+  // ---------------------------------------------
+  // The panel color
+  // ---------------------------------------------
+  // The panel is a premultiplied rgba color: each channel already scaled by
+  // the alpha, the form the scene texture uses. An unset panel is all zeros,
+  // fully transparent, and a set one is opaque, so its rgb needs no scaling.
+  // The Vector4 and its uniform are created once and written in place, so a
+  // color change never re-registers the pass (the uniform-stability gotcha in
+  // docs/agents/tsl.md).
+  const panelVec = useMemo(() => new Vector4(0, 0, 0, 0), []);
+  const panelUniform = useMemo(() => uniform(panelVec), [panelVec]);
+
+  useEffect(() => {
+    if (panelColor === undefined) {
+      panelVec.set(0, 0, 0, 0);
+    } else {
+      const [red, green, blue] = parseColor(panelColor);
+
+      panelVec.set(red, green, blue, 1);
+    }
+
+    // A bare uniform write repaints nothing on a static scene (the
+    // bare-uniform-write gotcha in docs/agents/tsl.md).
+    shaderContext?.scheduler.requestRender();
+  }, [panelColor, panelVec, shaderContext]);
 
   // ---------------------------------------------
   // Snap the scene sample to the cell center
@@ -270,16 +306,17 @@ export function LedWallShader({
       const tempoRandom = stableHash(stableHashUint(phaseSeed));
 
       // ---------------------------------------------
-      // Brightness: static variance times flicker
+      // Brightness: static variation times flicker
       // ---------------------------------------------
       // Each dot sits at its own permanent level, 1 minus a random share of
-      // the variance, so the grid never reads as a flat print. Then it
-      // breathes: a sine on the accumulated phase at a per-dot tempo between
+      // the variation, clamped to 0..1 so the level never goes negative. At
+      // variation 0 every dot sits at full. Then it breathes: a sine on the
+      // accumulated phase at a per-dot tempo between
       // 0.8 and 1.2, offset by a per-dot phase so the dots never breathe in
       // step. The wave is pushed into 0..1, scaled by the flicker dial, and
       // subtracted from 1: flicker 0 leaves the level untouched, flicker 1
       // takes the dot all the way to dark at the bottom of each breath.
-      const staticLevel = levelRandom.mul(VARIANCE).oneMinus();
+      const staticLevel = levelRandom.mul(variationUniform.clamp(0, 1)).oneMinus();
       const tempo = tempoRandom.mul(0.4).add(0.8);
       const breath = sin(phaseUniform.mul(tempo).add(phaseRandom.mul(Math.PI * 2)))
         .mul(0.5)
@@ -343,21 +380,32 @@ export function LedWallShader({
       const rim = float(RIM_SOFTNESS_PX).div(cellPx);
       const dotMask = smoothstep(rim.negate(), rim, squareDistance).oneMinus();
 
-      // Compose. The scene texture is premultiplied by construction (the
-      // scene blends over a transparent clear), so scaling rgb and alpha by
-      // the same factor is the correct way to dim it. Inside the dot the
-      // factor is the dot's brightness in display space, so the static
-      // level and the flicker only ever apply to lit dots. In the gaps it
-      // is bleed: 0 leaves alpha 0 so the page shows through, 1 leaves the
-      // scene untouched.
+      // Compose. factor says how much of the scene a pixel shows. Inside the
+      // dot it is the dot's brightness in display space, so the static level
+      // and the flicker only ever apply to lit dots. In the gaps it is bleed.
       const factor = mix(bleedUniform, displayBrightness, dotMask);
 
-      return vec4(vec3(input.rgb).mul(factor), input.a.mul(factor));
+      // The scene over the panel, with the premultiplied "over" rule: the
+      // panel shows through wherever the scene's own alpha leaves room. The
+      // scene texture is premultiplied by construction, because the scene
+      // blends over a transparent clear. vec4(0, 0, 0, 0).add(...) lifts the
+      // vec uniform into a node receiver (the vec-uniform gotcha in
+      // docs/agents/tsl.md).
+      const panel = vec4(0, 0, 0, 0).add(panelUniform);
+      const sceneOverPanel = vec4(input).add(panel.mul(input.a.oneMinus()));
+
+      // Then fade from the panel to that by factor: 0 is the panel alone, 1
+      // is the full scene over it. A transparent panel is all zeros, so this
+      // reduces to the scene times factor, exactly what the wall drew before
+      // the panel existed: a dim dot or a gap turns transparent and the page
+      // shows through.
+      return mix(panel, sceneOverPanel, factor);
     },
     [
       spacingUniform,
       dotSizeUniform,
       bleedUniform,
+      variationUniform,
       flickerUniform,
       phaseUniform,
       swellUniform,
@@ -365,6 +413,7 @@ export function LedWallShader({
       swellRadiusUniform,
       aspectUniform,
       dprUniform,
+      panelUniform,
     ],
   );
 

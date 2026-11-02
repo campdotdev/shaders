@@ -297,8 +297,8 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
       <>
         LED Wall is a post-process layer: stack it after any components inside a{' '}
         <code>&lt;ShaderScene&gt;</code> and it screens the composed scene into a grid of square
-        dots, each lit with the scene color at its cell. The gaps are transparent unless{' '}
-        <code>bleed</code> lets the scene through.
+        dots, each lit with the scene color at its cell. The gaps show <code>panelColor</code>,
+        which is transparent unless you set it, and <code>bleed</code> mixes the scene in over it.
       </>
     ),
   },
