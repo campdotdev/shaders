@@ -171,7 +171,7 @@ function sameValue(a: unknown, b: unknown): boolean {
   return a === b;
 }
 
-/** "Fixture" → Fixture, "Late summer haze" → LateSummerHaze. */
+/** "Reeded glass" → ReededGlass, "Late summer haze" → LateSummerHaze. */
 export function pascalCase(title: string): string {
   return title
     .split(/[^A-Za-z0-9]+/)

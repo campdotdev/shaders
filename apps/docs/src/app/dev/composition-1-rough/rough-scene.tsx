@@ -1,10 +1,10 @@
 'use client';
 
-// Hand-written scene that proves composition 1's direction, "Fluted dusk"
+// Hand-written scene that proves composition 1's direction, "Reeded glass"
 // (SHA-292): slow color behind fluted glass, with the pointer pulling the
-// color. SHA-300 turns it into a composition document. The frame keeps the
-// homepage hero's 1636 by 696 CSS pixel proportions, the size the Gallery's
-// GPU budget is measured at.
+// color. SHA-300 lifted it into compositions/reeded-glass/composition.ts.
+// The frame keeps the homepage hero's 1636 by 696 CSS pixel proportions, the
+// size the Gallery's GPU budget is measured at.
 import { useState } from 'react';
 
 import {
