@@ -2,6 +2,7 @@ export interface LedWallParams {
   spacing: number;
   dotSize: number;
   bleed: number;
+  variation: number;
   flicker: number;
   speed: number;
   swellRadius: number;
@@ -12,6 +13,7 @@ export const INITIAL: LedWallParams = {
   spacing: 8,
   dotSize: 4,
   bleed: 0,
+  variation: 0.5,
   flicker: 0.5,
   speed: 2.4,
   swellRadius: 0.6,

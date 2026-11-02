@@ -37,6 +37,7 @@ export default function LedWallScene({
         swell={params.swell}
         swellCenter="cursor"
         swellRadius={params.swellRadius}
+        variation={params.variation}
       />
       {children}
     </ShaderScene>
