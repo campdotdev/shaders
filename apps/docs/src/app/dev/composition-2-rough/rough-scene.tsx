@@ -185,7 +185,13 @@ export default function RoughScene() {
         ))}
       </div>
       <div
-        style={{ display: 'flex', gap: 16, marginBottom: 16, font: '13px ui-monospace, monospace' }}
+        style={{
+          display: 'flex',
+          gap: 16,
+          marginBottom: 16,
+          color: '#000',
+          font: '13px ui-monospace, monospace',
+        }}
       >
         {ENTRY_IDS.map((id) => (
           <label key={id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
