@@ -26,7 +26,7 @@ export function ReededGlass(props: Omit<ShaderSceneProps, 'children'>) {
       <CursorSmudge decay={0.35} radius={0.2} strength={0.1} />
       <FlutedGlass
         angle={0}
-        crossSection={1}
+        crossSection="flat"
         dispersion={0}
         fluteWidth={44}
         highlight={0.3}

@@ -10,6 +10,7 @@ import { fits, INDENT, printAttribute, printElement, printOpeningTag } from '@/l
 import { roundNumber } from '@/lib/print-literal';
 
 import type { Composition, EntryProps, StackEntry } from './define';
+import { type PrintFields, printFields } from './seed-fields';
 import {
   type CompositionDefaults,
   type CompositionState,
@@ -33,6 +34,12 @@ export interface GenerateInput {
    * the component renders without it. Defaults to leaving props as they are.
    */
   seed?: SeedFields;
+  /**
+   * What the file runs on the props it prints, such as turning FlutedGlass's
+   * dial value back into the name it sits on. Defaults to leaving props as
+   * they are.
+   */
+  print?: PrintFields;
 }
 
 // ----------------------------------------------------------------------------
@@ -45,6 +52,7 @@ export function generateComposition({
   state,
   defaults,
   seed = (_entry, props) => props,
+  print = (_entry, props) => props,
 }: GenerateInput): string {
   const presetOverride = composition.presets.find(({ name }) => name === preset)?.props;
   const componentNames = [...new Set(composition.stack.map(({ component }) => component))];
@@ -71,10 +79,14 @@ export function generateComposition({
     const printed = Object.keys(props)
       .filter((name) => shouldPrint(name, props, setBy, baseline))
       .sort();
+    const printedProps = print(
+      entry,
+      Object.fromEntries(printed.map((name) => [name, props[name]])),
+    );
 
     return printElement(
       entry.component,
-      printed.map((name) => [name, props[name]] as const),
+      printed.map((name) => [name, printedProps[name]] as const),
       elementIndent,
     );
   });
@@ -99,7 +111,10 @@ export function generateComposition({
   ].join('\n');
 }
 
-/** The file for the panel as it stands: its loaded preset and its current props. */
+/**
+ * The file for the panel as it stands: its loaded preset and its current
+ * props, run through the printer seed-fields.ts holds.
+ */
 export function generateFromStore(
   composition: Composition,
   defaults: CompositionDefaults,
@@ -111,6 +126,7 @@ export function generateFromStore(
     state: store.getSnapshot(),
     defaults,
     seed: store.seed,
+    print: printFields,
   });
 }
 

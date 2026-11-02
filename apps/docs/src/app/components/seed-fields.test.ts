@@ -4,9 +4,9 @@
  */
 import { describe, expect, it } from 'vitest';
 
-import { seedFields } from '@/compositions/seed-fields';
+import { printFields, seedFields } from '@/compositions/seed-fields';
 
-import { seedCrossSection } from './fluted-glass/cross-section';
+import { printCrossSection, seedCrossSection } from './fluted-glass/cross-section';
 import { seedStyleDials } from './fractal-noise/style-dials';
 import { seedLineColors } from './wave-lines/line-colors';
 
@@ -18,6 +18,25 @@ describe('seedCrossSection', () => {
 
   it('leaves a dial value alone', () => {
     expect(seedCrossSection({ crossSection: 0.3 })).toEqual({ crossSection: 0.3 });
+  });
+});
+
+describe('printCrossSection', () => {
+  it('turns a dial value on a named point back into its name', () => {
+    expect(printCrossSection({ crossSection: 0 })).toEqual({ crossSection: 'prism' });
+    expect(printCrossSection({ crossSection: 0.5 })).toEqual({ crossSection: 'round' });
+    expect(printCrossSection({ crossSection: 1 })).toEqual({ crossSection: 'flat' });
+  });
+
+  it('reads slider float noise as the point it prints as', () => {
+    expect(printCrossSection({ crossSection: 0.5000000000000001 })).toEqual({
+      crossSection: 'round',
+    });
+  });
+
+  it('leaves a value off the named points alone', () => {
+    expect(printCrossSection({ crossSection: 0.3 })).toEqual({ crossSection: 0.3 });
+    expect(printCrossSection({ dispersion: 0 })).toEqual({ dispersion: 0 });
   });
 });
 
@@ -60,5 +79,19 @@ describe('seedFields', () => {
     expect(seedFields({ id: 'base', component: 'MeshGradient', props: {} }, { speed: 1 })).toEqual({
       speed: 1,
     });
+  });
+});
+
+describe('printFields', () => {
+  it("runs the printer for the entry's component", () => {
+    expect(
+      printFields({ id: 'glass', component: 'FlutedGlass', props: {} }, { crossSection: 1 }),
+    ).toEqual({ crossSection: 'flat' });
+  });
+
+  it('leaves a component with no printer alone', () => {
+    expect(printFields({ id: 'base', component: 'MeshGradient', props: {} }, { speed: 1 })).toEqual(
+      { speed: 1 },
+    );
   });
 });

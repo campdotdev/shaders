@@ -16,6 +16,7 @@ import { getComponentDefaults } from '@/content/props';
 import type { ComponentName, Composition } from './define';
 import { defineComposition } from './define';
 import { generateComposition, kebabCase, pascalCase } from './generate';
+import { printFields, seedFields } from './seed-fields';
 import { presetProps, type SeedFields } from './store';
 
 const composition = defineComposition({
@@ -218,6 +219,40 @@ describe('seeded library defaults', () => {
     });
 
     expect(output).toContain('<FlutedGlass />');
+  });
+});
+
+describe('named cross-sections', () => {
+  // The store holds FlutedGlass's crossSection as a dial value, and the file
+  // prints the name for a value that sits on one of the named points.
+  const glass = defineComposition({
+    slug: 'named-cross-section-test',
+    title: 'Named cross-section',
+    description: 'A FlutedGlass for the named cross-section rule.',
+    stack: [{ id: 'glass', component: 'FlutedGlass', props: { crossSection: 'prism' } }],
+    defaultPresetName: 'Default',
+    presets: [],
+    controls: [],
+  });
+
+  const generateGlass = (crossSection: number) =>
+    generateComposition({
+      composition: glass,
+      preset: 'Default',
+      state: { glass: { crossSection } },
+      defaults: { glass: { crossSection: 'round' } },
+      seed: seedFields,
+      print: printFields,
+    });
+
+  it('prints a named point by name', () => {
+    expect(generateGlass(0)).toContain('<FlutedGlass crossSection="prism" />');
+    expect(generateGlass(1)).toContain('<FlutedGlass crossSection="flat" />');
+    expect(generateGlass(0.5)).toContain('<FlutedGlass crossSection="round" />');
+  });
+
+  it('prints a value off the named points as a number', () => {
+    expect(generateGlass(0.3)).toContain('<FlutedGlass crossSection={0.3} />');
   });
 });
 
