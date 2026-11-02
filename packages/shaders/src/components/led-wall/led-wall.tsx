@@ -23,12 +23,25 @@ export interface LedWallProps {
    */
   dotSize?: AnimatableProp<number>;
   /**
-   * How much of the scene shows between the dots. 0 leaves the gaps
-   * transparent so the page background shows through, 1 leaves the scene
-   * untouched there. Defaults to 0. Accepts a static value or an animation
-   * signal.
+   * How much of the scene shows between the dots. 0 shows only the panel
+   * there, 1 leaves the scene untouched. Defaults to 0. Accepts a static
+   * value or an animation signal.
    */
   bleed?: AnimatableProp<number>;
+  /**
+   * Color of the panel behind the dots (hex, `oklch()`, or `oklab()`). It
+   * fills the gaps, and a dim or flickering dot fades toward it. Leave it
+   * unset for a transparent panel, so the page shows through.
+   */
+  panelColor?: string;
+  /**
+   * How unevenly the dots are lit, 0 to 1. Each dot keeps its own fixed
+   * brightness, up to this fraction below full. 0 lights every dot the same,
+   * 0.5 lets a dot sit anywhere from half to full brightness, and 1 lets a
+   * dot go fully dark. Defaults to 0.5. Accepts a static value or an
+   * animation signal.
+   */
+  variation?: AnimatableProp<number>;
   /**
    * How deep each dot's brightness breathes over time, on its own phase and
    * tempo. 0 holds every dot still, 1 takes each dot all the way to dark at
@@ -69,6 +82,8 @@ export function LedWall({
   spacing = 8,
   dotSize = 4,
   bleed = 0,
+  panelColor,
+  variation = 0.5,
   flicker = 0.5,
   speed = 2.4,
   swellCenter = [0.5, 0.5],
@@ -80,11 +95,13 @@ export function LedWall({
       bleed={bleed}
       dotSize={dotSize}
       flicker={flicker}
+      panelColor={panelColor}
       spacing={spacing}
       speed={speed}
       swell={swell}
       swellCenter={swellCenter}
       swellRadius={swellRadius}
+      variation={variation}
     />
   );
 }

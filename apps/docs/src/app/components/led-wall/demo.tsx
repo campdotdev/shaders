@@ -57,6 +57,7 @@ export function LedWallFields() {
         <SliderInput label="Spacing" max={24} min={2} path="spacing" step={1} />
         <SliderInput label="Dot size" max={24} min={1} path="dotSize" step={1} />
         <SliderInput label="Bleed" max={1} min={0} path="bleed" step={0.01} />
+        <SliderInput label="Variation" max={1} min={0} path="variation" step={0.01} />
       </Section>
       <Section title="Motion">
         <SliderInput label="Flicker" max={1} min={0} path="flicker" step={0.01} />
