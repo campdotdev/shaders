@@ -26,6 +26,7 @@ const composition = defineComposition({
     { id: 'base', component: 'MeshGradient', props: { speed: 0.4 } },
     { id: 'grain', component: 'Grain', props: { intensity: 0.08 } },
   ],
+  defaultPresetName: 'Default',
   presets: [{ name: 'Coarse', props: { grain: { intensity: 0.08, blend: 'additive' } } }],
   controls: [],
 });
@@ -145,6 +146,7 @@ describe('props with no library default', () => {
     title: 'No default',
     description: 'A FractalNoise for the no-default rule.',
     stack: [{ id: 'noise', component: 'FractalNoise', props: {} }],
+    defaultPresetName: 'Default',
     presets: [],
     controls: [],
   });
@@ -201,6 +203,7 @@ describe('seeded library defaults', () => {
       title: 'Seeded default',
       description: 'A FlutedGlass for the seeded-default rule.',
       stack: [{ id: 'glass', component: 'FlutedGlass', props: {} }],
+      defaultPresetName: 'Default',
       presets: [],
       controls: [],
     });
@@ -228,6 +231,7 @@ describe('stop positions', () => {
       title: 'Stops',
       description: 'A LinearGradient for the stop-position rule.',
       stack: [{ id: 'base', component: 'LinearGradient', props: {} }],
+      defaultPresetName: 'Default',
       presets: [],
       controls: [],
     });
@@ -251,6 +255,7 @@ describe('strings', () => {
       title: 'Strings',
       description: 'A LinearGradient for the string rule.',
       stack: [{ id: 'base', component: 'LinearGradient', props: {} }],
+      defaultPresetName: 'Default',
       presets: [],
       controls: [],
     });
@@ -338,6 +343,7 @@ describe('Prettier style', () => {
       title: 'Prettier check',
       description: 'Every default of one component.',
       stack: [{ id: 'entry', component: name, props }],
+      defaultPresetName: 'Default',
       presets: [],
       controls: [],
     } as unknown as Composition;

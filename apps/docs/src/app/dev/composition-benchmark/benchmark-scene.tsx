@@ -21,7 +21,8 @@ const HEIGHT = 696;
 
 interface Settings {
   slug: string;
-  preset: string;
+  /** A preset's name in kebab case. Unset loads the default preset. */
+  preset: string | undefined;
   pixelRatio: number;
 }
 
@@ -30,7 +31,7 @@ const readSettings = (): Settings => {
 
   return {
     slug: search.get('composition') ?? COMPOSITIONS[0]?.slug ?? '',
-    preset: search.get('preset') ?? 'default',
+    preset: search.get('preset') ?? undefined,
     pixelRatio: search.get('dpr') === '2' ? 2 : 1,
   };
 };
@@ -46,7 +47,7 @@ function KeepDrawing() {
 }
 
 const href = ({ slug, preset, pixelRatio }: Settings) =>
-  `?composition=${slug}&preset=${preset}&dpr=${pixelRatio}`;
+  `?composition=${slug}${preset === undefined ? '' : `&preset=${preset}`}&dpr=${pixelRatio}`;
 
 // Time each reading with no other scene drawing, since a second scene
 // inflates it (the skewed-readout gotcha in docs/agents/tsl.md). The links
@@ -54,10 +55,13 @@ const href = ({ slug, preset, pixelRatio }: Settings) =>
 export default function BenchmarkScene() {
   const [settings] = useState(readSettings);
   const composition = COMPOSITIONS.find(({ slug }) => slug === settings.slug);
+  // presetNames lists the default first, so an unset preset finds it.
   const presetName =
     composition === undefined
       ? undefined
-      : presetNames(composition).find((name) => kebabCase(name) === settings.preset);
+      : presetNames(composition).find(
+          (name) => settings.preset === undefined || kebabCase(name) === settings.preset,
+        );
 
   return (
     <div style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>

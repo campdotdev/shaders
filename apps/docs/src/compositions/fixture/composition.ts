@@ -10,6 +10,7 @@ export const fixture = defineComposition({
   slug: 'fixture',
   title: 'Fixture',
   description: 'A MeshGradient under Grain, for building the pipeline.',
+  defaultPresetName: 'Default',
   stack: [
     { id: 'base', component: 'MeshGradient', props: { speed: 0.4 } },
     { id: 'grain', component: 'Grain', props: { intensity: 0.08 } },

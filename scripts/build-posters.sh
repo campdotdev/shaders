@@ -120,7 +120,7 @@ if [ "$THUMBNAILS_ONLY" = 1 ]; then
 fi
 
 # Each composition's poster is captured from the file Copy React hands out
-# for its Default preset, compositions/<slug>/generated/default.tsx, which
+# for its default preset, compositions/<slug>/generated/default.tsx, which
 # golden.test.ts keeps current, so the poster cannot drift from what a
 # visitor copies. The file's named export is the composition's title in
 # PascalCase. The composition page and the Gallery card read the poster

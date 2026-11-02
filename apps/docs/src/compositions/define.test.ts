@@ -10,7 +10,12 @@ import { describe, expect, expectTypeOf, it } from 'vitest';
 
 import { defineComposition, type LiteralPropsOf } from './define';
 
-const base = { slug: 'test', title: 'Test', description: 'A test composition.' };
+const base = {
+  slug: 'test',
+  title: 'Test',
+  description: 'A test composition.',
+  defaultPresetName: 'Default',
+};
 
 describe('LiteralPropsOf', () => {
   // No public component takes a callback today, so a props shape of its own

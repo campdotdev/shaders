@@ -11,12 +11,12 @@ import { isRecord } from '@/lib/is-record';
 
 import type { ComponentName, Composition, EntryProps, StackEntry } from './define';
 
-/** The picker's first choice: the stack's own props, with no preset applied. */
-export const DEFAULT_PRESET = 'Default';
-
-/** Every preset the picker offers, Default first. Each also gets a golden file. */
+/**
+ * Every preset the picker offers, the default first: the stack's own props,
+ * under the name the document gives them. Each also gets a golden file.
+ */
 export function presetNames(composition: Composition): string[] {
-  return [DEFAULT_PRESET, ...composition.presets.map(({ name }) => name)];
+  return [composition.defaultPresetName, ...composition.presets.map(({ name }) => name)];
 }
 
 /** Each entry's props, keyed by entry id. */
@@ -80,12 +80,12 @@ export function presetProps(
   defaults: CompositionDefaults,
   presetName: string,
 ): CompositionState {
-  const preset =
-    presetName === DEFAULT_PRESET
-      ? undefined
-      : composition.presets.find(({ name }) => name === presetName);
+  const isDefault = presetName === composition.defaultPresetName;
+  const preset = isDefault
+    ? undefined
+    : composition.presets.find(({ name }) => name === presetName);
 
-  if (presetName !== DEFAULT_PRESET && preset === undefined) {
+  if (!isDefault && preset === undefined) {
     throw new Error(`${composition.title} has no preset named "${presetName}".`);
   }
 
@@ -148,8 +148,8 @@ export function createCompositionStore(
     );
   };
 
-  let preset = DEFAULT_PRESET;
-  const store = createControlStore(loadedProps(DEFAULT_PRESET));
+  let preset = composition.defaultPresetName;
+  const store = createControlStore(loadedProps(preset));
 
   return {
     ...store,
