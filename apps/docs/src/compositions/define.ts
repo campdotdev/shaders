@@ -282,7 +282,13 @@ interface CompositionDocument<TStack extends readonly StackEntry[]> extends Comp
   /** First entry at the bottom. Each Effect acts on what the entries before it drew. */
   readonly stack: TStack & NoInfer<ExactStack<TStack>>;
   readonly scene?: SceneProps;
-  /** The picker lists "Default", the stack's own props, before these. */
+  /**
+   * What the picker calls the stack's own props, such as `'Dusk'`. It names
+   * the look, never a placeholder such as "Default", and it is the preset the
+   * page loads first.
+   */
+  readonly defaultPresetName: string;
+  /** The picker lists the default preset before these. */
   readonly presets: NoInfer<ReadonlyArray<PresetOf<TStack>>>;
   /** The curated controls, in panel order. */
   readonly controls: NoInfer<ReadonlyArray<ControlOf<TStack>>>;
@@ -305,6 +311,7 @@ export interface CompositionPreset {
 export interface Composition extends CompositionMetadata {
   readonly stack: readonly StackEntry[];
   readonly scene?: SceneProps;
+  readonly defaultPresetName: string;
   readonly presets: readonly CompositionPreset[];
   readonly controls: readonly CompositionControl[];
 }

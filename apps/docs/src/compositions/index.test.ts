@@ -10,9 +10,10 @@ import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 
-import { pascalCase } from './generate';
+import { kebabCase, pascalCase } from './generate';
 import { COMPOSITIONS } from './index';
 import { compositionPoster } from './posters';
+import { presetNames } from './store';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../../public', import.meta.url));
 
@@ -39,14 +40,17 @@ describe('COMPOSITIONS', () => {
     }
   });
 
-  // The picker lists "Default" ahead of the document's presets, so a
-  // preset by that name would show twice.
-  it('names every preset once, and never "Default"', () => {
+  // Golden files and baselines take each preset's name in kebab case, so two
+  // names that match there, such as "Sea glass" and "Sea-glass", would share
+  // a file. The default preset's golden file is always default.tsx, so no
+  // other preset may take that name either.
+  it('gives every preset its own file name, the default included', () => {
     for (const composition of COMPOSITIONS) {
-      const names = composition.presets.map(({ name }) => name.toLowerCase());
+      const [, ...others] = presetNames(composition).map(kebabCase);
+      const names = [kebabCase(composition.defaultPresetName), ...others];
 
-      expect(names, composition.slug).not.toContain('default');
       expect(new Set(names).size, composition.slug).toBe(names.length);
+      expect(others, composition.slug).not.toContain('default');
     }
   });
 

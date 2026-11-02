@@ -9,7 +9,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { defineComposition } from './define';
-import { createCompositionStore, DEFAULT_PRESET, presetProps, withStopPositions } from './store';
+import { createCompositionStore, presetProps, withStopPositions } from './store';
 
 const composition = defineComposition({
   slug: 'store-test',
@@ -19,6 +19,7 @@ const composition = defineComposition({
     { id: 'base', component: 'MeshGradient', props: { speed: 0.4 } },
     { id: 'grain', component: 'Grain', props: { intensity: 0.08 } },
   ],
+  defaultPresetName: 'Default',
   presets: [
     { name: 'Still', props: { base: { speed: 0 } } },
     { name: 'Coarse', props: { grain: { intensity: 0.3, blend: 'subtractive' } } },
@@ -33,7 +34,7 @@ const defaults = {
 
 describe('presetProps', () => {
   it('puts the stack props over the library defaults for Default', () => {
-    expect(presetProps(composition, defaults, DEFAULT_PRESET)).toEqual({
+    expect(presetProps(composition, defaults, composition.defaultPresetName)).toEqual({
       base: { speed: 0.4, frequency: 5 },
       grain: { intensity: 0.08, speed: 0.3, blend: 'additive' },
     });
@@ -55,8 +56,10 @@ describe('createCompositionStore', () => {
   it('starts on Default', () => {
     const store = createCompositionStore(composition, defaults);
 
-    expect(store.getPreset()).toBe(DEFAULT_PRESET);
-    expect(store.getSnapshot()).toEqual(presetProps(composition, defaults, DEFAULT_PRESET));
+    expect(store.getPreset()).toBe(composition.defaultPresetName);
+    expect(store.getSnapshot()).toEqual(
+      presetProps(composition, defaults, composition.defaultPresetName),
+    );
   });
 
   it('resets to the defaults before it applies a preset', () => {
