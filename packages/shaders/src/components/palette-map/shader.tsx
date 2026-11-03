@@ -205,11 +205,17 @@ export function PaletteMapShader({ colors, pixelSize, spread }: PaletteMapShader
     [colorsKey, pixelSizeUniform, spreadUniform, dprUniform],
   );
 
-  // A new palette re-registers the resample above, which rebuilds the output
-  // material but draws nothing on a static scene, so ask for a frame. This
-  // effect runs after the registration, which useResample declared first.
+  // A new palette re-registers the resample above, and unmounting removes it.
+  // Either rebuilds the output material but draws nothing on a static scene,
+  // so ask for a frame. React runs this effect and its cleanup after
+  // useResample's, which was declared first, so each request follows the
+  // rebuild.
   useEffect(() => {
     shaderContext?.scheduler.requestRender();
+
+    return () => {
+      shaderContext?.scheduler.requestRender();
+    };
   }, [colorsKey, shaderContext]);
 
   return null;
