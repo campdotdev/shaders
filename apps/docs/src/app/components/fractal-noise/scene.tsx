@@ -18,6 +18,7 @@ export default function FractalNoiseScene({
   return (
     <ShaderScene>
       <FractalNoise
+        angle={params.angle}
         balance={params.balance}
         colorSpace={params.colorSpace}
         contrast={params.contrast}
@@ -29,6 +30,7 @@ export default function FractalNoiseScene({
         softness={params.softness}
         speed={params.speed}
         stops={stops}
+        stretch={params.stretch}
         style={params.style}
       />
       {children}

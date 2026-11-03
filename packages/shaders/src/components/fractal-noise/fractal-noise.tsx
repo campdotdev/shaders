@@ -27,10 +27,25 @@ export interface FractalNoiseProps {
   stops?: ColorStop[];
   /**
    * Zoom of the noise field — roughly how many broad noise features span
-   * the canvas; finer octaves layer detail on top. Defaults to 3. Accepts a
-   * static value or an animation signal.
+   * the canvas; finer octaves layer detail on top. Counts features across
+   * the streaks when `stretch` is above 1. Defaults to 3. Accepts a static
+   * value or an animation signal.
    */
   scale?: AnimatableProp<number>;
+  /**
+   * The direction the features run, in degrees on screen: 0 runs them left
+   * to right and 90 runs them bottom to top, the degrees FlutedGlass's
+   * `angle` uses. Defaults to 0. Accepts a static
+   * value or an animation signal.
+   */
+  angle?: AnimatableProp<number>;
+  /**
+   * How much longer each feature runs along `angle`, 1 or more. At 1, a
+   * feature is as much longer than wide as the canvas is wider than tall.
+   * `stretch` multiplies that, so on a 2:1 canvas a stretch of 3 draws
+   * features 6 times longer than wide. Defaults to 1. Accepts a static value or an animation signal.
+   */
+  stretch?: AnimatableProp<number>;
   /**
    * How fast the pattern morphs over time. 0 freezes the pattern. Defaults
    * to 0.2. Accepts a static value or an animation signal.
@@ -96,6 +111,8 @@ export function FractalNoise({
   style = 'clouds',
   stops = DEFAULT_STOPS,
   scale = 3,
+  angle = 0,
+  stretch = 1,
   speed = 0.2,
   octaves = 4,
   detail = 0.5,
@@ -114,6 +131,7 @@ export function FractalNoise({
 
   return (
     <FractalNoiseShader
+      angle={angle}
       balance={resolvedBalance}
       colorSpace={colorSpace}
       contrast={resolvedContrast}
@@ -125,6 +143,7 @@ export function FractalNoise({
       softness={softness}
       speed={speed}
       stops={stops}
+      stretch={stretch}
       style={style}
     />
   );

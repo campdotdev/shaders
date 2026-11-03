@@ -43,15 +43,18 @@ const STACK_PROPS: StackProps = {
   // The heat field. Six auto-spaced stops, cold to hot, sampled from the
   // reference recording. softness 0 snaps the field to one flat band per
   // stop, and contrast spreads the noise wide enough to reach all six. The
-  // band edges are clean contours, not the reference's dither. scale counts
-  // broad features across the canvas, and speed 0.05 is a slow drift, a
-  // quarter of the default.
+  // band edges are clean contours, not the reference's dither. angle and
+  // stretch draw the features out into the reference's streaks, climbing
+  // from lower left to upper right at 30 degrees. scale counts features
+  // across the streaks, and speed 0.05 is a slow drift, a quarter of the
+  // default.
   field: {
+    angle: 30,
     balance: 0.5,
     contrast: 2.2,
     detail: 0.45,
     octaves: 6,
-    scale: 2.5,
+    scale: 5,
     softness: 0,
     speed: 0.05,
     stops: [
@@ -62,6 +65,7 @@ const STACK_PROPS: StackProps = {
       { color: 'oklch(0.92 0.215 120)' },
       { color: 'oklch(0.61 0.195 31)' },
     ],
+    stretch: 3,
   },
   // Stand-in for cursor heat. It brightens a round spot after the palette,
   // so it can't push a cell into a hotter color, and it leaves no trail.
