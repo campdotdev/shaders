@@ -23,8 +23,12 @@ An Effect's change to where the image beneath it is sampled, such as Dither's pi
 _Avoid_: Warp on its own, base UV transform
 
 **Resample**:
-An Effect's rule for building each pixel from samples of what the Sources beneath it drew, such as FlutedGlass's color split. A UV warp is a resample that takes one sample.
+An Effect's rule for building each pixel from samples of what the Sources beneath it drew, such as FlutedGlass's color split. A UV warp is a resample that takes one sample. A resample can change only color, as PaletteMap does, so that a UV warp mounted after it moves its output with the image (ADR 0006).
 _Avoid_: Gather, sampler transform, tap stage
+
+**Color transform**:
+An Effect's rule for changing each pixel's color at the pixel's own position, such as Grain's noise or Vignette's darkening. The output stage runs every color transform after every resample, so no UV warp moves what a color transform drew.
+_Avoid_: Overlay, post-process pass
 
 **Input**:
 A value that changes over time and is not drawn, such as the cursor, scroll, or canvas size. An Input is fed to a component as an animation signal.
