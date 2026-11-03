@@ -3,13 +3,14 @@
 // The fractal-noise field's GPU half. Each pixel sums several octaves of 3D
 // simplex noise — every octave at double the frequency and a fraction of the
 // amplitude of the one before, so broad shapes carry progressively finer
-// grain on top (x/y from screen position, z from time, so the pattern morphs
-// in place rather than scrolling). The layered sum then runs through a chain
+// grain on top (x/y from screen position, turned by `angle` and drawn out
+// by `stretch`, z from time, so the pattern morphs in place rather than
+// scrolling). The layered sum then runs through a chain
 // of 0..1 shaping steps — balance, contrast, banding — before picking a color
 // from the ramp. The wrapper (./fractal-noise.tsx) supplies the props.
 import { useEffect, useMemo } from 'react';
 
-import { clamp, float, mix, uniform, uv, vec3 } from 'three/tsl';
+import { clamp, cos, float, max, mix, sin, uniform, uv, vec2, vec3 } from 'three/tsl';
 import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import {
@@ -23,6 +24,7 @@ import {
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color.js';
@@ -55,14 +57,14 @@ const STYLE_FOLD: Record<FractalNoiseStyle, FractalFold> = {
 };
 
 // Per-style remap of the raw fBm sum onto the 0..1 range the ramp expects:
-// value = clamp(raw * stretch + lift, 0, 1).
+// value = clamp(raw * spread + lift, 0, 1).
 // clouds: raw is ~-1..1, so 0.5/0.5 is exactly (raw + 1) / 2.
-// smoke:  abs² folding pools values low — a stretch above 1 spreads them.
+// smoke:  abs² folding pools values low — a spread above 1 widens them.
 // veins:  sqrt folding pools values high — a negative lift pulls them back.
-const STYLE_REMAP: Record<FractalNoiseStyle, { stretch: number; lift: number }> = {
-  clouds: { stretch: 0.5, lift: 0.5 },
-  smoke: { stretch: 1.6, lift: 0.18 },
-  veins: { stretch: 1.4, lift: -0.28 },
+const STYLE_REMAP: Record<FractalNoiseStyle, { spread: number; lift: number }> = {
+  clouds: { spread: 0.5, lift: 0.5 },
+  smoke: { spread: 1.6, lift: 0.18 },
+  veins: { spread: 1.4, lift: -0.28 },
 };
 
 export interface FractalNoiseShaderProps {
@@ -74,10 +76,25 @@ export interface FractalNoiseShaderProps {
   style: FractalNoiseStyle;
   /**
    * Zoom of the noise field — roughly how many broad noise features span
-   * the canvas; finer octaves layer detail on top. Accepts a static value
-   * or an animation signal.
+   * the canvas; finer octaves layer detail on top. Counts features across
+   * the streaks when `stretch` is above 1. Accepts a static value or an
+   * animation signal.
    */
   scale: AnimatableProp<number>;
+  /**
+   * The direction the features run, in degrees on screen: 0 runs them left
+   * to right and 90 runs them bottom to top, the degrees FlutedGlass's
+   * `angle` uses. Accepts a static value or an
+   * animation signal.
+   */
+  angle: AnimatableProp<number>;
+  /**
+   * How much longer each feature runs along `angle`, 1 or more. At 1, a
+   * feature is as much longer than wide as the canvas is wider than tall.
+   * `stretch` multiplies that, so on a 2:1 canvas a stretch of 3 draws
+   * features 6 times longer than wide. Accepts a static value or an animation signal.
+   */
+  stretch: AnimatableProp<number>;
   /**
    * How fast the pattern morphs over time. 0 freezes the pattern.
    * Accepts a static value or an animation signal.
@@ -132,6 +149,8 @@ export interface FractalNoiseShaderProps {
 export function FractalNoiseShader({
   style,
   scale,
+  angle,
+  stretch,
   speed,
   octaves,
   detail,
@@ -158,11 +177,17 @@ export function FractalNoiseShader({
   // integrates it into a phase uniform (speed x delta summed each frame), so
   // a speed change shifts the morphing tempo without snapping the pattern.
   const scaleUniform = useAnimatableUniform<number>(scale);
+  const angleUniform = useAnimatableUniform<number>(angle);
+  const stretchUniform = useAnimatableUniform<number>(stretch);
   const phaseUniform = useAnimatableSpeed(speed);
   const detailUniform = useAnimatableUniform<number>(detail);
   const contrastUniform = useAnimatableUniform<number>(contrast);
   const balanceUniform = useAnimatableUniform<number>(balance);
   const softnessUniform = useAnimatableUniform<number>(softness);
+
+  // The canvas's width / height. The tilt below squares up the field with it,
+  // so `angle` reads in true on-screen degrees on a wide canvas.
+  const aspectUniform = useAspectUniform();
 
   // Content fingerprint of the stops array (colors + positions). The build
   // effect keys on this string, so a re-render that passes a new array with
@@ -197,13 +222,55 @@ export function FractalNoiseShader({
     () => {
       if (!shaderContext) return;
 
-      // Where to sample the noise field. uv() is the pixel's 0..1 position;
-      // multiplying by scale zooms out so roughly `scale` broad noise
-      // features span the canvas, and the seed offset slides the whole
-      // window to a different neighborhood. The accumulated phase rides in
-      // as a third dimension: as z advances the pattern morphs in place,
-      // rather than sliding sideways the way an x/y offset would.
-      const sampleXY = uv().mul(scaleUniform).add(seedUniform);
+      // ---------------------------------------------
+      // Tilt and stretch: turn the pixel into a field position
+      // ---------------------------------------------
+      // uv() is the pixel's 0..1 position, 0..1 on both axes whatever the
+      // canvas shape, so on a wide canvas every feature is already wider
+      // than it is tall. Rotating in uv would skew the angle: 30 degrees
+      // would show at about 14 on the 2.35:1 hero. So the rotation runs in
+      // square space instead, and the result returns to uv after it.
+      //
+      // Subtracting 0.5 puts the canvas center at the origin, so the field
+      // turns around the middle of the canvas. Multiplying x by the aspect
+      // ratio (width / height) squares the space up: one unit is now one
+      // canvas height on both axes, so a degree on screen is a degree here.
+      const centered = uv().sub(0.5);
+      const squareX = centered.x.mul(aspectUniform);
+      const squareY = centered.y;
+
+      // Rotate by -angle, the standard 2D rotation written out per axis.
+      // `along` is how far the pixel sits in the angle's direction, `across`
+      // how far it sits at right angles to it. At angle 0, cos is 1 and sin
+      // is 0, so along is x and across is y, and nothing turns.
+      const angleRadians = angleUniform.mul(Math.PI / 180);
+      const cosine = cos(angleRadians);
+      const sine = sin(angleRadians);
+      const along = squareX.mul(cosine).add(squareY.mul(sine));
+      const across = squareY.mul(cosine).sub(squareX.mul(sine));
+
+      // Dividing `along` by stretch slows the field down in the angle's
+      // direction: at stretch 4, a pixel has to move four times as far
+      // along the angle to cross one feature, so features run four times
+      // longer that way. `across` is untouched, so `scale` still counts
+      // features across the streaks. The max() floors stretch at 1, which
+      // also keeps a stretch of 0 from dividing by zero.
+      //
+      // Dividing by the aspect ratio again undoes the squaring, and adding
+      // 0.5 undoes the centering, so at angle 0 and stretch 1 this is uv
+      // back again and the field draws exactly what it drew before these
+      // props existed. At other angles the canvas shape's own widening
+      // turns with the angle, so on a wide canvas the streaks come out
+      // aspect x stretch long.
+      const fieldXY = vec2(along.div(max(stretchUniform, 1)).div(aspectUniform), across).add(0.5);
+
+      // Where to sample the noise field. Multiplying by scale zooms out so
+      // roughly `scale` broad noise features span the canvas, and the seed
+      // offset slides the whole window to a different neighborhood. The
+      // accumulated phase rides in as a third dimension: as z advances the
+      // pattern morphs in place, rather than sliding sideways the way an x/y
+      // offset would.
+      const sampleXY = fieldXY.mul(scaleUniform).add(seedUniform);
       const samplePoint = vec3(sampleXY, phaseUniform);
 
       // detail rides a uniform; remap 0..1 onto the useful gain range in
@@ -224,12 +291,12 @@ export function FractalNoiseShader({
 
       // Remap the raw sum onto the 0..1 range the ramp expects. One formula
       // covers every style — clouds' 0.5/0.5 is exactly (raw + 1) / 2, and
-      // the folded styles' stretch/lift recenters their clustered values
+      // the folded styles' spread/lift recenters their clustered values
       // (smoke pools low, veins pools high). The clamp catches overshoot.
       // Plain numbers, not uniforms: the remap pair is welded to the style,
       // and a style change rebuilds the material anyway.
-      const { stretch, lift } = STYLE_REMAP[style];
-      const normalized = clamp(rawNoise.mul(stretch).add(lift), 0, 1);
+      const { spread, lift } = STYLE_REMAP[style];
+      const normalized = clamp(rawNoise.mul(spread).add(lift), 0, 1);
 
       // Balance: shift the noise scalar earlier (<0.5) or later (>0.5) into the
       // color ramp. 0.5 is identity. In 2-color mode this reads as dark/light;
@@ -293,6 +360,9 @@ export function FractalNoiseShader({
     [
       shaderContext,
       scaleUniform,
+      angleUniform,
+      stretchUniform,
+      aspectUniform,
       phaseUniform,
       detailUniform,
       contrastUniform,
