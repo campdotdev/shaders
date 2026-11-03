@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './fixtures';
-import { waitForShader } from './helpers';
+import { readCanvasPixels, waitForShader } from './helpers';
 
 test('FlutedGlass — default story', async ({ page }) => {
   await page.goto('/components/fluted-glass?visualTest=1');
@@ -41,49 +41,26 @@ interface ProbeImage {
   rows: number[];
 }
 
-/**
- * Loads the probe with `query` appended and reads its canvas. The screenshot
- * decodes in the page, which has the browser's PNG decoder, and comes back
- * as three bytes per pixel: red, green, and blue.
- */
+/** Loads the probe with `query` appended and reads its canvas. */
 async function loadProbe(page: Page, query: string): Promise<ProbeImage> {
   await page.goto(`${PROBE}${query}`);
   await page.locator('canvas').first().waitFor();
   await waitForShader(page);
 
-  const shot = await page.locator('canvas').first().screenshot();
-  const { width, height, bytes } = await page.evaluate(async (pngBase64) => {
-    const response = await fetch(`data:image/png;base64,${pngBase64}`);
-    const bitmap = await createImageBitmap(await response.blob());
-    const canvas = document.createElement('canvas');
-
-    canvas.width = bitmap.width;
-    canvas.height = bitmap.height;
-    const context = canvas.getContext('2d')!;
-
-    context.drawImage(bitmap, 0, 0);
-    const rgba = context.getImageData(0, 0, bitmap.width, bitmap.height).data;
-    let binary = '';
-
-    for (let index = 0; index < rgba.length; index += 4) {
-      binary += String.fromCharCode(rgba[index] ?? 0, rgba[index + 1] ?? 0, rgba[index + 2] ?? 0);
-    }
-
-    return { width: bitmap.width, height: bitmap.height, bytes: btoa(binary) };
-  }, shot.toString('base64'));
-  const pixels = Buffer.from(bytes, 'base64');
+  const { width, height, rgb } = await readCanvasPixels(page);
   const rows: number[] = [];
 
   for (let y = Math.floor(height * 0.2); y < Math.floor(height * 0.8); y += 1) rows.push(y);
 
-  const channel = (x: number, y: number, offset: number) =>
-    pixels[(y * width + x) * 3 + offset] ?? 0;
-
   return {
     width,
-    brightness: (x, y) => Math.round((channel(x, y, 0) + channel(x, y, 1) + channel(x, y, 2)) / 3),
-    red: (x, y) => channel(x, y, 0),
-    blue: (x, y) => channel(x, y, 2),
+    brightness: (x, y) => {
+      const [red, green, blue] = rgb(x, y);
+
+      return Math.round((red + green + blue) / 3);
+    },
+    red: (x, y) => rgb(x, y)[0],
+    blue: (x, y) => rgb(x, y)[2],
     rows,
   };
 }

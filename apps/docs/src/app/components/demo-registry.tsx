@@ -29,6 +29,7 @@ import { LedWallFields, LedWallIsland } from './led-wall/demo';
 import { LinearGradientFields, LinearGradientIsland } from './linear-gradient/demo';
 import { LiquidGradientFields, LiquidGradientIsland } from './liquid-gradient/demo';
 import { MeshGradientFields, MeshGradientIsland } from './mesh-gradient/demo';
+import { PaletteMapFields, PaletteMapIsland } from './palette-map/demo';
 import { RadialGradientFields, RadialGradientIsland } from './radial-gradient/demo';
 import { RadialWipeFields, RadialWipeIsland } from './radial-wipe/demo';
 import { SimplexNoiseFields, SimplexNoiseIsland } from './simplex-noise/demo';
@@ -320,6 +321,33 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   <MeshGradient />
 </ShaderScene>`,
   },
+  'palette-map': {
+    Island: PaletteMapIsland,
+    copySiblings: [
+      "<FractalNoise contrast={3.5} stops={[{ color: 'oklch(0 0 0)' }, { color: 'oklch(1 0 0)' }]} />",
+    ],
+    usageSnippet: `<ShaderScene>
+  <FractalNoise contrast={3.5} stops={[{ color: 'oklch(0 0 0)' }, { color: 'oklch(1 0 0)' }]} />
+  <PaletteMap colors={['oklch(0.25 0.06 280)', 'oklch(0.68 0.18 40)', 'oklch(0.90 0.12 90)']} />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        <p>
+          PaletteMap repaints the scene beneath it in your <code>colors</code>, chosen by lightness:
+          the darkest areas take the first color and the lightest take the last. A Source that runs
+          from black to white, such as this gray FractalNoise, shows every color. Where two colors
+          meet, single cells of each scatter into the other. <code>spread</code> sets how wide that
+          scatter runs, from clean edges at <code>0</code> to stray cells in flat areas above{' '}
+          <code>1</code>.
+        </p>
+        <p>
+          To give each dot of an LED Wall one color, mount PaletteMap before the wall and set its{' '}
+          <code>pixelSize</code> to the wall&apos;s <code>spacing</code>. Effects that change color
+          in place, such as Grain, always run after PaletteMap, so mount them after it.
+        </p>
+      </>
+    ),
+  },
   'radial-gradient': {
     Island: RadialGradientIsland,
     usageSnippet: `<ShaderScene>
@@ -417,6 +445,7 @@ export const COMPONENT_FIELDS: Record<ComponentName, ComponentFields> = {
   LinearGradient: { Fields: LinearGradientFields },
   LiquidGradient: { Fields: LiquidGradientFields },
   MeshGradient: { Fields: MeshGradientFields },
+  PaletteMap: { Fields: PaletteMapFields },
   RadialGradient: { Fields: RadialGradientFields },
   RadialWipe: { Fields: RadialWipeFields },
   SimplexNoise: { Fields: SimplexNoiseFields },

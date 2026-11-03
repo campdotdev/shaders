@@ -103,6 +103,11 @@ export const COMPONENTS = {
       'Warped 4-color fluid gradient with time-cycling palette and film grain. Linear/Stripe marketing-page style.',
     category: 'gradients',
   },
+  'palette-map': {
+    description:
+      'Repaints the scene in a few chosen colors, picked by lightness, and scatters single cells of each color where two meet. Stacks on top of any Source inside <ShaderScene>.',
+    category: 'retro-glitch',
+  },
   'radial-gradient': {
     description:
       'A color ramp radiating from a point, with an elliptical shape control and repeating concentric rings. The radial counterpart to LinearGradient.',
