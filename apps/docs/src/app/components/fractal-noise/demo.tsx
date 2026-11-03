@@ -105,6 +105,8 @@ export function FractalNoiseFields() {
       <Section title="Texture">
         <StyleSelect />
         <SliderInput label="Scale" max={10} min={0.5} path="scale" step={0.1} />
+        <SliderInput label="Angle" max={360} min={0} path="angle" step={1} />
+        <SliderInput label="Stretch" max={8} min={1} path="stretch" step={0.1} />
         <SliderInput label="Octaves" max={8} min={1} path="octaves" step={1} />
         <SliderInput label="Detail" max={1} min={0} path="detail" step={0.01} />
         <SliderInput label="Speed" max={2} min={0} path="speed" step={0.01} />

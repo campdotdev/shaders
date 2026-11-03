@@ -10,6 +10,8 @@ export interface PlainColorStop {
 export interface Params {
   style: FractalNoiseStyle;
   scale: number;
+  angle: number;
+  stretch: number;
   speed: number;
   octaves: number;
   detail: number;
@@ -32,6 +34,8 @@ export const MAX_STOPS = 5;
 export const INITIAL: Params = {
   style: 'clouds',
   scale: 3,
+  angle: 0,
+  stretch: 1,
   speed: 0.2,
   octaves: 4,
   detail: 0.5,
