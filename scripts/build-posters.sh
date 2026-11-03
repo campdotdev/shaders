@@ -84,7 +84,8 @@ for pair in \
   "cursor-spotlight:jpg" \
   "fluted-glass:jpg::896x598" \
   "radial-wipe:jpg:#0b0f0d" \
-  "dissolve:jpg:#0b0f0d"; do
+  "dissolve:jpg:#0b0f0d" \
+  "palette-map:jpg"; do
   IFS=':' read -r name format background size crop <<< "$pair"
   width="$WIDTH"
   height="$HEIGHT"

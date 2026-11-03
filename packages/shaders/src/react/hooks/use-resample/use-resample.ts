@@ -12,8 +12,9 @@ import { useSceneRegistration } from '../use-scene-registration/use-scene-regist
  * than once, such as three times for a color split. Each call reruns every
  * resample beneath it, so sample counts multiply down the stack. Resamples
  * stack in mount order, and the last-mounted one acts as the top layer.
- * They read only what Sources drew, because color transforms such as Grain
- * run after every resample. `deps` works like an effect dependency list, so
+ * They read what Sources drew, as changed by the resamples beneath them, but
+ * never the output of a color transform such as Grain, which runs after
+ * every resample. `deps` works like an effect dependency list, so
  * list every non-uniform value the resample closes over. A change registers
  * the new resample in this Effect's place in the stack.
  */
