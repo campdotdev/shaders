@@ -61,6 +61,9 @@ export type { LiquidGradientProps } from './liquid-gradient/liquid-gradient.js';
 export { MeshGradient } from './mesh-gradient/mesh-gradient.js';
 export type { MeshGradientProps } from './mesh-gradient/mesh-gradient.js';
 
+export { PaletteMap } from './palette-map/palette-map.js';
+export type { PaletteMapProps } from './palette-map/palette-map.js';
+
 export { RadialGradient } from './radial-gradient/radial-gradient.js';
 export type { RadialGradientProps } from './radial-gradient/radial-gradient.js';
 
