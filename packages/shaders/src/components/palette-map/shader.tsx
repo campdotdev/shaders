@@ -135,21 +135,27 @@ export function PaletteMapShader({ colors, pixelSize, spread }: PaletteMapShader
       // OKLab's L, perceived lightness: 0 is black, 1 is white. For a gray
       // it is the cube root of the gray's linear value, so a black-to-white
       // Source that mixes in OKLab, every component's default, hands over an
-      // L that rises evenly with the Source's own value. max(0) first: a
-      // wide-gamut color can carry a negative channel, and the cube root of
-      // one would pull L below 0. Only L is used. The conversion also builds
-      // the a and b axes, which reach no output, so the GPU's own compiler
-      // is free to drop them.
-      const lightness = linearToOklab(color.max(0)).x;
+      // L that rises evenly with the Source's own value. No clamp first: a
+      // wide-gamut color can carry a negative channel, and raising it to 0
+      // would add light the color never had, lifting L enough to pick the
+      // next palette color. The cone responses it converts through stay
+      // positive for any real color, and the level clamp below holds
+      // anything else to the palette. Only L is used. The conversion also
+      // builds the a and b axes, which reach no output, so the GPU's own
+      // compiler is free to drop them.
+      const lightness = linearToOklab(color).x;
 
       // ---------------------------------------------
       // Round up or down? The dither
       // ---------------------------------------------
-      // The cell's blue-noise value, 0 to just under 1, read from a 64x64
-      // tile of thresholds arranged so that neighbors differ and no clumps
-      // form. Indexed by cell, one tile texel per cell, so the scatter keeps
-      // that clump-free spacing at any cell size.
-      const noise = ditherThreshold('blue-noise', cellIndex);
+      // The cell's blue-noise value, read from a 64x64 tile of thresholds
+      // arranged so that neighbors differ and no clumps form. Indexed by
+      // cell, one tile texel per cell, so the scatter keeps that clump-free
+      // spacing at any cell size. The tile stores bytes, which read back as
+      // 0 to exactly 1, so each of the 256 values moves to the middle of its
+      // own 1/256 step, strictly inside 0..1. Otherwise a 1 at spread 1
+      // would round a flat area's cells up to the next color.
+      const noise = ditherThreshold('blue-noise', cellIndex).mul(255).add(0.5).div(256);
 
       // spread pivots the noise around the plain 0.5 round, as Dither's
       // does. At 0 every cell rounds at 0.5, clean bands. At 1 the rounding
@@ -198,6 +204,13 @@ export function PaletteMapShader({ colors, pixelSize, spread }: PaletteMapShader
     },
     [colorsKey, pixelSizeUniform, spreadUniform, dprUniform],
   );
+
+  // A new palette re-registers the resample above, which rebuilds the output
+  // material but draws nothing on a static scene, so ask for a frame. This
+  // effect runs after the registration, which useResample declared first.
+  useEffect(() => {
+    shaderContext?.scheduler.requestRender();
+  }, [colorsKey, shaderContext]);
 
   return null;
 }
