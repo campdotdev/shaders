@@ -25,6 +25,9 @@ export type { CursorSmudgeProps } from './cursor-smudge/cursor-smudge.js';
 export { CursorSpotlight } from './cursor-spotlight/cursor-spotlight.js';
 export type { CursorSpotlightProps } from './cursor-spotlight/cursor-spotlight.js';
 
+export { CursorTrail } from './cursor-trail/cursor-trail.js';
+export type { CursorTrailProps } from './cursor-trail/cursor-trail.js';
+
 export { Dissolve } from './dissolve/dissolve.js';
 export type { DissolveProps } from './dissolve/dissolve.js';
 
