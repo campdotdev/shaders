@@ -33,13 +33,17 @@ interface ProbeParams {
   intensity: number;
   decay: number;
   source: 'flat' | 'wall';
+  hold: 'off' | 'on';
+  grow: number;
 }
 
 const INITIAL: ProbeParams = {
   radius: 0.1,
   intensity: 0.5,
-  decay: 0.5,
+  decay: 0.75,
   source: 'flat',
+  hold: 'off',
+  grow: 0.3,
 };
 
 // A dark blue-gray ramp, so added light shows at every point.
@@ -51,7 +55,13 @@ function LiveScene({ paused }: { paused: boolean }) {
   return (
     <ShaderScene maxDPR={2} paused={paused}>
       <LinearGradient stops={DARK_STOPS} />
-      <CursorTrail decay={params.decay} intensity={params.intensity} radius={params.radius} />
+      <CursorTrail
+        decay={params.decay}
+        grow={params.grow}
+        hold={params.hold === 'on'}
+        intensity={params.intensity}
+        radius={params.radius}
+      />
       {params.source === 'wall' ? (
         <LedWall bleed={0} dotSize={7} flicker={0} spacing={8} swell={0} />
       ) : null}
@@ -76,6 +86,15 @@ function Controls() {
           ]}
           path="source"
         />
+        <SelectInput
+          label="Hold"
+          options={[
+            { label: 'Off: everything fades away', value: 'off' },
+            { label: 'On: a still pointer keeps a spot', value: 'on' },
+          ]}
+          path="hold"
+        />
+        <SliderInput label="Grow" max={2} min={0} path="grow" step={0.05} />
       </Section>
     </ControlPanel>
   );
@@ -98,9 +117,12 @@ export default function ProbeScene() {
     <div style={{ padding: 24, minHeight: '100vh', background: '#09090b', color: '#fafafa' }}>
       <h1>CursorTrail probe</h1>
       <p>
-        Move across the image. The heat cools to nothing in Decay seconds, so a faster move leaves a
-        longer tail. A still pointer keeps a steady spot, and the spot cools away like the trail
-        when the pointer leaves. Under the paused motion policy, only the spot shows.
+        Move across the image. The trail follows the last Decay seconds of path, so a faster move
+        leaves a longer tail, and a stopped pointer draws it in along the path. With Hold off, the
+        head fades as the tail shortens, leaving nothing. With Hold on, the tail shortens into a
+        steady spot, which fades when the pointer leaves. Grow widens the brush with the pointer's
+        speed and eases it back as the pointer slows. Under the paused motion policy, the trail is
+        off, so only a held spot shows.
       </p>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBlock: 16 }}>
         <label>

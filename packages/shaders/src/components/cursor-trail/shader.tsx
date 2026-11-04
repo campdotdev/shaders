@@ -1,15 +1,18 @@
 'use client';
 
 // Bridges the scene's cursor and frame loop to a heat texture, and adds the
-// heat to the image beneath. The texture holds the trail. The spot under
-// the pointer is drawn in the shader instead, so a still pointer keeps its
-// spot while the texture cools to zero and the scene can stop drawing. It
-// registers as a resample, not a color transform, so a UV warp mounted
+// heat to the image beneath. path.ts records where the pointer has been,
+// and field.ts draws that path into the texture as one shape: full at the
+// head, tapering along the path to a point. When the pointer stops, the
+// path behind it runs out, so the tail shortens into the head. With `hold`,
+// the head stays while the pointer rests; without it, the head fades too.
+// It registers as a resample, not a color transform, so a UV warp mounted
 // after it moves the heat with the image: under LedWall's cell snap each
-// cell reads one heat value (ADR 0006).
-import { useEffect, useMemo } from 'react';
+// cell reads one heat value (ADR 0006). With `grow`, the brush swells with
+// the pointer's speed and eases back to `radius` as it slows.
+import { useEffect, useMemo, useRef } from 'react';
 
-import { length, max, oneMinus, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { max, oneMinus, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Texture, Vector2 as ThreeVector2 } from 'three/webgpu';
 
 import {
@@ -24,50 +27,80 @@ import { useResample } from '../../react/hooks/use-resample/use-resample.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import type { CursorTrailProps } from './cursor-trail.js';
-import { brushFalloff, createTrailField } from './field.js';
+import { createTrailField } from './field.js';
+import { createTrailPath, MAX_POINTS } from './path.js';
 
 // Longest the first tick after the scene parks counts for, in seconds: one
-// frame at 60 Hz. Longer would cool a spot the pointer just left behind by
-// the time spent asleep, and wipe it before it shows.
+// frame at 60 Hz. Longer would run out the path behind a head the pointer
+// just left by the time spent asleep, and wipe it before it shows.
 const WAKE_SECONDS = 1 / 60;
+// Smallest alpha the image's color is divided by when the premultiplied
+// alpha is undone, as in PaletteMap. It only has to keep the divide finite.
+const MIN_ALPHA = 1e-4;
+// Pointer speed, in canvas heights per second, at which the brush reaches
+// about two thirds of its full growth (1 - 1/e). Faster moves approach it.
+const GROW_SPEED = 1.5;
+// Seconds the size takes to follow the speed: quick to swell, slower to
+// settle, so the head eases back down after the pointer stops.
+const GROW_RISE = 0.08;
+const GROW_SETTLE = 0.25;
+// Below this share of full growth, snap to the base size, so the scene can
+// stop drawing.
+const GROW_REST = 0.001;
+
+// How fast a stroke crossed the canvas, in canvas heights per second.
+// Stroke points run 0..1 on both axes, so x is stretched by the aspect to
+// measure in heights, as the brush is.
+function strokeSpeed({ from, to }: PushStroke, delta: number, aspect: number): number {
+  return Math.hypot((to[0] - from[0]) * aspect, to[1] - from[1]) / delta;
+}
 
 export function CursorTrailShader({
   radius = 0.1,
   intensity = 0.5,
-  decay = 0.5,
+  decay = 0.75,
+  hold = false,
+  grow = 0.3,
 }: CursorTrailProps) {
   const context = useShaderContext();
   const radiusUniform = useAnimatableUniform(radius);
   const intensityUniform = useAnimatableUniform(intensity);
   const decayUniform = useAnimatableUniform(decay);
+  const growUniform = useAnimatableUniform(grow);
   const fieldTexture = useMemo(() => texture(new Texture(), uv()), []);
   const active = useMemo(() => uniform(0), []);
-  const spotCenter = useMemo(() => uniform(new ThreeVector2()), []);
-  const spotOn = useMemo(() => uniform(0), []);
   const aspect = useAspectUniform();
 
   useStaticSceneHint(true);
 
+  // The pre-pass reads hold on the CPU each frame, so it lives in a ref the
+  // pass's effect can keep without re-running. Turning it off lets the head
+  // fade, which a parked scene starts only on its next frame.
+  const holdRef = useRef(hold);
+
+  useEffect(() => {
+    holdRef.current = hold;
+    context?.scheduler.requestRender();
+  }, [context, hold]);
+
   // ---- Add the heat where the image beneath is sampled
   // Sample the image once at the coordinate given, then add the heat there.
   // The coordinate starts at the top-left and the field at the bottom-left,
-  // so flip y to read it. The spot uses the field's brush, measured in
-  // canvas heights, so the trail's head and the spot line up exactly. Where
-  // both reach, the hotter one wins, as two strokes do in the field. The
-  // scene texture is premultiplied, so the added light is scaled by alpha
-  // too, and a transparent pixel stays transparent.
+  // so flip y to read it.
   useResample(
     (sampleBeneath) => (coordinate) => {
       const beneath = sampleBeneath(coordinate);
-      const trail = fieldTexture.uv(vec2(coordinate.x, oneMinus(coordinate.y))).r.mul(active);
-      const offset = coordinate.sub(spotCenter);
-      const spotDistance = length(vec2(offset.x.mul(aspect), offset.y));
-      const spot = brushFalloff(spotDistance, radiusUniform).mul(spotOn);
-      const lift = max(trail, spot).mul(intensityUniform).mul(beneath.a);
+      const heat = fieldTexture.uv(vec2(coordinate.x, oneMinus(coordinate.y))).r.mul(active);
+      const lift = heat.mul(intensityUniform);
 
-      return vec4(vec3(beneath.rgb).add(lift), beneath.a);
+      // Add the same amount of linear light to every channel. The scene
+      // texture is premultiplied, so undo the alpha first and put it back at
+      // the end, which keeps a transparent pixel transparent.
+      const color = vec3(beneath.rgb).div(max(beneath.a, MIN_ALPHA));
+
+      return vec4(color.add(lift).mul(beneath.a), beneath.a);
     },
-    [fieldTexture, active, spotCenter, spotOn, aspect, radiusUniform, intensityUniform],
+    [fieldTexture, active, intensityUniform],
   );
 
   // ---- Create, drive, and dispose together for Strict Mode
@@ -77,6 +110,8 @@ export function CursorTrailShader({
     const input = context.getCursorInput();
     const size = context.renderer.three.getSize(new ThreeVector2());
     const field = createTrailField(context.renderer.three, size.width, size.height);
+    const path = createTrailPath();
+    const packed = new Float32Array(MAX_POINTS * 4);
     const motion = createReducedMotionWatcher();
     let previous: Vector2 | null = null;
     let inside = false;
@@ -85,8 +120,12 @@ export function CursorTrailShader({
     // Whether the last gather asked for the next frame, so this tick's delta
     // spans one frame rather than a sleep.
     let running = false;
-    // Where the spot was last drawn, in top-left canvas coordinates, or null.
-    let spotAt: Vector2 | null = null;
+    // Whether the last draw changed the field. A frame that changed nothing
+    // means the trail has settled, and the scene can stop drawing.
+    let changed = true;
+    // How far the brush has grown, from 0 at the base radius to 1 at the
+    // full grow. It eases toward the pointer's speed, so it lags a little.
+    let swell = 0;
 
     // A pointer boundary ends a pointer stroke, but not a scripted one. The
     // Input has already moved past a gathered scripted segment, so dropping
@@ -95,7 +134,7 @@ export function CursorTrailShader({
       previous = null;
       inside = false;
       if (!input.isScripting()) pendingStroke = null;
-      // A parked scene still shows the spot. Draw once more to take it away.
+      // A parked scene still shows a held head. Draw again to let it fade.
       scheduler.requestRender();
     };
 
@@ -119,7 +158,7 @@ export function CursorTrailShader({
       previous = null;
       pendingStroke = null;
       pendingDelta = 0;
-      if (!paused && !field.atRest) scheduler.requestRender();
+      if (!paused) scheduler.requestRender();
     });
     const stopMotion = motion.subscribe(() => scheduler.requestRender());
 
@@ -140,55 +179,60 @@ export function CursorTrailShader({
       pendingStroke = input.isScripting() ? input.getScriptedStroke() : (mouse ?? input.getPush());
       previous = inside ? current : null;
       // A parked scene's first tick reports the whole sleep as its delta.
-      // Nothing cooled while it slept, so count at most one frame of it.
-      // The first tick after a pause reports 0, so a trail cut off by the
-      // pause picks up where it left off.
+      // Nothing moved while it slept, so count at most one frame of it. The
+      // first tick after a pause reports 0, so a trail cut off by the pause
+      // picks up where it left off.
       pendingDelta = running ? delta : Math.min(delta, WAKE_SECONDS);
-      running = pendingStroke !== null || !field.atRest;
+      running = pendingStroke !== null || changed || swell > 0;
       if (running) scheduler.requestRender();
     };
 
     scheduler.add(gather);
 
-    // ---- Step the field and place the spot before the scene draws
-    // The spot sits where the last gathered stroke ended, the same point the
-    // field stamped up to, so the trail runs straight into it. A scripted
-    // stroke shows no spot: the pointer isn't what is moving.
+    // ---- Step the path and draw it before the scene draws
     const stopPass = context.registerPrePass(() => {
       const visible = intensityUniform.value > 0 && radiusUniform.value > 0;
-      // Under the paused motion policy the trail is cleared and stays off.
-      // The spot stays, as CursorSpotlight does, because it moves only when
-      // the pointer does.
+      // Under the paused motion policy the trail is off. With hold on, the
+      // head stays, as CursorSpotlight's spot does, because it moves only
+      // when the pointer does. With hold off, nothing shows. A scripted
+      // stroke holds no head: the pointer isn't what is moving.
       const disabled = !visible || motion.scale() <= 0;
-      const spotNext = visible && !input.isScripting() ? previous : null;
-      // When the spot goes, stamp it into the field, so it cools away like
-      // the trail instead of vanishing.
-      const leftBehind = spotAt && !spotNext ? { from: spotAt, to: spotAt, presence: 1 } : null;
+      const rest = visible && holdRef.current && !input.isScripting() ? previous : null;
 
-      field.step({
+      // Ease the growth toward the share the stroke's speed earns. A frame
+      // with no stroke earns none, so a pointer that stops settles back to
+      // the base radius. A frame with no time passed, after a pause or a
+      // resize, leaves it where it was.
+      if (pendingDelta > 0) {
+        const speed = pendingStroke ? strokeSpeed(pendingStroke, pendingDelta, aspect.value) : 0;
+        const target = disabled ? 0 : 1 - Math.exp(-speed / GROW_SPEED);
+        const ease = target > swell ? GROW_RISE : GROW_SETTLE;
+
+        swell += (target - swell) * (1 - Math.exp(-pendingDelta / ease));
+        if (swell < GROW_REST) swell = 0;
+      }
+
+      path.step({
         delta: pendingDelta,
-        stroke: pendingStroke ?? leftBehind,
-        radius: radiusUniform.value,
+        stroke: pendingStroke,
+        rest,
+        radius: radiusUniform.value * (1 + Math.max(0, growUniform.value) * swell),
         decay: decayUniform.value,
+        aspect: aspect.value,
         disabled,
       });
       pendingStroke = null;
       pendingDelta = 0;
-      spotAt = spotNext;
-      if (spotNext) spotCenter.value.set(spotNext[0], spotNext[1]);
-      spotOn.value = spotNext ? 1 : 0;
+      changed = field.draw(packed, path.pack(packed));
       const current = field.texture;
 
-      active.value = current && !disabled ? 1 : 0;
+      active.value = current ? 1 : 0;
       if (current) fieldTexture.value = current;
     });
-    // A resize clears the field, and the scene redraws it before the next
-    // gather. Drop the stroke gathered for the old field, so the redraw
-    // leaves the new field clear and the next stroke starts afresh.
+    // A resize redraws the path at the new size on the next frame.
     const stopResize = context.canvasSize.on('change', ([width, height]) => {
-      pendingStroke = null;
-      pendingDelta = 0;
       field.resize(width, height);
+      scheduler.requestRender();
     });
 
     scheduler.requestRender();
@@ -206,7 +250,6 @@ export function CursorTrailShader({
       motion.dispose();
       field.dispose();
       active.value = 0;
-      spotOn.value = 0;
       // A parked scene still shows the last frame. Draw once more so any
       // heat still showing leaves the canvas with the effect.
       scheduler.requestRender();
@@ -215,11 +258,11 @@ export function CursorTrailShader({
     context,
     fieldTexture,
     active,
-    spotCenter,
-    spotOn,
+    aspect,
     intensityUniform,
     radiusUniform,
     decayUniform,
+    growUniform,
   ]);
 
   return null;
