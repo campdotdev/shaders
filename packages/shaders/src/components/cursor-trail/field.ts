@@ -16,16 +16,18 @@ import {
   vec2,
   vec4,
 } from 'three/tsl';
+import type { ShaderNodeObject } from 'three/tsl';
 import {
   HalfFloatType,
   LinearFilter,
+  type Node,
   RedFormat,
   Texture,
   Vector2,
   type WebGPURenderer,
 } from 'three/webgpu';
 
-import { createTexturePass, type PushStroke } from '../../engine.js';
+import { createTexturePass, type PushStroke, type TSLNode } from '../../engine.js';
 
 export interface TrailStep {
   /** Seconds since the last draw. */
@@ -53,13 +55,24 @@ export interface TrailField {
   dispose: () => void;
 }
 
-// A quarter-resolution field is interpolated when sampled at full size.
-// The 512-texel cap bounds memory and fill cost on large canvases.
-const FIELD_SCALE = 0.25;
-const MAX_FIELD_EDGE = 512;
+// A half-resolution field is interpolated when sampled at full size. A
+// quarter showed its texels as a stair-stepped rim. The 1024-texel cap
+// bounds memory and fill cost on large canvases.
+const FIELD_SCALE = 0.5;
+const MAX_FIELD_EDGE = 1024;
 // Below a thousandth of full heat, cool the rest away in one draw, so
 // half-float rounding cannot leave a sliver the CPU counts as gone.
 const SETTLE_THRESHOLD = 0.001;
+
+/**
+ * The brush's heat at `distance` canvas heights from its center: 1 at the
+ * center, easing to 0 at `radius`. The field stamps strokes with it and the
+ * shader draws the spot under a still pointer with it, so the two meet with
+ * no seam. The epsilon keeps smoothstep's edges distinct at radius zero.
+ */
+export function brushFalloff(distance: TSLNode, radius: TSLNode): ShaderNodeObject<Node> {
+  return oneMinus(smoothstep(0, max(radius, 1e-5), distance));
+}
 
 export function createTrailField(
   renderer: WebGPURenderer,
@@ -87,9 +100,7 @@ export function createTrailField(
   // denominator epsilon keeps a zero-length stroke from dividing by zero.
   const along = clamp(dot(point.sub(start), segment).div(max(dot(segment, segment), 1e-8)), 0, 1);
   const distance = length(point.sub(start.add(segment.mul(along))));
-  // 1 on the stroke, easing to 0 at the radius. The radius epsilon keeps
-  // smoothstep's edges distinct at radius zero.
-  const brush = oneMinus(smoothstep(0, max(radius, 1e-5), distance));
+  const brush = brushFalloff(distance, radius);
 
   // ---- Cool, then stamp, in one draw
   // Subtracting a fixed amount per second cools every texel at the same

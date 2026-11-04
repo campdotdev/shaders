@@ -99,7 +99,8 @@ export default function ProbeScene() {
       <h1>CursorTrail probe</h1>
       <p>
         Move across the image. The heat cools to nothing in Decay seconds, so a faster move leaves a
-        longer tail. A still pointer leaves nothing yet: the steady spot under it is phase 2.
+        longer tail. A still pointer keeps a steady spot, and the spot cools away like the trail
+        when the pointer leaves. Under the paused motion policy, only the spot shows.
       </p>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBlock: 16 }}>
         <label>
