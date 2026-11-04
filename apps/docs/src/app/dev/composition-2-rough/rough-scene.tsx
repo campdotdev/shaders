@@ -8,22 +8,24 @@
 import { useState } from 'react';
 
 import {
-  CursorSpotlight,
-  type CursorSpotlightProps,
+  CursorTrail,
+  type CursorTrailProps,
   FractalNoise,
   type FractalNoiseProps,
   LedWall,
   type LedWallProps,
+  PaletteMap,
+  type PaletteMapProps,
   ShaderScene,
 } from '@camp-dev/shaders';
 
-// Shaped like a composition document's stack and presets, keyed by entry id.
-// The brief's planned stack differs: `field` holds the palette here, which
-// moves to a `palette` entry once PaletteMap exists, and `heat` stands in for
-// a `trail` entry.
+// Shaped like a composition document's stack and presets, keyed by entry id,
+// in the brief's planned order: the field, the trail's heat added to it,
+// the palette map, then the wall.
 interface StackProps {
   field: FractalNoiseProps;
-  heat: CursorSpotlightProps;
+  trail: CursorTrailProps;
+  palette: PaletteMapProps;
   wall: LedWallProps;
 }
 
@@ -40,37 +42,47 @@ interface Preset {
 // ---------------------------------------------
 // The reference look. Each preset below overrides some of these.
 const STACK_PROPS: StackProps = {
-  // The heat field. Six auto-spaced stops, cold to hot, sampled from the
-  // reference recording. softness 0 snaps the field to one flat band per
-  // stop, and contrast spreads the noise wide enough to reach all six. The
-  // band edges are clean contours, not the reference's dither. angle and
-  // stretch draw the features out into the reference's streaks, climbing
-  // from lower left to upper right at 30 degrees. scale counts features
-  // across the streaks, and speed 0.05 is a slow drift, a quarter of the
-  // default.
+  // The heat field, as a value from black to white that PaletteMap turns
+  // into color. contrast spreads the noise wide enough to reach every
+  // palette color. angle and stretch draw the features out into the
+  // reference's streaks, climbing from lower left to upper right at 30
+  // degrees. scale counts features across the streaks, and speed 0.05 is a
+  // slow drift, a quarter of the default.
   field: {
     angle: 30,
     balance: 0.5,
-    contrast: 2.2,
+    contrast: 1.75,
     detail: 0.45,
     octaves: 6,
     scale: 5,
-    softness: 0,
     speed: 0.05,
-    stops: [
-      { color: 'oklch(0.99 0 0)' },
-      { color: 'oklch(0.26 0.039 271)' },
-      { color: 'oklch(0.54 0.18 270)' },
-      { color: 'oklch(0.82 0.158 85)' },
-      { color: 'oklch(0.92 0.215 120)' },
-      { color: 'oklch(0.61 0.195 31)' },
-    ],
+    stops: [{ color: 'oklch(0 0 0)' }, { color: 'oklch(1 0 0)' }],
     stretch: 3,
   },
-  // Stand-in for cursor heat. It brightens a round spot after the palette,
-  // so it can't push a cell into a hotter color, and it leaves no trail.
-  // radius is in canvas heights: 0.14 of the hero's 696 px is about 100 px.
-  heat: { intensity: 0.6, radius: 0.14 },
+  // The cursor heat, added to the field's value before the palette map, so
+  // the spot and its trail pass through the same palette and dither as the
+  // field. radius is in canvas heights, and the brush fades to nothing at
+  // its edge, so the visible spot is smaller: 0.1 of the hero's 696 px
+  // reaches about 70 px. The tail draws in over half a second, and a still
+  // pointer holds a steady spot, as in the reference. grow 0.75 swells a
+  // fast stroke to up to three quarters again as wide.
+  trail: { decay: 0.5, grow: 0.75, hold: true, intensity: 1, radius: 0.1 },
+  // Six colors, cold to hot, sampled from the reference recording. One
+  // color per 8 CSS px cell, matched to the wall's spacing, so each dot
+  // takes one color. spread 1 scatters the two colors at each band edge
+  // across the whole step between them, as the reference's dither does.
+  palette: {
+    colors: [
+      'oklch(0.99 0 0)',
+      'oklch(0.26 0.039 271)',
+      'oklch(0.54 0.18 270)',
+      'oklch(0.82 0.158 85)',
+      'oklch(0.92 0.215 120)',
+      'oklch(0.61 0.195 31)',
+    ],
+    pixelSize: 8,
+    spread: 1,
+  },
   // One color per 8 CSS px cell with a 1 px gutter, and none of LedWall's
   // motion: no flicker, no swell. variation is left at its default of 0.5,
   // so each dot keeps a fixed random brightness of 50 to 100%.
@@ -90,30 +102,27 @@ const PRESETS: Preset[] = [
     name: 'Infrared',
     backdrop: '#000',
     props: {
-      field: {
-        stops: [
-          { color: 'oklch(0.12 0.02 280)' },
-          { color: 'oklch(0.30 0.14 290)' },
-          { color: 'oklch(0.50 0.22 340)' },
-          { color: 'oklch(0.68 0.20 30)' },
-          { color: 'oklch(0.84 0.17 75)' },
-          { color: 'oklch(0.97 0.08 100)' },
+      palette: {
+        colors: [
+          'oklch(0.12 0.02 280)',
+          'oklch(0.30 0.14 290)',
+          'oklch(0.50 0.22 340)',
+          'oklch(0.68 0.20 30)',
+          'oklch(0.84 0.17 75)',
+          'oklch(0.97 0.08 100)',
         ],
       },
     },
   },
   {
-    // Newsprint: four inks, fine cells, no color at all.
+    // Newsprint: four inks, fine cells, no color at all. The palette's
+    // cells shrink with the wall's spacing.
     name: 'Newsprint',
     backdrop: '#fff',
     props: {
-      field: {
-        stops: [
-          { color: 'oklch(0.99 0 0)' },
-          { color: 'oklch(0.80 0 0)' },
-          { color: 'oklch(0.50 0 0)' },
-          { color: 'oklch(0.18 0 0)' },
-        ],
+      palette: {
+        colors: ['oklch(0.99 0 0)', 'oklch(0.80 0 0)', 'oklch(0.50 0 0)', 'oklch(0.18 0 0)'],
+        pixelSize: 6,
       },
       wall: { dotSize: 5, spacing: 6 },
     },
@@ -124,12 +133,12 @@ const PRESETS: Preset[] = [
     name: 'Risograph',
     backdrop: '#fff',
     props: {
-      field: {
-        stops: [
-          { color: 'oklch(0.97 0.01 90)' },
-          { color: 'oklch(0.45 0.17 265)' },
-          { color: 'oklch(0.68 0.24 0)' },
-          { color: 'oklch(0.88 0.17 95)' },
+      palette: {
+        colors: [
+          'oklch(0.97 0.01 90)',
+          'oklch(0.45 0.17 265)',
+          'oklch(0.68 0.24 0)',
+          'oklch(0.88 0.17 95)',
         ],
       },
     },
@@ -140,13 +149,23 @@ const PRESETS: Preset[] = [
 // rule composition presets follow, so every preset is complete.
 const resolve = ({ props }: Preset): StackProps => ({
   field: { ...STACK_PROPS.field, ...props.field },
-  heat: { ...STACK_PROPS.heat, ...props.heat },
+  trail: { ...STACK_PROPS.trail, ...props.trail },
+  palette: { ...STACK_PROPS.palette, ...props.palette },
   wall: { ...STACK_PROPS.wall, ...props.wall },
 });
 
 // Entry ids in stack order, for the toggles that switch an entry off to show
 // what it adds.
-const ENTRY_IDS: Array<keyof StackProps> = ['field', 'heat', 'wall'];
+const ENTRY_IDS: Array<keyof StackProps> = ['field', 'trail', 'palette', 'wall'];
+
+const TOOLBAR_STYLE = {
+  display: 'flex',
+  flexWrap: 'wrap',
+  gap: 16,
+  marginBottom: 16,
+  color: '#000',
+  font: '13px ui-monospace, monospace',
+} as const;
 
 // ---------------------------------------------
 // Scene
@@ -154,7 +173,7 @@ const ENTRY_IDS: Array<keyof StackProps> = ['field', 'heat', 'wall'];
 export default function RoughScene() {
   const [preset, setPreset] = useState(DEFAULT_PRESET);
   const [hidden, setHidden] = useState<ReadonlySet<keyof StackProps>>(new Set());
-  const { field, heat, wall } = resolve(preset);
+  const { field, trail, palette, wall } = resolve(preset);
   const shows = (id: keyof StackProps) => !hidden.has(id);
   const toggle = (id: keyof StackProps) =>
     setHidden((current) => {
@@ -187,15 +206,7 @@ export default function RoughScene() {
           </button>
         ))}
       </div>
-      <div
-        style={{
-          display: 'flex',
-          gap: 16,
-          marginBottom: 16,
-          color: '#000',
-          font: '13px ui-monospace, monospace',
-        }}
-      >
+      <div style={TOOLBAR_STYLE}>
         {ENTRY_IDS.map((id) => (
           <label key={id} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             <input checked={shows(id)} onChange={() => toggle(id)} type="checkbox" />
@@ -214,7 +225,8 @@ export default function RoughScene() {
       >
         <ShaderScene>
           {shows('field') && <FractalNoise {...field} />}
-          {shows('heat') && <CursorSpotlight {...heat} />}
+          {shows('trail') && <CursorTrail {...trail} />}
+          {shows('palette') && <PaletteMap {...palette} />}
           {shows('wall') && <LedWall {...wall} />}
         </ShaderScene>
       </div>
