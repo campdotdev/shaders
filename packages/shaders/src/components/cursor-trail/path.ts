@@ -40,8 +40,11 @@ interface Piece {
   heldAt: number;
   /** How far the tail reaches back along the path, in canvas heights. */
   length: number;
-  /** How fast the tail draws in, in canvas heights per second. */
-  pace: number;
+  /**
+   * How long the tail was when the pointer last moved this piece, in canvas
+   * heights. The tail draws in by this much over `decay` seconds.
+   */
+  reach: number;
 }
 
 export interface PathStep {
@@ -191,9 +194,9 @@ function smooth(points: Point[], along: number[], length: number, smoothing: num
 // The tail's length is a running total, not a window of time. Each move
 // adds its distance, and the tail draws in by its own length over `decay`
 // seconds, so a pointer moving at a steady speed trails as far as it
-// travels in `decay` seconds. When the pointer stops, the tail keeps the
-// last pace it drew in at, so it starts shortening at once and reaches the
-// head in `decay` seconds, however long ago the stroke began.
+// travels in `decay` seconds. When the pointer stops, the tail keeps
+// drawing in by the length it had then, so it starts shortening at once and
+// reaches the head in `decay` seconds, however long ago the stroke began.
 //
 // The whole shape takes the brush's current radius, so when `grow` eases the
 // brush back after a fast move, the tail thins with the head instead of
@@ -212,7 +215,7 @@ export function createTrailPath(): TrailPath {
     points,
     heldAt: now,
     length,
-    pace: 0,
+    reach: 0,
   });
 
   // A move closer than MIN_SPACING to the point before the head slides the
@@ -288,16 +291,18 @@ export function createTrailPath(): TrailPath {
     }
   };
 
-  // Draw the tail in. A piece the pointer moved this frame sets its pace
-  // from its length, so the tail settles at the distance the pointer covers
-  // in `decay` seconds. A piece left alone keeps its last pace, so it draws
-  // in at a steady speed and ends at the head in `decay` seconds.
+  // Draw the tail in by its reach over `decay` seconds. A piece the pointer
+  // moved this frame takes its length as its reach, so the tail settles at
+  // the distance the pointer covers in `decay` seconds. A piece left alone
+  // keeps its reach, so it draws in at a steady speed and ends at the head
+  // in `decay` seconds. The speed reads `decay` each frame, so a change to
+  // it reaches a resting tail too.
   const drawIn = (target: Piece, moved: boolean, elapsed: number) => {
     if (decay <= 0) {
       target.length = 0;
     } else {
-      if (moved) target.pace = target.length / decay;
-      target.length = Math.max(0, target.length - target.pace * elapsed);
+      if (moved) target.reach = target.length;
+      target.length = Math.max(0, target.length - (target.reach / decay) * elapsed);
     }
     trim(target);
   };
@@ -380,7 +385,13 @@ export function createTrailPath(): TrailPath {
         // tail only a little longer than nothing tapers all the way to 0
         // inside the disc, and without this would cut off its back half.
         shape(0);
-        for (let at = 0; at < smoothed.length; at += 1) shape(at);
+        // A piece with no tail ends on its full head, so the segment from
+        // there to the next piece's zero point would draw a cone between
+        // them. Close it with another zero point instead. The segment from
+        // the head to it has no length, so it reads its start and still
+        // draws the disc.
+        if (length > 0) for (let at = 0; at < smoothed.length; at += 1) shape(at);
+        else write(head, 0, 0);
       }
 
       return count;

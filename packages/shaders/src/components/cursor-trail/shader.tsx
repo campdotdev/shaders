@@ -184,10 +184,11 @@ export function CursorTrailShader({
       const disabled = !visible || motion.scale() <= 0;
       const rest = visible && holdRef.current && !input.isScripting() ? previous : null;
 
-      const grown = growth.step(pendingStroke, pendingDelta, aspect.value, disabled);
+      const delta = pendingDelta;
+      const grown = growth.step(pendingStroke, delta, aspect.value, disabled);
 
       path.step({
-        delta: pendingDelta,
+        delta,
         stroke: pendingStroke,
         rest,
         radius: radiusUniform.value * (1 + Math.max(0, growUniform.value) * grown),
@@ -198,7 +199,13 @@ export function CursorTrailShader({
       });
       pendingStroke = null;
       pendingDelta = 0;
-      changed = field.draw(packed, path.pack(packed));
+      const count = path.pack(packed);
+
+      // A step with no time in it, such as the first after a pause, draws
+      // the same field without the trail having settled. While any of the
+      // trail shows, count it as a change, so the scene draws on until a
+      // step with time in it moves the trail along.
+      changed = field.draw(packed, count) || (delta <= 0 && count > 0);
       const current = field.texture;
 
       active.value = current ? 1 : 0;

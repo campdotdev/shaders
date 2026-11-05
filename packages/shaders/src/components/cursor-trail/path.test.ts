@@ -115,6 +115,38 @@ it('draws the tail all the way into a held head in decay seconds', () => {
   expect(heat).toBe(1);
 });
 
+it('draws a resting tail in by a new decay when decay changes', () => {
+  const path = createTrailPath();
+  const rest = moveRight(path, 0.5, 1);
+
+  for (let frame = 0; frame < 6; frame += 1) step(path, { rest });
+  for (let frame = 0; frame < Math.round(0.15 / FRAME); frame += 1) {
+    step(path, { rest, decay: 0.1 });
+  }
+
+  expect(tailLength(path)).toBe(0);
+});
+
+it('draws nothing between two resting spots', () => {
+  const path = createTrailPath();
+
+  // Rest at one spot, leave so it starts to fade, then rest at another.
+  for (let frame = 0; frame < 6; frame += 1) step(path, { rest: [0.2, 0.5] });
+  for (let frame = 0; frame < 6; frame += 1) step(path, {});
+  for (let frame = 0; frame < 6; frame += 1) step(path, { rest: [0.8, 0.5] });
+  const points = packed(path);
+
+  // Both spots still show.
+  expect(points.filter(([, , width = 0]) => width > 0).length).toBeGreaterThan(0);
+  for (let at = 1; at < points.length; at += 1) {
+    const [x0, y0, width0 = 0] = points[at - 1] ?? [];
+    const [x1, y1, width1 = 0] = points[at] ?? [];
+
+    // A segment that spans any distance is part of a tail, and there is none.
+    if (x0 !== x1 || y0 !== y1) expect([width0, width1]).toEqual([0, 0]);
+  }
+});
+
 it('leaves nothing once decay passes without hold', () => {
   const path = createTrailPath();
 
