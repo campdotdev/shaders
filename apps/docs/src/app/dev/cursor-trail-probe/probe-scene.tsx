@@ -4,15 +4,12 @@
 // 696 CSS pixel proportions, the size composition 2 is measured at. The
 // sources show the trail over a flat field and over a dark LED wall, where
 // each cell reads one heat value.
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import {
   CursorTrail,
-  getReducedMotionPolicy,
   LedWall,
   LinearGradient,
-  type ReducedMotionPolicy,
-  setReducedMotionPolicy,
   ShaderMonitor,
   ShaderScene,
 } from '@camp-dev/shaders';
@@ -26,6 +23,8 @@ import {
   SliderInput,
   useSnapshot,
 } from '@/components/controls';
+
+import { MotionPolicyPicker } from '../motion-policy-picker';
 
 // ---- Probe settings
 interface ProbeParams {
@@ -108,14 +107,6 @@ function Controls() {
 export default function ProbeScene() {
   const store = useMemo(() => createControlStore<ProbeParams>(INITIAL), []);
   const [paused, setPaused] = useState(false);
-  const [motion, setMotion] = useState<ReducedMotionPolicy>(getReducedMotionPolicy);
-
-  // Restore the app's policy when leaving this dev-only probe.
-  useEffect(() => {
-    const previous = getReducedMotionPolicy();
-
-    return () => setReducedMotionPolicy(previous);
-  }, []);
 
   return (
     <div style={{ padding: 24, minHeight: '100vh', background: '#09090b', color: '#fafafa' }}>
@@ -138,25 +129,7 @@ export default function ProbeScene() {
           />{' '}
           Pause scene
         </label>
-        <label>
-          Motion policy{' '}
-          <select
-            onChange={(event) => {
-              const next = event.target.value;
-
-              if (next === 'auto' || next === 'off' || next === 'slow' || next === 'paused') {
-                setMotion(next);
-                setReducedMotionPolicy(next);
-              }
-            }}
-            value={motion}
-          >
-            <option value="auto">Follow system</option>
-            <option value="off">Full speed</option>
-            <option value="slow">Slow</option>
-            <option value="paused">Paused, clear effect</option>
-          </select>
-        </label>
+        <MotionPolicyPicker />
       </div>
       <ControlsProvider store={store}>
         <div style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 24 }}>

@@ -8,11 +8,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   CursorSmudge,
-  getReducedMotionPolicy,
   LinearGradient,
   LiquidGradient,
-  type ReducedMotionPolicy,
-  setReducedMotionPolicy,
   ShaderMonitor,
   ShaderScene,
   useStaticSceneHint,
@@ -29,6 +26,8 @@ import {
   useSnapshot,
 } from '@/components/controls';
 import { EASE_OUT } from '@/lib/easing';
+
+import { MotionPolicyPicker } from '../motion-policy-picker';
 
 // ---- Probe settings and measured scene
 interface ProbeParams {
@@ -163,16 +162,8 @@ export default function ProbeScene() {
   const [benchmark, setBenchmark] = useState(false);
   const [large, setLarge] = useState(false);
   const [paused, setPaused] = useState(false);
-  const [motion, setMotion] = useState<ReducedMotionPolicy>(getReducedMotionPolicy);
   const [scriptSeconds, setScriptSeconds] = useState(0.85);
   const { point, scripting, runStroke } = useScriptedJStroke(scriptSeconds);
-
-  // Restore the app's policy when leaving this dev-only probe.
-  useEffect(() => {
-    const previous = getReducedMotionPolicy();
-
-    return () => setReducedMotionPolicy(previous);
-  }, []);
 
   return (
     <div style={{ padding: 24, minHeight: '180vh', background: '#09090b', color: '#fafafa' }}>
@@ -227,25 +218,7 @@ export default function ProbeScene() {
             <option value={3}>3 s, time to mouse over it</option>
           </select>
         </label>
-        <label>
-          Motion policy{' '}
-          <select
-            onChange={(event) => {
-              const next = event.target.value;
-
-              if (next === 'auto' || next === 'off' || next === 'slow' || next === 'paused') {
-                setMotion(next);
-                setReducedMotionPolicy(next);
-              }
-            }}
-            value={motion}
-          >
-            <option value="auto">Follow system</option>
-            <option value="off">Full speed</option>
-            <option value="slow">Slow</option>
-            <option value="paused">Paused, clear effect</option>
-          </select>
-        </label>
+        <MotionPolicyPicker />
       </div>
       <ControlsProvider store={store}>
         <div style={{ display: 'flex', alignItems: 'flex-start', flexWrap: 'wrap', gap: 24 }}>
