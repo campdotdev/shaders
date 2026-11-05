@@ -99,6 +99,29 @@ it('starts drawing the tail in as soon as the pointer stops, even after a short 
   expect(tailLength(path)).toBeLessThan(atStop * 0.97);
 });
 
+it('starts drawing the tail in as soon as the pointer stops after small moves and a flick', () => {
+  const path = createTrailPath();
+  const [x, y] = moveRight(path, 0.1, 1);
+  let from: Vector2 = [x, y];
+
+  // Forty moves between the head and just behind it, each closer than the
+  // points' spacing, so each slides the head instead of adding a point.
+  for (let frame = 0; frame < 40; frame += 1) {
+    const to: Vector2 = [frame % 2 ? x : x - 0.003, y];
+
+    step(path, { stroke: { from, to, presence: 1 } });
+    from = to;
+  }
+  const rest: Vector2 = [from[0] + 0.05, y];
+
+  step(path, { stroke: { from, to: rest, presence: 1 } });
+  const atStop = tailLength(path);
+
+  for (let frame = 0; frame < 6; frame += 1) step(path, { rest });
+
+  expect(tailLength(path)).toBeLessThan(atStop * 0.97);
+});
+
 it('draws the tail all the way into a held head in decay seconds', () => {
   const path = createTrailPath();
   const rest = moveRight(path, 0.5, 1);

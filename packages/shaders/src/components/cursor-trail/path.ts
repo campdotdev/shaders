@@ -219,13 +219,21 @@ export function createTrailPath(): TrailPath {
   });
 
   // A move closer than MIN_SPACING to the point before the head slides the
-  // head there. Anything farther adds a point.
+  // head there. Anything farther adds a point. Returns how much longer the
+  // path got, which is less than the move when the head slides back.
   const extend = (piece: Piece, next: Point) => {
     const { points } = piece;
     const before = points.at(-2);
+    const head = points.at(-1) ?? next;
 
-    if (before && distance(before, next) < MIN_SPACING) points[points.length - 1] = next;
-    else points.push(next);
+    if (before && distance(before, next) < MIN_SPACING) {
+      points[points.length - 1] = next;
+
+      return distance(before, next) - distance(before, head);
+    }
+    points.push(next);
+
+    return distance(head, next);
   };
 
   // A piece carries on when the move starts at its head and the head was
@@ -247,8 +255,7 @@ export function createTrailPath(): TrailPath {
     const to = point(stroke.to);
 
     if (continues(live, stroke.from, elapsed)) {
-      live.length += distance(live.points.at(-1) ?? to, to);
-      extend(live, to);
+      live.length = Math.max(0, live.length + extend(live, to));
 
       return live;
     }

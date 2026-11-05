@@ -223,7 +223,9 @@ export default function RoughScene() {
           background: preset.backdrop,
         }}
       >
-        <ShaderScene>
+        {/* Effects stack in mount order, so an entry switched back on would
+            land on top. A new key remounts the scene in stack order. */}
+        <ShaderScene key={ENTRY_IDS.filter(shows).join(' ')}>
           {shows('field') && <FractalNoise {...field} />}
           {shows('trail') && <CursorTrail {...trail} />}
           {shows('palette') && <PaletteMap {...palette} />}
