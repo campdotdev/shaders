@@ -4,6 +4,7 @@
 import type { Page } from '@playwright/test';
 
 import { expect, test } from './fixtures';
+import { changedPixels } from './helpers';
 
 // ---- Controlled browser input and image comparison
 async function openProbe(page: Page, source = 'LiquidGradient') {
@@ -23,41 +24,6 @@ async function openProbe(page: Page, source = 'LiquidGradient') {
   await page.addStyleTag({ content: '[data-testid="shaders-monitor"] { visibility: hidden; }' });
 
   return canvas;
-}
-
-async function changedPixels(page: Page, before: Buffer, after: Buffer) {
-  return page.evaluate(
-    async ([first, second]) => {
-      const read = async (png: string) => {
-        const response = await fetch(`data:image/png;base64,${png}`);
-        const bitmap = await createImageBitmap(await response.blob());
-        const scratch = document.createElement('canvas');
-
-        scratch.width = bitmap.width;
-        scratch.height = bitmap.height;
-        const context = scratch.getContext('2d')!;
-
-        context.drawImage(bitmap, 0, 0);
-        bitmap.close();
-
-        return context.getImageData(0, 0, scratch.width, scratch.height).data;
-      };
-      const [left, right] = await Promise.all([read(first!), read(second!)]);
-      let changed = 0;
-
-      for (let index = 0; index < left.length; index += 4) {
-        const difference =
-          Math.abs(left[index]! - right[index]!) +
-          Math.abs(left[index + 1]! - right[index + 1]!) +
-          Math.abs(left[index + 2]! - right[index + 2]!);
-
-        if (difference > 3) changed++;
-      }
-
-      return changed;
-    },
-    [before.toString('base64'), after.toString('base64')],
-  );
 }
 
 async function swipe(page: Page) {
