@@ -33,7 +33,7 @@ interface ProbeParams {
   intensity: number;
   decay: number;
   source: 'flat' | 'wall';
-  hold: 'off' | 'on';
+  hold: boolean;
   grow: number;
   smoothing: number;
 }
@@ -43,7 +43,7 @@ const INITIAL: ProbeParams = {
   intensity: 0.5,
   decay: 0.75,
   source: 'flat',
-  hold: 'off',
+  hold: false,
   grow: 0.3,
   smoothing: 0.05,
 };
@@ -60,7 +60,7 @@ function LiveScene({ paused }: { paused: boolean }) {
       <CursorTrail
         decay={params.decay}
         grow={params.grow}
-        hold={params.hold === 'on'}
+        hold={params.hold}
         intensity={params.intensity}
         radius={params.radius}
         smoothing={params.smoothing}
@@ -92,8 +92,8 @@ function Controls() {
         <SelectInput
           label="Hold"
           options={[
-            { label: 'Off: everything fades away', value: 'off' },
-            { label: 'On: a still pointer keeps a spot', value: 'on' },
+            { label: 'Off: everything fades away', value: false },
+            { label: 'On: a still pointer keeps a spot', value: true },
           ]}
           path="hold"
         />
