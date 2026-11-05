@@ -35,6 +35,7 @@ interface ProbeParams {
   source: 'flat' | 'wall';
   hold: 'off' | 'on';
   grow: number;
+  smoothing: number;
 }
 
 const INITIAL: ProbeParams = {
@@ -44,6 +45,7 @@ const INITIAL: ProbeParams = {
   source: 'flat',
   hold: 'off',
   grow: 0.3,
+  smoothing: 0.05,
 };
 
 // A dark blue-gray ramp, so added light shows at every point.
@@ -61,6 +63,7 @@ function LiveScene({ paused }: { paused: boolean }) {
         hold={params.hold === 'on'}
         intensity={params.intensity}
         radius={params.radius}
+        smoothing={params.smoothing}
       />
       {params.source === 'wall' ? (
         <LedWall bleed={0} dotSize={7} flicker={0} spacing={8} swell={0} />
@@ -95,6 +98,7 @@ function Controls() {
           path="hold"
         />
         <SliderInput label="Grow" max={2} min={0} path="grow" step={0.05} />
+        <SliderInput label="Smoothing" max={0.3} min={0} path="smoothing" step={0.01} />
       </Section>
     </ControlPanel>
   );
@@ -117,12 +121,13 @@ export default function ProbeScene() {
     <div style={{ padding: 24, minHeight: '100vh', background: '#09090b', color: '#fafafa' }}>
       <h1>CursorTrail probe</h1>
       <p>
-        Move across the image. The trail follows the last Decay seconds of path, so a faster move
-        leaves a longer tail, and a stopped pointer draws it in along the path. With Hold off, the
-        head fades as the tail shortens, leaving nothing. With Hold on, the tail shortens into a
-        steady spot, which fades when the pointer leaves. Grow widens the brush with the pointer's
-        speed and eases it back as the pointer slows. Under the paused motion policy, the trail is
-        off, so only a held spot shows.
+        Move across the image. A moving pointer trails about as far as it travels in Decay seconds,
+        so a faster move leaves a longer tail. A stopped pointer draws the trail in along its path
+        over Decay seconds. With Hold off, the head fades as the tail shortens, leaving nothing.
+        With Hold on, the tail shortens into a steady spot, which fades when the pointer leaves.
+        Grow widens the whole trail with the pointer's speed and eases it back as the pointer slows.
+        Smoothing averages the path behind the head, so the trail follows a smoother curve than the
+        pointer took. Under the paused motion policy, the trail is off, so only a held spot shows.
       </p>
       <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', marginBlock: 16 }}>
         <label>

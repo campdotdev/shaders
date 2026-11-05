@@ -15,6 +15,12 @@
 // The whole shape takes the brush's current radius, so when `grow` eases the
 // brush back after a fast move, the tail thins with the head instead of
 // keeping the size it was drawn at until it draws in.
+//
+// The recorded points are one frame's move apart, so a fast pointer leaves
+// long straight runs with a corner at each. pack() rounds those corners with
+// a curve, then lays points evenly along it, so the shader draws a smooth
+// stroke and a long trail fits the point budget. `smoothing` then averages
+// each of those points with its neighbors, which evens out a shaky hand.
 import type { PushStroke, Vector2 } from '../../engine.js';
 
 /** Most points pack() writes, and the bound of the shader's loop. */
@@ -32,6 +38,9 @@ const RESUME_SECONDS = 0.05;
 // path still ahead of each point. Below 1, the tail stays full for longer
 // and comes to a point at the end.
 const WIDTH_TAPER = 0.5;
+// Straight steps per rounded corner before the curve is laid out evenly.
+// Four keeps each step's sag off the true curve well under a pixel.
+const CURVE_STEPS = 4;
 
 interface Point {
   /** Top-left canvas coordinates, 0..1 on both axes. */
@@ -61,6 +70,8 @@ export interface PathStep {
   radius: number;
   /** Seconds the tail takes to draw in, and the head to fade without hold. */
   decay: number;
+  /** How far along the path, in canvas heights, each point is averaged with its neighbors. */
+  smoothing: number;
   /** Canvas width over height, so lengths are measured in canvas heights. */
   aspect: number;
   /** Keep no path while disabled, only a resting head. */
@@ -78,12 +89,122 @@ export interface TrailPath {
   pack: (out: Float32Array) => number;
 }
 
+// ---- Curving and spacing the path for the shader
+// How far apart two points are, in canvas heights.
+type Measure = (a: Point, b: Point) => number;
+
+const between = (from: Point, to: Point, share: number): Point => ({
+  x: from.x + (to.x - from.x) * share,
+  y: from.y + (to.y - from.y) * share,
+});
+
+function lineLength(line: Point[], measure: Measure) {
+  return line.reduce((sum, here, at) => {
+    const before = line[at - 1];
+
+    return before ? sum + measure(before, here) : sum;
+  }, 0);
+}
+
+// One rounded corner: a curve from `start` to `end` that bends toward
+// `corner`, in CURVE_STEPS straight steps, leaving out `end`.
+function bend(start: Point, corner: Point, end: Point): Point[] {
+  return Array.from({ length: CURVE_STEPS }, (_, step) => {
+    const share = step / CURVE_STEPS;
+
+    return between(between(start, corner, share), between(corner, end, share), share);
+  });
+}
+
+// Round each corner of the path with a curve: from the middle of the run
+// before a point to the middle of the run after it, bending toward the
+// point. Each curve leaves in the direction the last one arrived, so the
+// path has no corners. Straight runs at the ends reach the tail and the
+// head, so both stay where they are.
+function round(points: Point[]): Point[] {
+  const tail = points[0];
+  const head = points.at(-1);
+
+  if (!tail || !head || points.length < 3) return points;
+  const middles = points.slice(1).map((after, at) => between(points[at] ?? after, after, 0.5));
+  const bends = points
+    .slice(1, -1)
+    .flatMap((corner, at) => bend(middles[at] ?? corner, corner, middles[at + 1] ?? corner));
+
+  return [tail, ...bends, middles.at(-1) ?? head, head];
+}
+
+// Lay points `spacing` apart along the line, head first, ending at the
+// tail. A line too long for `room` points gets wider spacing. `along` is
+// each point's distance back from the head.
+function layOut(line: Point[], spacing: number, room: number, measure: Measure) {
+  const length = lineLength(line, measure);
+  const step = Math.max(spacing, length / Math.max(1, room - 2));
+  const head = line.at(-1);
+  const points = head ? [head] : [];
+  const along = [0];
+  let walked = 0;
+  let next = step;
+
+  for (let at = line.length - 1; at > 0; at -= 1) {
+    const newer = line[at];
+    const older = line[at - 1];
+
+    if (!newer || !older) continue;
+    const span = measure(newer, older);
+
+    // Stop short of the tail, which is added at its exact place below.
+    while (walked + span >= next && next < length - step * 0.5) {
+      points.push(between(newer, older, (next - walked) / span));
+      along.push(next);
+      next += step;
+    }
+    walked += span;
+  }
+  const tail = line[0];
+
+  if (tail && line.length > 1) {
+    points.push(tail);
+    along.push(length);
+  }
+
+  return { points, along, length };
+}
+
+// Average each point with its neighbors within `smoothing` along the path,
+// weighting nearer ones more. The reach narrows toward both ends, so the
+// head stays on the pointer and the tail on the path.
+function smooth(points: Point[], along: number[], length: number, smoothing: number): Point[] {
+  return points.map((here, at) => {
+    const from = along[at] ?? 0;
+    const reach = Math.min(smoothing, from, length - from);
+
+    if (reach <= 0) return here;
+    let x = 0;
+    let y = 0;
+    let total = 0;
+
+    points.forEach((neighbor, other) => {
+      const weight = 1 - Math.abs((along[other] ?? 0) - from) / reach;
+
+      if (weight <= 0) return;
+      x += neighbor.x * weight;
+      y += neighbor.y * weight;
+      total += weight;
+    });
+
+    return { x: x / total, y: y / total };
+  });
+}
+
+// ---- Recording the pointer's path
 export function createTrailPath(): TrailPath {
   let pieces: Piece[] = [];
   let now = 0;
   let aspect = 1;
   let decay = 0;
   let radius = 0;
+  let smoothing = 0;
 
   const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
     Math.hypot((a.x - b.x) * aspect, a.y - b.y);
@@ -122,6 +243,25 @@ export function createTrailPath(): TrailPath {
     );
   };
 
+  // Carry the live piece on to the end of the stroke, or start a new piece
+  // with it. Returns the piece the stroke moved.
+  const record = (live: Piece | undefined, stroke: PushStroke, elapsed: number): Piece => {
+    const to = point(stroke.to);
+
+    if (continues(live, stroke.from, elapsed)) {
+      live.length += distance(live.points.at(-1) ?? to, to);
+      extend(live, to);
+
+      return live;
+    }
+    const from = point(stroke.from);
+    const piece = newPiece([from, to], distance(from, to));
+
+    pieces.push(piece);
+
+    return piece;
+  };
+
   // 1 while the head is held, falling to 0 over `decay` seconds once it isn't.
   const fade = (piece: Piece) => {
     if (piece.heldAt >= now) return 1;
@@ -145,10 +285,7 @@ export function createTrailPath(): TrailPath {
       if (reached + span >= length) {
         const share = span > 0 ? (length - reached) / span : 0;
 
-        points.splice(0, at + 1, {
-          x: newer.x + (older.x - newer.x) * share,
-          y: newer.y + (older.y - newer.y) * share,
-        });
+        points.splice(0, at + 1, between(newer, older, share));
 
         return;
       }
@@ -177,6 +314,7 @@ export function createTrailPath(): TrailPath {
       rest,
       radius: nextRadius,
       decay: nextDecay,
+      smoothing: nextSmoothing,
       aspect: nextAspect,
       disabled,
     }) {
@@ -186,6 +324,7 @@ export function createTrailPath(): TrailPath {
       aspect = nextAspect;
       decay = Math.max(0, nextDecay);
       radius = Math.max(0, nextRadius);
+      smoothing = Math.max(0, nextSmoothing);
       if (disabled) {
         // A resting head, held where the pointer is, and no path behind it.
         pieces = rest ? [newPiece([point(rest)], 0)] : [];
@@ -196,19 +335,7 @@ export function createTrailPath(): TrailPath {
       let moved: Piece | null = null;
 
       if (stroke && stroke.presence > 0) {
-        const head = live?.points.at(-1);
-        const to = point(stroke.to);
-
-        if (live && head && continues(live, stroke.from, elapsed)) {
-          live.length += distance(head, to);
-          extend(live, to);
-          moved = live;
-        } else {
-          const from = point(stroke.from);
-
-          moved = newPiece([from, to], distance(from, to));
-          pieces.push(moved);
-        }
+        moved = record(live, stroke, elapsed);
         moved.heldAt = now;
       } else if (rest) {
         // Resting holds the head without moving it, and the tail draws in
@@ -227,35 +354,29 @@ export function createTrailPath(): TrailPath {
         out.set([at.x, 1 - at.y, width, heat], count * 4);
         count += 1;
       };
-
       // Newest piece first, so a full budget drops the oldest.
-      for (let index = pieces.length - 1; index >= 0; index -= 1) {
-        const piece = pieces[index];
+      const lines = pieces.map((piece) => ({ piece, line: round(piece.points) })).reverse();
+      // Each piece spends three points on its zero point, its doubled head,
+      // and its tail. Space the rest evenly over every piece's length.
+      const total = lines.reduce((sum, { line }) => sum + lineLength(line, distance), 0);
+      const spacing = Math.max(MIN_SPACING, total / Math.max(1, capacity - 3 * lines.length));
 
-        if (!piece || count + 4 > capacity) break;
-        const { points } = piece;
-        const head = points.at(-1);
+      for (const { piece, line } of lines) {
+        const room = capacity - count - 2;
 
-        if (!head) continue;
-        // Distance back along the path from the head to each point.
-        const along = new Array<number>(points.length).fill(0);
-
-        for (let at = points.length - 2; at >= 0; at -= 1) {
-          const here = points[at];
-          const next = points[at + 1];
-
-          if (here && next) along[at] = (along[at + 1] ?? 0) + distance(here, next);
-        }
-        const length = along[0] ?? 0;
+        if (room < 2) break;
+        const { points, along, length } = layOut(line, spacing, room, distance);
+        const smoothed = smooth(points, along, length, smoothing);
         const strength = fade(piece);
         const shape = (at: number) => {
           const ahead = length > 0 ? 1 - (along[at] ?? 0) / length : 1;
-          const source = points[at];
+          const source = smoothed[at];
 
-          if (source)
-            write(source, radius * ahead ** WIDTH_TAPER * strength, ahead * strength);
+          if (source) write(source, radius * ahead ** WIDTH_TAPER * strength, ahead * strength);
         };
+        const head = smoothed[0];
 
+        if (!head) continue;
         // A zero point at the head first, so the segment from the last
         // piece's tail draws nothing.
         write(head, 0, 0);
@@ -263,14 +384,8 @@ export function createTrailPath(): TrailPath {
         // the head as a whole disc, whatever the path behind it does. A
         // tail only a little longer than nothing tapers all the way to 0
         // inside the disc, and without this would cut off its back half.
-        shape(points.length - 1);
-        shape(points.length - 1);
-        // Thin a path longer than the budget left, keeping both ends.
-        const room = capacity - count;
-        const stride = Math.max(1, Math.ceil(points.length / Math.max(1, room - 1)));
-
-        for (let at = points.length - 1 - stride; at > 0; at -= stride) shape(at);
-        if (points.length > 1) shape(0);
+        shape(0);
+        for (let at = 0; at < smoothed.length; at += 1) shape(at);
       }
 
       return count;

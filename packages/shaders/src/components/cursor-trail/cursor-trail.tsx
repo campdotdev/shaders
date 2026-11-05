@@ -41,6 +41,15 @@ export interface CursorTrailProps {
    * 0.3. Accepts a static value or an animation signal.
    */
   grow?: AnimatableProp<number>;
+  /**
+   * How far along the path, in canvas heights, the trail averages the
+   * pointer's positions, so it follows a smoother curve than the pointer
+   * took. The head stays on the pointer; the averaging reaches full
+   * strength this far behind it. 0 follows the pointer's path exactly,
+   * with only the corners between frames rounded. Defaults to 0.05.
+   * Accepts a static value or an animation signal.
+   */
+  smoothing?: AnimatableProp<number>;
 }
 
 export function CursorTrail({
@@ -49,6 +58,7 @@ export function CursorTrail({
   decay = 0.75,
   hold = false,
   grow = 0.3,
+  smoothing = 0.05,
 }: CursorTrailProps) {
   return (
     <CursorTrailShader
@@ -57,6 +67,7 @@ export function CursorTrail({
       hold={hold}
       intensity={intensity}
       radius={radius}
+      smoothing={smoothing}
     />
   );
 }

@@ -9,7 +9,9 @@
 // It registers as a resample, not a color transform, so a UV warp mounted
 // after it moves the heat with the image: under LedWall's cell snap each
 // cell reads one heat value (ADR 0006). With `grow`, the brush swells with
-// the pointer's speed and eases back to `radius` as it slows.
+// the pointer's speed and eases back to `radius` as it slows. `smoothing`
+// averages the path behind the head, so the trail runs smoother than the
+// pointer did.
 import { useEffect, useMemo, useRef } from 'react';
 
 import { max, oneMinus, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
@@ -61,12 +63,14 @@ export function CursorTrailShader({
   decay = 0.75,
   hold = false,
   grow = 0.3,
+  smoothing = 0.05,
 }: CursorTrailProps) {
   const context = useShaderContext();
   const radiusUniform = useAnimatableUniform(radius);
   const intensityUniform = useAnimatableUniform(intensity);
   const decayUniform = useAnimatableUniform(decay);
   const growUniform = useAnimatableUniform(grow);
+  const smoothingUniform = useAnimatableUniform(smoothing);
   const fieldTexture = useMemo(() => texture(new Texture(), uv()), []);
   const active = useMemo(() => uniform(0), []);
   const aspect = useAspectUniform();
@@ -218,6 +222,7 @@ export function CursorTrailShader({
         rest,
         radius: radiusUniform.value * (1 + Math.max(0, growUniform.value) * swell),
         decay: decayUniform.value,
+        smoothing: smoothingUniform.value,
         aspect: aspect.value,
         disabled,
       });
@@ -263,6 +268,7 @@ export function CursorTrailShader({
     radiusUniform,
     decayUniform,
     growUniform,
+    smoothingUniform,
   ]);
 
   return null;

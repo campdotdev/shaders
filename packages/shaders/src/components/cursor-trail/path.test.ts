@@ -17,6 +17,7 @@ function step(path: TrailPath, overrides: Partial<PathStep>) {
     radius: RADIUS,
     decay: 2,
     aspect: 1,
+    smoothing: 0,
     disabled: false,
     ...overrides,
   });
@@ -58,6 +59,24 @@ function tailLength(path: TrailPath) {
   }
 
   return length;
+}
+
+// The sharpest turn between neighboring packed segments past the head, in
+// degrees.
+function sharpestTurn(path: TrailPath) {
+  const points = packed(path).slice(2);
+  let sharpest = 0;
+
+  for (let at = 2; at < points.length; at += 1) {
+    const [x0 = 0, y0 = 0] = points[at - 2] ?? [];
+    const [x1 = 0, y1 = 0] = points[at - 1] ?? [];
+    const [x2 = 0, y2 = 0] = points[at] ?? [];
+    const turn = Math.abs(Math.atan2(y2 - y1, x2 - x1) - Math.atan2(y1 - y0, x1 - x0));
+
+    sharpest = Math.max(sharpest, Math.min(turn, Math.PI * 2 - turn));
+  }
+
+  return (sharpest * 180) / Math.PI;
 }
 
 // ---- Behavior
@@ -134,4 +153,63 @@ it('thins the tail with the head when the brush shrinks back', () => {
 
   expect(tailLength(path)).toBeGreaterThan(0);
   expect(widest).toBeCloseTo(RADIUS, 5);
+});
+
+it('rounds the corner between one move and the next', () => {
+  const path = createTrailPath();
+  // A fast flick: a quarter turn in four long moves, about 0.08 apart.
+  const corners: Vector2[] = [
+    [0.3, 0.5],
+    [0.38, 0.52],
+    [0.45, 0.57],
+    [0.5, 0.64],
+    [0.52, 0.72],
+  ];
+
+  for (let at = 1; at < corners.length; at += 1) {
+    const from = corners[at - 1];
+    const to = corners[at];
+
+    if (from && to) step(path, { stroke: { from, to, presence: 1 } });
+  }
+
+  // The raw moves turn about 22 degrees at each corner.
+  expect(sharpestTurn(path)).toBeLessThan(8);
+});
+
+it('smooths a shaky path behind the head without moving the head', () => {
+  const path = createTrailPath();
+  let from: Vector2 = [0.1, 0.5];
+
+  // Right along y = 0.5, wobbling 0.01 up and down every move.
+  for (let frame = 1; frame <= 40; frame += 1) {
+    const to: Vector2 = [0.1 + frame * 0.01, 0.5 + (frame % 2 ? 0.01 : -0.01)];
+
+    step(path, { stroke: { from, to, presence: 1 }, smoothing: 0.05 });
+    from = to;
+  }
+  const points = packed(path);
+  const [, head] = points;
+  const [tailX = 0] = points.at(-1) ?? [];
+  // Beyond the smoothing's reach from either end, the wobble is mostly gone.
+  const settled = points.filter(([x = 0]) => x < from[0] - 0.05 && x > tailX + 0.05);
+
+  expect(head?.slice(0, 2)).toEqual([from[0], 1 - from[1]].map(Math.fround));
+  expect(settled.length).toBeGreaterThan(0);
+  for (const [, y = 0] of settled) expect(Math.abs(y - 0.5)).toBeLessThan(0.002);
+});
+
+it('fits a long path into the budget, keeping both ends', () => {
+  const path = createTrailPath();
+  const end = moveRight(path, 4, 0.6, 3);
+  const points = packed(path);
+  const [, head] = points;
+  const tail = points.at(-1);
+
+  expect(points.length).toBeLessThanOrEqual(MAX_POINTS);
+  expect(head?.[0]).toBeCloseTo(end[0], 5);
+  // The tail comes to a point.
+  expect(tail?.[2]).toBe(0);
+  // Still growing toward 1.8, 0.6 times decay, after 4 seconds.
+  expect(tailLength(path)).toBeGreaterThan(1.2);
 });
