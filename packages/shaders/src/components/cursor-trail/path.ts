@@ -1,26 +1,8 @@
 // Records the pointer's recent path for CursorTrail, so the trail is drawn
-// as one shape that follows it. The head sits at the pointer, and the shape
-// tapers from the head to the end of the path behind it, so when the
-// pointer stops, the tail shortens along the path into the head instead of
-// thinning in place. Plain numbers, no GPU: field.ts draws what pack()
-// returns. Lives beside the component.
-//
-// The tail's length is a running total, not a window of time. Each move
-// adds its distance, and the tail draws in by its own length over `decay`
-// seconds, so a pointer moving at a steady speed trails as far as it
-// travels in `decay` seconds. When the pointer stops, the tail keeps the
-// last pace it drew in at, so it starts shortening at once and reaches the
-// head in `decay` seconds, however long ago the stroke began.
-//
-// The whole shape takes the brush's current radius, so when `grow` eases the
-// brush back after a fast move, the tail thins with the head instead of
-// keeping the size it was drawn at until it draws in.
-//
-// The recorded points are one frame's move apart, so a fast pointer leaves
-// long straight runs with a corner at each. pack() rounds those corners with
-// a curve, then lays points evenly along it, so the shader draws a smooth
-// stroke and a long trail fits the point budget. `smoothing` then averages
-// each of those points with its neighbors, which evens out a shaky hand.
+// as one shape that tapers from the head at the pointer to the end of the
+// path behind it. When the pointer stops, the tail shortens along the path
+// into the head. Plain numbers, no GPU: field.ts draws what pack() returns.
+// Lives beside the component.
 import type { PushStroke, Vector2 } from '../../engine.js';
 
 /** Most points pack() writes, and the bound of the shader's loop. */
@@ -41,6 +23,9 @@ const WIDTH_TAPER = 0.5;
 // Straight steps per rounded corner before the curve is laid out evenly.
 // Four keeps each step's sag off the true curve well under a pixel.
 const CURVE_STEPS = 4;
+
+// A position as the Input hands it over: x, y in top-left canvas coordinates.
+type Position = Vector2 | readonly [number, number];
 
 interface Point {
   /** Top-left canvas coordinates, 0..1 on both axes. */
@@ -90,6 +75,11 @@ export interface TrailPath {
 }
 
 // ---- Curving and spacing the path for the shader
+// The recorded points are one frame's move apart, so a fast pointer leaves
+// long straight runs with a corner at each. pack() rounds those corners with
+// a curve, then lays points evenly along it, so the shader draws a smooth
+// stroke and a long trail fits the point budget. `smoothing` then averages
+// each of those points with its neighbors, which evens out a shaky hand.
 // How far apart two points are, in canvas heights.
 type Measure = (a: Point, b: Point) => number;
 
@@ -198,6 +188,16 @@ function smooth(points: Point[], along: number[], length: number, smoothing: num
 }
 
 // ---- Recording the pointer's path
+// The tail's length is a running total, not a window of time. Each move
+// adds its distance, and the tail draws in by its own length over `decay`
+// seconds, so a pointer moving at a steady speed trails as far as it
+// travels in `decay` seconds. When the pointer stops, the tail keeps the
+// last pace it drew in at, so it starts shortening at once and reaches the
+// head in `decay` seconds, however long ago the stroke began.
+//
+// The whole shape takes the brush's current radius, so when `grow` eases the
+// brush back after a fast move, the tail thins with the head instead of
+// keeping the size it was drawn at until it draws in.
 export function createTrailPath(): TrailPath {
   let pieces: Piece[] = [];
   let now = 0;
@@ -206,9 +206,8 @@ export function createTrailPath(): TrailPath {
   let radius = 0;
   let smoothing = 0;
 
-  const distance = (a: { x: number; y: number }, b: { x: number; y: number }) =>
-    Math.hypot((a.x - b.x) * aspect, a.y - b.y);
-  const point = ([x, y]: Vector2 | readonly [number, number]): Point => ({ x, y });
+  const distance: Measure = (a, b) => Math.hypot((a.x - b.x) * aspect, a.y - b.y);
+  const point = ([x, y]: Position): Point => ({ x, y });
   const newPiece = (points: Point[], length: number): Piece => ({
     points,
     heldAt: now,
@@ -228,18 +227,14 @@ export function createTrailPath(): TrailPath {
 
   // A piece carries on when the move starts at its head and the head was
   // held until the frame before.
-  const continues = (
-    piece: Piece | undefined,
-    from: Vector2 | readonly [number, number],
-    delta: number,
-  ): piece is Piece => {
+  const continues = (piece: Piece | undefined, from: Position, delta: number): piece is Piece => {
     const head = piece?.points.at(-1);
 
     return (
       piece !== undefined &&
       head !== undefined &&
       now - delta - piece.heldAt <= RESUME_SECONDS &&
-      distance(head, { x: from[0], y: from[1] }) < MIN_SPACING
+      distance(head, point(from)) < MIN_SPACING
     );
   };
 

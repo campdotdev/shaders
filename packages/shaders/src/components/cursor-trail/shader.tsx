@@ -2,16 +2,8 @@
 
 // Bridges the scene's cursor and frame loop to a heat texture, and adds the
 // heat to the image beneath. path.ts records where the pointer has been,
-// and field.ts draws that path into the texture as one shape: full at the
-// head, tapering along the path to a point. When the pointer stops, the
-// path behind it runs out, so the tail shortens into the head. With `hold`,
-// the head stays while the pointer rests; without it, the head fades too.
-// It registers as a resample, not a color transform, so a UV warp mounted
-// after it moves the heat with the image: under LedWall's cell snap each
-// cell reads one heat value (ADR 0006). With `grow`, the brush swells with
-// the pointer's speed and eases back to `radius` as it slows. `smoothing`
-// averages the path behind the head, so the trail runs smoother than the
-// pointer did.
+// grow.ts sizes the brush with its speed, and field.ts draws the path into
+// the texture as one shape: full at the head, tapering to a point.
 import { useEffect, useMemo, useRef } from 'react';
 
 import { max, oneMinus, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
@@ -30,6 +22,7 @@ import { useShaderContext } from '../../react/hooks/use-shader-context/use-shade
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import type { CursorTrailProps } from './cursor-trail.js';
 import { createTrailField } from './field.js';
+import { createGrowth } from './grow.js';
 import { createTrailPath, MAX_POINTS } from './path.js';
 
 // Longest the first tick after the scene parks counts for, in seconds: one
@@ -39,22 +32,13 @@ const WAKE_SECONDS = 1 / 60;
 // Smallest alpha the image's color is divided by when the premultiplied
 // alpha is undone, as in PaletteMap. It only has to keep the divide finite.
 const MIN_ALPHA = 1e-4;
-// Pointer speed, in canvas heights per second, at which the brush reaches
-// about two thirds of its full growth (1 - 1/e). Faster moves approach it.
-const GROW_SPEED = 1.5;
-// Seconds the size takes to follow the speed: quick to swell, slower to
-// settle, so the head eases back down after the pointer stops.
-const GROW_RISE = 0.08;
-const GROW_SETTLE = 0.25;
-// Below this share of full growth, snap to the base size, so the scene can
-// stop drawing.
-const GROW_REST = 0.001;
 
-// How fast a stroke crossed the canvas, in canvas heights per second.
-// Stroke points run 0..1 on both axes, so x is stretched by the aspect to
-// measure in heights, as the brush is.
-function strokeSpeed({ from, to }: PushStroke, delta: number, aspect: number): number {
-  return Math.hypot((to[0] - from[0]) * aspect, to[1] - from[1]) / delta;
+// The mouse's move since the last gather, or null when it didn't move or
+// isn't on the canvas.
+function mouseStroke(inside: boolean, from: Vector2 | null, to: Vector2 | null): PushStroke | null {
+  if (!inside || !from || !to) return null;
+
+  return to[0] === from[0] && to[1] === from[1] ? null : { from, to, presence: 1 };
 }
 
 export function CursorTrailShader({
@@ -88,6 +72,9 @@ export function CursorTrailShader({
   }, [context, hold]);
 
   // ---- Add the heat where the image beneath is sampled
+  // It registers as a resample, not a color transform, so a UV warp mounted
+  // after it moves the heat with the image: under LedWall's cell snap each
+  // cell reads one heat value (ADR 0006).
   // Sample the image once at the coordinate given, then add the heat there.
   // The coordinate starts at the top-left and the field at the bottom-left,
   // so flip y to read it.
@@ -127,9 +114,9 @@ export function CursorTrailShader({
     // Whether the last draw changed the field. A frame that changed nothing
     // means the trail has settled, and the scene can stop drawing.
     let changed = true;
-    // How far the brush has grown, from 0 at the base radius to 1 at the
-    // full grow. It eases toward the pointer's speed, so it lags a little.
-    let swell = 0;
+    // How far the brush has grown. It eases toward the pointer's speed, so
+    // it lags a little.
+    const growth = createGrowth();
 
     // A pointer boundary ends a pointer stroke, but not a scripted one. The
     // Input has already moved past a gathered scripted segment, so dropping
@@ -170,13 +157,7 @@ export function CursorTrailShader({
     // for the next draw; do the GPU work only inside its timed pre-pass.
     const gather = ({ delta }: SchedulerTick) => {
       const current = input.getTarget();
-      const from = previous;
-      const moved =
-        inside &&
-        current !== null &&
-        from !== null &&
-        (current[0] !== from[0] || current[1] !== from[1]);
-      const mouse = moved ? { from, to: current, presence: 1 } : null;
+      const mouse = mouseStroke(inside, previous, current);
 
       // A scripted stroke beats the mouse, and the mouse beats the push.
       // While a script is attached, the mouse and the push count for nothing.
@@ -187,7 +168,7 @@ export function CursorTrailShader({
       // first tick after a pause reports 0, so a trail cut off by the pause
       // picks up where it left off.
       pendingDelta = running ? delta : Math.min(delta, WAKE_SECONDS);
-      running = pendingStroke !== null || changed || swell > 0;
+      running = pendingStroke !== null || changed || growth.share > 0;
       if (running) scheduler.requestRender();
     };
 
@@ -203,24 +184,13 @@ export function CursorTrailShader({
       const disabled = !visible || motion.scale() <= 0;
       const rest = visible && holdRef.current && !input.isScripting() ? previous : null;
 
-      // Ease the growth toward the share the stroke's speed earns. A frame
-      // with no stroke earns none, so a pointer that stops settles back to
-      // the base radius. A frame with no time passed, after a pause or a
-      // resize, leaves it where it was.
-      if (pendingDelta > 0) {
-        const speed = pendingStroke ? strokeSpeed(pendingStroke, pendingDelta, aspect.value) : 0;
-        const target = disabled ? 0 : 1 - Math.exp(-speed / GROW_SPEED);
-        const ease = target > swell ? GROW_RISE : GROW_SETTLE;
-
-        swell += (target - swell) * (1 - Math.exp(-pendingDelta / ease));
-        if (swell < GROW_REST) swell = 0;
-      }
+      const grown = growth.step(pendingStroke, pendingDelta, aspect.value, disabled);
 
       path.step({
         delta: pendingDelta,
         stroke: pendingStroke,
         rest,
-        radius: radiusUniform.value * (1 + Math.max(0, growUniform.value) * swell),
+        radius: radiusUniform.value * (1 + Math.max(0, growUniform.value) * grown),
         decay: decayUniform.value,
         smoothing: smoothingUniform.value,
         aspect: aspect.value,

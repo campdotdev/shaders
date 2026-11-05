@@ -1,9 +1,7 @@
-// Draws CursorTrail's path into a heat texture. path.ts packs the path as
-// points, each with the width and heat the shape has there. Every texel
-// takes the hottest of the segments between neighboring points, so the
-// shape is one soft stroke along the path. Drawn at half the canvas's
-// resolution, and only when the path changes, so a resting trail costs
-// nothing. Lives beside the component, as field.ts does in cursor-smudge/.
+// Draws CursorTrail's path into a heat texture, one soft stroke along the
+// points path.ts packs. Drawn at half the canvas's resolution, and only
+// when the path changes, so a resting trail costs nothing. Lives beside the
+// component, as field.ts does in cursor-smudge/.
 import {
   Break,
   clamp,
@@ -48,7 +46,8 @@ export interface TrailField {
   /**
    * Draw the packed path: x, y, width, and heat per point, `count` points.
    * Skips the draw when nothing changed since the last one. Call inside the
-   * scene's pre-pass. Returns whether it drew.
+   * scene's pre-pass, the GPU work the scene runs just before it draws.
+   * Returns whether it drew.
    */
   draw: (points: Float32Array, count: number) => boolean;
   /** Latest heat texture, or null when float targets are unavailable. */
@@ -70,7 +69,7 @@ const MAX_FIELD_EDGE = 1024;
  * center, easing to 0 at `radius`. The epsilon keeps smoothstep's edges
  * distinct at radius zero.
  */
-export function brushFalloff(distance: TSLNode, radius: TSLNode): ShaderNodeObject<Node> {
+function brushFalloff(distance: TSLNode, radius: TSLNode): ShaderNodeObject<Node> {
   return oneMinus(smoothstep(0, max(radius, 1e-5), distance));
 }
 
@@ -81,7 +80,7 @@ export function brushFalloff(distance: TSLNode, radius: TSLNode): ShaderNodeObje
  * three in canvas heights so the result is too. The denominator epsilon
  * keeps a zero-length segment from dividing by zero; it reads as `start`.
  */
-export function nearestOnSegment(
+function nearestOnSegment(
   point: ShaderNodeObject<Node>,
   start: ShaderNodeObject<Node>,
   end: ShaderNodeObject<Node>,
@@ -103,6 +102,8 @@ export function createTrailField(
   const aspect = uniform(width / height);
 
   // ---- The hottest segment at each texel
+  // A texel is one pixel of the heat texture. Each takes the hottest of the
+  // segments between neighboring points, so the shape is one stroke.
   // uv() starts at the bottom-left, as the packed points do. Stretch x by
   // width/height so both axes measure canvas heights and the brush stays
   // round on a wide canvas. Each segment's width and heat run linearly

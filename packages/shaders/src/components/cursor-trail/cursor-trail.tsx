@@ -10,8 +10,8 @@ import { CursorTrailShader } from './shader.js';
 
 export interface CursorTrailProps {
   /**
-   * Brush radius in canvas heights, with a soft edge. 0 lays down no new
-   * heat. Defaults to 0.1. Accepts a static value or an animation signal.
+   * Brush radius in canvas heights, with a soft edge. 0 turns the effect
+   * off and clears the trail. Defaults to 0.1. Accepts a static value or an animation signal.
    */
   radius?: AnimatableProp<number>;
   /**
