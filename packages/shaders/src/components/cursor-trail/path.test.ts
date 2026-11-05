@@ -231,6 +231,26 @@ it('smooths a shaky path behind the head without moving the head', () => {
   for (const [, y = 0] of settled) expect(Math.abs(y - 0.5)).toBeLessThan(0.002);
 });
 
+it('spaces the newest path by the pieces that fit, not every piece', () => {
+  const path = createTrailPath();
+
+  // Forty short flicks, each its own piece, all still fading.
+  for (let flick = 0; flick < 40; flick += 1) {
+    const y = 0.05 + flick * 0.02;
+
+    step(path, { stroke: { from: [0.1, y], to: [0.15, y], presence: 1 }, decay: 10 });
+    for (let frame = 0; frame < 4; frame += 1) step(path, { decay: 10 });
+  }
+  moveRight(path, 0.5, 1, 10);
+  const points = packed(path);
+  // The newest piece runs from its head at 1 to its tail, the first point
+  // after the head copies with no width.
+  const tail = points.findIndex(([, , width = 0], at) => at > 2 && width === 0);
+
+  expect(points.length).toBeLessThanOrEqual(MAX_POINTS);
+  expect(tail).toBeGreaterThan(6);
+});
+
 it('fits a long path into the budget, keeping both ends', () => {
   const path = createTrailPath();
   const end = moveRight(path, 4, 0.6, 3);

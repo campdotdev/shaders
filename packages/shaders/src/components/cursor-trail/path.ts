@@ -354,8 +354,13 @@ export function createTrailPath(): TrailPath {
         out.set([at.x, 1 - at.y, width, heat], count * 4);
         count += 1;
       };
-      // Newest piece first, so a full budget drops the oldest.
-      const lines = pieces.map((piece) => ({ piece, line: round(piece.points) })).reverse();
+      // Newest piece first, so a full budget drops the oldest. A piece takes
+      // at least four points, so keep only the newest pieces that fit, and
+      // space the points by those alone.
+      const lines = pieces
+        .slice(-Math.floor(capacity / 4))
+        .map((piece) => ({ piece, line: round(piece.points) }))
+        .reverse();
       // Each piece spends three points on its zero point, its doubled head,
       // and its tail. Space the rest evenly over every piece's length.
       const total = lines.reduce((sum, { line }) => sum + lineLength(line, distance), 0);
