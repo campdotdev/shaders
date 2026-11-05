@@ -6,7 +6,7 @@
 // the texture as one shape: full at the head, tapering to a point.
 import { useEffect, useMemo, useRef } from 'react';
 
-import { max, oneMinus, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { oneMinus, texture, uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import { Texture, Vector2 as ThreeVector2 } from 'three/webgpu';
 
 import {
@@ -29,9 +29,6 @@ import { createTrailPath, MAX_POINTS } from './path.js';
 // frame at 60 Hz. Longer would run out the path behind a head the pointer
 // just left by the time spent asleep, and wipe it before it shows.
 const WAKE_SECONDS = 1 / 60;
-// Smallest alpha the image's color is divided by when the premultiplied
-// alpha is undone, as in PaletteMap. It only has to keep the divide finite.
-const MIN_ALPHA = 1e-4;
 
 // The mouse's move since the last gather, or null when it didn't move or
 // isn't on the canvas.
@@ -85,11 +82,11 @@ export function CursorTrailShader({
       const lift = heat.mul(intensityUniform);
 
       // Add the same amount of linear light to every channel. The scene
-      // texture is premultiplied, so undo the alpha first and put it back at
-      // the end, which keeps a transparent pixel transparent.
-      const color = vec3(beneath.rgb).div(max(beneath.a, MIN_ALPHA));
-
-      return vec4(color.add(lift).mul(beneath.a), beneath.a);
+      // texture is premultiplied, which means its color is already scaled
+      // by its alpha, so scale the lift by the alpha too. That keeps a
+      // transparent pixel transparent, and with no heat leaves the image
+      // exactly as it was.
+      return vec4(vec3(beneath.rgb).add(lift.mul(beneath.a)), beneath.a);
     },
     [fieldTexture, active, intensityUniform],
   );
@@ -200,6 +197,10 @@ export function CursorTrailShader({
       pendingStroke = null;
       pendingDelta = 0;
       const count = path.pack(packed);
+
+      // Growth shows only on a trail that is drawn, with grow above 0.
+      // Otherwise drop it now, so settling it asks for no frames.
+      if (count === 0 || growUniform.value <= 0) growth.reset();
 
       // A step with no time in it, such as the first after a pause, draws
       // the same field without the trail having settled. While any of the

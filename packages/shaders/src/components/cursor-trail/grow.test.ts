@@ -47,3 +47,11 @@ it('settles while disabled, whatever the pointer does', () => {
   run(growth, 0.5, stroke(3));
   expect(run(growth, 2, stroke(3), true)).toBe(0);
 });
+
+it('drops to the base size at once on reset', () => {
+  const growth = createGrowth();
+
+  run(growth, 0.5, stroke(3));
+  growth.reset();
+  expect(growth.share).toBe(0);
+});

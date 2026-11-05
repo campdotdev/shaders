@@ -25,6 +25,8 @@ export interface Growth {
    * frame with no stroke earns none, and a disabled trail settles to 0.
    */
   step: (stroke: PushStroke | null, delta: number, aspect: number, disabled: boolean) => number;
+  /** Drop to the base radius at once, for growth no one can see. */
+  reset: () => void;
   /** How far the brush has grown, as step() last returned. */
   readonly share: number;
 }
@@ -52,6 +54,9 @@ export function createGrowth(): Growth {
       if (share < GROW_REST) share = 0;
 
       return share;
+    },
+    reset() {
+      share = 0;
     },
     get share() {
       return share;
