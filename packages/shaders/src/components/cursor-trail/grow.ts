@@ -22,7 +22,8 @@ export interface Growth {
   /**
    * Ease toward the growth this frame's stroke earns, and return how far
    * the brush has grown: 0 at the base radius, 1 at the full `grow`. A
-   * frame with no stroke earns none, and a disabled trail settles to 0.
+   * frame with no stroke earns none, nor does a stroke whose brush is off
+   * the canvas, and a disabled trail settles to 0.
    */
   step: (stroke: PushStroke | null, delta: number, aspect: number, disabled: boolean) => number;
   /** Drop to the base radius at once, for growth no one can see. */
@@ -46,7 +47,8 @@ export function createGrowth(): Growth {
       // A frame with no time passed, after a pause or a resize, leaves the
       // size where it was.
       if (delta <= 0) return share;
-      const speed = stroke ? strokeSpeed(stroke, delta, aspect) : 0;
+      // A stroke with no presence draws no path, so it grows nothing.
+      const speed = stroke && stroke.presence > 0 ? strokeSpeed(stroke, delta, aspect) : 0;
       const target = disabled ? 0 : 1 - Math.exp(-speed / GROW_SPEED);
       const ease = target > share ? GROW_RISE : GROW_SETTLE;
 

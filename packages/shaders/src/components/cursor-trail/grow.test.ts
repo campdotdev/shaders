@@ -55,3 +55,9 @@ it('drops to the base size at once on reset', () => {
   growth.reset();
   expect(growth.share).toBe(0);
 });
+
+it('ignores a stroke whose brush is off the canvas', () => {
+  const growth = createGrowth();
+
+  expect(run(growth, 0.5, { ...stroke(3), presence: 0 })).toBe(0);
+});
