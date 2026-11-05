@@ -65,7 +65,8 @@ export async function readCanvasPixels(page: Page): Promise<CanvasPixels> {
 /**
  * How many pixels differ between two screenshots of the same canvas, by more
  * than 3 levels summed over red, green, and blue. Decodes in the page, which
- * has the browser's PNG decoder.
+ * has the browser's PNG decoder. Throws when the two differ in size, because
+ * their pixels don't line up.
  */
 export async function changedPixels(page: Page, before: Buffer, after: Buffer) {
   return page.evaluate(
@@ -82,9 +83,17 @@ export async function changedPixels(page: Page, before: Buffer, after: Buffer) {
         context.drawImage(bitmap, 0, 0);
         bitmap.close();
 
-        return context.getImageData(0, 0, scratch.width, scratch.height).data;
+        return context.getImageData(0, 0, scratch.width, scratch.height);
       };
-      const [left, right] = await Promise.all([read(first!), read(second!)]);
+      const [leftImage, rightImage] = await Promise.all([read(first!), read(second!)]);
+
+      if (leftImage.width !== rightImage.width || leftImage.height !== rightImage.height) {
+        throw new Error(
+          `Screenshots differ in size: ${leftImage.width}x${leftImage.height} and ${rightImage.width}x${rightImage.height}.`,
+        );
+      }
+      const left = leftImage.data;
+      const right = rightImage.data;
       let changed = 0;
 
       for (let index = 0; index < left.length; index += 4) {
