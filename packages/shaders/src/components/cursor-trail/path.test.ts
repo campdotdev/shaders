@@ -288,3 +288,27 @@ it('fits a long path into the budget, keeping both ends', () => {
   // Still growing toward 1.8, 0.6 times decay, after 4 seconds.
   expect(tailLength(path)).toBeGreaterThan(1.2);
 });
+
+it('draws a held tail in on time after the canvas narrows', () => {
+  const path = createTrailPath();
+  const head = moveRight(path, 0.5, 1);
+
+  step(path, { rest: head, aspect: 0.5 });
+  const before = tailLength(path);
+
+  // The scene stops drawing on the first frame the path doesn't change.
+  step(path, { rest: head, aspect: 0.5 });
+  expect(tailLength(path)).toBeLessThan(before);
+
+  for (let frame = 0; frame < 2 / FRAME; frame += 1) step(path, { rest: head, aspect: 0.5 });
+  expect(tailLength(path)).toBeCloseTo(0, 5);
+});
+
+it('keeps the whole tail when the canvas widens', () => {
+  const path = createTrailPath();
+  const head = moveRight(path, 0.5, 1);
+  const before = tailLength(path);
+
+  step(path, { rest: head, aspect: 2 });
+  expect(tailLength(path)).toBeGreaterThan(before * 0.9);
+});

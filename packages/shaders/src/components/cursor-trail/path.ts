@@ -314,6 +314,23 @@ export function createTrailPath(): TrailPath {
     trim(target);
   };
 
+  // A new aspect stretches the points, so each tail's length and reach change
+  // by as much as its path did. Otherwise a tail longer than its path has
+  // nothing to trim until its length catches up, and a parked scene takes that
+  // unchanged frame as settled. Scaling both keeps the time left to draw in.
+  const stretch = (nextAspect: number) => {
+    const before = pieces.map(({ points }) => lineLength(points, distance));
+
+    aspect = nextAspect;
+    pieces.forEach((piece, at) => {
+      const length = before[at] ?? 0;
+      const share = length > 0 ? lineLength(piece.points, distance) / length : 1;
+
+      piece.length *= share;
+      piece.reach *= share;
+    });
+  };
+
   return {
     step({
       delta,
@@ -328,7 +345,7 @@ export function createTrailPath(): TrailPath {
       const elapsed = Math.max(0, delta);
 
       now += elapsed;
-      aspect = nextAspect;
+      if (nextAspect !== aspect) stretch(nextAspect);
       decay = Math.max(0, nextDecay);
       radius = Math.max(0, nextRadius);
       smoothing = Math.max(0, nextSmoothing);
