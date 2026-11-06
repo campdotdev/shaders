@@ -103,6 +103,9 @@ export function CursorTrailShader({
     const motion = createReducedMotionWatcher();
     let previous: Vector2 | null = null;
     let inside = false;
+    // Whether the pointer was last on the canvas. Unlike `inside`, losing the
+    // window's focus leaves it set, because the pointer hasn't gone anywhere.
+    let hovering = false;
     let pendingStroke: PushStroke | null = null;
     let pendingDelta = 0;
     // Whether the last gather asked for the next frame, so this tick's delta
@@ -126,11 +129,27 @@ export function CursorTrailShader({
       scheduler.requestRender();
     };
 
+    const endHover = () => {
+      hovering = false;
+      endStroke();
+    };
+
+    // A pointer that stayed on the canvas sends no move when the window gets
+    // focus back, so a held head would stay gone until it next moved. Pick up
+    // from where it rests. A move that landed first has already done this.
+    const resumeHover = () => {
+      if (!hovering || inside) return;
+      inside = true;
+      previous = input.getTarget();
+      scheduler.requestRender();
+    };
+
     const canvas = context.renderer.three.domElement;
 
     window.addEventListener('blur', endStroke);
-    canvas.addEventListener('pointerleave', endStroke);
-    canvas.addEventListener('pointercancel', endStroke);
+    window.addEventListener('focus', resumeHover);
+    canvas.addEventListener('pointerleave', endHover);
+    canvas.addEventListener('pointercancel', endHover);
 
     // Reset at the actual boundary, not after eased presence reaches zero.
     // A move back onto the canvas seeds a new stroke instead of joining it
@@ -140,13 +159,18 @@ export function CursorTrailShader({
 
       if (!currentInside || !inside) previous = currentInside ? input.getTarget() : null;
       inside = currentInside;
+      hovering = currentInside;
       if (inside) scheduler.requestRender();
     });
+    // `previous` stays through a pause, because a held head rests on it and a
+    // resize redraws a paused scene. Resuming moves it to the pointer, so a
+    // move made during the pause draws no stroke.
     const stopPause = scheduler.onPauseChange((paused) => {
-      previous = null;
       pendingStroke = null;
       pendingDelta = 0;
-      if (!paused) scheduler.requestRender();
+      if (paused) return;
+      previous = inside ? input.getTarget() : null;
+      scheduler.requestRender();
     });
     const stopMotion = motion.subscribe(() => scheduler.requestRender());
 
@@ -222,8 +246,9 @@ export function CursorTrailShader({
 
     return () => {
       window.removeEventListener('blur', endStroke);
-      canvas.removeEventListener('pointerleave', endStroke);
-      canvas.removeEventListener('pointercancel', endStroke);
+      window.removeEventListener('focus', resumeHover);
+      canvas.removeEventListener('pointerleave', endHover);
+      canvas.removeEventListener('pointercancel', endHover);
       stopMoves();
       stopPause();
       stopMotion();

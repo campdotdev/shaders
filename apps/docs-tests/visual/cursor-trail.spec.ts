@@ -15,7 +15,7 @@ const DRAW_IN_MS = 1000;
 const SETTLE_MS = 2000;
 
 // ---- Controlled browser input
-async function openProbe(page: Page, { hold = false } = {}) {
+async function openProbe(page: Page, { hold = false, motionPolicy = 'auto' } = {}) {
   await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
   await page.goto('/dev/cursor-trail-probe');
   const canvas = page.locator('[data-trail-probe] canvas').first();
@@ -28,6 +28,7 @@ async function openProbe(page: Page, { hold = false } = {}) {
     await page.getByRole('combobox', { name: 'Hold', exact: true }).click();
     await page.getByRole('option', { name: /^On/ }).click();
   }
+  await page.getByLabel('Motion policy').selectOption(motionPolicy);
   await page.clock.pauseAt(new Date('2026-01-01T01:00:00Z'));
   await page.clock.runFor(64);
   // The HTML monitor overlaps the canvas but is not part of the GPU output.
@@ -53,6 +54,23 @@ async function swipe(page: Page) {
   }
   // Input is gathered after drawing, so let the last stroke reach the image.
   await page.clock.runFor(32);
+}
+
+// Resize the probe without the pointer, which has to stay on the canvas.
+async function setProbeWidth(page: Page, width: number) {
+  await page.locator('[data-trail-probe]').evaluate((probe, maxWidth) => {
+    (probe as HTMLElement).style.maxWidth = `${maxWidth}px`;
+  }, width);
+  await expect
+    .poll(
+      async () => (await page.locator('[data-trail-probe] canvas').first().boundingBox())?.width,
+    )
+    .toBe(width);
+}
+
+// Toggle the scene's pause without the pointer, which a click would move.
+async function togglePause(page: Page) {
+  await page.getByLabel('Pause scene').evaluate((box) => (box as HTMLElement).click());
 }
 
 // ---- GPU output through the mounted component
@@ -91,4 +109,42 @@ test('CursorTrail with hold keeps a steady spot under a still pointer', async ({
   await page.mouse.move(0, 0);
   await page.clock.runFor(DRAW_IN_MS);
   expect(await changedPixels(page, before, await canvas.screenshot())).toBe(0);
+});
+
+test('CursorTrail with hold brings the spot back when the window gets focus back', async ({
+  page,
+}) => {
+  const canvas = await openProbe(page, { hold: true });
+  const before = await canvas.screenshot();
+
+  await swipe(page);
+  await page.clock.runFor(SETTLE_MS);
+  const held = await canvas.screenshot();
+
+  // The pointer stays put, so neither event comes with a move.
+  await page.evaluate(() => window.dispatchEvent(new Event('blur')));
+  await page.clock.runFor(DRAW_IN_MS);
+  expect(await changedPixels(page, before, await canvas.screenshot())).toBe(0);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await page.clock.runFor(64);
+  expect(await changedPixels(page, held, await canvas.screenshot())).toBe(0);
+});
+
+test('CursorTrail keeps a held spot when a paused scene resizes under the paused policy', async ({
+  page,
+}) => {
+  const canvas = await openProbe(page, { hold: true, motionPolicy: 'paused' });
+
+  await setProbeWidth(page, 800);
+  const narrow = await canvas.screenshot();
+
+  await setProbeWidth(page, 1100);
+  await swipe(page);
+  await page.clock.runFor(64);
+  await togglePause(page);
+  await setProbeWidth(page, 800);
+  expect(await changedPixels(page, narrow, await canvas.screenshot())).toBeGreaterThan(500);
+  await togglePause(page);
+  await page.clock.runFor(64);
+  expect(await changedPixels(page, narrow, await canvas.screenshot())).toBeGreaterThan(500);
 });
