@@ -13,6 +13,7 @@ import {
   type Vector2,
 } from '../../../engine.js';
 import { ShadersError } from '../../errors/shaders-error.js';
+import { usePostProcessPass } from '../../hooks/use-overlay-pass/use-overlay-pass.js';
 import { useResize } from '../../hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../hooks/use-static-hint/use-static-hint.js';
@@ -117,6 +118,40 @@ describe('ShaderScene', () => {
     // Allow a tick for the async setup to run (or be cancelled).
     await waitFor(() => {});
     expect(() => unmount()).not.toThrow();
+  });
+
+  // An Effect's cleanup asks for a frame, and on a parked scene that request
+  // would queue one. Once the scene has disposed its scheduler, it must not.
+  // The Effect votes last, so its vote still holds when that cleanup runs.
+  it('queues no frame when a parked scene unmounts with an Effect mounted', async () => {
+    const frames: FrameRequestCallback[] = [];
+
+    vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
+      frames.push(callback);
+
+      return frames.length;
+    });
+
+    function Effect() {
+      usePostProcessPass((color) => color, []);
+      useStaticSceneHint(true);
+
+      return null;
+    }
+
+    const { unmount } = render(
+      <ShaderScene>
+        <Effect />
+      </ShaderScene>,
+    );
+
+    await waitFor(() => expect(frames.length).toBeGreaterThan(0));
+    for (let now = 16; frames.length > 0; now += 16) {
+      for (const frame of frames.splice(0)) frame(now);
+    }
+
+    expect(() => unmount()).not.toThrow();
+    expect(frames).toEqual([]);
   });
 
   it('fires onError with a renderer-init ShadersError when init fails', async () => {

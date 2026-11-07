@@ -6,11 +6,26 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { ShaderContext, type ShaderContextValue, type Slot } from '../../context/shader-context.js';
 import { useSceneRegistration } from './use-scene-registration.js';
 
-afterEach(cleanup);
+// What happened, in order, so a test can check that a frame request follows
+// the registration change it has to draw.
+const events: string[] = [];
 
-// The hook hands the context to `register` and reads nothing from it, so an
-// empty object stands in for a mounted scene.
-const context = {} as ShaderContextValue;
+afterEach(() => {
+  cleanup();
+  events.length = 0;
+});
+
+// The hook hands the context to `register` and asks its scheduler for frames,
+// so a scheduler that logs each request stands in for a mounted scene.
+const context = {
+  scheduler: {
+    requestRender: () => {
+      events.push('request');
+
+      return true;
+    },
+  },
+} as ShaderContextValue;
 
 function Wrapper({ children }: { children: ReactNode }) {
   return <ShaderContext.Provider value={context}>{children}</ShaderContext.Provider>;
@@ -23,8 +38,11 @@ function makeProbe() {
     useSceneRegistration(
       (_shaderContext, slot) => {
         slots.push(slot);
+        events.push('register');
 
-        return () => undefined;
+        return () => {
+          events.push('unregister');
+        };
       },
       [mode],
     );
@@ -36,6 +54,38 @@ function makeProbe() {
 }
 
 describe('useSceneRegistration', () => {
+  // A registration rebuilds the output material and draws nothing, so a scene
+  // that has parked needs a frame to show it.
+  it('asks for a frame after registering', () => {
+    const { Probe } = makeProbe();
+
+    render(<Probe />, { wrapper: Wrapper });
+
+    expect(events).toEqual(['register', 'request']);
+  });
+
+  // Unregistering rebuilds the material too, and a parked scene would keep
+  // showing the Effect's last frame.
+  it('asks for a frame after unregistering', () => {
+    const { Probe } = makeProbe();
+    const { unmount } = render(<Probe />, { wrapper: Wrapper });
+
+    events.length = 0;
+    unmount();
+
+    expect(events).toEqual(['unregister', 'request']);
+  });
+
+  it('asks for a frame after each half of a swap when deps change', () => {
+    const { Probe } = makeProbe();
+    const { rerender } = render(<Probe mode="a" />, { wrapper: Wrapper });
+
+    events.length = 0;
+    rerender(<Probe mode="b" />);
+
+    expect(events).toEqual(['unregister', 'request', 'register', 'request']);
+  });
+
   // The scene puts a registration under a slot it has seen back in that
   // slot's place, so an Effect whose deps change keeps its place in the
   // stack.
