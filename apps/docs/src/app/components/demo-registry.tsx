@@ -18,6 +18,7 @@ import { ConicGradientFields, ConicGradientIsland } from './conic-gradient/demo'
 import { CursorRippleFields, CursorRippleIsland } from './cursor-ripple/demo';
 import { CursorSmudgeFields, CursorSmudgeIsland } from './cursor-smudge/demo';
 import { CursorSpotlightFields, CursorSpotlightIsland } from './cursor-spotlight/demo';
+import { CursorTrailFields, CursorTrailIsland } from './cursor-trail/demo';
 import { DissolveFields, DissolveIsland } from './dissolve/demo';
 import { DitherFields, DitherIsland } from './dither/demo';
 import { DotFieldFields, DotFieldIsland } from './dot-field/demo';
@@ -163,6 +164,42 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
         they drew. It stays invisible until the pointer first moves over the canvas, fades out when
         the pointer leaves, and lets the scene idle while the pointer is still. Mode 1 only: it
         needs the scene&apos;s output stage.
+      </>
+    ),
+  },
+  'cursor-trail': {
+    Island: CursorTrailIsland,
+    copySiblings: [
+      "<LinearGradient stops={[{ color: 'oklch(0.18 0.03 260)' }, { color: 'oklch(0.28 0.05 250)' }]} />",
+    ],
+    usageSnippet: `<ShaderScene>
+  <LinearGradient stops={[{ color: 'oklch(0.18 0.03 260)' }, { color: 'oklch(0.28 0.05 250)' }]} />
+  <CursorTrail />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        <p>
+          Move the pointer over the canvas. The trail is widest at the pointer and narrows along the
+          path behind it. A pointer moving at a steady speed trails about as far as it travels in{' '}
+          <code>decay</code> seconds. When the pointer stops, the trail draws in along its path and
+          reaches the pointer <code>decay</code> seconds later. <code>grow</code> widens the whole
+          trail while the pointer moves fast, and eases it back as the pointer slows.{' '}
+          <code>smoothing</code> averages the path behind the pointer, so the trail follows a
+          smoother curve than the pointer took.
+        </p>
+        <p>
+          With <code>hold</code> off, the spot under a stopped pointer fades with the trail. With{' '}
+          <code>hold</code> on, a spot stays under the pointer while it rests on the canvas, and
+          fades once the pointer leaves. Either way, the scene stops drawing once the trail settles.
+          Under the <code>paused</code> motion policy, the trail is off, and only the held spot
+          shows. Set <code>intensity</code> or <code>radius</code> to 0 to disable the effect.
+        </p>
+        <p>
+          Place Cursor Trail after a Source inside <code>&lt;ShaderScene&gt;</code>. It adds light
+          to the image beneath it, so an Effect after it, such as PaletteMap, maps the trail with
+          the image. A warp after it, such as LED Wall&apos;s cells, moves the trail with the image,
+          so each cell takes one value. Cursor Trail requires Mode 1.
+        </p>
       </>
     ),
   },
@@ -434,6 +471,7 @@ export const COMPONENT_FIELDS: Record<ComponentName, ComponentFields> = {
   CursorRipple: { Fields: CursorRippleFields },
   CursorSmudge: { Fields: CursorSmudgeFields },
   CursorSpotlight: { Fields: CursorSpotlightFields },
+  CursorTrail: { Fields: CursorTrailFields },
   Dissolve: { Fields: DissolveFields },
   Dither: { Fields: DitherFields },
   DotField: { Fields: DotFieldFields },

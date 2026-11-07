@@ -48,6 +48,11 @@ export const COMPONENTS = {
       'Brightens the scene around the pointer. Invisible until the first move, it fades out when the pointer leaves the canvas. Stacks on top of any base component inside <ShaderScene>.',
     category: 'cursor',
   },
+  'cursor-trail': {
+    description:
+      'Lights a trail behind the pointer that tapers from its head and draws in along its path when the pointer stops. Stacks on top of any Source inside <ShaderScene>.',
+    category: 'cursor',
+  },
   dissolve: {
     description:
       'Turns the scene into grain, shown block by block as progress rises. Stacked after a feathered wipe, it grains the soft edge into a ragged one. Stacks on top of any base component inside <ShaderScene>.',

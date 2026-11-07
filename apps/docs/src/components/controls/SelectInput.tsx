@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * An enum prop (colorSpace, hueInterpolation, blend). Base UI's Select gives a
- * styleable listbox with correct roles and keyboard behaviour, which a native
- * <select> can't be styled into.
+ * An enum prop (colorSpace, hueInterpolation, blend), or a boolean one shown
+ * as named choices (CursorTrail's hold). Base UI's Select gives a styleable
+ * listbox with correct roles and keyboard behaviour, which a native <select>
+ * can't be styled into.
  */
 import { Select } from '@base-ui/react/select';
 
@@ -19,22 +20,33 @@ export interface SelectOption {
   value: string;
 }
 
+/** A choice SelectInput writes. A boolean value is written as a boolean. */
+export interface SelectInputOption {
+  label: string;
+  value: string | boolean;
+}
+
 export interface SelectInputProps {
   path: PathInput;
   label: string;
-  options: readonly SelectOption[];
+  options: readonly SelectInputOption[];
 }
 
 export function SelectInput({ path, label, options }: SelectInputProps) {
-  const value = usePropValue<string>(path);
+  const value = usePropValue<string | boolean>(path);
   const setProp = useSetProp();
+  // The listbox keys its items by string, so a boolean option rides as
+  // "true" or "false" and is written back as the option's own value.
+  const choices = options.map((option) => ({ ...option, value: String(option.value) }));
 
   return (
     <SelectField
       label={label}
-      onValueChange={(next) => setProp(path, next)}
-      options={options}
-      value={value}
+      onValueChange={(next) =>
+        setProp(path, options.find((option) => String(option.value) === next)?.value ?? next)
+      }
+      options={choices}
+      value={String(value)}
     />
   );
 }

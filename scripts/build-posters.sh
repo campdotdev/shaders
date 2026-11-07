@@ -82,6 +82,7 @@ for pair in \
   "cursor-ripple:jpg" \
   "cursor-smudge:jpg" \
   "cursor-spotlight:jpg" \
+  "cursor-trail:jpg" \
   "fluted-glass:jpg::896x598" \
   "radial-wipe:jpg:#0b0f0d" \
   "dissolve:jpg:#0b0f0d" \

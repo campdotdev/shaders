@@ -1,6 +1,6 @@
 # Visual regression testing
 
-Playwright visual regression tests in [`apps/docs-tests/visual/`](../../apps/docs-tests/visual/) check the shader components. Most specs open a component's deterministic visual-test route on the docs site (`/components/<name>?visualTest=1`), screenshot the canvas, and compare the shot with a committed baseline PNG. The `cursor-ripple` and `wave-field` specs take their baselines from the `/dev/wave-field-probe` route instead, and the `fractal-noise` spec takes a second baseline from `/dev/fractal-noise-probe`.
+Playwright visual regression tests in [`apps/docs-tests/visual/`](../../apps/docs-tests/visual/) check the shader components. Most specs open a component's deterministic visual-test route on the docs site (`/components/<name>?visualTest=1`), screenshot the canvas, and compare the shot with a committed baseline PNG. The `cursor-ripple` and `wave-field` specs take their baselines from the `/dev/wave-field-probe` route instead, the `fractal-noise` spec takes a second baseline from `/dev/fractal-noise-probe`, and the `cursor-trail` spec takes its baselines from `/dev/cursor-trail-probe`.
 
 Five specs keep no baseline. `color-space`, `dot-field-stack`, `hsl-gamut`, and `hue-arc` open a `/dev/*-probe` route and assert on sampled pixel colors. `gamut` checks that both of its canvases render, and takes no screenshot.
 
@@ -14,7 +14,7 @@ Three changes do invalidate baselines: a change to the shader's output, to the a
 
 ## Two platform baselines
 
-Each baseline has two committed snapshots. `<spec>` is the spec file's name, and `<snapshot>` is the name the spec passes to `toHaveScreenshot`. That name is usually `<spec>-default`, but `cursor-ripple` and `wave-field` use `-probe`, `cursor-spotlight` uses `-lit`, and `fractal-noise` adds `-angle-stretch`.
+Each baseline has two committed snapshots. `<spec>` is the spec file's name, and `<snapshot>` is the name the spec passes to `toHaveScreenshot`. That name is usually `<spec>-default`, but `cursor-ripple` and `wave-field` use `-probe`, `cursor-spotlight` uses `-lit`, `cursor-trail` uses `-moving` and `-held`, and `fractal-noise` adds `-angle-stretch`.
 
 ```
 visual/<spec>.spec.ts-snapshots/

@@ -61,3 +61,52 @@ export async function readCanvasPixels(page: Page): Promise<CanvasPixels> {
     rgb: (x, y) => [channel(x, y, 0), channel(x, y, 1), channel(x, y, 2)],
   };
 }
+
+/**
+ * How many pixels differ between two screenshots of the same canvas, by more
+ * than 3 levels summed over red, green, and blue. Decodes in the page, which
+ * has the browser's PNG decoder. Throws when the two differ in size, because
+ * their pixels don't line up.
+ */
+export async function changedPixels(page: Page, before: Buffer, after: Buffer) {
+  return page.evaluate(
+    async ([first, second]) => {
+      const read = async (png: string) => {
+        const response = await fetch(`data:image/png;base64,${png}`);
+        const bitmap = await createImageBitmap(await response.blob());
+        const scratch = document.createElement('canvas');
+
+        scratch.width = bitmap.width;
+        scratch.height = bitmap.height;
+        const context = scratch.getContext('2d')!;
+
+        context.drawImage(bitmap, 0, 0);
+        bitmap.close();
+
+        return context.getImageData(0, 0, scratch.width, scratch.height);
+      };
+      const [leftImage, rightImage] = await Promise.all([read(first!), read(second!)]);
+
+      if (leftImage.width !== rightImage.width || leftImage.height !== rightImage.height) {
+        throw new Error(
+          `Screenshots differ in size: ${leftImage.width}x${leftImage.height} and ${rightImage.width}x${rightImage.height}.`,
+        );
+      }
+      const left = leftImage.data;
+      const right = rightImage.data;
+      let changed = 0;
+
+      for (let index = 0; index < left.length; index += 4) {
+        const difference =
+          Math.abs(left[index]! - right[index]!) +
+          Math.abs(left[index + 1]! - right[index + 1]!) +
+          Math.abs(left[index + 2]! - right[index + 2]!);
+
+        if (difference > 3) changed++;
+      }
+
+      return changed;
+    },
+    [before.toString('base64'), after.toString('base64')],
+  );
+}
