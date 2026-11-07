@@ -22,7 +22,7 @@ function makeCtx(): {
     renderer: {} as ShaderContextValue['renderer'],
     scene: {} as ShaderContextValue['scene'],
     camera: {} as ShaderContextValue['camera'],
-    scheduler: {} as ShaderContextValue['scheduler'],
+    scheduler: { requestRender: () => false } as ShaderContextValue['scheduler'],
     registerOverlay: () => () => undefined,
     registerResample: (resample: Resample) => {
       registered.push(resample);

@@ -21,7 +21,7 @@ function makeCtx(): {
     renderer: {} as ShaderContextValue['renderer'],
     scene: {} as ShaderContextValue['scene'],
     camera: {} as ShaderContextValue['camera'],
-    scheduler: {} as ShaderContextValue['scheduler'],
+    scheduler: { requestRender: () => false } as ShaderContextValue['scheduler'],
     registerOverlay: (transform: PostProcessTransform) => {
       registered.push(transform);
 
@@ -72,7 +72,7 @@ describe('usePostProcessPass', () => {
       renderer: {} as ShaderContextValue['renderer'],
       scene: {} as ShaderContextValue['scene'],
       camera: {} as ShaderContextValue['camera'],
-      scheduler: {} as ShaderContextValue['scheduler'],
+      scheduler: { requestRender: () => false } as ShaderContextValue['scheduler'],
       registerOverlay: () => cleanupFn,
     } as unknown as ShaderContextValue;
 

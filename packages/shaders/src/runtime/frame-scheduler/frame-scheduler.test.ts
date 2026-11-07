@@ -529,6 +529,22 @@ describe('dispose invariants', () => {
     rafCallbacks.forEach((cb) => cb(performance.now()));
     expect(client).not.toHaveBeenCalled();
   });
+
+  // An Effect's cleanup asks for a frame, and when a whole scene unmounts it
+  // can run after the scene has disposed its scheduler.
+  it('queues no frame for a requestRender after dispose', () => {
+    const scheduler = new FrameScheduler();
+
+    scheduler.add(vi.fn());
+    scheduler.start();
+    scheduler.setIdle(true);
+    scheduler.dispose();
+    rafCallbacks = [];
+
+    scheduler.requestRender();
+
+    expect(rafCallbacks).toEqual([]);
+  });
 });
 
 describe('FrameScheduler phase reset', () => {
