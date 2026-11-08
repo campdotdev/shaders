@@ -4,10 +4,11 @@
  * is three-free, so server code reads the registry directly: the page's
  * metadata and the Gallery grid.
  */
+import { bitComet } from './bit-comet/composition';
 import type { Composition } from './define';
 import { reededGlass } from './reeded-glass/composition';
 
-export const COMPOSITIONS: readonly Composition[] = [reededGlass];
+export const COMPOSITIONS: readonly Composition[] = [reededGlass, bitComet];
 
 /** The composition with this slug, or undefined when there is none. */
 export function findComposition(slug: string): Composition | undefined {
