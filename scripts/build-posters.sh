@@ -129,7 +129,8 @@ fi
 # from posters/gallery/. Entries are slug:ExportName[:background].
 mkdir -p "${OUT_DIR}/gallery"
 for entry in \
-  "reeded-glass:ReededGlass"; do
+  "reeded-glass:ReededGlass" \
+  "bit-comet:BitComet"; do
   IFS=':' read -r slug export_name background <<< "$entry"
   echo "==> gallery/${slug} (jpg, ${WIDTH}x${HEIGHT})"
   gallery_args=(
