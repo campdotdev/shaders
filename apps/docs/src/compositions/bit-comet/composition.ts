@@ -3,7 +3,7 @@
  * cells, mapped onto a few flat colors with scattered cells at each band's
  * edge. The pointer heats the cells under it and leaves a tail that cools
  * back through the palette. CursorTrail and PaletteMap are resamples, so they
- * nest inside LedWall's cell snap and each runs once per cell, at its center.
+ * nest inside LedWall's cell snap and each samples at the cell's center.
  */
 import { defineComposition } from '../define';
 
