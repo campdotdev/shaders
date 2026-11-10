@@ -660,8 +660,9 @@
   min-height: var(--spacing-6);
 }
 
-/* The row's name as a button: caret when closed, chevron when open, both
-   from the icon set, then the name. Hover brightens the name only. */
+/* The row's name as a button: a caret pointing right when closed and down
+   when open, both from the icon set, then the name. Hover brightens the name
+   only. */
 .disclosureTrigger {
   display: flex;
   flex: 1;

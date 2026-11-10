@@ -108,9 +108,9 @@ export function PageActions({ target, markdownUrl }: PageActionsProps) {
   // ---------------------------------------------
   // The demo as it stands right now: the import line for every tag in the
   // snippet, then the scene with the store's current params as props. A
-  // composition's page copies the file its Customize panel would. Read at
-  // click time rather than subscribed, so dragging a slider never
-  // re-renders the header.
+  // composition's page copies the file generated from its Customize panel's
+  // state. Read at click time rather than subscribed, so dragging a slider
+  // never re-renders the header.
   const copyReact = () => {
     if (store === null) return;
 
