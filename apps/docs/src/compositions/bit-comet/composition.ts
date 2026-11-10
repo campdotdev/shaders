@@ -196,7 +196,7 @@ export const bitComet = defineComposition({
       kind: 'slider',
       entry: 'trail',
       path: 'radius',
-      label: 'Heat radius',
+      label: 'Comet radius',
       min: 0.04,
       max: 0.3,
       step: 0.01,
