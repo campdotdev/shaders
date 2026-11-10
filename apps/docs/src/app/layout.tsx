@@ -32,7 +32,10 @@ export const metadata = {
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html className={`${plexMono.variable} ${ppMori.variable}`} lang="en">
-      <body>
+      {/* Browser extensions such as Grammarly add attributes to <body> before
+          React hydrates. suppressHydrationWarning ignores mismatches in
+          <body>'s own attributes and text, not in its children. */}
+      <body suppressHydrationWarning>
         {/* The `site` size container; globals.css declares it and explains
             why the site's width rules query named containers rather than
             the viewport. Base UI portals render into <body>, outside it on
