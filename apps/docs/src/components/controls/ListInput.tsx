@@ -23,8 +23,8 @@ import { type ReactNode, useId } from 'react';
 
 import { Collapsible } from '@base-ui/react/collapsible';
 
+import { CaretDownIcon } from '@/components/icons/caret-down';
 import { CaretRightIcon } from '@/components/icons/caret-right';
-import { ChevronDownIcon } from '@/components/icons/chevron-down';
 import { MinusIcon } from '@/components/icons/minus';
 import { PlusIcon } from '@/components/icons/plus';
 
@@ -189,7 +189,7 @@ export function ListInput<TItem>({
                         height="16"
                         width="16"
                       />
-                      <ChevronDownIcon className={styles.disclosureOpenIcon} />
+                      <CaretDownIcon className={styles.disclosureOpenIcon} />
                       <span className={styles.rowLabel}>{ownLabel}</span>
                     </Collapsible.Trigger>
                     {removeButton}
