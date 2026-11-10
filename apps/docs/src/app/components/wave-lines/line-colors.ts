@@ -1,7 +1,7 @@
 /**
- * WaveLines' line colors for a composition's All props section. A line's
- * color can be one string, a list of stops, or left out, and the Colors list
- * edits only a list, so the store needs every line's color as one.
+ * WaveLines' line colors in a composition's store. A line's color can be one
+ * string, a list of stops, or left out, and a control edits only a list, so
+ * the store holds every line's color as one.
  */
 import { isRecord } from '@/lib/is-record';
 

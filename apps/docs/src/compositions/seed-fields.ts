@@ -1,9 +1,10 @@
 /**
  * The seed a composition's store runs on each entry's props, keyed by the
  * entry's component, and the printer that turns the seeded shape back into
- * what the document wrote for the copied file. The Customize panel and
- * golden.test.ts both use them, so the golden files match what Copy React
- * hands out. Three-free, so the docs' Node vitest can load it.
+ * what the document wrote for the copied file. The store runs the seeds and
+ * the generator runs the printers, on the composition page and in
+ * golden.test.ts alike, so the golden files match what Copy React hands out.
+ * Three-free, so the docs' Node vitest can load it.
  */
 import { printCrossSection, seedCrossSection } from '@/app/components/fluted-glass/cross-section';
 import { seedStyleDials } from '@/app/components/fractal-noise/style-dials';

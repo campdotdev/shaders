@@ -1,6 +1,6 @@
 /**
- * The seeds that put a prop the All props fields can't edit as written into
- * a shape they can, without changing what the component renders.
+ * The seeds that put a prop a control can't edit as written into a shape it
+ * can, without changing what the component renders.
  */
 import { describe, expect, it } from 'vitest';
 

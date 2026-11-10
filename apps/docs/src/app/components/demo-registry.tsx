@@ -1,42 +1,38 @@
 /**
  * Maps a component slug to the pieces the shared components/[slug] template
  * cannot derive from the catalog (content/components.ts): the client demo island and
- * the Usage content. COMPONENT_FIELDS at the end maps each component's
- * export name to its demo's fields, which a composition's All props section
- * mounts. The template renders usageNotes above the snippet, so
+ * the Usage content. The template renders usageNotes above the snippet, so
  * notes read as guidance introducing the code. Paragraphs that merely
  * restated the catalog description were dropped when pages converted — the
  * template's header already shows it.
  */
 import type { ComponentType, ReactNode } from 'react';
 
-import type { ComponentName } from '@/compositions/define';
-
-import { AuroraFields, AuroraIsland } from './aurora/demo';
-import { BlobsFields, BlobsIsland } from './blobs/demo';
-import { ConicGradientFields, ConicGradientIsland } from './conic-gradient/demo';
-import { CursorRippleFields, CursorRippleIsland } from './cursor-ripple/demo';
-import { CursorSmudgeFields, CursorSmudgeIsland } from './cursor-smudge/demo';
-import { CursorSpotlightFields, CursorSpotlightIsland } from './cursor-spotlight/demo';
-import { CursorTrailFields, CursorTrailIsland } from './cursor-trail/demo';
-import { DissolveFields, DissolveIsland } from './dissolve/demo';
-import { DitherFields, DitherIsland } from './dither/demo';
-import { DotFieldFields, DotFieldIsland } from './dot-field/demo';
-import { FlutedGlassFields, FlutedGlassIsland } from './fluted-glass/demo';
-import { FractalNoiseFields, FractalNoiseIsland } from './fractal-noise/demo';
-import { GodRaysFields, GodRaysIsland } from './god-rays/demo';
-import { GrainFields, GrainIsland } from './grain/demo';
-import { LedWallFields, LedWallIsland } from './led-wall/demo';
-import { LinearGradientFields, LinearGradientIsland } from './linear-gradient/demo';
-import { LiquidGradientFields, LiquidGradientIsland } from './liquid-gradient/demo';
-import { MeshGradientFields, MeshGradientIsland } from './mesh-gradient/demo';
-import { PaletteMapFields, PaletteMapIsland } from './palette-map/demo';
-import { RadialGradientFields, RadialGradientIsland } from './radial-gradient/demo';
-import { RadialWipeFields, RadialWipeIsland } from './radial-wipe/demo';
-import { SimplexNoiseFields, SimplexNoiseIsland } from './simplex-noise/demo';
-import { VignetteFields, VignetteIsland } from './vignette/demo';
-import { VoronoiFields, VoronoiIsland } from './voronoi/demo';
-import { WaveLinesFields, WaveLinesIsland } from './wave-lines/demo';
+import { AuroraIsland } from './aurora/demo';
+import { BlobsIsland } from './blobs/demo';
+import { ConicGradientIsland } from './conic-gradient/demo';
+import { CursorRippleIsland } from './cursor-ripple/demo';
+import { CursorSmudgeIsland } from './cursor-smudge/demo';
+import { CursorSpotlightIsland } from './cursor-spotlight/demo';
+import { CursorTrailIsland } from './cursor-trail/demo';
+import { DissolveIsland } from './dissolve/demo';
+import { DitherIsland } from './dither/demo';
+import { DotFieldIsland } from './dot-field/demo';
+import { FlutedGlassIsland } from './fluted-glass/demo';
+import { FractalNoiseIsland } from './fractal-noise/demo';
+import { GodRaysIsland } from './god-rays/demo';
+import { GrainIsland } from './grain/demo';
+import { LedWallIsland } from './led-wall/demo';
+import { LinearGradientIsland } from './linear-gradient/demo';
+import { LiquidGradientIsland } from './liquid-gradient/demo';
+import { MeshGradientIsland } from './mesh-gradient/demo';
+import { PaletteMapIsland } from './palette-map/demo';
+import { RadialGradientIsland } from './radial-gradient/demo';
+import { RadialWipeIsland } from './radial-wipe/demo';
+import { SimplexNoiseIsland } from './simplex-noise/demo';
+import { VignetteIsland } from './vignette/demo';
+import { VoronoiIsland } from './voronoi/demo';
+import { WaveLinesIsland } from './wave-lines/demo';
 
 export interface ComponentPageEntry {
   /** Client island rendering the control store, shader demo, and control panel. */
@@ -452,42 +448,4 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   <WaveLines />
 </ShaderScene>`,
   },
-};
-
-/** One component's demo fields, as a composition's All props section mounts them. */
-export interface ComponentFields {
-  /**
-   * The demo's controls without its panel. The Customize panel mounts them
-   * under a stack entry's id, so `path="speed"` writes `<entry>.speed`.
-   */
-  Fields: ComponentType;
-}
-
-/** Every component's fields, keyed by export name, so a stack entry's `component` finds them. */
-export const COMPONENT_FIELDS: Record<ComponentName, ComponentFields> = {
-  Aurora: { Fields: AuroraFields },
-  Blobs: { Fields: BlobsFields },
-  ConicGradient: { Fields: ConicGradientFields },
-  CursorRipple: { Fields: CursorRippleFields },
-  CursorSmudge: { Fields: CursorSmudgeFields },
-  CursorSpotlight: { Fields: CursorSpotlightFields },
-  CursorTrail: { Fields: CursorTrailFields },
-  Dissolve: { Fields: DissolveFields },
-  Dither: { Fields: DitherFields },
-  DotField: { Fields: DotFieldFields },
-  FlutedGlass: { Fields: FlutedGlassFields },
-  FractalNoise: { Fields: FractalNoiseFields },
-  GodRays: { Fields: GodRaysFields },
-  Grain: { Fields: GrainFields },
-  LedWall: { Fields: LedWallFields },
-  LinearGradient: { Fields: LinearGradientFields },
-  LiquidGradient: { Fields: LiquidGradientFields },
-  MeshGradient: { Fields: MeshGradientFields },
-  PaletteMap: { Fields: PaletteMapFields },
-  RadialGradient: { Fields: RadialGradientFields },
-  RadialWipe: { Fields: RadialWipeFields },
-  SimplexNoise: { Fields: SimplexNoiseFields },
-  Vignette: { Fields: VignetteFields },
-  Voronoi: { Fields: VoronoiFields },
-  WaveLines: { Fields: WaveLinesFields },
 };

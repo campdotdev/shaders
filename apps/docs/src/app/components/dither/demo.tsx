@@ -57,12 +57,8 @@ function DitherDemo() {
   );
 }
 
-/**
- * The panel's controls without the panel around them. A composition's All
- * props section mounts them under a stack entry's id, so each path lands in
- * that entry's props.
- */
-export function DitherFields() {
+/** The panel's controls without the panel around them. */
+function DitherFields() {
   return (
     <>
       <Section title="Dither">
