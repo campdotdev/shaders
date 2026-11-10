@@ -58,12 +58,9 @@ function LiveScene({ composition, store }: { composition: Composition; store: Co
 export function CompositionIsland({
   composition,
   defaults,
-  labels,
 }: {
   composition: Composition;
   defaults: CompositionDefaults;
-  /** Each entry's component label, keyed by entry id, for All props. */
-  labels: Readonly<Record<string, string>>;
 }) {
   const store = useMemo(
     () => createCompositionStore(composition, defaults, seedFields),
@@ -72,16 +69,7 @@ export function CompositionIsland({
 
   return (
     <ControlsProvider store={store}>
-      <DemoLayout
-        controls={
-          <CustomizePanel
-            composition={composition}
-            defaults={defaults}
-            labels={labels}
-            store={store}
-          />
-        }
-      >
+      <DemoLayout controls={<CustomizePanel composition={composition} store={store} />}>
         <div data-shader-demo>
           <LiveScene composition={composition} store={store} />
         </div>
