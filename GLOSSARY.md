@@ -54,6 +54,14 @@ _Avoid_: Hold to interact, touch drag, scroll drag
 A stroke code draws across a scene's cursor effects by moving a point. While code strokes, the effects ignore the mouse and scroll push.
 _Avoid_: Virtual pointer, fake cursor, brush
 
+**Intro**:
+The opening a Source plays when it first appears, in which its shape builds itself in, such as terrain rising from flat ground. An intro belongs to one Source. A wipe or a dissolve stacked over a scene is not an intro.
+_Avoid_: Entrance, reveal, intro animation, transition
+
+**Camera**:
+The viewpoint a 3D Source draws its scene from: where it sits, where it looks, and how wide it sees. Each 3D Source owns its camera. A scene has none.
+_Avoid_: View, eye, viewport
+
 ### Rendering
 
 **Render on demand**:
