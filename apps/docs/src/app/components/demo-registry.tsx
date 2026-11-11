@@ -18,6 +18,7 @@ import { CursorTrailIsland } from './cursor-trail/demo';
 import { DissolveIsland } from './dissolve/demo';
 import { DitherIsland } from './dither/demo';
 import { DotFieldIsland } from './dot-field/demo';
+import { DunesIsland } from './dunes/demo';
 import { FlutedGlassIsland } from './fluted-glass/demo';
 import { FractalNoiseIsland } from './fractal-noise/demo';
 import { GodRaysIsland } from './god-rays/demo';
@@ -255,6 +256,24 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
     usageSnippet: `<ShaderScene>
   <DotField spacing={30} dotSize={3} color="oklch(0.65 0.01 150)" speed={0.45} amplitude={0.15} />
 </ShaderScene>`,
+  },
+  dunes: {
+    Island: DunesIsland,
+    copySiblings: [
+      "<LinearGradient angle={90} speed={0} stops={[{ color: 'oklch(0.80 0.05 230)' }, { color: 'oklch(0.56 0.10 255)' }]} />",
+    ],
+    usageSnippet: `<ShaderScene>
+  <LinearGradient />
+  <Dunes />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        Dunes draws only the ground and leaves the sky transparent, so mount a sky Source first and
+        Dunes after it. Mode 1 only. In your own r3f <code>&lt;Canvas&gt;</code>, the{' '}
+        <code>cameraRay</code> and <code>marchHeightMap</code> primitives cast and march the same
+        rays over a height function you write.
+      </>
+    ),
   },
   'fluted-glass': {
     Island: FlutedGlassIsland,

@@ -68,6 +68,11 @@ export const COMPONENTS = {
       'Tiled dot field with center-anchored ripple displacement. The architecturally-validating Shaders component.',
     category: 'patterns',
   },
+  dunes: {
+    description:
+      'Rolling terrain seen through a camera of its own, lit from its slopes. Dunes draws only the ground, so mount a sky Source beneath it inside <ShaderScene>.',
+    category: 'scenes',
+  },
   'fluted-glass': {
     description:
       'A pane of fluted glass over the scene. Each flute bends the image beneath it into a squeezed copy and catches the light along one wall. Stacks on top of any Source inside <ShaderScene>.',

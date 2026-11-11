@@ -73,6 +73,16 @@ export type {
   FluteSurfaceResult,
 } from './primitives/flute-surface/flute-surface.js';
 
+export { cameraRay } from './primitives/camera-ray/camera-ray.js';
+export type { CameraRayOptions, CameraTurn, Ray } from './primitives/camera-ray/camera-ray.js';
+
+export { marchHeightMap } from './primitives/march-height-map/march-height-map.js';
+export type {
+  HeightFunction,
+  MarchHeightMapOptions,
+  MarchHeightMapResult,
+} from './primitives/march-height-map/march-height-map.js';
+
 export { cursorRipple } from './primitives/cursor-ripple/cursor-ripple.js';
 export type { CursorRippleOptions } from './primitives/cursor-ripple/cursor-ripple.js';
 
