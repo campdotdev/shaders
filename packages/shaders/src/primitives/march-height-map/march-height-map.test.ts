@@ -1,5 +1,5 @@
 import { type ShaderNodeObject, sin, uniform, uv, vec3 } from 'three/tsl';
-import type { Node } from 'three/webgpu';
+import { type Node, Vector3 } from 'three/webgpu';
 import { describe, expect, it } from 'vitest';
 
 import { cameraRay } from '../camera-ray/camera-ray.js';
@@ -23,6 +23,18 @@ describe('marchHeightMap', () => {
   it('accepts a ray built by hand', () => {
     const march = marchHeightMap(
       { origin: vec3(0, 1, 0), direction: vec3(0, -0.2, 1).normalize() },
+      flat,
+      { steps: 8 },
+    );
+
+    expect(march.hit).toBeDefined();
+  });
+
+  // A uniform node's generic doesn't fit ShaderNodeObject<Node> (TSLNode's
+  // JSDoc says why), so this fails pnpm typecheck if the ray narrows again.
+  it('accepts a ray from vector uniforms', () => {
+    const march = marchHeightMap(
+      { origin: uniform(new Vector3(0, 1, 0)), direction: uniform(new Vector3(0, 0, 1)) },
       flat,
       { steps: 8 },
     );

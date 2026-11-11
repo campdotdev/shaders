@@ -98,7 +98,9 @@ const HIT_TOLERANCE = 0.02;
  * (the 128-second-compile gotcha in docs/agents/tsl.md).
  */
 export function marchHeightMap(
-  ray: Ray,
+  // Wider than cameraRay's Ray, so a hand-built ray can hold uniforms
+  // (TSLNode's JSDoc says why a uniform doesn't fit Ray's fields).
+  ray: { [Field in keyof Ray]: TSLNode },
   height: HeightFunction,
   options: MarchHeightMapOptions,
 ): MarchHeightMapResult {
