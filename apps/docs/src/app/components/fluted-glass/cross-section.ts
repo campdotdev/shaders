@@ -1,8 +1,8 @@
 /**
- * FlutedGlass's cross-section for a composition's All props section. The
- * Cross-section slider edits the dial as a number, and the library default
- * is the name `'round'`, so the store needs the number the name stands for.
- * The copied file turns a number on a named point back into its name.
+ * FlutedGlass's cross-section in a composition's store. A slider edits the
+ * dial as a number, and the library default is the name `'round'`, so the
+ * store holds the number the name stands for. The copied file turns a number
+ * on a named point back into its name.
  */
 import type { CrossSectionName } from '@camp-dev/shaders';
 

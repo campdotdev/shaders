@@ -26,17 +26,17 @@ export type CompositionState = Record<string, Record<string, unknown>>;
 export type CompositionDefaults = Readonly<Record<string, EntryProps>>;
 
 // ----------------------------------------------------------------------------
-// The shape the fields edit
+// The shape the controls edit
 // ----------------------------------------------------------------------------
-// The All props section mounts each component's demo fields, which edit every
-// color stop's position. The library's default stops for the gradients leave
-// positions out and space them evenly, so those stops get the positions the
-// library would give them: index / (count - 1), as toColorRampStops in
-// packages/shaders/src/components/shared/color.ts spaces them. The picture
-// doesn't change, and the generator compares against the same shape.
+// The library's default stops for the gradients leave positions out and space
+// them evenly, so those stops get the positions the library would give them:
+// index / (count - 1), as toColorRampStops in
+// packages/shaders/src/components/shared/color.ts spaces them. A control can
+// then edit a stop's position, the picture doesn't change, and the generator
+// compares against the same shape.
 
-/** The components whose demo fields edit a stop's position. demo-fields.test.ts keeps it current. */
-export const POSITIONED_STOP_COMPONENTS: ReadonlySet<ComponentName> = new Set([
+/** The components whose color stops get their positions written out. */
+const POSITIONED_STOP_COMPONENTS: ReadonlySet<ComponentName> = new Set([
   'Aurora',
   'ConicGradient',
   'LinearGradient',
@@ -124,10 +124,10 @@ export function isCompositionStore(store: ControlStore<object>): store is Compos
 }
 
 /**
- * Fills in what an entry's fields need beyond the library defaults, such as
+ * Fills in what a control needs beyond the library defaults, such as
  * FractalNoise's contrast and balance, whose defaults follow its style, and
- * puts a prop the fields can't edit as written, such as FlutedGlass's named
- * cross-section, into a shape they can. seed-fields.ts holds the one the page
+ * puts a prop a control can't edit as written, such as FlutedGlass's named
+ * cross-section, into a shape it can. seed-fields.ts holds the one the page
  * and the golden test share.
  */
 export type SeedFields = (

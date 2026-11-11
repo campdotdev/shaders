@@ -51,12 +51,8 @@ function GrainDemo() {
   );
 }
 
-/**
- * The panel's controls without the panel around them. A composition's All
- * props section mounts them under a stack entry's id, so each path lands in
- * that entry's props.
- */
-export function GrainFields() {
+/** The panel's controls without the panel around them. */
+function GrainFields() {
   return (
     <>
       <Section title="Grain">

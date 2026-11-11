@@ -50,12 +50,8 @@ function MeshGradientDemo() {
   );
 }
 
-/**
- * The panel's controls without the panel around them. A composition's All
- * props section mounts them under a stack entry's id, so each path lands in
- * that entry's props.
- */
-export function MeshGradientFields() {
+/** The panel's controls without the panel around them. */
+function MeshGradientFields() {
   return (
     <>
       <Section title="Motion">

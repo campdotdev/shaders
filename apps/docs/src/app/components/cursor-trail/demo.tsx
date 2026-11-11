@@ -40,12 +40,8 @@ function CursorTrailDemo() {
 }
 
 // ---- Controls and page layout
-/**
- * The panel's controls without the panel around them. A composition's All
- * props section mounts them under a stack entry's id, so each path lands in
- * that entry's props.
- */
-export function CursorTrailFields() {
+/** The panel's controls without the panel around them. */
+function CursorTrailFields() {
   return (
     <>
       <Section title="Trail">
