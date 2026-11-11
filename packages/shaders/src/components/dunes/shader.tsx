@@ -306,6 +306,9 @@ export function DunesShader({ altitude, tilt, fieldOfView, tuning }: DunesShader
 
     return () => {
       shaderContext.scene.remove(mesh);
+      // Another still Source can keep the scene parked, and a parked scene
+      // would keep showing the sand, so ask for a frame without it.
+      shaderContext.scheduler.requestRender();
       try {
         material.dispose();
       } catch {

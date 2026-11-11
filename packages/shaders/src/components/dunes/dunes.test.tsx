@@ -105,6 +105,18 @@ describe('Dunes', () => {
     expect(scene.scene.children).toHaveLength(0);
   });
 
+  // Another still Source can keep the scene parked after Dunes leaves, and a
+  // parked scene would keep showing the last frame, sand and all.
+  it('asks for a frame when it leaves the scene', () => {
+    const scene = makeScene();
+    const { unmount } = render(<Dunes />, { wrapper: scene.Wrapper });
+
+    scene.scheduler.requestRender.mockClear();
+    unmount();
+
+    expect(scene.scheduler.requestRender).toHaveBeenCalled();
+  });
+
   // Every dial rides a stable uniform, so a new value is a uniform write and
   // a repaint, never a new material.
   it('changes its camera dials without rebuilding the material', () => {
