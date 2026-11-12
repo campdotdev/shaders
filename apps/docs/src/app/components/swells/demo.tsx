@@ -53,9 +53,10 @@ function SwellsFields() {
         <SliderInput label="Tilt" max={60} min={-10} path="tilt" step={0.5} />
         <SliderInput label="Field of view" max={100} min={20} path="fieldOfView" step={1} />
       </Section>
-      <Section title="Sand">
+      <Section title="Shape">
         <SliderInput label="Scale" max={20} min={1} path="scale" step={0.1} />
         <SliderInput label="Relief" max={2} min={0} path="relief" step={0.01} />
+        <SliderInput label="Sharpness" max={1} min={0} path="sharpness" step={0.01} />
         <SliderInput label="Ripples" max={1} min={0} path="ripples" step={0.01} />
       </Section>
       <Section title="Sun">

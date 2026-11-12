@@ -93,6 +93,7 @@ describe('Swells', () => {
       fieldOfView?: AnimatableProp<number>;
       scale?: AnimatableProp<number>;
       relief?: AnimatableProp<number>;
+      sharpness?: AnimatableProp<number>;
       ripples?: AnimatableProp<number>;
       sunAngle?: AnimatableProp<number>;
       sunHeight?: AnimatableProp<number>;
@@ -144,16 +145,18 @@ describe('Swells', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
-  it('changes its sand and sun dials without rebuilding the material', () => {
+  it('changes its shape and sun dials without rebuilding the material', () => {
     const scene = makeScene();
     const { rerender } = render(
-      <Swells relief={0.8} ripples={0.6} scale={4} sunAngle={300} sunHeight={15} />,
+      <Swells relief={0.8} ripples={0.6} scale={4} sharpness={1} sunAngle={300} sunHeight={15} />,
       { wrapper: scene.Wrapper },
     );
     const { material } = scene.onlyMesh();
 
     scene.scheduler.requestRender.mockClear();
-    rerender(<Swells relief={0} ripples={0} scale={8} sunAngle={90} sunHeight={60} />);
+    rerender(
+      <Swells relief={0} ripples={0} scale={8} sharpness={0} sunAngle={90} sunHeight={60} />,
+    );
 
     expect(scene.onlyMesh().material).toBe(material);
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
@@ -216,11 +219,12 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
-  it('follows its sand and sun signals without rebuilding the material', () => {
+  it('follows its shape and sun signals without rebuilding the material', () => {
     const scene = makeScene();
     const signals = {
       scale: makeSignal(4),
       relief: makeSignal(0.8),
+      sharpness: makeSignal(0.5),
       ripples: makeSignal(0.6),
       sunAngle: makeSignal(300),
       sunHeight: makeSignal(15),
@@ -231,6 +235,7 @@ describe('Swells', () => {
         relief={signals.relief.signal}
         ripples={signals.ripples.signal}
         scale={signals.scale.signal}
+        sharpness={signals.sharpness.signal}
         sunAngle={signals.sunAngle.signal}
         sunHeight={signals.sunHeight.signal}
       />,

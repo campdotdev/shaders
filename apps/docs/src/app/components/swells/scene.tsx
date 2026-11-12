@@ -30,6 +30,7 @@ export default function SwellsScene({
         ripples={params.ripples}
         scale={params.scale}
         shadowColor={params.shadowColor}
+        sharpness={params.sharpness}
         sunAngle={params.sunAngle}
         sunHeight={params.sunHeight}
         tilt={params.tilt}

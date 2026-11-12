@@ -20,6 +20,7 @@ export interface SwellsParams {
   fieldOfView: number;
   scale: number;
   relief: number;
+  sharpness: number;
   ripples: number;
   sunAngle: number;
   sunHeight: number;
@@ -38,6 +39,7 @@ export const INITIAL: SwellsParams = {
   fieldOfView: 50,
   scale: 4,
   relief: 0.8,
+  sharpness: 1,
   ripples: 0.5,
   sunAngle: 300,
   sunHeight: 15,

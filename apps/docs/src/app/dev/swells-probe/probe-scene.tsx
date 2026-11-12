@@ -1,8 +1,8 @@
 'use client';
 
-// Probe for Swells: the sand in gray, from near black on faces turned from
-// the sun to near white on faces turned toward it, over a black canvas. With
-// no hue and no sky, a pixel's brightness is how squarely the sand there
+// Probe for Swells: the surface in gray, from near black on faces turned
+// from the sun to near white on faces turned toward it, over a black canvas.
+// With no hue and no sky, a pixel's brightness is how squarely the surface there
 // faces the sun, so the visual spec's pixel checks can read the light
 // straight off the canvas.
 import { ShaderScene, Swells } from '@camp-dev/shaders';
@@ -10,7 +10,8 @@ import { ShaderScene, Swells } from '@camp-dev/shaders';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
 // Query params override Swells' dials, such as ?sunAngle=180&sunHeight=10,
-// or ?relief=0&ripples=0 for level, smooth sand, for checking one by eye.
+// ?relief=0&ripples=0 for level, smooth ground, or ?sharpness=0 for round
+// swells, for checking one by eye.
 
 /** A number from the page's query string, or undefined when it is absent. */
 function queryNumber(name: string): number | undefined {
@@ -31,6 +32,7 @@ export default function ProbeScene() {
           ripples={queryNumber('ripples')}
           scale={queryNumber('scale')}
           shadowColor="oklch(0.15 0 0)"
+          sharpness={queryNumber('sharpness')}
           sunAngle={queryNumber('sunAngle')}
           sunHeight={queryNumber('sunHeight')}
           tilt={queryNumber('tilt')}

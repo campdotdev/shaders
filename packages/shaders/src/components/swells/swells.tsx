@@ -1,7 +1,7 @@
 'use client';
 
 // Public face of Swells: owns the props, their JSDoc, and their defaults,
-// then delegates to SwellsShader (./shader.tsx), which draws terrain through
+// then delegates to SwellsShader (./shader.tsx), which draws a surface through
 // a camera of its own by marching each pixel's ray over a height map. Swells
 // draws only the ground and is transparent where the ray misses it, so
 // mount a sky Source beneath it inside a <ShaderScene>.
@@ -15,7 +15,7 @@ export interface SwellsProps {
   /**
    * How high the camera sits above the ground, in terrain units. The
    * tallest crests reach `relief` units, so a camera below that can end up
-   * inside a dune. Defaults to 1.5. Accepts a static value or an animation
+   * inside a swell. Defaults to 1.5. Accepts a static value or an animation
    * signal.
    */
   altitude?: AnimatableProp<number>;
@@ -34,22 +34,30 @@ export interface SwellsProps {
    */
   fieldOfView?: AnimatableProp<number>;
   /**
-   * How many dunes, crest to crest, fit in 10 terrain units. Higher packs
-   * in more, smaller dunes; lower spreads out fewer, bigger ones. The
-   * ripples keep their size. Defaults to 4, so a dune is 2.5 units long.
+   * How many swells, crest to crest, fit in 10 terrain units. Higher packs
+   * in more, smaller swells; lower spreads out fewer, bigger ones. The
+   * ripples keep their size. Defaults to 4, so a swell is 2.5 units long.
    * Accepts a static value or an animation signal.
    */
   scale?: AnimatableProp<number>;
   /**
-   * How tall the dunes are, in terrain units: the height of the tallest
-   * crests. 0 flattens the dunes into level ground, which still carries
+   * How tall the swells are, in terrain units: the height of the tallest
+   * crests. 0 flattens the swells into level ground, which still carries
    * ripples unless `ripples` is 0 too. Defaults to 0.8. Accepts a static
    * value or an animation signal.
    */
   relief?: AnimatableProp<number>;
   /**
-   * How strong the wind ripples on the sand are, from 0 to 1, where 0 is
-   * smooth sand and 1 is the deepest ripples. They show up close and fade
+   * The swells' shape, from 0 to 1. 0 gives round swells that ease over
+   * their crests, like silk or open water, with both faces alike. 1 gives
+   * sharp dune crests, with a long, gentle face and a short, steep one that
+   * looks downwind. Defaults to 1. Accepts a static value or an animation
+   * signal.
+   */
+  sharpness?: AnimatableProp<number>;
+  /**
+   * How strong the fine ripples on the surface are, from 0 to 1, where 0 is
+   * a smooth surface and 1 is the deepest ripples. They show up close and fade
    * out with distance. Defaults to 0.5. Accepts a static value or an
    * animation signal.
    */
@@ -65,20 +73,20 @@ export interface SwellsProps {
   sunAngle?: AnimatableProp<number>;
   /**
    * How high the sun sits, in degrees above the horizon, from 0 on the
-   * horizon to 90 overhead. A low sun rakes across the dunes, so every
+   * horizon to 90 overhead. A low sun rakes across the swells, so every
    * crest splits into a lit face and a shaded one; a high sun lights both
    * faces alike and flattens them. Defaults to 15. Accepts a static value or
    * an animation signal.
    */
   sunHeight?: AnimatableProp<number>;
   /**
-   * The sand's color where it faces the sun: hex, `oklch()`, or `oklab()`.
+   * The surface's color where it faces the sun: hex, `oklch()`, or `oklab()`.
    * Faces turned from the sun take `shadowColor`, and the slopes between
    * blend the two. Defaults to a warm sand, `'oklch(0.82 0.08 75)'`.
    */
   color?: string;
   /**
-   * The sand's color on faces turned from the sun: hex, `oklch()`, or
+   * The surface's color on faces turned from the sun: hex, `oklch()`, or
    * `oklab()`. Defaults to a rose brown, `'oklch(0.45 0.06 15)'`.
    */
   shadowColor?: string;
@@ -106,6 +114,7 @@ export function Swells({
   fieldOfView = 50,
   scale = 4,
   relief = 0.8,
+  sharpness = 1,
   ripples = 0.5,
   sunAngle = 300,
   sunHeight = 15,
@@ -126,6 +135,7 @@ export function Swells({
       ripples={ripples}
       scale={scale}
       shadowColor={shadowColor}
+      sharpness={sharpness}
       sunAngle={sunAngle}
       sunHeight={sunHeight}
       tilt={tilt}
