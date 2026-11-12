@@ -22,7 +22,16 @@ export default function DunesScene({
       <LinearGradient angle={90} speed={0} stops={SKY_STOPS} />
       <Dunes
         altitude={params.altitude}
+        color={params.color}
+        colorSpace={params.colorSpace}
         fieldOfView={params.fieldOfView}
+        hueInterpolation={params.hueInterpolation}
+        relief={params.relief}
+        ripples={params.ripples}
+        scale={params.scale}
+        shadowColor={params.shadowColor}
+        sunAngle={params.sunAngle}
+        sunHeight={params.sunHeight}
         tilt={params.tilt}
         tuning={params.tuning}
       />

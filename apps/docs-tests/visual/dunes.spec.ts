@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import { expect, test } from './fixtures';
 import { readCanvasPixels, waitForShader } from './helpers';
 
@@ -20,9 +22,9 @@ test('Dunes — default story', async ({ page }) => {
 // screenshot, so this checks what the demo must show. The demo mounts a blue
 // sky gradient beneath Dunes. Above the horizon the ray misses the ground and
 // Dunes is transparent, so the top rows read blue. The bottom rows are
-// ground, which reads sand: more red than blue. And the slope light varies
-// across the ground, so its brightness spreads; unlit ground would be one
-// flat color.
+// ground. No ground pixel reads as sky, and the ground as a whole reads as
+// sand, more red than blue on average. And the sun's light varies across the
+// ground, so its brightness spreads; unlit ground would be one flat color.
 test('Dunes — sky above the horizon, lit sand below', async ({ page }) => {
   await page.goto('/components/dunes?visualTest=1');
   await waitForShader(page);
@@ -41,12 +43,71 @@ test('Dunes — sky above the horizon, lit sand below', async ({ page }) => {
   const ground = groundRows.flat();
 
   for (const [red, , blue] of ground) {
-    expect(red, 'sand pixel').toBeGreaterThan(blue + 30);
+    expect(blue, 'ground pixel, not sky').toBeLessThan(red + 40);
   }
+
+  const meanOf = (channel: 0 | 2) =>
+    ground.reduce((sum, pixel) => sum + pixel[channel], 0) / ground.length;
+
+  expect(meanOf(0), 'sand: mean red over mean blue').toBeGreaterThan(meanOf(2) + 8);
 
   const brightness = ground.map(([red, green, blue]) => (red + green + blue) / 3);
 
   expect(Math.max(...brightness) - Math.min(...brightness), 'slope light spread').toBeGreaterThan(
     12,
   );
+});
+
+// The probe draws the sand in gray, from near black on faces turned from the
+// sun to near white on faces turned toward it, over a black canvas. Query
+// params set Dunes' dials.
+const PROBE = '/dev/dunes-probe?visualTest=1';
+
+/**
+ * Loads the probe with `query` appended and returns the brightness, 0 to 255,
+ * at points spread over its ground: the bottom third of the canvas, which
+ * lies below the horizon at the default camera.
+ */
+async function groundBrightness(page: Page, query: string): Promise<number[]> {
+  await page.goto(`${PROBE}${query}`);
+  await page.locator('canvas').first().waitFor();
+  await waitForShader(page);
+
+  const { width, height, rgb } = await readCanvasPixels(page);
+  const samples: number[] = [];
+
+  for (let y = Math.floor(height * 0.65); y < Math.floor(height * 0.98); y += 8) {
+    for (let x = 0; x < width; x += 8) {
+      const [red, green, blue] = rgb(x, y);
+
+      samples.push((red + green + blue) / 3);
+    }
+  }
+
+  return samples;
+}
+
+const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
+
+// A camera sees mostly the faces turned toward it, because a dune hides its
+// own far face. With the sun behind the camera those faces are sunlit, and
+// with the sun ahead they are shaded, so the ground's mean brightness swings
+// far between the two. Lighting that ignored the sun would read the same in
+// both. The gap measured about 120 levels on macOS, so 60 leaves room for
+// another GPU.
+test('Dunes — sunlit faces are brighter than shaded ones', async ({ page }) => {
+  const sunBehind = mean(await groundBrightness(page, '&sunAngle=180'));
+  const sunAhead = mean(await groundBrightness(page, '&sunAngle=0'));
+
+  expect(sunBehind - sunAhead, 'sun behind minus sun ahead').toBeGreaterThan(60);
+});
+
+// With no relief and no ripples the ground is level, so every point faces the
+// sun alike and the ground reads one even tone. The only spread left is the
+// scene's dither, a level or two.
+test('Dunes — relief 0 and ripples 0 give flat, smooth ground', async ({ page }) => {
+  const flat = await groundBrightness(page, '&relief=0&ripples=0');
+
+  expect(Math.max(...flat) - Math.min(...flat), 'flat ground spread').toBeLessThan(6);
+  expect(mean(flat), 'flat ground is lit').toBeGreaterThan(40);
 });

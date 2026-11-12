@@ -4,6 +4,7 @@ import { render } from '@testing-library/react';
 import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
+import type { ColorSpace, HueInterpolation } from '../../engine.js';
 import { Dunes, type DunesProps, type DunesTuning } from '../../index.js';
 import { ShaderContext, type ShaderContextValue } from '../../react/context/shader-context.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
@@ -81,14 +82,25 @@ function makeSignal(initial: number) {
 }
 
 describe('Dunes', () => {
-  // The public shape so far: three camera dials, each a number or an
-  // animation signal, and the temporary tuning rig. pnpm typecheck runs this
-  // file too, so a missing export or a narrowed prop fails there as well.
-  it('takes three animatable camera dials from the package root', () => {
+  // The public shape so far: the camera, sand, and sun dials, each a number
+  // or an animation signal, the two sand colors and the space they blend
+  // in, and the temporary tuning
+  // rig. pnpm typecheck runs this file too, so a missing export or a
+  // narrowed prop fails there as well.
+  it('takes animatable camera, sand, and sun dials from the package root', () => {
     expectTypeOf<DunesProps>().toEqualTypeOf<{
       altitude?: AnimatableProp<number>;
       tilt?: AnimatableProp<number>;
       fieldOfView?: AnimatableProp<number>;
+      scale?: AnimatableProp<number>;
+      relief?: AnimatableProp<number>;
+      ripples?: AnimatableProp<number>;
+      sunAngle?: AnimatableProp<number>;
+      sunHeight?: AnimatableProp<number>;
+      color?: string;
+      shadowColor?: string;
+      colorSpace?: ColorSpace;
+      hueInterpolation?: HueInterpolation;
       tuning?: DunesTuning;
     }>();
   });
@@ -133,6 +145,52 @@ describe('Dunes', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
+  it('changes its sand and sun dials without rebuilding the material', () => {
+    const scene = makeScene();
+    const { rerender } = render(
+      <Dunes relief={0.8} ripples={0.6} scale={4} sunAngle={300} sunHeight={15} />,
+      { wrapper: scene.Wrapper },
+    );
+    const { material } = scene.onlyMesh();
+
+    scene.scheduler.requestRender.mockClear();
+    rerender(<Dunes relief={0} ripples={0} scale={8} sunAngle={90} sunHeight={60} />);
+
+    expect(scene.onlyMesh().material).toBe(material);
+    expect(scene.scheduler.requestRender).toHaveBeenCalled();
+  });
+
+  // The colors decode into uniforms on the CPU, so a new color is a uniform
+  // write and a repaint too.
+  it('changes its colors without rebuilding the material', () => {
+    const scene = makeScene();
+    const { rerender } = render(
+      <Dunes color="oklch(0.82 0.08 75)" shadowColor="oklch(0.45 0.06 15)" />,
+      { wrapper: scene.Wrapper },
+    );
+    const { material } = scene.onlyMesh();
+
+    scene.scheduler.requestRender.mockClear();
+    rerender(<Dunes color="#ffffff" />);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
+    rerender(<Dunes color="#ffffff" shadowColor="#000000" />);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(2);
+
+    expect(scene.onlyMesh().material).toBe(material);
+  });
+
+  // Each color space's blend is different shader code, so a new space is a
+  // new material, and still only one mesh.
+  it('rebuilds the material for a new color space', () => {
+    const scene = makeScene();
+    const { rerender } = render(<Dunes colorSpace="oklab" />, { wrapper: scene.Wrapper });
+    const { material } = scene.onlyMesh();
+
+    rerender(<Dunes colorSpace="linear" />);
+
+    expect(scene.onlyMesh().material).not.toBe(material);
+  });
+
   it('follows its camera signals without rebuilding the material', () => {
     const scene = makeScene();
     const altitude = makeSignal(1);
@@ -159,17 +217,59 @@ describe('Dunes', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
+  it('follows its sand and sun signals without rebuilding the material', () => {
+    const scene = makeScene();
+    const signals = {
+      scale: makeSignal(4),
+      relief: makeSignal(0.8),
+      ripples: makeSignal(0.6),
+      sunAngle: makeSignal(300),
+      sunHeight: makeSignal(15),
+    };
+
+    render(
+      <Dunes
+        relief={signals.relief.signal}
+        ripples={signals.ripples.signal}
+        scale={signals.scale.signal}
+        sunAngle={signals.sunAngle.signal}
+        sunHeight={signals.sunHeight.signal}
+      />,
+      { wrapper: scene.Wrapper },
+    );
+    const { material } = scene.onlyMesh();
+
+    scene.scheduler.requestRender.mockClear();
+
+    Object.values(signals).forEach((channel, index) => {
+      channel.set(1);
+      expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(index + 1);
+    });
+
+    expect(scene.onlyMesh().material).toBe(material);
+  });
+
   // The tuning sliders on the docs page glide for the same reason.
   it('changes its tuning without rebuilding the material', () => {
     const scene = makeScene();
-    const { rerender } = render(<Dunes tuning={{ frequency: 0.3 }} />, {
+    const { rerender } = render(<Dunes tuning={{ windAngle: 30 }} />, {
       wrapper: scene.Wrapper,
     });
     const { material } = scene.onlyMesh();
 
     scene.scheduler.requestRender.mockClear();
     rerender(
-      <Dunes tuning={{ frequency: 0.5, terrainHeight: 1, stepScale: 0.4, maxDistance: 60 }} />,
+      <Dunes
+        tuning={{
+          stepScale: 0.4,
+          maxDistance: 60,
+          windAngle: 90,
+          slipFace: 0.2,
+          meander: 0,
+          rippleSize: 0.2,
+          rippleHeight: 0.02,
+        }}
+      />,
     );
 
     expect(scene.onlyMesh().material).toBe(material);
