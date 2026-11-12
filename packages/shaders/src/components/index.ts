@@ -37,6 +37,9 @@ export type { DitherProps } from './dither/dither.js';
 export { DotField } from './dot-field/dot-field.js';
 export type { DotFieldProps, DotShape, SvgMarkup } from './dot-field/dot-field.js';
 
+export { Dunes } from './dunes/dunes.js';
+export type { DunesProps, DunesTuning } from './dunes/dunes.js';
+
 export { FlutedGlass } from './fluted-glass/fluted-glass.js';
 export type { CrossSectionName, FlutedGlassProps } from './fluted-glass/fluted-glass.js';
 
