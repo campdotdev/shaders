@@ -6,7 +6,7 @@
 // the sand it hits from a sun, and leave the pixel transparent where the
 // ray misses, so the Source beneath shows through as the sky. The wrapper
 // (./dunes.tsx) supplies the props.
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
 import {
   clamp,
@@ -23,13 +23,12 @@ import {
   type ShaderNodeObject,
   sin,
   smoothstep,
-  uniform,
   uv,
   vec2,
   vec3,
   vec4,
 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry, Vector3 } from 'three/webgpu';
+import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
 
 import {
   cameraRay,
@@ -39,13 +38,12 @@ import {
   mixColor,
   stableHash,
 } from '../../engine.js';
-import type { ShaderContextValue } from '../../react/context/shader-context.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
+import { useColorUniform } from '../../react/hooks/use-color-uniform/use-color-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
-import { parseColor } from '../shared/color.js';
 
 type TSLValue = ShaderNodeObject<Node>;
 
@@ -261,27 +259,6 @@ const layeredNoise = (point: TSLValue): TSLValue => {
   return sum.div(total);
 };
 
-/**
- * A color prop decoded into a uniform the shader reads. parseColor turns
- * hex and the wide-gamut oklch() and oklab() strings into linear RGB once
- * per change, on the CPU. The Vector3 and its uniform are created once, and
- * the effect writes each new color into the Vector3, so a new color never
- * rebuilds the material.
- */
-function useColorUniform(color: string, shaderContext: ShaderContextValue | null) {
-  const colorVector = useMemo(() => new Vector3(1, 1, 1), []);
-  const colorUniform = useMemo(() => uniform(colorVector), [colorVector]);
-
-  useEffect(() => {
-    colorVector.set(...parseColor(color));
-    // The bare-uniform-write gotcha in docs/agents/tsl.md: a write into the
-    // Vector3 repaints nothing on a static scene by itself.
-    shaderContext?.scheduler.requestRender();
-  }, [color, colorVector, shaderContext]);
-
-  return colorUniform;
-}
-
 export interface DunesShaderProps {
   /**
    * How high the camera sits above the ground, in terrain units. Accepts a
@@ -370,8 +347,8 @@ export function DunesShader({
   const ripplesUniform = useAnimatableUniform<number>(ripples);
   const sunAngleUniform = useAnimatableUniform<number>(sunAngle);
   const sunHeightUniform = useAnimatableUniform<number>(sunHeight);
-  const colorUniform = useColorUniform(color, shaderContext);
-  const shadowColorUniform = useColorUniform(shadowColor, shaderContext);
+  const colorUniform = useColorUniform(color);
+  const shadowColorUniform = useColorUniform(shadowColor);
 
   // TEMPORARY: the feel constants ride uniforms too, so the tuning sliders
   // glide. The defaults gate deletes these and bakes the constants back in.

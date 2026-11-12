@@ -7,10 +7,10 @@
 // the bottom, with soft seams. All eight palette colors live in uniforms, so
 // changing `palettes` restyles the gradient without recompiling the shader —
 // unlike the ramp-based components, which bake colors in.
-import { useEffect, useMemo } from 'react';
+import { useEffect } from 'react';
 
-import { abs, cos, pow, sign, sin, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector3 } from 'three/webgpu';
+import { abs, cos, pow, sign, sin, smoothstep, uv, vec2, vec4 } from 'three/tsl';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry } from 'three/webgpu';
 
 import {
   type ColorSpace,
@@ -23,9 +23,10 @@ import type { AnimatableProp } from '../../react/hooks/animatable-signal/animata
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
+import { useColorUniform } from '../../react/hooks/use-color-uniform/use-color-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
-import { type Palette, parseColor } from '../shared/color.js';
+import type { Palette } from '../shared/color.js';
 
 export interface MeshGradientShaderProps {
   /**
@@ -66,31 +67,6 @@ export interface MeshGradientShaderProps {
 // Tilt of the left/right color seam, in radians (-5 degrees). A perfectly
 // vertical seam reads as two rectangles; the small tilt hides the geometry.
 const LAYER_ROT_RAD = (-5 * Math.PI) / 180;
-
-// One palette entry -> one stable color uniform. The Vector3 and uniform are
-// created once; when the color string changes, the effect re-decodes it into
-// the same vector, so the material never rebuilds for a palette change.
-function useColorUniform(hex: string) {
-  const vec = useMemo(
-    () => {
-      const [redChannel, greenChannel, blueChannel] = parseColor(hex);
-
-      return new Vector3(redChannel, greenChannel, blueChannel);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  const node = useMemo(() => uniform(vec), [vec]);
-
-  useEffect(() => {
-    const [redChannel, greenChannel, blueChannel] = parseColor(hex);
-
-    vec.set(redChannel, greenChannel, blueChannel);
-  }, [hex, vec]);
-
-  return node;
-}
 
 export function MeshGradientShader({
   speed,

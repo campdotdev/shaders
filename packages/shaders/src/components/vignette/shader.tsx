@@ -4,10 +4,7 @@
 // distance from a focal point and blends the already-rendered image toward
 // `color` as that distance grows. The wrapper (./vignette.tsx) supplies the
 // props; the engine's mixColor() does the color-space-aware blending.
-import { useEffect, useMemo } from 'react';
-
-import { length, smoothstep, uniform, uv, vec2, vec4 } from 'three/tsl';
-import { Vector3 } from 'three/webgpu';
+import { length, smoothstep, uv, vec2, vec4 } from 'three/tsl';
 
 import { mixColor } from '../../engine.js';
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
@@ -18,8 +15,8 @@ import type {
 import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
+import { useColorUniform } from '../../react/hooks/use-color-uniform/use-color-uniform.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
-import { parseColor } from '../shared/color.js';
 
 export interface VignetteShaderProps {
   /**
@@ -71,32 +68,9 @@ export function VignetteShader({
 
   const centerUniform = useAnimatablePoint(center);
 
-  // The color vector the decode effect writes into
-  // The Vector3 and its uniform wrapper are created once and never replaced;
-  // the effect below decodes the color prop and pushes channels in with .set().
-  // Because the pass depends only on the stable wrapper, color changes never
-  // re-register the pass.
-
-  // The color prop decodes once into linear rgb channels (parseColor handles
-  // hex and wide-gamut oklch/oklab strings); the effect below re-decodes
-  // whenever the string changes.
-  const colorVec = useMemo(
-    () => {
-      const [redChannel, greenChannel, blueChannel] = parseColor(color);
-
-      return new Vector3(redChannel, greenChannel, blueChannel);
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [],
-  );
-
-  const colorUniform = useMemo(() => uniform(colorVec), [colorVec]);
-
-  useEffect(() => {
-    const [redChannel, greenChannel, blueChannel] = parseColor(color);
-
-    colorVec.set(redChannel, greenChannel, blueChannel);
-  }, [color, colorVec]);
+  // The color rides one stable uniform, so a color change never re-registers
+  // the pass.
+  const colorUniform = useColorUniform(color);
 
   // ---------------------------------------------
   // Track the canvas aspect ratio

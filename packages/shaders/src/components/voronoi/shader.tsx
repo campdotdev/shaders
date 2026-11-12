@@ -9,7 +9,7 @@
 import { useEffect, useMemo } from 'react';
 
 import { clamp, float, fwidth, mix, pow, select, smoothstep, uniform, uv, vec2 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2, Vector3 } from 'three/webgpu';
+import { Mesh, MeshBasicNodeMaterial, PlaneGeometry, Vector2 } from 'three/webgpu';
 
 import {
   colorRamp,
@@ -23,9 +23,10 @@ import type { AnimatableProp } from '../../react/hooks/animatable-signal/animata
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
+import { useColorUniform } from '../../react/hooks/use-color-uniform/use-color-uniform.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
-import { type ColorStop, colorStopsKey, parseColor, toColorRampStops } from '../shared/color.js';
+import { type ColorStop, colorStopsKey, toColorRampStops } from '../shared/color.js';
 
 // ---------------------------------------------
 // Feel constants (tuned by eye at the build's visual gates)
@@ -178,18 +179,9 @@ export function VoronoiShader({
     shaderContext?.scheduler.requestRender();
   }, [shaderContext, seedVec, seed]);
 
-  // The border color rides a Vector3 uniform (vignette's pattern): the
-  // Vector3 and its uniform are created once, the effect writes decoded rgb
-  // into them, so a color change never rebuilds the material.
-  const borderColorVec = useMemo(() => new Vector3(0, 0, 0), []);
-  const borderColorUniform = useMemo(() => uniform(borderColorVec), [borderColorVec]);
-
-  useEffect(() => {
-    const [red, green, blue] = parseColor(borderColor);
-
-    borderColorVec.set(red, green, blue);
-    shaderContext?.scheduler.requestRender();
-  }, [shaderContext, borderColorVec, borderColor]);
+  // The border color rides one stable uniform, so a color change never
+  // rebuilds the material.
+  const borderColorUniform = useColorUniform(borderColor);
 
   const borderWidthUniform = useAnimatableUniform<number>(borderWidth);
   const borderSoftnessUniform = useAnimatableUniform<number>(borderSoftness);
