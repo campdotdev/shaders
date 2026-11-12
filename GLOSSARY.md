@@ -108,6 +108,12 @@ _Avoid_: Profile, distortion shape, preset
 The line where two neighboring flutes meet, where the glass is steepest.
 _Avoid_: Seam, edge, crease
 
+### Swells
+
+**Swell**:
+One wave of Swells' surface, from a trough over a crest to the next trough. `scale` sets how many fit in a stretch of ground, and `sharpness` shapes each one, from a round wave to a dune with a steep downwind face. LedWall's swell is a different thing: a reaction that grows toward a point.
+_Avoid_: Dune, wave, ridge
+
 ### Compositions
 
 **Composition**:

@@ -1,11 +1,11 @@
 'use client';
 
-// Dunes' GPU half. Unlike the flat Sources, this one draws a 3D world. The
+// Swells' GPU half. Unlike the flat Sources, this one draws a 3D world. The
 // pixel's journey: cast a ray from a perspective camera through the pixel
 // (cameraRay), follow it until it meets the sand (marchHeightMap), light
 // the sand it hits from a sun, and leave the pixel transparent where the
 // ray misses, so the Source beneath shows through as the sky. The wrapper
-// (./dunes.tsx) supplies the props.
+// (./swells.tsx) supplies the props.
 import { useEffect } from 'react';
 
 import {
@@ -180,7 +180,7 @@ const ROW_STRIDE = 4096;
 const DEGREES_TO_RADIANS = Math.PI / 180;
 
 /** TEMPORARY (build-phase tuning only): dev overrides for the feel constants. */
-export interface DunesTuning {
+export interface SwellsTuning {
   /** The share of the ray's height above the ground each march step moves, 0 to 1. */
   stepScale?: number;
   /** How far the camera sees, in terrain units. */
@@ -259,7 +259,7 @@ const layeredNoise = (point: TSLValue): TSLValue => {
   return sum.div(total);
 };
 
-export interface DunesShaderProps {
+export interface SwellsShaderProps {
   /**
    * How high the camera sits above the ground, in terrain units. Accepts a
    * static value or an animation signal.
@@ -313,10 +313,10 @@ export interface DunesShaderProps {
    * TEMPORARY (build-phase tuning only): dev overrides for the feel
    * constants.
    */
-  tuning: DunesTuning | undefined;
+  tuning: SwellsTuning | undefined;
 }
 
-export function DunesShader({
+export function SwellsShader({
   altitude,
   tilt,
   fieldOfView,
@@ -330,7 +330,7 @@ export function DunesShader({
   colorSpace,
   hueInterpolation,
   tuning,
-}: DunesShaderProps) {
+}: SwellsShaderProps) {
   const shaderContext = useShaderContext();
 
   // Nothing on screen moves yet, so the scene can park on its first frame.
@@ -377,7 +377,7 @@ export function DunesShader({
     // Fn() wraps the body in a GPU function node, which gives the march's
     // loop a list of statements to append to. The trailing () calls it once
     // to produce the node the material renders.
-    const dunesNode = Fn(() => {
+    const swellsNode = Fn(() => {
       // ---------------------------------------------
       // Cast the pixel's ray
       // ---------------------------------------------
@@ -562,7 +562,7 @@ export function DunesShader({
     const material = new MeshBasicNodeMaterial();
 
     material.transparent = true;
-    material.colorNode = dunesNode;
+    material.colorNode = swellsNode;
 
     // A 2x2 plane exactly fills ShaderScene's camera view (-1..1 on both
     // axes), so every pixel of the canvas casts a ray.

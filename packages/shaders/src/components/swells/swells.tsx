@@ -1,17 +1,17 @@
 'use client';
 
-// Public face of Dunes: owns the props, their JSDoc, and their defaults,
-// then delegates to DunesShader (./shader.tsx), which draws terrain through
-// a camera of its own by marching each pixel's ray over a height map. Dunes
+// Public face of Swells: owns the props, their JSDoc, and their defaults,
+// then delegates to SwellsShader (./shader.tsx), which draws terrain through
+// a camera of its own by marching each pixel's ray over a height map. Swells
 // draws only the ground and is transparent where the ray misses it, so
 // mount a sky Source beneath it inside a <ShaderScene>.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
-import { DunesShader, type DunesTuning } from './shader.js';
+import { SwellsShader, type SwellsTuning } from './shader.js';
 
-export type { DunesTuning } from './shader.js';
+export type { SwellsTuning } from './shader.js';
 
-export interface DunesProps {
+export interface SwellsProps {
   /**
    * How high the camera sits above the ground, in terrain units. The
    * tallest crests reach `relief` units, so a camera below that can end up
@@ -96,11 +96,11 @@ export interface DunesProps {
    * TEMPORARY (build-phase tuning only): dev overrides for the feel
    * constants. Stripped at the defaults gate, so don't use it.
    */
-  tuning?: DunesTuning;
+  tuning?: SwellsTuning;
 }
 
 // Provisional until the defaults gate (SHA-327) tunes them by eye.
-export function Dunes({
+export function Swells({
   altitude = 1.5,
   tilt = 12,
   fieldOfView = 50,
@@ -114,9 +114,9 @@ export function Dunes({
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
   tuning,
-}: DunesProps) {
+}: SwellsProps) {
   return (
-    <DunesShader
+    <SwellsShader
       altitude={altitude}
       color={color}
       colorSpace={colorSpace}

@@ -3,11 +3,11 @@ import type { Page } from '@playwright/test';
 import { expect, test } from './fixtures';
 import { readCanvasPixels, waitForShader } from './helpers';
 
-// Dunes marches a ray per pixel in a fixed-count loop, which the WebGL2
+// Swells marches a ray per pixel in a fixed-count loop, which the WebGL2
 // fallback accepts only with a constant bound. Headless Chromium runs that
 // fallback, so this spec is the check that the march compiles there.
-test('Dunes — default story', async ({ page }) => {
-  await page.goto('/components/dunes?visualTest=1');
+test('Swells — default story', async ({ page }) => {
+  await page.goto('/components/swells?visualTest=1');
   await waitForShader(page);
 
   const backend = await page.evaluate(
@@ -15,18 +15,18 @@ test('Dunes — default story', async ({ page }) => {
   );
 
   expect(backend).toBe('webgl2');
-  await expect(page.locator('canvas').first()).toHaveScreenshot('dunes-default.png');
+  await expect(page.locator('canvas').first()).toHaveScreenshot('swells-default.png');
 });
 
 // A baseline regenerated from blank or unlit output would pass its own
 // screenshot, so this checks what the demo must show. The demo mounts a blue
-// sky gradient beneath Dunes. Above the horizon the ray misses the ground and
-// Dunes is transparent, so the top rows read blue. The bottom rows are
+// sky gradient beneath Swells. Above the horizon the ray misses the ground and
+// Swells is transparent, so the top rows read blue. The bottom rows are
 // ground. No ground pixel reads as sky, and the ground as a whole reads as
 // sand, more red than blue on average. And the sun's light varies across the
 // ground, so its brightness spreads; unlit ground would be one flat color.
-test('Dunes — sky above the horizon, lit sand below', async ({ page }) => {
-  await page.goto('/components/dunes?visualTest=1');
+test('Swells — sky above the horizon, lit sand below', async ({ page }) => {
+  await page.goto('/components/swells?visualTest=1');
   await waitForShader(page);
 
   const pixels = await readCanvasPixels(page);
@@ -60,8 +60,8 @@ test('Dunes — sky above the horizon, lit sand below', async ({ page }) => {
 
 // The probe draws the sand in gray, from near black on faces turned from the
 // sun to near white on faces turned toward it, over a black canvas. Query
-// params set Dunes' dials.
-const PROBE = '/dev/dunes-probe?visualTest=1';
+// params set Swells' dials.
+const PROBE = '/dev/swells-probe?visualTest=1';
 
 /**
  * Loads the probe with `query` appended and returns the brightness, 0 to 255,
@@ -95,7 +95,7 @@ const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0)
 // far between the two. Lighting that ignored the sun would read the same in
 // both. The gap measured about 120 levels on macOS, so 60 leaves room for
 // another GPU.
-test('Dunes — sunlit faces are brighter than shaded ones', async ({ page }) => {
+test('Swells — sunlit faces are brighter than shaded ones', async ({ page }) => {
   const sunBehind = mean(await groundBrightness(page, '&sunAngle=180'));
   const sunAhead = mean(await groundBrightness(page, '&sunAngle=0'));
 
@@ -105,7 +105,7 @@ test('Dunes — sunlit faces are brighter than shaded ones', async ({ page }) =>
 // With no relief and no ripples the ground is level, so every point faces the
 // sun alike and the ground reads one even tone. The only spread left is the
 // scene's dither, a level or two.
-test('Dunes — relief 0 and ripples 0 give flat, smooth ground', async ({ page }) => {
+test('Swells — relief 0 and ripples 0 give flat, smooth ground', async ({ page }) => {
   const flat = await groundBrightness(page, '&relief=0&ripples=0');
 
   expect(Math.max(...flat) - Math.min(...flat), 'flat ground spread').toBeLessThan(6);

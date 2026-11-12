@@ -1,10 +1,10 @@
 import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
 
 /**
- * TEMPORARY (build-phase tuning only): mirrors DunesTuning. The whole block
+ * TEMPORARY (build-phase tuning only): mirrors SwellsTuning. The whole block
  * goes at the defaults gate (SHA-327).
  */
-export interface DunesTuningParams {
+export interface SwellsTuningParams {
   stepScale: number;
   maxDistance: number;
   windAngle: number;
@@ -14,7 +14,7 @@ export interface DunesTuningParams {
   rippleHeight: number;
 }
 
-export interface DunesParams {
+export interface SwellsParams {
   altitude: number;
   tilt: number;
   fieldOfView: number;
@@ -27,12 +27,12 @@ export interface DunesParams {
   shadowColor: string;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
-  tuning: DunesTuningParams;
+  tuning: SwellsTuningParams;
 }
 
 // Values mirror the component defaults in
-// packages/shaders/src/components/dunes. Keep the two in step.
-export const INITIAL: DunesParams = {
+// packages/shaders/src/components/swells. Keep the two in step.
+export const INITIAL: SwellsParams = {
   altitude: 1.5,
   tilt: 12,
   fieldOfView: 50,

@@ -6,6 +6,6 @@ import dynamic from 'next/dynamic';
 // scene is loaded client-only. Dev route: invisible to production builds.
 const ProbeScene = dynamic(() => import('./probe-scene'), { ssr: false });
 
-export default function DunesProbePage() {
+export default function SwellsProbePage() {
   return <ProbeScene />;
 }

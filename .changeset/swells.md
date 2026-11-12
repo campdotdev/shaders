@@ -2,7 +2,7 @@
 '@camp-dev/shaders': minor
 ---
 
-Add `Dunes`, a Source that draws wind-shaped sand dunes through a camera of its own. Each pixel casts a ray from the camera, follows it to the sand, and lights the sand from a sun. Dunes draws only the ground and is transparent where the ray misses it, so mount a sky Source, such as a `LinearGradient`, beneath it inside a `ShaderScene`. Its numeric props each take a static value or an animation signal:
+Add `Swells`, a Source that draws wind-shaped sand dunes through a camera of its own. Each pixel casts a ray from the camera, follows it to the sand, and lights the sand from a sun. Swells draws only the ground and is transparent where the ray misses it, so mount a sky Source, such as a `LinearGradient`, beneath it inside a `ShaderScene`. Its numeric props each take a static value or an animation signal:
 
 - `altitude`: how high the camera sits above the ground, in terrain units.
 - `tilt`: how far the camera looks down from the horizon, in degrees.
@@ -15,7 +15,7 @@ Add `Dunes`, a Source that draws wind-shaped sand dunes through a camera of its 
 
 `color` and `shadowColor` set the sand's color in full sun and on the faces turned from it. The slopes between blend the two in `colorSpace`, which defaults to `oklab`, along the hue arc `hueInterpolation` picks.
 
-Add two Tier 2 primitives for Mode 2, which Dunes is built on:
+Add two Tier 2 primitives for Mode 2, which Swells is built on:
 
 - `cameraRay` returns the origin and direction of the ray from a perspective camera through a point on the canvas, for a camera's aspect, altitude, tilt, field of view, and turn.
 - `marchHeightMap` follows a ray over a height function you write, in a fixed number of steps, and returns whether it hit the ground, how far along the ray, where, and the ground's normal there.

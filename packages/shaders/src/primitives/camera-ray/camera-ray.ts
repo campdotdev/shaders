@@ -2,7 +2,7 @@
 // which way it points. A 3D Source draws its world by following each pixel's
 // ray until it meets something, so this is the first step of every such
 // Source. marchHeightMap (../march-height-map) follows the ray over a
-// terrain. Dunes casts its rays here, and Mode 2 users call it on their own uv.
+// terrain. Swells casts its rays here, and Mode 2 users call it on their own uv.
 import { cos, float, normalize, type ShaderNodeObject, sin, tan, vec2, vec3 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 

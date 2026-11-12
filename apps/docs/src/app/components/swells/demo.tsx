@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * Dunes demo island: the interactive slice of the Dunes page, with its
- * control store, shader preview, and control panel for the camera, the sand,
- * the sun, and the temporary tuning rig. The shared components/[slug] template renders this
+ * Swells demo island: the interactive slice of the Swells page, with its
+ * control store, shader preview, and control panel for the camera, the swells'
+ * shape, the sun and the colors it blends, and the temporary tuning rig. The shared components/[slug] template renders this
  * between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
@@ -25,27 +25,27 @@ import {
 import { DemoPoster } from '@/components/DemoPoster';
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-import { type DunesParams, INITIAL } from './params';
+import { INITIAL, type SwellsParams } from './params';
 
-const DunesScene = dynamic(() => import('./scene'), { ssr: false });
+const SwellsScene = dynamic(() => import('./scene'), { ssr: false });
 
-function DunesDemo() {
-  const params = useSnapshot<DunesParams>();
+function SwellsDemo() {
+  const params = useSnapshot<SwellsParams>();
 
   return (
     <DemoPoster
-      alt="Dunes shader preview: rows of wind-shaped sand dunes, golden on the faces toward a low sun and rose brown on the shaded ones, running to a horizon under a pale blue sky"
-      src="/posters/dunes.jpg"
+      alt="Swells shader preview: rows of wind-shaped sand dunes, golden on the faces toward a low sun and rose brown on the shaded ones, running to a horizon under a pale blue sky"
+      src="/posters/swells.jpg"
     >
-      <DunesScene params={params}>
+      <SwellsScene params={params}>
         <VisualTestPause />
-      </DunesScene>
+      </SwellsScene>
     </DemoPoster>
   );
 }
 
 /** The panel's controls without the panel around them. */
-function DunesFields() {
+function SwellsFields() {
   return (
     <>
       <Section title="Camera">
@@ -91,22 +91,22 @@ function DunesFields() {
   );
 }
 
-function DunesControls() {
+function SwellsControls() {
   return (
     <ControlPanel>
-      <DunesFields />
+      <SwellsFields />
     </ControlPanel>
   );
 }
 
-export function DunesIsland() {
-  const store = useMemo(() => createControlStore<DunesParams>(INITIAL), []);
+export function SwellsIsland() {
+  const store = useMemo(() => createControlStore<SwellsParams>(INITIAL), []);
 
   return (
     <ControlsProvider store={store}>
-      <DemoLayout controls={<DunesControls />}>
+      <DemoLayout controls={<SwellsControls />}>
         <div data-shader-demo>
-          <DunesDemo />
+          <SwellsDemo />
         </div>
       </DemoLayout>
     </ControlsProvider>
