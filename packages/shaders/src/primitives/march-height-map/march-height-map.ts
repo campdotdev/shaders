@@ -85,10 +85,10 @@ export interface MarchHeightMapResult {
 // ground. Lower is more precise and uses more steps.
 const STOP_PRECISION = 0.001;
 
-// How close to the ground the ray must end to count as a hit, as a share of
-// the distance travelled. Looser than STOP_PRECISION, so a ray that ran out
-// of steps while grazing far ground still draws it. Higher lets more rays
-// that pass just over a crest draw ground behind it.
+// How close to the ground a ray that never crossed it must end to count as
+// a hit, as a share of the distance travelled. Looser than STOP_PRECISION,
+// so a ray that ran out of steps while grazing far ground still draws it.
+// Higher lets more rays that pass just over a crest draw ground behind it.
 const HIT_TOLERANCE = 0.02;
 
 // How many times the march halves the gap around the ground after a step
@@ -129,9 +129,10 @@ export function marchHeightMap(
   // ---------------------------------------------
   // March the ray
   // ---------------------------------------------
-  // Fn gives Loop and If a list of statements to append to. Its result is
-  // the distance along the ray where the march stopped.
-  const distance = Fn(() => {
+  // Fn gives Loop and If a list of statements to append to. Its result packs
+  // two floats into a vec2: x is the distance along the ray where the march
+  // stopped, and y is 1 if the march saw the ray cross the ground.
+  const march = Fn(() => {
     // Pin the ray in GPU variables before the loop. A TSL node is written
     // out where the shader first uses it, and that would be inside the loop,
     // redoing the camera math on every step (the first-use gotcha in
@@ -153,6 +154,14 @@ export function marchHeightMap(
     // ground. If a step goes under, the surface lies between here and there.
     const above = float(0).toVar();
 
+    // 1 once the march has measured a point above the ground. A ray that
+    // starts under the ground never does.
+    const measuredAbove = float(0).toVar();
+
+    // 1 if the ray went from above the ground to under it, which proves it
+    // met the ground.
+    const crossed = float(0).toVar();
+
     Loop(steps, () => {
       const clearance = clearanceAt(travelled).toVar();
 
@@ -164,6 +173,7 @@ export function marchHeightMap(
       });
 
       above.assign(travelled);
+      measuredAbove.assign(1);
 
       // How far a step can safely go. Over flat ground, a ray that sits
       // `clearance` above it has at least `clearance` to travel before it
@@ -189,10 +199,13 @@ export function marchHeightMap(
     // `above` and `travelled`. Bisection finds it: test the middle of that
     // gap, keep the half the surface is in, and repeat, halving the gap each
     // time. The march then stops at the gap's near end, which is always
-    // above the ground, so the hit test below reads a small positive
-    // clearance. A ray that starts under the ground has no gap to search
-    // (both ends are 0), so it keeps its negative clearance and misses.
+    // above the ground. On a steep slope the near end can still sit higher
+    // than the hit tolerance allows, so the crossing itself marks the hit.
+    // A ray that starts under the ground has no gap to search (both ends
+    // are 0) and never measured a point above, so it never crosses.
     If(clearanceAt(travelled).lessThan(0), () => {
+      crossed.assign(measuredAbove);
+
       const below = travelled.toVar();
 
       Loop(REFINE_STEPS, () => {
@@ -208,26 +221,30 @@ export function marchHeightMap(
       travelled.assign(above);
     });
 
-    return travelled;
+    return vec2(travelled, crossed);
   })().toVar();
+
+  const distance = march.x;
+  const crossed = march.y;
 
   // ---------------------------------------------
   // Read the hit
   // ---------------------------------------------
-  // A hit stopped short of maxDistance, close to the ground. A ray that
-  // grazes far terrain closes in slowly and can use up every step a little
-  // above the ground, so the hit test is looser than the stop test. A ray
-  // that ran out of steps well above the ground, as one aimed just over the
-  // horizon does, is a miss. The clearance is read again at the point where
-  // the march stopped, because the loop's last step moves on past the point
-  // it last measured. It must sit between 0 and the tolerance: only a ray
-  // that started under the ground ends below 0. step(edge, x) is 1 when
-  // x >= edge, so each factor is 1 when its test passes.
+  // A hit stopped short of maxDistance, and either crossed the ground or
+  // ended close to it. A ray that grazes far terrain closes in slowly and
+  // can use up every step a little above the ground without crossing, so
+  // the near-ground test is looser than the stop test. A ray that ran out
+  // of steps well above the ground, as one aimed just over the horizon
+  // does, is a miss. The clearance is read again at the point where the
+  // march stopped, because the loop's last step moves on past the point it
+  // last measured. It must sit between 0 and the tolerance: only a ray that
+  // started under the ground ends below 0. step(edge, x) is 1 when x >=
+  // edge, so each factor is 1 when its test passes, and max() of two such
+  // factors is 1 when either passes.
   const position = vec3(ray.origin).add(vec3(ray.direction).mul(distance)).toVar();
   const endClearance = position.y.sub(heightAt(vec2(position.x, position.z))).toVar();
-  const hit = step(distance, maxDistance)
-    .mul(step(0, endClearance))
-    .mul(step(endClearance, distance.mul(HIT_TOLERANCE)));
+  const nearGround = step(0, endClearance).mul(step(endClearance, distance.mul(HIT_TOLERANCE)));
+  const hit = step(distance, maxDistance).mul(max(crossed, nearGround));
 
   // ---------------------------------------------
   // The normal from the slope
