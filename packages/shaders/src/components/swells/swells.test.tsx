@@ -99,6 +99,11 @@ describe('Swells', () => {
       sunHeight?: AnimatableProp<number>;
       color?: string;
       shadowColor?: string;
+      sheen?: AnimatableProp<number>;
+      sheenColor?: string;
+      haze?: AnimatableProp<number>;
+      hazeColor?: string;
+      mirage?: AnimatableProp<number>;
       colorSpace?: ColorSpace;
       hueInterpolation?: HueInterpolation;
       tuning?: SwellsTuning;
@@ -177,6 +182,27 @@ describe('Swells', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
     rerender(<Swells color="#ffffff" shadowColor="#000000" />);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(2);
+
+    expect(scene.onlyMesh().material).toBe(material);
+  });
+
+  // The sheen, the haze, and the mirage ride uniforms too, so they glide
+  // on a slider or a signal with no rebuild.
+  it('changes its sheen, haze, and mirage without rebuilding the material', () => {
+    const scene = makeScene();
+    const haze = makeSignal(0.04);
+    const { rerender } = render(<Swells haze={haze.signal} sheen={0.3} />, {
+      wrapper: scene.Wrapper,
+    });
+    const { material } = scene.onlyMesh();
+
+    scene.scheduler.requestRender.mockClear();
+    haze.set(0);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
+    rerender(
+      <Swells haze={haze.signal} hazeColor="#ffffff" mirage={0.8} sheen={1} sheenColor="#ffffff" />,
+    );
+    expect(scene.scheduler.requestRender).toHaveBeenCalled();
 
     expect(scene.onlyMesh().material).toBe(material);
   });
@@ -308,14 +334,35 @@ describe('Swells', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
-  // Nothing moves yet, so a scene of still Sources can park.
-  it('votes idle and never animated', () => {
+  // Only the mirage moves so far. At 0 a scene of still Sources can park.
+  it('votes idle when the mirage is 0', () => {
     const scene = makeScene();
 
-    render(<Swells />, { wrapper: scene.Wrapper });
+    render(<Swells mirage={0} />, { wrapper: scene.Wrapper });
 
     expect(scene.scheduler.setIdle).toHaveBeenCalledWith(true);
     expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
+  });
+
+  // The shimmer moves on its own, so the scene must keep drawing.
+  it('votes animated while the mirage is above 0', () => {
+    const scene = makeScene();
+
+    render(<Swells mirage={0.3} />, { wrapper: scene.Wrapper });
+
+    expect(scene.scheduler.setIdle).toHaveBeenCalledWith(false);
+    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(true);
+  });
+
+  // A signal can leave 0 between renders, so it counts as moving whatever
+  // it reads now.
+  it('votes animated for a mirage signal that reads 0', () => {
+    const scene = makeScene();
+
+    render(<Swells mirage={makeSignal(0).signal} />, { wrapper: scene.Wrapper });
+
+    expect(scene.scheduler.setIdle).toHaveBeenCalledWith(false);
+    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(true);
   });
 
   // Mode 1 only: outside a scene there is nowhere to draw, so Swells follows

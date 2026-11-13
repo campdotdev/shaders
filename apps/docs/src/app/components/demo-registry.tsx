@@ -412,19 +412,17 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
   },
   swells: {
     Island: SwellsIsland,
-    copySiblings: [
-      "<LinearGradient angle={90} speed={0} stops={[{ color: 'oklch(0.80 0.05 230)' }, { color: 'oklch(0.56 0.10 255)' }]} />",
-    ],
     usageSnippet: `<ShaderScene>
-  <LinearGradient />
   <Swells />
 </ShaderScene>`,
     usageNotes: (
       <>
-        Swells draws only the ground and leaves the sky transparent, so mount a sky Source first and
-        Swells after it. Mode 1 only. In your own r3f <code>&lt;Canvas&gt;</code>, the{' '}
-        <code>cameraRay</code> and <code>marchHeightMap</code> primitives cast and march the same
-        rays over a height function you write.
+        Swells draws only the surface and leaves the sky transparent, so the page shows through
+        above the horizon. With distance, the surface turns to <code>hazeColor</code>, then fades
+        out to show the page. For a sky of your own, mount a sky Source before Swells. Mode 1 only.
+        In your own r3f <code>&lt;Canvas&gt;</code>, the <code>cameraRay</code> and{' '}
+        <code>marchHeightMap</code> primitives cast and march the same rays over a height function
+        you write.
       </>
     ),
   },

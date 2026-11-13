@@ -3,9 +3,11 @@
 // Swells' GPU half. Unlike the flat Sources, this one draws a 3D world. The
 // pixel's journey: cast a ray from a perspective camera through the pixel
 // (cameraRay), follow it until it meets the surface (marchHeightMap), light
-// the surface it hits from a sun, and leave the pixel transparent where the
-// ray misses, so the Source beneath shows through as the sky. The wrapper
-// (./swells.tsx) supplies the props.
+// the surface it hits from a sun and add a sheen, blend it into the haze and
+// fade it out with distance, shimmer it near the horizon, and leave the
+// pixel transparent where the ray misses, so the page, or a Source mounted
+// beneath, shows through as the sky. The wrapper (./swells.tsx) supplies
+// the props.
 import { useEffect, useRef } from 'react';
 
 import {
@@ -39,7 +41,11 @@ import {
   mixColor,
   stableHash,
 } from '../../engine.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import {
+  type AnimatableProp,
+  isSignal,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useColorUniform } from '../../react/hooks/use-color-uniform/use-color-uniform.js';
@@ -165,6 +171,44 @@ const RIPPLE_ROLL_BEND = 6;
 const RIPPLE_FADE_START = 15;
 const RIPPLE_FADE_END = 60;
 
+// How tightly the sheen gathers around the sun's reflection: the exponent
+// the highlight's falloff is raised to (the Light it from the sun section
+// says how). Low spreads a broad, soft glow over every face near the
+// reflection, which reads as satin; high pinches it into a small, bright
+// glint, which reads as wet or polished.
+const SHEEN_FOCUS = 12;
+
+// The share of the camera's reach, at its far end, over which the surface
+// fades out whatever the haze, 0 to 1. At 0.4 and the 40-unit reach, the
+// fade runs from 24 units to 40. Out there some rays meet the ground and
+// their neighbors run out of steps or out of reach and miss it, which
+// leaves slivers of sky between the far crests; fading that ground out
+// hides them. Higher fades more of the far field; 0 turns the fade off and
+// leaves the surface ending in a hard, ragged edge at the reach.
+const REACH_FADE = 0.4;
+
+// Where the mirage starts, in terrain units from the camera: the shimmer
+// fades in from here to twice as far, and holds full strength beyond,
+// over the far ground and the horizon. Lower brings it closer.
+const MIRAGE_START = 12;
+
+// How far the mirage moves a pixel at `mirage={1}`, at the most, as a share
+// of the canvas's height: 0.003 is 3 pixels on a canvas 1000 pixels tall.
+// Higher wavers more. Past about 0.0044 the shimmer's waves fold the
+// image over itself (the Shimmer near the horizon section says why).
+const MIRAGE_SWAY = 0.003;
+
+// How much of the surface the mirage clears at its strongest, where the
+// sky shows through, 0 to 1, at `mirage={1}`.
+const MIRAGE_CLEARING = 0.6;
+
+// How many times further out the surface fades to transparent than it
+// turns to `hazeColor`. At 2, the ground has mostly taken the haze's color
+// by the time it starts to thin, so the far field glows in that color
+// before it dissolves into what is beneath. At 1 the two happen together
+// and the glow is faint; higher holds the glowing band longer.
+const HAZE_FADE_LAG = 2;
+
 // `scale` counts the swells, crest to crest, in this many terrain units, so
 // a swell is SWELL_SPAN / scale units long. Counting swells, rather than
 // giving a swell's length, keeps `scale` a density, as it is on FractalNoise
@@ -219,6 +263,18 @@ export interface SwellsTuning {
   rippleSize?: number;
   /** How tall the ripples are at full strength, in terrain units. */
   rippleHeight?: number;
+  /** How tightly the sheen gathers around the sun's reflection, as an exponent. */
+  sheenFocus?: number;
+  /** The share of the camera's reach, at its far end, the surface fades out over, 0 to 1. */
+  reachFade?: number;
+  /** Where the mirage starts, in terrain units from the camera. */
+  mirageStart?: number;
+  /** How far the mirage moves a pixel at full strength, as a share of the canvas's height. */
+  mirageSway?: number;
+  /** How much of the surface the mirage clears at its strongest, 0 to 1. */
+  mirageClearing?: number;
+  /** How many times further out the surface fades than it turns to the haze color. */
+  hazeFadeLag?: number;
 }
 
 // ---------------------------------------------
@@ -300,6 +356,12 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
     meander = MEANDER,
     rippleSize = RIPPLE_SIZE,
     rippleHeight = RIPPLE_HEIGHT,
+    sheenFocus = SHEEN_FOCUS,
+    reachFade = REACH_FADE,
+    mirageStart = MIRAGE_START,
+    mirageSway = MIRAGE_SWAY,
+    mirageClearing = MIRAGE_CLEARING,
+    hazeFadeLag = HAZE_FADE_LAG,
   } = tuning ?? {};
 
   return {
@@ -312,6 +374,43 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
     meanderUniform: useAnimatableUniform<number>(meander),
     rippleSizeUniform: useAnimatableUniform<number>(rippleSize),
     rippleHeightUniform: useAnimatableUniform<number>(rippleHeight),
+    sheenFocusUniform: useAnimatableUniform<number>(sheenFocus),
+    reachFadeUniform: useAnimatableUniform<number>(reachFade),
+    mirageStartUniform: useAnimatableUniform<number>(mirageStart),
+    mirageSwayUniform: useAnimatableUniform<number>(mirageSway),
+    mirageClearingUniform: useAnimatableUniform<number>(mirageClearing),
+    hazeFadeLagUniform: useAnimatableUniform<number>(hazeFadeLag),
+  };
+}
+
+/**
+ * The uniforms for the light and air over the surface: the sheen, the
+ * haze, and the mirage, with the mirage's clock. It also casts Swells'
+ * render-on-demand vote, because only the mirage moves so far.
+ */
+function useAirUniforms({
+  sheen,
+  sheenColor,
+  haze,
+  hazeColor,
+  mirage,
+}: Pick<SwellsShaderProps, 'sheen' | 'sheenColor' | 'haze' | 'hazeColor' | 'mirage'>) {
+  // The scene can park on its first frame when the mirage is a plain 0. A
+  // signal is live whatever it reads now, because it changes between
+  // renders. The glide in a later phase adds to this vote.
+  useStaticSceneHint(!isSignal(mirage) && mirage <= 0);
+
+  return {
+    sheenUniform: useAnimatableUniform<number>(sheen),
+    sheenColorUniform: useColorUniform(sheenColor),
+    hazeUniform: useAnimatableUniform<number>(haze),
+    hazeColorUniform: useColorUniform(hazeColor),
+    mirageUniform: useAnimatableUniform<number>(mirage),
+    // The mirage's clock: seconds summed on the CPU each frame, times the
+    // reduced-motion time scale, so the shimmer slows under reduced motion
+    // and holds still under the `paused` policy posters and visual tests
+    // use.
+    shimmerClock: useAnimatableSpeed(1),
   };
 }
 
@@ -367,7 +466,30 @@ export interface SwellsShaderProps {
   color: string;
   /** The surface's color on faces turned from the sun: hex, `oklch()`, or `oklab()`. */
   shadowColor: string;
-  /** The color space the slopes between `shadowColor` and `color` blend in. */
+  /**
+   * How strong the soft highlight is where the surface mirrors the sun, from
+   * 0 (a matte surface) to 1. Accepts a static value or an animation signal.
+   */
+  sheen: AnimatableProp<number>;
+  /** The highlight's color: hex, `oklch()`, or `oklab()`. */
+  sheenColor: string;
+  /**
+   * How thick the haze is, per terrain unit: how fast the surface turns to
+   * `hazeColor` and then fades out with distance, where 0 is clear air.
+   * Accepts a static value or an animation signal.
+   */
+  haze: AnimatableProp<number>;
+  /** The haze's color: hex, `oklch()`, or `oklab()`. */
+  hazeColor: string;
+  /**
+   * How strongly the far surface shimmers, from 0 (still air) to 1, like
+   * heat haze over sand. Accepts a static value or an animation signal.
+   */
+  mirage: AnimatableProp<number>;
+  /**
+   * The color space the slopes between `shadowColor` and `color`, the
+   * sheen over them, and the haze blend in.
+   */
   colorSpace: ColorSpace;
   /** The hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
   hueInterpolation: HueInterpolation;
@@ -390,15 +512,16 @@ export function SwellsShader({
   sunHeight,
   color,
   shadowColor,
+  sheen,
+  sheenColor,
+  haze,
+  hazeColor,
+  mirage,
   colorSpace,
   hueInterpolation,
   tuning,
 }: SwellsShaderProps) {
   const shaderContext = useShaderContext();
-
-  // Nothing on screen moves yet, so the scene can park on its first frame.
-  // The glide in a later phase changes this vote.
-  useStaticSceneHint(true);
 
   // Every dial lives in a uniform, a value the CPU can change each frame
   // without rebuilding the shader, tracking a static number or a signal.
@@ -413,6 +536,14 @@ export function SwellsShader({
   const sunHeightUniform = useAnimatableUniform<number>(sunHeight);
   const colorUniform = useColorUniform(color);
   const shadowColorUniform = useColorUniform(shadowColor);
+  const {
+    sheenUniform,
+    sheenColorUniform,
+    hazeUniform,
+    hazeColorUniform,
+    mirageUniform,
+    shimmerClock,
+  } = useAirUniforms({ sheen, sheenColor, haze, hazeColor, mirage });
 
   // TEMPORARY: the tuning rig's uniforms (useTuningUniforms above).
   const {
@@ -425,6 +556,12 @@ export function SwellsShader({
     meanderUniform,
     rippleSizeUniform,
     rippleHeightUniform,
+    sheenFocusUniform,
+    reachFadeUniform,
+    mirageStartUniform,
+    mirageSwayUniform,
+    mirageClearingUniform,
+    hazeFadeLagUniform,
   } = useTuningUniforms(tuning);
 
   // Canvas width over height, so the view widens on a wide canvas instead
@@ -488,12 +625,66 @@ export function SwellsShader({
       // ---------------------------------------------
       // uv() is the pixel's place on the full-canvas quad, 0..1 both ways,
       // which cameraRay turns into a ray through that point of the view.
-      const ray = cameraRay(uv(), {
+      const camera = {
         aspect: aspectNode,
         altitude: altitudeUniform,
         tilt: tiltUniform,
         fieldOfView: fieldOfViewUniform,
-      });
+      };
+      const straightRay = cameraRay(uv(), camera);
+
+      // ---------------------------------------------
+      // Shimmer near the horizon
+      // ---------------------------------------------
+      // Over hot ground, the air just above it is hotter and thinner than
+      // the air higher up, and light bends as it passes between them. Far
+      // off, where a ray skims the ground for a long way, the bend is enough
+      // to show the sky where the ground should be, and the moving air
+      // makes it waver (a mirage). Swells fakes the bend in screen space:
+      // it nudges the pixel's place up or down a little before casting its
+      // ray, so the pixel shows the ground from just above or below it.
+      //
+      // Where the mirage applies: how far off the pixel's ground lies. The
+      // straight ray falls its altitude by the time it reaches height 0,
+      // at altitude / descent units, which is close to where it meets the
+      // swells, and is known before the march. A ray heading level or up
+      // has no ground, and max() turns its descent into a sliver, so its
+      // distance is huge and it counts as far: the shimmer reaches up over
+      // the horizon line, where the far crests waver into the sky. The band
+      // fades in from mirageStart to twice that.
+      const straightDescent = max(vec3(straightRay.direction).y.negate(), 1e-4);
+      const groundDistance = vec3(straightRay.origin).y.div(straightDescent);
+      const mirageAmount = smoothstep(mirageStartUniform, mirageStartUniform.mul(2), groundDistance)
+        .mul(clamp(mirageUniform, 0, 1))
+        .toVar();
+
+      // The shimmer itself: two sine waves that run mostly up the canvas,
+      // tilted a little across it in opposite directions, and drift at
+      // different rates, so their sum never repeats a simple pattern and
+      // reads as turbulent air. The canvas's x is multiplied by its aspect,
+      // so both axes count in canvas heights and the waves keep their shape
+      // on a wide canvas. Halving the sum keeps it -1..1. The numbers
+      // multiplying screenY and screenX are each wave's frequency, in
+      // radians per canvas height: 260 runs a wave about every 1/41 of the
+      // canvas's height, and higher packs the waves tighter. The numbers
+      // multiplying shimmerClock are its drift, in radians per second, and
+      // higher shimmers faster.
+      //
+      // A wave of up-down nudges stretches the image where the nudge grows
+      // and squeezes it where it shrinks. If the nudge grows faster than
+      // the pixels it moves, by more than one canvas height per canvas
+      // height, neighboring pixels swap order and the image folds over
+      // itself. The waves' slopes are their frequencies times the sway:
+      // the sum's steepest is (260 + 190) / 2 = 225 times the sway, so a
+      // sway under 1 / 225, about 0.0044, never folds (MIRAGE_SWAY above).
+      const screenX = uv().x.mul(aspectNode);
+      const screenY = uv().y;
+      const shimmer = sin(screenY.mul(260).add(screenX.mul(23)).add(shimmerClock.mul(5)))
+        .add(sin(screenY.mul(190).sub(screenX.mul(41)).sub(shimmerClock.mul(3.7))))
+        .mul(0.5)
+        .toVar();
+      const nudge = shimmer.mul(mirageSwayUniform).mul(mirageAmount);
+      const ray = cameraRay(vec2(uv().x, uv().y.add(nudge)), camera);
 
       // ---------------------------------------------
       // Settle the wind and the sizes before the march
@@ -719,14 +910,59 @@ export function SwellsShader({
       // into a lit face and a shaded one (raking light). A sun overhead
       // lights level ground at 1 and a 20 degree slope at cos(20) = 0.94, so
       // the same swells flatten into one tone.
-      const facing = max(dot(march.normal, sunDirection), 0);
-      const surface = mixColor(
+      const sunFacing = dot(march.normal, sunDirection).toVar();
+      const facing = max(sunFacing, 0);
+      const diffuse = mixColor(
         shadowColorUniform,
         colorUniform,
         facing,
         colorSpace,
         hueInterpolation,
       );
+
+      // ---------------------------------------------
+      // Add the sheen where the surface mirrors the sun
+      // ---------------------------------------------
+      // The light above is diffuse: a face looks the same from any angle,
+      // because it scatters sunlight every way, as chalk or dry sand does.
+      // A smooth surface also mirrors some of it, and that reflection is
+      // bright only where it bounces toward the camera, so it moves when the
+      // camera does. That mirrored light is specular light, and the sheen is
+      // a soft version of it.
+      //
+      // A face mirrors the sun into the camera when its normal points
+      // exactly halfway between the way to the sun and the way back to the
+      // camera. The way back to the camera is the ray's direction flipped.
+      // Adding the two unit vectors and normalizing the sum gives that
+      // halfway direction, so dot(normal, halfway) is 1 on a face that
+      // mirrors the sun straight at the camera and falls as the face turns
+      // off it (the Blinn-Phong model).
+      //
+      // pow() of that cosine shapes the highlight. A dot product just under
+      // 1, 0.95, stays 0.54 at the power 12 and drops to 0.01 at the power
+      // 100, so a low power (SHEEN_FOCUS above) spreads the glow over every
+      // face near the reflection, and a high one keeps only the faces that
+      // mirror the sun almost exactly. max() keeps pow() off negative
+      // numbers, which have no real power.
+      //
+      // A face turned from the sun can still have its normal near the
+      // halfway direction when the sun sits low behind the swells, and would
+      // glow from light that never reaches it. smoothstep() fades the sheen
+      // in as the face turns toward the sun, over its first 0.15 of
+      // sunFacing, about 9 degrees, so the cut isn't a hard line.
+      const toCamera = vec3(ray.direction).negate();
+      const halfway = sunDirection.add(toCamera).normalize();
+      const mirror = max(dot(march.normal, halfway), 0);
+      const sunlit = smoothstep(0, 0.15, sunFacing);
+      const highlight = mirror
+        .pow(max(sheenFocusUniform, 1))
+        .mul(sunlit)
+        .mul(clamp(sheenUniform, 0, 1));
+
+      // Blend toward sheenColor by the highlight's strength, in the same
+      // space the slopes blend in, so the brightest point of a full sheen
+      // is exactly sheenColor and no channel ever clips past it.
+      const surface = mixColor(diffuse, sheenColorUniform, highlight, colorSpace, hueInterpolation);
 
       // ---------------------------------------------
       // Leave the sky transparent
@@ -736,20 +972,90 @@ export function SwellsShader({
       // it through.
       //
       // The march also gives up when it runs out of steps, and it reports
-      // that as a miss. A ray that skims a round crest creeps past it in
-      // tiny steps, spends its steps there, and would leave a seam of sky
-      // along the crest. But no swell dips below height 0, so a ray heading
-      // down meets the ground by the time it falls to 0, at its height over
-      // its rate of descent. If that is within the camera's reach, the ray
-      // lands for certain, and counts as a hit wherever its steps ran out.
-      // That end point sits just past the crest it skimmed, so it takes the
-      // light of the ground under it.
+      // that as a miss. A ray that skims a crest creeps past it in tiny
+      // steps, because each step is a share of its height above the ground,
+      // and spends its steps there. Near the horizon, where every ray skims
+      // crest after crest, that left slivers of sky between the far crests.
+      // But no swell dips below height 0, so every ray heading down meets
+      // the ground somewhere, and counts as ground wherever its steps ran
+      // out. That end point sits just past the last crest it skimmed, so
+      // it takes the light of the ground under it. A ray heading down that
+      // runs past the camera's reach counts as ground too, and the reach
+      // fade below hides it. Only a ray heading level or up, into the sky,
+      // can miss, and it does unless it met a crest taller than the camera.
+      // step(1e-4, descent) is 1 for a ray heading down, with an epsilon
+      // so a level ray doesn't count.
       const descent = vec3(ray.direction).y.negate();
-      const landsAt = vec3(ray.origin).y.div(max(descent, 1e-4));
-      const mustLand = step(1e-4, descent).mul(step(landsAt, maxDistanceUniform));
-      const coverage = max(march.hit, mustLand);
+      const coverage = max(march.hit, step(1e-4, descent));
 
-      return vec4(surface, coverage);
+      // ---------------------------------------------
+      // Fade the far surface into the haze
+      // ---------------------------------------------
+      // Air between the camera and the ground scatters some of the light on
+      // its way and adds its own glow, so far ground takes on the air's
+      // color and then disappears into it (aerial perspective). Swells does
+      // both in turn. The far surface first blends toward `hazeColor`, then
+      // fades to transparent further out, so the far field glows in the
+      // haze's color before it dissolves into whatever is beneath: the
+      // page's background, or a sky Source mounted under Swells.
+      //
+      // Both follow the curve exp(-(haze * d)^2), the squared form three's
+      // FogExp2 uses, for how much of the surface gets through d units of
+      // haze. Plain exp(-haze * d), the law for even haze, falls fastest at
+      // the start, so it would tint the ground at the camera's feet too.
+      // Squaring the product keeps the near ground clear and falls fast
+      // further out. At 1 / haze units, 37% of the surface's own color gets
+      // through, and at haze 0 all of it does.
+      //
+      // The color takes 1 minus that curve as its blend toward hazeColor,
+      // in `colorSpace`. The alpha takes the same curve with the distance
+      // divided by the fade lag (HAZE_FADE_LAG above), which stretches it
+      // out. At haze 0.04 and a lag of 2, the ground has turned 47% to the
+      // haze's color at 20 units and 92% at 40, while its alpha is still 85%
+      // at 20 and 53% at 40, where the reach fade below takes it the rest
+      // of the way.
+      //
+      // march.distance is where the ray stopped. For a ray that ran out of
+      // steps, that is short of where it meets the ground, so its haze is a
+      // little light, but close to its neighbors' that met the crests
+      // around it, so no sliver shows.
+      const hazeDepth = max(hazeUniform, 0).mul(march.distance).toVar();
+      const hazeBlend = hazeDepth.mul(hazeDepth).negate().exp().oneMinus();
+      const hazed = mixColor(surface, hazeColorUniform, hazeBlend, colorSpace, hueInterpolation);
+      const fadeDepth = hazeDepth.div(max(hazeFadeLagUniform, 0.1));
+      const clearAir = fadeDepth.mul(fadeDepth).negate().exp();
+
+      // The camera's reach ends the surface wherever haze hasn't. Every
+      // ray heading down counts as ground (above), so without this the
+      // ground would run solid to the horizon line, lit by wherever each
+      // ray stopped, which past the reach is nowhere near the ground.
+      // Fading the last share of the reach (REACH_FADE above) to
+      // transparent ends the surface softly instead. smoothstep() runs 0..1
+      // from where the fade starts to the reach, and oneMinus() flips it,
+      // so the surface holds full strength before the fade and reaches 0
+      // at the reach. A ray that ran past the reach stopped just beyond
+      // it, so it draws nothing.
+      const reachShare = clamp(reachFadeUniform, 0, 1);
+      const withinReach = smoothstep(
+        maxDistanceUniform.mul(reachShare.oneMinus()),
+        maxDistanceUniform,
+        march.distance,
+      ).oneMinus();
+
+      // The mirage clears the surface where the shimmer peaks, so the sky
+      // beneath shows through in wavering patches, as it does over hot sand.
+      // shimmer * 0.5 + 0.5 moves it to 0..1, and the clearing grows with
+      // the mirage's strength in the band (MIRAGE_CLEARING above).
+      // oneMinus() turns the share cleared into the share of the surface
+      // that still covers what is beneath.
+      const mirageCoverage = shimmer
+        .mul(0.5)
+        .add(0.5)
+        .mul(mirageAmount)
+        .mul(clamp(mirageClearingUniform, 0, 1))
+        .oneMinus();
+
+      return vec4(hazed, coverage.mul(clearAir).mul(withinReach).mul(mirageCoverage));
     })();
 
     // An unlit material whose per-pixel color comes from colorNode.
@@ -783,6 +1089,9 @@ export function SwellsShader({
     sunHeightUniform,
     colorUniform,
     shadowColorUniform,
+    sheenUniform,
+    sheenColorUniform,
+    hazeUniform,
     colorSpace,
     hueInterpolation,
     stepScaleUniform,
@@ -794,6 +1103,15 @@ export function SwellsShader({
     meanderUniform,
     rippleSizeUniform,
     rippleHeightUniform,
+    sheenFocusUniform,
+    mirageUniform,
+    shimmerClock,
+    reachFadeUniform,
+    mirageStartUniform,
+    mirageSwayUniform,
+    mirageClearingUniform,
+    hazeColorUniform,
+    hazeFadeLagUniform,
     aspectNode,
   ]);
 

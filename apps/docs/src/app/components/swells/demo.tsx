@@ -3,8 +3,9 @@
 /**
  * Swells demo island: the interactive slice of the Swells page, with its
  * control store, shader preview, and control panel for the camera, the swells'
- * shape, the sun and the colors it blends, and the temporary tuning rig. The shared components/[slug] template renders this
- * between its static header and prose sections.
+ * shape, the sun and the colors it blends, the sheen, haze, and mirage, and
+ * the temporary tuning rig. The shared components/[slug] template renders
+ * this between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -67,6 +68,13 @@ function SwellsFields() {
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
         <SelectInput label="Hue arc" options={HUE_ARC_OPTIONS} path="hueInterpolation" />
       </Section>
+      <Section title="Air">
+        <SliderInput label="Sheen" max={1} min={0} path="sheen" step={0.01} />
+        <ColorInput label="Sheen color" path="sheenColor" />
+        <SliderInput label="Haze" max={0.2} min={0} path="haze" step={0.001} />
+        <ColorInput label="Haze color" path="hazeColor" />
+        <SliderInput label="Mirage" max={1} min={0} path="mirage" step={0.01} />
+      </Section>
       <Section title="Tuning (dev)">
         <SliderInput label="Step scale" max={1} min={0.1} path="tuning.stepScale" step={0.01} />
         <SliderInput label="Max distance" max={120} min={5} path="tuning.maxDistance" step={1} />
@@ -95,6 +103,24 @@ function SwellsFields() {
           path="tuning.rippleHeight"
           step={0.001}
         />
+        <SliderInput label="Sheen focus" max={128} min={1} path="tuning.sheenFocus" step={1} />
+        <SliderInput label="Reach fade" max={1} min={0} path="tuning.reachFade" step={0.01} />
+        <SliderInput label="Mirage start" max={40} min={0} path="tuning.mirageStart" step={0.5} />
+        <SliderInput
+          label="Mirage clearing"
+          max={1}
+          min={0}
+          path="tuning.mirageClearing"
+          step={0.01}
+        />
+        <SliderInput
+          label="Mirage sway"
+          max={0.01}
+          min={0}
+          path="tuning.mirageSway"
+          step={0.0005}
+        />
+        <SliderInput label="Haze fade lag" max={6} min={0.5} path="tuning.hazeFadeLag" step={0.1} />
       </Section>
     </>
   );
