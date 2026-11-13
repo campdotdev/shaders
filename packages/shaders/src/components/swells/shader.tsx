@@ -50,8 +50,8 @@ type TSLValue = ShaderNodeObject<Node>;
 // ---------------------------------------------
 // Feel constants (provisional until the defaults gate)
 // ---------------------------------------------
-// The tuning prop overrides the first seven on the docs page, and the
-// defaults gate bakes the landed values back in here.
+// The tuning prop overrides the ones SwellsTuning lists, on the docs page,
+// and the defaults gate bakes the landed values back in here.
 
 // The share of the ray's height above the ground that each march step
 // moves (marchHeightMap's stepScale). Lower is safer on steep slopes and
@@ -79,8 +79,8 @@ const SLIP_FACE = 0.3;
 // How wide a band the crest rounds over at `sharpness={0}`, in the swell's
 // own height (the triangle below climbs 0 to 1). The band narrows as
 // `sharpness` rises and closes at 1, where the faces meet at an edge. Higher
-// gives broader, softer crests. Keep it at 1 or under: past that the band
-// would reach the trough and lift it.
+// gives broader, softer crests. The shader holds it to 1 or under, since
+// past that the band would reach the trough and lift it.
 const CREST_ROUNDING = 0.8;
 
 // How far the crests wander from straight lines, in swell lengths. 0 lines
@@ -199,6 +199,8 @@ export interface SwellsTuning {
   windAngle?: number;
   /** The share of each swell's length its steep downwind face takes at full sharpness, 0 to 1. */
   slipFace?: number;
+  /** How wide a band the crest rounds over at sharpness 0, 0 to 1. */
+  crestRounding?: number;
   /** How far the crests wander from straight lines, in swell lengths. */
   meander?: number;
   /** The distance from one ripple's crest to the next, in terrain units. */
@@ -281,6 +283,7 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
     maxDistance = MAX_DISTANCE,
     windAngle = WIND_ANGLE,
     slipFace = SLIP_FACE,
+    crestRounding = CREST_ROUNDING,
     meander = MEANDER,
     rippleSize = RIPPLE_SIZE,
     rippleHeight = RIPPLE_HEIGHT,
@@ -291,6 +294,7 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
     maxDistanceUniform: useAnimatableUniform<number>(maxDistance),
     windAngleUniform: useAnimatableUniform<number>(windAngle),
     slipFaceUniform: useAnimatableUniform<number>(slipFace),
+    crestRoundingUniform: useAnimatableUniform<number>(crestRounding),
     meanderUniform: useAnimatableUniform<number>(meander),
     rippleSizeUniform: useAnimatableUniform<number>(rippleSize),
     rippleHeightUniform: useAnimatableUniform<number>(rippleHeight),
@@ -401,6 +405,7 @@ export function SwellsShader({
     maxDistanceUniform,
     windAngleUniform,
     slipFaceUniform,
+    crestRoundingUniform,
     meanderUniform,
     rippleSizeUniform,
     rippleHeightUniform,
@@ -465,7 +470,8 @@ export function SwellsShader({
       const slipShare = clamp(slipFaceUniform, 0.05, 0.95);
       const crestShare = mix(0.5, slipShare.oneMinus(), sharpnessAmount).toVar();
       const fallShare = crestShare.oneMinus().toVar();
-      // The crest's rounding band (CREST_ROUNDING above). It shrinks with
+      // The crest's rounding band (CREST_ROUNDING above), kept to 1 or
+      // under so it never reaches the trough. It shrinks with
       // sharpness squared rather than sharpness, so the band stays wide
       // through the lower half of the slider and closes fast near 1: at 0.5
       // it is still three quarters as wide. A band of exactly 0 would
@@ -476,7 +482,7 @@ export function SwellsShader({
       const crestRounding = sharpnessAmount
         .mul(sharpnessAmount)
         .oneMinus()
-        .mul(CREST_ROUNDING)
+        .mul(clamp(crestRoundingUniform, 0, 1))
         .max(1e-4)
         .toVar();
       const crestRestore = float(1).div(crestRounding.mul(-0.25).add(1)).toVar();
@@ -716,6 +722,7 @@ export function SwellsShader({
     maxDistanceUniform,
     windAngleUniform,
     slipFaceUniform,
+    crestRoundingUniform,
     meanderUniform,
     rippleSizeUniform,
     rippleHeightUniform,

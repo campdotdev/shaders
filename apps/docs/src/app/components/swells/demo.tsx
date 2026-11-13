@@ -72,6 +72,13 @@ function SwellsFields() {
         <SliderInput label="Max distance" max={120} min={5} path="tuning.maxDistance" step={1} />
         <SliderInput label="Wind angle" max={360} min={0} path="tuning.windAngle" step={1} />
         <SliderInput label="Slip face" max={0.5} min={0.05} path="tuning.slipFace" step={0.01} />
+        <SliderInput
+          label="Crest rounding"
+          max={1}
+          min={0}
+          path="tuning.crestRounding"
+          step={0.05}
+        />
         <SliderInput label="Meander" max={4} min={0} path="tuning.meander" step={0.05} />
         <SliderInput
           label="Ripple size"

@@ -9,6 +9,7 @@ export interface SwellsTuningParams {
   maxDistance: number;
   windAngle: number;
   slipFace: number;
+  crestRounding: number;
   meander: number;
   rippleSize: number;
   rippleHeight: number;
@@ -52,6 +53,7 @@ export const INITIAL: SwellsParams = {
     maxDistance: 40,
     windAngle: 30,
     slipFace: 0.3,
+    crestRounding: 0.8,
     meander: 1.5,
     rippleSize: 0.1,
     rippleHeight: 0.008,
