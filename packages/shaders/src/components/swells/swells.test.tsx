@@ -193,6 +193,19 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).not.toBe(material);
   });
 
+  // So is each hue arc's.
+  it('rebuilds the material for a new hue arc', () => {
+    const scene = makeScene();
+    const { rerender } = render(<Swells colorSpace="oklch" hueInterpolation="shorter" />, {
+      wrapper: scene.Wrapper,
+    });
+    const { material } = scene.onlyMesh();
+
+    rerender(<Swells colorSpace="oklch" hueInterpolation="longer" />);
+
+    expect(scene.onlyMesh().material).not.toBe(material);
+  });
+
   it('follows its camera signals without rebuilding the material', () => {
     const scene = makeScene();
     const altitude = makeSignal(1);

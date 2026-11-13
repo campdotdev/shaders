@@ -6,6 +6,7 @@ import { readCanvasPixels, waitForShader } from './helpers';
 // Swells marches a ray per pixel in a fixed-count loop, which the WebGL2
 // fallback accepts only with a constant bound. Headless Chromium runs that
 // fallback, so this spec is the check that the march compiles there.
+
 test('Swells — default story', async ({ page }) => {
   await page.goto('/components/swells?visualTest=1');
   await waitForShader(page);
@@ -46,8 +47,7 @@ test('Swells — sky above the horizon, lit sand below', async ({ page }) => {
     expect(blue, 'ground pixel, not sky').toBeLessThan(red + 40);
   }
 
-  const meanOf = (channel: 0 | 2) =>
-    ground.reduce((sum, pixel) => sum + pixel[channel], 0) / ground.length;
+  const meanOf = (channel: 0 | 2) => mean(ground.map((pixel) => pixel[channel]));
 
   expect(meanOf(0), 'sand: mean red over mean blue').toBeGreaterThan(meanOf(2) + 8);
 
