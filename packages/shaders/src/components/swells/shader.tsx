@@ -6,7 +6,7 @@
 // the surface it hits from a sun, and leave the pixel transparent where the
 // ray misses, so the Source beneath shows through as the sky. The wrapper
 // (./swells.tsx) supplies the props.
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import {
   clamp,
@@ -416,14 +416,52 @@ export function SwellsShader({
   const aspectNode = useAspectUniform();
 
   // ---------------------------------------------
-  // Build the material and mount the mesh
+  // Mount the mesh
+  // ---------------------------------------------
+  // The mesh is made once per scene and outlives every material rebuild
+  // below. three draws transparent meshes in the order they were created
+  // when nothing else separates them, and Swells is transparent where the
+  // sky shows through. A rebuild that made a new mesh would draw Swells
+  // after a Source later in the JSX, such as DotField, and cover it. The
+  // mesh holds no material yet. The effect below, which runs right after
+  // this one in the same commit and before any frame draws, supplies it.
+  const meshRef = useRef<Mesh | null>(null);
+
+  useEffect(() => {
+    if (!shaderContext) return;
+
+    // A 2x2 plane exactly fills ShaderScene's camera view (-1..1 on both
+    // axes), so every pixel of the canvas casts a ray.
+    const mesh = new Mesh(new PlaneGeometry(2, 2));
+
+    meshRef.current = mesh;
+    shaderContext.scene.add(mesh);
+
+    return () => {
+      meshRef.current = null;
+      shaderContext.scene.remove(mesh);
+      // Another still Source can keep the scene parked, and a parked scene
+      // would keep showing the surface, so ask for a frame without it.
+      shaderContext.scheduler.requestRender();
+      try {
+        mesh.geometry.dispose();
+      } catch {
+        // three/webgpu can throw during dispose under Strict Mode double-invoke
+      }
+    };
+  }, [shaderContext]);
+
+  // ---------------------------------------------
+  // Build the material and hand it to the mesh
   // ---------------------------------------------
   // Runs once per mount, and again when `colorSpace` or `hueInterpolation`
   // changes, because each space's blend is different shader code. Every
   // other dial flows through a uniform, so nothing else here depends on a
   // prop's value.
   useEffect(() => {
-    if (!shaderContext) return;
+    const mesh = meshRef.current;
+
+    if (!shaderContext || !mesh) return;
 
     // Fn() wraps the body in a GPU function node, which gives the march's
     // loop a list of statements to append to. The trailing () calls it once
@@ -677,30 +715,16 @@ export function SwellsShader({
 
     material.transparent = true;
     material.colorNode = swellsNode;
+    mesh.material = material;
 
-    // A 2x2 plane exactly fills ShaderScene's camera view (-1..1 on both
-    // axes), so every pixel of the canvas casts a ray.
-    const mesh = new Mesh(new PlaneGeometry(2, 2), material);
-
-    shaderContext.scene.add(mesh);
-
-    // A still scene is parked, so ask it to draw the new mesh.
+    // A still scene is parked, so ask it to draw the new material.
     shaderContext.scheduler.requestRender();
 
     return () => {
-      shaderContext.scene.remove(mesh);
-      // Another still Source can keep the scene parked, and a parked scene
-      // would keep showing the surface, so ask for a frame without it.
-      shaderContext.scheduler.requestRender();
       try {
         material.dispose();
       } catch {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
-      }
-      try {
-        mesh.geometry.dispose();
-      } catch {
-        // same
       }
     };
   }, [

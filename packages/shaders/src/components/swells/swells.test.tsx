@@ -206,6 +206,20 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).not.toBe(material);
   });
 
+  // three draws transparent meshes in the order they were created when
+  // nothing else separates them, and Swells is transparent where the sky
+  // shows through. A rebuild that made a new mesh would move Swells in front
+  // of a later Source, such as DotField, that the JSX order put on top.
+  it('keeps the same mesh when the material rebuilds', () => {
+    const scene = makeScene();
+    const { rerender } = render(<Swells colorSpace="oklab" />, { wrapper: scene.Wrapper });
+    const { mesh } = scene.onlyMesh();
+
+    rerender(<Swells colorSpace="linear" />);
+
+    expect(scene.onlyMesh().mesh).toBe(mesh);
+  });
+
   it('follows its camera signals without rebuilding the material', () => {
     const scene = makeScene();
     const altitude = makeSignal(1);
