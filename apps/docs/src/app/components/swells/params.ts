@@ -14,6 +14,12 @@ export interface SwellsTuningParams {
   meander: number;
   rippleSize: number;
   rippleHeight: number;
+  sheenFocus: number;
+  reachFade: number;
+  mirageStart: number;
+  mirageSway: number;
+  mirageClearing: number;
+  hazeFadeLag: number;
 }
 
 export interface SwellsParams {
@@ -28,6 +34,11 @@ export interface SwellsParams {
   sunHeight: number;
   color: string;
   shadowColor: string;
+  sheen: number;
+  sheenColor: string;
+  haze: number;
+  hazeColor: string;
+  mirage: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
   tuning: SwellsTuningParams;
@@ -47,6 +58,11 @@ export const INITIAL: SwellsParams = {
   sunHeight: 15,
   color: 'oklch(0.82 0.08 75)',
   shadowColor: 'oklch(0.45 0.06 15)',
+  sheen: 0.3,
+  sheenColor: 'oklch(0.97 0.03 85)',
+  haze: 0.04,
+  hazeColor: 'oklch(0.78 0.07 45)',
+  mirage: 0.3,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
   tuning: {
@@ -59,5 +75,11 @@ export const INITIAL: SwellsParams = {
     meander: 1.5,
     rippleSize: 0.1,
     rippleHeight: 0.008,
+    sheenFocus: 12,
+    reachFade: 0.4,
+    mirageStart: 12,
+    mirageSway: 0.003,
+    mirageClearing: 0.6,
+    hazeFadeLag: 2,
   },
 };

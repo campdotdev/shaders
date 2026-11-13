@@ -3,8 +3,8 @@
 // Public face of Swells: owns the props, their JSDoc, and their defaults,
 // then delegates to SwellsShader (./shader.tsx), which draws a surface through
 // a camera of its own by marching each pixel's ray over a height map. Swells
-// draws only the ground and is transparent where the ray misses it, so
-// mount a sky Source beneath it inside a <ShaderScene>.
+// draws only the surface and is transparent where the ray misses it, so the
+// page shows through as the sky, or a sky Source mounted beneath it does.
 import type { ColorSpace, HueInterpolation } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { SwellsShader, type SwellsTuning } from './shader.js';
@@ -93,8 +93,46 @@ export interface SwellsProps {
    */
   shadowColor?: string;
   /**
-   * The color space the slopes between `shadowColor` and `color` blend in.
-   * Defaults to `'oklab'`.
+   * How strong the soft highlight is where the surface mirrors the sun
+   * toward the camera, from 0 to 1. 0 gives a matte surface, like dry sand;
+   * higher values add a satin glow in `sheenColor` that slides over the
+   * swells as the camera or the sun moves. Defaults to 0.3. Accepts a static
+   * value or an animation signal.
+   */
+  sheen?: AnimatableProp<number>;
+  /**
+   * The highlight's color: hex, `oklch()`, or `oklab()`. At full `sheen`,
+   * the brightest point of the highlight is exactly this color. Defaults to
+   * a warm white, `'oklch(0.97 0.03 85)'`.
+   */
+  sheenColor?: string;
+  /**
+   * How thick the haze is, per terrain unit. With distance, the surface
+   * first turns to `hazeColor`, then fades out into whatever is beneath
+   * Swells, so the far field glows in the haze's color. 0 is clear air,
+   * with the surface in its own colors until it fades out at the edge of
+   * the camera's view. At `1 / haze` terrain units, about a third of the
+   * surface's own color shows, and the near ground stays clear. Defaults to
+   * 0.04. Accepts a static value or an animation signal.
+   */
+  haze?: AnimatableProp<number>;
+  /**
+   * The haze's color, which the far surface turns to before it fades out:
+   * hex, `oklch()`, or `oklab()`. Defaults to a dusty rose,
+   * `'oklch(0.78 0.07 45)'`.
+   */
+  hazeColor?: string;
+  /**
+   * How strongly the far surface shimmers, from 0 to 1, like heat haze over
+   * sand: the far crests waver, and the sky beneath shows through in
+   * patches. 0 is still air. Swells keeps the scene drawing every frame
+   * while the mirage is above 0, and the shimmer slows under reduced
+   * motion. Defaults to 0.3. Accepts a static value or an animation signal.
+   */
+  mirage?: AnimatableProp<number>;
+  /**
+   * The color space the slopes between `shadowColor` and `color`, the
+   * sheen over them, and the haze blend in. Defaults to `'oklab'`.
    */
   colorSpace?: ColorSpace;
   /**
@@ -122,6 +160,11 @@ export function Swells({
   sunHeight = 15,
   color = 'oklch(0.82 0.08 75)',
   shadowColor = 'oklch(0.45 0.06 15)',
+  sheen = 0.3,
+  sheenColor = 'oklch(0.97 0.03 85)',
+  haze = 0.04,
+  hazeColor = 'oklch(0.78 0.07 45)',
+  mirage = 0.3,
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
   tuning,
@@ -132,12 +175,17 @@ export function Swells({
       color={color}
       colorSpace={colorSpace}
       fieldOfView={fieldOfView}
+      haze={haze}
+      hazeColor={hazeColor}
       hueInterpolation={hueInterpolation}
+      mirage={mirage}
       relief={relief}
       ripples={ripples}
       scale={scale}
       shadowColor={shadowColor}
       sharpness={sharpness}
+      sheen={sheen}
+      sheenColor={sheenColor}
       sunAngle={sunAngle}
       sunHeight={sunHeight}
       tilt={tilt}
