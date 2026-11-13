@@ -70,6 +70,7 @@ function SwellsFields() {
       <Section title="Tuning (dev)">
         <SliderInput label="Step scale" max={1} min={0.1} path="tuning.stepScale" step={0.01} />
         <SliderInput label="Max distance" max={120} min={5} path="tuning.maxDistance" step={1} />
+        <SliderInput label="Max slope" max={8} min={0.5} path="tuning.maxSlope" step={0.1} />
         <SliderInput label="Wind angle" max={360} min={0} path="tuning.windAngle" step={1} />
         <SliderInput label="Slip face" max={0.5} min={0.05} path="tuning.slipFace" step={0.01} />
         <SliderInput

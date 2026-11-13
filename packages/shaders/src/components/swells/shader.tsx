@@ -18,6 +18,7 @@ import {
   fract,
   length,
   max,
+  min,
   mix,
   type ShaderNodeObject,
   sin,
@@ -57,6 +58,15 @@ type TSLValue = ShaderNodeObject<Node>;
 // moves (marchHeightMap's stepScale). Lower is safer on steep slopes and
 // reaches less far in the same steps.
 const STEP_SCALE = 0.5;
+
+// The steepest a swell's face may get, as height gained per unit of ground:
+// 3 climbs at about 72 degrees. A crest steeper than the march's steps can
+// follow slips between two of them, both above the ground, and the ray
+// draws the ground behind it instead. Short, tall swells, a high `scale`
+// with a high `relief`, get there first, so `relief` stops raising them
+// once their steepest face reaches this slope. Higher lets taller, sharper
+// swells through and lets more crests slip; lower flattens more of them.
+const MAX_SLOPE = 3;
 
 // How far the camera sees, in terrain units. A ray that travels this far
 // without meeting the ground counts as a miss.
@@ -195,6 +205,8 @@ export interface SwellsTuning {
   stepScale?: number;
   /** How far the camera sees, in terrain units. */
   maxDistance?: number;
+  /** The steepest a swell's face may get, as height gained per unit of ground. */
+  maxSlope?: number;
   /** Which way the wind blows, in compass degrees from the camera's heading. */
   windAngle?: number;
   /** The share of each swell's length its steep downwind face takes at full sharpness, 0 to 1. */
@@ -281,6 +293,7 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
   const {
     stepScale = STEP_SCALE,
     maxDistance = MAX_DISTANCE,
+    maxSlope = MAX_SLOPE,
     windAngle = WIND_ANGLE,
     slipFace = SLIP_FACE,
     crestRounding = CREST_ROUNDING,
@@ -292,6 +305,7 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
   return {
     stepScaleUniform: useAnimatableUniform<number>(stepScale),
     maxDistanceUniform: useAnimatableUniform<number>(maxDistance),
+    maxSlopeUniform: useAnimatableUniform<number>(maxSlope),
     windAngleUniform: useAnimatableUniform<number>(windAngle),
     slipFaceUniform: useAnimatableUniform<number>(slipFace),
     crestRoundingUniform: useAnimatableUniform<number>(crestRounding),
@@ -324,6 +338,7 @@ export interface SwellsShaderProps {
   scale: AnimatableProp<number>;
   /**
    * How tall the swells are, in terrain units, where 0 is level ground.
+   * Short swells stop growing taller once their faces reach MAX_SLOPE.
    * Accepts a static value or an animation signal.
    */
   relief: AnimatableProp<number>;
@@ -403,6 +418,7 @@ export function SwellsShader({
   const {
     stepScaleUniform,
     maxDistanceUniform,
+    maxSlopeUniform,
     windAngleUniform,
     slipFaceUniform,
     crestRoundingUniform,
@@ -526,6 +542,32 @@ export function SwellsShader({
       const crestRestore = float(1).div(crestRounding.mul(-0.25).add(1)).toVar();
       const rippleAmplitude = ripplesUniform.mul(rippleHeightUniform).toVar();
 
+      // The relief the swells are built with, `relief` held down where the
+      // swells are too short to carry it (MAX_SLOPE above). A face climbs
+      // the swell's height over the face's length, and the profile's curve
+      // below steepens that straight climb at its steepest point: 1.5 times,
+      // halfway up, for the round curve, and 2 times, at the crest, for the
+      // sharp one, blended by sharpness. crestRestore stretches the height
+      // a little more, and the shorter face is the steeper one. The swell
+      // takes relief / (1 + ROLL_SHARE) of the height, so a relief of
+      // MAX_SLOPE * (1 + ROLL_SHARE) * face length / steepening puts the
+      // steepest face right at the limit. min() keeps whichever of that and
+      // `relief` is lower, and max() keeps a negative limit from turning the
+      // swells upside down. At the defaults, swells 2.5 units long with a
+      // 0.75-unit slip face, the limit is about 1.5, above the default
+      // relief of 0.8, so it changes nothing there. The roll's meander packs
+      // crests closer in places, which steepens them past this estimate, so
+      // MAX_SLOPE sits well under the slope where crests start to slip.
+      const steepening = mix(float(1.5), float(2), sharpnessAmount).mul(crestRestore);
+      const shortestFace = min(crestShare, fallShare).mul(swellLength);
+      const limitedRelief = min(
+        reliefUniform,
+        max(maxSlopeUniform, 0)
+          .mul(1 + ROLL_SHARE)
+          .mul(shortestFace)
+          .div(steepening),
+      ).toVar();
+
       // How far a ground point lies along the wind, and across it to the
       // wind's right, in the units the point is in. A dot product with the
       // wind's direction measures along it; the direction turned a quarter
@@ -595,12 +637,13 @@ export function SwellsShader({
         // The swell's own height, scaled by its strength, then the roll
         // added under it. Dividing by 1 + ROLL_SHARE brings the tallest
         // sum back to 1, so `relief` is the height of the tallest crests,
-        // before the ripples add their few thousandths of a unit on top.
+        // unless the slope limit above holds it down, before the ripples add
+        // their few thousandths of a unit on top.
         const swells = profile
           .mul(mix(MIN_STRENGTH, 1, strength))
           .add(roll.mul(ROLL_SHARE))
           .div(1 + ROLL_SHARE)
-          .mul(reliefUniform);
+          .mul(limitedRelief);
 
         // The ripples: a sine wave whose crests run square to the wind,
         // one per ripple length, its phase wobbled across the wind and bent
@@ -744,6 +787,7 @@ export function SwellsShader({
     hueInterpolation,
     stepScaleUniform,
     maxDistanceUniform,
+    maxSlopeUniform,
     windAngleUniform,
     slipFaceUniform,
     crestRoundingUniform,

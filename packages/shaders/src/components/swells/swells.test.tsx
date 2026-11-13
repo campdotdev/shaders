@@ -294,6 +294,7 @@ describe('Swells', () => {
         tuning={{
           stepScale: 0.4,
           maxDistance: 60,
+          maxSlope: 2,
           windAngle: 90,
           slipFace: 0.2,
           meander: 0,

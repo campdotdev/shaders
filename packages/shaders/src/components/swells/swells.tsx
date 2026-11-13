@@ -43,7 +43,9 @@ export interface SwellsProps {
   /**
    * How tall the swells are, in terrain units: the height of the tallest
    * crests. 0 flattens the swells into level ground, which still carries
-   * ripples unless `ripples` is 0 too. Defaults to 0.8. Accepts a static
+   * ripples unless `ripples` is 0 too. Short swells, at a high `scale`, stop
+   * growing taller once their steepest faces climb at about 72 degrees, so
+   * the ray can't skip over their crests. Defaults to 0.8. Accepts a static
    * value or an animation signal.
    */
   relief?: AnimatableProp<number>;

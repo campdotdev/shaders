@@ -8,7 +8,7 @@ Add `Swells`, a Source that draws a rolling surface through a camera of its own,
 - `tilt`: how far the camera looks down from the horizon, in degrees.
 - `fieldOfView`: how much the camera sees from the bottom of the canvas to the top, in degrees.
 - `scale`: how many swells, crest to crest, fit in 10 terrain units.
-- `relief`: how tall the swells are, in terrain units. 0 gives level ground.
+- `relief`: how tall the swells are, in terrain units. 0 gives level ground. Short swells stop growing taller once their faces get too steep for the ray to follow.
 - `sharpness`: the swells' shape, from 0 for round swells to 1 for sharp dune crests.
 - `ripples`: how strong the fine ripples are, from 0 to 1. 0 gives a smooth surface.
 - `sunAngle`: where the sun sits, in compass degrees clockwise from the way the camera faces.

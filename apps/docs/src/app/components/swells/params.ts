@@ -7,6 +7,7 @@ import type { ColorSpace, HueInterpolation } from '@camp-dev/shaders';
 export interface SwellsTuningParams {
   stepScale: number;
   maxDistance: number;
+  maxSlope: number;
   windAngle: number;
   slipFace: number;
   crestRounding: number;
@@ -51,6 +52,7 @@ export const INITIAL: SwellsParams = {
   tuning: {
     stepScale: 0.5,
     maxDistance: 40,
+    maxSlope: 3,
     windAngle: 30,
     slipFace: 0.3,
     crestRounding: 0.8,
