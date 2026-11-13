@@ -269,6 +269,34 @@ const layeredNoise = (point: TSLValue): TSLValue => {
   return sum.div(total);
 };
 
+/**
+ * TEMPORARY (build-phase tuning only): a uniform for each feel constant,
+ * holding the tuning prop's override or the constant itself. They ride
+ * uniforms so the tuning sliders glide without rebuilding the shader. The
+ * defaults gate deletes this hook and bakes the constants back in.
+ */
+function useTuningUniforms(tuning: SwellsTuning | undefined) {
+  const {
+    stepScale = STEP_SCALE,
+    maxDistance = MAX_DISTANCE,
+    windAngle = WIND_ANGLE,
+    slipFace = SLIP_FACE,
+    meander = MEANDER,
+    rippleSize = RIPPLE_SIZE,
+    rippleHeight = RIPPLE_HEIGHT,
+  } = tuning ?? {};
+
+  return {
+    stepScaleUniform: useAnimatableUniform<number>(stepScale),
+    maxDistanceUniform: useAnimatableUniform<number>(maxDistance),
+    windAngleUniform: useAnimatableUniform<number>(windAngle),
+    slipFaceUniform: useAnimatableUniform<number>(slipFace),
+    meanderUniform: useAnimatableUniform<number>(meander),
+    rippleSizeUniform: useAnimatableUniform<number>(rippleSize),
+    rippleHeightUniform: useAnimatableUniform<number>(rippleHeight),
+  };
+}
+
 export interface SwellsShaderProps {
   /**
    * How high the camera sits above the ground, in terrain units. Accepts a
@@ -367,15 +395,16 @@ export function SwellsShader({
   const colorUniform = useColorUniform(color);
   const shadowColorUniform = useColorUniform(shadowColor);
 
-  // TEMPORARY: the feel constants ride uniforms too, so the tuning sliders
-  // glide. The defaults gate deletes these and bakes the constants back in.
-  const stepScaleUniform = useAnimatableUniform<number>(tuning?.stepScale ?? STEP_SCALE);
-  const maxDistanceUniform = useAnimatableUniform<number>(tuning?.maxDistance ?? MAX_DISTANCE);
-  const windAngleUniform = useAnimatableUniform<number>(tuning?.windAngle ?? WIND_ANGLE);
-  const slipFaceUniform = useAnimatableUniform<number>(tuning?.slipFace ?? SLIP_FACE);
-  const meanderUniform = useAnimatableUniform<number>(tuning?.meander ?? MEANDER);
-  const rippleSizeUniform = useAnimatableUniform<number>(tuning?.rippleSize ?? RIPPLE_SIZE);
-  const rippleHeightUniform = useAnimatableUniform<number>(tuning?.rippleHeight ?? RIPPLE_HEIGHT);
+  // TEMPORARY: the tuning rig's uniforms (useTuningUniforms above).
+  const {
+    stepScaleUniform,
+    maxDistanceUniform,
+    windAngleUniform,
+    slipFaceUniform,
+    meanderUniform,
+    rippleSizeUniform,
+    rippleHeightUniform,
+  } = useTuningUniforms(tuning);
 
   // Canvas width over height, so the view widens on a wide canvas instead
   // of stretching the terrain.
