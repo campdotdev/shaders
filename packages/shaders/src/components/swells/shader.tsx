@@ -651,10 +651,14 @@ export function SwellsShader({
       // has no ground, and max() turns its descent into a sliver, so its
       // distance is huge and it counts as far: the shimmer reaches up over
       // the horizon line, where the far crests waver into the sky. The band
-      // fades in from mirageStart to twice that.
+      // fades in from mirageStart to twice that. smoothstep() has no defined
+      // result when its two edges meet, as they would at a start of 0, so
+      // max() keeps the start a sliver above 0, which still puts the mirage
+      // over all the ground.
       const straightDescent = max(vec3(straightRay.direction).y.negate(), 1e-4);
       const groundDistance = vec3(straightRay.origin).y.div(straightDescent);
-      const mirageAmount = smoothstep(mirageStartUniform, mirageStartUniform.mul(2), groundDistance)
+      const mirageFrom = max(mirageStartUniform, 1e-3);
+      const mirageAmount = smoothstep(mirageFrom, mirageFrom.mul(2), groundDistance)
         .mul(clamp(mirageUniform, 0, 1))
         .toVar();
 
@@ -1034,8 +1038,11 @@ export function SwellsShader({
       // from where the fade starts to the reach, and oneMinus() flips it,
       // so the surface holds full strength before the fade and reaches 0
       // at the reach. A ray that ran past the reach stopped just beyond
-      // it, so it draws nothing.
-      const reachShare = clamp(reachFadeUniform, 0, 1);
+      // it, so it draws nothing. smoothstep() has no defined result when
+      // its two edges meet, as they would at a reach fade of 0, so the
+      // clamp keeps the share a sliver above 0: a fade over the last 0.1%
+      // of the reach, which reads as the hard edge 0 asks for.
+      const reachShare = clamp(reachFadeUniform, 1e-3, 1);
       const withinReach = smoothstep(
         maxDistanceUniform.mul(reachShare.oneMinus()),
         maxDistanceUniform,

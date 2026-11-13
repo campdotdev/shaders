@@ -140,13 +140,17 @@ test('Swells — relief 0 and ripples 0 give flat, smooth ground', async ({ page
 });
 
 // The sky stays transparent whatever the air is doing: with the sheen, the
-// haze, and the mirage all on, the sky still reads the black beneath
-// Swells. The band starts below the site header, which the docs layout
-// draws over the top of the probe's canvas, and ends above the horizon.
+// haze, and the mirage all on, the sky still reads the white canvas beneath
+// Swells. The haze is black, so a sky Swells painted opaque would read dark
+// here rather than pass for the canvas. The band starts below the site
+// header, which the docs layout draws over the top of the probe's canvas,
+// and ends above the horizon.
 test('Swells — the sky above the horizon is transparent', async ({ page }) => {
-  const rows = await probeRows(page, '&sheen=1&haze=0.04&mirage=1');
+  const rows = await probeRows(page, '&sheen=1&haze=0.04&mirage=1&background=white');
 
-  expect(Math.max(...bandBrightness(rows, SKY_TOP, 0.22)), 'brightest sky sample').toBeLessThan(3);
+  expect(Math.min(...bandBrightness(rows, SKY_TOP, 0.22)), 'darkest sky sample').toBeGreaterThan(
+    252,
+  );
 });
 
 // Haze turns the far surface to its color, here black, and then fades it
