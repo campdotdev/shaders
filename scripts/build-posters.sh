@@ -87,7 +87,7 @@ for pair in \
   "radial-wipe:jpg:#0b0f0d" \
   "dissolve:jpg:#0b0f0d" \
   "palette-map:jpg" \
-  "dunes:jpg"; do
+  "swells:jpg"; do
   IFS=':' read -r name format background size crop <<< "$pair"
   width="$WIDTH"
   height="$HEIGHT"

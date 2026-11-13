@@ -3,7 +3,7 @@
 // there. A height map is a function from a ground point (x, z) to the
 // terrain's height at that point. The caller brings the height function,
 // the light, and any fog, so this knows nothing about what the terrain is.
-// Dunes marches its sand with it, and Mode 2 users march their own terrain.
+// Swells marches its sand with it, and Mode 2 users march their own terrain.
 import {
   abs,
   Break,

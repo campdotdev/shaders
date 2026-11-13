@@ -37,9 +37,6 @@ export type { DitherProps } from './dither/dither.js';
 export { DotField } from './dot-field/dot-field.js';
 export type { DotFieldProps, DotShape, SvgMarkup } from './dot-field/dot-field.js';
 
-export { Dunes } from './dunes/dunes.js';
-export type { DunesProps, DunesTuning } from './dunes/dunes.js';
-
 export { FlutedGlass } from './fluted-glass/fluted-glass.js';
 export type { CrossSectionName, FlutedGlassProps } from './fluted-glass/fluted-glass.js';
 
@@ -78,6 +75,9 @@ export type { RadialWipeProps } from './radial-wipe/radial-wipe.js';
 
 export { SimplexNoise } from './simplex-noise/simplex-noise.js';
 export type { SimplexNoiseProps } from './simplex-noise/simplex-noise.js';
+
+export { Swells } from './swells/swells.js';
+export type { SwellsProps, SwellsTuning } from './swells/swells.js';
 
 export { Vignette } from './vignette/vignette.js';
 export type { VignetteProps } from './vignette/vignette.js';

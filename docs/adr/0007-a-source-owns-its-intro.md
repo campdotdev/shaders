@@ -1,6 +1,6 @@
 # A Source owns its intro, and a composition sets it as a literal prop
 
-Status: Accepted. Dunes lands it in SHA-318, for composition 3 (SHA-317).
+Status: Accepted. Swells, first named Dunes, lands it in SHA-318, for composition 3 (SHA-317).
 
 A composition feels finished when its scene builds itself in as the page loads. Terrain rises from flat ground instead of fading in. A composition document holds only literal props, and ADR 0005 keeps animation code out of compositions, so nothing in a composition can play a value over time.
 

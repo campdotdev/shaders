@@ -25,16 +25,16 @@ import {
   vec3,
   vec4,
 } from 'three/tsl';
-import { type Node, Vector3 } from 'three/webgpu';
+import type { Node } from 'three/webgpu';
 
 import { fluteSurface } from '../../engine.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
+import { useColorUniform } from '../../react/hooks/use-color-uniform/use-color-uniform.js';
 import { usePostProcessPass } from '../../react/hooks/use-overlay-pass/use-overlay-pass.js';
 import { useResample } from '../../react/hooks/use-resample/use-resample.js';
 import { useResize } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
-import { parseColor } from '../shared/color.js';
 
 export interface FlutedGlassShaderProps {
   /**
@@ -158,22 +158,9 @@ export function FlutedGlassShader({
   const highlightUniform = useAnimatableUniform(highlight);
   const shadowUniform = useAnimatableUniform(shadow);
 
-  // The highlight color decodes once into linear rgb (parseColor reads hex
-  // and the wide-gamut oklch() and oklab() strings). The Vector3 and its
-  // uniform are created once, and the effect below writes each new color
-  // into the Vector3, so a new color never rebuilds the color transform.
-  const highlightColorVector = useMemo(() => new Vector3(1, 1, 1), []);
-  const highlightColorUniform = useMemo(
-    () => uniform(highlightColorVector),
-    [highlightColorVector],
-  );
-
-  useEffect(() => {
-    highlightColorVector.set(...parseColor(highlightColor));
-    // The bare-uniform-write gotcha in docs/agents/tsl.md: a write into the
-    // Vector3 repaints nothing on a static scene by itself.
-    shaderContext?.scheduler.requestRender();
-  }, [highlightColor, highlightColorVector, shaderContext]);
+  // The highlight color rides one stable uniform, so a new color never
+  // rebuilds the color transform.
+  const highlightColorUniform = useColorUniform(highlightColor);
 
   // ---------------------------------------------
   // CSS pixels -> device pixels
