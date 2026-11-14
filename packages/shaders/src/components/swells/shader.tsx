@@ -9,7 +9,7 @@
 // beneath, shows through as the sky. The camera glides over the surface and
 // can sway sideways toward a point, and the swells rise and fall in place.
 // The wrapper (./swells.tsx) supplies the props.
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 import {
   atan,
@@ -47,6 +47,7 @@ import {
   mixColor,
   stableHash,
 } from '../../engine.js';
+import type { ShaderContextValue } from '../../react/context/shader-context.js';
 import {
   type AnimatableProp,
   isSignal,
@@ -286,7 +287,7 @@ const MIN_PARALLAX_PIVOT = 0.5;
 const DEGREES_TO_RADIANS = Math.PI / 180;
 
 // The middle of the canvas, as a position prop: the sway's center when a
-// fixed `parallax` of 0 leaves it nothing to do.
+// fixed `parallax` of 0 or reduced motion leaves it nothing to do.
 const CANVAS_CENTER: readonly [number, number] = [0.5, 0.5];
 
 /** TEMPORARY (build-phase tuning only): dev overrides for the feel constants. */
@@ -481,7 +482,10 @@ function useMotionUniforms({
   swellSpeed,
   parallax,
   parallaxCenter,
-}: Pick<SwellsShaderProps, 'speed' | 'swellSpeed' | 'parallax' | 'parallaxCenter'>) {
+  isFullMotion,
+}: Pick<SwellsShaderProps, 'speed' | 'swellSpeed' | 'parallax' | 'parallaxCenter'> & {
+  isFullMotion: boolean;
+}) {
   return {
     // How far the camera has glided, in terrain units: speed times each
     // frame's seconds, summed on the CPU and scaled by the reduced-motion
@@ -496,14 +500,50 @@ function useMotionUniforms({
     // The center as uv, 0..1 with y up: screenOrigin flips the prop's
     // top-left frame, so up on the canvas is up in the shader. "cursor"
     // resolves to the scene's shared pointer. A fixed `parallax` of 0 holds
-    // the camera still wherever the center is, so the canvas center stands
-    // in for the cursor there: following the pointer would wake the march
-    // on every move to draw the same picture. A signal can leave 0 at any
-    // frame, so it keeps the cursor.
-    parallaxCenterUniform: useAnimatablePoint(parallax === 0 ? CANVAS_CENTER : parallaxCenter, {
-      screenOrigin: true,
-    }),
+    // the camera still wherever the center is, and so does reduced motion,
+    // so the canvas center stands in for the center there: following the
+    // pointer or a signal would wake the march on every move to draw the
+    // same picture. A `parallax` signal can leave 0 at any frame, so it
+    // keeps the center.
+    parallaxCenterUniform: useAnimatablePoint(
+      parallax === 0 || !isFullMotion ? CANVAS_CENTER : parallaxCenter,
+      { screenOrigin: true },
+    ),
   };
+}
+
+/**
+ * Whether the reduced-motion policy allows full motion, the only scale at
+ * which the sway moves. Kept current as the policy changes, and each change
+ * asks for a frame: the sway reads the engine's shared time-scale uniform,
+ * which the engine updates without asking for one, so a parked scene would
+ * keep the old sway on screen (the bare-uniform-write gotcha in
+ * docs/agents/tsl.md).
+ */
+function useFullMotion(scheduler: ShaderContextValue['scheduler'] | undefined): boolean {
+  const [isFullMotion, setIsFullMotion] = useState(() => {
+    const motion = createReducedMotionWatcher();
+    const scale = motion.scale();
+
+    motion.dispose();
+
+    return scale >= FULL_MOTION;
+  });
+
+  useEffect(() => {
+    const motion = createReducedMotionWatcher();
+    const stopMotion = motion.subscribe((scale) => {
+      setIsFullMotion(scale >= FULL_MOTION);
+      scheduler?.requestRender();
+    });
+
+    return () => {
+      stopMotion();
+      motion.dispose();
+    };
+  }, [scheduler]);
+
+  return isFullMotion;
 }
 
 /**
@@ -662,6 +702,7 @@ export function SwellsShader({
   tuning,
 }: SwellsShaderProps) {
   const shaderContext = useShaderContext();
+  const isFullMotion = useFullMotion(shaderContext?.scheduler);
 
   // Every dial lives in a uniform, a value the CPU can change each frame
   // without rebuilding the shader, tracking a static number or a signal.
@@ -689,6 +730,7 @@ export function SwellsShader({
     swellSpeed,
     parallax,
     parallaxCenter,
+    isFullMotion,
   });
 
   useStaticSceneHint(isSwellsStill({ speed, swellSpeed, mirage }));
@@ -750,26 +792,6 @@ export function SwellsShader({
       } catch {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
-    };
-  }, [shaderContext]);
-
-  // ---------------------------------------------
-  // Redraw when the reduced-motion policy changes
-  // ---------------------------------------------
-  // The sway reads the engine's shared time-scale uniform, which the engine
-  // updates without asking for a frame. A still scene is parked, so a policy
-  // change would leave the old sway on screen until something else woke it
-  // (the bare-uniform-write gotcha in docs/agents/tsl.md). Each change asks
-  // for one frame.
-  useEffect(() => {
-    if (!shaderContext) return;
-
-    const motion = createReducedMotionWatcher();
-    const stopMotion = motion.subscribe(() => shaderContext.scheduler.requestRender());
-
-    return () => {
-      stopMotion();
-      motion.dispose();
     };
   }, [shaderContext]);
 

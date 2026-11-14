@@ -4,7 +4,12 @@ import { render } from '@testing-library/react';
 import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import { type ColorSpace, CursorInput, type HueInterpolation } from '../../engine.js';
+import {
+  type ColorSpace,
+  CursorInput,
+  type HueInterpolation,
+  setReducedMotionPolicy,
+} from '../../engine.js';
 import { Swells, type SwellsProps, type SwellsTuning } from '../../index.js';
 import { ShaderContext, type ShaderContextValue } from '../../react/context/shader-context.js';
 import type {
@@ -22,6 +27,7 @@ beforeEach(() => {
   vi.stubGlobal('cancelAnimationFrame', () => {});
 });
 afterEach(() => {
+  setReducedMotionPolicy('auto');
   vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
@@ -446,6 +452,20 @@ describe('Swells', () => {
     render(<Swells parallax={0} parallaxCenter="cursor" />, { wrapper: level.Wrapper });
     expect(level.getCursorInput).not.toHaveBeenCalled();
 
+    const swaying = makeScene();
+
+    render(<Swells parallax={1} parallaxCenter="cursor" />, { wrapper: swaying.Wrapper });
+    expect(swaying.getCursorInput).toHaveBeenCalled();
+  });
+
+  it('reads the cursor only while reduced motion lets the sway move', () => {
+    setReducedMotionPolicy('slow');
+    const held = makeScene();
+
+    render(<Swells parallax={1} parallaxCenter="cursor" />, { wrapper: held.Wrapper });
+    expect(held.getCursorInput).not.toHaveBeenCalled();
+
+    setReducedMotionPolicy('off');
     const swaying = makeScene();
 
     render(<Swells parallax={1} parallaxCenter="cursor" />, { wrapper: swaying.Wrapper });
