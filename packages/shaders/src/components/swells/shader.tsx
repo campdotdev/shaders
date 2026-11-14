@@ -39,6 +39,7 @@ import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/web
 import {
   cameraRay,
   type ColorSpace,
+  createReducedMotionWatcher,
   getReducedMotionTimeScale,
   type HueInterpolation,
   marchHeightMap,
@@ -738,6 +739,26 @@ export function SwellsShader({
       } catch {
         // three/webgpu can throw during dispose under Strict Mode double-invoke
       }
+    };
+  }, [shaderContext]);
+
+  // ---------------------------------------------
+  // Redraw when the reduced-motion policy changes
+  // ---------------------------------------------
+  // The sway reads the engine's shared time-scale uniform, which the engine
+  // updates without asking for a frame. A still scene is parked, so a policy
+  // change would leave the old sway on screen until something else woke it
+  // (the bare-uniform-write gotcha in docs/agents/tsl.md). Each change asks
+  // for one frame.
+  useEffect(() => {
+    if (!shaderContext) return;
+
+    const motion = createReducedMotionWatcher();
+    const stopMotion = motion.subscribe(() => shaderContext.scheduler.requestRender());
+
+    return () => {
+      stopMotion();
+      motion.dispose();
     };
   }, [shaderContext]);
 
