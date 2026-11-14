@@ -537,6 +537,11 @@ function useFullMotion(scheduler: ShaderContextValue['scheduler'] | undefined): 
       scheduler?.requestRender();
     });
 
+    // A watcher reports changes only, so seed from this one's scale: the
+    // policy can change after the render read it and before this effect
+    // runs, such as from another component's layout effect.
+    setIsFullMotion(motion.scale() >= FULL_MOTION);
+
     return () => {
       stopMotion();
       motion.dispose();

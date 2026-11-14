@@ -1,4 +1,4 @@
-import { type ReactNode, StrictMode } from 'react';
+import { type ReactNode, StrictMode, useLayoutEffect } from 'react';
 
 import { render } from '@testing-library/react';
 import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
@@ -470,6 +470,28 @@ describe('Swells', () => {
 
     render(<Swells parallax={1} parallaxCenter="cursor" />, { wrapper: swaying.Wrapper });
     expect(swaying.getCursorInput).toHaveBeenCalled();
+  });
+
+  // A layout effect runs after Swells renders and before it subscribes, so
+  // this change lands in the gap between the two.
+  it('catches a policy change between its render and its subscription', () => {
+    function TurnMotionOn() {
+      useLayoutEffect(() => setReducedMotionPolicy('off'), []);
+
+      return null;
+    }
+
+    setReducedMotionPolicy('slow');
+    const scene = makeScene();
+
+    render(
+      <>
+        <Swells parallax={1} parallaxCenter="cursor" />
+        <TurnMotionOn />
+      </>,
+      { wrapper: scene.Wrapper },
+    );
+    expect(scene.getCursorInput).toHaveBeenCalled();
   });
 
   // The vote follows the dials as they change.
