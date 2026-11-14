@@ -17,7 +17,9 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 // own color, so hazed ground reads darker whether it blends or fades, and
 // ?hazeColor=white makes it white, so blending and fading pull apart.
 // ?background=white turns the canvas white, so a transparent sky reads
-// white and an opaque black one can't pass for it.
+// white and an opaque black one can't pass for it. ?speed, ?swellSpeed, and
+// ?parallax set the motion dials, and ?parallaxCenter=cursor sways the camera
+// toward the pointer.
 
 /** The haze's color: black, or white under ?hazeColor=white. */
 function hazeColor(): string {
@@ -31,6 +33,13 @@ function background(): string {
   const raw = new URLSearchParams(window.location.search).get('background');
 
   return raw === 'white' ? '#fff' : '#000';
+}
+
+/** The point the camera sways toward: the pointer under ?parallaxCenter=cursor. */
+function parallaxCenter(): 'cursor' | undefined {
+  const raw = new URLSearchParams(window.location.search).get('parallaxCenter');
+
+  return raw === 'cursor' ? 'cursor' : undefined;
 }
 
 /** A number from the page's query string, or undefined when it is absent. */
@@ -51,6 +60,8 @@ export default function ProbeScene() {
           haze={queryNumber('haze') ?? 0}
           hazeColor={hazeColor()}
           mirage={queryNumber('mirage') ?? 0}
+          parallax={queryNumber('parallax')}
+          parallaxCenter={parallaxCenter()}
           relief={queryNumber('relief')}
           ripples={queryNumber('ripples')}
           scale={queryNumber('scale')}
@@ -58,8 +69,10 @@ export default function ProbeScene() {
           sharpness={queryNumber('sharpness')}
           sheen={queryNumber('sheen') ?? 0}
           sheenColor="oklch(1 0 0)"
+          speed={queryNumber('speed')}
           sunAngle={queryNumber('sunAngle')}
           sunHeight={queryNumber('sunHeight')}
+          swellSpeed={queryNumber('swellSpeed')}
           tilt={queryNumber('tilt')}
         />
         <VisualTestPause />

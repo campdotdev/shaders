@@ -72,14 +72,10 @@ async function groundBrightness(page: Page, query: string): Promise<number[]> {
 }
 
 /**
- * Loads the probe with `query` appended and returns its brightness, 0 to
- * 255, in rows 8 pixels apart: each row a list of samples 8 pixels apart.
+ * The canvas's brightness, 0 to 255, in rows 8 pixels apart: each row a
+ * list of samples 8 pixels apart.
  */
-async function probeRows(page: Page, query: string): Promise<number[][]> {
-  await page.goto(`${PROBE}${query}`);
-  await page.locator('canvas').first().waitFor();
-  await waitForShader(page);
-
+async function sampleRows(page: Page): Promise<number[][]> {
   const { width, height, rgb } = await readCanvasPixels(page);
   const rows: number[][] = [];
 
@@ -95,6 +91,15 @@ async function probeRows(page: Page, query: string): Promise<number[][]> {
   }
 
   return rows;
+}
+
+/** Loads the probe with `query` appended and returns its rows, as sampleRows reads them. */
+async function probeRows(page: Page, query: string): Promise<number[][]> {
+  await page.goto(`${PROBE}${query}`);
+  await page.locator('canvas').first().waitFor();
+  await waitForShader(page);
+
+  return sampleRows(page);
 }
 
 /**
@@ -226,4 +231,97 @@ test('Swells — the mirage changes only the far surface', async ({ page }) => {
     Math.abs(bandShift(still, shimmering, 0.85, 0.95)),
     'near ground, still against shimmering',
   ).toBeLessThan(1);
+});
+
+/**
+ * Loads the probe with the camera swaying toward the pointer under the
+ * reduced-motion `policy`, moves the pointer to `pointerX` across the
+ * canvas's middle row, a share of its width, and returns the probe's rows
+ * as sampleRows reads them. The glide is off, so only the sway can move the
+ * picture, and `pointer=1` holds the capture until the pointer has moved
+ * and the cursor's smoothing has settled.
+ */
+async function rowsUnderPointer(
+  page: Page,
+  policy: 'off' | 'slow',
+  pointerX: number,
+): Promise<number[][]> {
+  await page.goto(
+    `${PROBE}&sunAngle=180&speed=0&parallax=1&parallaxCenter=cursor&pointer=1&reducedMotion=${policy}`,
+  );
+  const canvas = page.locator('canvas').first();
+
+  await canvas.waitFor();
+  await page.waitForFunction(
+    () =>
+      (window as unknown as { __shadersTestAwaitingPointer?: boolean })
+        .__shadersTestAwaitingPointer === true,
+    undefined,
+    { timeout: 60_000 },
+  );
+
+  const box = await canvas.boundingBox();
+
+  if (box === null) throw new Error('canvas has no bounding box');
+  await page.mouse.move(box.x + box.width * pointerX, box.y + box.height * 0.5);
+  await waitForShader(page);
+
+  return sampleRows(page);
+}
+
+/**
+ * The mean of the per-sample brightness differences between two captures,
+ * over the band from `top` to `bottom`, each a share of the height. Unlike
+ * bandShift, it catches a pattern that slid sideways without changing its
+ * mean.
+ */
+function bandChange(before: number[][], after: number[][], top: number, bottom: number): number {
+  const from = bandBrightness(before, top, bottom);
+  const to = bandBrightness(after, top, bottom);
+
+  return mean(from.map((value, index) => Math.abs(value - (to[index] ?? value))));
+}
+
+/** The row index of the horizon: the first row below the site header that reads as lit ground. */
+function horizonRow(rows: number[][]): number {
+  const skyTop = Math.floor(rows.length * SKY_TOP);
+
+  return skyTop + rows.slice(skyTop).findIndex((row) => mean(row) > 20);
+}
+
+// Parallax: a pointer right of the middle moves the camera right, and the
+// camera turns a little to keep facing a point on the ground ahead. Ground
+// nearer than that point slides one way and ground beyond it the other, so
+// both the near ground and the far ground just under the horizon change.
+// The camera never pitches or rolls and keeps its height, so the horizon
+// stays at the same row. Under reduced motion the sway holds at 0, so the
+// same pointer changes nothing.
+test('Swells — the pointer orbits the camera at a level horizon, and holds under reduced motion', async ({
+  page,
+}) => {
+  const middle = await rowsUnderPointer(page, 'off', 0.5);
+  const right = await rowsUnderPointer(page, 'off', 0.85);
+  const horizon = horizonRow(middle);
+  const farTop = (horizon + 2) / middle.length;
+  const farBottom = (horizon + 8) / middle.length;
+
+  expect(bandChange(middle, right, 0.85, 0.95), 'near ground change').toBeGreaterThan(10);
+  expect(bandChange(middle, right, farTop, farBottom), 'far ground change').toBeGreaterThan(15);
+  expect(
+    Math.abs(horizonRow(right) - horizon),
+    'horizon move, in 8-pixel rows',
+  ).toBeLessThanOrEqual(1);
+
+  const slowMiddle = await rowsUnderPointer(page, 'slow', 0.5);
+  const slowRight = await rowsUnderPointer(page, 'slow', 0.85);
+
+  expect(
+    bandChange(slowMiddle, slowRight, 0.85, 0.95),
+    'near ground under reduced motion',
+  ).toBeLessThan(1);
+  expect(
+    bandChange(slowMiddle, slowRight, farTop, farBottom),
+    'far ground under reduced motion',
+  ).toBeLessThan(1);
+  expect(horizonRow(slowRight), 'horizon row under reduced motion').toBe(horizonRow(slowMiddle));
 });
