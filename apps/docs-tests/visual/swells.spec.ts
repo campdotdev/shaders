@@ -234,39 +234,26 @@ test('Swells — the mirage changes only the far surface', async ({ page }) => {
 });
 
 /**
- * Loads the probe with the camera swaying toward the pointer under the
- * reduced-motion `policy`, moves the pointer to `pointerX` across the
- * canvas's middle row, a share of its width, and returns the probe's rows
- * as sampleRows reads them. The glide is off, so only the sway can move the
- * picture, and `pointer=1` holds the capture until the pointer has moved
- * and the cursor's smoothing has settled.
+ * Loads the probe with the camera swaying toward a fixed point at `centerX`
+ * across the canvas's middle row, a share of its width, under the
+ * reduced-motion `policy`, and returns its rows as sampleRows reads them.
+ * The glide is off, so only the sway can move the picture.
+ *
+ * A fixed point rather than the pointer, because the sway's math is the same
+ * for either. The probe's `pointer=1` mode keeps the scene drawing until the
+ * pointer settles, and on CI's software GL every Swells frame takes seconds
+ * and stalls each Playwright step behind it, so pointer loads ran past the
+ * test timeout.
  */
-async function rowsUnderPointer(
+async function rowsSwayingToward(
   page: Page,
   policy: 'off' | 'slow',
-  pointerX: number,
+  centerX: number,
 ): Promise<number[][]> {
-  await page.goto(
-    `${PROBE}&sunAngle=180&speed=0&parallax=1&parallaxCenter=cursor&pointer=1&reducedMotion=${policy}`,
+  return probeRows(
+    page,
+    `&sunAngle=180&speed=0&parallax=1&parallaxCenter=${centerX},0.5&reducedMotion=${policy}`,
   );
-  const canvas = page.locator('canvas').first();
-
-  await canvas.waitFor();
-  await page.waitForFunction(
-    () =>
-      (window as unknown as { __shadersTestAwaitingPointer?: boolean })
-        .__shadersTestAwaitingPointer === true,
-    undefined,
-    { timeout: 60_000 },
-  );
-
-  const box = await canvas.boundingBox();
-
-  if (box === null) throw new Error('canvas has no bounding box');
-  await page.mouse.move(box.x + box.width * pointerX, box.y + box.height * 0.5);
-  await waitForShader(page);
-
-  return sampleRows(page);
 }
 
 /**
@@ -289,18 +276,17 @@ function horizonRow(rows: number[][]): number {
   return skyTop + rows.slice(skyTop).findIndex((row) => mean(row) > 20);
 }
 
-// Parallax: a pointer right of the middle moves the camera right, and the
+// Parallax: a center right of the middle moves the camera right, and the
 // camera turns a little to keep facing a point on the ground ahead. Ground
 // nearer than that point slides one way and ground beyond it the other, so
 // both the near ground and the far ground just under the horizon change.
 // The camera never pitches or rolls and keeps its height, so the horizon
-// stays at the same row. Under reduced motion the sway holds at 0, so the
-// same pointer changes nothing.
-test('Swells — the pointer orbits the camera at a level horizon, and holds under reduced motion', async ({
+// stays at the same row.
+test('Swells — a sway toward parallaxCenter orbits the camera at a level horizon', async ({
   page,
 }) => {
-  const middle = await rowsUnderPointer(page, 'off', 0.5);
-  const right = await rowsUnderPointer(page, 'off', 0.85);
+  const middle = await rowsSwayingToward(page, 'off', 0.5);
+  const right = await rowsSwayingToward(page, 'off', 0.85);
   const horizon = horizonRow(middle);
   const farTop = (horizon + 2) / middle.length;
   const farBottom = (horizon + 8) / middle.length;
@@ -311,17 +297,21 @@ test('Swells — the pointer orbits the camera at a level horizon, and holds und
     Math.abs(horizonRow(right) - horizon),
     'horizon move, in 8-pixel rows',
   ).toBeLessThanOrEqual(1);
+});
 
-  const slowMiddle = await rowsUnderPointer(page, 'slow', 0.5);
-  const slowRight = await rowsUnderPointer(page, 'slow', 0.85);
+// Under reduced motion the sway holds at 0, so the same move of the center
+// changes nothing.
+test('Swells — reduced motion holds the sway', async ({ page }) => {
+  const middle = await rowsSwayingToward(page, 'slow', 0.5);
+  const right = await rowsSwayingToward(page, 'slow', 0.85);
+  const horizon = horizonRow(middle);
+  const farTop = (horizon + 2) / middle.length;
+  const farBottom = (horizon + 8) / middle.length;
 
+  expect(bandChange(middle, right, 0.85, 0.95), 'near ground under reduced motion').toBeLessThan(1);
   expect(
-    bandChange(slowMiddle, slowRight, 0.85, 0.95),
-    'near ground under reduced motion',
-  ).toBeLessThan(1);
-  expect(
-    bandChange(slowMiddle, slowRight, farTop, farBottom),
+    bandChange(middle, right, farTop, farBottom),
     'far ground under reduced motion',
   ).toBeLessThan(1);
-  expect(horizonRow(slowRight), 'horizon row under reduced motion').toBe(horizonRow(slowMiddle));
+  expect(horizonRow(right), 'horizon row under reduced motion').toBe(horizon);
 });

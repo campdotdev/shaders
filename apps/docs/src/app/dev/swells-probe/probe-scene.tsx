@@ -18,8 +18,8 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 // ?hazeColor=white makes it white, so blending and fading pull apart.
 // ?background=white turns the canvas white, so a transparent sky reads
 // white and an opaque black one can't pass for it. ?speed, ?swellSpeed, and
-// ?parallax set the motion dials, and ?parallaxCenter=cursor sways the camera
-// toward the pointer.
+// ?parallax set the motion dials. ?parallaxCenter=cursor sways the camera
+// toward the pointer, and ?parallaxCenter=0.85,0.5 toward a fixed point.
 
 /** The haze's color: black, or white under ?hazeColor=white. */
 function hazeColor(): string {
@@ -35,11 +35,19 @@ function background(): string {
   return raw === 'white' ? '#fff' : '#000';
 }
 
-/** The point the camera sways toward: the pointer under ?parallaxCenter=cursor. */
-function parallaxCenter(): 'cursor' | undefined {
+/**
+ * The point the camera sways toward: the pointer under ?parallaxCenter=cursor,
+ * or a fixed point under ?parallaxCenter=x,y, 0..1 from the top-left.
+ */
+function parallaxCenter(): 'cursor' | [number, number] | undefined {
   const raw = new URLSearchParams(window.location.search).get('parallaxCenter');
 
-  return raw === 'cursor' ? 'cursor' : undefined;
+  if (raw === null) return undefined;
+  if (raw === 'cursor') return 'cursor';
+
+  const [x, y] = raw.split(',').map(Number);
+
+  return x === undefined || y === undefined ? undefined : [x, y];
 }
 
 /** A number from the page's query string, or undefined when it is absent. */
