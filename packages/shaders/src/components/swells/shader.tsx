@@ -6,11 +6,13 @@
 // the surface it hits from a sun and add a sheen, blend it into the haze and
 // fade it out with distance, shimmer it near the horizon, and leave the
 // pixel transparent where the ray misses, so the page, or a Source mounted
-// beneath, shows through as the sky. The wrapper (./swells.tsx) supplies
-// the props.
+// beneath, shows through as the sky. The camera glides over the surface and
+// can sway sideways toward a point, and the swells rise and fall in place.
+// The wrapper (./swells.tsx) supplies the props.
 import { useEffect, useRef } from 'react';
 
 import {
+  atan,
   clamp,
   cos,
   dot,
@@ -25,6 +27,7 @@ import {
   type ShaderNodeObject,
   sin,
   smoothstep,
+  sqrt,
   step,
   uv,
   vec2,
@@ -36,6 +39,7 @@ import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/web
 import {
   cameraRay,
   type ColorSpace,
+  getReducedMotionTimeScale,
   type HueInterpolation,
   marchHeightMap,
   mixColor,
@@ -44,7 +48,9 @@ import {
 import {
   type AnimatableProp,
   isSignal,
+  type PositionProp,
 } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatablePoint } from '../../react/hooks/use-animatable-point/use-animatable-point.js';
 import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
@@ -216,10 +222,9 @@ const HAZE_FADE_LAG = 2;
 const SWELL_SPAN = 10;
 
 // The range of `scale` the shader works with. It divides SWELL_SPAN, so 0
-// would blow up, and past MAX_SCALE a swell shorter than a quarter unit
-// would push the noise coordinates toward the hash's range
-// (HASH_DOMAIN_OFFSET below). MIN_SCALE makes a swell 100 units long, past
-// the horizon.
+// would blow up. Past MAX_SCALE a swell shorter than a quarter unit packs
+// the noise so fine that the far field turns to grain. MIN_SCALE makes a
+// swell 100 units long, past the horizon.
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 40;
 
@@ -227,19 +232,54 @@ const MAX_SCALE = 40;
 // divides the ground's coordinates, so 0 would blow up.
 const MIN_RIPPLE_SIZE = 0.05;
 
-// Shifts noise coordinates positive before hashing. stableHash converts its
-// input to u32, and u32 of a negative float is backend-defined. The camera
-// sits at the origin and sees maxDistance units at most. At the tuning
-// slider's 120 units over the shortest swell, a quarter unit at MAX_SCALE,
-// that is 480 swell lengths, and the finest noise read, the roll's second
-// octave, reaches about 500 cells, so no cell comes near -1024.
+// Slides every point before the noise cuts it into cells. Any whole number
+// gives an equally random surface; this one picks the surface the defaults
+// are tuned on.
 const HASH_DOMAIN_OFFSET = 1024;
 
 // Each cell's corner hashes x + y * ROW_STRIDE, one whole number per
-// corner. Every cell coordinate stays under ROW_STRIDE, and the sum stays
-// under 2^24, where a float still holds every whole number exactly on both
-// backends (the seeded-randomness gotcha in docs/agents/tsl.md).
+// corner. The noise wraps each cell coordinate into 0..ROW_STRIDE - 1
+// before it hashes, so the sum stays under 2^24, where a float still holds
+// every whole number exactly on both backends (the seeded-randomness gotcha
+// in docs/agents/tsl.md), and never goes negative, which stableHash's u32
+// conversion can't take. The wrap matters once the camera glides, because
+// the glide carries the noise coordinates without bound. The noise repeats
+// every ROW_STRIDE cells, thousands of swells, too far apart to notice.
 const ROW_STRIDE = 4096;
+
+// The swells' rise and fall moves their strength through a cycle of this
+// many noise slices, one per second at `swellSpeed={1}`, then starts over.
+// "Drift the swells' strength" below says how. 64 seconds at
+// that speed, and longer when slower, is too long a cycle to notice
+// repeating.
+const STRENGTH_SLICES = 64;
+
+// How far apart neighboring slices sit in the strength noise, in its cells.
+// Anything over a few cells makes each slice an unrelated pattern; the
+// fractions keep slices off the noise's grid lines.
+const SLICE_STEP = [37.1, 19.7] as const;
+
+// Slides the strength noise away from the roll, in the strength noise's
+// cells, so a swell's strength doesn't track the roll beneath it. Any offset
+// of a few cells works; this one picks the pattern the defaults are tuned on.
+const STRENGTH_OFFSET = [41.7, 23.9] as const;
+
+// The reduced-motion time scale counts as full motion only at 1. The sway
+// toward parallaxCenter holds still at any lower scale, and this sits just
+// under 1 so step() reads 1 exactly as on.
+const FULL_MOTION = 0.999;
+
+// How far ahead of the camera, in terrain units, the point it keeps facing
+// sits while it sways. Ground at this distance holds still, nearer ground
+// slides against the sway, and farther ground slides with it. At the
+// default camera the middle of the canvas looks at ground about 7 units
+// off. Lower turns the camera harder for the same sway; higher turns it
+// less, until the sway is a plain slide.
+const PARALLAX_PIVOT = 8;
+
+// The closest the pivot may sit, in terrain units. The turn is the angle to
+// the pivot, so a pivot at 0 would swing the camera a quarter turn.
+const MIN_PARALLAX_PIVOT = 0.5;
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 
@@ -275,11 +315,22 @@ export interface SwellsTuning {
   mirageClearing?: number;
   /** How many times further out the surface fades than it turns to the haze color. */
   hazeFadeLag?: number;
+  /** How far ahead the point the camera keeps facing while it sways sits, in terrain units. */
+  parallaxPivot?: number;
 }
 
 // ---------------------------------------------
 // Noise for the surface's shape
 // ---------------------------------------------
+
+/**
+ * Wraps a whole number into 0..count - 1, negative numbers included, as
+ * value - floor(value / count) * count. It is spelled out rather than
+ * mod(), because WGSL's % keeps a negative number's sign and GLSL's mod()
+ * doesn't, so the two backends would land on different numbers.
+ */
+const wrapInto = (value: TSLValue, count: number): TSLValue =>
+  value.sub(floor(value.div(count)).mul(count));
 
 /**
  * Value noise: a random height at each whole-number grid point, blended
@@ -300,9 +351,14 @@ const valueNoise = (point: TSLValue): TSLValue => {
   // continuous across edges and the light shows no grid.
   const weight = local.mul(local).mul(local.mul(-2).add(3));
 
-  // The random height at a corner, from one whole number per corner.
+  // The random height at a corner, from one whole number per corner. Each
+  // coordinate wraps into 0..ROW_STRIDE - 1 first (ROW_STRIDE above).
   const corner = (offsetX: number, offsetY: number) =>
-    stableHash(cell.x.add(offsetX).add(cell.y.add(offsetY).mul(ROW_STRIDE)));
+    stableHash(
+      wrapInto(cell.x.add(offsetX), ROW_STRIDE).add(
+        wrapInto(cell.y.add(offsetY), ROW_STRIDE).mul(ROW_STRIDE),
+      ),
+    );
 
   const bottom = mix(corner(0, 0), corner(1, 0), weight.x);
   const top = mix(corner(0, 1), corner(1, 1), weight.x);
@@ -362,6 +418,7 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
     mirageSway = MIRAGE_SWAY,
     mirageClearing = MIRAGE_CLEARING,
     hazeFadeLag = HAZE_FADE_LAG,
+    parallaxPivot = PARALLAX_PIVOT,
   } = tuning ?? {};
 
   return {
@@ -380,13 +437,13 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
     mirageSwayUniform: useAnimatableUniform<number>(mirageSway),
     mirageClearingUniform: useAnimatableUniform<number>(mirageClearing),
     hazeFadeLagUniform: useAnimatableUniform<number>(hazeFadeLag),
+    parallaxPivotUniform: useAnimatableUniform<number>(parallaxPivot),
   };
 }
 
 /**
  * The uniforms for the light and air over the surface: the sheen, the
- * haze, and the mirage, with the mirage's clock. It also casts Swells'
- * render-on-demand vote, because only the mirage moves so far.
+ * haze, and the mirage, with the mirage's clock.
  */
 function useAirUniforms({
   sheen,
@@ -395,11 +452,6 @@ function useAirUniforms({
   hazeColor,
   mirage,
 }: Pick<SwellsShaderProps, 'sheen' | 'sheenColor' | 'haze' | 'hazeColor' | 'mirage'>) {
-  // The scene can park on its first frame when the mirage is a plain 0. A
-  // signal is live whatever it reads now, because it changes between
-  // renders. The glide in a later phase adds to this vote.
-  useStaticSceneHint(!isSignal(mirage) && mirage <= 0);
-
   return {
     sheenUniform: useAnimatableUniform<number>(sheen),
     sheenColorUniform: useColorUniform(sheenColor),
@@ -412,6 +464,56 @@ function useAirUniforms({
     // use.
     shimmerClock: useAnimatableSpeed(1),
   };
+}
+
+/**
+ * The uniforms for the motion: the camera's travel, the swells' clock, and
+ * the sway toward parallaxCenter.
+ */
+function useMotionUniforms({
+  speed,
+  swellSpeed,
+  parallax,
+  parallaxCenter,
+}: Pick<SwellsShaderProps, 'speed' | 'swellSpeed' | 'parallax' | 'parallaxCenter'>) {
+  return {
+    // How far the camera has glided, in terrain units: speed times each
+    // frame's seconds, summed on the CPU and scaled by the reduced-motion
+    // time scale. Summing keeps a speed change from making the surface
+    // jump, which speed times elapsed time would. The scene rewinds it to 0
+    // at its first frame with content.
+    travelUniform: useAnimatableSpeed(speed),
+    // How far the swells' strength has drifted, in noise slices, summed the
+    // same way.
+    swellClock: useAnimatableSpeed(swellSpeed),
+    parallaxUniform: useAnimatableUniform<number>(parallax),
+    // The center as uv, 0..1 with y up: screenOrigin flips the prop's
+    // top-left frame, so up on the canvas is up in the shader. "cursor"
+    // resolves to the scene's shared pointer.
+    parallaxCenterUniform: useAnimatablePoint(parallaxCenter, { screenOrigin: true }),
+  };
+}
+
+/**
+ * Swells' render-on-demand vote: true when nothing it draws changes between
+ * frames, so the scene may stop drawing. Three dials move the picture on
+ * their own: the glide, the swells' rise and fall, and the mirage's
+ * shimmer. A signal is live whatever it reads now, because it can change
+ * between renders.
+ *
+ * The sway doesn't count, even toward the cursor. A cursor moves only when
+ * the pointer does, and useCursor wakes the scene on every move and keeps
+ * it drawing until its smoothing settles, so a still pointer can let the
+ * scene park, as LedWall's swell center does (SHA-139).
+ */
+function isSwellsStill({
+  speed,
+  swellSpeed,
+  mirage,
+}: Pick<SwellsShaderProps, 'speed' | 'swellSpeed' | 'mirage'>): boolean {
+  if (isSignal(speed) || isSignal(swellSpeed) || isSignal(mirage)) return false;
+
+  return speed === 0 && swellSpeed === 0 && mirage <= 0;
 }
 
 export interface SwellsShaderProps {
@@ -453,8 +555,8 @@ export interface SwellsShaderProps {
   ripples: AnimatableProp<number>;
   /**
    * Where the sun sits around the scene, in compass degrees clockwise from
-   * the way the camera faces. Accepts a static value or an animation
-   * signal.
+   * the way the camera faces at rest. The sun stays put while a parallax
+   * sway turns the camera. Accepts a static value or an animation signal.
    */
   sunAngle: AnimatableProp<number>;
   /**
@@ -494,6 +596,28 @@ export interface SwellsShaderProps {
   /** The hue arc for cylindrical color spaces (oklch/lch/hsl/hsv); inert otherwise. */
   hueInterpolation: HueInterpolation;
   /**
+   * How fast the camera glides forward, in terrain units per second, where
+   * negative glides backward. Accepts a static value or an animation signal.
+   */
+  speed: AnimatableProp<number>;
+  /**
+   * How fast the swells rise and fall in place, in noise slices per second,
+   * where 0 holds them still. Accepts a static value or an animation signal.
+   */
+  swellSpeed: AnimatableProp<number>;
+  /**
+   * How far the camera sways sideways toward `parallaxCenter`, in terrain
+   * units, at the most. Held at 0 under reduced motion. Accepts a static
+   * value or an animation signal.
+   */
+  parallax: AnimatableProp<number>;
+  /**
+   * The point the camera sways toward, 0..1 across the canvas with `[0, 0]`
+   * at the top-left corner, or `"cursor"`. Only its x moves the camera.
+   * Accepts a static value or an animation signal.
+   */
+  parallaxCenter: PositionProp;
+  /**
    * TEMPORARY (build-phase tuning only): dev overrides for the feel
    * constants.
    */
@@ -519,6 +643,10 @@ export function SwellsShader({
   mirage,
   colorSpace,
   hueInterpolation,
+  speed,
+  swellSpeed,
+  parallax,
+  parallaxCenter,
   tuning,
 }: SwellsShaderProps) {
   const shaderContext = useShaderContext();
@@ -544,6 +672,14 @@ export function SwellsShader({
     mirageUniform,
     shimmerClock,
   } = useAirUniforms({ sheen, sheenColor, haze, hazeColor, mirage });
+  const { travelUniform, swellClock, parallaxUniform, parallaxCenterUniform } = useMotionUniforms({
+    speed,
+    swellSpeed,
+    parallax,
+    parallaxCenter,
+  });
+
+  useStaticSceneHint(isSwellsStill({ speed, swellSpeed, mirage }));
 
   // TEMPORARY: the tuning rig's uniforms (useTuningUniforms above).
   const {
@@ -562,6 +698,7 @@ export function SwellsShader({
     mirageSwayUniform,
     mirageClearingUniform,
     hazeFadeLagUniform,
+    parallaxPivotUniform,
   } = useTuningUniforms(tuning);
 
   // Canvas width over height, so the view widens on a wide canvas instead
@@ -625,11 +762,62 @@ export function SwellsShader({
       // ---------------------------------------------
       // uv() is the pixel's place on the full-canvas quad, 0..1 both ways,
       // which cameraRay turns into a ray through that point of the view.
+      //
+      // The parallax sway first. Parallax is how near things slide
+      // further than far ones when the eye moves: shift your head and a
+      // fence post next to you jumps across the hills behind it. So the
+      // camera moves sideways toward parallaxCenter. A turn alone would
+      // swing the whole view by the same angle, near and far alike, and
+      // show no depth.
+      //
+      // The camera orbits rather than slides: as it moves, it turns to keep
+      // facing a point PARALLAX_PIVOT units ahead of where it rests. Ground
+      // at the pivot holds still, nearer ground slides against the sway,
+      // and farther ground slides with it. The glide already carries the
+      // diagonal crests across the view, so a sway can cancel the near
+      // crests' motion. The far ground then moves the other way, so some of
+      // the view always moves.
+      //
+      // From the camera at (swayRight, 0) the pivot at (0, pivot) lies
+      // (-swayRight, pivot) away, and atan() of the one over the other is
+      // the angle right of straight ahead, so a sway right turns the camera
+      // left. cameraRay takes it in degrees, and max() holds the pivot at
+      // MIN_PARALLAX_PIVOT or further. The pivot is always
+      // ahead, so the one-argument atan() covers every angle, and it avoids
+      // the atan2 gotcha in docs/agents/tsl.md: with no sway the sway's
+      // negation is -0, and atan2() over WebGL read that as half a turn.
+      //
+      // Only sideways. The camera keeps its altitude, because a camera
+      // moved down sinks into the swells: once it is level with the crests
+      // the ray starts inside or against a slope, and every ray skims crest
+      // after crest until the march runs out of steps.
+      //
+      // The center's x, minus the canvas center, times 2, runs -1 at the
+      // left edge to 1 at the right edge, and clamp() holds a signal that
+      // strays off the canvas to that range. Times `parallax` it is the
+      // sway in terrain units, so a center at an edge moves the camera the
+      // full amount and the canvas center not at all. heightAt below slides
+      // the surface under the camera by it, the way the glide does.
+      //
+      // Under reduced motion the sway holds at 0. The engine's time scale
+      // is 1 at full motion, 0.3 slowed, and 0 paused, and step() is 1 only
+      // at full motion (FULL_MOTION above), so it switches the sway off at
+      // any lower scale rather than slowing it: a slower sway would still
+      // move the view under a moving pointer. The parallax center uniform
+      // goes in as an argument to add(), never as the receiver of a chained
+      // call (the vec-uniform gotcha in docs/agents/tsl.md).
+      const fullMotion = step(FULL_MOTION, getReducedMotionTimeScale());
+      const towardCenter = clamp(vec2(-0.5, -0.5).add(parallaxCenterUniform).mul(2), -1, 1);
+      const swayRight = towardCenter.x.mul(parallaxUniform).mul(fullMotion).toVar();
+      const orbitTurn = atan(swayRight.negate().div(max(parallaxPivotUniform, MIN_PARALLAX_PIVOT)))
+        .div(DEGREES_TO_RADIANS)
+        .toVar();
       const camera = {
         aspect: aspectNode,
         altitude: altitudeUniform,
         tilt: tiltUniform,
         fieldOfView: fieldOfViewUniform,
+        turn: { right: orbitTurn },
       };
       const straightRay = cameraRay(uv(), camera);
 
@@ -771,20 +959,95 @@ export function SwellsShader({
       const acrossWind = (point: TSLValue) => point.x.mul(windZ).sub(point.y.mul(windX));
 
       // ---------------------------------------------
+      // Drift the swells' strength
+      // ---------------------------------------------
+      // Each swell's strength, how tall it stands against its neighbors,
+      // comes from a slow noise field (heightAt below). To make the swells
+      // rise and fall in place, the field changes over time while the
+      // crests stay where they are. Noise in 2D has no time axis, so the
+      // drift fakes one: it reads two unrelated slices of the noise, the
+      // current one and the next, and blends from one to the other as the
+      // clock runs. swellClock counts slices, so its whole part picks the
+      // slices and its fraction is how far the blend has gone.
+      //
+      // Both slice numbers wrap into 0..STRENGTH_SLICES - 1, the next one
+      // too, so the last slice of the cycle blends into the first and the
+      // cycle closes with no jump. Each slice number then slides the noise
+      // by SLICE_STEP cells that many times, which gives each its own
+      // pattern. At swellSpeed 0 the clock stays at 0, so the strength reads
+      // slice 0 alone and the swells hold still.
+      //
+      // smoothstep() eases each blend in and out, so every swell slows to a
+      // stop at the end of a slice, then starts toward its next height:
+      // a slow breath rather than a steady crawl.
+      //
+      // A blend of two unrelated noises is flatter than either: halfway,
+      // the highs and lows partly cancel, and the spread around the middle
+      // falls to sqrt(0.5 ^ 2 + 0.5 ^ 2) = 0.71 of a single slice's. Left
+      // alone, every crest would even out once per slice. Dividing the
+      // distance from the middle by sqrt(w ^ 2 + (1 - w) ^ 2), where w is
+      // the blend, puts the spread back, and it is 1 at either end of a
+      // blend, where one slice shows alone.
+      //
+      // All of this depends on the clock alone, so .toVar() pins it here,
+      // before the march's loop (the first-use gotcha).
+      const sliceNow = wrapInto(floor(swellClock), STRENGTH_SLICES).toVar();
+      const sliceNext = wrapInto(sliceNow.add(1), STRENGTH_SLICES).toVar();
+      const sliceBlend = smoothstep(0, 1, fract(swellClock)).toVar();
+      const spreadRestore = float(1)
+        .div(sqrt(sliceBlend.mul(sliceBlend).add(sliceBlend.oneMinus().mul(sliceBlend.oneMinus()))))
+        .toVar();
+      const sliceOffset = (slice: TSLValue) =>
+        vec2(...SLICE_STEP)
+          .mul(slice)
+          .add(vec2(...STRENGTH_OFFSET))
+          .toVar();
+      const offsetNow = sliceOffset(sliceNow);
+      const offsetNext = sliceOffset(sliceNext);
+
+      // ---------------------------------------------
       // The surface's height: swells, roll, and ripples
       // ---------------------------------------------
       // The march calls this with a ground point (x, z) on every step and
       // every bisection step, then once more where it stopped, and the
-      // normal calls it four more times around the hit.
+      // normal calls it four more times around the hit. The point is where
+      // the ray is relative to the camera, which stands over (0, 0).
       const heightAt = (groundPoint: TSLValue) => {
+        // The glide. The camera stays at the origin, and the surface slides
+        // toward it instead: every point reads the surface `travel` units
+        // further ahead (+z, the way the camera faces). That looks the same
+        // as the camera moving forward, and it keeps the march's numbers,
+        // its distances and its ray, small. The parallax sway (+x, to the
+        // camera's right) slides the surface the same way. A float holds the
+        // travel to within about a thousandth of a unit until it reaches
+        // about 8,000 units, which takes over 7 hours at the default speed,
+        // so the ripples, the finest detail, stay sharp that long.
+        const worldPoint = groundPoint.add(vec2(swayRight, travelUniform));
+
         // The point in swell lengths, so one unit is one swell, crest to crest.
-        const swellPoint = groundPoint.div(swellLength);
+        const swellPoint = worldPoint.div(swellLength);
 
         // The roll: broad noise, 0..1, that lifts and lowers the ground and
         // bends the crests. Each swell's strength is a second noise, slid by
-        // an arbitrary offset so it doesn't track the roll.
+        // an arbitrary offset so it doesn't track the roll, and drifting
+        // between two slices as the swells rise and fall ("Drift the swells'
+        // strength" above). The blend is pulled back out
+        // from the middle by spreadRestore and clamped to 0..1, which the
+        // restored spread can pass at a rare extreme.
         const roll = layeredNoise(swellPoint.mul(ROLL_FREQUENCY));
-        const strength = valueNoise(swellPoint.mul(STRENGTH_FREQUENCY).add(vec2(41.7, 23.9)));
+        const strengthPoint = swellPoint.mul(STRENGTH_FREQUENCY);
+        const strength = clamp(
+          mix(
+            valueNoise(strengthPoint.add(offsetNow)),
+            valueNoise(strengthPoint.add(offsetNext)),
+            sliceBlend,
+          )
+            .sub(0.5)
+            .mul(spreadRestore)
+            .add(0.5),
+          0,
+          1,
+        );
 
         // Where the point falls within its swell, 0..1 from one trough to
         // the next, measured downwind. fract() keeps the fractional part, so
@@ -845,7 +1108,7 @@ export function SwellsShader({
         // by the roll so the crests curve. sin() of the phase times 2 pi
         // runs one full wave per ripple length; * 0.5 + 0.5 moves it to
         // 0..1, so a ripple only ever adds height.
-        const ripplePoint = groundPoint.div(rippleLength);
+        const ripplePoint = worldPoint.div(rippleLength);
         const ripplePhase = alongWind(ripplePoint)
           .add(
             sin(acrossWind(ripplePoint).mul((Math.PI * 2) / RIPPLE_WOBBLE_LENGTH)).mul(
@@ -857,10 +1120,12 @@ export function SwellsShader({
           .mul(0.5)
           .add(0.5);
 
-        // Fade the ripples out with distance from the camera, which stands
-        // over (0, 0), measured in ripple lengths. smoothstep() runs 0..1
-        // from the fade's start to its end, and oneMinus() flips it, so the
-        // ripples hold full strength up close and reach 0 at the end.
+        // Fade the ripples out with distance from the camera, measured in
+        // ripple lengths. The camera stands over (0, 0) of the ground point,
+        // not of the glided one, so the distance comes from groundPoint.
+        // smoothstep() runs 0..1 from the fade's start to its end, and
+        // oneMinus() flips it, so the ripples hold full strength up close
+        // and reach 0 at the end.
         const fade = smoothstep(
           RIPPLE_FADE_START,
           RIPPLE_FADE_END,
@@ -1119,6 +1384,11 @@ export function SwellsShader({
     mirageClearingUniform,
     hazeColorUniform,
     hazeFadeLagUniform,
+    parallaxPivotUniform,
+    travelUniform,
+    swellClock,
+    parallaxUniform,
+    parallaxCenterUniform,
     aspectNode,
   ]);
 

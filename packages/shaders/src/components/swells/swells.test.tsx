@@ -4,10 +4,13 @@ import { render } from '@testing-library/react';
 import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
-import type { ColorSpace, HueInterpolation } from '../../engine.js';
+import { type ColorSpace, CursorInput, type HueInterpolation } from '../../engine.js';
 import { Swells, type SwellsProps, type SwellsTuning } from '../../index.js';
 import { ShaderContext, type ShaderContextValue } from '../../react/context/shader-context.js';
-import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type {
+  AnimatableProp,
+  PositionProp,
+} from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { createSignal } from '../../react/internal/create-signal.js';
 
 // What Swells asks of the scene, never what the surface looks like. The look is
@@ -25,16 +28,21 @@ afterEach(() => {
 
 function makeScene() {
   const scene = new Scene();
+  const canvas = document.createElement('canvas');
   const scheduler = {
     idle: true,
     add: vi.fn(),
     remove: vi.fn(),
     requestRender: vi.fn(() => true),
-    setIdle: vi.fn(() => () => undefined),
+    setIdle: vi.fn<(isStatic: boolean) => () => void>(() => () => undefined),
     onPhaseReset: vi.fn(() => () => undefined),
   };
+  // The scene's one shared pointer, which a "cursor" parallax center reads.
+  let sharedInput: CursorInput | null = null;
   const shaderContext = {
-    renderer: { three: { getPixelRatio: () => 2 } as unknown as WebGPURenderer },
+    renderer: {
+      three: { domElement: canvas, getPixelRatio: () => 2 } as unknown as WebGPURenderer,
+    },
     scene,
     camera: {},
     scheduler,
@@ -46,6 +54,11 @@ function makeScene() {
       on: () => () => undefined,
     },
     timeGpu: () => () => undefined,
+    getCursorInput: () => {
+      sharedInput ??= new CursorInput({ element: canvas });
+
+      return sharedInput;
+    },
   } as unknown as ShaderContextValue;
 
   function Wrapper({ children }: { children: ReactNode }) {
@@ -82,11 +95,12 @@ function makeSignal(initial: number) {
 }
 
 describe('Swells', () => {
-  // The public shape so far: the camera, shape, and sun dials, each a
-  // number or an animation signal, the two surface colors and the space they
-  // blend in, and the temporary tuning rig. pnpm typecheck runs this file too, so a missing export or a
+  // The public shape so far: the camera, shape, sun, air, and motion dials,
+  // each a number or an animation signal, the colors and the space they
+  // blend in, the point the camera sways toward, and the temporary tuning
+  // rig. pnpm typecheck runs this file too, so a missing export or a
   // narrowed prop fails there as well.
-  it('takes animatable camera, shape, and sun dials from the package root', () => {
+  it('takes animatable camera, shape, sun, air, and motion dials from the package root', () => {
     expectTypeOf<SwellsProps>().toEqualTypeOf<{
       altitude?: AnimatableProp<number>;
       tilt?: AnimatableProp<number>;
@@ -106,6 +120,10 @@ describe('Swells', () => {
       mirage?: AnimatableProp<number>;
       colorSpace?: ColorSpace;
       hueInterpolation?: HueInterpolation;
+      speed?: AnimatableProp<number>;
+      swellSpeed?: AnimatableProp<number>;
+      parallax?: AnimatableProp<number>;
+      parallaxCenter?: PositionProp;
       tuning?: SwellsTuning;
     }>();
   });
@@ -334,21 +352,54 @@ describe('Swells', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
-  // Only the mirage moves so far. At 0 a scene of still Sources can park.
-  it('votes idle when the mirage is 0', () => {
+  // The glide, the swells' rise and fall, and the parallax sway ride uniforms too.
+  it('changes its motion dials without rebuilding the material', () => {
+    const scene = makeScene();
+    const parallax = makeSignal(0);
+    const { rerender } = render(<Swells parallax={parallax.signal} speed={0.3} swellSpeed={0} />, {
+      wrapper: scene.Wrapper,
+    });
+    const { material } = scene.onlyMesh();
+
+    scene.scheduler.requestRender.mockClear();
+    parallax.set(1);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
+    rerender(
+      <Swells parallax={parallax.signal} parallaxCenter={[0.2, 0.8]} speed={-1} swellSpeed={0.5} />,
+    );
+    expect(scene.scheduler.requestRender).toHaveBeenCalled();
+
+    expect(scene.onlyMesh().material).toBe(material);
+  });
+
+  // The render-on-demand vote. Three dials move the picture on their own:
+  // the glide, the swells' rise and fall, and the mirage's shimmer. With
+  // all three at 0 nothing changes between frames, so a scene of still
+  // Sources can park.
+  const still = { speed: 0, swellSpeed: 0, mirage: 0 } as const;
+
+  /** The last vote Swells cast: true for static, false for animated. */
+  const lastVote = (scene: ReturnType<typeof makeScene>) =>
+    scene.scheduler.setIdle.mock.lastCall?.[0];
+
+  it('votes static when the glide, the swells, and the mirage are all still', () => {
     const scene = makeScene();
 
-    render(<Swells mirage={0} />, { wrapper: scene.Wrapper });
+    render(<Swells {...still} />, { wrapper: scene.Wrapper });
 
     expect(scene.scheduler.setIdle).toHaveBeenCalledWith(true);
     expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
   });
 
-  // The shimmer moves on its own, so the scene must keep drawing.
-  it('votes animated while the mirage is above 0', () => {
+  it.each([
+    ['gliding forward', { speed: 0.3 }],
+    ['gliding backward', { speed: -0.3 }],
+    ['rising and falling', { swellSpeed: 0.2 }],
+    ['shimmering', { mirage: 0.3 }],
+  ])('votes animated while %s', (_name, moving) => {
     const scene = makeScene();
 
-    render(<Swells mirage={0.3} />, { wrapper: scene.Wrapper });
+    render(<Swells {...still} {...moving} />, { wrapper: scene.Wrapper });
 
     expect(scene.scheduler.setIdle).toHaveBeenCalledWith(false);
     expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(true);
@@ -356,13 +407,45 @@ describe('Swells', () => {
 
   // A signal can leave 0 between renders, so it counts as moving whatever
   // it reads now.
-  it('votes animated for a mirage signal that reads 0', () => {
+  it.each(['speed', 'swellSpeed', 'mirage'] as const)(
+    'votes animated for a %s signal that reads 0',
+    (dial) => {
+      const scene = makeScene();
+
+      render(<Swells {...still} {...{ [dial]: makeSignal(0).signal }} />, {
+        wrapper: scene.Wrapper,
+      });
+
+      expect(scene.scheduler.setIdle).toHaveBeenCalledWith(false);
+      expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(true);
+    },
+  );
+
+  // A cursor only moves when the pointer does, and useCursor wakes the
+  // scene on every move and keeps it drawing until its smoothing settles,
+  // so a still pointer may let the scene park, as LedWall's swell center
+  // does (SHA-139). The sway itself changes nothing over time.
+  it('votes static with a cursor sway while everything else is still', () => {
     const scene = makeScene();
 
-    render(<Swells mirage={makeSignal(0).signal} />, { wrapper: scene.Wrapper });
+    render(<Swells {...still} parallax={1} parallaxCenter="cursor" />, {
+      wrapper: scene.Wrapper,
+    });
 
-    expect(scene.scheduler.setIdle).toHaveBeenCalledWith(false);
-    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(true);
+    expect(lastVote(scene)).toBe(true);
+    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
+  });
+
+  // The vote follows the dials as they change.
+  it('changes its vote when the glide starts and stops', () => {
+    const scene = makeScene();
+    const { rerender } = render(<Swells {...still} />, { wrapper: scene.Wrapper });
+
+    expect(lastVote(scene)).toBe(true);
+    rerender(<Swells {...still} speed={0.3} />);
+    expect(lastVote(scene)).toBe(false);
+    rerender(<Swells {...still} />);
+    expect(lastVote(scene)).toBe(true);
   });
 
   // Mode 1 only: outside a scene there is nowhere to draw, so Swells follows
