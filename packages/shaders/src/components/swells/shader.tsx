@@ -20,6 +20,7 @@ import {
   floor,
   Fn,
   fract,
+  If,
   length,
   max,
   min,
@@ -1067,15 +1068,25 @@ export function SwellsShader({
         // restored spread can pass at a rare extreme.
         const roll = layeredNoise(swellPoint.mul(ROLL_FREQUENCY));
         const strengthPoint = swellPoint.mul(STRENGTH_FREQUENCY);
+
+        // The next slice costs a noise read, four hashes, on every height
+        // read, and at the default swellSpeed of 0 its blend weight is 0, so
+        // the read would go to waste. If() makes it a real GPU branch, a
+        // block the GPU runs only when its condition holds. The condition
+        // reads a uniform, so every pixel takes the same side and none waits
+        // on its neighbors (pixels shaded together run in lockstep, and a
+        // branch they split on costs both sides). Skipped, the next slice
+        // stays 0, and mix() takes none of it. A clock stopped partway
+        // through a blend keeps both reads, because its weight is over 0.
+        const strengthNow = valueNoise(strengthPoint.add(offsetNow)).toVar();
+        const strengthNext = float(0).toVar();
+
+        If(sliceBlend.greaterThan(0), () => {
+          strengthNext.assign(valueNoise(strengthPoint.add(offsetNext)));
+        });
+
         const strength = clamp(
-          mix(
-            valueNoise(strengthPoint.add(offsetNow)),
-            valueNoise(strengthPoint.add(offsetNext)),
-            sliceBlend,
-          )
-            .sub(0.5)
-            .mul(spreadRestore)
-            .add(0.5),
+          mix(strengthNow, strengthNext, sliceBlend).sub(0.5).mul(spreadRestore).add(0.5),
           0,
           1,
         );
