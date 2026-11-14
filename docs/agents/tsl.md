@@ -68,6 +68,10 @@ The second trap survives exact constants. `hash(x).mul(0xffffff).toUint()` cross
 
 To verify a change here, diff `/components/voronoi?visualTest=1` captures across both backends. Expect differences only at single vertex specks, never in cell-shaped regions.
 
+### The atan2 gotcha: a -0 numerator can read as half a turn on WebGL2
+
+`atan2(y, x)` compiles to GLSL's `atan(y, x)` on the WebGL2 fallback, and there a `y` of -0 with a positive `x` came back far from 0. Negating a product that is 0, such as `sway.negate()` when the sway is off, gives exactly -0. Swells' orbit turn did this: with no sway, the camera on headless Chromium swung around and the probe's sunlit-face check flipped. When `x` is always positive, use the one-argument `atan(y.div(x))`, which has no quadrant logic and returns 0 for either zero. Keep `atan2` for angles that need all four quadrants, and keep its `y` away from a negated zero.
+
 ### Type notes
 
 - `colorNode` rejects `ShaderNodeObject<unknown>`. Type it as `Node | ShaderNodeObject<Node>`.
