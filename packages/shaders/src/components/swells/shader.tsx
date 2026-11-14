@@ -284,6 +284,10 @@ const MIN_PARALLAX_PIVOT = 0.5;
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
 
+// The middle of the canvas, as a position prop: the sway's center when a
+// fixed `parallax` of 0 leaves it nothing to do.
+const CANVAS_CENTER: readonly [number, number] = [0.5, 0.5];
+
 /** TEMPORARY (build-phase tuning only): dev overrides for the feel constants. */
 export interface SwellsTuning {
   /** The share of the ray's height above the ground each march step moves, 0 to 1. */
@@ -490,8 +494,14 @@ function useMotionUniforms({
     parallaxUniform: useAnimatableUniform<number>(parallax),
     // The center as uv, 0..1 with y up: screenOrigin flips the prop's
     // top-left frame, so up on the canvas is up in the shader. "cursor"
-    // resolves to the scene's shared pointer.
-    parallaxCenterUniform: useAnimatablePoint(parallaxCenter, { screenOrigin: true }),
+    // resolves to the scene's shared pointer. A fixed `parallax` of 0 holds
+    // the camera still wherever the center is, so the canvas center stands
+    // in for the cursor there: following the pointer would wake the march
+    // on every move to draw the same picture. A signal can leave 0 at any
+    // frame, so it keeps the cursor.
+    parallaxCenterUniform: useAnimatablePoint(parallax === 0 ? CANVAS_CENTER : parallaxCenter, {
+      screenOrigin: true,
+    }),
   };
 }
 

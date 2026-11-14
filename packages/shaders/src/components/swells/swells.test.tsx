@@ -54,11 +54,11 @@ function makeScene() {
       on: () => () => undefined,
     },
     timeGpu: () => () => undefined,
-    getCursorInput: () => {
+    getCursorInput: vi.fn(() => {
       sharedInput ??= new CursorInput({ element: canvas });
 
       return sharedInput;
-    },
+    }),
   } as unknown as ShaderContextValue;
 
   function Wrapper({ children }: { children: ReactNode }) {
@@ -77,7 +77,7 @@ function makeScene() {
     return { mesh, material: mesh.material };
   };
 
-  return { Wrapper, scene, scheduler, onlyMesh };
+  return { Wrapper, scene, scheduler, onlyMesh, getCursorInput: shaderContext.getCursorInput };
 }
 
 /** A hand-driven animation signal, the shape a MotionValue has. */
@@ -434,6 +434,22 @@ describe('Swells', () => {
 
     expect(lastVote(scene)).toBe(true);
     expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
+  });
+
+  // A fixed parallax of 0 holds the camera still wherever the center is, so a
+  // cursor center has nothing to move and Swells never reads the pointer.
+  // A pointer it did read would wake the march on every move for the same
+  // picture. Any other parallax follows it.
+  it('reads the cursor only while the parallax can sway the camera', () => {
+    const level = makeScene();
+
+    render(<Swells parallax={0} parallaxCenter="cursor" />, { wrapper: level.Wrapper });
+    expect(level.getCursorInput).not.toHaveBeenCalled();
+
+    const swaying = makeScene();
+
+    render(<Swells parallax={1} parallaxCenter="cursor" />, { wrapper: swaying.Wrapper });
+    expect(swaying.getCursorInput).toHaveBeenCalled();
   });
 
   // The vote follows the dials as they change.
