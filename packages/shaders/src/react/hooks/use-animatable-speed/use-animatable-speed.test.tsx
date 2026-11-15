@@ -14,7 +14,7 @@ import { useAnimatableSpeed } from './use-animatable-speed.js';
 // exact delta without stubbing requestAnimationFrame.
 class FakeScheduler {
   clients = new Set<SchedulerClient>();
-  phaseResetListeners = new Set<() => void>();
+  phaseResetListeners = new Set<(originSeconds: number) => void>();
   requestRender = vi.fn();
 
   add(client: SchedulerClient): void {
@@ -25,14 +25,14 @@ class FakeScheduler {
     this.clients.delete(client);
   }
 
-  onPhaseReset(listener: () => void): () => void {
+  onPhaseReset(listener: (originSeconds: number) => void): () => void {
     this.phaseResetListeners.add(listener);
 
     return () => this.phaseResetListeners.delete(listener);
   }
 
-  resetPhases(): void {
-    for (const listener of this.phaseResetListeners) listener();
+  resetPhases(originSeconds = 0): void {
+    for (const listener of this.phaseResetListeners) listener(originSeconds);
   }
 
   tick(delta: number): void {
@@ -246,6 +246,18 @@ describe('useAnimatableSpeed', () => {
     // The accumulator keeps integrating from the new epoch.
     scheduler.tick(0.05);
     expect(phaseOf(result)).toBeCloseTo(0.05);
+  });
+
+  it('rewinds to the phase its speed reaches at the reset origin', () => {
+    const scheduler = new FakeScheduler();
+    const { result } = renderHook(() => useAnimatableSpeed(2), {
+      wrapper: makeWrapper(scheduler),
+    });
+
+    scheduler.tick(0.1);
+    scheduler.resetPhases(31.75);
+
+    expect(phaseOf(result)).toBe(63.5);
   });
 
   it('unsubscribes its phase-reset listener on unmount', () => {

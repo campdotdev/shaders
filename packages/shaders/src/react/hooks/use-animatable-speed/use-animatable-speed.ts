@@ -84,9 +84,11 @@ export function useAnimatableSpeed(
     // the harness that keeps visual tests reproducible: resetting the
     // renderer clock rewinds elapsedTime but not this uniform. Registering
     // with the scheduler's reset channel lets that harness rewind the phase
-    // to a known origin in the same breath.
-    const unsubscribeReset = scheduler.onPhaseReset(() => {
-      phaseUniform.value = 0;
+    // to a known origin in the same breath. The origin is a time, so the
+    // phase lands where the current speed would carry it from 0 in that
+    // long.
+    const unsubscribeReset = scheduler.onPhaseReset((originSeconds) => {
+      phaseUniform.value = speedRef.current * originSeconds;
     });
 
     return () => {

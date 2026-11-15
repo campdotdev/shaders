@@ -31,7 +31,9 @@ const FRAME_CAP_TOLERANCE = 0.1;
 
 export class FrameScheduler {
   private readonly clients = new Set<SchedulerClient>();
-  private readonly phaseResetListeners = new Set<() => void>();
+  private readonly phaseResetListeners = new Set<(originSeconds: number) => void>();
+  // The time resetPhases() rewinds to, in seconds. See setPhaseOrigin().
+  private phaseOrigin = 0;
   private readonly pauseListeners = new Set<(paused: boolean) => void>();
   private rafId: number | null = null;
   private running = false;
@@ -148,10 +150,11 @@ export class FrameScheduler {
    *
    * Phase accumulators (useAnimatableSpeed) integrate wall-clock deltas into
    * uniforms the scheduler cannot see, so the scheduler brokers resets
-   * instead of performing them: each accumulator registers here and zeroes
-   * its own state when asked.
+   * instead of performing them: each accumulator registers here and rewinds
+   * its own state when asked. The listener receives the origin, in seconds,
+   * and sets its phase to where it would be that long after a start from 0.
    */
-  onPhaseReset(listener: () => void): () => void {
+  onPhaseReset(listener: (originSeconds: number) => void): () => void {
     this.phaseResetListeners.add(listener);
 
     return () => {
@@ -160,14 +163,26 @@ export class FrameScheduler {
   }
 
   /**
-   * Rewind every registered phase accumulator to zero. The visual-test
-   * harness calls this alongside the renderer clock reset so a captured
-   * frame renders at a reproducible time origin — accumulated phase is
-   * wall-clock history, and without the rewind no two machines capture the
-   * same frame.
+   * Rewind every registered phase accumulator to the phase origin, 0 unless
+   * setPhaseOrigin() moved it. The visual-test harness calls this alongside
+   * the renderer clock reset so a captured frame renders at a reproducible
+   * time origin — accumulated phase is wall-clock history, and without the
+   * rewind no two machines capture the same frame.
    */
   resetPhases(): void {
-    for (const listener of this.phaseResetListeners) listener();
+    for (const listener of this.phaseResetListeners) listener(this.phaseOrigin);
+  }
+
+  /**
+   * Set the time, in seconds, that resetPhases() rewinds every accumulator
+   * to. A visual test sets it to capture a moment later than the start,
+   * such as a blend partway between two of Swells' strength slices, without
+   * waiting for wall-clock time to get there. It holds for every later
+   * reset, including the one ShaderScene runs at its first frame with
+   * content, which can land after the harness's own.
+   */
+  setPhaseOrigin(seconds: number): void {
+    this.phaseOrigin = seconds;
   }
 
   /**
