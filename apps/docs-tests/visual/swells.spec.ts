@@ -371,3 +371,39 @@ test('Swells — the swell clock wraps from the last slice to the first', async 
   ).toBeLessThan(0.5);
   expect(canvasChange(first, wrapped), 'slice 64 against slice 0').toBeLessThan(0.5);
 });
+
+/**
+ * Loads the probe with the intro on or off under the reduced-motion `policy`
+ * and returns its rows, as sampleRows reads them. The glide and the mirage
+ * are off, so only the intro can change the picture.
+ */
+async function rowsWithIntro(
+  page: Page,
+  intro: boolean,
+  policy: 'off' | 'slow' | 'paused',
+): Promise<number[][]> {
+  return probeRows(page, `&sunAngle=180&speed=0&intro=${intro ? 1 : 0}&reducedMotion=${policy}`);
+}
+
+// The intro raises the surface from flat ground under thick haze. At full
+// motion the capture lands a couple of frames in, while the ground is still
+// flat and hazed, so it differs from the finished surface the intro-off load
+// draws. The paused policy, which posters and baselines load under, and the
+// slow policy both count as reduced motion. Under either the intro skips to
+// the finished surface, so the first frame matches the intro-off load.
+test('Swells — the intro plays at full motion and skips under reduced motion', async ({ page }) => {
+  const playing = await rowsWithIntro(page, true, 'off');
+  const finished = await rowsWithIntro(page, false, 'off');
+
+  expect(
+    canvasChange(playing, finished),
+    'early intro frame against the finished surface',
+  ).toBeGreaterThan(5);
+
+  for (const policy of ['paused', 'slow'] as const) {
+    const skipped = await rowsWithIntro(page, true, policy);
+    const off = await rowsWithIntro(page, false, policy);
+
+    expect(canvasChange(skipped, off), `intro under ${policy} against intro off`).toBeLessThan(0.5);
+  }
+});

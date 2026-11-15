@@ -20,6 +20,8 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 // white and an opaque black one can't pass for it. ?speed, ?swellSpeed, and
 // ?parallax set the motion dials. ?parallaxCenter=cursor sways the camera
 // toward the pointer, and ?parallaxCenter=0.85,0.5 toward a fixed point.
+// The intro starts off, so a check under ?reducedMotion=off, where the intro
+// would play, never catches the surface mid-rise; ?intro=1 turns it on.
 
 /** The haze's color: black, or white under ?hazeColor=white. */
 function hazeColor(): string {
@@ -57,6 +59,11 @@ function queryNumber(name: string): number | undefined {
   return raw === null ? undefined : Number(raw);
 }
 
+/** Whether a flag is on in the page's query string, as `?name=1`. */
+function queryFlag(name: string): boolean {
+  return new URLSearchParams(window.location.search).get(name) === '1';
+}
+
 export default function ProbeScene() {
   return (
     <div style={{ width: '100vw', height: '100vh', background: background() }}>
@@ -67,6 +74,7 @@ export default function ProbeScene() {
           fieldOfView={queryNumber('fieldOfView')}
           haze={queryNumber('haze') ?? 0}
           hazeColor={hazeColor()}
+          intro={queryFlag('intro')}
           mirage={queryNumber('mirage') ?? 0}
           parallax={queryNumber('parallax')}
           parallaxCenter={parallaxCenter()}

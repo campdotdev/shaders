@@ -30,6 +30,7 @@ import {
   smoothstep,
   sqrt,
   step,
+  uniform,
   uv,
   vec2,
   vec3,
@@ -45,6 +46,7 @@ import {
   type HueInterpolation,
   marchHeightMap,
   mixColor,
+  type SchedulerTick,
   stableHash,
 } from '../../engine.js';
 import type { ShaderContextValue } from '../../react/context/shader-context.js';
@@ -284,6 +286,40 @@ const PARALLAX_PIVOT = 8;
 // the pivot, so a pivot at 0 would swing the camera a quarter turn.
 const MIN_PARALLAX_PIVOT = 0.5;
 
+// How long the intro takes, in seconds, from flat ground under thick haze
+// to the finished surface. Higher is slower and calmer.
+const INTRO_SECONDS = 3;
+
+// How wide the band at the intro's rise front is, in terrain units. The
+// front sweeps in from the edge of the camera's reach toward the camera,
+// and ground lifts from flat to its full height as the band passes over it.
+// Lower gives a sharper wave of rising ground; higher a softer swell that
+// lifts a wider stretch at once.
+const INTRO_FRONT = 10;
+
+// How thick the haze is when the intro starts, per terrain unit, like
+// `haze`. At 0.2 about 5 units of ground show before the haze takes over.
+// Higher hides more of the ground at the start; lower opens with clearer
+// air. A `haze` thicker than this starts and stays at its own value.
+const INTRO_HAZE = 0.2;
+
+// The share of the intro over which the haze clears, 0 to 1. At 0.5 the air
+// is clear by halfway, so the far ground shows while the rise front is still
+// out there and the viewer watches it roll in. Lower clears it sooner; 1
+// spreads the clearing over the whole intro, which hides more of the far
+// rise behind the haze.
+const INTRO_HAZE_SHARE = 0.5;
+
+// The shortest intro the clock works with, in seconds, so a tuning value of
+// 0 can't divide by 0.
+const MIN_INTRO_SECONDS = 0.1;
+
+// The longest slice of time one tick may add to the intro's clock, in
+// seconds, as in useAnimatableSpeed: a tick after a long stall would
+// otherwise jump the intro straight to its end. Normal frames, 16 to 33 ms,
+// never come near it.
+const INTRO_MAX_DELTA = 0.1;
+
 const DEGREES_TO_RADIANS = Math.PI / 180;
 
 // The middle of the canvas, as a position prop: the sway's center when a
@@ -324,6 +360,12 @@ export interface SwellsTuning {
   hazeFadeLag?: number;
   /** How far ahead the point the camera keeps facing while it sways sits, in terrain units. */
   parallaxPivot?: number;
+  /** How long the intro takes, in seconds. */
+  introSeconds?: number;
+  /** How wide the band at the intro's rise front is, in terrain units. */
+  introFront?: number;
+  /** How thick the haze is when the intro starts, per terrain unit. */
+  introHaze?: number;
 }
 
 // ---------------------------------------------
@@ -426,6 +468,8 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
     mirageClearing = MIRAGE_CLEARING,
     hazeFadeLag = HAZE_FADE_LAG,
     parallaxPivot = PARALLAX_PIVOT,
+    introFront = INTRO_FRONT,
+    introHaze = INTRO_HAZE,
   } = tuning ?? {};
 
   return {
@@ -445,6 +489,8 @@ function useTuningUniforms(tuning: SwellsTuning | undefined) {
     mirageClearingUniform: useAnimatableUniform<number>(mirageClearing),
     hazeFadeLagUniform: useAnimatableUniform<number>(hazeFadeLag),
     parallaxPivotUniform: useAnimatableUniform<number>(parallaxPivot),
+    introFrontUniform: useAnimatableUniform<number>(introFront),
+    introHazeUniform: useAnimatableUniform<number>(introHaze),
   };
 }
 
@@ -549,6 +595,112 @@ function useFullMotion(scheduler: ShaderContextValue['scheduler'] | undefined): 
   }, [scheduler]);
 
   return isFullMotion;
+}
+
+/**
+ * The intro's clock (ADR 0007): a uniform that runs 0 to 1 over the intro,
+ * and whether the intro is still playing. It plays once per mount. A
+ * scheduler client sums each tick's seconds into the clock and asks for the
+ * next frame until the clock lands on 1, as CursorTrail does while its
+ * trail fades. Once landed it stays landed, so a prop change, the intro
+ * switched off and on, a resumed scene, or a later phase reset never
+ * replays it.
+ *
+ * A phase reset before the intro lands starts the clock over from the
+ * reset's origin. The scene resets at its first frame with content, so the
+ * intro starts there and the renderer's start-up time doesn't eat into it.
+ * The visual-test harness resets the same way. A Swells that mounts into a
+ * scene already drawing gets no reset and starts its intro at mount.
+ *
+ * The intro lands at once when `intro` is off, and whenever the
+ * reduced-motion time scale isn't 1, as under the `paused` policy posters
+ * and visual tests use and the slow policy's 0.3x. The client reads the
+ * engine's time scale on each tick rather than `isFullMotion`, which only
+ * catches up on the next render. The shader skips the intro under reduced
+ * motion on its own too ("Settle the intro" in the shader), so the first
+ * frame shows the finished surface before this client's first tick.
+ */
+function useIntro({
+  intro,
+  introSeconds,
+  isFullMotion,
+  scheduler,
+}: {
+  intro: boolean;
+  introSeconds: number;
+  isFullMotion: boolean;
+  scheduler: ShaderContextValue['scheduler'] | undefined;
+}) {
+  const [isIntroPlaying, setIsIntroPlaying] = useState(() => intro && isFullMotion);
+
+  // Created once, so the material that captures it never rebuilds. It starts
+  // at 1, the finished surface, unless the intro is about to play.
+  const [introUniform] = useState(() => uniform(intro && isFullMotion ? 0 : 1));
+
+  // The clock's seconds, and whether it has landed, read and written by the
+  // scheduler client below between renders.
+  const clockRef = useRef(0);
+  const landedRef = useRef(!(intro && isFullMotion));
+
+  // The props as of the last render, read fresh by the client on each tick.
+  const introRef = useRef(intro);
+  const secondsRef = useRef(introSeconds);
+
+  useEffect(() => {
+    introRef.current = intro;
+    secondsRef.current = introSeconds;
+  }, [intro, introSeconds]);
+
+  useEffect(() => {
+    if (!scheduler) return undefined;
+
+    const timeScale = getReducedMotionTimeScale();
+    const canPlay = () => introRef.current && timeScale.value >= FULL_MOTION;
+
+    // Writes the clock's share of the intro into the uniform, lands the
+    // intro once it reaches 1, and asks for a frame to show it. The scene
+    // draws before its children's clients each frame, so a value written
+    // on a tick shows on the next frame, and a parked scene would never
+    // draw it at all (the bare-uniform-write gotcha in docs/agents/tsl.md).
+    // That holds on the landing tick too, which draws the finished surface.
+    const writeProgress = () => {
+      const progress = Math.min(
+        clockRef.current / Math.max(secondsRef.current, MIN_INTRO_SECONDS),
+        1,
+      );
+
+      introUniform.value = progress;
+      landedRef.current = progress >= 1;
+      setIsIntroPlaying(!landedRef.current);
+      scheduler.requestRender();
+    };
+
+    const advance = ({ delta }: SchedulerTick) => {
+      if (landedRef.current) return;
+
+      clockRef.current = canPlay()
+        ? clockRef.current + Math.min(delta, INTRO_MAX_DELTA)
+        : Number.POSITIVE_INFINITY;
+      writeProgress();
+    };
+
+    scheduler.add(advance);
+
+    // A reset starts an intro that hasn't landed over from the origin. One
+    // that can't play now is left for the next tick to land.
+    const stopReset = scheduler.onPhaseReset((originSeconds) => {
+      if (landedRef.current || !canPlay()) return;
+      clockRef.current = originSeconds;
+      writeProgress();
+    });
+
+    return () => {
+      scheduler.remove(advance);
+      stopReset();
+    };
+  }, [scheduler, introUniform]);
+
+  return { introUniform, isIntroPlaying };
 }
 
 /**
@@ -675,6 +827,13 @@ export interface SwellsShaderProps {
    */
   parallaxCenter: PositionProp;
   /**
+   * Whether the surface builds itself in when the scene first draws: it
+   * rises from flat ground in a sweep from the horizon toward the camera
+   * while the haze clears. Plays once per mount, and skips to the finished
+   * surface under reduced motion.
+   */
+  intro: boolean;
+  /**
    * TEMPORARY (build-phase tuning only): dev overrides for the feel
    * constants.
    */
@@ -704,6 +863,7 @@ export function SwellsShader({
   swellSpeed,
   parallax,
   parallaxCenter,
+  intro,
   tuning,
 }: SwellsShaderProps) {
   const shaderContext = useShaderContext();
@@ -738,7 +898,14 @@ export function SwellsShader({
     isFullMotion,
   });
 
-  useStaticSceneHint(isSwellsStill({ speed, swellSpeed, mirage }));
+  const { introUniform, isIntroPlaying } = useIntro({
+    intro,
+    introSeconds: tuning?.introSeconds ?? INTRO_SECONDS,
+    isFullMotion,
+    scheduler: shaderContext?.scheduler,
+  });
+
+  useStaticSceneHint(!isIntroPlaying && isSwellsStill({ speed, swellSpeed, mirage }));
 
   // TEMPORARY: the tuning rig's uniforms (useTuningUniforms above).
   const {
@@ -758,6 +925,8 @@ export function SwellsShader({
     mirageClearingUniform,
     hazeFadeLagUniform,
     parallaxPivotUniform,
+    introFrontUniform,
+    introHazeUniform,
   } = useTuningUniforms(tuning);
 
   // Canvas width over height, so the view widens on a wide canvas instead
@@ -1065,6 +1234,38 @@ export function SwellsShader({
       const offsetNext = sliceOffset(sliceNext);
 
       // ---------------------------------------------
+      // Settle the intro
+      // ---------------------------------------------
+      // The intro builds the surface in from flat ground under thick haze.
+      // introUniform runs 0 to 1 over the intro on the CPU (useIntro
+      // above). max() with 1 - fullMotion holds it at 1, the finished
+      // surface, at any reduced-motion scale below full motion, so a poster
+      // or a reduced-motion first frame shows the finished surface before
+      // the CPU's clock has ticked once. Once landed, every value below
+      // works out to what it is with no intro, to within float rounding, so
+      // the finished surface is the picture Swells drew before it had one.
+      //
+      // The rise front: a circle around the camera that shrinks from the
+      // edge of its reach to the camera's feet. Ground beyond the front has
+      // risen; ground inside it is still flat. Seen through the camera, the
+      // circle is a line across the ground that sweeps from the horizon
+      // toward the viewer. smoothstep() eases the progress in and out, so
+      // the front starts slowly, crosses the middle ground fastest, and
+      // settles at the end. mix() then slides it from maxDistance at 0 to
+      // one band width behind the camera at 1. Ending there, rather than at
+      // the camera, carries the band's whole width past the camera's feet,
+      // so all the ground has risen in full at the end. max() keeps the
+      // band a sliver wide, since heightAt divides by it.
+      const introProgress = max(introUniform, fullMotion.oneMinus()).toVar();
+      const frontBand = max(introFrontUniform, 0.1).toVar();
+      const riseFront = mix(
+        maxDistanceUniform,
+        frontBand.negate(),
+        smoothstep(0, 1, introProgress),
+      ).toVar();
+      const riseFrontEnd = riseFront.add(frontBand).toVar();
+
+      // ---------------------------------------------
       // The surface's height: swells, roll, and ripples
       // ---------------------------------------------
       // The march calls this with a ground point (x, z) on every step and
@@ -1166,11 +1367,26 @@ export function SwellsShader({
         // sum back to 1, so `relief` is the height of the tallest crests,
         // unless the slope limit above holds it down, before the ripples add
         // their few thousandths of a unit on top.
+        //
+        // The intro's rise ("Settle the intro" above) then scales it from
+        // flat to full by the point's distance from the camera. smoothstep()
+        // runs 0 at the rise front to 1 one band width beyond it, so ground
+        // the front has passed stands at its full height, ground it hasn't
+        // reached lies flat, and the band between lifts smoothly. The band
+        // adds a slope of at most 1.5 * relief / band, where smoothstep() is
+        // steepest, 0.12 at the defaults, far under MAX_SLOPE, so the march
+        // still follows it. Once the intro
+        // lands the front sits a band behind the camera, and every point
+        // reads 1. The ripples sit on top unscaled, so the flat
+        // ground at the start is rippled level sand.
+        const distance = length(groundPoint);
+        const risen = smoothstep(riseFront, riseFrontEnd, distance);
         const swells = profile
           .mul(mix(MIN_STRENGTH, 1, strength))
           .add(roll.mul(ROLL_SHARE))
           .div(1 + ROLL_SHARE)
-          .mul(limitedRelief);
+          .mul(limitedRelief)
+          .mul(risen);
 
         // The ripples: a sine wave whose crests run square to the wind,
         // one per ripple length, its phase wobbled across the wind and bent
@@ -1198,7 +1414,7 @@ export function SwellsShader({
         const fade = smoothstep(
           RIPPLE_FADE_START,
           RIPPLE_FADE_END,
-          length(groundPoint).div(rippleLength),
+          distance.div(rippleLength),
         ).oneMinus();
 
         return swells.add(wave.mul(rippleAmplitude).mul(fade));
@@ -1357,7 +1573,19 @@ export function SwellsShader({
       // steps, that is short of where it meets the ground, so its haze is a
       // little light, but close to its neighbors' that met the crests
       // around it, so no sliver shows.
-      const hazeDepth = max(hazeUniform, 0).mul(march.distance).toVar();
+      //
+      // During the intro the haze starts thick and clears. It thins from
+      // introHaze to `haze` over the first INTRO_HAZE_SHARE of the intro,
+      // so the far ground shows while the rise front is still out there.
+      // The clearing eases out, as 1 - (1 - t)^2: quick at first, then
+      // settling onto `haze`, so the air opens up as the intro starts. max()
+      // keeps a `haze` thicker than introHaze at its own value throughout.
+      // At the end t is 1 and mix() returns `haze`.
+      const settledHaze = max(hazeUniform, 0);
+      const hazeLeft = clamp(introProgress.div(INTRO_HAZE_SHARE), 0, 1).oneMinus();
+      const clearedShare = hazeLeft.mul(hazeLeft).oneMinus();
+      const hazeNow = mix(max(introHazeUniform, settledHaze), settledHaze, clearedShare);
+      const hazeDepth = hazeNow.mul(march.distance).toVar();
       const hazeBlend = hazeDepth.mul(hazeDepth).negate().exp().oneMinus();
       const hazed = mixColor(surface, hazeColorUniform, hazeBlend, colorSpace, hueInterpolation);
       const fadeDepth = hazeDepth.div(max(hazeFadeLagUniform, 0.1));
@@ -1458,6 +1686,9 @@ export function SwellsShader({
     swellClock,
     parallaxUniform,
     parallaxCenterUniform,
+    introUniform,
+    introFrontUniform,
+    introHazeUniform,
     aspectNode,
   ]);
 
