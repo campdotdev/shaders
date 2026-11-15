@@ -34,6 +34,10 @@ _Avoid_: Overlay, post-process pass
 A value that changes over time and is not drawn, such as the cursor, scroll, or canvas size. An Input is fed to a component as an animation signal.
 _Avoid_: Cursor hook, entry point, scene-level field
 
+**Press**:
+An Input that holds the moments a pointer pushed down on a scene in the last few seconds, each with its point and its age. A mouse or pen counts when its button goes down. A finger counts when it lifts quickly without scrolling the page.
+_Avoid_: Click, tap, pointerdown
+
 **Position prop**:
 A component prop that names a point on the canvas. A component's own center is `center`; a point that belongs to one reaction among the component's other dials is named after the reaction, such as `swellCenter`. It is a position, not a cursor: the cursor is one Input you can feed it. The `'cursor'` shorthand expresses that mapping without a hook, as in `swellCenter="cursor"`.
 _Avoid_: Cursor prop, interactive prop, entry point, focus
@@ -41,6 +45,10 @@ _Avoid_: Cursor prop, interactive prop, entry point, focus
 **Reaction**:
 A component's response that grows toward a point and needs the component's own internals, such as LedWall's swell. A reaction exposes three props: the amount named for the reaction, where 0 turns it off, a `<reaction>Radius` in canvas units, and a `<reaction>Center` position prop.
 _Avoid_: Interaction, cursor ability, hover effect
+
+**Pulse**:
+Light a component sends out once from a point. The light travels on its own and fades with age. A pulse is not a reaction: nothing holds it toward its point, so it has no radius or center prop.
+_Avoid_: Ripple (that is CursorRipple), wave, burst
 
 **Cursor effect**:
 An Effect driven by the cursor Input that works over any scene with no help from the components beneath it. CursorSpotlight and CursorRipple are two.
@@ -53,6 +61,10 @@ _Avoid_: Hold to interact, touch drag, scroll drag
 **Scripted stroke**:
 A stroke code draws across a scene's cursor effects by moving a point. While code strokes, the effects ignore the mouse and scroll push.
 _Avoid_: Virtual pointer, fake cursor, brush
+
+**Scripted press**:
+A press code makes at a point, such as on a form submit. Real presses still count while code presses.
+_Avoid_: Programmatic pulse, fake click, trigger
 
 **Intro**:
 The opening a Source plays when it first appears, in which its shape builds itself in, such as terrain rising from flat ground. An intro belongs to one Source. A wipe or a dissolve stacked over a scene is not an intro.
@@ -113,6 +125,28 @@ _Avoid_: Seam, edge, crease
 **Swell**:
 One wave of Swells' surface, from a trough over a crest to the next trough. `scale` sets how many fit in a stretch of ground, and `sharpness` shapes each one, from a round wave to a dune with a steep downwind face. LedWall's swell is a different thing: a reaction that grows toward a point.
 _Avoid_: Dune, wave, ridge
+
+### Ribbons
+
+**Ribbon**:
+A long, narrow band of strands that waves along its length and turns over on itself as it goes.
+_Avoid_: Sheet, line (WaveLines' line is a different thing)
+
+**Strand**:
+One of the fine curves of light a ribbon is made of. Every strand keeps its place across the ribbon.
+_Avoid_: Wire, fiber, filament, line, thread
+
+**Twist**:
+How many times a ribbon turns over along its length. Where the ribbon turns edge-on, its strands crowd into one bright knot.
+_Avoid_: Rotation, roll, spin
+
+**Curl**:
+The bend across a ribbon's width, from flat to a shallow trough. A ribbon has a curl. A flute has a cross-section.
+_Avoid_: Cross-section, profile, cup
+
+**Near side**:
+The face of a ribbon turned toward the viewer at a given point along it. Strands on the near side draw wider and brighter than strands on the far side.
+_Avoid_: Front, back, facing
 
 ### Compositions
 
