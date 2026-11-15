@@ -16,6 +16,11 @@ const TARGET_FRAME = 2;
 const QUERY_FLAG = 'visualTest';
 const REDUCED_MOTION_FLAG = 'reducedMotion';
 const POINTER_FLAG = 'pointer';
+// ?phaseTime=<seconds> captures the frame that many seconds after the start,
+// as far as the phase accumulators go: each speed-driven clock, such as
+// Swells' glide and its swell clock, starts where its speed would carry it
+// in that long. The renderer clock still starts at 0.
+const PHASE_TIME_FLAG = 'phaseTime';
 const VALID_POLICIES: ReducedMotionPolicy[] = ['auto', 'off', 'slow', 'paused'];
 
 /**
@@ -64,6 +69,14 @@ function useVisualTestPause(): void {
       policyParam !== null && isReducedMotionPolicy(policyParam) ? policyParam : 'paused';
 
     setReducedMotionPolicy(policy);
+
+    // Set before the scene's first reset, so every reset, the harness's own
+    // at frame 1 and ShaderScene's at its first frame with content, lands
+    // on the same moment. The default `paused` policy then holds each clock
+    // there.
+    const phaseTime = Number(params.get(PHASE_TIME_FLAG) ?? 0);
+
+    ctx.scheduler.setPhaseOrigin(Number.isFinite(phaseTime) ? phaseTime : 0);
 
     // A composition page remounts this on every preset it loads, so a spec
     // can capture each one. An earlier capture left the scheduler paused,

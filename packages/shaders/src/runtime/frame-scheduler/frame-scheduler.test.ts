@@ -558,6 +558,28 @@ describe('FrameScheduler phase reset', () => {
     expect(listener).toHaveBeenCalledTimes(1);
   });
 
+  it('rewinds to an origin of 0 seconds by default', () => {
+    const scheduler = new FrameScheduler();
+    const listener = vi.fn();
+
+    scheduler.onPhaseReset(listener);
+    scheduler.resetPhases();
+
+    expect(listener).toHaveBeenCalledWith(0);
+  });
+
+  it('rewinds every later reset to the origin setPhaseOrigin() sets', () => {
+    const scheduler = new FrameScheduler();
+    const listener = vi.fn();
+
+    scheduler.onPhaseReset(listener);
+    scheduler.setPhaseOrigin(63.5);
+    scheduler.resetPhases();
+    scheduler.resetPhases();
+
+    expect(listener.mock.calls).toEqual([[63.5], [63.5]]);
+  });
+
   it('does not invoke a phase-reset listener after its unsubscribe runs', () => {
     const scheduler = new FrameScheduler();
     const listener = vi.fn();

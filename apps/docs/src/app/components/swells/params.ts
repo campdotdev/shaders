@@ -20,6 +20,7 @@ export interface SwellsTuningParams {
   mirageSway: number;
   mirageClearing: number;
   hazeFadeLag: number;
+  parallaxPivot: number;
 }
 
 export interface SwellsParams {
@@ -41,6 +42,10 @@ export interface SwellsParams {
   mirage: number;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
+  speed: number;
+  swellSpeed: number;
+  /** The scene always passes `parallaxCenter="cursor"`, so the sway follows the pointer. */
+  parallax: number;
   tuning: SwellsTuningParams;
 }
 
@@ -65,6 +70,9 @@ export const INITIAL: SwellsParams = {
   mirage: 0.3,
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
+  speed: 0.3,
+  swellSpeed: 0,
+  parallax: 0,
   tuning: {
     stepScale: 0.5,
     maxDistance: 40,
@@ -81,5 +89,6 @@ export const INITIAL: SwellsParams = {
     mirageSway: 0.003,
     mirageClearing: 0.6,
     hazeFadeLag: 2,
+    parallaxPivot: 8,
   },
 };

@@ -24,6 +24,8 @@ export default function SwellsScene({
         hazeColor={params.hazeColor}
         hueInterpolation={params.hueInterpolation}
         mirage={params.mirage}
+        parallax={params.parallax}
+        parallaxCenter="cursor"
         relief={params.relief}
         ripples={params.ripples}
         scale={params.scale}
@@ -31,8 +33,10 @@ export default function SwellsScene({
         sharpness={params.sharpness}
         sheen={params.sheen}
         sheenColor={params.sheenColor}
+        speed={params.speed}
         sunAngle={params.sunAngle}
         sunHeight={params.sunHeight}
+        swellSpeed={params.swellSpeed}
         tilt={params.tilt}
         tuning={params.tuning}
       />

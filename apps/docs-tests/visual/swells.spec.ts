@@ -72,14 +72,10 @@ async function groundBrightness(page: Page, query: string): Promise<number[]> {
 }
 
 /**
- * Loads the probe with `query` appended and returns its brightness, 0 to
- * 255, in rows 8 pixels apart: each row a list of samples 8 pixels apart.
+ * The canvas's brightness, 0 to 255, in rows 8 pixels apart: each row a
+ * list of samples 8 pixels apart.
  */
-async function probeRows(page: Page, query: string): Promise<number[][]> {
-  await page.goto(`${PROBE}${query}`);
-  await page.locator('canvas').first().waitFor();
-  await waitForShader(page);
-
+async function sampleRows(page: Page): Promise<number[][]> {
   const { width, height, rgb } = await readCanvasPixels(page);
   const rows: number[][] = [];
 
@@ -95,6 +91,15 @@ async function probeRows(page: Page, query: string): Promise<number[][]> {
   }
 
   return rows;
+}
+
+/** Loads the probe with `query` appended and returns its rows, as sampleRows reads them. */
+async function probeRows(page: Page, query: string): Promise<number[][]> {
+  await page.goto(`${PROBE}${query}`);
+  await page.locator('canvas').first().waitFor();
+  await waitForShader(page);
+
+  return sampleRows(page);
 }
 
 /**
@@ -226,4 +231,143 @@ test('Swells — the mirage changes only the far surface', async ({ page }) => {
     Math.abs(bandShift(still, shimmering, 0.85, 0.95)),
     'near ground, still against shimmering',
   ).toBeLessThan(1);
+});
+
+/**
+ * Loads the probe with the camera swaying toward a fixed point at `centerX`
+ * across the canvas's middle row, a share of its width, under the
+ * reduced-motion `policy`, and returns its rows as sampleRows reads them.
+ * The glide is off, so only the sway can move the picture.
+ *
+ * A fixed point rather than the pointer, because the sway's math is the same
+ * for either. The probe's `pointer=1` mode keeps the scene drawing until the
+ * pointer settles, and on CI's software GL every Swells frame takes seconds
+ * and stalls each Playwright step behind it, so pointer loads ran past the
+ * test timeout.
+ */
+async function rowsSwayingToward(
+  page: Page,
+  policy: 'off' | 'slow',
+  centerX: number,
+): Promise<number[][]> {
+  return probeRows(
+    page,
+    `&sunAngle=180&speed=0&parallax=1&parallaxCenter=${centerX},0.5&reducedMotion=${policy}`,
+  );
+}
+
+/**
+ * The mean of the per-sample brightness differences between two captures,
+ * over the band from `top` to `bottom`, each a share of the height. Unlike
+ * bandShift, it catches a pattern that slid sideways without changing its
+ * mean.
+ */
+function bandChange(before: number[][], after: number[][], top: number, bottom: number): number {
+  const from = bandBrightness(before, top, bottom);
+  const to = bandBrightness(after, top, bottom);
+
+  return mean(from.map((value, index) => Math.abs(value - (to[index] ?? value))));
+}
+
+/** The row index of the horizon: the first row below the site header that reads as lit ground. */
+function horizonRow(rows: number[][]): number {
+  const skyTop = Math.floor(rows.length * SKY_TOP);
+
+  return skyTop + rows.slice(skyTop).findIndex((row) => mean(row) > 20);
+}
+
+// Parallax: a center right of the middle moves the camera right, and the
+// camera turns a little to keep facing a point on the ground ahead. Ground
+// nearer than that point slides one way and ground beyond it the other, so
+// both the near ground and the far ground just under the horizon change.
+// The camera never pitches or rolls and keeps its height, so the horizon
+// stays at the same row.
+test('Swells — a sway toward parallaxCenter orbits the camera at a level horizon', async ({
+  page,
+}) => {
+  const middle = await rowsSwayingToward(page, 'off', 0.5);
+  const right = await rowsSwayingToward(page, 'off', 0.85);
+  const horizon = horizonRow(middle);
+  const farTop = (horizon + 2) / middle.length;
+  const farBottom = (horizon + 8) / middle.length;
+
+  expect(bandChange(middle, right, 0.85, 0.95), 'near ground change').toBeGreaterThan(10);
+  expect(bandChange(middle, right, farTop, farBottom), 'far ground change').toBeGreaterThan(15);
+  expect(
+    Math.abs(horizonRow(right) - horizon),
+    'horizon move, in 8-pixel rows',
+  ).toBeLessThanOrEqual(1);
+});
+
+// Under reduced motion the sway holds at 0, so the same move of the center
+// changes nothing.
+test('Swells — reduced motion holds the sway', async ({ page }) => {
+  const middle = await rowsSwayingToward(page, 'slow', 0.5);
+  const right = await rowsSwayingToward(page, 'slow', 0.85);
+  const horizon = horizonRow(middle);
+  const farTop = (horizon + 2) / middle.length;
+  const farBottom = (horizon + 8) / middle.length;
+
+  expect(bandChange(middle, right, 0.85, 0.95), 'near ground under reduced motion').toBeLessThan(1);
+  expect(
+    bandChange(middle, right, farTop, farBottom),
+    'far ground under reduced motion',
+  ).toBeLessThan(1);
+  expect(horizonRow(right), 'horizon row under reduced motion').toBe(horizon);
+});
+
+/**
+ * Loads the probe with the swell clock at `clock` slices and returns its
+ * rows, as sampleRows reads them. swellSpeed 1 and ?phaseTime set the clock
+ * to that many slices, and the paused reduced-motion policy every visual
+ * test loads under holds it there. The glide is off, so only the swells'
+ * strength can change the picture.
+ */
+async function rowsAtSwellClock(page: Page, clock: number): Promise<number[][]> {
+  return probeRows(page, `&sunAngle=180&speed=0&swellSpeed=1&phaseTime=${clock}`);
+}
+
+/** The mean brightness change from `before` to `after` over everything below the site header. */
+const canvasChange = (before: number[][], after: number[][]) =>
+  bandChange(before, after, SKY_TOP, 0.98);
+
+// The swells rise and fall by blending each swell's strength from one noise
+// slice into the next as the clock runs through a slice. Partway through,
+// the picture differs from both ends. Just short of the end it already
+// matches the next slice, which it can only do if the next slice's noise is
+// read and blended in full. On macOS the mid-blend frame differed from each
+// end by 7 to 9 levels, and the end of a blend matched the next slice to 0,
+// so 2 and 0.5 leave room for another GPU.
+test("Swells — the swells' strength blends into the next slice", async ({ page }) => {
+  const start = await rowsAtSwellClock(page, 0);
+  const midway = await rowsAtSwellClock(page, 0.5);
+  const almostNext = await rowsAtSwellClock(page, 0.999);
+  const next = await rowsAtSwellClock(page, 1);
+
+  expect(canvasChange(start, midway), 'midway against the first slice').toBeGreaterThan(2);
+  expect(canvasChange(midway, next), 'midway against the next slice').toBeGreaterThan(2);
+  expect(canvasChange(almostNext, next), 'end of the blend against the next slice').toBeLessThan(
+    0.5,
+  );
+});
+
+// The clock counts slices without end, and the shader wraps it into
+// STRENGTH_SLICES (64) slices, so the last slice blends back into the first.
+// Partway through that last blend the picture differs from where it ends,
+// the blend's end matches slice 64, and slice 64 matches slice 0. A next
+// slice that didn't wrap would blend toward noise that slice 0 never shows,
+// so the swells would jump at the wrap. On macOS the mid-blend frame
+// differed by about 5.5 levels, and both matches came to 0.
+test('Swells — the swell clock wraps from the last slice to the first', async ({ page }) => {
+  const first = await rowsAtSwellClock(page, 0);
+  const lastMidway = await rowsAtSwellClock(page, 63.5);
+  const almostWrapped = await rowsAtSwellClock(page, 63.999);
+  const wrapped = await rowsAtSwellClock(page, 64);
+
+  expect(canvasChange(lastMidway, wrapped), 'last blend midway against its end').toBeGreaterThan(2);
+  expect(
+    canvasChange(almostWrapped, wrapped),
+    'end of the last blend against slice 64',
+  ).toBeLessThan(0.5);
+  expect(canvasChange(first, wrapped), 'slice 64 against slice 0').toBeLessThan(0.5);
 });
