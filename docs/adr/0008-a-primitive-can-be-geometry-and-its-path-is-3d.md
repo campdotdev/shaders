@@ -15,6 +15,7 @@ We chose to draw strands as geometry and to export that geometry as primitives. 
 ## Consequences
 
 - The Ribbon Source draws its strands in a pre-pass, into its own half-float target, and shows them through its one quad, as Aurora shows its field. The scene pass still holds one quad per Source, so it still needs no depth buffer, as the no-depth gotcha describes.
+- WebGL2 draws into a half-float target only with `EXT_color_buffer_float`, which `canRenderTo` checks. Without it, the pre-pass draws into an 8-bit target, which every backend can draw into. Light at a crossing then clips at 1 and bands, so glow mode loses the range it tone-maps, but the Ribbon still draws. Aurora falls back by working out its field inline. The Ribbon cannot, because the per-pixel strand search is the cost this ADR avoids.
 - `useShaderMaterial` widens. Its build callback returns a color node, as now, or `{ color, vertex }`. A second argument sets `blending` to `'normal'` or `'additive'`. Additive also turns off depth writes, so strands never hide each other where they cross. Existing callers change nothing.
 - `extrudeStrand`'s position goes to `vertexNode`. In three 0.170, a set `vertexNode` replaces three's whole position setup. At a three upgrade, check that it still does.
 - A path must be a pure function of its inputs, time included. When the cursor sweeps across a ribbon, the Ribbon finds the strands it crossed by running the path again at the pulse's launch time, in the vertex stage. No JS copy of the ribbon's math exists to drift from the TSL.
