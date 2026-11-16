@@ -388,10 +388,8 @@ async function rowsWithIntro(
 // The intro raises the surface from flat ground under thick haze. At full
 // motion the capture lands a couple of frames in, while the ground is still
 // flat and hazed, so it differs from the finished surface the intro-off load
-// draws. The paused policy, which posters and baselines load under, and the
-// slow policy both count as reduced motion. Under either the intro skips to
-// the finished surface, so the first frame matches the intro-off load.
-test('Swells — the intro plays at full motion and skips under reduced motion', async ({ page }) => {
+// draws.
+test('Swells — the intro plays at full motion', async ({ page }) => {
   const playing = await rowsWithIntro(page, true, 'off');
   const finished = await rowsWithIntro(page, false, 'off');
 
@@ -399,11 +397,19 @@ test('Swells — the intro plays at full motion and skips under reduced motion',
     canvasChange(playing, finished),
     'early intro frame against the finished surface',
   ).toBeGreaterThan(5);
+});
 
-  for (const policy of ['paused', 'slow'] as const) {
+// The paused policy, which posters and baselines load under, and the slow
+// policy both count as reduced motion. Under either the intro skips to the
+// finished surface, so the first frame matches the intro-off load. Each
+// policy gets a test of its own because a probe load on CI's software GL
+// takes 12 to 23 seconds, and six loads in one test ran past its 90-second
+// timeout.
+for (const policy of ['paused', 'slow'] as const) {
+  test(`Swells — the intro skips under the ${policy} policy`, async ({ page }) => {
     const skipped = await rowsWithIntro(page, true, policy);
     const off = await rowsWithIntro(page, false, policy);
 
-    expect(canvasChange(skipped, off), `intro under ${policy} against intro off`).toBeLessThan(0.5);
-  }
-});
+    expect(canvasChange(skipped, off), 'intro on against intro off').toBeLessThan(0.5);
+  });
+}
