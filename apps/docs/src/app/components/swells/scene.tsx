@@ -13,6 +13,8 @@ export default function SwellsScene({
   params?: SwellsParams;
   children?: ReactNode;
 } = {}) {
+  const { introSeconds, introFront, introHaze } = params.tuning;
+
   return (
     <ShaderScene>
       <Swells
@@ -23,6 +25,11 @@ export default function SwellsScene({
         haze={params.haze}
         hazeColor={params.hazeColor}
         hueInterpolation={params.hueInterpolation}
+        intro={params.intro}
+        // TEMPORARY (build-phase tuning only): an intro plays once per mount,
+        // so a change to an intro tuning slider mounts Swells again to replay
+        // it. Goes with the tuning rig at the defaults gate (SHA-327).
+        key={`${introSeconds}|${introFront}|${introHaze}`}
         mirage={params.mirage}
         parallax={params.parallax}
         parallaxCenter="cursor"

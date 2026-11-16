@@ -4,8 +4,8 @@
  * Swells demo island: the interactive slice of the Swells page, with its
  * control store, shader preview, and control panel for the camera, the swells'
  * shape, the sun and the colors it blends, the sheen, haze, and mirage, the
- * glide, the swells' rise and fall, and the parallax sway toward the
- * pointer, and the temporary tuning rig. The shared components/[slug] template renders
+ * glide, the swells' rise and fall, the parallax sway toward the pointer,
+ * and the intro, and the temporary tuning rig. The shared components/[slug] template renders
  * this between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
@@ -80,6 +80,14 @@ function SwellsFields() {
         <SliderInput label="Speed" max={2} min={-2} path="speed" step={0.01} />
         <SliderInput label="Swell speed" max={1} min={0} path="swellSpeed" step={0.01} />
         <SliderInput label="Parallax" max={2} min={0} path="parallax" step={0.01} />
+        <SelectInput
+          label="Intro"
+          options={[
+            { label: 'Off', value: false },
+            { label: 'On', value: true },
+          ]}
+          path="intro"
+        />
       </Section>
       <Section title="Tuning (dev)">
         <SliderInput label="Step scale" max={1} min={0.1} path="tuning.stepScale" step={0.01} />
@@ -134,6 +142,15 @@ function SwellsFields() {
           path="tuning.parallaxPivot"
           step={0.5}
         />
+        <SliderInput
+          label="Intro seconds"
+          max={8}
+          min={0.5}
+          path="tuning.introSeconds"
+          step={0.1}
+        />
+        <SliderInput label="Intro front" max={30} min={1} path="tuning.introFront" step={0.5} />
+        <SliderInput label="Intro haze" max={0.6} min={0} path="tuning.introHaze" step={0.01} />
       </Section>
     </>
   );

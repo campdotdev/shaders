@@ -21,6 +21,9 @@ export interface SwellsTuningParams {
   mirageClearing: number;
   hazeFadeLag: number;
   parallaxPivot: number;
+  introSeconds: number;
+  introFront: number;
+  introHaze: number;
 }
 
 export interface SwellsParams {
@@ -46,6 +49,7 @@ export interface SwellsParams {
   swellSpeed: number;
   /** The scene always passes `parallaxCenter="cursor"`, so the sway follows the pointer. */
   parallax: number;
+  intro: boolean;
   tuning: SwellsTuningParams;
 }
 
@@ -73,6 +77,7 @@ export const INITIAL: SwellsParams = {
   speed: 0.3,
   swellSpeed: 0,
   parallax: 0,
+  intro: true,
   tuning: {
     stepScale: 0.5,
     maxDistance: 40,
@@ -90,5 +95,8 @@ export const INITIAL: SwellsParams = {
     mirageClearing: 0.6,
     hazeFadeLag: 2,
     parallaxPivot: 8,
+    introSeconds: 3,
+    introFront: 10,
+    introHaze: 0.2,
   },
 };

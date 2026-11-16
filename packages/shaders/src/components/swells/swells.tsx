@@ -184,6 +184,16 @@ export interface SwellsProps {
    */
   parallaxCenter?: PositionProp;
   /**
+   * Whether the surface builds itself in when the scene first draws: it
+   * rises from flat ground in a sweep from the horizon toward the camera
+   * while the haze clears, over about 3 seconds. It plays once per mount,
+   * from the scene's first frame, or from the mount when Swells joins a scene
+   * already drawing, and a prop change doesn't replay it. Under
+   * reduced motion, and for posters, it skips to the finished surface.
+   * `false` starts on the finished surface. Defaults to true.
+   */
+  intro?: boolean;
+  /**
    * TEMPORARY (build-phase tuning only): dev overrides for the feel
    * constants. Stripped at the defaults gate, so don't use it.
    */
@@ -218,6 +228,7 @@ export function Swells({
   swellSpeed = 0,
   parallax = 0,
   parallaxCenter = [0.5, 0.5],
+  intro = true,
   tuning,
 }: SwellsProps) {
   return (
@@ -229,6 +240,7 @@ export function Swells({
       haze={haze}
       hazeColor={hazeColor}
       hueInterpolation={hueInterpolation}
+      intro={intro}
       mirage={mirage}
       parallax={parallax}
       parallaxCenter={parallaxCenter}

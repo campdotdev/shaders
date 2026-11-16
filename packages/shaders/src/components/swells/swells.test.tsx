@@ -1,6 +1,6 @@
 import { type ReactNode, StrictMode, useLayoutEffect } from 'react';
 
-import { render } from '@testing-library/react';
+import { act, render } from '@testing-library/react';
 import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
@@ -8,6 +8,7 @@ import {
   type ColorSpace,
   CursorInput,
   type HueInterpolation,
+  type SchedulerTick,
   setReducedMotionPolicy,
 } from '../../engine.js';
 import { Swells, type SwellsProps, type SwellsTuning } from '../../index.js';
@@ -41,7 +42,9 @@ function makeScene() {
     remove: vi.fn(),
     requestRender: vi.fn(() => true),
     setIdle: vi.fn<(isStatic: boolean) => () => void>(() => () => undefined),
-    onPhaseReset: vi.fn(() => () => undefined),
+    onPhaseReset: vi.fn<(listener: (originSeconds: number) => void) => () => void>(
+      () => () => undefined,
+    ),
   };
   // The scene's one shared pointer, which a "cursor" parallax center reads.
   let sharedInput: CursorInput | null = null;
@@ -103,8 +106,8 @@ function makeSignal(initial: number) {
 describe('Swells', () => {
   // The public shape so far: the camera, shape, sun, air, and motion dials,
   // each a number or an animation signal, the colors and the space they
-  // blend in, the point the camera sways toward, and the temporary tuning
-  // rig. pnpm typecheck runs this file too, so a missing export or a
+  // blend in, the point the camera sways toward, the intro switch, and the
+  // temporary tuning rig. pnpm typecheck runs this file too, so a missing export or a
   // narrowed prop fails there as well.
   it('takes animatable camera, shape, sun, air, and motion dials from the package root', () => {
     expectTypeOf<SwellsProps>().toEqualTypeOf<{
@@ -130,6 +133,7 @@ describe('Swells', () => {
       swellSpeed?: AnimatableProp<number>;
       parallax?: AnimatableProp<number>;
       parallaxCenter?: PositionProp;
+      intro?: boolean;
       tuning?: SwellsTuning;
     }>();
   });
@@ -379,10 +383,10 @@ describe('Swells', () => {
   });
 
   // The render-on-demand vote. Three dials move the picture on their own:
-  // the glide, the swells' rise and fall, and the mirage's shimmer. With
-  // all three at 0 nothing changes between frames, so a scene of still
-  // Sources can park.
-  const still = { speed: 0, swellSpeed: 0, mirage: 0 } as const;
+  // the glide, the swells' rise and fall, and the mirage's shimmer, and so
+  // does the intro while it plays. With all three at 0 and the intro off,
+  // nothing changes between frames, so a scene of still Sources can park.
+  const still = { speed: 0, swellSpeed: 0, mirage: 0, intro: false } as const;
 
   /** The last vote Swells cast: true for static, false for animated. */
   const lastVote = (scene: ReturnType<typeof makeScene>) =>
@@ -503,6 +507,145 @@ describe('Swells', () => {
     rerender(<Swells {...still} speed={0.3} />);
     expect(lastVote(scene)).toBe(false);
     rerender(<Swells {...still} />);
+    expect(lastVote(scene)).toBe(true);
+  });
+
+  // ---------------------------------------------
+  // The intro
+  // ---------------------------------------------
+  // The intro runs on a clock of its own, a scheduler client that sums each
+  // tick's seconds. These drive every client Swells registered by hand, the
+  // way the scene's frame loop would, and read what Swells asks of the
+  // scene in reply.
+
+  /** Runs one scheduler tick of `delta` seconds through every client Swells added. */
+  const tick = (scene: ReturnType<typeof makeScene>, delta: number) => {
+    act(() => {
+      for (const [client] of scene.scheduler.add.mock.calls) {
+        (client as (tick: SchedulerTick) => void)({ delta, elapsed: 0, now: 0 });
+      }
+    });
+  };
+
+  /** Runs `seconds` of ticks, 0.05 seconds apiece. */
+  const run = (scene: ReturnType<typeof makeScene>, seconds: number) => {
+    for (let elapsed = 0; elapsed < seconds; elapsed += 0.05) tick(scene, 0.05);
+  };
+
+  /** Rewinds every phase clock Swells registered, as the scene does at its first frame with content. */
+  const resetPhases = (scene: ReturnType<typeof makeScene>, origin = 0) => {
+    act(() => {
+      for (const [listener] of scene.scheduler.onPhaseReset.mock.calls) listener(origin);
+    });
+  };
+
+  // Everything but the intro holds still here, so the intro alone decides
+  // the vote and the frame requests.
+  const stillButIntro = { ...still, intro: true } as const;
+
+  it('requests a frame on every tick while the intro plays, then votes static once it lands', () => {
+    setReducedMotionPolicy('off');
+    const scene = makeScene();
+
+    render(<Swells {...stillButIntro} />, { wrapper: scene.Wrapper });
+    expect(lastVote(scene), 'vote while the intro plays').toBe(false);
+
+    for (let step = 0; step < 20; step += 1) {
+      scene.scheduler.requestRender.mockClear();
+      tick(scene, 0.05);
+      expect(scene.scheduler.requestRender, `a frame after tick ${step}`).toHaveBeenCalled();
+    }
+
+    run(scene, 10);
+    expect(lastVote(scene), 'vote once the intro lands').toBe(true);
+
+    scene.scheduler.requestRender.mockClear();
+    tick(scene, 0.05);
+    expect(scene.scheduler.requestRender, 'frames after the intro lands').not.toHaveBeenCalled();
+  });
+
+  // The intro plays once per mount. A prop change, the intro switched off
+  // and on again included, leaves a landed intro landed.
+  it('does not replay the intro on a prop change', () => {
+    setReducedMotionPolicy('off');
+    const scene = makeScene();
+    const { rerender } = render(<Swells {...stillButIntro} />, { wrapper: scene.Wrapper });
+
+    run(scene, 10);
+    rerender(<Swells {...stillButIntro} relief={0.4} />);
+    rerender(<Swells {...stillButIntro} intro={false} relief={0.4} />);
+    rerender(<Swells {...stillButIntro} relief={0.4} />);
+
+    scene.scheduler.requestRender.mockClear();
+    tick(scene, 0.05);
+    expect(lastVote(scene)).toBe(true);
+    expect(scene.scheduler.requestRender).not.toHaveBeenCalled();
+  });
+
+  // The scene rewinds its clocks at its first frame with content, so the
+  // intro starts there rather than at mount, and the renderer's start-up
+  // time doesn't eat into it.
+  it("starts the intro over at the scene's phase reset", () => {
+    setReducedMotionPolicy('off');
+    const scene = makeScene();
+
+    render(<Swells {...stillButIntro} />, { wrapper: scene.Wrapper });
+    run(scene, 2);
+    resetPhases(scene);
+    run(scene, 2);
+
+    expect(lastVote(scene), 'two seconds after the reset').toBe(false);
+  });
+
+  // A composition page under the visual-test harness resets the phases on
+  // every preset it loads, long after the intro has landed.
+  it('does not replay a landed intro at a later phase reset', () => {
+    setReducedMotionPolicy('off');
+    const scene = makeScene();
+
+    render(<Swells {...stillButIntro} />, { wrapper: scene.Wrapper });
+    run(scene, 10);
+    resetPhases(scene);
+
+    scene.scheduler.requestRender.mockClear();
+    tick(scene, 0.05);
+    expect(lastVote(scene)).toBe(true);
+    expect(scene.scheduler.requestRender).not.toHaveBeenCalled();
+  });
+
+  // Turned off, or under reduced motion, the intro skips to the finished
+  // surface: posters and visual tests load under the paused policy, and at
+  // the slow policy's 0.3x it would crawl.
+  it.each([
+    ['intro={false}', 'off', false],
+    ['the slow policy', 'slow', true],
+    ['the paused policy', 'paused', true],
+  ] as const)('skips the intro under %s', (_name, policy, intro) => {
+    setReducedMotionPolicy(policy);
+    const scene = makeScene();
+
+    render(<Swells {...still} intro={intro} />, { wrapper: scene.Wrapper });
+    resetPhases(scene);
+    scene.scheduler.requestRender.mockClear();
+    tick(scene, 0.05);
+
+    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
+    expect(lastVote(scene)).toBe(true);
+    expect(scene.scheduler.requestRender).not.toHaveBeenCalled();
+  });
+
+  // A switch to reduced motion partway through lands the intro at once.
+  it('lands the intro when reduced motion turns on partway through', () => {
+    setReducedMotionPolicy('off');
+    const scene = makeScene();
+
+    render(<Swells {...stillButIntro} />, { wrapper: scene.Wrapper });
+    run(scene, 1);
+    act(() => setReducedMotionPolicy('slow'));
+    tick(scene, 0.05);
+    act(() => setReducedMotionPolicy('off'));
+    tick(scene, 0.05);
+
     expect(lastVote(scene)).toBe(true);
   });
 
