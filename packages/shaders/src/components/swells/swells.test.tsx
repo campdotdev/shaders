@@ -11,7 +11,7 @@ import {
   type SchedulerTick,
   setReducedMotionPolicy,
 } from '../../engine.js';
-import { Swells, type SwellsProps, type SwellsTuning } from '../../index.js';
+import { Swells, type SwellsProps } from '../../index.js';
 import { ShaderContext, type ShaderContextValue } from '../../react/context/shader-context.js';
 import type {
   AnimatableProp,
@@ -104,12 +104,12 @@ function makeSignal(initial: number) {
 }
 
 describe('Swells', () => {
-  // The public shape so far: the camera, shape, sun, air, and motion dials,
-  // each a number or an animation signal, the colors and the space they
-  // blend in, the point the camera sways toward, the intro switch, and the
-  // temporary tuning rig. pnpm typecheck runs this file too, so a missing export or a
-  // narrowed prop fails there as well.
-  it('takes animatable camera, shape, sun, air, and motion dials from the package root', () => {
+  // The public shape: the camera, shape, light, air, and motion dials, each
+  // a number or an animation signal, the colors and the space they blend
+  // in, the point the camera sways toward, and the intro switch. pnpm
+  // typecheck runs this file too, so a missing export or a narrowed prop
+  // fails there as well.
+  it('takes animatable camera, shape, light, air, and motion dials from the package root', () => {
     expectTypeOf<SwellsProps>().toEqualTypeOf<{
       altitude?: AnimatableProp<number>;
       tilt?: AnimatableProp<number>;
@@ -117,16 +117,16 @@ describe('Swells', () => {
       scale?: AnimatableProp<number>;
       relief?: AnimatableProp<number>;
       sharpness?: AnimatableProp<number>;
+      angle?: AnimatableProp<number>;
       ripples?: AnimatableProp<number>;
-      sunAngle?: AnimatableProp<number>;
-      sunHeight?: AnimatableProp<number>;
+      lightAngle?: AnimatableProp<number>;
+      lightHeight?: AnimatableProp<number>;
       color?: string;
       shadowColor?: string;
       sheen?: AnimatableProp<number>;
       sheenColor?: string;
       haze?: AnimatableProp<number>;
       hazeColor?: string;
-      mirage?: AnimatableProp<number>;
       colorSpace?: ColorSpace;
       hueInterpolation?: HueInterpolation;
       speed?: AnimatableProp<number>;
@@ -134,7 +134,6 @@ describe('Swells', () => {
       parallax?: AnimatableProp<number>;
       parallaxCenter?: PositionProp;
       intro?: boolean;
-      tuning?: SwellsTuning;
     }>();
   });
 
@@ -178,17 +177,33 @@ describe('Swells', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
-  it('changes its shape and sun dials without rebuilding the material', () => {
+  it('changes its shape and light dials without rebuilding the material', () => {
     const scene = makeScene();
     const { rerender } = render(
-      <Swells relief={0.8} ripples={0.6} scale={4} sharpness={1} sunAngle={300} sunHeight={15} />,
+      <Swells
+        angle={30}
+        lightAngle={300}
+        lightHeight={15}
+        relief={0.8}
+        ripples={0.6}
+        scale={4}
+        sharpness={1}
+      />,
       { wrapper: scene.Wrapper },
     );
     const { material } = scene.onlyMesh();
 
     scene.scheduler.requestRender.mockClear();
     rerender(
-      <Swells relief={0} ripples={0} scale={8} sharpness={0} sunAngle={90} sunHeight={60} />,
+      <Swells
+        angle={90}
+        lightAngle={90}
+        lightHeight={60}
+        relief={0}
+        ripples={0}
+        scale={8}
+        sharpness={0}
+      />,
     );
 
     expect(scene.onlyMesh().material).toBe(material);
@@ -206,7 +221,7 @@ describe('Swells', () => {
     const { material } = scene.onlyMesh();
 
     scene.scheduler.requestRender.mockClear();
-    rerender(<Swells color="#ffffff" />);
+    rerender(<Swells color="#ffffff" shadowColor="oklch(0.45 0.06 15)" />);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
     rerender(<Swells color="#ffffff" shadowColor="#000000" />);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(2);
@@ -214,9 +229,9 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
-  // The sheen, the haze, and the mirage ride uniforms too, so they glide
-  // on a slider or a signal with no rebuild.
-  it('changes its sheen, haze, and mirage without rebuilding the material', () => {
+  // The sheen and the haze ride uniforms too, so they glide on a slider or
+  // a signal with no rebuild.
+  it('changes its sheen and haze without rebuilding the material', () => {
     const scene = makeScene();
     const haze = makeSignal(0.04);
     const { rerender } = render(<Swells haze={haze.signal} sheen={0.3} />, {
@@ -227,9 +242,7 @@ describe('Swells', () => {
     scene.scheduler.requestRender.mockClear();
     haze.set(0);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
-    rerender(
-      <Swells haze={haze.signal} hazeColor="#ffffff" mirage={0.8} sheen={1} sheenColor="#ffffff" />,
-    );
+    rerender(<Swells haze={haze.signal} hazeColor="#ffffff" sheen={1} sheenColor="#ffffff" />);
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
 
     expect(scene.onlyMesh().material).toBe(material);
@@ -300,25 +313,27 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
-  it('follows its shape and sun signals without rebuilding the material', () => {
+  it('follows its shape and light signals without rebuilding the material', () => {
     const scene = makeScene();
     const signals = {
       scale: makeSignal(4),
       relief: makeSignal(0.8),
       sharpness: makeSignal(0.5),
+      angle: makeSignal(30),
       ripples: makeSignal(0.6),
-      sunAngle: makeSignal(300),
-      sunHeight: makeSignal(15),
+      lightAngle: makeSignal(300),
+      lightHeight: makeSignal(15),
     };
 
     render(
       <Swells
+        angle={signals.angle.signal}
+        lightAngle={signals.lightAngle.signal}
+        lightHeight={signals.lightHeight.signal}
         relief={signals.relief.signal}
         ripples={signals.ripples.signal}
         scale={signals.scale.signal}
         sharpness={signals.sharpness.signal}
-        sunAngle={signals.sunAngle.signal}
-        sunHeight={signals.sunHeight.signal}
       />,
       { wrapper: scene.Wrapper },
     );
@@ -332,34 +347,6 @@ describe('Swells', () => {
     });
 
     expect(scene.onlyMesh().material).toBe(material);
-  });
-
-  // The tuning sliders on the docs page glide for the same reason.
-  it('changes its tuning without rebuilding the material', () => {
-    const scene = makeScene();
-    const { rerender } = render(<Swells tuning={{ windAngle: 30 }} />, {
-      wrapper: scene.Wrapper,
-    });
-    const { material } = scene.onlyMesh();
-
-    scene.scheduler.requestRender.mockClear();
-    rerender(
-      <Swells
-        tuning={{
-          stepScale: 0.4,
-          maxDistance: 60,
-          maxSlope: 2,
-          windAngle: 90,
-          slipFace: 0.2,
-          meander: 0,
-          rippleSize: 0.2,
-          rippleHeight: 0.02,
-        }}
-      />,
-    );
-
-    expect(scene.onlyMesh().material).toBe(material);
-    expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
   // The glide, the swells' rise and fall, and the parallax sway ride uniforms too.
@@ -382,17 +369,17 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
-  // The render-on-demand vote. Three dials move the picture on their own:
-  // the glide, the swells' rise and fall, and the mirage's shimmer, and so
-  // does the intro while it plays. With all three at 0 and the intro off,
+  // The render-on-demand vote. Two dials move the picture on their own:
+  // the glide and the swells' rise and fall, and so does the intro while
+  // it plays. With both at 0 and the intro off,
   // nothing changes between frames, so a scene of still Sources can park.
-  const still = { speed: 0, swellSpeed: 0, mirage: 0, intro: false } as const;
+  const still = { speed: 0, swellSpeed: 0, intro: false } as const;
 
   /** The last vote Swells cast: true for static, false for animated. */
   const lastVote = (scene: ReturnType<typeof makeScene>) =>
     scene.scheduler.setIdle.mock.lastCall?.[0];
 
-  it('votes static when the glide, the swells, and the mirage are all still', () => {
+  it('votes static when the glide and the swells are both still', () => {
     const scene = makeScene();
 
     render(<Swells {...still} />, { wrapper: scene.Wrapper });
@@ -405,7 +392,6 @@ describe('Swells', () => {
     ['gliding forward', { speed: 0.3 }],
     ['gliding backward', { speed: -0.3 }],
     ['rising and falling', { swellSpeed: 0.2 }],
-    ['shimmering', { mirage: 0.3 }],
   ])('votes animated while %s', (_name, moving) => {
     const scene = makeScene();
 
@@ -417,7 +403,7 @@ describe('Swells', () => {
 
   // A signal can leave 0 between renders, so it counts as moving whatever
   // it reads now.
-  it.each(['speed', 'swellSpeed', 'mirage'] as const)(
+  it.each(['speed', 'swellSpeed'] as const)(
     'votes animated for a %s signal that reads 0',
     (dial) => {
       const scene = makeScene();

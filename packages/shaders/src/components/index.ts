@@ -77,7 +77,7 @@ export { SimplexNoise } from './simplex-noise/simplex-noise.js';
 export type { SimplexNoiseProps } from './simplex-noise/simplex-noise.js';
 
 export { Swells } from './swells/swells.js';
-export type { SwellsProps, SwellsTuning } from './swells/swells.js';
+export type { SwellsProps } from './swells/swells.js';
 
 export { Vignette } from './vignette/vignette.js';
 export type { VignetteProps } from './vignette/vignette.js';

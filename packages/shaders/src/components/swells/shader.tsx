@@ -3,9 +3,9 @@
 // Swells' GPU half. Unlike the flat Sources, this one draws a 3D world. The
 // pixel's journey: cast a ray from a perspective camera through the pixel
 // (cameraRay), follow it until it meets the surface (marchHeightMap), light
-// the surface it hits from a sun and add a sheen, blend it into the haze and
-// fade it out with distance, shimmer it near the horizon, and leave the
-// pixel transparent where the ray misses, so the page, or a Source mounted
+// the surface it hits by how it faces the light and add a sheen, blend it
+// into the haze and fade it out with distance, and leave the pixel
+// transparent where the ray misses, so the page, or a Source mounted
 // beneath, shows through as the sky. The camera glides over the surface and
 // can sway sideways toward a point, and the swells rise and fall in place.
 // The wrapper (./swells.tsx) supplies the props.
@@ -30,18 +30,29 @@ import {
   smoothstep,
   sqrt,
   step,
+  texture,
   uniform,
   uv,
   vec2,
   vec3,
   vec4,
 } from 'three/tsl';
-import { Mesh, MeshBasicNodeMaterial, type Node, PlaneGeometry } from 'three/webgpu';
+import {
+  HalfFloatType,
+  LinearFilter,
+  Mesh,
+  MeshBasicNodeMaterial,
+  type Node,
+  PlaneGeometry,
+  type Texture,
+  type Vector2,
+} from 'three/webgpu';
 
 import {
   cameraRay,
   type ColorSpace,
   createReducedMotionWatcher,
+  createTexturePass,
   getReducedMotionTimeScale,
   type HueInterpolation,
   marchHeightMap,
@@ -64,12 +75,14 @@ import { useShaderContext } from '../../react/hooks/use-shader-context/use-shade
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 
 type TSLValue = ShaderNodeObject<Node>;
+type FloatUniform = ReturnType<typeof uniform<number>>;
+type Vector2Uniform = ReturnType<typeof uniform<Vector2>>;
 
 // ---------------------------------------------
-// Feel constants (provisional until the defaults gate)
+// Feel constants
 // ---------------------------------------------
-// The tuning prop overrides the ones SwellsTuning lists, on the docs page,
-// and the defaults gate bakes the landed values back in here.
+// Tuned by eye at the defaults gate (SHA-327). They are baked into the
+// shader as literals, so none of them is a prop.
 
 // The share of the ray's height above the ground that each march step
 // moves (marchHeightMap's stepScale). Lower is safer on steep slopes and
@@ -89,12 +102,6 @@ const MAX_SLOPE = 3;
 // without meeting the ground counts as a miss.
 const MAX_DISTANCE = 40;
 
-// Which way the wind blows, in compass degrees clockwise from the way the
-// camera faces, the convention sunAngle uses: 0 blows straight away from
-// the camera, 90 to its right. The crests run square to the wind, and at
-// full `sharpness` each swell's steep face looks downwind, as a dune's does.
-const WIND_ANGLE = 30;
-
 // The share of each swell's length that its steep downwind face takes at
 // full `sharpness`, 0 to 1. On a dune, wind pushes sand up the long, gentle
 // windward face and drops it over the crest, where it slides down a short,
@@ -106,8 +113,8 @@ const SLIP_FACE = 0.3;
 // How wide a band the crest rounds over at `sharpness={0}`, in the swell's
 // own height (the triangle below climbs 0 to 1). The band narrows as
 // `sharpness` rises and closes at 1, where the faces meet at an edge. Higher
-// gives broader, softer crests. The shader holds it to 1 or under, since
-// past that the band would reach the trough and lift it.
+// gives broader, softer crests. Keep it at 1 or under, since past that the
+// band would reach the trough and lift it.
 const CREST_ROUNDING = 0.8;
 
 // How far the crests wander from straight lines, in swell lengths. 0 lines
@@ -121,14 +128,13 @@ const MEANDER = 1.5;
 const RIPPLE_SIZE = 0.1;
 
 // How tall the ripples are at `ripples={1}`, in terrain units. Real sand
-// ripples are a few centimetres on dunes metres tall, so a little goes a long way:
-// the light picks them out from their slope, not their height.
+// ripples are a few centimetres on dunes metres tall, so a little goes a
+// long way: the light picks them out from their slope, not their height.
 const RIPPLE_HEIGHT = 0.008;
 
-// How many steps each pixel's ray takes. It is baked into the shader as the
-// loop's bound, because WebGL2 accepts only a fixed one, so it is not on the
-// tuning rig. More steps reach further toward the horizon and cost GPU time
-// on every pixel.
+// How many steps each pixel's ray takes. It is the loop's bound, which
+// WebGL2 accepts only as a fixed number. More steps reach further toward
+// the horizon and cost GPU time on every pixel.
 const STEP_COUNT = 64;
 
 // How far apart, in terrain units, the normal's height reads sit on either
@@ -182,8 +188,8 @@ const RIPPLE_ROLL_BEND = 6;
 const RIPPLE_FADE_START = 15;
 const RIPPLE_FADE_END = 60;
 
-// How tightly the sheen gathers around the sun's reflection: the exponent
-// the highlight's falloff is raised to (the Light it from the sun section
+// How tightly the sheen gathers around the light's reflection: the exponent
+// the highlight's falloff is raised to (the Shade it by the light section
 // says how). Low spreads a broad, soft glow over every face near the
 // reflection, which reads as satin; high pinches it into a small, bright
 // glint, which reads as wet or polished.
@@ -197,21 +203,6 @@ const SHEEN_FOCUS = 12;
 // hides them. Higher fades more of the far field; 0 turns the fade off and
 // leaves the surface ending in a hard, ragged edge at the reach.
 const REACH_FADE = 0.4;
-
-// Where the mirage starts, in terrain units from the camera: the shimmer
-// fades in from here to twice as far, and holds full strength beyond,
-// over the far ground and the horizon. Lower brings it closer.
-const MIRAGE_START = 12;
-
-// How far the mirage moves a pixel at `mirage={1}`, at the most, as a share
-// of the canvas's height: 0.003 is 3 pixels on a canvas 1000 pixels tall.
-// Higher wavers more. Past about 0.0044 the shimmer's waves fold the
-// image over itself (the Shimmer near the horizon section says why).
-const MIRAGE_SWAY = 0.003;
-
-// How much of the surface the mirage clears at its strongest, where the
-// sky shows through, 0 to 1, at `mirage={1}`.
-const MIRAGE_CLEARING = 0.6;
 
 // How many times further out the surface fades to transparent than it
 // turns to `hazeColor`. At 2, the ground has mostly taken the haze's color
@@ -232,10 +223,6 @@ const SWELL_SPAN = 10;
 // swell 100 units long, past the horizon.
 const MIN_SCALE = 0.1;
 const MAX_SCALE = 40;
-
-// The smallest ripple size the shader works with, in terrain units. It
-// divides the ground's coordinates, so 0 would blow up.
-const MIN_RIPPLE_SIZE = 0.05;
 
 // Slides every point before the noise cuts it into cells. Any whole number
 // gives an equally random surface; this one picks the surface the defaults
@@ -269,6 +256,28 @@ const SLICE_STEP = [37.1, 19.7] as const;
 // of a few cells works; this one picks the pattern the defaults are tuned on.
 const STRENGTH_OFFSET = [41.7, 23.9] as const;
 
+// The field texture (createFieldPass below). It covers the ground the march
+// reaches: MAX_DISTANCE to either side of the camera and ahead of it, plus a
+// unit of margin for the normal's reads around a hit at the edge of the
+// reach and for the grid's snap. Behind the camera it covers FIELD_BEHIND
+// units, enough for rays aimed past straight down, which the demo's widest
+// view and steepest tilt reach about 1.5 units behind a camera at altitude
+// 4. A point past the texture's edge reads the edge texel. Each texel is
+// FIELD_TEXEL units square, and the texel counts round each side up to a
+// whole number of texels.
+//
+// The filter blends the fields in straight lines between texel centers, so
+// the surface's slope changes at each texel's edge, which shows as faint
+// facets in the light where the noise cells are only a few texels wide: at
+// a high `scale`. At 0.04 units, 2050 by 1125 texels and about 18 MB, a
+// frame at `scale` 40 matches the inline fields by eye, and the pass costs
+// no more GPU time than one at 0.08 units did (SHA-327).
+const FIELD_TEXEL = 0.04;
+const FIELD_BEHIND = 4;
+const FIELD_WIDTH = Math.ceil((MAX_DISTANCE * 2 + 2) / FIELD_TEXEL);
+const FIELD_HEIGHT = Math.ceil((MAX_DISTANCE + 1 + FIELD_BEHIND) / FIELD_TEXEL);
+const FIELD_SPAN = [FIELD_WIDTH * FIELD_TEXEL, FIELD_HEIGHT * FIELD_TEXEL] as const;
+
 // The reduced-motion time scale counts as full motion only at 1. The sway
 // toward parallaxCenter holds still at any lower scale, and this sits just
 // under 1 so step() reads 1 exactly as on.
@@ -281,10 +290,6 @@ const FULL_MOTION = 0.999;
 // off. Lower turns the camera harder for the same sway; higher turns it
 // less, until the sway is a plain slide.
 const PARALLAX_PIVOT = 8;
-
-// The closest the pivot may sit, in terrain units. The turn is the angle to
-// the pivot, so a pivot at 0 would swing the camera a quarter turn.
-const MIN_PARALLAX_PIVOT = 0.5;
 
 // How long the intro takes, in seconds, from flat ground under thick haze
 // to the finished surface. Higher is slower and calmer.
@@ -310,10 +315,6 @@ const INTRO_HAZE = 0.2;
 // rise behind the haze.
 const INTRO_HAZE_SHARE = 0.5;
 
-// The shortest intro the clock works with, in seconds, so a tuning value of
-// 0 can't divide by 0.
-const MIN_INTRO_SECONDS = 0.1;
-
 // The longest slice of time one tick may add to the intro's clock, in
 // seconds, as in useAnimatableSpeed: a tick after a long stall would
 // otherwise jump the intro straight to its end. Normal frames, 16 to 33 ms,
@@ -325,48 +326,6 @@ const DEGREES_TO_RADIANS = Math.PI / 180;
 // The middle of the canvas, as a position prop: the sway's center when a
 // fixed `parallax` of 0 or reduced motion leaves it nothing to do.
 const CANVAS_CENTER: readonly [number, number] = [0.5, 0.5];
-
-/** TEMPORARY (build-phase tuning only): dev overrides for the feel constants. */
-export interface SwellsTuning {
-  /** The share of the ray's height above the ground each march step moves, 0 to 1. */
-  stepScale?: number;
-  /** How far the camera sees, in terrain units. */
-  maxDistance?: number;
-  /** The steepest a swell's face may get, as height gained per unit of ground. */
-  maxSlope?: number;
-  /** Which way the wind blows, in compass degrees from the camera's heading. */
-  windAngle?: number;
-  /** The share of each swell's length its steep downwind face takes at full sharpness, 0 to 1. */
-  slipFace?: number;
-  /** How wide a band the crest rounds over at sharpness 0, 0 to 1. */
-  crestRounding?: number;
-  /** How far the crests wander from straight lines, in swell lengths. */
-  meander?: number;
-  /** The distance from one ripple's crest to the next, in terrain units. */
-  rippleSize?: number;
-  /** How tall the ripples are at full strength, in terrain units. */
-  rippleHeight?: number;
-  /** How tightly the sheen gathers around the sun's reflection, as an exponent. */
-  sheenFocus?: number;
-  /** The share of the camera's reach, at its far end, the surface fades out over, 0 to 1. */
-  reachFade?: number;
-  /** Where the mirage starts, in terrain units from the camera. */
-  mirageStart?: number;
-  /** How far the mirage moves a pixel at full strength, as a share of the canvas's height. */
-  mirageSway?: number;
-  /** How much of the surface the mirage clears at its strongest, 0 to 1. */
-  mirageClearing?: number;
-  /** How many times further out the surface fades than it turns to the haze color. */
-  hazeFadeLag?: number;
-  /** How far ahead the point the camera keeps facing while it sways sits, in terrain units. */
-  parallaxPivot?: number;
-  /** How long the intro takes, in seconds. */
-  introSeconds?: number;
-  /** How wide the band at the intro's rise front is, in terrain units. */
-  introFront?: number;
-  /** How thick the haze is when the intro starts, per terrain unit. */
-  introHaze?: number;
-}
 
 // ---------------------------------------------
 // Noise for the surface's shape
@@ -444,78 +403,236 @@ const layeredNoise = (point: TSLValue): TSLValue => {
   return sum.div(total);
 };
 
-/**
- * TEMPORARY (build-phase tuning only): a uniform for each feel constant,
- * holding the tuning prop's override or the constant itself. They ride
- * uniforms so the tuning sliders glide without rebuilding the shader. The
- * defaults gate deletes this hook and bakes the constants back in.
- */
-function useTuningUniforms(tuning: SwellsTuning | undefined) {
-  const {
-    stepScale = STEP_SCALE,
-    maxDistance = MAX_DISTANCE,
-    maxSlope = MAX_SLOPE,
-    windAngle = WIND_ANGLE,
-    slipFace = SLIP_FACE,
-    crestRounding = CREST_ROUNDING,
-    meander = MEANDER,
-    rippleSize = RIPPLE_SIZE,
-    rippleHeight = RIPPLE_HEIGHT,
-    sheenFocus = SHEEN_FOCUS,
-    reachFade = REACH_FADE,
-    mirageStart = MIRAGE_START,
-    mirageSway = MIRAGE_SWAY,
-    mirageClearing = MIRAGE_CLEARING,
-    hazeFadeLag = HAZE_FADE_LAG,
-    parallaxPivot = PARALLAX_PIVOT,
-    introFront = INTRO_FRONT,
-    introHaze = INTRO_HAZE,
-  } = tuning ?? {};
+// ---------------------------------------------
+// The surface's fields: the roll and each swell's strength
+// ---------------------------------------------
 
-  return {
-    stepScaleUniform: useAnimatableUniform<number>(stepScale),
-    maxDistanceUniform: useAnimatableUniform<number>(maxDistance),
-    maxSlopeUniform: useAnimatableUniform<number>(maxSlope),
-    windAngleUniform: useAnimatableUniform<number>(windAngle),
-    slipFaceUniform: useAnimatableUniform<number>(slipFace),
-    crestRoundingUniform: useAnimatableUniform<number>(crestRounding),
-    meanderUniform: useAnimatableUniform<number>(meander),
-    rippleSizeUniform: useAnimatableUniform<number>(rippleSize),
-    rippleHeightUniform: useAnimatableUniform<number>(rippleHeight),
-    sheenFocusUniform: useAnimatableUniform<number>(sheenFocus),
-    reachFadeUniform: useAnimatableUniform<number>(reachFade),
-    mirageStartUniform: useAnimatableUniform<number>(mirageStart),
-    mirageSwayUniform: useAnimatableUniform<number>(mirageSway),
-    mirageClearingUniform: useAnimatableUniform<number>(mirageClearing),
-    hazeFadeLagUniform: useAnimatableUniform<number>(hazeFadeLag),
-    parallaxPivotUniform: useAnimatableUniform<number>(parallaxPivot),
-    introFrontUniform: useAnimatableUniform<number>(introFront),
-    introHazeUniform: useAnimatableUniform<number>(introHaze),
-  };
+/** The strength drift's state for this frame, pinned before any loop. */
+interface StrengthDrift {
+  sliceBlend: TSLValue;
+  spreadRestore: TSLValue;
+  offsetNow: TSLValue;
+  offsetNext: TSLValue;
 }
 
 /**
- * The uniforms for the light and air over the surface: the sheen, the
- * haze, and the mirage, with the mirage's clock.
+ * Drift the swells' strength. Each swell's strength, how tall it stands
+ * against its neighbors, comes from a slow noise field (surfaceFields below).
+ * To make the swells rise and fall in place, the field changes over time
+ * while the crests stay where they are. Noise in 2D has no time axis, so the
+ * drift fakes one: it reads two unrelated slices of the noise, the current
+ * one and the next, and blends from one to the other as the clock runs.
+ * swellClock counts slices, so its whole part picks the slices and its
+ * fraction is how far the blend has gone.
+ *
+ * Both slice numbers wrap into 0..STRENGTH_SLICES - 1, the next one too, so
+ * the last slice of the cycle blends into the first and the cycle closes
+ * with no jump. Each slice number then slides the noise by SLICE_STEP cells
+ * that many times, which gives each its own pattern. At swellSpeed 0 the
+ * clock stays at 0, so the strength reads slice 0 alone and the swells hold
+ * still.
+ *
+ * smoothstep() eases each blend in and out, so every swell slows to a stop
+ * at the end of a slice, then starts toward its next height: a slow breath
+ * rather than a steady crawl.
+ *
+ * A blend of two unrelated noises is flatter than either: halfway, the highs
+ * and lows partly cancel, and the spread around the middle falls to
+ * sqrt(0.5 ^ 2 + 0.5 ^ 2) = 0.71 of a single slice's. Left alone, every
+ * crest would even out once per slice. Dividing the distance from the middle
+ * by sqrt(w ^ 2 + (1 - w) ^ 2), where w is the blend, puts the spread back,
+ * and it is 1 at either end of a blend, where one slice shows alone.
+ *
+ * All of this depends on the clock alone, so .toVar() pins it where this is
+ * called, before any loop (the first-use gotcha in docs/agents/tsl.md).
  */
+const strengthDrift = (swellClock: FloatUniform): StrengthDrift => {
+  const sliceNow = wrapInto(floor(swellClock), STRENGTH_SLICES).toVar();
+  const sliceNext = wrapInto(sliceNow.add(1), STRENGTH_SLICES).toVar();
+  const sliceBlend = smoothstep(0, 1, fract(swellClock)).toVar();
+  const spreadRestore = float(1)
+    .div(sqrt(sliceBlend.mul(sliceBlend).add(sliceBlend.oneMinus().mul(sliceBlend.oneMinus()))))
+    .toVar();
+  const sliceOffset = (slice: TSLValue) =>
+    vec2(...SLICE_STEP)
+      .mul(slice)
+      .add(vec2(...STRENGTH_OFFSET))
+      .toVar();
+
+  return {
+    sliceBlend,
+    spreadRestore,
+    offsetNow: sliceOffset(sliceNow),
+    offsetNext: sliceOffset(sliceNext),
+  };
+};
+
+/**
+ * The two noise fields under the surface at a point on the ground, in world
+ * terrain units, as vec2(roll, strength).
+ *
+ * The roll: broad noise, 0..1, that lifts and lowers the ground and bends
+ * the crests. Each swell's strength is a second noise, slid by an arbitrary
+ * offset so it doesn't track the roll, and drifting between two slices as
+ * the swells rise and fall (strengthDrift above). The blend is pulled back
+ * out from the middle by spreadRestore. It can pass 0..1 at a rare extreme,
+ * and the caller clamps it after any texture read, so the texture's filter
+ * blends the smooth value (the texture-pass case in "Keep shared work out of
+ * per-pixel loops" in docs/agents/tsl.md).
+ */
+const surfaceFields = (
+  worldPoint: TSLValue,
+  swellLength: TSLValue,
+  drift: StrengthDrift,
+): TSLValue => {
+  // The point in swell lengths, so one unit is one swell, crest to crest.
+  const swellPoint = worldPoint.div(swellLength);
+  const roll = layeredNoise(swellPoint.mul(ROLL_FREQUENCY));
+  const strengthPoint = swellPoint.mul(STRENGTH_FREQUENCY);
+
+  // The next slice costs a noise read, four hashes, and at a swellSpeed of 0
+  // its blend weight is 0, so the read would go to waste. If() makes it a
+  // real GPU branch, a block the GPU runs only when its condition holds. The
+  // condition reads a uniform, so every pixel takes the same side and none
+  // waits on its neighbors (pixels shaded together run in lockstep, and a
+  // branch they split on costs both sides). Skipped, the next slice stays 0,
+  // and mix() takes none of it. A clock stopped partway through a blend keeps
+  // both reads, because its weight is over 0.
+  const strengthNow = valueNoise(strengthPoint.add(drift.offsetNow)).toVar();
+  const strengthNext = float(0).toVar();
+
+  If(drift.sliceBlend.greaterThan(0), () => {
+    strengthNext.assign(valueNoise(strengthPoint.add(drift.offsetNext)));
+  });
+
+  const strength = mix(strengthNow, strengthNext, drift.sliceBlend)
+    .sub(0.5)
+    .mul(drift.spreadRestore)
+    .add(0.5);
+
+  return vec2(roll, strength);
+};
+
+/** How long a swell is, crest to crest, in terrain units, from `scale`. */
+const swellLengthFrom = (scale: FloatUniform): TSLValue =>
+  float(SWELL_SPAN).div(clamp(scale, MIN_SCALE, MAX_SCALE));
+
+/**
+ * The parallax sway, in terrain units right of the camera's resting place,
+ * and the switch that holds it at 0 below full motion. See "Cast the pixel's
+ * ray" in SwellsShader for how the sway works. The parallax center uniform
+ * goes in as an argument to add(), never as the receiver of a chained call
+ * (the vec-uniform gotcha in docs/agents/tsl.md).
+ */
+const cameraSway = (parallaxCenter: Vector2Uniform, parallax: FloatUniform) => {
+  const fullMotion = step(FULL_MOTION, getReducedMotionTimeScale());
+  const towardCenter = clamp(vec2(-0.5, -0.5).add(parallaxCenter).mul(2), -1, 1);
+
+  return { fullMotion, swayRight: towardCenter.x.mul(parallax).mul(fullMotion) };
+};
+
+/**
+ * The world point at the field texture's corner, for a camera standing over
+ * `cameraWorld`. The texture follows the camera, but in whole texels: the
+ * corner snaps to the texel grid, so each texel sits on the same world point
+ * from frame to frame while the camera glides. A texture that slid with the
+ * camera would land its texels on new points each frame, and the filter's
+ * small error between texels would crawl over the surface.
+ */
+const fieldCornerFor = (cameraWorld: TSLValue): TSLValue =>
+  floor(cameraWorld.div(FIELD_TEXEL))
+    .mul(FIELD_TEXEL)
+    .sub(vec2(FIELD_SPAN[0] / 2, FIELD_BEHIND));
+
+interface FieldPassInputs {
+  shaderContext: ShaderContextValue;
+  scale: FloatUniform;
+  swellClock: FloatUniform;
+  travel: FloatUniform;
+  parallax: FloatUniform;
+  parallaxCenter: Vector2Uniform;
+}
+
+/** The field pass's texture and its teardown. */
+interface FieldPass {
+  /** vec2(roll, strength) over the ground ahead of the camera, in r and g. */
+  texture: Texture;
+  /** Stop drawing the fields, and release the texture. */
+  dispose: () => void;
+}
+
+/**
+ * Draws the surface's two noise fields into a texture once a frame, so each
+ * of the march's height reads takes one texture read instead of four value
+ * noises, sixteen hashes. The fields depend on a point on the ground and on
+ * the uniforms, never on the pixel, so every pixel's reads share one 2D
+ * field: the third case in "Keep shared work out of per-pixel loops" in
+ * docs/agents/tsl.md, with Aurora's field pass as the model.
+ *
+ * The texture covers the ground the march reaches (FIELD_TEXEL above), its
+ * corner snapped to the texel grid (fieldCornerFor above). Each texel works out the fields
+ * at its world point. The march works out the same corner from the same
+ * uniforms, and the output stage draws pre-passes ahead of the scene pass in
+ * the same frame, so the two agree (the draw-order gotcha in
+ * docs/agents/tsl.md).
+ *
+ * Returns null where the renderer cannot draw into a half-float target, and
+ * the march works out the fields inline.
+ */
+function createFieldPass({
+  shaderContext,
+  scale,
+  swellClock,
+  travel,
+  parallax,
+  parallaxCenter,
+}: FieldPassInputs): FieldPass | null {
+  const fieldNode = Fn(() => {
+    const { swayRight } = cameraSway(parallaxCenter, parallax);
+    const corner = fieldCornerFor(vec2(swayRight, travel));
+    const worldPoint = uv()
+      .mul(vec2(...FIELD_SPAN))
+      .add(corner);
+
+    return vec4(surfaceFields(worldPoint, swellLengthFrom(scale), strengthDrift(swellClock)), 0, 1);
+  })();
+
+  // A half float holds the fields to about three significant digits, and
+  // linear filtering blends the four texels around each read, so the
+  // fields vary smoothly between texel centers.
+  const pass = createTexturePass(shaderContext.renderer.three, fieldNode, {
+    width: FIELD_WIDTH,
+    height: FIELD_HEIGHT,
+    type: HalfFloatType,
+    filter: LinearFilter,
+  });
+  const fieldTexture = pass.texture;
+
+  if (fieldTexture === null) return null;
+
+  const removePrePass = shaderContext.registerPrePass(pass.render);
+
+  return {
+    texture: fieldTexture,
+    dispose() {
+      removePrePass();
+      pass.dispose();
+    },
+  };
+}
+
+/** The uniforms for the light and air over the surface: the sheen and the haze. */
 function useAirUniforms({
   sheen,
   sheenColor,
   haze,
   hazeColor,
-  mirage,
-}: Pick<SwellsShaderProps, 'sheen' | 'sheenColor' | 'haze' | 'hazeColor' | 'mirage'>) {
+}: Pick<SwellsShaderProps, 'sheen' | 'sheenColor' | 'haze' | 'hazeColor'>) {
   return {
     sheenUniform: useAnimatableUniform<number>(sheen),
     sheenColorUniform: useColorUniform(sheenColor),
     hazeUniform: useAnimatableUniform<number>(haze),
     hazeColorUniform: useColorUniform(hazeColor),
-    mirageUniform: useAnimatableUniform<number>(mirage),
-    // The mirage's clock: seconds summed on the CPU each frame, times the
-    // reduced-motion time scale, so the shimmer slows under reduced motion
-    // and holds still under the `paused` policy posters and visual tests
-    // use.
-    shimmerClock: useAnimatableSpeed(1),
   };
 }
 
@@ -622,12 +739,10 @@ function useFullMotion(scheduler: ShaderContextValue['scheduler'] | undefined): 
  */
 function useIntro({
   intro,
-  introSeconds,
   isFullMotion,
   scheduler,
 }: {
   intro: boolean;
-  introSeconds: number;
   isFullMotion: boolean;
   scheduler: ShaderContextValue['scheduler'] | undefined;
 }) {
@@ -642,14 +757,12 @@ function useIntro({
   const clockRef = useRef(0);
   const landedRef = useRef(!(intro && isFullMotion));
 
-  // The props as of the last render, read fresh by the client on each tick.
+  // The prop as of the last render, read fresh by the client on each tick.
   const introRef = useRef(intro);
-  const secondsRef = useRef(introSeconds);
 
   useEffect(() => {
     introRef.current = intro;
-    secondsRef.current = introSeconds;
-  }, [intro, introSeconds]);
+  }, [intro]);
 
   useEffect(() => {
     if (!scheduler) return undefined;
@@ -664,10 +777,7 @@ function useIntro({
     // draw it at all (the bare-uniform-write gotcha in docs/agents/tsl.md).
     // That holds on the landing tick too, which draws the finished surface.
     const writeProgress = () => {
-      const progress = Math.min(
-        clockRef.current / Math.max(secondsRef.current, MIN_INTRO_SECONDS),
-        1,
-      );
+      const progress = Math.min(clockRef.current / INTRO_SECONDS, 1);
 
       introUniform.value = progress;
       landedRef.current = progress >= 1;
@@ -705,10 +815,9 @@ function useIntro({
 
 /**
  * Swells' render-on-demand vote: true when nothing it draws changes between
- * frames, so the scene may stop drawing. Three dials move the picture on
- * their own: the glide, the swells' rise and fall, and the mirage's
- * shimmer. A signal is live whatever it reads now, because it can change
- * between renders.
+ * frames, so the scene may stop drawing. Two dials move the picture on
+ * their own: the glide and the swells' rise and fall. A signal is live
+ * whatever it reads now, because it can change between renders.
  *
  * The sway doesn't count, even toward the cursor. A cursor moves only when
  * the pointer does, and useCursor wakes the scene on every move and keeps
@@ -718,11 +827,10 @@ function useIntro({
 function isSwellsStill({
   speed,
   swellSpeed,
-  mirage,
-}: Pick<SwellsShaderProps, 'speed' | 'swellSpeed' | 'mirage'>): boolean {
-  if (isSignal(speed) || isSignal(swellSpeed) || isSignal(mirage)) return false;
+}: Pick<SwellsShaderProps, 'speed' | 'swellSpeed'>): boolean {
+  if (isSignal(speed) || isSignal(swellSpeed)) return false;
 
-  return speed === 0 && swellSpeed === 0 && mirage <= 0;
+  return speed === 0 && swellSpeed === 0;
 }
 
 export interface SwellsShaderProps {
@@ -758,27 +866,33 @@ export interface SwellsShaderProps {
    */
   sharpness: AnimatableProp<number>;
   /**
+   * Which way the swells face, in compass degrees clockwise from the way
+   * the camera faces at rest. The crests run square to it. Accepts a static
+   * value or an animation signal.
+   */
+  angle: AnimatableProp<number>;
+  /**
    * How strong the fine ripples are, from 0 to 1, where 0 is a smooth
    * surface. Accepts a static value or an animation signal.
    */
   ripples: AnimatableProp<number>;
   /**
-   * Where the sun sits around the scene, in compass degrees clockwise from
-   * the way the camera faces at rest. The sun stays put while a parallax
+   * Where the light sits around the scene, in compass degrees clockwise from
+   * the way the camera faces at rest. The light stays put while a parallax
    * sway turns the camera. Accepts a static value or an animation signal.
    */
-  sunAngle: AnimatableProp<number>;
+  lightAngle: AnimatableProp<number>;
   /**
-   * How high the sun sits, in degrees above the horizon. Accepts a static
+   * How high the light sits, in degrees above the horizon. Accepts a static
    * value or an animation signal.
    */
-  sunHeight: AnimatableProp<number>;
-  /** The surface's color in full sun: hex, `oklch()`, or `oklab()`. */
+  lightHeight: AnimatableProp<number>;
+  /** The surface's color in full light: hex, `oklch()`, or `oklab()`. */
   color: string;
-  /** The surface's color on faces turned from the sun: hex, `oklch()`, or `oklab()`. */
+  /** The surface's color on faces turned from the light: hex, `oklch()`, or `oklab()`. */
   shadowColor: string;
   /**
-   * How strong the soft highlight is where the surface mirrors the sun, from
+   * How strong the soft highlight is where the surface mirrors the light, from
    * 0 (a matte surface) to 1. Accepts a static value or an animation signal.
    */
   sheen: AnimatableProp<number>;
@@ -792,11 +906,6 @@ export interface SwellsShaderProps {
   haze: AnimatableProp<number>;
   /** The haze's color: hex, `oklch()`, or `oklab()`. */
   hazeColor: string;
-  /**
-   * How strongly the far surface shimmers, from 0 (still air) to 1, like
-   * heat haze over sand. Accepts a static value or an animation signal.
-   */
-  mirage: AnimatableProp<number>;
   /**
    * The color space the slopes between `shadowColor` and `color`, the
    * sheen over them, and the haze blend in.
@@ -833,11 +942,6 @@ export interface SwellsShaderProps {
    * surface under reduced motion.
    */
   intro: boolean;
-  /**
-   * TEMPORARY (build-phase tuning only): dev overrides for the feel
-   * constants.
-   */
-  tuning: SwellsTuning | undefined;
 }
 
 export function SwellsShader({
@@ -847,16 +951,16 @@ export function SwellsShader({
   scale,
   relief,
   sharpness,
+  angle,
   ripples,
-  sunAngle,
-  sunHeight,
+  lightAngle,
+  lightHeight,
   color,
   shadowColor,
   sheen,
   sheenColor,
   haze,
   hazeColor,
-  mirage,
   colorSpace,
   hueInterpolation,
   speed,
@@ -864,7 +968,6 @@ export function SwellsShader({
   parallax,
   parallaxCenter,
   intro,
-  tuning,
 }: SwellsShaderProps) {
   const shaderContext = useShaderContext();
   const isFullMotion = useFullMotion(shaderContext?.scheduler);
@@ -877,19 +980,18 @@ export function SwellsShader({
   const scaleUniform = useAnimatableUniform<number>(scale);
   const reliefUniform = useAnimatableUniform<number>(relief);
   const sharpnessUniform = useAnimatableUniform<number>(sharpness);
+  const angleUniform = useAnimatableUniform<number>(angle);
   const ripplesUniform = useAnimatableUniform<number>(ripples);
-  const sunAngleUniform = useAnimatableUniform<number>(sunAngle);
-  const sunHeightUniform = useAnimatableUniform<number>(sunHeight);
+  const lightAngleUniform = useAnimatableUniform<number>(lightAngle);
+  const lightHeightUniform = useAnimatableUniform<number>(lightHeight);
   const colorUniform = useColorUniform(color);
   const shadowColorUniform = useColorUniform(shadowColor);
-  const {
-    sheenUniform,
-    sheenColorUniform,
-    hazeUniform,
-    hazeColorUniform,
-    mirageUniform,
-    shimmerClock,
-  } = useAirUniforms({ sheen, sheenColor, haze, hazeColor, mirage });
+  const { sheenUniform, sheenColorUniform, hazeUniform, hazeColorUniform } = useAirUniforms({
+    sheen,
+    sheenColor,
+    haze,
+    hazeColor,
+  });
   const { travelUniform, swellClock, parallaxUniform, parallaxCenterUniform } = useMotionUniforms({
     speed,
     swellSpeed,
@@ -900,34 +1002,11 @@ export function SwellsShader({
 
   const { introUniform, isIntroPlaying } = useIntro({
     intro,
-    introSeconds: tuning?.introSeconds ?? INTRO_SECONDS,
     isFullMotion,
     scheduler: shaderContext?.scheduler,
   });
 
-  useStaticSceneHint(!isIntroPlaying && isSwellsStill({ speed, swellSpeed, mirage }));
-
-  // TEMPORARY: the tuning rig's uniforms (useTuningUniforms above).
-  const {
-    stepScaleUniform,
-    maxDistanceUniform,
-    maxSlopeUniform,
-    windAngleUniform,
-    slipFaceUniform,
-    crestRoundingUniform,
-    meanderUniform,
-    rippleSizeUniform,
-    rippleHeightUniform,
-    sheenFocusUniform,
-    reachFadeUniform,
-    mirageStartUniform,
-    mirageSwayUniform,
-    mirageClearingUniform,
-    hazeFadeLagUniform,
-    parallaxPivotUniform,
-    introFrontUniform,
-    introHazeUniform,
-  } = useTuningUniforms(tuning);
+  useStaticSceneHint(!isIntroPlaying && isSwellsStill({ speed, swellSpeed }));
 
   // Canvas width over height, so the view widens on a wide canvas instead
   // of stretching the terrain.
@@ -981,6 +1060,22 @@ export function SwellsShader({
 
     if (!shaderContext || !mesh) return;
 
+    // The field pass, which draws the roll and the strength once a frame for
+    // the march to read (createFieldPass above). Null where the renderer
+    // cannot draw into a half-float target (WebGL2 without
+    // EXT_color_buffer_float), and the march then works the fields out at
+    // every height read with the same TSL. It is created and disposed in
+    // this effect, so a Strict Mode remount builds a fresh one (the Strict
+    // Mode gotcha in docs/agents/tsl.md).
+    const fieldPass = createFieldPass({
+      shaderContext,
+      scale: scaleUniform,
+      swellClock,
+      travel: travelUniform,
+      parallax: parallaxUniform,
+      parallaxCenter: parallaxCenterUniform,
+    });
+
     // Fn() wraps the body in a GPU function node, which gives the march's
     // loop a list of statements to append to. The trailing () calls it once
     // to produce the node the material renders.
@@ -1009,9 +1104,8 @@ export function SwellsShader({
       // From the camera at (swayRight, 0) the pivot at (0, pivot) lies
       // (-swayRight, pivot) away, and atan() of the one over the other is
       // the angle right of straight ahead, so a sway right turns the camera
-      // left. cameraRay takes it in degrees, and max() holds the pivot at
-      // MIN_PARALLAX_PIVOT or further. The pivot is always
-      // ahead, so the one-argument atan() covers every angle, and it avoids
+      // left. cameraRay takes it in degrees. The pivot is always ahead, so
+      // the one-argument atan() covers every angle, and it avoids
       // the atan2 gotcha in docs/agents/tsl.md: with no sway the sway's
       // negation is -0, and atan2() over WebGL read that as half a turn.
       //
@@ -1031,13 +1125,12 @@ export function SwellsShader({
       // is 1 at full motion, 0.3 slowed, and 0 paused, and step() is 1 only
       // at full motion (FULL_MOTION above), so it switches the sway off at
       // any lower scale rather than slowing it: a slower sway would still
-      // move the view under a moving pointer. The parallax center uniform
-      // goes in as an argument to add(), never as the receiver of a chained
-      // call (the vec-uniform gotcha in docs/agents/tsl.md).
-      const fullMotion = step(FULL_MOTION, getReducedMotionTimeScale());
-      const towardCenter = clamp(vec2(-0.5, -0.5).add(parallaxCenterUniform).mul(2), -1, 1);
-      const swayRight = towardCenter.x.mul(parallaxUniform).mul(fullMotion).toVar();
-      const orbitTurn = atan(swayRight.negate().div(max(parallaxPivotUniform, MIN_PARALLAX_PIVOT)))
+      // move the view under a moving pointer. cameraSway above works it out,
+      // so the field pass finds the same camera position.
+      const sway = cameraSway(parallaxCenterUniform, parallaxUniform);
+      const fullMotion = sway.fullMotion;
+      const swayRight = sway.swayRight.toVar();
+      const orbitTurn = atan(swayRight.negate().div(PARALLAX_PIVOT))
         .div(DEGREES_TO_RADIANS)
         .toVar();
       const camera = {
@@ -1047,64 +1140,7 @@ export function SwellsShader({
         fieldOfView: fieldOfViewUniform,
         turn: { right: orbitTurn },
       };
-      const straightRay = cameraRay(uv(), camera);
-
-      // ---------------------------------------------
-      // Shimmer near the horizon
-      // ---------------------------------------------
-      // Over hot ground, the air just above it is hotter and thinner than
-      // the air higher up, and light bends as it passes between them. Far
-      // off, where a ray skims the ground for a long way, the bend is enough
-      // to show the sky where the ground should be, and the moving air
-      // makes it waver (a mirage). Swells fakes the bend in screen space:
-      // it nudges the pixel's place up or down a little before casting its
-      // ray, so the pixel shows the ground from just above or below it.
-      //
-      // Where the mirage applies: how far off the pixel's ground lies. The
-      // straight ray falls its altitude by the time it reaches height 0,
-      // at altitude / descent units, which is close to where it meets the
-      // swells, and is known before the march. A ray heading level or up
-      // has no ground, and max() turns its descent into a sliver, so its
-      // distance is huge and it counts as far: the shimmer reaches up over
-      // the horizon line, where the far crests waver into the sky. The band
-      // fades in from mirageStart to twice that. smoothstep() has no defined
-      // result when its two edges meet, as they would at a start of 0, so
-      // max() keeps the start a sliver above 0, which still puts the mirage
-      // over all the ground.
-      const straightDescent = max(vec3(straightRay.direction).y.negate(), 1e-4);
-      const groundDistance = vec3(straightRay.origin).y.div(straightDescent);
-      const mirageFrom = max(mirageStartUniform, 1e-3);
-      const mirageAmount = smoothstep(mirageFrom, mirageFrom.mul(2), groundDistance)
-        .mul(clamp(mirageUniform, 0, 1))
-        .toVar();
-
-      // The shimmer itself: two sine waves that run mostly up the canvas,
-      // tilted a little across it in opposite directions, and drift at
-      // different rates, so their sum never repeats a simple pattern and
-      // reads as turbulent air. The canvas's x is multiplied by its aspect,
-      // so both axes count in canvas heights and the waves keep their shape
-      // on a wide canvas. Halving the sum keeps it -1..1. The numbers
-      // multiplying screenY and screenX are each wave's frequency, in
-      // radians per canvas height: 260 runs a wave about every 1/41 of the
-      // canvas's height, and higher packs the waves tighter. The numbers
-      // multiplying shimmerClock are its drift, in radians per second, and
-      // higher shimmers faster.
-      //
-      // A wave of up-down nudges stretches the image where the nudge grows
-      // and squeezes it where it shrinks. If the nudge grows faster than
-      // the pixels it moves, by more than one canvas height per canvas
-      // height, neighboring pixels swap order and the image folds over
-      // itself. The waves' slopes are their frequencies times the sway:
-      // the sum's steepest is (260 + 190) / 2 = 225 times the sway, so a
-      // sway under 1 / 225, about 0.0044, never folds (MIRAGE_SWAY above).
-      const screenX = uv().x.mul(aspectNode);
-      const screenY = uv().y;
-      const shimmer = sin(screenY.mul(260).add(screenX.mul(23)).add(shimmerClock.mul(5)))
-        .add(sin(screenY.mul(190).sub(screenX.mul(41)).sub(shimmerClock.mul(3.7))))
-        .mul(0.5)
-        .toVar();
-      const nudge = shimmer.mul(mirageSwayUniform).mul(mirageAmount);
-      const ray = cameraRay(vec2(uv().x, uv().y.add(nudge)), camera);
+      const ray = cameraRay(uv(), camera);
 
       // ---------------------------------------------
       // Settle the wind and the sizes before the march
@@ -1115,28 +1151,25 @@ export function SwellsShader({
       // reads it, which is inside the loop (the first-use gotcha in
       // docs/agents/tsl.md).
       //
-      // The wind's direction on the ground, as a unit vec2 of (x, z): the
+      // The way the swells face (`angle`) on the ground, as a unit vec2 of
+      // (x, z). Think of it as a wind: the crests run square to it, and at
+      // full sharpness each steep face looks downwind, as a dune's does. The
       // compass angle's sine is how far it points right (+x), and its
-      // cosine how far it points ahead (+z), so 0 points straight ahead.
-      const windRadians = windAngleUniform.mul(DEGREES_TO_RADIANS);
+      // cosine how far it points ahead (+z), so 0 points straight ahead and
+      // lays the crests straight across the canvas.
+      const windRadians = angleUniform.mul(DEGREES_TO_RADIANS);
       const windX = sin(windRadians).toVar();
       const windZ = cos(windRadians).toVar();
-      const swellLength = float(SWELL_SPAN)
-        .div(clamp(scaleUniform, MIN_SCALE, MAX_SCALE))
-        .toVar();
-      const rippleLength = max(rippleSizeUniform, MIN_RIPPLE_SIZE).toVar();
+      const swellLength = swellLengthFrom(scaleUniform).toVar();
+      const rippleLength = float(RIPPLE_SIZE);
       // How sharp the swells are, kept to 0..1, and where each one's crest
       // falls along it. A round swell is symmetric, so its crest sits
       // halfway; a sharp one is a dune, whose crest sits past its long
-      // windward face. mix() slides the crest between the two. The steep
-      // face's share is kept clear of 0 and 1, where one of the two faces
-      // would have no length and the divides below would blow up.
+      // windward face. mix() slides the crest between the two.
       const sharpnessAmount = clamp(sharpnessUniform, 0, 1).toVar();
-      const slipShare = clamp(slipFaceUniform, 0.05, 0.95);
-      const crestShare = mix(0.5, slipShare.oneMinus(), sharpnessAmount).toVar();
+      const crestShare = mix(0.5, 1 - SLIP_FACE, sharpnessAmount).toVar();
       const fallShare = crestShare.oneMinus().toVar();
-      // The crest's rounding band (CREST_ROUNDING above), kept to 1 or
-      // under so it never reaches the trough. It shrinks with
+      // The crest's rounding band (CREST_ROUNDING above). It shrinks with
       // sharpness squared rather than sharpness, so the band stays wide
       // through the lower half of the slider and closes fast near 1: at 0.5
       // it is still three quarters as wide. A band of exactly 0 would
@@ -1147,11 +1180,11 @@ export function SwellsShader({
       const crestRounding = sharpnessAmount
         .mul(sharpnessAmount)
         .oneMinus()
-        .mul(clamp(crestRoundingUniform, 0, 1))
+        .mul(CREST_ROUNDING)
         .max(1e-4)
         .toVar();
       const crestRestore = float(1).div(crestRounding.mul(-0.25).add(1)).toVar();
-      const rippleAmplitude = ripplesUniform.mul(rippleHeightUniform).toVar();
+      const rippleAmplitude = ripplesUniform.mul(RIPPLE_HEIGHT).toVar();
 
       // The relief the swells are built with, `relief` held down where the
       // swells are too short to carry it (MAX_SLOPE above). A face climbs
@@ -1163,20 +1196,17 @@ export function SwellsShader({
       // takes relief / (1 + ROLL_SHARE) of the height, so a relief of
       // MAX_SLOPE * (1 + ROLL_SHARE) * face length / steepening puts the
       // steepest face right at the limit. min() keeps whichever of that and
-      // `relief` is lower, and max() keeps a negative limit from turning the
-      // swells upside down. At the defaults, swells 2.5 units long with a
-      // 0.75-unit slip face, the limit is about 1.5, above the default
-      // relief of 0.8, so it changes nothing there. The roll's meander packs
-      // crests closer in places, which steepens them past this estimate, so
-      // MAX_SLOPE sits well under the slope where crests start to slip.
+      // `relief` is lower. At the defaults, swells about 3.3 units long whose
+      // shorter face is 1.5 units, the limit is about 3, well above the
+      // default relief of 0.9, so it changes nothing there. The roll's
+      // meander packs crests closer in places, which steepens them past this
+      // estimate, so MAX_SLOPE sits well under the slope where crests start
+      // to slip.
       const steepening = mix(float(1.5), float(2), sharpnessAmount).mul(crestRestore);
       const shortestFace = min(crestShare, fallShare).mul(swellLength);
       const limitedRelief = min(
         reliefUniform,
-        max(maxSlopeUniform, 0)
-          .mul(1 + ROLL_SHARE)
-          .mul(shortestFace)
-          .div(steepening),
+        shortestFace.mul(MAX_SLOPE * (1 + ROLL_SHARE)).div(steepening),
       ).toVar();
 
       // How far a ground point lies along the wind, and across it to the
@@ -1187,51 +1217,36 @@ export function SwellsShader({
       const acrossWind = (point: TSLValue) => point.x.mul(windZ).sub(point.y.mul(windX));
 
       // ---------------------------------------------
-      // Drift the swells' strength
+      // Read the surface's fields
       // ---------------------------------------------
-      // Each swell's strength, how tall it stands against its neighbors,
-      // comes from a slow noise field (heightAt below). To make the swells
-      // rise and fall in place, the field changes over time while the
-      // crests stay where they are. Noise in 2D has no time axis, so the
-      // drift fakes one: it reads two unrelated slices of the noise, the
-      // current one and the next, and blends from one to the other as the
-      // clock runs. swellClock counts slices, so its whole part picks the
-      // slices and its fraction is how far the blend has gone.
+      // The roll and each swell's strength (surfaceFields above). With a
+      // field pass, one read of its texture at the point's place in it: the
+      // world point less the texture's corner, over its span, 0..1 across.
+      // The corner comes from the same uniforms the field pass reads, so it
+      // lands on the same texels, and it is pinned here, before the loop.
+      // The read passes its mip level, 0, because the march's loop breaks
+      // out at a different step for each pixel (the sample-level gotcha in
+      // docs/agents/tsl.md). The coordinate goes in when the node is built,
+      // so three adds no matrix multiply (the texture-matrix gotcha in
+      // docs/agents/tsl.md).
       //
-      // Both slice numbers wrap into 0..STRENGTH_SLICES - 1, the next one
-      // too, so the last slice of the cycle blends into the first and the
-      // cycle closes with no jump. Each slice number then slides the noise
-      // by SLICE_STEP cells that many times, which gives each its own
-      // pattern. At swellSpeed 0 the clock stays at 0, so the strength reads
-      // slice 0 alone and the swells hold still.
-      //
-      // smoothstep() eases each blend in and out, so every swell slows to a
-      // stop at the end of a slice, then starts toward its next height:
-      // a slow breath rather than a steady crawl.
-      //
-      // A blend of two unrelated noises is flatter than either: halfway,
-      // the highs and lows partly cancel, and the spread around the middle
-      // falls to sqrt(0.5 ^ 2 + 0.5 ^ 2) = 0.71 of a single slice's. Left
-      // alone, every crest would even out once per slice. Dividing the
-      // distance from the middle by sqrt(w ^ 2 + (1 - w) ^ 2), where w is
-      // the blend, puts the spread back, and it is 1 at either end of a
-      // blend, where one slice shows alone.
-      //
-      // All of this depends on the clock alone, so .toVar() pins it here,
-      // before the march's loop (the first-use gotcha).
-      const sliceNow = wrapInto(floor(swellClock), STRENGTH_SLICES).toVar();
-      const sliceNext = wrapInto(sliceNow.add(1), STRENGTH_SLICES).toVar();
-      const sliceBlend = smoothstep(0, 1, fract(swellClock)).toVar();
-      const spreadRestore = float(1)
-        .div(sqrt(sliceBlend.mul(sliceBlend).add(sliceBlend.oneMinus().mul(sliceBlend.oneMinus()))))
-        .toVar();
-      const sliceOffset = (slice: TSLValue) =>
-        vec2(...SLICE_STEP)
-          .mul(slice)
-          .add(vec2(...STRENGTH_OFFSET))
-          .toVar();
-      const offsetNow = sliceOffset(sliceNow);
-      const offsetNext = sliceOffset(sliceNext);
+      // Without a field pass, the fields are worked out inline at every
+      // height read, with the drift's state pinned here once.
+      const fieldsAt = (() => {
+        if (fieldPass !== null) {
+          const fieldCorner = fieldCornerFor(vec2(swayRight, travelUniform)).toVar();
+
+          return (worldPoint: TSLValue) =>
+            texture(
+              fieldPass.texture,
+              worldPoint.sub(fieldCorner).div(vec2(...FIELD_SPAN)),
+              float(0),
+            ).xy;
+        }
+        const drift = strengthDrift(swellClock);
+
+        return (worldPoint: TSLValue) => surfaceFields(worldPoint, swellLength, drift);
+      })();
 
       // ---------------------------------------------
       // Settle the intro
@@ -1249,21 +1264,20 @@ export function SwellsShader({
       // edge of its reach to the camera's feet. Ground beyond the front has
       // risen; ground inside it is still flat. Seen through the camera, the
       // circle is a line across the ground that sweeps from the horizon
-      // toward the viewer. smoothstep() eases the progress in and out, so
-      // the front starts slowly, crosses the middle ground fastest, and
-      // settles at the end. mix() then slides it from maxDistance at 0 to
-      // one band width behind the camera at 1. Ending there, rather than at
-      // the camera, carries the band's whole width past the camera's feet,
-      // so all the ground has risen in full at the end. max() keeps the
-      // band a sliver wide, since heightAt divides by it.
+      // toward the viewer. The progress eases out, as 1 - (1 - t)^3: the
+      // front starts fast and settles as it nears the camera, the curve an
+      // entrance wants. It also evens out how fast the front looks to move.
+      // Perspective squeezes the far ground into a few rows of pixels, so a
+      // front that started slowly out there would show nothing at all for
+      // the first moments. mix() then slides the front from MAX_DISTANCE at
+      // 0 to one band width behind the camera at 1. Ending there, rather
+      // than at the camera, carries the band's whole width past the camera's
+      // feet, so all the ground has risen in full at the end.
       const introProgress = max(introUniform, fullMotion.oneMinus()).toVar();
-      const frontBand = max(introFrontUniform, 0.1).toVar();
-      const riseFront = mix(
-        maxDistanceUniform,
-        frontBand.negate(),
-        smoothstep(0, 1, introProgress),
-      ).toVar();
-      const riseFrontEnd = riseFront.add(frontBand).toVar();
+      const frontLeft = introProgress.oneMinus();
+      const frontEased = frontLeft.mul(frontLeft).mul(frontLeft).oneMinus();
+      const riseFront = mix(MAX_DISTANCE, -INTRO_FRONT, frontEased).toVar();
+      const riseFrontEnd = riseFront.add(INTRO_FRONT).toVar();
 
       // ---------------------------------------------
       // The surface's height: swells, roll, and ripples
@@ -1287,44 +1301,19 @@ export function SwellsShader({
         // The point in swell lengths, so one unit is one swell, crest to crest.
         const swellPoint = worldPoint.div(swellLength);
 
-        // The roll: broad noise, 0..1, that lifts and lowers the ground and
-        // bends the crests. Each swell's strength is a second noise, slid by
-        // an arbitrary offset so it doesn't track the roll, and drifting
-        // between two slices as the swells rise and fall ("Drift the swells'
-        // strength" above). The blend is pulled back out
-        // from the middle by spreadRestore and clamped to 0..1, which the
-        // restored spread can pass at a rare extreme.
-        const roll = layeredNoise(swellPoint.mul(ROLL_FREQUENCY));
-        const strengthPoint = swellPoint.mul(STRENGTH_FREQUENCY);
-
-        // The next slice costs a noise read, four hashes, on every height
-        // read, and at the default swellSpeed of 0 its blend weight is 0, so
-        // the read would go to waste. If() makes it a real GPU branch, a
-        // block the GPU runs only when its condition holds. The condition
-        // reads a uniform, so every pixel takes the same side and none waits
-        // on its neighbors (pixels shaded together run in lockstep, and a
-        // branch they split on costs both sides). Skipped, the next slice
-        // stays 0, and mix() takes none of it. A clock stopped partway
-        // through a blend keeps both reads, because its weight is over 0.
-        const strengthNow = valueNoise(strengthPoint.add(offsetNow)).toVar();
-        const strengthNext = float(0).toVar();
-
-        If(sliceBlend.greaterThan(0), () => {
-          strengthNext.assign(valueNoise(strengthPoint.add(offsetNext)));
-        });
-
-        const strength = clamp(
-          mix(strengthNow, strengthNext, sliceBlend).sub(0.5).mul(spreadRestore).add(0.5),
-          0,
-          1,
-        );
+        // The roll and each swell's strength ("Read the surface's fields"
+        // above). The strength is clamped to 0..1 here, after the read,
+        // which the restored spread can pass at a rare extreme.
+        const fields = fieldsAt(worldPoint).toVar();
+        const roll = fields.x;
+        const strength = clamp(fields.y, 0, 1);
 
         // Where the point falls within its swell, 0..1 from one trough to
         // the next, measured downwind. fract() keeps the fractional part, so
         // the count repeats once per swell length. Adding the roll, centered
         // on 0 and scaled by the meander, slides the crests up and down the
         // wind from place to place, so they bend instead of running straight.
-        const withinSwell = fract(alongWind(swellPoint).add(roll.sub(0.5).mul(meanderUniform)));
+        const withinSwell = fract(alongWind(swellPoint).add(roll.sub(0.5).mul(MEANDER)));
 
         // The swell's profile starts as a triangle that climbs from 0 at the
         // trough to 1 at the crest, then drops back to 0. Each face is a
@@ -1374,11 +1363,10 @@ export function SwellsShader({
         // the front has passed stands at its full height, ground it hasn't
         // reached lies flat, and the band between lifts smoothly. The band
         // adds a slope of at most 1.5 * relief / band, where smoothstep() is
-        // steepest, 0.12 at the defaults, far under MAX_SLOPE, so the march
-        // still follows it. Once the intro
-        // lands the front sits a band behind the camera, and every point
-        // reads 1. The ripples sit on top unscaled, so the flat
-        // ground at the start is rippled level sand.
+        // steepest, about 0.14 at the defaults, far under MAX_SLOPE, so the
+        // march still follows it. Once the intro lands the front sits a band
+        // behind the camera, and every point reads 1. The ripples rise with
+        // the swells (below), so the ground at the start is smooth and level.
         const distance = length(groundPoint);
         const risen = smoothstep(riseFront, riseFrontEnd, distance);
         const swells = profile
@@ -1410,14 +1398,16 @@ export function SwellsShader({
         // not of the glided one, so the distance comes from groundPoint.
         // smoothstep() runs 0..1 from the fade's start to its end, and
         // oneMinus() flips it, so the ripples hold full strength up close
-        // and reach 0 at the end.
+        // and reach 0 at the end. They also scale by `risen`, the intro's rise
+        // above, so they come in with the swells rather than striping the
+        // flat ground ahead of them.
         const fade = smoothstep(
           RIPPLE_FADE_START,
           RIPPLE_FADE_END,
           distance.div(rippleLength),
         ).oneMinus();
 
-        return swells.add(wave.mul(rippleAmplitude).mul(fade));
+        return swells.add(wave.mul(rippleAmplitude).mul(fade).mul(risen));
       };
 
       // ---------------------------------------------
@@ -1425,47 +1415,47 @@ export function SwellsShader({
       // ---------------------------------------------
       const march = marchHeightMap(ray, heightAt, {
         steps: STEP_COUNT,
-        maxDistance: maxDistanceUniform,
-        stepScale: stepScaleUniform,
+        maxDistance: MAX_DISTANCE,
+        stepScale: STEP_SCALE,
         normalOffset: NORMAL_OFFSET,
       });
 
       // ---------------------------------------------
-      // Light it from the sun
+      // Shade it by the light
       // ---------------------------------------------
-      // The sun's direction, a unit vector from the ground toward it. Its
+      // The light's direction, a unit vector from the ground toward it. Its
       // height above the horizon splits it into an upward part, sin(height),
       // and a level part, cos(height); the compass angle then points the
       // level part, sine to the right (+x) and cosine ahead (+z), the way
       // the wind's direction works above.
-      const sunAngleRadians = sunAngleUniform.mul(DEGREES_TO_RADIANS);
-      const sunHeightRadians = sunHeightUniform.mul(DEGREES_TO_RADIANS);
-      const level = cos(sunHeightRadians);
-      const sunDirection = vec3(
-        sin(sunAngleRadians).mul(level),
-        sin(sunHeightRadians),
-        cos(sunAngleRadians).mul(level),
+      const lightAngleRadians = lightAngleUniform.mul(DEGREES_TO_RADIANS);
+      const lightHeightRadians = lightHeightUniform.mul(DEGREES_TO_RADIANS);
+      const level = cos(lightHeightRadians);
+      const lightDirection = vec3(
+        sin(lightAngleRadians).mul(level),
+        sin(lightHeightRadians),
+        cos(lightAngleRadians).mul(level),
       );
 
-      // How squarely the surface faces the sun. The normal points straight
-      // out of the surface, and its dot product with the sun's direction is
+      // How squarely the surface faces the light. The normal points straight
+      // out of the surface, and its dot product with the light's direction is
       // the cosine of the angle between them: 1 where the surface faces the
-      // sun head on, 0 where the light runs along it, negative where it faces
-      // away. max() clamps the far side to 0, so a face turned from the sun
+      // light head on, 0 where the light runs along it, negative where it faces
+      // away. max() clamps the far side to 0, so a face turned from the light
       // takes the shadow color alone. mixColor blends the two colors in
       // `colorSpace`, so the slopes between them pass through that space's
       // midpoints: oklab's keep an even lightness step, where linear RGB's
       // turn muddy between a warm and a cool color.
       //
-      // A low sun is what makes swells read. Level ground faces a sun 15
+      // A low light is what makes swells read. Level ground faces a light 15
       // degrees up at only sin(15) = 0.26, a slope that tips toward it
       // climbs fast toward 1, and one that tips away drops to 0. So small
       // slopes swing far between the two colors, and every crest splits
-      // into a lit face and a shaded one (raking light). A sun overhead
+      // into a lit face and a shaded one (raking light). A light overhead
       // lights level ground at 1 and a 20 degree slope at cos(20) = 0.94, so
       // the same swells flatten into one tone.
-      const sunFacing = dot(march.normal, sunDirection).toVar();
-      const facing = max(sunFacing, 0);
+      const lightFacing = dot(march.normal, lightDirection).toVar();
+      const facing = max(lightFacing, 0);
       const diffuse = mixColor(
         shadowColorUniform,
         colorUniform,
@@ -1475,42 +1465,42 @@ export function SwellsShader({
       );
 
       // ---------------------------------------------
-      // Add the sheen where the surface mirrors the sun
+      // Add the sheen where the surface mirrors the light
       // ---------------------------------------------
       // The light above is diffuse: a face looks the same from any angle,
-      // because it scatters sunlight every way, as chalk or dry sand does.
+      // because it scatters light every way, as chalk or dry sand does.
       // A smooth surface also mirrors some of it, and that reflection is
       // bright only where it bounces toward the camera, so it moves when the
       // camera does. That mirrored light is specular light, and the sheen is
       // a soft version of it.
       //
-      // A face mirrors the sun into the camera when its normal points
-      // exactly halfway between the way to the sun and the way back to the
+      // A face mirrors the light into the camera when its normal points
+      // exactly halfway between the way to the light and the way back to the
       // camera. The way back to the camera is the ray's direction flipped.
       // Adding the two unit vectors and normalizing the sum gives that
       // halfway direction, so dot(normal, halfway) is 1 on a face that
-      // mirrors the sun straight at the camera and falls as the face turns
+      // mirrors the light straight at the camera and falls as the face turns
       // off it (the Blinn-Phong model).
       //
       // pow() of that cosine shapes the highlight. A dot product just under
       // 1, 0.95, stays 0.54 at the power 12 and drops to 0.01 at the power
       // 100, so a low power (SHEEN_FOCUS above) spreads the glow over every
       // face near the reflection, and a high one keeps only the faces that
-      // mirror the sun almost exactly. max() keeps pow() off negative
+      // mirror the light almost exactly. max() keeps pow() off negative
       // numbers, which have no real power.
       //
-      // A face turned from the sun can still have its normal near the
-      // halfway direction when the sun sits low behind the swells, and would
+      // A face turned from the light can still have its normal near the
+      // halfway direction when the light sits low behind the swells, and would
       // glow from light that never reaches it. smoothstep() fades the sheen
-      // in as the face turns toward the sun, over its first 0.15 of
-      // sunFacing, about 9 degrees, so the cut isn't a hard line.
+      // in as the face turns toward the light, over its first 0.15 of
+      // lightFacing, about 9 degrees, so the cut isn't a hard line.
       const toCamera = vec3(ray.direction).negate();
-      const halfway = sunDirection.add(toCamera).normalize();
+      const halfway = lightDirection.add(toCamera).normalize();
       const mirror = max(dot(march.normal, halfway), 0);
-      const sunlit = smoothstep(0, 0.15, sunFacing);
+      const lit = smoothstep(0, 0.15, lightFacing);
       const highlight = mirror
-        .pow(max(sheenFocusUniform, 1))
-        .mul(sunlit)
+        .pow(SHEEN_FOCUS)
+        .mul(lit)
         .mul(clamp(sheenUniform, 0, 1));
 
       // Blend toward sheenColor by the highlight's strength, in the same
@@ -1564,10 +1554,10 @@ export function SwellsShader({
       // The color takes 1 minus that curve as its blend toward hazeColor,
       // in `colorSpace`. The alpha takes the same curve with the distance
       // divided by the fade lag (HAZE_FADE_LAG above), which stretches it
-      // out. At haze 0.04 and a lag of 2, the ground has turned 47% to the
-      // haze's color at 20 units and 92% at 40, while its alpha is still 85%
-      // at 20 and 53% at 40, where the reach fade below takes it the rest
-      // of the way.
+      // out. For example, at haze 0.04 and a lag of 2, the ground has turned
+      // 47% to the haze's color at 20 units and 92% at 40, while its alpha
+      // is still 85% at 20 and 53% at 40, where the reach fade below takes
+      // it the rest of the way.
       //
       // march.distance is where the ray stopped. For a ray that ran out of
       // steps, that is short of where it meets the ground, so its haze is a
@@ -1575,20 +1565,21 @@ export function SwellsShader({
       // around it, so no sliver shows.
       //
       // During the intro the haze starts thick and clears. It thins from
-      // introHaze to `haze` over the first INTRO_HAZE_SHARE of the intro,
+      // INTRO_HAZE to `haze` over the first INTRO_HAZE_SHARE of the intro,
       // so the far ground shows while the rise front is still out there.
-      // The clearing eases out, as 1 - (1 - t)^2: quick at first, then
-      // settling onto `haze`, so the air opens up as the intro starts. max()
-      // keeps a `haze` thicker than introHaze at its own value throughout.
+      // The clearing eases out on the front's curve, 1 - (1 - t)^3: quick at
+      // first, then settling onto `haze`, so the air opens up as the intro
+      // starts and the two read as one motion. max() keeps a `haze` thicker
+      // than INTRO_HAZE at its own value throughout.
       // At the end t is 1 and mix() returns `haze`.
       const settledHaze = max(hazeUniform, 0);
       const hazeLeft = clamp(introProgress.div(INTRO_HAZE_SHARE), 0, 1).oneMinus();
-      const clearedShare = hazeLeft.mul(hazeLeft).oneMinus();
-      const hazeNow = mix(max(introHazeUniform, settledHaze), settledHaze, clearedShare);
+      const clearedShare = hazeLeft.mul(hazeLeft).mul(hazeLeft).oneMinus();
+      const hazeNow = mix(max(settledHaze, INTRO_HAZE), settledHaze, clearedShare);
       const hazeDepth = hazeNow.mul(march.distance).toVar();
       const hazeBlend = hazeDepth.mul(hazeDepth).negate().exp().oneMinus();
       const hazed = mixColor(surface, hazeColorUniform, hazeBlend, colorSpace, hueInterpolation);
-      const fadeDepth = hazeDepth.div(max(hazeFadeLagUniform, 0.1));
+      const fadeDepth = hazeDepth.div(HAZE_FADE_LAG);
       const clearAir = fadeDepth.mul(fadeDepth).negate().exp();
 
       // The camera's reach ends the surface wherever haze hasn't. Every
@@ -1600,31 +1591,14 @@ export function SwellsShader({
       // from where the fade starts to the reach, and oneMinus() flips it,
       // so the surface holds full strength before the fade and reaches 0
       // at the reach. A ray that ran past the reach stopped just beyond
-      // it, so it draws nothing. smoothstep() has no defined result when
-      // its two edges meet, as they would at a reach fade of 0, so the
-      // clamp keeps the share a sliver above 0: a fade over the last 0.1%
-      // of the reach, which reads as the hard edge 0 asks for.
-      const reachShare = clamp(reachFadeUniform, 1e-3, 1);
+      // it, so it draws nothing.
       const withinReach = smoothstep(
-        maxDistanceUniform.mul(reachShare.oneMinus()),
-        maxDistanceUniform,
+        MAX_DISTANCE * (1 - REACH_FADE),
+        MAX_DISTANCE,
         march.distance,
       ).oneMinus();
 
-      // The mirage clears the surface where the shimmer peaks, so the sky
-      // beneath shows through in wavering patches, as it does over hot sand.
-      // shimmer * 0.5 + 0.5 moves it to 0..1, and the clearing grows with
-      // the mirage's strength in the band (MIRAGE_CLEARING above).
-      // oneMinus() turns the share cleared into the share of the surface
-      // that still covers what is beneath.
-      const mirageCoverage = shimmer
-        .mul(0.5)
-        .add(0.5)
-        .mul(mirageAmount)
-        .mul(clamp(mirageClearingUniform, 0, 1))
-        .oneMinus();
-
-      return vec4(hazed, coverage.mul(clearAir).mul(withinReach).mul(mirageCoverage));
+      return vec4(hazed, coverage.mul(clearAir).mul(withinReach));
     })();
 
     // An unlit material whose per-pixel color comes from colorNode.
@@ -1639,6 +1613,7 @@ export function SwellsShader({
     shaderContext.scheduler.requestRender();
 
     return () => {
+      fieldPass?.dispose();
       try {
         material.dispose();
       } catch {
@@ -1654,8 +1629,8 @@ export function SwellsShader({
     reliefUniform,
     sharpnessUniform,
     ripplesUniform,
-    sunAngleUniform,
-    sunHeightUniform,
+    lightAngleUniform,
+    lightHeightUniform,
     colorUniform,
     shadowColorUniform,
     sheenUniform,
@@ -1663,32 +1638,13 @@ export function SwellsShader({
     hazeUniform,
     colorSpace,
     hueInterpolation,
-    stepScaleUniform,
-    maxDistanceUniform,
-    maxSlopeUniform,
-    windAngleUniform,
-    slipFaceUniform,
-    crestRoundingUniform,
-    meanderUniform,
-    rippleSizeUniform,
-    rippleHeightUniform,
-    sheenFocusUniform,
-    mirageUniform,
-    shimmerClock,
-    reachFadeUniform,
-    mirageStartUniform,
-    mirageSwayUniform,
-    mirageClearingUniform,
+    angleUniform,
     hazeColorUniform,
-    hazeFadeLagUniform,
-    parallaxPivotUniform,
     travelUniform,
     swellClock,
     parallaxUniform,
     parallaxCenterUniform,
     introUniform,
-    introFrontUniform,
-    introHazeUniform,
     aspectNode,
   ]);
 
