@@ -258,26 +258,35 @@ const SLICE_STEP = [37.1, 19.7] as const;
 const STRENGTH_OFFSET = [41.7, 23.9] as const;
 
 // The field texture (createFieldPass below). It covers the ground the march
-// reaches: MAX_DISTANCE to either side of the camera and ahead of it, plus a
-// unit of margin for the normal's reads around a hit at the edge of the
-// reach and for the grid's snap. Behind the camera it covers FIELD_BEHIND
-// units, enough for rays aimed past straight down, which the demo's widest
-// view and steepest tilt reach about 1.5 units behind a camera at altitude
-// 4. A point past the texture's edge, which a steeper view or a higher
-// camera can reach, works the fields out inline ("Read the surface's
-// fields" in SwellsShader). Each texel is
-// FIELD_TEXEL units square, and the texel counts round each side up to a
-// whole number of texels.
+// reaches: MAX_DISTANCE to either side of the camera and ahead of it, plus
+// about a unit of margin for the normal's reads around a hit at the edge of
+// the reach and for the grid's snap. Behind the camera it covers
+// FIELD_BEHIND units, enough for rays aimed past straight down, which the
+// demo's widest view and steepest tilt reach about 1.5 units behind a camera
+// at altitude 4. A point past the texture's edge, which a steeper view or a
+// higher camera can reach, works the fields out inline ("Read the surface's
+// fields" in SwellsShader). Each texel is FIELD_TEXEL units square, and the
+// texel counts round each side up to a whole number of texels.
+//
+// The width stops at WEBGL2_MIN_TEXTURE_SIDE, the longest side every WebGL2
+// device allows, which trims the side margin to 0.96 units. createTexturePass
+// clamps a longer side to the device's limit, which would stretch each
+// texel past FIELD_TEXEL, and the march's snap and bounds, worked out in
+// FIELD_TEXEL steps, would then miss the texels the pass drew.
 //
 // The filter blends the fields in straight lines between texel centers, so
 // the surface's slope changes at each texel's edge, which shows as faint
 // facets in the light where the noise cells are only a few texels wide: at
-// a high `scale`. At 0.04 units, 2050 by 1125 texels and about 18 MB, a
+// a high `scale`. At 0.04 units, 2048 by 1125 texels and about 18 MB, a
 // frame at `scale` 40 matches the inline fields by eye, and the pass costs
 // no more GPU time than one at 0.08 units did (SHA-327).
 const FIELD_TEXEL = 0.04;
 const FIELD_BEHIND = 4;
-const FIELD_WIDTH = Math.ceil((MAX_DISTANCE * 2 + 2) / FIELD_TEXEL);
+const WEBGL2_MIN_TEXTURE_SIDE = 2048;
+const FIELD_WIDTH = Math.min(
+  Math.ceil((MAX_DISTANCE * 2 + 2) / FIELD_TEXEL),
+  WEBGL2_MIN_TEXTURE_SIDE,
+);
 const FIELD_HEIGHT = Math.ceil((MAX_DISTANCE + 1 + FIELD_BEHIND) / FIELD_TEXEL);
 const FIELD_SPAN = [FIELD_WIDTH * FIELD_TEXEL, FIELD_HEIGHT * FIELD_TEXEL] as const;
 
