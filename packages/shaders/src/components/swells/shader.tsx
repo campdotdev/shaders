@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import {
+  abs,
   atan,
   clamp,
   cos,
@@ -262,7 +263,9 @@ const STRENGTH_OFFSET = [41.7, 23.9] as const;
 // reach and for the grid's snap. Behind the camera it covers FIELD_BEHIND
 // units, enough for rays aimed past straight down, which the demo's widest
 // view and steepest tilt reach about 1.5 units behind a camera at altitude
-// 4. A point past the texture's edge reads the edge texel. Each texel is
+// 4. A point past the texture's edge, which a steeper view or a higher
+// camera can reach, works the fields out inline ("Read the surface's
+// fields" in SwellsShader). Each texel is
 // FIELD_TEXEL units square, and the texel counts round each side up to a
 // whole number of texels.
 //
@@ -1232,20 +1235,36 @@ export function SwellsShader({
       //
       // Without a field pass, the fields are worked out inline at every
       // height read, with the drift's state pinned here once.
+      //
+      // A camera aimed further down than the texture allows for (FIELD_BEHIND
+      // above) reaches ground past the texture's edge, where a read would
+      // repeat the edge texel. Those reads work the fields out inline too.
+      // The bounds sit half a texel in from each edge, where the filter
+      // still has a texel on both sides. If() makes the inline work a real
+      // GPU branch, so pixels whose reads all land inside the texture skip
+      // it. At the demo's camera settings every read does.
+      const drift = strengthDrift(swellClock);
+      const inlineFieldsAt = (worldPoint: TSLValue) =>
+        surfaceFields(worldPoint, swellLength, drift);
       const fieldsAt = (() => {
-        if (fieldPass !== null) {
-          const fieldCorner = fieldCornerFor(vec2(swayRight, travelUniform)).toVar();
+        if (fieldPass === null) return inlineFieldsAt;
+        const fieldCorner = fieldCornerFor(vec2(swayRight, travelUniform)).toVar();
+        const coveredHalf = vec2(0.5 - 0.5 / FIELD_WIDTH, 0.5 - 0.5 / FIELD_HEIGHT);
 
-          return (worldPoint: TSLValue) =>
-            texture(
-              fieldPass.texture,
-              worldPoint.sub(fieldCorner).div(vec2(...FIELD_SPAN)),
-              float(0),
-            ).xy;
-        }
-        const drift = strengthDrift(swellClock);
+        return (worldPoint: TSLValue) => {
+          const fieldUv = worldPoint
+            .sub(fieldCorner)
+            .div(vec2(...FIELD_SPAN))
+            .toVar();
+          const fields = texture(fieldPass.texture, fieldUv, float(0)).xy.toVar();
+          const overshoot = abs(fieldUv.sub(0.5)).sub(coveredHalf);
 
-        return (worldPoint: TSLValue) => surfaceFields(worldPoint, swellLength, drift);
+          If(max(overshoot.x, overshoot.y).greaterThan(0), () => {
+            fields.assign(inlineFieldsAt(worldPoint));
+          });
+
+          return fields;
+        };
       })();
 
       // ---------------------------------------------
