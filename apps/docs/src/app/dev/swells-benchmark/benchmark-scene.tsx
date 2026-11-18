@@ -7,7 +7,13 @@
 // LinearGradient alone. Read after the intro lands, about 3 seconds in.
 import { useState } from 'react';
 
-import { LinearGradient, ShaderMonitor, ShaderScene, Swells } from '@camp-dev/shaders';
+import {
+  LinearGradient,
+  ShaderMonitor,
+  ShaderScene,
+  Swells,
+  useStaticSceneHint,
+} from '@camp-dev/shaders';
 
 const WIDTH = 1636;
 const HEIGHT = 696;
@@ -28,6 +34,17 @@ const readSettings = (): Settings => {
   };
 };
 
+/**
+ * Votes the scene animated, so the LinearGradient baseline, which is still
+ * on its own, keeps drawing frames and the GPU readout averages many frames
+ * instead of settling on one.
+ */
+function KeepDrawing() {
+  useStaticSceneHint(false);
+
+  return null;
+}
+
 /** The query string that loads the page at `dpr`. */
 const query = (dpr: number) => `?dpr=${dpr}`;
 
@@ -44,11 +61,10 @@ export default function BenchmarkScene() {
         <a href={`${query(pixelRatio)}&baseline`}>baseline</a>
       </p>
       <div style={{ position: 'relative', width: WIDTH, height: HEIGHT }}>
-        {/* Swells glides at its default speed, so the scene keeps drawing
-            and the readout averages many frames. */}
         <ShaderScene maxDPR={pixelRatio}>
           <LinearGradient />
           {baseline ? null : <Swells swellSpeed={still ? 0 : undefined} />}
+          <KeepDrawing />
           <ShaderMonitor anchor="top-left" />
         </ShaderScene>
       </div>
