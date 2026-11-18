@@ -1,13 +1,20 @@
 import { type ReactNode, StrictMode, useLayoutEffect } from 'react';
 
 import { act, render } from '@testing-library/react';
-import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
+import {
+  HalfFloatType,
+  type Mesh,
+  type RenderTarget,
+  Scene,
+  type WebGPURenderer,
+} from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import {
   type ColorSpace,
   CursorInput,
   type HueInterpolation,
+  type PrePass,
   type SchedulerTick,
   setReducedMotionPolicy,
 } from '../../engine.js';
@@ -21,8 +28,9 @@ import { createSignal } from '../../react/internal/create-signal.js';
 
 // What Swells asks of the scene, never what the surface looks like. The look is
 // the demo page and apps/docs-tests/visual/swells.spec.ts. A fake context
-// counts the meshes Swells adds and how it votes, and the material on the
-// mesh stands in for the compiled shader: a new material is a rebuild.
+// counts the meshes Swells adds, how it votes, and the pre-passes it
+// registers, and the material on the mesh stands in for the compiled shader:
+// a new material is a rebuild.
 beforeEach(() => {
   vi.stubGlobal('requestAnimationFrame', () => 0);
   vi.stubGlobal('cancelAnimationFrame', () => {});
@@ -33,9 +41,47 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function makeScene() {
+interface SceneOptions {
+  /**
+   * WebGL2: whether EXT_color_buffer_float lets the renderer draw into the
+   * field pass's half-float target. Off by default, so Swells works its
+   * fields out inline and registers no pre-pass.
+   */
+  halfFloatTargets?: boolean;
+}
+
+/**
+ * A WebGL2 renderer stub, the way the Aurora tests build one: the field pass
+ * only binds its target and draws a quad into it, and reads the backend to
+ * learn whether it can draw into a half-float target.
+ */
+function makeRenderer(canvas: HTMLCanvasElement, halfFloatTargets: boolean) {
+  let boundTarget: RenderTarget | null = null;
+
+  return {
+    domElement: canvas,
+    getPixelRatio: () => 2,
+    render: vi.fn(),
+    setRenderTarget: vi.fn((target: RenderTarget | null) => {
+      boundTarget = target;
+    }),
+    getRenderTarget: vi.fn(() => boundTarget),
+    backend: {
+      isWebGLBackend: true,
+      extensions: {
+        has: (name: string) => halfFloatTargets && name === 'EXT_color_buffer_float',
+      },
+      gl: { MAX_TEXTURE_SIZE: 0x0d33, getParameter: () => 4096 },
+    },
+  } as unknown as WebGPURenderer;
+}
+
+function makeScene({ halfFloatTargets = false }: SceneOptions = {}) {
   const scene = new Scene();
   const canvas = document.createElement('canvas');
+  const renderer = makeRenderer(canvas, halfFloatTargets);
+  const prePasses: PrePass[] = [];
+  const removedPrePasses: PrePass[] = [];
   const scheduler = {
     idle: true,
     add: vi.fn(),
@@ -49,15 +95,19 @@ function makeScene() {
   // The scene's one shared pointer, which a "cursor" parallax center reads.
   let sharedInput: CursorInput | null = null;
   const shaderContext = {
-    renderer: {
-      three: { domElement: canvas, getPixelRatio: () => 2 } as unknown as WebGPURenderer,
-    },
+    renderer: { three: renderer },
     scene,
     camera: {},
     scheduler,
     registerOverlay: () => () => undefined,
     registerResample: () => () => undefined,
-    registerPrePass: () => () => undefined,
+    registerPrePass: (prePass: PrePass) => {
+      prePasses.push(prePass);
+
+      return () => {
+        removedPrePasses.push(prePass);
+      };
+    },
     canvasSize: {
       get: () => [800, 400, 2],
       on: () => () => undefined,
@@ -86,7 +136,29 @@ function makeScene() {
     return { mesh, material: mesh.material };
   };
 
-  return { Wrapper, scene, scheduler, onlyMesh, getCursorInput: shaderContext.getCursorInput };
+  /** The pre-passes still registered: added and not yet removed. */
+  const livePrePasses = () => prePasses.filter((prePass) => !removedPrePasses.includes(prePass));
+
+  /** Run a pre-pass and return the render target it drew into. */
+  const drawPrePass = (prePass: PrePass) => {
+    vi.mocked(renderer.setRenderTarget).mockClear();
+    prePass();
+    const [target] = vi.mocked(renderer.setRenderTarget).mock.calls[0] ?? [];
+
+    if (!target) throw new Error('expected the pre-pass to bind a render target');
+
+    return target;
+  };
+
+  return {
+    Wrapper,
+    scene,
+    scheduler,
+    onlyMesh,
+    livePrePasses,
+    drawPrePass,
+    getCursorInput: shaderContext.getCursorInput,
+  };
 }
 
 /** A hand-driven animation signal, the shape a MotionValue has. */
@@ -646,5 +718,59 @@ describe('Swells', () => {
 
     expect(() => altitude.set(2)).not.toThrow();
     expect(addListener).not.toHaveBeenCalled();
+  });
+});
+
+describe('Swells with a field pass', () => {
+  // Strict Mode mounts, unmounts, and mounts again, so a registration left
+  // behind by the first mount would draw the fields twice a frame. The
+  // texture is 2048 texels wide, the longest side every WebGL2 device
+  // allows, so the pass never clamps it.
+  it('draws its fields in one pre-pass into a half-float texture, and removes it on unmount', () => {
+    const scene = makeScene({ halfFloatTargets: true });
+    const { unmount } = render(<Swells />, { wrapper: scene.Wrapper });
+    const live = scene.livePrePasses();
+
+    expect(live).toHaveLength(1);
+    const target = scene.drawPrePass(live[0]!);
+    const disposed = vi.fn();
+
+    target.addEventListener('dispose', disposed);
+    expect(target.texture.type).toBe(HalfFloatType);
+    expect([target.width, target.height]).toEqual([2048, 1125]);
+
+    unmount();
+    expect(scene.livePrePasses()).toHaveLength(0);
+    expect(disposed).toHaveBeenCalled();
+  });
+
+  // A new color space rebuilds the material, and the field pass with it. The
+  // old pass must leave with the old material, or each rebuild would add
+  // another draw of the fields to every frame.
+  it('replaces its pre-pass when the material rebuilds', () => {
+    const scene = makeScene({ halfFloatTargets: true });
+    const { rerender } = render(<Swells colorSpace="oklab" />, { wrapper: scene.Wrapper });
+    const [before] = scene.livePrePasses();
+    const oldTarget = scene.drawPrePass(before!);
+    const disposed = vi.fn();
+
+    oldTarget.addEventListener('dispose', disposed);
+    rerender(<Swells colorSpace="linear" />);
+    const live = scene.livePrePasses();
+
+    expect(live).toHaveLength(1);
+    expect(live[0]).not.toBe(before);
+    expect(disposed).toHaveBeenCalled();
+  });
+
+  // Without a half-float target the march works the fields out inline, so
+  // Swells still draws its surface.
+  it('registers no pre-pass without half-float targets and still draws its mesh', () => {
+    const scene = makeScene({ halfFloatTargets: false });
+
+    render(<Swells />, { wrapper: scene.Wrapper });
+
+    expect(scene.livePrePasses()).toHaveLength(0);
+    scene.onlyMesh();
   });
 });
