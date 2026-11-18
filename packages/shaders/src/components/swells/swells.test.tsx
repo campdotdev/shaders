@@ -1,17 +1,24 @@
 import { type ReactNode, StrictMode, useLayoutEffect } from 'react';
 
 import { act, render } from '@testing-library/react';
-import { type Mesh, Scene, type WebGPURenderer } from 'three/webgpu';
+import {
+  HalfFloatType,
+  type Mesh,
+  type RenderTarget,
+  Scene,
+  type WebGPURenderer,
+} from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import {
   type ColorSpace,
   CursorInput,
   type HueInterpolation,
+  type PrePass,
   type SchedulerTick,
   setReducedMotionPolicy,
 } from '../../engine.js';
-import { Swells, type SwellsProps, type SwellsTuning } from '../../index.js';
+import { Swells, type SwellsProps } from '../../index.js';
 import { ShaderContext, type ShaderContextValue } from '../../react/context/shader-context.js';
 import type {
   AnimatableProp,
@@ -21,8 +28,9 @@ import { createSignal } from '../../react/internal/create-signal.js';
 
 // What Swells asks of the scene, never what the surface looks like. The look is
 // the demo page and apps/docs-tests/visual/swells.spec.ts. A fake context
-// counts the meshes Swells adds and how it votes, and the material on the
-// mesh stands in for the compiled shader: a new material is a rebuild.
+// counts the meshes Swells adds, how it votes, and the pre-passes it
+// registers, and the material on the mesh stands in for the compiled shader:
+// a new material is a rebuild.
 beforeEach(() => {
   vi.stubGlobal('requestAnimationFrame', () => 0);
   vi.stubGlobal('cancelAnimationFrame', () => {});
@@ -33,9 +41,47 @@ afterEach(() => {
   vi.restoreAllMocks();
 });
 
-function makeScene() {
+interface SceneOptions {
+  /**
+   * WebGL2: whether EXT_color_buffer_float lets the renderer draw into the
+   * field pass's half-float target. Off by default, so Swells works its
+   * fields out inline and registers no pre-pass.
+   */
+  halfFloatTargets?: boolean;
+}
+
+/**
+ * A WebGL2 renderer stub, the way the Aurora tests build one: the field pass
+ * only binds its target and draws a quad into it, and reads the backend to
+ * learn whether it can draw into a half-float target.
+ */
+function makeRenderer(canvas: HTMLCanvasElement, halfFloatTargets: boolean) {
+  let boundTarget: RenderTarget | null = null;
+
+  return {
+    domElement: canvas,
+    getPixelRatio: () => 2,
+    render: vi.fn(),
+    setRenderTarget: vi.fn((target: RenderTarget | null) => {
+      boundTarget = target;
+    }),
+    getRenderTarget: vi.fn(() => boundTarget),
+    backend: {
+      isWebGLBackend: true,
+      extensions: {
+        has: (name: string) => halfFloatTargets && name === 'EXT_color_buffer_float',
+      },
+      gl: { MAX_TEXTURE_SIZE: 0x0d33, getParameter: () => 4096 },
+    },
+  } as unknown as WebGPURenderer;
+}
+
+function makeScene({ halfFloatTargets = false }: SceneOptions = {}) {
   const scene = new Scene();
   const canvas = document.createElement('canvas');
+  const renderer = makeRenderer(canvas, halfFloatTargets);
+  const prePasses: PrePass[] = [];
+  const removedPrePasses: PrePass[] = [];
   const scheduler = {
     idle: true,
     add: vi.fn(),
@@ -49,15 +95,19 @@ function makeScene() {
   // The scene's one shared pointer, which a "cursor" parallax center reads.
   let sharedInput: CursorInput | null = null;
   const shaderContext = {
-    renderer: {
-      three: { domElement: canvas, getPixelRatio: () => 2 } as unknown as WebGPURenderer,
-    },
+    renderer: { three: renderer },
     scene,
     camera: {},
     scheduler,
     registerOverlay: () => () => undefined,
     registerResample: () => () => undefined,
-    registerPrePass: () => () => undefined,
+    registerPrePass: (prePass: PrePass) => {
+      prePasses.push(prePass);
+
+      return () => {
+        removedPrePasses.push(prePass);
+      };
+    },
     canvasSize: {
       get: () => [800, 400, 2],
       on: () => () => undefined,
@@ -86,7 +136,29 @@ function makeScene() {
     return { mesh, material: mesh.material };
   };
 
-  return { Wrapper, scene, scheduler, onlyMesh, getCursorInput: shaderContext.getCursorInput };
+  /** The pre-passes still registered: added and not yet removed. */
+  const livePrePasses = () => prePasses.filter((prePass) => !removedPrePasses.includes(prePass));
+
+  /** Run a pre-pass and return the render target it drew into. */
+  const drawPrePass = (prePass: PrePass) => {
+    vi.mocked(renderer.setRenderTarget).mockClear();
+    prePass();
+    const [target] = vi.mocked(renderer.setRenderTarget).mock.calls[0] ?? [];
+
+    if (!target) throw new Error('expected the pre-pass to bind a render target');
+
+    return target;
+  };
+
+  return {
+    Wrapper,
+    scene,
+    scheduler,
+    onlyMesh,
+    livePrePasses,
+    drawPrePass,
+    getCursorInput: shaderContext.getCursorInput,
+  };
 }
 
 /** A hand-driven animation signal, the shape a MotionValue has. */
@@ -104,12 +176,12 @@ function makeSignal(initial: number) {
 }
 
 describe('Swells', () => {
-  // The public shape so far: the camera, shape, sun, air, and motion dials,
-  // each a number or an animation signal, the colors and the space they
-  // blend in, the point the camera sways toward, the intro switch, and the
-  // temporary tuning rig. pnpm typecheck runs this file too, so a missing export or a
-  // narrowed prop fails there as well.
-  it('takes animatable camera, shape, sun, air, and motion dials from the package root', () => {
+  // The public shape: the camera, shape, light, air, and motion dials, each
+  // a number or an animation signal, the colors and the space they blend
+  // in, the point the camera sways toward, and the intro switch. pnpm
+  // typecheck runs this file too, so a missing export or a narrowed prop
+  // fails there as well.
+  it('takes animatable camera, shape, light, air, and motion dials from the package root', () => {
     expectTypeOf<SwellsProps>().toEqualTypeOf<{
       altitude?: AnimatableProp<number>;
       tilt?: AnimatableProp<number>;
@@ -117,16 +189,16 @@ describe('Swells', () => {
       scale?: AnimatableProp<number>;
       relief?: AnimatableProp<number>;
       sharpness?: AnimatableProp<number>;
+      angle?: AnimatableProp<number>;
       ripples?: AnimatableProp<number>;
-      sunAngle?: AnimatableProp<number>;
-      sunHeight?: AnimatableProp<number>;
+      lightAngle?: AnimatableProp<number>;
+      lightHeight?: AnimatableProp<number>;
       color?: string;
       shadowColor?: string;
       sheen?: AnimatableProp<number>;
       sheenColor?: string;
       haze?: AnimatableProp<number>;
       hazeColor?: string;
-      mirage?: AnimatableProp<number>;
       colorSpace?: ColorSpace;
       hueInterpolation?: HueInterpolation;
       speed?: AnimatableProp<number>;
@@ -134,7 +206,6 @@ describe('Swells', () => {
       parallax?: AnimatableProp<number>;
       parallaxCenter?: PositionProp;
       intro?: boolean;
-      tuning?: SwellsTuning;
     }>();
   });
 
@@ -178,17 +249,33 @@ describe('Swells', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
-  it('changes its shape and sun dials without rebuilding the material', () => {
+  it('changes its shape and light dials without rebuilding the material', () => {
     const scene = makeScene();
     const { rerender } = render(
-      <Swells relief={0.8} ripples={0.6} scale={4} sharpness={1} sunAngle={300} sunHeight={15} />,
+      <Swells
+        angle={30}
+        lightAngle={300}
+        lightHeight={15}
+        relief={0.8}
+        ripples={0.6}
+        scale={4}
+        sharpness={1}
+      />,
       { wrapper: scene.Wrapper },
     );
     const { material } = scene.onlyMesh();
 
     scene.scheduler.requestRender.mockClear();
     rerender(
-      <Swells relief={0} ripples={0} scale={8} sharpness={0} sunAngle={90} sunHeight={60} />,
+      <Swells
+        angle={90}
+        lightAngle={90}
+        lightHeight={60}
+        relief={0}
+        ripples={0}
+        scale={8}
+        sharpness={0}
+      />,
     );
 
     expect(scene.onlyMesh().material).toBe(material);
@@ -206,7 +293,7 @@ describe('Swells', () => {
     const { material } = scene.onlyMesh();
 
     scene.scheduler.requestRender.mockClear();
-    rerender(<Swells color="#ffffff" />);
+    rerender(<Swells color="#ffffff" shadowColor="oklch(0.45 0.06 15)" />);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
     rerender(<Swells color="#ffffff" shadowColor="#000000" />);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(2);
@@ -214,9 +301,9 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
-  // The sheen, the haze, and the mirage ride uniforms too, so they glide
-  // on a slider or a signal with no rebuild.
-  it('changes its sheen, haze, and mirage without rebuilding the material', () => {
+  // The sheen and the haze ride uniforms too, so they glide on a slider or
+  // a signal with no rebuild.
+  it('changes its sheen and haze without rebuilding the material', () => {
     const scene = makeScene();
     const haze = makeSignal(0.04);
     const { rerender } = render(<Swells haze={haze.signal} sheen={0.3} />, {
@@ -227,9 +314,7 @@ describe('Swells', () => {
     scene.scheduler.requestRender.mockClear();
     haze.set(0);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
-    rerender(
-      <Swells haze={haze.signal} hazeColor="#ffffff" mirage={0.8} sheen={1} sheenColor="#ffffff" />,
-    );
+    rerender(<Swells haze={haze.signal} hazeColor="#ffffff" sheen={1} sheenColor="#ffffff" />);
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
 
     expect(scene.onlyMesh().material).toBe(material);
@@ -300,25 +385,27 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
-  it('follows its shape and sun signals without rebuilding the material', () => {
+  it('follows its shape and light signals without rebuilding the material', () => {
     const scene = makeScene();
     const signals = {
       scale: makeSignal(4),
       relief: makeSignal(0.8),
       sharpness: makeSignal(0.5),
+      angle: makeSignal(30),
       ripples: makeSignal(0.6),
-      sunAngle: makeSignal(300),
-      sunHeight: makeSignal(15),
+      lightAngle: makeSignal(300),
+      lightHeight: makeSignal(15),
     };
 
     render(
       <Swells
+        angle={signals.angle.signal}
+        lightAngle={signals.lightAngle.signal}
+        lightHeight={signals.lightHeight.signal}
         relief={signals.relief.signal}
         ripples={signals.ripples.signal}
         scale={signals.scale.signal}
         sharpness={signals.sharpness.signal}
-        sunAngle={signals.sunAngle.signal}
-        sunHeight={signals.sunHeight.signal}
       />,
       { wrapper: scene.Wrapper },
     );
@@ -332,34 +419,6 @@ describe('Swells', () => {
     });
 
     expect(scene.onlyMesh().material).toBe(material);
-  });
-
-  // The tuning sliders on the docs page glide for the same reason.
-  it('changes its tuning without rebuilding the material', () => {
-    const scene = makeScene();
-    const { rerender } = render(<Swells tuning={{ windAngle: 30 }} />, {
-      wrapper: scene.Wrapper,
-    });
-    const { material } = scene.onlyMesh();
-
-    scene.scheduler.requestRender.mockClear();
-    rerender(
-      <Swells
-        tuning={{
-          stepScale: 0.4,
-          maxDistance: 60,
-          maxSlope: 2,
-          windAngle: 90,
-          slipFace: 0.2,
-          meander: 0,
-          rippleSize: 0.2,
-          rippleHeight: 0.02,
-        }}
-      />,
-    );
-
-    expect(scene.onlyMesh().material).toBe(material);
-    expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
   // The glide, the swells' rise and fall, and the parallax sway ride uniforms too.
@@ -382,17 +441,17 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
-  // The render-on-demand vote. Three dials move the picture on their own:
-  // the glide, the swells' rise and fall, and the mirage's shimmer, and so
-  // does the intro while it plays. With all three at 0 and the intro off,
+  // The render-on-demand vote. Two dials move the picture on their own:
+  // the glide and the swells' rise and fall, and so does the intro while
+  // it plays. With both at 0 and the intro off,
   // nothing changes between frames, so a scene of still Sources can park.
-  const still = { speed: 0, swellSpeed: 0, mirage: 0, intro: false } as const;
+  const still = { speed: 0, swellSpeed: 0, intro: false } as const;
 
   /** The last vote Swells cast: true for static, false for animated. */
   const lastVote = (scene: ReturnType<typeof makeScene>) =>
     scene.scheduler.setIdle.mock.lastCall?.[0];
 
-  it('votes static when the glide, the swells, and the mirage are all still', () => {
+  it('votes static when the glide and the swells are both still', () => {
     const scene = makeScene();
 
     render(<Swells {...still} />, { wrapper: scene.Wrapper });
@@ -405,7 +464,6 @@ describe('Swells', () => {
     ['gliding forward', { speed: 0.3 }],
     ['gliding backward', { speed: -0.3 }],
     ['rising and falling', { swellSpeed: 0.2 }],
-    ['shimmering', { mirage: 0.3 }],
   ])('votes animated while %s', (_name, moving) => {
     const scene = makeScene();
 
@@ -417,7 +475,7 @@ describe('Swells', () => {
 
   // A signal can leave 0 between renders, so it counts as moving whatever
   // it reads now.
-  it.each(['speed', 'swellSpeed', 'mirage'] as const)(
+  it.each(['speed', 'swellSpeed'] as const)(
     'votes animated for a %s signal that reads 0',
     (dial) => {
       const scene = makeScene();
@@ -660,5 +718,59 @@ describe('Swells', () => {
 
     expect(() => altitude.set(2)).not.toThrow();
     expect(addListener).not.toHaveBeenCalled();
+  });
+});
+
+describe('Swells with a field pass', () => {
+  // Strict Mode mounts, unmounts, and mounts again, so a registration left
+  // behind by the first mount would draw the fields twice a frame. The
+  // texture is 2048 texels wide, the longest side every WebGL2 device
+  // allows, so the pass never clamps it.
+  it('draws its fields in one pre-pass into a half-float texture, and removes it on unmount', () => {
+    const scene = makeScene({ halfFloatTargets: true });
+    const { unmount } = render(<Swells />, { wrapper: scene.Wrapper });
+    const live = scene.livePrePasses();
+
+    expect(live).toHaveLength(1);
+    const target = scene.drawPrePass(live[0]!);
+    const disposed = vi.fn();
+
+    target.addEventListener('dispose', disposed);
+    expect(target.texture.type).toBe(HalfFloatType);
+    expect([target.width, target.height]).toEqual([2048, 1125]);
+
+    unmount();
+    expect(scene.livePrePasses()).toHaveLength(0);
+    expect(disposed).toHaveBeenCalled();
+  });
+
+  // A new color space rebuilds the material, and the field pass with it. The
+  // old pass must leave with the old material, or each rebuild would add
+  // another draw of the fields to every frame.
+  it('replaces its pre-pass when the material rebuilds', () => {
+    const scene = makeScene({ halfFloatTargets: true });
+    const { rerender } = render(<Swells colorSpace="oklab" />, { wrapper: scene.Wrapper });
+    const [before] = scene.livePrePasses();
+    const oldTarget = scene.drawPrePass(before!);
+    const disposed = vi.fn();
+
+    oldTarget.addEventListener('dispose', disposed);
+    rerender(<Swells colorSpace="linear" />);
+    const live = scene.livePrePasses();
+
+    expect(live).toHaveLength(1);
+    expect(live[0]).not.toBe(before);
+    expect(disposed).toHaveBeenCalled();
+  });
+
+  // Without a half-float target the march works the fields out inline, so
+  // Swells still draws its surface.
+  it('registers no pre-pass without half-float targets and still draws its mesh', () => {
+    const scene = makeScene({ halfFloatTargets: false });
+
+    render(<Swells />, { wrapper: scene.Wrapper });
+
+    expect(scene.livePrePasses()).toHaveLength(0);
+    scene.onlyMesh();
   });
 });

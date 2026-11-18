@@ -70,7 +70,7 @@ To verify a change here, diff `/components/voronoi?visualTest=1` captures across
 
 ### The atan2 gotcha: a -0 numerator can read as half a turn on WebGL2
 
-`atan2(y, x)` compiles to GLSL's `atan(y, x)` on the WebGL2 fallback, and there a `y` of -0 with a positive `x` came back far from 0. Negating a product that is 0, such as `sway.negate()` when the sway is off, gives exactly -0. Swells' orbit turn did this: with no sway, the camera on headless Chromium swung around and the probe's sunlit-face check flipped. When `x` is always positive, use the one-argument `atan(y.div(x))`, which has no quadrant logic and returns 0 for either zero. Keep `atan2` for angles that need all four quadrants, and keep its `y` away from a negated zero.
+`atan2(y, x)` compiles to GLSL's `atan(y, x)` on the WebGL2 fallback, and there a `y` of -0 with a positive `x` came back far from 0. Negating a product that is 0, such as `sway.negate()` when the sway is off, gives exactly -0. Swells' orbit turn did this: with no sway, the camera on headless Chromium swung around and the probe's lit-face check flipped. When `x` is always positive, use the one-argument `atan(y.div(x))`, which has no quadrant logic and returns 0 for either zero. Keep `atan2` for angles that need all four quadrants, and keep its `y` away from a negated zero.
 
 ### Type notes
 
@@ -94,7 +94,7 @@ The GPU's own compiler may already move a loop-invariant expression out of the l
 
 ## Draw into render targets the renderer can bind, and read them cheaply
 
-The texture pass, the wave field, and the output stage each draw into a render target, a texture the GPU draws into instead of the canvas. A shader then reads it back through a texture node. Three gotchas apply.
+The texture pass, the wave field, and the output stage each draw into a render target, a texture the GPU draws into instead of the canvas. A shader then reads it back through a texture node. Five gotchas apply.
 
 ### The draw-order gotcha: draw a texture the scene reads in a pre-pass
 
@@ -111,6 +111,10 @@ three 0.170 binds every render target's texture as a filterable float, whatever 
 A texture node built without a coordinate, `texture(map)`, runs its coordinate through the texture's offset-and-repeat matrix, a 3x3 multiply. A node made by chaining `.uv(coordinate)` onto it keeps the multiply. Pass the coordinate when you build the node, as in `texture(map, coordinate)`, and three skips the matrix. Inside a loop, the multiply runs on every step.
 
 A pass texture from `passTexture()` is the exception. It turns the matrix off, and every `.uv()` read cloned from it keeps it off. The output stage reads the scene through one, so a stack of resamples pays no multiply per read. `output-stage.test.ts` fails if a three upgrade turns the matrix back on for those reads.
+
+### The sample-level gotcha: a texture read inside a loop that breaks needs its mip level
+
+A plain texture read, `texture(map, coordinate)`, compiles to WGSL's `textureSample`. It picks a mip level from how fast the coordinate changes between neighboring pixels, and WGSL accepts that only in uniform control flow, where every pixel in a group runs the same code. A loop with a `Break()` that fires at a different step for each pixel, such as a ray march, isn't uniform, so the shader fails to compile on WebGPU. Pass the level as the third argument, `texture(map, coordinate, float(0))`, which compiles to `textureSampleLevel` and is valid anywhere. Swells' march reads its field pass this way.
 
 ### The resize-rebind gotcha: a resized target that a shader samples before the next draw into it needs a version bump
 

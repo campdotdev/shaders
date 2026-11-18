@@ -130,7 +130,7 @@ export const COMPONENTS = {
   },
   swells: {
     description:
-      'Rolling swells seen through a camera of its own, from round waves to sharp dunes, lit by a low sun and fading into a glowing haze. The sky stays transparent, so the page or a Source beneath shows through.',
+      'Rolling swells seen through a camera of its own, from round waves to sharp dunes, lit from low on one side and fading into a glowing haze. The sky stays transparent, so the page or a Source beneath shows through.',
     category: 'scenes',
   },
   vignette: {

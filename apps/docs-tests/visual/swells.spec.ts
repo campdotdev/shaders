@@ -23,11 +23,13 @@ test('Swells — default story', async ({ page }) => {
 // screenshot, so this checks what the demo must show. Swells is mounted
 // alone, so above the horizon the ray misses the ground and Swells is
 // transparent: the top rows read the page's own background, one flat
-// color. The bottom rows are ground, and the ground as a whole reads as
-// sand, more red than blue on average, far brighter than that background.
-// And the sun's light varies across the ground, so its brightness spreads;
-// unlit ground would be one flat color.
-test('Swells — page background above the horizon, lit sand below', async ({ page }) => {
+// color. The bottom rows are ground, far brighter than that background, and
+// the default colors are pinks and violets over deep blue, so the ground
+// reads far more blue than red. On macOS mean blue led mean red by about 89
+// levels, so 40 leaves room for another GPU. And the light falls unevenly
+// across the ground, so its brightness spreads, where unlit ground would be
+// one flat color.
+test('Swells — page background above the horizon, lit ground below', async ({ page }) => {
   await page.goto('/components/swells?visualTest=1');
   await waitForShader(page);
 
@@ -50,16 +52,16 @@ test('Swells — page background above the horizon, lit sand below', async ({ pa
 
   const meanOf = (channel: 0 | 2) => mean(ground.map((pixel) => pixel[channel]));
 
-  expect(meanOf(0), 'sand: mean red over mean blue').toBeGreaterThan(meanOf(2) + 8);
+  expect(meanOf(2), 'default colors: mean blue over mean red').toBeGreaterThan(meanOf(0) + 40);
   expect(Math.max(...brightness) - Math.min(...brightness), 'slope light spread').toBeGreaterThan(
     12,
   );
 });
 
-// The probe draws the sand in gray, from near black on faces turned from the
-// sun to near white on faces turned toward it, over a black canvas. Query
-// params set Swells' dials. The sheen, the haze, and the mirage start at 0,
-// and the haze is black, so hazed ground reads darker.
+// The probe draws the surface in gray, from near black on faces turned from the
+// light to near white on faces turned toward it, over a black canvas. Query
+// params set Swells' dials. The sheen and the haze start at 0, and the
+// haze is black, so hazed ground reads darker.
 const PROBE = '/dev/swells-probe?visualTest=1';
 
 /**
@@ -121,21 +123,21 @@ const SKY_TOP = 0.12;
 
 const mean = (values: number[]) => values.reduce((sum, value) => sum + value, 0) / values.length;
 
-// A camera sees mostly the faces turned toward it, because a dune hides its
-// own far face. With the sun behind the camera those faces are sunlit, and
-// with the sun ahead they are shaded, so the ground's mean brightness swings
-// far between the two. Lighting that ignored the sun would read the same in
+// A camera sees mostly the faces turned toward it, because a swell hides its
+// own far face. With the light behind the camera those faces are lit, and
+// with the light ahead they are shaded, so the ground's mean brightness swings
+// far between the two. Lighting that ignored lightAngle would read the same in
 // both. The gap measured about 120 levels on macOS, so 60 leaves room for
 // another GPU.
-test('Swells — sunlit faces are brighter than shaded ones', async ({ page }) => {
-  const sunBehind = mean(await groundBrightness(page, '&sunAngle=180'));
-  const sunAhead = mean(await groundBrightness(page, '&sunAngle=0'));
+test('Swells — lit faces are brighter than shaded ones', async ({ page }) => {
+  const lightBehind = mean(await groundBrightness(page, '&lightAngle=180'));
+  const lightAhead = mean(await groundBrightness(page, '&lightAngle=0'));
 
-  expect(sunBehind - sunAhead, 'sun behind minus sun ahead').toBeGreaterThan(60);
+  expect(lightBehind - lightAhead, 'light behind minus light ahead').toBeGreaterThan(60);
 });
 
 // With no relief and no ripples the ground is level, so every point faces the
-// sun alike and the ground reads one even tone. The only spread left is the
+// light alike and the ground reads one even tone. The only spread left is the
 // scene's dither, a level or two.
 test('Swells — relief 0 and ripples 0 give flat, smooth ground', async ({ page }) => {
   const flat = await groundBrightness(page, '&relief=0&ripples=0');
@@ -144,14 +146,14 @@ test('Swells — relief 0 and ripples 0 give flat, smooth ground', async ({ page
   expect(mean(flat), 'flat ground is lit').toBeGreaterThan(40);
 });
 
-// The sky stays transparent whatever the air is doing: with the sheen, the
-// haze, and the mirage all on, the sky still reads the white canvas beneath
+// The sky stays transparent whatever the air is doing: with the sheen and
+// the haze both on, the sky still reads the white canvas beneath
 // Swells. The haze is black, so a sky Swells painted opaque would read dark
 // here rather than pass for the canvas. The band starts below the site
 // header, which the docs layout draws over the top of the probe's canvas,
 // and ends above the horizon.
 test('Swells — the sky above the horizon is transparent', async ({ page }) => {
-  const rows = await probeRows(page, '&sheen=1&haze=0.04&mirage=1&background=white');
+  const rows = await probeRows(page, '&sheen=1&haze=0.04&background=white');
 
   expect(Math.min(...bandBrightness(rows, SKY_TOP, 0.22)), 'darkest sky sample').toBeGreaterThan(
     252,
@@ -159,13 +161,13 @@ test('Swells — the sky above the horizon is transparent', async ({ page }) => 
 });
 
 // Haze turns the far surface to its color, here black, and then fades it
-// out, while the ground at the camera's feet stays clear. With the sun
+// out, while the ground at the camera's feet stays clear. With the light
 // behind the camera every face in view is lit, so the far band, just below
 // the horizon, reads bright in clear air. On macOS it fell from about 100
 // levels to about 13 at haze 0.08, and the near ground moved about 6.
 test('Swells — haze fades the far surface and leaves the near ground', async ({ page }) => {
-  const clear = await probeRows(page, '&sunAngle=180');
-  const hazy = await probeRows(page, '&sunAngle=180&haze=0.08');
+  const clear = await probeRows(page, '&lightAngle=180');
+  const hazy = await probeRows(page, '&lightAngle=180&haze=0.08');
 
   expect(bandShift(hazy, clear, 0.3, 0.4), 'far band, clear minus hazy').toBeGreaterThan(50);
   expect(
@@ -184,8 +186,8 @@ test('Swells — haze fades the far surface and leaves the near ground', async (
 // ground went from about 109 levels to 163, and the band from 0.35 to
 // 0.45 of the height went from about 120 to 68.
 test('Swells — haze blends toward its color, then fades out', async ({ page }) => {
-  const clear = await probeRows(page, '&sunAngle=180');
-  const white = await probeRows(page, '&sunAngle=180&haze=0.3&hazeColor=white');
+  const clear = await probeRows(page, '&lightAngle=180');
+  const white = await probeRows(page, '&lightAngle=180&haze=0.3&hazeColor=white');
 
   expect(
     bandShift(clear, white, 0.85, 0.95),
@@ -198,12 +200,12 @@ test('Swells — haze blends toward its color, then fades out', async ({ page })
 
 // Every ray heading down meets the ground, so no sky shows between the far
 // crests. A ray that ran out of steps while it skimmed them used to count
-// as a miss and left slivers of black among the lit far faces. With the sun
+// as a miss and left slivers of black among the lit far faces. With the light
 // behind the camera every face in view is lit, so a sample darker than 4
 // levels below the horizon is a sliver. The check starts a little below the
 // horizon, where the reach fade has not yet taken the ground to black.
 test('Swells — no sky shows between the far crests', async ({ page }) => {
-  const rows = await probeRows(page, '&sunAngle=180');
+  const rows = await probeRows(page, '&lightAngle=180');
   const skyTop = Math.floor(rows.length * SKY_TOP);
   const horizon = skyTop + rows.slice(skyTop).findIndex((row) => mean(row) > 20);
 
@@ -214,23 +216,6 @@ test('Swells — no sky shows between the far crests', async ({ page }) => {
   const slivers = below.filter((sample) => sample < 4).length;
 
   expect(slivers / below.length, 'share of black samples below the horizon').toBeLessThan(0.01);
-});
-
-// The mirage wavers the far surface and clears it in patches, and leaves
-// the near ground alone. The visual-test flag holds its clock still, so
-// this compares one frame with the mirage against one without.
-test('Swells — the mirage changes only the far surface', async ({ page }) => {
-  const still = await probeRows(page, '&sunAngle=180');
-  const shimmering = await probeRows(page, '&sunAngle=180&mirage=1');
-
-  expect(
-    Math.abs(bandShift(still, shimmering, 0.28, 0.34)),
-    'far band, still against shimmering',
-  ).toBeGreaterThan(8);
-  expect(
-    Math.abs(bandShift(still, shimmering, 0.85, 0.95)),
-    'near ground, still against shimmering',
-  ).toBeLessThan(1);
 });
 
 /**
@@ -252,7 +237,7 @@ async function rowsSwayingToward(
 ): Promise<number[][]> {
   return probeRows(
     page,
-    `&sunAngle=180&speed=0&parallax=1&parallaxCenter=${centerX},0.5&reducedMotion=${policy}`,
+    `&lightAngle=180&speed=0&parallax=1&parallaxCenter=${centerX},0.5&reducedMotion=${policy}`,
   );
 }
 
@@ -324,7 +309,7 @@ test('Swells — reduced motion holds the sway', async ({ page }) => {
  * strength can change the picture.
  */
 async function rowsAtSwellClock(page: Page, clock: number): Promise<number[][]> {
-  return probeRows(page, `&sunAngle=180&speed=0&swellSpeed=1&phaseTime=${clock}`);
+  return probeRows(page, `&lightAngle=180&speed=0&swellSpeed=1&phaseTime=${clock}`);
 }
 
 /** The mean brightness change from `before` to `after` over everything below the site header. */
@@ -374,15 +359,15 @@ test('Swells — the swell clock wraps from the last slice to the first', async 
 
 /**
  * Loads the probe with the intro on or off under the reduced-motion `policy`
- * and returns its rows, as sampleRows reads them. The glide and the mirage
- * are off, so only the intro can change the picture.
+ * and returns its rows, as sampleRows reads them. The glide is off, so
+ * only the intro can change the picture.
  */
 async function rowsWithIntro(
   page: Page,
   intro: boolean,
   policy: 'off' | 'slow' | 'paused',
 ): Promise<number[][]> {
-  return probeRows(page, `&sunAngle=180&speed=0&intro=${intro ? 1 : 0}&reducedMotion=${policy}`);
+  return probeRows(page, `&lightAngle=180&speed=0&intro=${intro ? 1 : 0}&reducedMotion=${policy}`);
 }
 
 // The intro raises the surface from flat ground under thick haze. At full

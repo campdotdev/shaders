@@ -1,27 +1,43 @@
 'use client';
 
 // Probe for Swells: the surface in gray, from near black on faces turned
-// from the sun to near white on faces turned toward it, over a black canvas.
+// from the light to near white on faces turned toward it, over a black canvas.
 // With no hue and no sky, a pixel's brightness is how squarely the surface there
-// faces the sun, so the visual spec's pixel checks can read the light
+// faces the light, so the visual spec's pixel checks can read the light
 // straight off the canvas.
 import { ShaderScene, Swells } from '@camp-dev/shaders';
 
 import { VisualTestPause } from '@/lib/visualTestHooks';
 
-// Query params override Swells' dials, such as ?sunAngle=180&sunHeight=10,
+// Query params override Swells' dials, such as ?lightAngle=180&lightHeight=10,
 // ?relief=0&ripples=0 for level, smooth ground, or ?sharpness=0 for round
-// swells, for checking one by eye. The sheen, the haze, and the mirage start
-// at 0, so a pixel's brightness is the slope light alone, and ?sheen=1,
-// ?haze=0.04, or ?mirage=1 turns one on. The haze is black, the canvas's
-// own color, so hazed ground reads darker whether it blends or fades, and
-// ?hazeColor=white makes it white, so blending and fading pull apart.
+// swells, for checking one by eye. The sheen and the haze start at 0, so a
+// pixel's brightness is the slope light alone, and ?sheen=1 or ?haze=0.04
+// turns one on. The haze is black, the canvas's own color, so hazed ground
+// reads darker whether it blends or fades, and ?hazeColor=white makes it
+// white, so blending and fading pull apart.
 // ?background=white turns the canvas white, so a transparent sky reads
 // white and an opaque black one can't pass for it. ?speed, ?swellSpeed, and
 // ?parallax set the motion dials. ?parallaxCenter=cursor sways the camera
 // toward the pointer, and ?parallaxCenter=0.85,0.5 toward a fixed point.
 // The intro starts off, so a check under ?reducedMotion=off, where the intro
 // would play, never catches the surface mid-rise; ?intro=1 turns it on.
+//
+// The camera, the swells' shape, and their rise and fall start where they
+// were when the spec's checks were measured, not at Swells' defaults, so
+// the defaults can change without moving the bands the checks read. The
+// narrower default field of view lifts the horizon into the band the sky
+// check reads, and the default round swells, turned to 130 degrees, hide
+// less of their far faces.
+const PROBE_DEFAULTS = {
+  angle: 30,
+  fieldOfView: 50,
+  relief: 0.8,
+  ripples: 0.5,
+  scale: 4,
+  sharpness: 1,
+  swellSpeed: 0,
+};
 
 /** The haze's color: black, or white under ?hazeColor=white. */
 function hazeColor(): string {
@@ -70,25 +86,25 @@ export default function ProbeScene() {
       <ShaderScene>
         <Swells
           altitude={queryNumber('altitude')}
+          angle={queryNumber('angle') ?? PROBE_DEFAULTS.angle}
           color="oklch(0.95 0 0)"
-          fieldOfView={queryNumber('fieldOfView')}
+          fieldOfView={queryNumber('fieldOfView') ?? PROBE_DEFAULTS.fieldOfView}
           haze={queryNumber('haze') ?? 0}
           hazeColor={hazeColor()}
           intro={queryFlag('intro')}
-          mirage={queryNumber('mirage') ?? 0}
+          lightAngle={queryNumber('lightAngle')}
+          lightHeight={queryNumber('lightHeight')}
           parallax={queryNumber('parallax')}
           parallaxCenter={parallaxCenter()}
-          relief={queryNumber('relief')}
-          ripples={queryNumber('ripples')}
-          scale={queryNumber('scale')}
+          relief={queryNumber('relief') ?? PROBE_DEFAULTS.relief}
+          ripples={queryNumber('ripples') ?? PROBE_DEFAULTS.ripples}
+          scale={queryNumber('scale') ?? PROBE_DEFAULTS.scale}
           shadowColor="oklch(0.15 0 0)"
-          sharpness={queryNumber('sharpness')}
+          sharpness={queryNumber('sharpness') ?? PROBE_DEFAULTS.sharpness}
           sheen={queryNumber('sheen') ?? 0}
           sheenColor="oklch(1 0 0)"
           speed={queryNumber('speed')}
-          sunAngle={queryNumber('sunAngle')}
-          sunHeight={queryNumber('sunHeight')}
-          swellSpeed={queryNumber('swellSpeed')}
+          swellSpeed={queryNumber('swellSpeed') ?? PROBE_DEFAULTS.swellSpeed}
           tilt={queryNumber('tilt')}
         />
         <VisualTestPause />

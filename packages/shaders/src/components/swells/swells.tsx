@@ -10,9 +10,7 @@ import type {
   AnimatableProp,
   PositionProp,
 } from '../../react/hooks/animatable-signal/animatable-signal.js';
-import { SwellsShader, type SwellsTuning } from './shader.js';
-
-export type { SwellsTuning } from './shader.js';
+import { SwellsShader } from './shader.js';
 
 export interface SwellsProps {
   /**
@@ -33,13 +31,14 @@ export interface SwellsProps {
    * How much the camera sees from the bottom of the canvas to the top, in
    * degrees. Lower values zoom in and flatten the terrain's depth; higher
    * values widen the view and stretch near ground toward the viewer.
-   * Defaults to 50. Accepts a static value or an animation signal.
+   * Defaults to 32. Accepts a static value or an animation signal.
    */
   fieldOfView?: AnimatableProp<number>;
   /**
    * How many swells, crest to crest, fit in 10 terrain units. Higher packs
    * in more, smaller swells; lower spreads out fewer, bigger ones. The
-   * ripples keep their size. Defaults to 4, so a swell is 2.5 units long.
+   * ripples keep their size. Defaults to 3, so a swell is about 3.3 units
+   * long.
    * Accepts a static value or an animation signal.
    */
   scale?: AnimatableProp<number>;
@@ -48,7 +47,7 @@ export interface SwellsProps {
    * crests. 0 flattens the swells into level ground, which still carries
    * ripples unless `ripples` is 0 too. Short swells, at a high `scale`, stop
    * growing taller once their steepest faces climb at about 72 degrees, so
-   * the ray can't skip over their crests. Defaults to 0.8. Accepts a static
+   * the ray can't skip over their crests. Defaults to 0.9. Accepts a static
    * value or an animation signal.
    */
   relief?: AnimatableProp<number>;
@@ -56,58 +55,69 @@ export interface SwellsProps {
    * The swells' shape, from 0 to 1. 0 gives round swells that ease over
    * their crests, like silk or open water, with both faces alike. 1 gives
    * sharp dune crests, with a long, gentle face and a short, steep one that
-   * looks downwind. Defaults to 1. Accepts a static value or an animation
+   * looks downwind. Defaults to 0.25. Accepts a static value or an animation
    * signal.
    */
   sharpness?: AnimatableProp<number>;
   /**
+   * Which way the swells face, in compass degrees clockwise from the way
+   * the camera faces at rest, the convention `lightAngle` uses. The crests
+   * run square to it: at 0 they run straight across the canvas, and at 90
+   * they run away from the camera toward the horizon. At full `sharpness`,
+   * each swell's steep face looks this way, as a dune's looks downwind. The
+   * camera always glides straight ahead, so at any angle but 0 and 180 it
+   * crosses the crests at a slant. Defaults to 130. Accepts a static value
+   * or an animation signal.
+   */
+  angle?: AnimatableProp<number>;
+  /**
    * How strong the fine ripples on the surface are, from 0 to 1, where 0 is
    * a smooth surface and 1 is the deepest ripples. They show up close and fade
-   * out with distance. Defaults to 0.5. Accepts a static value or an
+   * out with distance. Defaults to 0.6. Accepts a static value or an
    * animation signal.
    */
   ripples?: AnimatableProp<number>;
   /**
-   * Where the sun sits around the scene, in compass degrees clockwise from
+   * Where the light sits around the scene, in compass degrees clockwise from
    * the way the camera faces at rest: 0 straight ahead, so the camera looks
-   * into the sun and sees mostly shaded faces; 90 to the right; 180 behind
+   * into the light and sees mostly shaded faces; 90 to the right; 180 behind
    * the camera, lighting the faces turned toward it; and 270 to the left.
-   * The sun stays put while a `parallax` sway turns the camera. Defaults to
-   * 300, ahead and to the left. Accepts a static value or an animation
-   * signal.
+   * The light stays put while a `parallax` sway turns the camera. Defaults to
+   * 265, to the left and a little behind the camera. Accepts a static value
+   * or an animation signal.
    */
-  sunAngle?: AnimatableProp<number>;
+  lightAngle?: AnimatableProp<number>;
   /**
-   * How high the sun sits, in degrees above the horizon, from 0 on the
-   * horizon to 90 overhead. A low sun rakes across the swells, so every
-   * crest splits into a lit face and a shaded one; a high sun lights both
+   * How high the light sits, in degrees above the horizon, from 0 on the
+   * horizon to 90 overhead. A low light rakes across the swells, so every
+   * crest splits into a lit face and a shaded one; a high light falls on both
    * faces alike and flattens them. Defaults to 15. Accepts a static value or
    * an animation signal.
    */
-  sunHeight?: AnimatableProp<number>;
+  lightHeight?: AnimatableProp<number>;
   /**
-   * The surface's color where it faces the sun: hex, `oklch()`, or `oklab()`.
-   * Faces turned from the sun take `shadowColor`, and the slopes between
-   * blend the two. Defaults to a warm sand, `'oklch(0.82 0.08 75)'`.
+   * The surface's color where it faces the light: hex, `oklch()`, or `oklab()`.
+   * Faces turned from the light take `shadowColor`, and the slopes between
+   * blend the two. Defaults to a bright purple, `'oklch(0.720 0.250 320)'`.
    */
   color?: string;
   /**
-   * The surface's color on faces turned from the sun: hex, `oklch()`, or
-   * `oklab()`. Defaults to a rose brown, `'oklch(0.45 0.06 15)'`.
+   * The surface's color on faces turned from the light: hex, `oklch()`, or
+   * `oklab()`. Defaults to a deep blue, `'oklch(0.303 0.152 265.847)'`.
    */
   shadowColor?: string;
   /**
-   * How strong the soft highlight is where the surface mirrors the sun
+   * How strong the soft highlight is where the surface mirrors the light
    * toward the camera, from 0 to 1. 0 gives a matte surface, like dry sand;
    * higher values add a satin glow in `sheenColor` that slides over the
-   * swells as the camera or the sun moves. Defaults to 0.3. Accepts a static
+   * swells as the camera or the light moves. Defaults to 0.5. Accepts a static
    * value or an animation signal.
    */
   sheen?: AnimatableProp<number>;
   /**
    * The highlight's color: hex, `oklch()`, or `oklab()`. At full `sheen`,
    * the brightest point of the highlight is exactly this color. Defaults to
-   * a warm white, `'oklch(0.97 0.03 85)'`.
+   * a pale pink, `'oklch(0.932 0.047 343.895)'`.
    */
   sheenColor?: string;
   /**
@@ -117,23 +127,15 @@ export interface SwellsProps {
    * with the surface in its own colors until it fades out at the edge of
    * the camera's view. At `1 / haze` terrain units, about a third of the
    * surface's own color shows, and the near ground stays clear. Defaults to
-   * 0.04. Accepts a static value or an animation signal.
+   * 0.05. Accepts a static value or an animation signal.
    */
   haze?: AnimatableProp<number>;
   /**
    * The haze's color, which the far surface turns to before it fades out:
-   * hex, `oklch()`, or `oklab()`. Defaults to a dusty rose,
-   * `'oklch(0.78 0.07 45)'`.
+   * hex, `oklch()`, or `oklab()`. Defaults to a violet,
+   * `'oklch(0.460 0.248 293.328)'`.
    */
   hazeColor?: string;
-  /**
-   * How strongly the far surface shimmers, from 0 to 1, like heat haze over
-   * sand: the far crests waver, and the sky beneath shows through in
-   * patches. 0 is still air. Swells keeps the scene drawing every frame
-   * while the mirage is above 0, and the shimmer slows under reduced
-   * motion. Defaults to 0.3. Accepts a static value or an animation signal.
-   */
-  mirage?: AnimatableProp<number>;
   /**
    * The color space the slopes between `shadowColor` and `color`, the
    * sheen over them, and the haze blend in. Defaults to `'oklab'`.
@@ -146,8 +148,8 @@ export interface SwellsProps {
   hueInterpolation?: HueInterpolation;
   /**
    * How fast the camera glides forward over the surface, in terrain units
-   * per second. A swell is 2.5 units long at the default `scale`, so 0.3
-   * passes one about every 8 seconds. Negative glides backward, and 0 holds
+   * per second. A swell is about 3.3 units long at the default `scale`, so
+   * 0.3 passes one about every 11 seconds. Negative glides backward, and 0 holds
    * the camera still. A change of speed changes the pace without the
    * surface jumping, and the glide slows under reduced motion. Defaults to
    * 0.3. Accepts a static value or an animation signal.
@@ -159,7 +161,7 @@ export interface SwellsProps {
    * next settles, and at 1 the pattern of tall and short crests turns over
    * about once a second. 0 holds every swell at its height, as dunes are.
    * The crests never travel. The motion slows under reduced motion.
-   * Defaults to 0. Accepts a static value or an animation signal.
+   * Defaults to 0.2. Accepts a static value or an animation signal.
    */
   swellSpeed?: AnimatableProp<number>;
   /**
@@ -193,47 +195,43 @@ export interface SwellsProps {
    * `false` starts on the finished surface. Defaults to true.
    */
   intro?: boolean;
-  /**
-   * TEMPORARY (build-phase tuning only): dev overrides for the feel
-   * constants. Stripped at the defaults gate, so don't use it.
-   */
-  tuning?: SwellsTuning;
 }
 
-// Provisional until the defaults gate (SHA-327) tunes them by eye. ESLint's
-// and Fallow's complexity rules count each default as a branch, and Swells
-// has more defaulted props than their limits, with no logic of its own.
+// The colors are swatches from the brand palette: purple 9, blue 3,
+// magenta 11, and violet 6 (SHA-339). ESLint's and Fallow's complexity
+// rules count each default as a branch, and Swells has more defaulted props
+// than their limits, with no logic of its own.
 /* eslint-disable complexity */
 // fallow-ignore-next-line complexity
 export function Swells({
   altitude = 1.5,
   tilt = 12,
-  fieldOfView = 50,
-  scale = 4,
-  relief = 0.8,
-  sharpness = 1,
-  ripples = 0.5,
-  sunAngle = 300,
-  sunHeight = 15,
-  color = 'oklch(0.82 0.08 75)',
-  shadowColor = 'oklch(0.45 0.06 15)',
-  sheen = 0.3,
-  sheenColor = 'oklch(0.97 0.03 85)',
-  haze = 0.04,
-  hazeColor = 'oklch(0.78 0.07 45)',
-  mirage = 0.3,
+  fieldOfView = 32,
+  scale = 3,
+  relief = 0.9,
+  sharpness = 0.25,
+  angle = 130,
+  ripples = 0.6,
+  lightAngle = 265,
+  lightHeight = 15,
+  color = 'oklch(0.720 0.250 320)',
+  shadowColor = 'oklch(0.303 0.152 265.847)',
+  sheen = 0.5,
+  sheenColor = 'oklch(0.932 0.047 343.895)',
+  haze = 0.05,
+  hazeColor = 'oklch(0.460 0.248 293.328)',
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
   speed = 0.3,
-  swellSpeed = 0,
+  swellSpeed = 0.2,
   parallax = 0,
   parallaxCenter = [0.5, 0.5],
   intro = true,
-  tuning,
 }: SwellsProps) {
   return (
     <SwellsShader
       altitude={altitude}
+      angle={angle}
       color={color}
       colorSpace={colorSpace}
       fieldOfView={fieldOfView}
@@ -241,7 +239,8 @@ export function Swells({
       hazeColor={hazeColor}
       hueInterpolation={hueInterpolation}
       intro={intro}
-      mirage={mirage}
+      lightAngle={lightAngle}
+      lightHeight={lightHeight}
       parallax={parallax}
       parallaxCenter={parallaxCenter}
       relief={relief}
@@ -252,11 +251,8 @@ export function Swells({
       sheen={sheen}
       sheenColor={sheenColor}
       speed={speed}
-      sunAngle={sunAngle}
-      sunHeight={sunHeight}
       swellSpeed={swellSpeed}
       tilt={tilt}
-      tuning={tuning}
     />
   );
 }

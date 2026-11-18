@@ -33,7 +33,7 @@ if [ "$THUMBNAILS_ONLY" = 0 ] && [ ! -f packages/shaders-cli/dist/index.js ]; th
   exit 1
 fi
 
-# name:format[:background][:WxH][:crop] entries (png for the flat shaders, jpg
+# name:format[:background][:WxH][:crop][:delay] entries (png for the flat shaders, jpg
 # for the busy ones; background is optional and only needed for shaders with a
 # transparent base layer, e.g. aurora, so they flatten onto a sensible color;
 # WxH overrides the default capture size and is only needed for pixel-sized
@@ -55,6 +55,12 @@ fi
 # real on-screen size and a full-height cut shrinks the pattern out of sight
 # (build-thumbnail.mjs works through DotField's numbers). DotField's 360 is
 # six of its 60-pixel cells across.
+#
+# delay is how many seconds to wait after the first frame before the capture.
+# Only a component whose opening frames differ from its usual look needs one.
+# Swells' intro raises the surface out of thick haze over 3 seconds, and the
+# harness's paused policy doesn't reach docs scenes yet (SHA-342), so its
+# poster waits 4 seconds to show the finished surface.
 #
 # radial-gradient is the exception to "flat means png": PNG's row filters
 # predict each pixel from its left and upper neighbours, which crushes a linear
@@ -87,8 +93,8 @@ for pair in \
   "radial-wipe:jpg:#0b0f0d" \
   "dissolve:jpg:#0b0f0d" \
   "palette-map:jpg" \
-  "swells:jpg"; do
-  IFS=':' read -r name format background size crop <<< "$pair"
+  "swells:jpg:#0b0f0d:::4"; do
+  IFS=':' read -r name format background size crop delay <<< "$pair"
   width="$WIDTH"
   height="$HEIGHT"
   if [ -n "${size:-}" ]; then
@@ -107,6 +113,9 @@ for pair in \
     )
     if [ -n "$background" ]; then
       args+=(--background "$background")
+    fi
+    if [ -n "${delay:-}" ]; then
+      args+=(--capture-delay "$delay")
     fi
     $CLI "${args[@]}"
   fi
