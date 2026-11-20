@@ -195,6 +195,43 @@ export interface SwellsProps {
    * `false` starts on the finished surface. Defaults to true.
    */
   intro?: boolean;
+  /**
+   * How dark the shadows are that crests cast across the surface behind
+   * them, from 0 to 1. 0 casts none, so only a face's own tilt shades it;
+   * at 1 a shadowed point gets no direct light. A low `lightHeight` casts long
+   * shadows. Shadows cost GPU time on every lit pixel, and 0 costs none.
+   * Defaults to 1. Accepts a static value or an animation signal.
+   */
+  shadows?: AnimatableProp<number>;
+  /**
+   * How much light the sky adds to faces the light doesn't reach, from 0 to
+   * 1. At 0 those faces take `shadowColor` alone and read flat; higher
+   * values lift them toward `color`, most where they face the light's side
+   * of the sky, so the swells keep their shape in the shade. Defaults to
+   * 0.5. Accepts a static value or an animation signal.
+   */
+  skylight?: AnimatableProp<number>;
+  /**
+   * How strongly surfaces seen edge-on glow in `sheenColor`, from 0 to 1:
+   * the rims of crests and the far ground, which mirror the sky the way
+   * water does at a low angle. 0 gives none. Defaults to 0.5. Accepts a
+   * static value or an animation signal.
+   */
+  rimGlow?: AnimatableProp<number>;
+  /**
+   * How bright the grains of sand flash where they mirror the light at the
+   * camera, from 0 to 1. The glints show in direct light, near the camera,
+   * and twinkle as the camera glides. 0 gives none. Defaults to 0.8.
+   * Accepts a static value or an animation signal.
+   */
+  glints?: AnimatableProp<number>;
+  /**
+   * How big the glints are: the width of one grain's cell, in terrain
+   * units, from 0.002 to 0.2. Higher draws bigger glints, further apart,
+   * that show from further away. Defaults to 0.02. Accepts a static value
+   * or an animation signal.
+   */
+  glintSize?: AnimatableProp<number>;
 }
 
 // The colors are swatches from the brand palette: purple 9, blue 3,
@@ -227,6 +264,11 @@ export function Swells({
   parallax = 0,
   parallaxCenter = [0.5, 0.5],
   intro = true,
+  shadows = 1,
+  skylight = 0.5,
+  rimGlow = 0.5,
+  glints = 0.8,
+  glintSize = 0.02,
 }: SwellsProps) {
   return (
     <SwellsShader
@@ -235,6 +277,8 @@ export function Swells({
       color={color}
       colorSpace={colorSpace}
       fieldOfView={fieldOfView}
+      glintSize={glintSize}
+      glints={glints}
       haze={haze}
       hazeColor={hazeColor}
       hueInterpolation={hueInterpolation}
@@ -244,12 +288,15 @@ export function Swells({
       parallax={parallax}
       parallaxCenter={parallaxCenter}
       relief={relief}
+      rimGlow={rimGlow}
       ripples={ripples}
       scale={scale}
       shadowColor={shadowColor}
+      shadows={shadows}
       sharpness={sharpness}
       sheen={sheen}
       sheenColor={sheenColor}
+      skylight={skylight}
       speed={speed}
       swellSpeed={swellSpeed}
       tilt={tilt}

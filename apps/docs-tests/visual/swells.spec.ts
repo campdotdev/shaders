@@ -398,3 +398,43 @@ for (const policy of ['paused', 'slow'] as const) {
     expect(canvasChange(skipped, off), 'intro on against intro off').toBeLessThan(0.5);
   });
 }
+
+// A low light off to one side stretches each crest's shadow over the
+// ground behind it, so with `shadows` on the ground reads darker than with
+// only each face's own tilt shading it. On macOS the ground's mean fell
+// from about 19 levels to about 12.
+test('Swells — crests cast shadows under a low light', async ({ page }) => {
+  const low = '&lightAngle=60&lightHeight=10';
+  const unshadowed = mean(await groundBrightness(page, low));
+  const shadowed = mean(await groundBrightness(page, `${low}&shadows=1`));
+
+  expect(unshadowed - shadowed, 'ground, without shadows minus with').toBeGreaterThan(3);
+});
+
+// With the light ahead of the camera, the faces in view are turned from it
+// and take the shadow color alone. Skylight lifts them toward the lit
+// color. On macOS the ground's mean rose from about 26 levels to about 65.
+test('Swells — skylight lifts the faces turned from the light', async ({ page }) => {
+  const shaded = mean(await groundBrightness(page, '&lightAngle=0'));
+  const skylit = mean(await groundBrightness(page, '&lightAngle=0&skylight=1'));
+
+  expect(skylit - shaded, 'ground, with skylight minus without').toBeGreaterThan(20);
+});
+
+// The rim glow turns surfaces seen edge-on toward the sheen color, white
+// here. The far ground is seen at a low angle and the ground at the
+// camera's feet from above, so the far band brightens and the near ground
+// barely moves. On macOS the far band rose from about 37 levels to about
+// 100, and the near ground by about 5.
+test('Swells — the rim glow brightens ground seen edge-on', async ({ page }) => {
+  const plain = await probeRows(page, '&lightAngle=0');
+  const glowing = await probeRows(page, '&lightAngle=0&rimGlow=1');
+
+  expect(bandShift(plain, glowing, 0.3, 0.4), 'far band, with glow minus without').toBeGreaterThan(
+    30,
+  );
+  expect(
+    bandShift(plain, glowing, 0.85, 0.95),
+    'near ground, with glow minus without',
+  ).toBeLessThan(15);
+});

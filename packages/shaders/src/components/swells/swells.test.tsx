@@ -206,6 +206,11 @@ describe('Swells', () => {
       parallax?: AnimatableProp<number>;
       parallaxCenter?: PositionProp;
       intro?: boolean;
+      shadows?: AnimatableProp<number>;
+      skylight?: AnimatableProp<number>;
+      rimGlow?: AnimatableProp<number>;
+      glints?: AnimatableProp<number>;
+      glintSize?: AnimatableProp<number>;
     }>();
   });
 
@@ -315,6 +320,25 @@ describe('Swells', () => {
     haze.set(0);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
     rerender(<Swells haze={haze.signal} hazeColor="#ffffff" sheen={1} sheenColor="#ffffff" />);
+    expect(scene.scheduler.requestRender).toHaveBeenCalled();
+
+    expect(scene.onlyMesh().material).toBe(material);
+  });
+
+  it('changes its shadows, skylight, rim glow, and glints without rebuilding the material', () => {
+    const scene = makeScene();
+    const shadows = makeSignal(1);
+    const { rerender } = render(<Swells glints={0.8} shadows={shadows.signal} />, {
+      wrapper: scene.Wrapper,
+    });
+    const { material } = scene.onlyMesh();
+
+    scene.scheduler.requestRender.mockClear();
+    shadows.set(0);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
+    rerender(
+      <Swells glintSize={0.1} glints={0} rimGlow={1} shadows={shadows.signal} skylight={0} />,
+    );
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
 
     expect(scene.onlyMesh().material).toBe(material);

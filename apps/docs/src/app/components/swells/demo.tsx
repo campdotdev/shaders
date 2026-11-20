@@ -65,6 +65,8 @@ function SwellsFields() {
       <Section title="Light">
         <SliderInput label="Light angle" max={360} min={0} path="lightAngle" step={1} />
         <SliderInput label="Light height" max={90} min={0} path="lightHeight" step={0.5} />
+        <SliderInput label="Shadows" max={1} min={0} path="shadows" step={0.01} />
+        <SliderInput label="Skylight" max={1} min={0} path="skylight" step={0.01} />
         <ColorInput label="Color" path="color" />
         <ColorInput label="Shadow color" path="shadowColor" />
         <SelectInput label="Color space" options={COLOR_SPACE_OPTIONS} path="colorSpace" />
@@ -73,6 +75,9 @@ function SwellsFields() {
       <Section title="Air">
         <SliderInput label="Sheen" max={1} min={0} path="sheen" step={0.01} />
         <ColorInput label="Sheen color" path="sheenColor" />
+        <SliderInput label="Rim glow" max={1} min={0} path="rimGlow" step={0.01} />
+        <SliderInput label="Glints" max={1} min={0} path="glints" step={0.01} />
+        <SliderInput label="Glint size" max={0.2} min={0.002} path="glintSize" step={0.001} />
         <SliderInput label="Haze" max={0.2} min={0} path="haze" step={0.001} />
         <ColorInput label="Haze color" path="hazeColor" />
       </Section>

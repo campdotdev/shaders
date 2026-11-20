@@ -15,6 +15,11 @@ export interface SwellsParams {
   shadowColor: string;
   sheen: number;
   sheenColor: string;
+  shadows: number;
+  skylight: number;
+  rimGlow: number;
+  glints: number;
+  glintSize: number;
   haze: number;
   hazeColor: string;
   colorSpace: ColorSpace;
@@ -43,6 +48,11 @@ export const INITIAL: SwellsParams = {
   shadowColor: 'oklch(0.303 0.152 265.847)', // paletteOklch.blue[3]
   sheen: 0.5,
   sheenColor: 'oklch(0.932 0.047 343.895)', // paletteOklch.magenta[11]
+  shadows: 1,
+  skylight: 0.5,
+  rimGlow: 0.5,
+  glints: 0.8,
+  glintSize: 0.02,
   haze: 0.05,
   hazeColor: 'oklch(0.460 0.248 293.328)', // paletteOklch.violet[6]
   colorSpace: 'oklab',
