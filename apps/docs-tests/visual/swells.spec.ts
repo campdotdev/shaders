@@ -345,6 +345,81 @@ test('Swells — the swells travel downwind in sets', async ({ page }) => {
 });
 
 /**
+ * Loads the probe with the swells facing straight ahead, `swellLengths`
+ * swell lengths downwind of where they start, and returns the brightness
+ * down the middle of the canvas, one value per pixel row. Facing ahead, the
+ * crests lie across the canvas, so each is a bright band in the column.
+ */
+async function middleColumnAfterSwellTravel(page: Page, swellLengths: number): Promise<number[]> {
+  const clock = swellLengths * PROBE_SWELL_LENGTH;
+
+  await page.goto(
+    `${PROBE}&angle=0&lightAngle=180&ripples=0&glideSpeed=0&swellSpeed=1&phaseTime=${clock}`,
+  );
+  await page.locator('canvas').first().waitFor();
+  await waitForShader(page);
+
+  const { width, height, rgb } = await readCanvasPixels(page);
+  const middle = Math.floor(width / 2);
+
+  return Array.from({ length: height }, (_, y) => {
+    const [red, green, blue] = rgb(middle, y);
+
+    return (red + green + blue) / 3;
+  });
+}
+
+/**
+ * How many pixel rows the picture in `after` sits above the one in `before`,
+ * over the rows from `top` to `bottom`: the shift, up to `reach` rows either
+ * way, that lines the two columns up best. Negative is down the canvas.
+ */
+function rowsMovedUp(
+  before: number[],
+  after: number[],
+  top: number,
+  bottom: number,
+  reach: number,
+): number {
+  let best = 0;
+  let bestError = Infinity;
+
+  for (let shift = -reach; shift <= reach; shift++) {
+    let error = 0;
+
+    for (let y = top; y < bottom; y++) error += Math.abs(after[y]! - before[y + shift]!);
+    if (error < bestError) {
+      bestError = error;
+      best = shift;
+    }
+  }
+
+  return best;
+}
+
+// Which way the crests travel. The checks above read the picture at 0, a
+// half, and 1 swell length, where crests travelling upwind would land in the
+// same places. With `angle` 0 the wind blows straight ahead, so a tenth of a
+// swell length of travel carries every crest away from the camera, up the
+// canvas. The band is the near ground, where a crest covers the most rows.
+// On macOS the crests moved 28 rows up a 720-row canvas, and crests
+// travelling upwind would move 28 down, so 8 leaves room for another GPU.
+test('Swells — the crests travel downwind, away from a camera the wind blows past', async ({
+  page,
+}) => {
+  const start = await middleColumnAfterSwellTravel(page, 0);
+  const moved = await middleColumnAfterSwellTravel(page, 0.1);
+  const height = start.length;
+  const top = Math.floor(height * 0.6);
+  const bottom = Math.floor(height * 0.85);
+  const reach = Math.floor(height * 0.1);
+
+  const up = rowsMovedUp(start, moved, top, bottom, reach);
+
+  expect(up, 'rows the crests moved up the canvas').toBeGreaterThan(8);
+});
+
+/**
  * Loads the probe with the intro on or off under the reduced-motion `policy`
  * and returns its rows, as sampleRows reads them. The glide is off, so
  * only the intro can change the picture.
