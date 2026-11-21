@@ -4,10 +4,14 @@
 // Swells at its defaults over a LinearGradient, at the composition page's
 // 1636 by 696 CSS pixels. `?dpr=2` draws at two pixels per CSS pixel,
 // `?still` holds the swells in place, and `?baseline` draws the
-// LinearGradient alone. Read after the intro lands, about 3 seconds in.
+// LinearGradient alone. `?shimmer` mounts HeatShimmer at its defaults above
+// Swells, across the whole image (SHA-344): its own cost is this page with
+// the flag less the page without it. Read after the intro lands, about 3
+// seconds in.
 import { useState } from 'react';
 
 import {
+  HeatShimmer,
   LinearGradient,
   ShaderMonitor,
   ShaderScene,
@@ -22,6 +26,7 @@ interface Settings {
   pixelRatio: number;
   still: boolean;
   baseline: boolean;
+  shimmer: boolean;
 }
 
 const readSettings = (): Settings => {
@@ -31,6 +36,7 @@ const readSettings = (): Settings => {
     pixelRatio: search.get('dpr') === '2' ? 2 : 1,
     still: search.has('still'),
     baseline: search.has('baseline'),
+    shimmer: search.has('shimmer'),
   };
 };
 
@@ -49,21 +55,24 @@ function KeepDrawing() {
 const query = (dpr: number) => `?dpr=${dpr}`;
 
 export default function BenchmarkScene() {
-  const [{ pixelRatio, still, baseline }] = useState(readSettings);
+  const [{ pixelRatio, still, baseline, shimmer }] = useState(readSettings);
 
   return (
     <div style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
       <p style={{ margin: '0 0 16px', font: '13px ui-monospace, monospace' }}>
         {baseline ? 'LinearGradient baseline' : 'Swells over a LinearGradient'}
-        {still ? ' (swellSpeed 0)' : ''} at {WIDTH} × {HEIGHT} CSS px, pixel ratio capped at{' '}
+        {still ? ' (swellSpeed 0)' : ''}
+        {shimmer ? ' under HeatShimmer' : ''} at {WIDTH} × {HEIGHT} CSS px, pixel ratio capped at{' '}
         {pixelRatio}x. <a href={query(1)}>1x</a> · <a href={query(2)}>2x</a> ·{' '}
         <a href={`${query(pixelRatio)}&still`}>still</a> ·{' '}
-        <a href={`${query(pixelRatio)}&baseline`}>baseline</a>
+        <a href={`${query(pixelRatio)}&baseline`}>baseline</a> ·{' '}
+        <a href={`${query(pixelRatio)}&shimmer`}>shimmer</a>
       </p>
       <div style={{ position: 'relative', width: WIDTH, height: HEIGHT }}>
         <ShaderScene maxDPR={pixelRatio}>
           <LinearGradient />
           {baseline ? null : <Swells swellSpeed={still ? 0 : undefined} />}
+          {shimmer ? <HeatShimmer /> : null}
           <KeepDrawing />
           <ShaderMonitor anchor="top-left" />
         </ShaderScene>

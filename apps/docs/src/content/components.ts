@@ -88,6 +88,11 @@ export const COMPONENTS = {
       'Additive or subtractive film grain overlay. Stacks on top of any base component inside <ShaderScene>.',
     category: 'lens-film',
   },
+  'heat-shimmer': {
+    description:
+      'Hot air over the scene. The image beneath wavers as if seen through rising heat. Stacks on top of any Source inside <ShaderScene>.',
+    category: 'warp',
+  },
   'led-wall': {
     description:
       'Screens the scene into a wall of square LED dots, each lit with the color beneath it, with a per-dot flicker and a swell that follows the cursor. Stacks on top of any base component inside <ShaderScene>.',

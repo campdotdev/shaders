@@ -90,6 +90,7 @@ for pair in \
   "cursor-spotlight:jpg" \
   "cursor-trail:jpg" \
   "fluted-glass:jpg::896x598" \
+  "heat-shimmer:jpg" \
   "radial-wipe:jpg:#0b0f0d" \
   "dissolve:jpg:#0b0f0d" \
   "palette-map:jpg" \

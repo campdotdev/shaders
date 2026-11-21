@@ -120,6 +120,16 @@ _Avoid_: Profile, distortion shape, preset
 The line where two neighboring flutes meet, where the glass is steepest.
 _Avoid_: Seam, edge, crease
 
+### Heat shimmer
+
+**Shimmer**:
+The small, moving shift HeatShimmer gives the image beneath it. The image wavers, and the shimmer is what makes it waver.
+_Avoid_: Waver (as a noun), ripple, wobble, distortion, mirage
+
+**Band**:
+The horizontal strip of the canvas the shimmer covers, with soft edges.
+_Avoid_: Mask, region, zone, strip
+
 ### Swells
 
 **Swell**:
