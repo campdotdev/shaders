@@ -21,6 +21,7 @@ export default function SwellsScene({
         color={params.color}
         colorSpace={params.colorSpace}
         fieldOfView={params.fieldOfView}
+        glideSpeed={params.glideSpeed}
         glintSize={params.glintSize}
         glints={params.glints}
         haze={params.haze}
@@ -41,7 +42,6 @@ export default function SwellsScene({
         sheen={params.sheen}
         sheenColor={params.sheenColor}
         skylight={params.skylight}
-        speed={params.speed}
         swellSpeed={params.swellSpeed}
         tilt={params.tilt}
       />

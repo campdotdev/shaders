@@ -3,7 +3,7 @@
 // Benchmark for Swells' GPU time with ShaderMonitor (SHA-327, SHA-341):
 // Swells at its defaults over a LinearGradient, at the composition page's
 // 1636 by 696 CSS pixels. `?dpr=2` draws at two pixels per CSS pixel,
-// `?still` holds the swells' rise and fall, and `?baseline` draws the
+// `?still` holds the swells in place, and `?baseline` draws the
 // LinearGradient alone. Read after the intro lands, about 3 seconds in.
 import { useState } from 'react';
 

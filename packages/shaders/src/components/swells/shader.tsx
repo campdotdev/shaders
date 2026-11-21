@@ -7,7 +7,7 @@
 // into the haze and fade it out with distance, and leave the pixel
 // transparent where the ray misses, so the page, or a Source mounted
 // beneath, shows through as the sky. The camera glides over the surface and
-// can sway sideways toward a point, and the swells rise and fall in place.
+// can sway sideways toward a point, and the swells travel downwind in sets.
 // The wrapper (./swells.tsx) supplies the props.
 import { useEffect, useRef, useState } from 'react';
 
@@ -168,6 +168,14 @@ const ROLL_SHARE = 0.35;
 // shorter stretch.
 const STRENGTH_FREQUENCY = 0.8;
 
+// How fast a set of swells travels, as a share of the speed of the crests
+// inside it. In deep water a set (a wave group) moves at half the speed of
+// its crests, so each crest enters the back of a set, grows, peaks in the
+// middle, and fades out of the front. At 1 every crest keeps its height as
+// it travels; at 0 the tall patches stay put and the crests pass through
+// them twice as fast.
+const GROUP_SPEED = 0.5;
+
 // The weakest a swell gets, as a share of the tallest. 1 makes every crest
 // the same height; 0 lets some flatten out entirely.
 const MIN_STRENGTH = 0.4;
@@ -241,18 +249,6 @@ const HASH_DOMAIN_OFFSET = 1024;
 // the glide carries the noise coordinates without bound. The noise repeats
 // every ROW_STRIDE cells, thousands of swells, too far apart to notice.
 const ROW_STRIDE = 4096;
-
-// The swells' rise and fall moves their strength through a cycle of this
-// many noise slices, one per second at `swellSpeed={1}`, then starts over.
-// "Drift the swells' strength" below says how. 64 seconds at
-// that speed, and longer when slower, is too long a cycle to notice
-// repeating.
-const STRENGTH_SLICES = 64;
-
-// How far apart neighboring slices sit in the strength noise, in its cells.
-// Anything over a few cells makes each slice an unrelated pattern; the
-// fractions keep slices off the noise's grid lines.
-const SLICE_STEP = [37.1, 19.7] as const;
 
 // Slides the strength noise away from the roll, in the strength noise's
 // cells, so a swell's strength doesn't track the roll beneath it. Any offset
@@ -474,65 +470,36 @@ const layeredNoise = (point: TSLValue): TSLValue => {
 // The surface's fields: the roll and each swell's strength
 // ---------------------------------------------
 
-/** The strength drift's state for this frame, pinned before any loop. */
-interface StrengthDrift {
-  sliceBlend: TSLValue;
-  spreadRestore: TSLValue;
-  offsetNow: TSLValue;
-  offsetNext: TSLValue;
-}
+/**
+ * The wind's direction on the ground, as a unit vec2 of (x, z), from
+ * `angle`. The swells face it and travel along it.
+ */
+const windFrom = (angle: FloatUniform): TSLValue => {
+  const windRadians = angle.mul(DEGREES_TO_RADIANS);
+
+  return vec2(sin(windRadians), cos(windRadians));
+};
 
 /**
- * Drift the swells' strength. Each swell's strength, how tall it stands
- * against its neighbors, comes from a slow noise field (surfaceFields below).
- * To make the swells rise and fall in place, the field changes over time
- * while the crests stay where they are. Noise in 2D has no time axis, so the
- * drift fakes one: it reads two unrelated slices of the noise, the current
- * one and the next, and blends from one to the other as the clock runs.
- * swellClock counts slices, so its whole part picks the slices and its
- * fraction is how far the blend has gone.
+ * How far the swells' strength has slid downwind, in the strength noise's
+ * cells. Each swell's strength, how tall it stands
+ * against its neighbors, comes from a slow noise field (surfaceFields
+ * below). The field slides downwind at GROUP_SPEED times the crests' speed,
+ * so the tall patches travel as sets and every crest passes through them.
+ * A crest that only slid along at a fixed height would look like a conveyor
+ * belt. At swellSpeed 0 the clock stays at 0 and the swells hold still.
  *
- * Both slice numbers wrap into 0..STRENGTH_SLICES - 1, the next one too, so
- * the last slice of the cycle blends into the first and the cycle closes
- * with no jump. Each slice number then slides the noise by SLICE_STEP cells
- * that many times, which gives each its own pattern. At swellSpeed 0 the
- * clock stays at 0, so the strength reads slice 0 alone and the swells hold
- * still.
+ * swellClock counts the terrain units the crests have travelled, as the
+ * glide's `travel` does, and dividing by the swell length turns that into
+ * swell lengths. A float
+ * holds the offset to under a thousandth of a cell for the first 8,000 cells, days
+ * of travel at the default speed.
  *
- * smoothstep() eases each blend in and out, so every swell slows to a stop
- * at the end of a slice, then starts toward its next height: a slow breath
- * rather than a steady crawl.
- *
- * A blend of two unrelated noises is flatter than either: halfway, the highs
- * and lows partly cancel, and the spread around the middle falls to
- * sqrt(0.5 ^ 2 + 0.5 ^ 2) = 0.71 of a single slice's. Left alone, every
- * crest would even out once per slice. Dividing the distance from the middle
- * by sqrt(w ^ 2 + (1 - w) ^ 2), where w is the blend, puts the spread back,
- * and it is 1 at either end of a blend, where one slice shows alone.
- *
- * All of this depends on the clock alone, so .toVar() pins it where this is
- * called, before any loop (the first-use gotcha in docs/agents/tsl.md).
+ * It depends on the clock and the wind alone, so .toVar() pins it where this
+ * is called, before any loop (the first-use gotcha in docs/agents/tsl.md).
  */
-const strengthDrift = (swellClock: FloatUniform): StrengthDrift => {
-  const sliceNow = wrapInto(floor(swellClock), STRENGTH_SLICES).toVar();
-  const sliceNext = wrapInto(sliceNow.add(1), STRENGTH_SLICES).toVar();
-  const sliceBlend = smoothstep(0, 1, fract(swellClock)).toVar();
-  const spreadRestore = float(1)
-    .div(sqrt(sliceBlend.mul(sliceBlend).add(sliceBlend.oneMinus().mul(sliceBlend.oneMinus()))))
-    .toVar();
-  const sliceOffset = (slice: TSLValue) =>
-    vec2(...SLICE_STEP)
-      .mul(slice)
-      .add(vec2(...STRENGTH_OFFSET))
-      .toVar();
-
-  return {
-    sliceBlend,
-    spreadRestore,
-    offsetNow: sliceOffset(sliceNow),
-    offsetNext: sliceOffset(sliceNext),
-  };
-};
+const strengthDrift = (swellClock: FloatUniform, swellLength: TSLValue, wind: TSLValue): TSLValue =>
+  wind.mul(swellClock.div(swellLength).mul(GROUP_SPEED * STRENGTH_FREQUENCY)).toVar();
 
 /**
  * The two noise fields under the surface at a point on the ground, in world
@@ -540,42 +507,26 @@ const strengthDrift = (swellClock: FloatUniform): StrengthDrift => {
  *
  * The roll: broad noise, 0..1, that lifts and lowers the ground and bends
  * the crests. Each swell's strength is a second noise, slid by an arbitrary
- * offset so it doesn't track the roll, and drifting between two slices as
- * the swells rise and fall (strengthDrift above). The blend is pulled back
- * out from the middle by spreadRestore. It can pass 0..1 at a rare extreme,
- * and the caller clamps it after any texture read, so the texture's filter
- * blends the smooth value (the texture-pass case in "Keep shared work out of
- * per-pixel loops" in docs/agents/tsl.md).
+ * offset so it doesn't track the roll, and sliding downwind as the swells
+ * travel (strengthDrift above). The roll never moves: it is the ground the
+ * swells pass over.
  */
 const surfaceFields = (
   worldPoint: TSLValue,
   swellLength: TSLValue,
-  drift: StrengthDrift,
+  groupOffset: TSLValue,
 ): TSLValue => {
   // The point in swell lengths, so one unit is one swell, crest to crest.
   const swellPoint = worldPoint.div(swellLength);
   const roll = layeredNoise(swellPoint.mul(ROLL_FREQUENCY));
-  const strengthPoint = swellPoint.mul(STRENGTH_FREQUENCY);
-
-  // The next slice costs a noise read, four hashes, and at a swellSpeed of 0
-  // its blend weight is 0, so the read would go to waste. If() makes it a
-  // real GPU branch, a block the GPU runs only when its condition holds. The
-  // condition reads a uniform, so every pixel takes the same side and none
-  // waits on its neighbors (pixels shaded together run in lockstep, and a
-  // branch they split on costs both sides). Skipped, the next slice stays 0,
-  // and mix() takes none of it. A clock stopped partway through a blend keeps
-  // both reads, because its weight is over 0.
-  const strengthNow = valueNoise(strengthPoint.add(drift.offsetNow)).toVar();
-  const strengthNext = float(0).toVar();
-
-  If(drift.sliceBlend.greaterThan(0), () => {
-    strengthNext.assign(valueNoise(strengthPoint.add(drift.offsetNext)));
-  });
-
-  const strength = mix(strengthNow, strengthNext, drift.sliceBlend)
-    .sub(0.5)
-    .mul(drift.spreadRestore)
-    .add(0.5);
+  // Reading the noise `groupOffset` cells upwind of the point moves the
+  // pattern that far downwind.
+  const strength = valueNoise(
+    swellPoint
+      .mul(STRENGTH_FREQUENCY)
+      .add(vec2(...STRENGTH_OFFSET))
+      .sub(groupOffset),
+  );
 
   return vec2(roll, strength);
 };
@@ -615,6 +566,7 @@ interface FieldPassInputs {
   shaderContext: ShaderContextValue;
   scale: FloatUniform;
   swellClock: FloatUniform;
+  angle: FloatUniform;
   travel: FloatUniform;
   parallax: FloatUniform;
   parallaxCenter: Vector2Uniform;
@@ -650,6 +602,7 @@ function createFieldPass({
   shaderContext,
   scale,
   swellClock,
+  angle,
   travel,
   parallax,
   parallaxCenter,
@@ -661,7 +614,17 @@ function createFieldPass({
       .mul(vec2(...FIELD_SPAN))
       .add(corner);
 
-    return vec4(surfaceFields(worldPoint, swellLengthFrom(scale), strengthDrift(swellClock)), 0, 1);
+    const swellLength = swellLengthFrom(scale);
+
+    return vec4(
+      surfaceFields(
+        worldPoint,
+        swellLength,
+        strengthDrift(swellClock, swellLength, windFrom(angle)),
+      ),
+      0,
+      1,
+    );
   })();
 
   // A half float holds the fields to about three significant digits, and
@@ -708,12 +671,12 @@ function useAirUniforms({
  * the sway toward parallaxCenter.
  */
 function useMotionUniforms({
-  speed,
+  glideSpeed,
   swellSpeed,
   parallax,
   parallaxCenter,
   isFullMotion,
-}: Pick<SwellsShaderProps, 'speed' | 'swellSpeed' | 'parallax' | 'parallaxCenter'> & {
+}: Pick<SwellsShaderProps, 'glideSpeed' | 'swellSpeed' | 'parallax' | 'parallaxCenter'> & {
   isFullMotion: boolean;
 }) {
   return {
@@ -722,9 +685,9 @@ function useMotionUniforms({
     // time scale. Summing keeps a speed change from making the surface
     // jump, which speed times elapsed time would. The scene rewinds it to 0
     // at its first frame with content.
-    travelUniform: useAnimatableSpeed(speed),
-    // How far the swells' strength has drifted, in noise slices, summed the
-    // same way.
+    travelUniform: useAnimatableSpeed(glideSpeed),
+    // How far the swells' crests have travelled downwind, in terrain units,
+    // summed the same way.
     swellClock: useAnimatableSpeed(swellSpeed),
     parallaxUniform: useAnimatableUniform<number>(parallax),
     // The center as uv, 0..1 with y up: screenOrigin flips the prop's
@@ -883,7 +846,7 @@ function useIntro({
 /**
  * Swells' render-on-demand vote: true when nothing it draws changes between
  * frames, so the scene may stop drawing. Two dials move the picture on
- * their own: the glide and the swells' rise and fall. A signal is live
+ * their own: the glide and the swells' travel. A signal is live
  * whatever it reads now, because it can change between renders.
  *
  * The sway doesn't count, even toward the cursor. A cursor moves only when
@@ -892,12 +855,12 @@ function useIntro({
  * scene park, as LedWall's swell center does (SHA-139).
  */
 function isSwellsStill({
-  speed,
+  glideSpeed,
   swellSpeed,
-}: Pick<SwellsShaderProps, 'speed' | 'swellSpeed'>): boolean {
-  if (isSignal(speed) || isSignal(swellSpeed)) return false;
+}: Pick<SwellsShaderProps, 'glideSpeed' | 'swellSpeed'>): boolean {
+  if (isSignal(glideSpeed) || isSignal(swellSpeed)) return false;
 
-  return speed === 0 && swellSpeed === 0;
+  return glideSpeed === 0 && swellSpeed === 0;
 }
 
 export interface SwellsShaderProps {
@@ -984,10 +947,10 @@ export interface SwellsShaderProps {
    * How fast the camera glides forward, in terrain units per second, where
    * negative glides backward. Accepts a static value or an animation signal.
    */
-  speed: AnimatableProp<number>;
+  glideSpeed: AnimatableProp<number>;
   /**
-   * How fast the swells rise and fall in place, in noise slices per second,
-   * where 0 holds them still. Accepts a static value or an animation signal.
+   * How fast the swells travel downwind, in terrain units per second, where
+   * 0 holds them still. Accepts a static value or an animation signal.
    */
   swellSpeed: AnimatableProp<number>;
   /**
@@ -1060,7 +1023,7 @@ export function SwellsShader({
   hazeColor,
   colorSpace,
   hueInterpolation,
-  speed,
+  glideSpeed,
   swellSpeed,
   parallax,
   parallaxCenter,
@@ -1095,7 +1058,7 @@ export function SwellsShader({
     hazeColor,
   });
   const { travelUniform, swellClock, parallaxUniform, parallaxCenterUniform } = useMotionUniforms({
-    speed,
+    glideSpeed,
     swellSpeed,
     parallax,
     parallaxCenter,
@@ -1114,7 +1077,7 @@ export function SwellsShader({
     scheduler: shaderContext?.scheduler,
   });
 
-  useStaticSceneHint(!isIntroPlaying && isSwellsStill({ speed, swellSpeed }));
+  useStaticSceneHint(!isIntroPlaying && isSwellsStill({ glideSpeed, swellSpeed }));
 
   // Canvas width over height, so the view widens on a wide canvas instead
   // of stretching the terrain.
@@ -1179,6 +1142,7 @@ export function SwellsShader({
       shaderContext,
       scale: scaleUniform,
       swellClock,
+      angle: angleUniform,
       travel: travelUniform,
       parallax: parallaxUniform,
       parallaxCenter: parallaxCenterUniform,
@@ -1265,9 +1229,9 @@ export function SwellsShader({
       // compass angle's sine is how far it points right (+x), and its
       // cosine how far it points ahead (+z), so 0 points straight ahead and
       // lays the crests straight across the canvas.
-      const windRadians = angleUniform.mul(DEGREES_TO_RADIANS);
-      const windX = sin(windRadians).toVar();
-      const windZ = cos(windRadians).toVar();
+      const wind = windFrom(angleUniform).toVar();
+      const windX = wind.x;
+      const windZ = wind.y;
       const swellLength = swellLengthFrom(scaleUniform).toVar();
       const rippleLength = float(RIPPLE_SIZE);
       // How sharp the swells are, kept to 0..1, and where each one's crest
@@ -1339,7 +1303,7 @@ export function SwellsShader({
       // docs/agents/tsl.md).
       //
       // Without a field pass, the fields are worked out inline at every
-      // height read, with the drift's state pinned here once.
+      // height read, with the strength's slide pinned here once.
       //
       // A camera aimed further down than the texture allows for (FIELD_BEHIND
       // above) reaches ground past the texture's edge, where a read would
@@ -1349,9 +1313,10 @@ export function SwellsShader({
       // GPU branch, so pixels whose reads all land inside the texture skip
       // it. At the demo's camera settings every read on the camera's ray
       // does. A shadow ray walks toward the light and can pass the edge.
-      const drift = strengthDrift(swellClock);
+      const groupOffset = strengthDrift(swellClock, swellLength, wind);
+      const crestPhase = fract(swellClock.div(swellLength)).toVar();
       const inlineFieldsAt = (worldPoint: TSLValue) =>
-        surfaceFields(worldPoint, swellLength, drift);
+        surfaceFields(worldPoint, swellLength, groupOffset);
       const fieldsAt = (() => {
         if (fieldPass === null) return inlineFieldsAt;
         const fieldCorner = fieldCornerFor(vec2(swayRight, travelUniform)).toVar();
@@ -1431,18 +1396,23 @@ export function SwellsShader({
         const swellPoint = worldPoint.div(swellLength);
 
         // The roll and each swell's strength ("Read the surface's fields"
-        // above). The strength is clamped to 0..1 here, after the read,
-        // which the restored spread can pass at a rare extreme.
+        // above), both 0..1.
         const fields = fieldsAt(worldPoint).toVar();
         const roll = fields.x;
-        const strength = clamp(fields.y, 0, 1);
+        const strength = fields.y;
 
         // Where the point falls within its swell, 0..1 from one trough to
         // the next, measured downwind. fract() keeps the fractional part, so
         // the count repeats once per swell length. Adding the roll, centered
         // on 0 and scaled by the meander, slides the crests up and down the
         // wind from place to place, so they bend instead of running straight.
-        const withinSwell = fract(alongWind(swellPoint).add(roll.sub(0.5).mul(MEANDER)));
+        //
+        // Subtracting crestPhase, how far the crests have travelled in swell
+        // lengths, slides every crest that far downwind. The count repeats
+        // once per swell length, so crestPhase keeps the fraction alone.
+        const withinSwell = fract(
+          alongWind(swellPoint).sub(crestPhase).add(roll.sub(0.5).mul(MEANDER)),
+        );
 
         // The swell's profile starts as a triangle that climbs from 0 at the
         // trough to 1 at the crest, then drops back to 0. Each face is a

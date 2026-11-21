@@ -24,7 +24,7 @@ export interface SwellsParams {
   hazeColor: string;
   colorSpace: ColorSpace;
   hueInterpolation: HueInterpolation;
-  speed: number;
+  glideSpeed: number;
   swellSpeed: number;
   /** The scene always passes `parallaxCenter="cursor"`, so the sway follows the pointer. */
   parallax: number;
@@ -57,8 +57,8 @@ export const INITIAL: SwellsParams = {
   hazeColor: 'oklch(0.460 0.248 293.328)', // paletteOklch.violet[6]
   colorSpace: 'oklab',
   hueInterpolation: 'shorter',
-  speed: 0.3,
-  swellSpeed: 0.2,
+  glideSpeed: 0.3,
+  swellSpeed: 0.3,
   parallax: 0,
   intro: true,
 };

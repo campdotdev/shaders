@@ -20,13 +20,13 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 // ?skylight=1, ?rimGlow=1, or ?glints=1 turns one on. ?glintSize sets the
 // glints' size.
 // ?background=white turns the canvas white, so a transparent sky reads
-// white and an opaque black one can't pass for it. ?speed, ?swellSpeed, and
+// white and an opaque black one can't pass for it. ?glideSpeed, ?swellSpeed, and
 // ?parallax set the motion dials. ?parallaxCenter=cursor sways the camera
 // toward the pointer, and ?parallaxCenter=0.85,0.5 toward a fixed point.
 // The intro starts off, so a check under ?reducedMotion=off, where the intro
 // would play, never catches the surface mid-rise; ?intro=1 turns it on.
 //
-// The camera, the swells' shape, and their rise and fall start where they
+// The camera, the swells' shape, and their travel start where they
 // were when the spec's checks were measured, not at Swells' defaults, so
 // the defaults can change without moving the bands the checks read. The
 // narrower default field of view lifts the horizon into the band the sky
@@ -92,6 +92,7 @@ export default function ProbeScene() {
           angle={queryNumber('angle') ?? PROBE_DEFAULTS.angle}
           color="oklch(0.95 0 0)"
           fieldOfView={queryNumber('fieldOfView') ?? PROBE_DEFAULTS.fieldOfView}
+          glideSpeed={queryNumber('glideSpeed')}
           glintSize={queryNumber('glintSize')}
           glints={queryNumber('glints') ?? 0}
           haze={queryNumber('haze') ?? 0}
@@ -111,7 +112,6 @@ export default function ProbeScene() {
           sheen={queryNumber('sheen') ?? 0}
           sheenColor="oklch(1 0 0)"
           skylight={queryNumber('skylight') ?? 0}
-          speed={queryNumber('speed')}
           swellSpeed={queryNumber('swellSpeed') ?? PROBE_DEFAULTS.swellSpeed}
           tilt={queryNumber('tilt')}
         />
