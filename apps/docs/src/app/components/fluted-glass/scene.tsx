@@ -4,9 +4,10 @@ import type { ReactNode } from 'react';
 
 import { FlutedGlass, ShaderScene } from '@camp-dev/shaders';
 
-import anthurium from './anthurium.webp';
+import anthurium from '@/components/photo/anthurium.webp';
+import { PhotoSource, usePhoto } from '@/components/photo/photo-source';
+
 import { type FlutedGlassParams, INITIAL } from './params';
-import { PhotoSource, usePhoto } from './photo-source';
 import { POSTER_SIZE } from './poster-size';
 
 export default function FlutedGlassScene({

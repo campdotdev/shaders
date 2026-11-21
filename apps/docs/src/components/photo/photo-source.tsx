@@ -1,10 +1,11 @@
 'use client';
 
-// The Fluted Glass demo's Source: a photo across the canvas, because the
-// glass shows best on hard edges that a smooth gradient lacks. The package
-// ships no image Source until v2, so this one uses public API: a plane that
-// fills the scene's view, the way LinearGradient draws its gradient.
-// scene.tsx decodes the photo with usePhoto before the scene mounts.
+// The docs' photo Source: a photo across the canvas for an Effect demo to
+// draw over, because a photo's edges and detail show a resample or a color
+// transform plainly (ADR 0009). The package ships no image Source until v2,
+// so this one uses public API: a plane that fills the scene's view, the way
+// LinearGradient draws its gradient. A demo's scene.tsx decodes the photo
+// with usePhoto before the scene mounts. cover.ts holds the fit.
 import type { StaticImageData } from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -18,6 +19,8 @@ import {
   Texture,
   Vector2,
 } from 'three/webgpu';
+
+import { coverShare } from './cover';
 
 // ---------------------------------------------
 // Loading the photo
@@ -45,7 +48,7 @@ export function usePhoto(source: StaticImageData | string): HTMLImageElement | n
         if (!cancelled) setPhoto(image);
       },
       (error: unknown) => {
-        console.error('Fluted Glass demo: the photo failed to load.', error);
+        console.error('PhotoSource: the photo failed to load.', error);
       },
     );
 
@@ -62,8 +65,9 @@ export function usePhoto(source: StaticImageData | string): HTMLImageElement | n
 // ---------------------------------------------
 
 /**
- * Draws `photo` across the canvas at the scale that covers `frame`, cropped
- * to the canvas without stretching.
+ * Draws `photo` across the canvas, cropped without stretching. Without
+ * `frame` the photo covers the canvas and scales with it. With `frame` it
+ * keeps the scale that covers the frame.
  */
 export function PhotoSource({
   photo,
@@ -72,13 +76,18 @@ export function PhotoSource({
   photo: HTMLImageElement;
   /**
    * The CSS size of the box the photo covers, centered on the canvas. The
-   * canvas shows the middle of that box at the canvas's own size.
+   * canvas shows the middle of that box at the canvas's own size. A demo
+   * whose poster renders pixel-locked passes its poster's size, so the
+   * photo keeps the poster's scale. Leave it out to cover the canvas.
    */
-  frame: readonly [number, number];
+  frame?: readonly [number, number];
 }) {
   const shaderContext = useShaderContext();
   const resize = useResize();
-  const [frameWidth, frameHeight] = frame;
+  // The frame's two numbers, not the tuple, go into the fit effect's deps,
+  // so a caller that passes a fresh tuple each render refits nothing.
+  const frameWidth = frame?.[0];
+  const frameHeight = frame?.[1];
 
   // A still photo changes nothing over time, so a scene of it can park.
   useStaticSceneHint(true);
@@ -89,32 +98,23 @@ export function PhotoSource({
   const coverVector = useMemo(() => new Vector2(1, 1), []);
   const coverUniform = useMemo(() => uniform(coverVector), [coverVector]);
 
-  // The fit. The photo covers the frame, centered, and the canvas shows the
-  // middle of the frame at its own size, the way DemoPoster's pixel-locked
-  // mode crops the poster. So the photo keeps one scale in every box, and
-  // nothing zooms when the scene replaces the poster. To cover a box, a
-  // photo photoAspect times as wide as it is tall must be max(width,
-  // height * photoAspect) CSS pixels wide. The photo takes the larger of
-  // that for the frame and for the canvas, so a canvas bigger than the
-  // frame still reaches no edge of the photo. When the canvas is the frame,
-  // this is a plain cover fit. The write repaints nothing on a still scene
-  // by itself, so it asks for a frame (the bare-uniform-write gotcha in
-  // docs/agents/tsl.md).
+  // The fit from cover.ts, refreshed on every resize. With a frame, the
+  // canvas crops the photo the way DemoPoster's pixel-locked mode crops the
+  // poster, so nothing zooms when the scene replaces the poster. The write
+  // repaints nothing on a still scene by itself, so it asks for a frame (the
+  // bare-uniform-write gotcha in docs/agents/tsl.md).
   useEffect(() => {
     const apply = () => {
       const [width, height] = resize.get();
 
       if (width <= 0 || height <= 0) return;
       const photoAspect = photo.naturalWidth / photo.naturalHeight;
-      const photoWidth = Math.max(
-        frameWidth,
-        frameHeight * photoAspect,
-        width,
-        height * photoAspect,
-      );
-      const photoHeight = photoWidth / photoAspect;
+      const fitFrame =
+        frameWidth === undefined || frameHeight === undefined
+          ? undefined
+          : ([frameWidth, frameHeight] as const);
 
-      coverVector.set(width / photoWidth, height / photoHeight);
+      coverVector.set(...coverShare(photoAspect, [width, height], fitFrame));
       shaderContext?.scheduler.requestRender();
     };
 
