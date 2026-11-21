@@ -83,6 +83,7 @@ function makeScene() {
     },
     requestRender: vi.fn(() => true),
     setIdle: vi.fn(() => () => undefined),
+    onPhaseReset: vi.fn(() => () => undefined),
   };
   const shaderContext = {
     renderer: { three: renderer },
@@ -134,10 +135,16 @@ function makeScene() {
   /** The pre-passes still registered: added and not yet removed. */
   const livePrePasses = () => prePasses.filter((prePass) => !removedPrePasses.includes(prePass));
 
+  /** Run every scheduler client once, as one frame of `delta` seconds. */
+  const tick = (delta: number) => {
+    for (const client of [...clients]) client({ delta, elapsed: 0, now: 0 });
+  };
+
   return {
     Wrapper,
     renderer,
     scheduler,
+    tick,
     resamples,
     overlays,
     prePasses,
@@ -194,17 +201,21 @@ function makeSignal(initial: number) {
 }
 
 describe('HeatShimmer', () => {
-  // The public shape in phase 1: two animatable dials, plus the temporary
-  // tuning rig the defaults gate deletes. pnpm typecheck runs this file
-  // too, so a missing export or a narrowed prop fails there as well.
-  it('takes two animatable dials and the tuning rig from the package root', () => {
+  // The public shape in phase 2: three animatable dials, plus the
+  // temporary tuning rig the defaults gate deletes. pnpm typecheck runs
+  // this file too, so a missing export or a narrowed prop fails there as
+  // well.
+  it('takes three animatable dials and the tuning rig from the package root', () => {
     expectTypeOf<HeatShimmerTuning>().toEqualTypeOf<{
       foldLimit?: number;
       stretch?: number;
+      riseRate?: number;
+      morphRate?: number;
     }>();
     expectTypeOf<HeatShimmerProps>().toEqualTypeOf<{
       strength?: AnimatableProp<number>;
       scale?: AnimatableProp<number>;
+      speed?: AnimatableProp<number>;
       tuning?: HeatShimmerTuning;
     }>();
   });
@@ -267,6 +278,24 @@ describe('HeatShimmer', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
+  // Speed feeds a clock the CPU sums each frame, so a new speed, a speed
+  // signal's tick, and a frame of the clock all leave the registrations as
+  // they were.
+  it('changes its speed without registering again', () => {
+    const scene = makeScene();
+    const speed = makeSignal(1);
+    const { rerender } = render(<HeatShimmer speed={1} />, { wrapper: scene.Wrapper });
+
+    scene.tick(1 / 60);
+    rerender(<HeatShimmer speed={-2} />);
+    scene.tick(1 / 60);
+    rerender(<HeatShimmer speed={speed.signal} />);
+    speed.set(0.5);
+    scene.tick(1 / 60);
+
+    expectStableRegistrations(scene);
+  });
+
   it('follows its dial signals without registering again', () => {
     const scene = makeScene();
     const strength = makeSignal(0.5);
@@ -294,22 +323,38 @@ describe('HeatShimmer', () => {
     });
 
     scene.scheduler.requestRender.mockClear();
-    rerender(<HeatShimmer tuning={{ foldLimit: 0.6, stretch: 1 }} />);
+    rerender(<HeatShimmer tuning={{ foldLimit: 0.6, stretch: 1, riseRate: 0.3, morphRate: 2 }} />);
 
     expectStableRegistrations(scene);
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
-  // Phase 1 has no clock, so the shimmer is still, and every dial repaints
-  // through its uniform when it moves. A scene of still Sources under it
-  // can park.
-  it('votes idle and never animated', () => {
+  // The clock moves the shimmer at its defaults, so it keeps the scene
+  // drawing. ./idle.test.ts covers every case of the vote, and these two
+  // check that the wrapper casts it.
+  it('votes animated at its defaults', () => {
     const scene = makeScene();
 
     render(<HeatShimmer />, { wrapper: scene.Wrapper });
 
-    expect(scene.scheduler.setIdle).toHaveBeenCalledWith(true);
-    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
+    expect(scene.scheduler.setIdle).toHaveBeenCalledWith(false);
+    expect(scene.scheduler.setIdle).not.toHaveBeenCalledWith(true);
+  });
+
+  // With nothing to move, or no clock to move it, a scene of still Sources
+  // under it can park.
+  it('votes idle at a strength of 0 or a speed of 0', () => {
+    const offScene = makeScene();
+
+    render(<HeatShimmer strength={0} />, { wrapper: offScene.Wrapper });
+    expect(offScene.scheduler.setIdle).toHaveBeenCalledWith(true);
+    expect(offScene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
+
+    const stillScene = makeScene();
+
+    render(<HeatShimmer speed={0} />, { wrapper: stillScene.Wrapper });
+    expect(stillScene.scheduler.setIdle).toHaveBeenCalledWith(true);
+    expect(stillScene.scheduler.setIdle).not.toHaveBeenCalledWith(false);
   });
 
   // Mode 1 only: outside a scene there is no output stage to warp, so the

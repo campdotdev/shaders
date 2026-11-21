@@ -5,8 +5,10 @@
 // for each direction. It adds no light and no color of its own. A pre-pass,
 // a draw that runs before the scene each frame, puts the noise into a small
 // texture, and each pixel reads one texel (one pixel of a texture) of it.
-// The wrapper (./heat-shimmer.tsx) supplies the props. In this phase the
-// shimmer has no clock, so the shift holds still.
+// A clock summed on the CPU moves the noise in that pass, so the shift rises
+// up the canvas and changes shape as it goes. The warp's shader stays the
+// same, and only the texture it reads changes.
+// The wrapper (./heat-shimmer.tsx) supplies the props.
 import { useEffect, useMemo } from 'react';
 
 import {
@@ -32,6 +34,7 @@ import {
 import { createTexturePass, simplexNoise } from '../../engine.js';
 import type { ShaderContextValue } from '../../react/context/shader-context.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import { useAnimatableSpeed } from '../../react/hooks/use-animatable-speed/use-animatable-speed.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useAspectUniform } from '../../react/hooks/use-aspect-uniform/use-aspect-uniform.js';
 import { useBasePassUv } from '../../react/hooks/use-base-pass-uv/use-base-pass-uv.js';
@@ -60,6 +63,24 @@ const FOLD_LIMIT = 0.25;
  * across, and lower than 1 makes them taller than wide.
  */
 const STRETCH = 1.5;
+
+/**
+ * How fast the shimmer rises at a `speed` of 1, in canvas heights per
+ * second. At 0.1 a lump takes 10 seconds to cross the canvas from bottom
+ * to top. It is in canvas heights, not noise units, so a lump climbs at the
+ * same pace on screen whatever `scale` makes its size. Higher rises faster,
+ * and 0 leaves the lumps in place while they change shape.
+ */
+const RISE_RATE = 0.1;
+
+/**
+ * How fast the lumps change shape at a `speed` of 1, in noise units per
+ * second along the noise's third axis. The noise is smooth over about one
+ * unit, so at 0.5 a lump becomes a different one in about two seconds.
+ * Higher churns faster, and 0 keeps each lump's shape as it rises, so the
+ * pattern slides like a picture.
+ */
+const MORPH_RATE = 0.5;
 
 /**
  * Where the second noise read sits on the noise's third axis, in noise
@@ -103,6 +124,10 @@ export interface HeatShimmerTuning {
   foldLimit?: number;
   /** How much wider than tall each lump is. 1 is round. */
   stretch?: number;
+  /** How fast the shimmer rises at a `speed` of 1, in canvas heights per second. */
+  riseRate?: number;
+  /** How fast the lumps change shape at a `speed` of 1, in noise units per second. */
+  morphRate?: number;
 }
 
 /**
@@ -111,11 +136,18 @@ export interface HeatShimmerTuning {
  * defaults gate deletes this hook and bakes the constants back in.
  */
 function useTuningUniforms(tuning: HeatShimmerTuning | undefined) {
-  const { foldLimit = FOLD_LIMIT, stretch = STRETCH } = tuning ?? {};
+  const {
+    foldLimit = FOLD_LIMIT,
+    stretch = STRETCH,
+    riseRate = RISE_RATE,
+    morphRate = MORPH_RATE,
+  } = tuning ?? {};
 
   return {
     foldLimitUniform: useAnimatableUniform<number>(foldLimit),
     stretchUniform: useAnimatableUniform<number>(stretch),
+    riseRateUniform: useAnimatableUniform<number>(riseRate),
+    morphRateUniform: useAnimatableUniform<number>(morphRate),
   };
 }
 
@@ -131,6 +163,12 @@ export interface HeatShimmerShaderProps {
    * smaller. Accepts a static value or an animation signal.
    */
   scale: AnimatableProp<number>;
+  /**
+   * A multiplier on the shimmer's pace, where 1 is the tuned pace. A
+   * negative value makes the shimmer sink, and 0 holds it still as a fixed
+   * warp. Accepts a static value or an animation signal.
+   */
+  speed: AnimatableProp<number>;
   /**
    * TEMPORARY (build-phase tuning only): dev overrides for the feel
    * constants.
@@ -152,6 +190,10 @@ interface ShiftPassInputs {
   stretch: FloatUniform;
   /** `scale`, kept off 0 by MIN_SCALE. */
   safeScale: ShaderNodeObject<Node>;
+  /** How far the pattern has risen, in canvas heights. */
+  rise: ShaderNodeObject<Node>;
+  /** How far both reads have moved along the noise's third axis, in noise units. */
+  morph: ShaderNodeObject<Node>;
 }
 
 /** The shift pass's texture and its teardown. */
@@ -180,6 +222,8 @@ function createShiftPass({
   aspect,
   stretch,
   safeScale,
+  rise,
+  morph,
 }: ShiftPassInputs): ShiftPass | null {
   const renderer = shaderContext.renderer.three;
 
@@ -197,18 +241,34 @@ function createShiftPass({
     // canvas and a tall one (aspect correction). Dividing x by the stretch
     // slows the noise across, so each lump spans more of the width than
     // the height. `scale` then fits that many lumps in the canvas's height.
-    const noisePoint = vec2(coordinate.x.mul(aspect).div(stretch), coordinate.y).mul(safeScale);
+    //
+    // The rise scrolls the pattern. y grows downward, so adding the rise to
+    // it makes each texel read the noise from further down the canvas, and
+    // the lump that sat below a texel a moment ago now shows at the texel:
+    // the pattern climbs. The rise grows with the clock, so the climb is
+    // steady, and it is added before `scale`, so it counts in canvas
+    // heights. When the clock runs backward, the rise falls and the
+    // pattern sinks.
+    const noisePoint = vec2(coordinate.x.mul(aspect).div(stretch), coordinate.y.add(rise)).mul(
+      safeScale,
+    );
 
     // Two noise reads, each a smooth random number from about -1 to 1 that
     // changes gradually across the canvas. The first sets the sideways
     // shift and the second, one slice further along the noise's third axis,
     // the vertical one. Two independent reads move an edge at every angle:
     // a vertical edge such as a stem bends sideways, and a horizontal one
-    // bends up and down. The third axis holds 0 for now, and a later phase
-    // moves both slices along it with a clock.
+    // bends up and down.
+    //
+    // The third axis is time. Simplex noise is a smooth field in three
+    // dimensions, and each read takes a flat slice of it. Moving both
+    // slices along the third axis by the morph shows a neighboring slice
+    // each frame, which looks like the same lumps slowly changing shape,
+    // with no seam and no repeat. The two slices keep SECOND_SLICE apart,
+    // so they never meet.
     const shift = vec2(
-      simplexNoise(vec3(noisePoint, 0)),
-      simplexNoise(vec3(noisePoint, SECOND_SLICE)),
+      simplexNoise(vec3(noisePoint, morph)),
+      simplexNoise(vec3(noisePoint, morph.add(SECOND_SLICE))),
     );
 
     // An 8-bit channel holds 0 to 1 in 256 steps, so the noise is mapped
@@ -268,7 +328,7 @@ function createShiftPass({
   };
 }
 
-export function HeatShimmerShader({ strength, scale, tuning }: HeatShimmerShaderProps) {
+export function HeatShimmerShader({ strength, scale, speed, tuning }: HeatShimmerShaderProps) {
   const shaderContext = useShaderContext();
 
   // The dials live in uniforms, values the CPU writes and the GPU reads at
@@ -276,11 +336,32 @@ export function HeatShimmerShader({ strength, scale, tuning }: HeatShimmerShader
   const strengthUniform = useAnimatableUniform<number>(strength);
   const scaleUniform = useAnimatableUniform<number>(scale);
   const aspectUniform = useAspectUniform();
-  const { foldLimitUniform, stretchUniform } = useTuningUniforms(tuning);
+  const { foldLimitUniform, stretchUniform, riseRateUniform, morphRateUniform } =
+    useTuningUniforms(tuning);
 
   // `scale` kept off 0, which the reach divides by. The pass and the warp
   // share this one node.
   const safeScale = useMemo(() => max(scaleUniform, MIN_SCALE), [scaleUniform]);
+
+  // ---------------------------------------------
+  // The clock: seconds of shimmer, summed on the CPU
+  // ---------------------------------------------
+  // Seconds of shimmer so far, in a uniform: speed times each frame's
+  // seconds, summed on the CPU and scaled by the reduced-motion policy, so a
+  // change of speed changes the pace without jumping the pattern. Under the
+  // `auto` policy it runs at 0.3 when the visitor asks for less motion, and
+  // under `paused` it stops. At a speed of 0 it stops too, and the shimmer
+  // holds a fixed warp.
+  const clock = useAnimatableSpeed(speed);
+
+  // One clock, two motions: how far the pattern has risen, in canvas
+  // heights, and how far it has moved along the noise's third axis. Both
+  // grow at a rate the tuning sets. A change of rate multiplies every
+  // second the clock has summed, so dragging a rate's tuning slider jumps
+  // the pattern. The defaults gate bakes both rates into constants, and the
+  // jump goes with them.
+  const rise = useMemo(() => clock.mul(riseRateUniform), [clock, riseRateUniform]);
+  const morph = useMemo(() => clock.mul(morphRateUniform), [clock, morphRateUniform]);
 
   // ---------------------------------------------
   // Point the warp at the shift pass
@@ -315,6 +396,8 @@ export function HeatShimmerShader({ strength, scale, tuning }: HeatShimmerShader
       aspect: aspectUniform,
       stretch: stretchUniform,
       safeScale,
+      rise,
+      morph,
     });
 
     if (!pass) return;
@@ -325,7 +408,16 @@ export function HeatShimmerShader({ strength, scale, tuning }: HeatShimmerShader
       shiftReady.value = 0;
       pass.dispose();
     };
-  }, [shaderContext, shiftTexture, shiftReady, aspectUniform, stretchUniform, safeScale]);
+  }, [
+    shaderContext,
+    shiftTexture,
+    shiftReady,
+    aspectUniform,
+    stretchUniform,
+    safeScale,
+    rise,
+    morph,
+  ]);
 
   // ---------------------------------------------
   // The warp: move where the image beneath is sampled

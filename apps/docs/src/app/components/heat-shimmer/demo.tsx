@@ -52,10 +52,13 @@ function HeatShimmerFields() {
       <Section title="Shimmer">
         <SliderInput label="Strength" max={1} min={0} path="strength" step={0.01} />
         <SliderInput label="Scale" max={40} min={1} path="scale" step={0.1} />
+        <SliderInput label="Speed" max={2} min={-2} path="speed" step={0.01} />
       </Section>
       <Section title="Tuning (dev)">
         <SliderInput label="Fold limit" max={1} min={0} path="tuning.foldLimit" step={0.005} />
         <SliderInput label="Stretch" max={4} min={0.25} path="tuning.stretch" step={0.05} />
+        <SliderInput label="Rise rate" max={0.5} min={0} path="tuning.riseRate" step={0.005} />
+        <SliderInput label="Morph rate" max={3} min={0} path="tuning.morphRate" step={0.05} />
       </Section>
     </>
   );

@@ -27,7 +27,12 @@ export default function HeatShimmerScene({
   return (
     <ShaderScene>
       <PhotoSource photo={photo} />
-      <HeatShimmer scale={params.scale} strength={params.strength} tuning={params.tuning} />
+      <HeatShimmer
+        scale={params.scale}
+        speed={params.speed}
+        strength={params.strength}
+        tuning={params.tuning}
+      />
       {children}
     </ShaderScene>
   );
