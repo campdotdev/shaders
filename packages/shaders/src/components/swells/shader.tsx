@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from 'react';
 import {
   abs,
   atan,
+  Break,
   clamp,
   cos,
   dot,
@@ -23,6 +24,7 @@ import {
   fract,
   If,
   length,
+  Loop,
   max,
   min,
   mix,
@@ -334,6 +336,59 @@ const INTRO_HAZE_SHARE = 0.5;
 const INTRO_MAX_DELTA = 0.1;
 
 const DEGREES_TO_RADIANS = Math.PI / 180;
+
+// How many times the shadow ray reads the surface
+// on its way from a lit point toward the light. More steps catch thinner
+// crests and cost GPU time on every lit pixel: about 1.9 ms a frame at 24,
+// 1.0 ms at 12, and 0.6 ms at 8, at 2x on an M1 Max. The author saw no
+// difference between 24 and 12 in motion. 8 looked the same too, but it
+// leaves half the margin against a thin crest for 0.4 ms.
+const SHADOW_STEPS = 12;
+
+// The furthest the shadow ray looks for a crest
+// in its way, in terrain units. A light near the horizon would otherwise
+// send the ray almost level, and it would never climb clear of the swells.
+const SHADOW_REACH = 12;
+
+// The width of a cast shadow's soft edge, as the slope between the shadow
+// ray and the crest it grazes: 0.01 is a hard edge, 0.15 a wide blur.
+const SHADOW_EDGE = 0.052;
+
+// The most light the sky adds to a face the sun
+// doesn't reach, at `skylight` 1, as a share of full sunlight. Higher lifts
+// the shadows further toward `color`.
+const SKYLIGHT_SHARE = 0.45;
+
+// How tightly the glow hugs surfaces seen edge-on: the
+// exponent on 1 minus the cosine between the surface and the view. Low
+// spreads the glow over every face that leans away; high keeps only the
+// thin rims of crests.
+const RIM_FOCUS = 4;
+
+// The smallest and largest cell `glintSize` allows, in
+// terrain units. A cell holds one grain, and its glint fills about half of
+// it.
+const GLINT_SIZE_MIN = 0.002;
+const GLINT_SIZE_MAX = 0.2;
+
+// How exactly a grain must mirror the light at the camera to flash: the
+// exponent on the cosine between its face and the mirror direction. At 400
+// a grain flashes only within about 3.4 degrees, about one grain in 550. At
+// 40 the window is about 10.7 degrees, about one in 60, and each flash
+// lasts longer. 148 sits between, nearer the busy end.
+const GLINT_FOCUS = 148;
+
+// Where the glints fade out, in cells from the camera.
+// A cell this far away is about a pixel wide, and further out it would
+// flicker as noise. At a `glintSize` of 0.02 the fade runs from 5 to 14
+// terrain units.
+const GLINT_FADE_START = 250;
+const GLINT_FADE_END = 700;
+
+// The grain cells' hash wraps each coordinate into
+// 0..GLINT_STRIDE - 1, so the two whole numbers each cell hashes stay under
+// 2^24, the largest a float holds exactly (ROW_STRIDE above).
+const GLINT_STRIDE = 2048;
 
 // The middle of the canvas, as a position prop: the sway's center when a
 // fixed `parallax` of 0 or reduced motion leaves it nothing to do.
@@ -954,6 +1009,36 @@ export interface SwellsShaderProps {
    * surface under reduced motion.
    */
   intro: boolean;
+  /**
+   * How dark the shadows are that crests cast across the surface behind
+   * them, from 0 (none, and no GPU cost) to 1 (a shadowed point gets no
+   * direct light). Accepts a static value or an animation signal.
+   */
+  shadows: AnimatableProp<number>;
+  /**
+   * How much light the sky adds to faces the light doesn't reach, from 0
+   * (none, so they take `shadowColor` alone) to 1. Accepts a static value
+   * or an animation signal.
+   */
+  skylight: AnimatableProp<number>;
+  /**
+   * How strongly surfaces seen edge-on, the rims of crests and the far
+   * ground, glow in `sheenColor`, from 0 (none) to 1. Accepts a static
+   * value or an animation signal.
+   */
+  rimGlow: AnimatableProp<number>;
+  /**
+   * How bright the grains of sand flash where they mirror the light at the
+   * camera, from 0 (none) to 1. Accepts a static value or an animation
+   * signal.
+   */
+  glints: AnimatableProp<number>;
+  /**
+   * How wide one grain's cell is, in terrain units, from 0.002 to 0.2.
+   * Higher draws bigger glints, further apart, that show
+   * from further away. Accepts a static value or an animation signal.
+   */
+  glintSize: AnimatableProp<number>;
 }
 
 export function SwellsShader({
@@ -980,6 +1065,11 @@ export function SwellsShader({
   parallax,
   parallaxCenter,
   intro,
+  shadows,
+  skylight,
+  rimGlow,
+  glints,
+  glintSize,
 }: SwellsShaderProps) {
   const shaderContext = useShaderContext();
   const isFullMotion = useFullMotion(shaderContext?.scheduler);
@@ -1011,6 +1101,12 @@ export function SwellsShader({
     parallaxCenter,
     isFullMotion,
   });
+
+  const shadowsUniform = useAnimatableUniform<number>(shadows);
+  const skylightUniform = useAnimatableUniform<number>(skylight);
+  const rimGlowUniform = useAnimatableUniform<number>(rimGlow);
+  const glintsUniform = useAnimatableUniform<number>(glints);
+  const glintSizeUniform = useAnimatableUniform<number>(glintSize);
 
   const { introUniform, isIntroPlaying } = useIntro({
     intro,
@@ -1251,7 +1347,8 @@ export function SwellsShader({
       // The bounds sit half a texel in from each edge, where the filter
       // still has a texel on both sides. If() makes the inline work a real
       // GPU branch, so pixels whose reads all land inside the texture skip
-      // it. At the demo's camera settings every read does.
+      // it. At the demo's camera settings every read on the camera's ray
+      // does. A shadow ray walks toward the light and can pass the edge.
       const drift = strengthDrift(swellClock);
       const inlineFieldsAt = (worldPoint: TSLValue) =>
         surfaceFields(worldPoint, swellLength, drift);
@@ -1314,7 +1411,11 @@ export function SwellsShader({
       // every bisection step, then once more where it stopped, and the
       // normal calls it four more times around the hit. The point is where
       // the ray is relative to the camera, which stands over (0, 0).
-      const heightAt = (groundPoint: TSLValue) => {
+      //
+      // The shadow ray passes includeRipples as false and reads the swells
+      // alone. The ripples are finer than the shadow ray's steps, so reading
+      // them there would speckle the shadows.
+      const heightAt = (groundPoint: TSLValue, includeRipples = true) => {
         // The glide. The camera stays at the origin, and the surface slides
         // toward it instead: every point reads the surface `travel` units
         // further ahead (+z, the way the camera faces). That looks the same
@@ -1404,6 +1505,8 @@ export function SwellsShader({
           .mul(limitedRelief)
           .mul(risen);
 
+        if (!includeRipples) return swells;
+
         // The ripples: a sine wave whose crests run square to the wind,
         // one per ripple length, its phase wobbled across the wind and bent
         // by the roll so the crests curve. sin() of the phase times 2 pi
@@ -1469,8 +1572,9 @@ export function SwellsShader({
       // out of the surface, and its dot product with the light's direction is
       // the cosine of the angle between them: 1 where the surface faces the
       // light head on, 0 where the light runs along it, negative where it faces
-      // away. max() clamps the far side to 0, so a face turned from the light
-      // takes the shadow color alone. mixColor blends the two colors in
+      // away. max() clamps the far side to 0 (sunFacing below), so with
+      // `skylight` at 0 a face turned from the light takes the shadow color
+      // alone. mixColor blends the two colors in
       // `colorSpace`, so the slopes between them pass through that space's
       // midpoints: oklab's keep an even lightness step, where linear RGB's
       // turn muddy between a warm and a cool color.
@@ -1483,7 +1587,109 @@ export function SwellsShader({
       // lights level ground at 1 and a 20 degree slope at cos(20) = 0.94, so
       // the same swells flatten into one tone.
       const lightFacing = dot(march.normal, lightDirection).toVar();
-      const facing = max(lightFacing, 0);
+
+      // ---------------------------------------------
+      // Shadows that crests cast
+      // ---------------------------------------------
+      // lightFacing only knows which way this one point faces. It can't
+      // tell that a crest between the point and the light blocks the light,
+      // so a trough behind a tall crest is lit as if nothing stood in the
+      // way. A cast shadow needs a second ray (a shadow ray): start at the
+      // point the camera's ray hit, walk toward the light, and check whether
+      // the surface ever rises above the ray.
+      //
+      // The walk is short. Nothing stands taller than limitedRelief, so
+      // once the ray has climbed that high, nothing can block it. The ray
+      // climbs toLight.y per unit travelled, so it needs
+      // (top - start height) / toLight.y units to get there: a point just
+      // under a crest's top walks a few hundredths of a unit, and a point
+      // deep in a trough walks furthest. max() keeps a light on the horizon,
+      // where toLight.y is 0, from dividing by 0, and SHADOW_REACH caps the
+      // walk for a low light. The floor stays tiny: a floor of 0.02 would
+      // stop the walk short for a light under about 1.15 degrees, before
+      // it climbs clear of the crests SHADOW_REACH still covers.
+      //
+      // The steps bunch up near the start: each sits at reach * share^2,
+      // where share runs 1/12, 2/12, ... 1. The first lands 1/144 of the way
+      // along and the last gap covers 16% of the reach. Near crests give a
+      // shadow its crisp edge where it starts, so they get the fine steps.
+      //
+      // At each step, clearance is how far the ray sits above the surface.
+      // Below 0, the surface blocks the ray: full shadow. Just above 0, the
+      // ray grazes a crest, and the point sits at the shadow's edge. A real
+      // sun is a disc, not a point, so at the edge part of the disc still
+      // shows over the crest, and the shadow fades in over a band (the
+      // penumbra). clearance / along is the slope from the start point up to
+      // the ray's gap over the surface, which is how much of that disc
+      // clears the crest. Dividing by the edge width turns it into 0..1,
+      // and min() keeps the worst step, the crest that blocks the most.
+      //
+      // sunlit starts at 1, fully lit. The loop is a real GPU loop with
+      // .assign(), because a running minimum written as a chain of select()
+      // hangs the compiler (the running-minimum gotcha in docs/agents/tsl.md).
+      // If() skips the whole walk where shadows are off or the face is
+      // turned from the light, which is shaded already, so `shadows` at 0
+      // costs nothing.
+      const shadowStrength = clamp(shadowsUniform, 0, 1).toVar();
+      const sunlit = float(1).toVar();
+
+      If(shadowStrength.greaterThan(0), () => {
+        If(lightFacing.greaterThan(0), () => {
+          const start = vec3(march.position).toVar();
+          const toLight = vec3(lightDirection).toVar();
+          const reach = clamp(
+            limitedRelief.sub(start.y).div(max(toLight.y, 1e-4)),
+            0,
+            SHADOW_REACH,
+          ).toVar();
+
+          Loop(SHADOW_STEPS, ({ i }: { i: TSLValue }) => {
+            const share = float(i).add(1).div(SHADOW_STEPS);
+            const along = reach.mul(share).mul(share).toVar();
+            const point = start.add(toLight.mul(along)).toVar();
+            const clearance = point.y.sub(heightAt(vec2(point.x, point.z), false));
+
+            sunlit.assign(min(sunlit, clearance.div(max(along, 1e-4).mul(SHADOW_EDGE))));
+
+            If(sunlit.lessThan(0), () => {
+              Break();
+            });
+          });
+        });
+      });
+
+      // smoothstep() eases the edge in and out, and clamps sunlit to 0..1.
+      // mix() then scales the shadow by its strength: at 0 every point keeps
+      // all its light, and at 1 a blocked point keeps none.
+      const sunShare = mix(1, smoothstep(0, 1, sunlit), shadowStrength).toVar();
+      const sunFacing = max(lightFacing, 0).mul(sunShare);
+
+      // ---------------------------------------------
+      // Light from the sky
+      // ---------------------------------------------
+      // The sun isn't the only light outdoors. The whole sky glows, and that
+      // glow reaches ground the sun can't (ambient light). Without it, every
+      // face turned from the sun and every shadowed trough is one flat
+      // `shadowColor`, and the ripples there vanish, because nothing lights
+      // one side of a ripple more than the other.
+      //
+      // At dusk the sky is brightest on the sun's side, so the sky's light
+      // leans the sun's way but wraps around the surface. lightFacing runs 1
+      // facing the sun, 0 edge-on, -1 facing away; * 0.5 + 0.5 moves that to
+      // 1..0, so a face edge-on to the sun still gets half and only a face
+      // turned straight away gets none (a wrap light). The ripples tilt the
+      // normal from one side to the other, so the wrap shades them even in
+      // shadow.
+      //
+      // The two lights then combine as sun + sky * (1 - sun): the sky fills
+      // only the share the sun left dark, so a face in full sun stays at 1
+      // and never brightens past `color`.
+      const skyFacing = lightFacing
+        .mul(0.5)
+        .add(0.5)
+        .mul(clamp(skylightUniform, 0, 1))
+        .mul(SKYLIGHT_SHARE);
+      const facing = sunFacing.add(skyFacing.mul(sunFacing.oneMinus()));
       const diffuse = mixColor(
         shadowColorUniform,
         colorUniform,
@@ -1526,15 +1732,119 @@ export function SwellsShader({
       const halfway = lightDirection.add(toCamera).normalize();
       const mirror = max(dot(march.normal, halfway), 0);
       const lit = smoothstep(0, 0.15, lightFacing);
-      const highlight = mirror
+
+      // ---------------------------------------------
+      // Glints off grains of sand
+      // ---------------------------------------------
+      // Sand is a heap of tiny crystals, each a mirror facing its own way.
+      // The sheen above treats the surface as one smooth sheet. A glint is
+      // one grain that happens to face just right to mirror the light
+      // straight at the camera, and it flashes and dies as the camera moves.
+      //
+      // The ground is cut into a grid of cells, `glintSize` on a side, one
+      // grain each. The hit point's x and z, plus the glide and the sway
+      // that heightAt adds, give its place on the ground itself, so a grain
+      // stays put on the surface as the camera passes over. floor() names
+      // the cell, and fract() - 0.5 is the place within it, measured from
+      // its center.
+      //
+      // Each cell hashes to two random numbers (stableHash, one whole number
+      // in, 0..1 out), and they aim the grain's face anywhere in the upper
+      // half of a sphere: the first is its compass turn, times 2 pi, and the
+      // second is its upward part, the cosine of its lean from straight up.
+      // Picking that cosine evenly spreads the faces evenly over the half
+      // sphere. The face ignores the slope under it, because a crystal in a
+      // heap faces any way at all. A low sun to one side puts the halfway
+      // direction about 70 degrees from straight up, so a grain that only
+      // leaned a little off the surface would never reach it.
+      //
+      // The flash is the sheen's test with a far higher power: the cosine
+      // between the grain's normal and the halfway direction, to a power
+      // of GLINT_FOCUS (above). At about 150 the result is over 0.5 only
+      // within about 5.5 degrees, so about one grain in 200 lines up, and
+      // the rest stay dark. As the camera glides, the
+      // halfway direction at each grain turns, so grains pass through that
+      // narrow window one after another: the twinkle.
+      //
+      // smoothstep() on the distance from the cell's center draws each
+      // glint as a soft dot instead of a square. Its edges run low to high
+      // and oneMinus() turns it bright at the center, because GLSL leaves
+      // smoothstep() undefined for falling edges, and the WebGL2 fallback
+      // compiles to GLSL. The glints fade out with
+      // distance, counted in cells so a bigger grain shows from further
+      // away, where a cell shrinks under a pixel, and they show only in
+      // direct sun: `lit` cuts faces turned from the light, and sunShare
+      // cuts cast shadows.
+      const grainSize = clamp(glintSizeUniform, GLINT_SIZE_MIN, GLINT_SIZE_MAX).toVar();
+      const grainPoint = vec2(march.position.x, march.position.z)
+        .add(vec2(swayRight, travelUniform))
+        .div(grainSize);
+      const grainCell = floor(grainPoint);
+      const grainSeed = wrapInto(grainCell.x, GLINT_STRIDE)
+        .add(wrapInto(grainCell.y, GLINT_STRIDE).mul(GLINT_STRIDE))
+        .toVar();
+      const grainTurn = stableHash(grainSeed).mul(Math.PI * 2);
+      const grainUp = stableHash(grainSeed.add(GLINT_STRIDE * GLINT_STRIDE));
+      const grainLevel = sqrt(grainUp.mul(grainUp).oneMinus());
+      const grainNormal = vec3(
+        cos(grainTurn).mul(grainLevel),
+        grainUp,
+        sin(grainTurn).mul(grainLevel),
+      );
+      const grainDisc = smoothstep(0.15, 0.5, length(fract(grainPoint).sub(0.5))).oneMinus();
+      const grainFade = smoothstep(
+        GLINT_FADE_START,
+        GLINT_FADE_END,
+        march.distance.div(grainSize),
+      ).oneMinus();
+      const glint = max(dot(grainNormal, halfway), 0)
+        .pow(GLINT_FOCUS)
+        .mul(grainDisc)
+        .mul(grainFade)
+        .mul(lit)
+        .mul(sunShare)
+        .mul(clamp(glintsUniform, 0, 1));
+
+      const sheenHighlight = mirror
         .pow(SHEEN_FOCUS)
         .mul(lit)
+        // No light reaches a shadowed point, so it
+        // mirrors none.
+        .mul(sunShare)
         .mul(clamp(sheenUniform, 0, 1));
+
+      // A glint shows through wherever it is brighter
+      // than the sheen under it.
+      const highlight = max(sheenHighlight, glint);
 
       // Blend toward sheenColor by the highlight's strength, in the same
       // space the slopes blend in, so the brightest point of a full sheen
       // is exactly sheenColor and no channel ever clips past it.
-      const surface = mixColor(diffuse, sheenColorUniform, highlight, colorSpace, hueInterpolation);
+      const sheened = mixColor(diffuse, sheenColorUniform, highlight, colorSpace, hueInterpolation);
+
+      // ---------------------------------------------
+      // A glow on surfaces seen edge-on
+      // ---------------------------------------------
+      // A surface mirrors more of its surroundings the more edge-on you see
+      // it (the Fresnel effect): look straight down at water and you see
+      // into it, look across it and you see the sky. So faces that lean away
+      // from the camera, the rims of crests and the far ground, take on the
+      // color of the sky they mirror. That color is `sheenColor`, the light
+      // the surface mirrors everywhere else, and not `hazeColor`: the haze
+      // is often darker than the sand, as dusk air is, and blending a sunlit
+      // crest toward a darker color dims it where a glow should brighten it.
+      //
+      // dot(normal, toCamera) is the cosine between the surface and the
+      // view: 1 seen head on, 0 seen edge-on. oneMinus() flips it, and pow()
+      // gathers the glow toward the edge (RIM_FOCUS above): halfway, at 0.5,
+      // the power 4 leaves 0.06, so only faces close to edge-on glow. max()
+      // keeps pow() off a negative number on a face that leans past edge-on,
+      // which the normal's finite gap can report at a crest.
+      const edgeOn = max(dot(march.normal, toCamera), 0)
+        .oneMinus()
+        .pow(RIM_FOCUS)
+        .mul(clamp(rimGlowUniform, 0, 1));
+      const surface = mixColor(sheened, sheenColorUniform, edgeOn, colorSpace, hueInterpolation);
 
       // ---------------------------------------------
       // Leave the sky transparent
@@ -1674,6 +1984,11 @@ export function SwellsShader({
     parallaxCenterUniform,
     introUniform,
     aspectNode,
+    shadowsUniform,
+    skylightUniform,
+    rimGlowUniform,
+    glintsUniform,
+    glintSizeUniform,
   ]);
 
   return null;

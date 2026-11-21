@@ -15,7 +15,10 @@ import { VisualTestPause } from '@/lib/visualTestHooks';
 // pixel's brightness is the slope light alone, and ?sheen=1 or ?haze=0.04
 // turns one on. The haze is black, the canvas's own color, so hazed ground
 // reads darker whether it blends or fades, and ?hazeColor=white makes it
-// white, so blending and fading pull apart.
+// white, so blending and fading pull apart. Cast shadows, skylight, rim
+// glow, and glints start at 0 for the same reason, and ?shadows=1,
+// ?skylight=1, ?rimGlow=1, or ?glints=1 turns one on. ?glintSize sets the
+// glints' size.
 // ?background=white turns the canvas white, so a transparent sky reads
 // white and an opaque black one can't pass for it. ?speed, ?swellSpeed, and
 // ?parallax set the motion dials. ?parallaxCenter=cursor sways the camera
@@ -89,6 +92,8 @@ export default function ProbeScene() {
           angle={queryNumber('angle') ?? PROBE_DEFAULTS.angle}
           color="oklch(0.95 0 0)"
           fieldOfView={queryNumber('fieldOfView') ?? PROBE_DEFAULTS.fieldOfView}
+          glintSize={queryNumber('glintSize')}
+          glints={queryNumber('glints') ?? 0}
           haze={queryNumber('haze') ?? 0}
           hazeColor={hazeColor()}
           intro={queryFlag('intro')}
@@ -97,12 +102,15 @@ export default function ProbeScene() {
           parallax={queryNumber('parallax')}
           parallaxCenter={parallaxCenter()}
           relief={queryNumber('relief') ?? PROBE_DEFAULTS.relief}
+          rimGlow={queryNumber('rimGlow') ?? 0}
           ripples={queryNumber('ripples') ?? PROBE_DEFAULTS.ripples}
           scale={queryNumber('scale') ?? PROBE_DEFAULTS.scale}
           shadowColor="oklch(0.15 0 0)"
+          shadows={queryNumber('shadows') ?? 0}
           sharpness={queryNumber('sharpness') ?? PROBE_DEFAULTS.sharpness}
           sheen={queryNumber('sheen') ?? 0}
           sheenColor="oklch(1 0 0)"
+          skylight={queryNumber('skylight') ?? 0}
           speed={queryNumber('speed')}
           swellSpeed={queryNumber('swellSpeed') ?? PROBE_DEFAULTS.swellSpeed}
           tilt={queryNumber('tilt')}

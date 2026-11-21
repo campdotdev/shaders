@@ -14,7 +14,12 @@ Add `Swells`, a Source that draws a rolling surface through a camera of its own,
 - `ripples`: how strong the fine ripples are, from 0 to 1. 0 gives a smooth surface.
 - `lightAngle`: where the light sits, in compass degrees clockwise from the way the camera faces.
 - `lightHeight`: how high the light sits, in degrees above the horizon.
+- `shadows`: how dark the shadows are that crests cast across the surface behind them, from 0 for none to 1.
+- `skylight`: how much light the sky adds to faces the light doesn't reach, from 0 to 1. Higher values keep the swells' shape in the shade.
 - `sheen`: how strong the soft highlight is where the surface mirrors the light, from 0 for a matte surface to 1.
+- `rimGlow`: how strongly surfaces seen edge-on, the rims of crests and the far ground, glow in `sheenColor`, from 0 to 1.
+- `glints`: how bright the grains of sand flash where they mirror the light at the camera, from 0 to 1.
+- `glintSize`: how big the glints are, as the width of one grain's cell in terrain units.
 - `haze`: how thick the haze is, per terrain unit. 0 is clear air.
 - `speed`: how fast the camera glides forward, in terrain units per second. Negative glides backward, and the glide slows under reduced motion.
 - `swellSpeed`: how fast the swells rise and fall in place. 0 holds every swell at its height.

@@ -21,6 +21,8 @@ export default function SwellsScene({
         color={params.color}
         colorSpace={params.colorSpace}
         fieldOfView={params.fieldOfView}
+        glintSize={params.glintSize}
+        glints={params.glints}
         haze={params.haze}
         hazeColor={params.hazeColor}
         hueInterpolation={params.hueInterpolation}
@@ -30,12 +32,15 @@ export default function SwellsScene({
         parallax={params.parallax}
         parallaxCenter="cursor"
         relief={params.relief}
+        rimGlow={params.rimGlow}
         ripples={params.ripples}
         scale={params.scale}
         shadowColor={params.shadowColor}
+        shadows={params.shadows}
         sharpness={params.sharpness}
         sheen={params.sheen}
         sheenColor={params.sheenColor}
+        skylight={params.skylight}
         speed={params.speed}
         swellSpeed={params.swellSpeed}
         tilt={params.tilt}
