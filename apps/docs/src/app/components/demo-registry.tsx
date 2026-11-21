@@ -22,6 +22,7 @@ import { FlutedGlassIsland } from './fluted-glass/demo';
 import { FractalNoiseIsland } from './fractal-noise/demo';
 import { GodRaysIsland } from './god-rays/demo';
 import { GrainIsland } from './grain/demo';
+import { HeatShimmerIsland } from './heat-shimmer/demo';
 import { LedWallIsland } from './led-wall/demo';
 import { LinearGradientIsland } from './linear-gradient/demo';
 import { LiquidGradientIsland } from './liquid-gradient/demo';
@@ -318,6 +319,21 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
           at 60fps), <code>0.4</code> ≈ 24Hz (chunky film cadence), <code>0</code> freezes the grain
           pattern.
         </p>
+      </>
+    ),
+  },
+  'heat-shimmer': {
+    Island: HeatShimmerIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <HeatShimmer />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        HeatShimmer moves only what Sources drew, so an Effect such as Grain stays still whether you
+        mount it before or after the shimmer. Over a flat color the shimmer has nothing to move and
+        shows nothing. Mode 1 only: it needs the scene&apos;s output stage.
       </>
     ),
   },
