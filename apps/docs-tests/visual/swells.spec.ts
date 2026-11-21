@@ -237,7 +237,7 @@ async function rowsSwayingToward(
 ): Promise<number[][]> {
   return probeRows(
     page,
-    `&lightAngle=180&speed=0&parallax=1&parallaxCenter=${centerX},0.5&reducedMotion=${policy}`,
+    `&lightAngle=180&glideSpeed=0&parallax=1&parallaxCenter=${centerX},0.5&reducedMotion=${policy}`,
   );
 }
 
@@ -301,60 +301,47 @@ test('Swells — reduced motion holds the sway', async ({ page }) => {
   expect(horizonRow(right), 'horizon row under reduced motion').toBe(horizon);
 });
 
+// How long one of the probe's swells is, crest to crest, in terrain units:
+// Swells fits `scale` swells in 10 units, and the probe's scale is 4.
+const PROBE_SWELL_LENGTH = 10 / 4;
+
 /**
- * Loads the probe with the swell clock at `clock` slices and returns its
- * rows, as sampleRows reads them. swellSpeed 1 and ?phaseTime set the clock
- * to that many slices, and the paused reduced-motion policy every visual
- * test loads under holds it there. The glide is off, so only the swells'
- * strength can change the picture.
+ * Loads the probe with the swells `swellLengths` swell lengths downwind of
+ * where they start, and returns its rows, as sampleRows reads them.
+ * swellSpeed 1 and ?phaseTime set the swell clock to that many terrain
+ * units, and the paused reduced-motion policy every visual test loads under
+ * holds it there. The glide is off, so only the swells' travel can change
+ * the picture.
  */
-async function rowsAtSwellClock(page: Page, clock: number): Promise<number[][]> {
-  return probeRows(page, `&lightAngle=180&speed=0&swellSpeed=1&phaseTime=${clock}`);
+async function rowsAfterSwellTravel(page: Page, swellLengths: number): Promise<number[][]> {
+  const clock = swellLengths * PROBE_SWELL_LENGTH;
+
+  return probeRows(page, `&lightAngle=180&glideSpeed=0&swellSpeed=1&phaseTime=${clock}`);
 }
 
 /** The mean brightness change from `before` to `after` over everything below the site header. */
 const canvasChange = (before: number[][], after: number[][]) =>
   bandChange(before, after, SKY_TOP, 0.98);
 
-// The swells rise and fall by blending each swell's strength from one noise
-// slice into the next as the clock runs through a slice. Partway through,
-// the picture differs from both ends. Just short of the end it already
-// matches the next slice, which it can only do if the next slice's noise is
-// read and blended in full. On macOS the mid-blend frame differed from each
-// end by 7 to 9 levels, and the end of a blend matched the next slice to 0,
-// so 2 and 0.5 leave room for another GPU.
-test("Swells — the swells' strength blends into the next slice", async ({ page }) => {
-  const start = await rowsAtSwellClock(page, 0);
-  const midway = await rowsAtSwellClock(page, 0.5);
-  const almostNext = await rowsAtSwellClock(page, 0.999);
-  const next = await rowsAtSwellClock(page, 1);
+// The crests travel downwind, and the tall and short patches travel the same
+// way at half the crests' speed. Half a swell length on, every crest sits
+// halfway to where the next one was, so the picture differs most. A whole swell length on,
+// the crests are back where they started, but the patches have moved half
+// as far, so the picture is closer to the start without matching it. Crests
+// that travelled at a fixed height would match the start there.
+// On macOS half a swell length changed the picture by 30 levels and a whole
+// one by 5.7, so 10 and 1 leave room for another GPU.
+test('Swells — the swells travel downwind in sets', async ({ page }) => {
+  const start = await rowsAfterSwellTravel(page, 0);
+  const halfLength = await rowsAfterSwellTravel(page, 0.5);
+  const wholeLength = await rowsAfterSwellTravel(page, 1);
 
-  expect(canvasChange(start, midway), 'midway against the first slice').toBeGreaterThan(2);
-  expect(canvasChange(midway, next), 'midway against the next slice').toBeGreaterThan(2);
-  expect(canvasChange(almostNext, next), 'end of the blend against the next slice').toBeLessThan(
-    0.5,
-  );
-});
+  const halfChange = canvasChange(start, halfLength);
+  const wholeChange = canvasChange(start, wholeLength);
 
-// The clock counts slices without end, and the shader wraps it into
-// STRENGTH_SLICES (64) slices, so the last slice blends back into the first.
-// Partway through that last blend the picture differs from where it ends,
-// the blend's end matches slice 64, and slice 64 matches slice 0. A next
-// slice that didn't wrap would blend toward noise that slice 0 never shows,
-// so the swells would jump at the wrap. On macOS the mid-blend frame
-// differed by about 5.5 levels, and both matches came to 0.
-test('Swells — the swell clock wraps from the last slice to the first', async ({ page }) => {
-  const first = await rowsAtSwellClock(page, 0);
-  const lastMidway = await rowsAtSwellClock(page, 63.5);
-  const almostWrapped = await rowsAtSwellClock(page, 63.999);
-  const wrapped = await rowsAtSwellClock(page, 64);
-
-  expect(canvasChange(lastMidway, wrapped), 'last blend midway against its end').toBeGreaterThan(2);
-  expect(
-    canvasChange(almostWrapped, wrapped),
-    'end of the last blend against slice 64',
-  ).toBeLessThan(0.5);
-  expect(canvasChange(first, wrapped), 'slice 64 against slice 0').toBeLessThan(0.5);
+  expect(halfChange, 'half a swell length against the start').toBeGreaterThan(10);
+  expect(wholeChange, 'a whole swell length against the start').toBeGreaterThan(1);
+  expect(wholeChange, 'a whole swell length against half of one').toBeLessThan(halfChange);
 });
 
 /**
@@ -367,7 +354,10 @@ async function rowsWithIntro(
   intro: boolean,
   policy: 'off' | 'slow' | 'paused',
 ): Promise<number[][]> {
-  return probeRows(page, `&lightAngle=180&speed=0&intro=${intro ? 1 : 0}&reducedMotion=${policy}`);
+  return probeRows(
+    page,
+    `&lightAngle=180&glideSpeed=0&intro=${intro ? 1 : 0}&reducedMotion=${policy}`,
+  );
 }
 
 // The intro raises the surface from flat ground under thick haze. At full

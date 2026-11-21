@@ -148,20 +148,20 @@ export interface SwellsProps {
   hueInterpolation?: HueInterpolation;
   /**
    * How fast the camera glides forward over the surface, in terrain units
-   * per second. A swell is about 3.3 units long at the default `scale`, so
-   * 0.3 passes one about every 11 seconds. Negative glides backward, and 0 holds
-   * the camera still. A change of speed changes the pace without the
+   * per second. A swell is about 3.3 units long at the default `scale`.
+   * Negative glides backward, and 0 holds the camera still. A change of speed changes the pace without the
    * surface jumping, and the glide slows under reduced motion. Defaults to
    * 0.3. Accepts a static value or an animation signal.
    */
-  speed?: AnimatableProp<number>;
+  glideSpeed?: AnimatableProp<number>;
   /**
-   * How fast the swells rise and fall in place, apart from the glide.
-   * Every swell's height drifts on its own, so one crest grows while the
-   * next settles, and at 1 the pattern of tall and short crests turns over
-   * about once a second. 0 holds every swell at its height, as dunes are.
-   * The crests never travel. The motion slows under reduced motion.
-   * Defaults to 0.2. Accepts a static value or an animation signal.
+   * How fast the swells travel downwind, the way `angle` faces, in terrain
+   * units per second, the unit `glideSpeed` uses. The tall and short
+   * patches travel the same way at half that speed, so each crest grows
+   * as it enters a tall patch and settles as it leaves, as swells do in
+   * sets on open water. 0 holds every swell in place, as dunes are. The
+   * motion slows under reduced motion. Defaults to 0.3. Accepts a static
+   * value or an animation signal.
    */
   swellSpeed?: AnimatableProp<number>;
   /**
@@ -259,8 +259,8 @@ export function Swells({
   hazeColor = 'oklch(0.460 0.248 293.328)',
   colorSpace = 'oklab',
   hueInterpolation = 'shorter',
-  speed = 0.3,
-  swellSpeed = 0.2,
+  glideSpeed = 0.3,
+  swellSpeed = 0.3,
   parallax = 0,
   parallaxCenter = [0.5, 0.5],
   intro = true,
@@ -277,6 +277,7 @@ export function Swells({
       color={color}
       colorSpace={colorSpace}
       fieldOfView={fieldOfView}
+      glideSpeed={glideSpeed}
       glintSize={glintSize}
       glints={glints}
       haze={haze}
@@ -297,7 +298,6 @@ export function Swells({
       sheen={sheen}
       sheenColor={sheenColor}
       skylight={skylight}
-      speed={speed}
       swellSpeed={swellSpeed}
       tilt={tilt}
     />

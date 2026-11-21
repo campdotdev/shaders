@@ -201,7 +201,7 @@ describe('Swells', () => {
       hazeColor?: string;
       colorSpace?: ColorSpace;
       hueInterpolation?: HueInterpolation;
-      speed?: AnimatableProp<number>;
+      glideSpeed?: AnimatableProp<number>;
       swellSpeed?: AnimatableProp<number>;
       parallax?: AnimatableProp<number>;
       parallaxCenter?: PositionProp;
@@ -445,20 +445,28 @@ describe('Swells', () => {
     expect(scene.onlyMesh().material).toBe(material);
   });
 
-  // The glide, the swells' rise and fall, and the parallax sway ride uniforms too.
+  // The glide, the swells' travel, and the parallax sway ride uniforms too.
   it('changes its motion dials without rebuilding the material', () => {
     const scene = makeScene();
     const parallax = makeSignal(0);
-    const { rerender } = render(<Swells parallax={parallax.signal} speed={0.3} swellSpeed={0} />, {
-      wrapper: scene.Wrapper,
-    });
+    const { rerender } = render(
+      <Swells glideSpeed={0.3} parallax={parallax.signal} swellSpeed={0} />,
+      {
+        wrapper: scene.Wrapper,
+      },
+    );
     const { material } = scene.onlyMesh();
 
     scene.scheduler.requestRender.mockClear();
     parallax.set(1);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
     rerender(
-      <Swells parallax={parallax.signal} parallaxCenter={[0.2, 0.8]} speed={-1} swellSpeed={0.5} />,
+      <Swells
+        glideSpeed={-1}
+        parallax={parallax.signal}
+        parallaxCenter={[0.2, 0.8]}
+        swellSpeed={0.5}
+      />,
     );
     expect(scene.scheduler.requestRender).toHaveBeenCalled();
 
@@ -466,10 +474,10 @@ describe('Swells', () => {
   });
 
   // The render-on-demand vote. Two dials move the picture on their own:
-  // the glide and the swells' rise and fall, and so does the intro while
+  // the glide and the swells' travel, and so does the intro while
   // it plays. With both at 0 and the intro off,
   // nothing changes between frames, so a scene of still Sources can park.
-  const still = { speed: 0, swellSpeed: 0, intro: false } as const;
+  const still = { glideSpeed: 0, swellSpeed: 0, intro: false } as const;
 
   /** The last vote Swells cast: true for static, false for animated. */
   const lastVote = (scene: ReturnType<typeof makeScene>) =>
@@ -485,9 +493,9 @@ describe('Swells', () => {
   });
 
   it.each([
-    ['gliding forward', { speed: 0.3 }],
-    ['gliding backward', { speed: -0.3 }],
-    ['rising and falling', { swellSpeed: 0.2 }],
+    ['gliding forward', { glideSpeed: 0.3 }],
+    ['gliding backward', { glideSpeed: -0.3 }],
+    ['travelling', { swellSpeed: 0.3 }],
   ])('votes animated while %s', (_name, moving) => {
     const scene = makeScene();
 
@@ -499,7 +507,7 @@ describe('Swells', () => {
 
   // A signal can leave 0 between renders, so it counts as moving whatever
   // it reads now.
-  it.each(['speed', 'swellSpeed'] as const)(
+  it.each(['glideSpeed', 'swellSpeed'] as const)(
     'votes animated for a %s signal that reads 0',
     (dial) => {
       const scene = makeScene();
@@ -586,7 +594,7 @@ describe('Swells', () => {
     const { rerender } = render(<Swells {...still} />, { wrapper: scene.Wrapper });
 
     expect(lastVote(scene)).toBe(true);
-    rerender(<Swells {...still} speed={0.3} />);
+    rerender(<Swells {...still} glideSpeed={0.3} />);
     expect(lastVote(scene)).toBe(false);
     rerender(<Swells {...still} />);
     expect(lastVote(scene)).toBe(true);
