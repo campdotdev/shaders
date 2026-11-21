@@ -1605,7 +1605,9 @@ export function SwellsShader({
       // under a crest's top walks a few hundredths of a unit, and a point
       // deep in a trough walks furthest. max() keeps a light on the horizon,
       // where toLight.y is 0, from dividing by 0, and SHADOW_REACH caps the
-      // walk for a low light.
+      // walk for a low light. The floor stays tiny: a floor of 0.02 would
+      // stop the walk short for a light under about 1.15 degrees, before
+      // it climbs clear of the crests SHADOW_REACH still covers.
       //
       // The steps bunch up near the start: each sits at reach * share^2,
       // where share runs 1/12, 2/12, ... 1. The first lands 1/144 of the way
@@ -1636,7 +1638,7 @@ export function SwellsShader({
           const start = vec3(march.position).toVar();
           const toLight = vec3(lightDirection).toVar();
           const reach = clamp(
-            limitedRelief.sub(start.y).div(max(toLight.y, 0.02)),
+            limitedRelief.sub(start.y).div(max(toLight.y, 1e-4)),
             0,
             SHADOW_REACH,
           ).toVar();
@@ -1765,7 +1767,10 @@ export function SwellsShader({
       // narrow window one after another: the twinkle.
       //
       // smoothstep() on the distance from the cell's center draws each
-      // glint as a soft dot instead of a square. The glints fade out with
+      // glint as a soft dot instead of a square. Its edges run low to high
+      // and oneMinus() turns it bright at the center, because GLSL leaves
+      // smoothstep() undefined for falling edges, and the WebGL2 fallback
+      // compiles to GLSL. The glints fade out with
       // distance, counted in cells so a bigger grain shows from further
       // away, where a cell shrinks under a pixel, and they show only in
       // direct sun: `lit` cuts faces turned from the light, and sunShare
@@ -1786,7 +1791,7 @@ export function SwellsShader({
         grainUp,
         sin(grainTurn).mul(grainLevel),
       );
-      const grainDisc = smoothstep(0.5, 0.15, length(fract(grainPoint).sub(0.5)));
+      const grainDisc = smoothstep(0.15, 0.5, length(fract(grainPoint).sub(0.5))).oneMinus();
       const grainFade = smoothstep(
         GLINT_FADE_START,
         GLINT_FADE_END,
