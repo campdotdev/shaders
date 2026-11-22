@@ -13,6 +13,10 @@ export interface HeatShimmerParams {
   strength: number;
   scale: number;
   speed: number;
+  band: boolean;
+  bandPosition: number;
+  bandHeight: number;
+  bandFeather: number;
   tuning: HeatShimmerTuningParams;
 }
 
@@ -22,6 +26,10 @@ export const INITIAL: HeatShimmerParams = {
   strength: 0.5,
   scale: 12,
   speed: 1,
+  band: false,
+  bandPosition: 0.5,
+  bandHeight: 0.3,
+  bandFeather: 0.5,
   tuning: {
     foldLimit: 0.25,
     stretch: 1.5,

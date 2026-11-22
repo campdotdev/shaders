@@ -7,15 +7,21 @@
 // texture, and each pixel reads one texel (one pixel of a texture) of it.
 // A clock summed on the CPU moves the noise in that pass, so the shift rises
 // up the canvas and changes shape as it goes. The warp's shader stays the
-// same, and only the texture it reads changes.
+// same, and only the texture it reads changes. With the band on, the shift
+// fades out above and below a horizontal band.
 // The wrapper (./heat-shimmer.tsx) supplies the props.
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 
 import {
+  abs,
   clamp,
   Fn,
   max,
+  mix,
+  oneMinus,
   type ShaderNodeObject,
+  smoothstep,
+  step,
   texture,
   uniform,
   uv,
@@ -99,6 +105,24 @@ const SECOND_SLICE = 37.5;
 const MIN_SCALE = 0.1;
 
 /**
+ * The smallest band height the mask divides by, as a share of the canvas's
+ * height. The mask divides by half the band's height, so 0 would divide by
+ * zero. The floor alone would still leave a band 0.001 tall, which covers
+ * the one row whose center sits on `bandPosition`, so the mask also drops
+ * to 0 for a `bandHeight` of 0 or less.
+ */
+const MIN_BAND_HEIGHT = 0.001;
+
+/**
+ * The smallest `bandFeather` the shader accepts. The fade is a smoothstep
+ * between `1 - bandFeather` and 1, and a smoothstep whose two edges meet
+ * divides by zero. At 0.001 the fade spans a thousandth of the band's half
+ * height, well under a pixel, so a `bandFeather` of 0 gives a hard edge.
+ * Raising it would soften the edges of a band set to 0.
+ */
+const MIN_BAND_FEATHER = 0.001;
+
+/**
  * How many device pixels one texel of the shift texture covers on each
  * side. At 4 the texture holds a sixteenth of the canvas's pixels, so the
  * two noise reads run a sixteenth as often as they would per pixel. The
@@ -169,6 +193,28 @@ export interface HeatShimmerShaderProps {
    * warp. Accepts a static value or an animation signal.
    */
   speed: AnimatableProp<number>;
+  /**
+   * Confines the shimmer to a horizontal band, which `bandPosition`,
+   * `bandHeight`, and `bandFeather` place. Off, the whole image wavers.
+   */
+  band: boolean;
+  /**
+   * The band's middle, from 0 at the top of the canvas to 1 at the bottom.
+   * Accepts a static value or an animation signal.
+   */
+  bandPosition: AnimatableProp<number>;
+  /**
+   * The band's full height, as a share of the canvas's height. 1 spans the
+   * canvas, and 0 leaves no band at all. Accepts a static value or an
+   * animation signal.
+   */
+  bandHeight: AnimatableProp<number>;
+  /**
+   * The share of the band, from each edge inward, that fades, from 0 to 1.
+   * 0 gives hard edges, and 1 fades all the way to the middle. Accepts a
+   * static value or an animation signal.
+   */
+  bandFeather: AnimatableProp<number>;
   /**
    * TEMPORARY (build-phase tuning only): dev overrides for the feel
    * constants.
@@ -328,7 +374,16 @@ function createShiftPass({
   };
 }
 
-export function HeatShimmerShader({ strength, scale, speed, tuning }: HeatShimmerShaderProps) {
+export function HeatShimmerShader({
+  strength,
+  scale,
+  speed,
+  band,
+  bandPosition,
+  bandHeight,
+  bandFeather,
+  tuning,
+}: HeatShimmerShaderProps) {
   const shaderContext = useShaderContext();
 
   // The dials live in uniforms, values the CPU writes and the GPU reads at
@@ -336,6 +391,13 @@ export function HeatShimmerShader({ strength, scale, speed, tuning }: HeatShimme
   const strengthUniform = useAnimatableUniform<number>(strength);
   const scaleUniform = useAnimatableUniform<number>(scale);
   const aspectUniform = useAspectUniform();
+  const bandPositionUniform = useAnimatableUniform<number>(bandPosition);
+  const bandHeightUniform = useAnimatableUniform<number>(bandHeight);
+  const bandFeatherUniform = useAnimatableUniform<number>(bandFeather);
+  // `band` rides a uniform too, as 1 for on and 0 for off, so toggling it
+  // is a uniform write and a repaint. Branching on it in JS would build a
+  // different shader for each value and register the warp again.
+  const bandOnUniform = useAnimatableUniform<number>(band ? 1 : 0);
   const { foldLimitUniform, stretchUniform, riseRateUniform, morphRateUniform } =
     useTuningUniforms(tuning);
 
@@ -420,6 +482,53 @@ export function HeatShimmerShader({ strength, scale, speed, tuning }: HeatShimme
   ]);
 
   // ---------------------------------------------
+  // The band: how much of the shimmer a row gets
+  // ---------------------------------------------
+  // A function of the pixel's height on the canvas that returns how much of
+  // the shift it keeps, from 0 for none to 1 for all of it. The warp below
+  // multiplies its reach by this, so a row with 0 samples the image exactly
+  // where it would without HeatShimmer.
+  //
+  // `y` is a pass coordinate, 0 at the top of the canvas and 1 at the
+  // bottom. `bandPosition` counts from the top too, so the two compare
+  // directly. A texture coordinate in uv space counts from the bottom, so a
+  // mask worked out there would need `oneMinus(bandPosition)` instead.
+  const bandAmount = useCallback(
+    (y: ShaderNodeObject<Node>) => {
+      // How far the row sits from the band's middle, in half-heights of the
+      // band. abs() drops the sign, so a row above the middle and a row the
+      // same distance below get the same value: 0 at the middle, 1 at
+      // either edge, and more than 1 outside the band. Folding the two
+      // halves into one this way lets a single fade serve both edges.
+      const halfHeight = max(bandHeightUniform, MIN_BAND_HEIGHT).mul(0.5);
+      const fromMiddle = abs(y.sub(bandPositionUniform)).div(halfHeight);
+
+      // The fade. smoothstep(low, high, x) is 0 at or below `low`, 1 at or
+      // above `high`, and an S-curve between, flat at both ends so the fade
+      // leaves no visible line where it starts or stops. Here `low` is
+      // where the fade begins, `1 - bandFeather` of the way out from the
+      // middle, and `high` is the band's edge. oneMinus() turns it around,
+      // so the mask is 1 inside the unfaded core and 0 at the edge and
+      // beyond. At a feather of 1 the fade starts at the middle, so only
+      // the middle row gets the full shift. At the floor near 0 the fade
+      // spans under a pixel, so the edge is hard.
+      const feather = clamp(bandFeatherUniform, MIN_BAND_FEATHER, 1);
+      const fade = oneMinus(smoothstep(oneMinus(feather), 1, fromMiddle));
+
+      // A height of 0 or less leaves no band. step(edge, x) is 1 when x >=
+      // edge, so step(bandHeight, 0) is 1 for a height of 0 or less, and
+      // oneMinus() turns that into 0 for no band and 1 for any other height.
+      const mask = fade.mul(oneMinus(step(bandHeightUniform, 0)));
+
+      // The toggle. mix(a, b, t) is a + (b - a) * t: at t = 0 it gives a,
+      // at t = 1 it gives b. With the band off, every row keeps the whole
+      // shift. With it on, each row keeps the mask's share.
+      return mix(1, mask, bandOnUniform);
+    },
+    [bandPositionUniform, bandHeightUniform, bandFeatherUniform, bandOnUniform],
+  );
+
+  // ---------------------------------------------
   // The warp: move where the image beneath is sampled
   // ---------------------------------------------
   // A base-pass UV warp: the callback receives the 0..1 coordinate the
@@ -453,7 +562,8 @@ export function HeatShimmerShader({ strength, scale, speed, tuning }: HeatShimme
       const reach = clamp(strengthUniform, 0, 1)
         .mul(foldLimitUniform)
         .div(safeScale)
-        .mul(shiftReady);
+        .mul(shiftReady)
+        .mul(bandAmount(coordinate.y));
 
       // Back to the pass's units. The vertical shift is already a share of
       // the canvas's height. The sideways one is in canvas heights, so
@@ -463,7 +573,15 @@ export function HeatShimmerShader({ strength, scale, speed, tuning }: HeatShimme
 
       return coordinate.add(shift);
     },
-    [shiftTexture, shiftReady, strengthUniform, safeScale, aspectUniform, foldLimitUniform],
+    [
+      shiftTexture,
+      shiftReady,
+      strengthUniform,
+      safeScale,
+      aspectUniform,
+      foldLimitUniform,
+      bandAmount,
+    ],
   );
 
   return null;
