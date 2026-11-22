@@ -202,6 +202,44 @@ describe('FrameScheduler', () => {
     scheduler.add(vi.fn());
     expect(getRafCallbacks().length).toBe(1);
   });
+
+  // A prepare client advances a value the draw reads, so it has to run
+  // first however late it registered. The scene's render client registers
+  // before any child mounts.
+  it('runs prepare clients before draw clients, whatever order they registered in', () => {
+    const scheduler = new FrameScheduler();
+    const calls: string[] = [];
+
+    scheduler.add(() => calls.push('draw'));
+    scheduler.add(() => calls.push('prepare'), 'prepare');
+    scheduler.start();
+
+    tickFrame(0);
+
+    expect(calls).toEqual(['prepare', 'draw']);
+  });
+
+  it('does not invoke a removed prepare client', () => {
+    const scheduler = new FrameScheduler();
+    const prepare = vi.fn();
+
+    scheduler.add(vi.fn());
+    scheduler.add(prepare, 'prepare');
+    scheduler.start();
+    tickFrame(0);
+    scheduler.remove(prepare);
+    tickFrame(16);
+
+    expect(prepare).toHaveBeenCalledTimes(1);
+  });
+
+  it('starts the rAF loop when the only client is a prepare client', () => {
+    const scheduler = new FrameScheduler();
+
+    scheduler.start();
+    scheduler.add(vi.fn(), 'prepare');
+    expect(getRafCallbacks().length).toBe(1);
+  });
 });
 
 describe('setIdle (render-on-demand)', () => {

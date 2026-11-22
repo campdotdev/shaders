@@ -9,10 +9,12 @@ import type * as ShadersModule from '../../../engine.js';
 import {
   createRenderer,
   type CursorInput,
+  getReducedMotionTimeScale,
   type GpuRenderer,
   type Vector2,
 } from '../../../engine.js';
 import { ShadersError } from '../../errors/shaders-error.js';
+import { useAnimatableSpeed } from '../../hooks/use-animatable-speed/use-animatable-speed.js';
 import { usePostProcessPass } from '../../hooks/use-overlay-pass/use-overlay-pass.js';
 import { useResize } from '../../hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../hooks/use-shader-context/use-shader-context.js';
@@ -617,6 +619,55 @@ describe('ShaderScene', () => {
       fireResize();
 
       expect(timeAtRender).toEqual([0]);
+    });
+
+    // A speed-driven phase advances in the scheduler's prepare stage, ahead
+    // of the draw, so the last frame before a pause shows the phase the
+    // scene then holds. A phase that advanced after the draw would sit one
+    // tick ahead of the screen, and the redraw would move the frozen frame.
+    it('redraws a paused scene at the phase its last frame drew', async () => {
+      const fireResize = stubResizeObserver();
+      const frames = captureFrames();
+      const { gpuRenderer } = rendererWithClock();
+      const phaseAtRender: number[] = [];
+      let phase: ReturnType<typeof useAnimatableSpeed> | undefined;
+
+      getReducedMotionTimeScale().value = 1;
+      vi.mocked(gpuRenderer.three.render).mockImplementation(() => {
+        phaseAtRender.push(Number(phase?.value));
+
+        return undefined;
+      });
+
+      function SpeedChild() {
+        phase = useAnimatableSpeed(1);
+
+        return <MeshChild />;
+      }
+
+      const { getByTestId, rerender } = render(
+        <ShaderScene>
+          <SpeedChild />
+        </ShaderScene>,
+      );
+
+      await waitFor(() => expect(getByTestId('child')).toBeInTheDocument());
+      runFrames(frames, 16);
+      runFrames(frames, 32);
+      runFrames(frames, 48);
+      rerender(
+        <ShaderScene paused>
+          <SpeedChild />
+        </ShaderScene>,
+      );
+
+      const lastDrawnPhase = phaseAtRender.at(-1);
+
+      expect(lastDrawnPhase).toBeGreaterThan(0);
+      phaseAtRender.length = 0;
+      fireResize();
+
+      expect(phaseAtRender).toEqual([lastDrawnPhase]);
     });
 
     // A running scene's loop drew this frame before layout resized the

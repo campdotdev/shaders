@@ -100,6 +100,8 @@ The texture pass, the wave field, and the output stage each draw into a render t
 
 `ShaderScene` adds its render client to the scheduler before any child mounts, so each frame draws the scene first and runs the children's clients after. A texture drawn from a child's scheduler client lands after the scene pass, and the scene reads the texture from the frame before. On a running scene the lag is one frame. On the last frame before a static scene parks, a change never reaches the screen, which is the bare-uniform-write gotcha in a new form.
 
+A client that only advances a value the draw reads can register in the scheduler's `prepare` stage, with `scheduler.add(client, 'prepare')`. Every `prepare` client runs before the render client, so the frame draws the value that tick leaves. `useAnimatableSpeed` registers its phase there, which keeps a paused scene's redraw after a resize on the phase its last frame drew. A `prepare` client still cannot draw a texture for the scene, because a redraw runs no scheduler client.
+
 Register the draw with `registerPrePass` from the scene context instead. The output stage runs every pre-pass before the scene pass, on every frame and on the redraw after a resize. Aurora's field pass is the model. `CursorRipple`'s wave field still steps from a scheduler client, and asks for one more frame after the step that settles it.
 
 ### The float32-filterable gotcha: WebGPU binds a full-float target only with a device feature
