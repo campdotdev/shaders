@@ -1,7 +1,7 @@
 // The heat shimmer's idle vote, a pure function so it has a unit test. The
 // wrapper (./heat-shimmer.tsx) casts it. A strength of 0 or less moves the
 // image by nothing, and a speed of 0 stops the clock, so either lets the
-// scene park. `scale` and the tuning never move anything over time, and each
+// scene park. `scale` and the band never move anything over time, and each
 // repaints through its uniform when it changes.
 import {
   type AnimatableProp,

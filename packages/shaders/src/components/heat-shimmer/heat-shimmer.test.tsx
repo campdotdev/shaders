@@ -12,7 +12,7 @@ import {
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import type { PrePass } from '../../engine.js';
-import { HeatShimmer, type HeatShimmerProps, type HeatShimmerTuning } from '../../index.js';
+import { HeatShimmer, type HeatShimmerProps } from '../../index.js';
 import {
   type PostProcessTransform,
   type Resample,
@@ -201,17 +201,10 @@ function makeSignal(initial: number) {
 }
 
 describe('HeatShimmer', () => {
-  // The public shape in phase 3: three animatable dials for the shimmer,
-  // the band's toggle and its three animatable dials, plus the temporary
-  // tuning rig the defaults gate deletes. pnpm typecheck runs this file
-  // too, so a missing export or a narrowed prop fails there as well.
-  it('takes the shimmer, the band, and the tuning rig from the package root', () => {
-    expectTypeOf<HeatShimmerTuning>().toEqualTypeOf<{
-      foldLimit?: number;
-      stretch?: number;
-      riseRate?: number;
-      morphRate?: number;
-    }>();
+  // The public shape: three animatable dials for the shimmer, and the
+  // band's toggle and its three animatable dials. pnpm typecheck runs this
+  // file too, so a missing export or a narrowed prop fails there as well.
+  it('takes the shimmer and the band from the package root', () => {
     expectTypeOf<HeatShimmerProps>().toEqualTypeOf<{
       strength?: AnimatableProp<number>;
       scale?: AnimatableProp<number>;
@@ -220,7 +213,6 @@ describe('HeatShimmer', () => {
       bandPosition?: AnimatableProp<number>;
       bandHeight?: AnimatableProp<number>;
       bandFeather?: AnimatableProp<number>;
-      tuning?: HeatShimmerTuning;
     }>();
   });
 
@@ -350,21 +342,6 @@ describe('HeatShimmer', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(3);
 
     expectStableRegistrations(scene);
-  });
-
-  // The tuning sliders ride uniforms too, so the author can drag them on
-  // the docs page without a stutter.
-  it('changes its tuning without registering again', () => {
-    const scene = makeScene();
-    const { rerender } = render(<HeatShimmer tuning={{ foldLimit: 0.25, stretch: 1.5 }} />, {
-      wrapper: scene.Wrapper,
-    });
-
-    scene.scheduler.requestRender.mockClear();
-    rerender(<HeatShimmer tuning={{ foldLimit: 0.6, stretch: 1, riseRate: 0.3, morphRate: 2 }} />);
-
-    expectStableRegistrations(scene);
-    expect(scene.scheduler.requestRender).toHaveBeenCalled();
   });
 
   // The clock moves the shimmer at its defaults, so it keeps the scene

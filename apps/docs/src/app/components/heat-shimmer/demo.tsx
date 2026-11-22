@@ -3,8 +3,8 @@
 /**
  * Heat Shimmer demo island: the interactive slice of the Heat Shimmer page,
  * holding the control store, the shader preview, and the control panel for
- * the shimmer, the band, and the temporary tuning rig. The shared components/[slug]
- * template renders this between its static header and prose sections.
+ * the shimmer and the band. The shared components/[slug] template renders
+ * this between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
 import { useMemo } from 'react';
@@ -86,12 +86,6 @@ function HeatShimmerFields() {
           path="band"
         />
         <BandSliders />
-      </Section>
-      <Section title="Tuning (dev)">
-        <SliderInput label="Fold limit" max={1} min={0} path="tuning.foldLimit" step={0.005} />
-        <SliderInput label="Stretch" max={4} min={0.25} path="tuning.stretch" step={0.05} />
-        <SliderInput label="Rise rate" max={0.5} min={0} path="tuning.riseRate" step={0.005} />
-        <SliderInput label="Morph rate" max={3} min={0} path="tuning.morphRate" step={0.05} />
       </Section>
     </>
   );

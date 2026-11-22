@@ -15,13 +15,11 @@ import { MotionPolicyPicker } from '../motion-policy-picker';
 
 // Query params override the shimmer's dials, such as ?strength=0 for the
 // photo exactly as it is, ?strength=1&scale=4 for checking one by eye, or
-// ?speed=0 for a fixed warp. ?riseRate and ?morphRate override the two
-// tuning rates, so the visual spec can turn one motion off and check the
-// other: ?morphRate=0 leaves only the rise, and ?riseRate=0 only the change
-// of shape. ?band=1 turns the band on, and ?bandPosition, ?bandHeight, and
-// ?bandFeather place it, such as ?band=1&bandPosition=0.25&bandFeather=0
-// for a hard-edged band a quarter of the way down. ?shimmer=none drops
-// HeatShimmer, to compare against the photo alone.
+// ?speed=0 for a fixed warp. ?band=1 turns the band on, and
+// ?bandPosition, ?bandHeight, and ?bandFeather place it, such as
+// ?band=1&bandPosition=0.25&bandFeather=0 for a hard-edged band a quarter
+// of the way down. ?shimmer=none drops HeatShimmer, to compare against the
+// photo alone.
 
 /** A value from the page's query string, or null when it is absent. */
 function query(name: string): string | null {
@@ -64,7 +62,6 @@ export default function ProbeScene() {
             scale={queryNumber('scale')}
             speed={queryNumber('speed')}
             strength={queryNumber('strength')}
-            tuning={{ riseRate: queryNumber('riseRate'), morphRate: queryNumber('morphRate') }}
           />
         )}
         <VisualTestPause />

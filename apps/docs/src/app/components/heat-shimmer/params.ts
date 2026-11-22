@@ -1,14 +1,3 @@
-/**
- * TEMPORARY (build-phase tuning only): mirrors HeatShimmerTuning. The whole
- * block goes at the defaults gate.
- */
-export interface HeatShimmerTuningParams {
-  foldLimit: number;
-  stretch: number;
-  riseRate: number;
-  morphRate: number;
-}
-
 export interface HeatShimmerParams {
   strength: number;
   scale: number;
@@ -17,7 +6,6 @@ export interface HeatShimmerParams {
   bandPosition: number;
   bandHeight: number;
   bandFeather: number;
-  tuning: HeatShimmerTuningParams;
 }
 
 // Values mirror the component defaults in
@@ -30,10 +18,4 @@ export const INITIAL: HeatShimmerParams = {
   bandPosition: 0.5,
   bandHeight: 0.3,
   bandFeather: 0.5,
-  tuning: {
-    foldLimit: 0.25,
-    stretch: 1.5,
-    riseRate: 0.1,
-    morphRate: 0.5,
-  },
 };
