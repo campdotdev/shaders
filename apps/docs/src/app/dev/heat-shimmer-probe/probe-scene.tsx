@@ -15,7 +15,10 @@ import { MotionPolicyPicker } from '../motion-policy-picker';
 
 // Query params override the shimmer's dials, such as ?strength=0 for the
 // photo exactly as it is, ?strength=1&scale=4 for checking one by eye, or
-// ?speed=0 for a fixed warp.
+// ?speed=0 for a fixed warp. ?riseRate and ?morphRate override the two
+// tuning rates, so the visual spec can turn one motion off and check the
+// other: ?morphRate=0 leaves only the rise, and ?riseRate=0 only the change
+// of shape.
 
 /** A number from the page's query string, or undefined when it is absent. */
 function queryNumber(name: string): number | undefined {
@@ -48,6 +51,7 @@ export default function ProbeScene() {
           scale={queryNumber('scale')}
           speed={queryNumber('speed')}
           strength={queryNumber('strength')}
+          tuning={{ riseRate: queryNumber('riseRate'), morphRate: queryNumber('morphRate') }}
         />
         <VisualTestPause />
       </ShaderScene>
