@@ -21,6 +21,7 @@ import {
   oneMinus,
   type ShaderNodeObject,
   smoothstep,
+  step,
   texture,
   uniform,
   uv,
@@ -104,11 +105,11 @@ const SECOND_SLICE = 37.5;
 const MIN_SCALE = 0.1;
 
 /**
- * The smallest `bandHeight` the shader accepts, as a share of the canvas's
+ * The smallest band height the mask divides by, as a share of the canvas's
  * height. The mask divides by half the band's height, so 0 would divide by
- * zero. At 0.001 the band is under a pixel tall on any canvas, so a
- * `bandHeight` of 0 still shows no shimmer. Raising it would give a band
- * set to 0 a visible sliver.
+ * zero. The floor alone would still leave a band 0.001 tall, which covers
+ * the one row whose center sits on `bandPosition`, so the mask also drops
+ * to 0 for a `bandHeight` of 0 or less.
  */
 const MIN_BAND_HEIGHT = 0.001;
 
@@ -512,7 +513,12 @@ export function HeatShimmerShader({
       // the middle row gets the full shift. At the floor near 0 the fade
       // spans under a pixel, so the edge is hard.
       const feather = clamp(bandFeatherUniform, MIN_BAND_FEATHER, 1);
-      const mask = oneMinus(smoothstep(oneMinus(feather), 1, fromMiddle));
+      const fade = oneMinus(smoothstep(oneMinus(feather), 1, fromMiddle));
+
+      // A height of 0 or less leaves no band. step(edge, x) is 1 when x >=
+      // edge, so step(bandHeight, 0) is 1 for a height of 0 or less, and
+      // oneMinus() turns that into 0 for no band and 1 for any other height.
+      const mask = fade.mul(oneMinus(step(bandHeightUniform, 0)));
 
       // The toggle. mix(a, b, t) is a + (b - a) * t: at t = 0 it gives a,
       // at t = 1 it gives b. With the band off, every row keeps the whole
