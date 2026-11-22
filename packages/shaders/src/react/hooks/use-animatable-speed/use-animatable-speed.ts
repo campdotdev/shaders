@@ -62,6 +62,10 @@ export function useAnimatableSpeed(
   );
 
   // The integrator: one scheduler client advancing the phase each frame.
+  // It registers in the scheduler's `prepare` stage, which runs before the
+  // scene's render client, so each frame draws the phase this tick leaves
+  // behind. A redraw with no tick, such as a paused scene's after a resize,
+  // then shows the same phase as the frame before it.
   // Multiplying by the reduced-motion scale preserves the engine's
   // prefers-reduced-motion contract — the GPU path is time x scale, and
   // this is the same scale applied to the same increment. Reading it fresh
@@ -78,7 +82,7 @@ export function useAnimatableSpeed(
       phaseUniform.value += speedRef.current * Math.min(delta, MAX_DELTA) * scale.value;
     };
 
-    scheduler.add(accumulate);
+    scheduler.add(accumulate, 'prepare');
 
     // Accumulated phase is wall-clock history, which makes it invisible to
     // the harness that keeps visual tests reproducible: resetting the

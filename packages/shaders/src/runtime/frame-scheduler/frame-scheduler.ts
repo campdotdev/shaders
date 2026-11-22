@@ -19,6 +19,15 @@ export interface SchedulerTick {
 
 export type SchedulerClient = (tick: SchedulerTick) => void;
 
+/**
+ * When in a tick a client runs. Every `prepare` client runs before any
+ * `draw` client. A client that advances a value the frame's draw reads, such
+ * as a speed-driven phase, registers as `prepare`, so the draw shows the
+ * value the tick leaves behind. `draw` is the default, and the scene's
+ * render client is one.
+ */
+export type SchedulerStage = 'prepare' | 'draw';
+
 // How early a frame may arrive and still tick under a frame cap, as a
 // fraction of the cap's interval. Animation frame timestamps jitter, and
 // some browsers round them to the whole millisecond, so the frame one
@@ -30,7 +39,10 @@ export type SchedulerClient = (tick: SchedulerTick) => void;
 const FRAME_CAP_TOLERANCE = 0.1;
 
 export class FrameScheduler {
+  // The `draw` clients, in the order they registered.
   private readonly clients = new Set<SchedulerClient>();
+  // The `prepare` clients, which every tick runs before the `draw` clients.
+  private readonly prepareClients = new Set<SchedulerClient>();
   private readonly phaseResetListeners = new Set<(originSeconds: number) => void>();
   // The time resetPhases() rewinds to, in seconds. See setPhaseOrigin().
   private phaseOrigin = 0;
@@ -126,21 +138,28 @@ export class FrameScheduler {
     this.minTickGap = capped ? (1000 / maxFPS) * (1 - FRAME_CAP_TOLERANCE) : 0;
   }
 
-  /** Register a client to be called on every tick. */
-  add(client: SchedulerClient): void {
-    this.clients.add(client);
+  /**
+   * Register a client to be called on every tick. Within a tick, the
+   * `prepare` clients run first and the `draw` clients after, each stage in
+   * the order its clients registered.
+   */
+  add(client: SchedulerClient, stage: SchedulerStage = 'draw'): void {
+    if (stage === 'prepare') this.prepareClients.add(client);
+    else this.clients.add(client);
     if (this.running) this.maybeQueue();
   }
 
-  /** Unregister a client. */
+  /** Unregister a client, whichever stage it registered in. */
   remove(client: SchedulerClient): void {
     this.clients.delete(client);
+    this.prepareClients.delete(client);
   }
 
   /** Permanent teardown: stop the loop and drop all clients. */
   dispose(): void {
     this.stop();
     this.clients.clear();
+    this.prepareClients.clear();
     this.phaseResetListeners.clear();
     this.pauseListeners.clear();
   }
@@ -259,7 +278,7 @@ export class FrameScheduler {
   private maybeQueue(): void {
     if (this.rafId !== null) return;
     if (!this.running) return;
-    if (this.clients.size === 0) return;
+    if (this.clients.size === 0 && this.prepareClients.size === 0) return;
     if (this.idle && !this.flushPending) return;
     this.rafId = requestAnimationFrame(this.frame);
   }
@@ -311,6 +330,9 @@ export class FrameScheduler {
 
     const tick: SchedulerTick = { delta, elapsed, now };
 
+    for (const client of this.prepareClients) {
+      client(tick);
+    }
     for (const client of this.clients) {
       client(tick);
     }
