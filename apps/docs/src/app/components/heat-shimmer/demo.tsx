@@ -3,7 +3,7 @@
 /**
  * Heat Shimmer demo island: the interactive slice of the Heat Shimmer page,
  * holding the control store, the shader preview, and the control panel for
- * the shimmer and the temporary tuning rig. The shared components/[slug]
+ * the shimmer, the band, and the temporary tuning rig. The shared components/[slug]
  * template renders this between its static header and prose sections.
  */
 import dynamic from 'next/dynamic';
@@ -15,7 +15,9 @@ import {
   createControlStore,
   DemoLayout,
   Section,
+  SelectInput,
   SliderInput,
+  usePropValue,
   useSnapshot,
 } from '@/components/controls';
 import { DemoPoster } from '@/components/DemoPoster';
@@ -45,6 +47,26 @@ function HeatShimmerDemo() {
   );
 }
 
+/**
+ * The band's three sliders, shown only while the band is on, since they
+ * change nothing with it off. Subscribes to the `band` leaf alone, so a
+ * drag on another control never re-renders it (the demo-store gotcha in
+ * docs/agents/docs-site.md).
+ */
+function BandSliders() {
+  const band = usePropValue<boolean>('band');
+
+  if (!band) return null;
+
+  return (
+    <>
+      <SliderInput label="Position" max={1} min={0} path="bandPosition" step={0.001} />
+      <SliderInput label="Height" max={1} min={0} path="bandHeight" step={0.01} />
+      <SliderInput label="Feather" max={1} min={0} path="bandFeather" step={0.01} />
+    </>
+  );
+}
+
 /** The panel's controls without the panel around them. */
 function HeatShimmerFields() {
   return (
@@ -53,6 +75,17 @@ function HeatShimmerFields() {
         <SliderInput label="Strength" max={1} min={0} path="strength" step={0.01} />
         <SliderInput label="Scale" max={40} min={1} path="scale" step={0.1} />
         <SliderInput label="Speed" max={2} min={-2} path="speed" step={0.01} />
+      </Section>
+      <Section title="Band">
+        <SelectInput
+          label="Band"
+          options={[
+            { label: 'Off', value: false },
+            { label: 'On', value: true },
+          ]}
+          path="band"
+        />
+        <BandSliders />
       </Section>
       <Section title="Tuning (dev)">
         <SliderInput label="Fold limit" max={1} min={0} path="tuning.foldLimit" step={0.005} />

@@ -201,11 +201,11 @@ function makeSignal(initial: number) {
 }
 
 describe('HeatShimmer', () => {
-  // The public shape in phase 2: three animatable dials, plus the
-  // temporary tuning rig the defaults gate deletes. pnpm typecheck runs
-  // this file too, so a missing export or a narrowed prop fails there as
-  // well.
-  it('takes three animatable dials and the tuning rig from the package root', () => {
+  // The public shape in phase 3: three animatable dials for the shimmer,
+  // the band's toggle and its three animatable dials, plus the temporary
+  // tuning rig the defaults gate deletes. pnpm typecheck runs this file
+  // too, so a missing export or a narrowed prop fails there as well.
+  it('takes the shimmer, the band, and the tuning rig from the package root', () => {
     expectTypeOf<HeatShimmerTuning>().toEqualTypeOf<{
       foldLimit?: number;
       stretch?: number;
@@ -216,6 +216,10 @@ describe('HeatShimmer', () => {
       strength?: AnimatableProp<number>;
       scale?: AnimatableProp<number>;
       speed?: AnimatableProp<number>;
+      band?: boolean;
+      bandPosition?: AnimatableProp<number>;
+      bandHeight?: AnimatableProp<number>;
+      bandFeather?: AnimatableProp<number>;
       tuning?: HeatShimmerTuning;
     }>();
   });
@@ -310,6 +314,40 @@ describe('HeatShimmer', () => {
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
     scale.set(4);
     expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(2);
+
+    expectStableRegistrations(scene);
+  });
+
+  // `band` writes a uniform that blends between the whole canvas and the
+  // band's mask, so switching it on and off never builds a new warp.
+  it('toggles the band without registering again, and repaints', () => {
+    const scene = makeScene();
+    const { rerender } = render(<HeatShimmer />, { wrapper: scene.Wrapper });
+
+    scene.scheduler.requestRender.mockClear();
+    rerender(<HeatShimmer band />);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
+    rerender(<HeatShimmer band={false} />);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(2);
+
+    expectStableRegistrations(scene);
+  });
+
+  it('moves and reshapes the band without registering again', () => {
+    const scene = makeScene();
+    const bandPosition = makeSignal(0.5);
+    const { rerender } = render(
+      <HeatShimmer band bandFeather={0.5} bandHeight={0.3} bandPosition={bandPosition.signal} />,
+      { wrapper: scene.Wrapper },
+    );
+
+    scene.scheduler.requestRender.mockClear();
+    bandPosition.set(0.129);
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(1);
+    rerender(
+      <HeatShimmer band bandFeather={0} bandHeight={0.1} bandPosition={bandPosition.signal} />,
+    );
+    expect(scene.scheduler.requestRender).toHaveBeenCalledTimes(3);
 
     expectStableRegistrations(scene);
   });

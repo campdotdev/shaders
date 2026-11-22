@@ -18,11 +18,19 @@ import { MotionPolicyPicker } from '../motion-policy-picker';
 // ?speed=0 for a fixed warp. ?riseRate and ?morphRate override the two
 // tuning rates, so the visual spec can turn one motion off and check the
 // other: ?morphRate=0 leaves only the rise, and ?riseRate=0 only the change
-// of shape.
+// of shape. ?band=1 turns the band on, and ?bandPosition, ?bandHeight, and
+// ?bandFeather place it, such as ?band=1&bandPosition=0.25&bandFeather=0
+// for a hard-edged band a quarter of the way down. ?shimmer=none drops
+// HeatShimmer, to compare against the photo alone.
+
+/** A value from the page's query string, or null when it is absent. */
+function query(name: string): string | null {
+  return new URLSearchParams(window.location.search).get(name);
+}
 
 /** A number from the page's query string, or undefined when it is absent. */
 function queryNumber(name: string): number | undefined {
-  const raw = new URLSearchParams(window.location.search).get(name);
+  const raw = query(name);
 
   return raw === null ? undefined : Number(raw);
 }
@@ -33,7 +41,7 @@ function queryNumber(name: string): number | undefined {
  * the harness holds the paused policy anyway.
  */
 function isVisualTest(): boolean {
-  return new URLSearchParams(window.location.search).get('visualTest') === '1';
+  return query('visualTest') === '1';
 }
 
 export default function ProbeScene() {
@@ -47,12 +55,18 @@ export default function ProbeScene() {
     <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
       <ShaderScene>
         <PhotoSource photo={photo} />
-        <HeatShimmer
-          scale={queryNumber('scale')}
-          speed={queryNumber('speed')}
-          strength={queryNumber('strength')}
-          tuning={{ riseRate: queryNumber('riseRate'), morphRate: queryNumber('morphRate') }}
-        />
+        {query('shimmer') !== 'none' && (
+          <HeatShimmer
+            band={query('band') === '1'}
+            bandFeather={queryNumber('bandFeather')}
+            bandHeight={queryNumber('bandHeight')}
+            bandPosition={queryNumber('bandPosition')}
+            scale={queryNumber('scale')}
+            speed={queryNumber('speed')}
+            strength={queryNumber('strength')}
+            tuning={{ riseRate: queryNumber('riseRate'), morphRate: queryNumber('morphRate') }}
+          />
+        )}
         <VisualTestPause />
       </ShaderScene>
       {isVisualTest() ? null : (

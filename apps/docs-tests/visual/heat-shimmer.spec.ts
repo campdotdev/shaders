@@ -81,20 +81,27 @@ async function probePixels(page: Page, query: string): Promise<CanvasPixels> {
   return readCanvasPixels(page);
 }
 
-/** How many pixels differ between two reads of the canvas, by more than 3 levels summed over red, green, and blue. */
+/** How many pixels in pixel row `y` differ between two reads of the canvas, by more than 3 levels summed over red, green, and blue. */
+function rowChanged(before: CanvasPixels, after: CanvasPixels, y: number): number {
+  let changed = 0;
+
+  for (let x = 0; x < before.width; x++) {
+    const [red, green, blue] = before.rgb(x, y);
+    const [nextRed, nextGreen, nextBlue] = after.rgb(x, y);
+
+    if (Math.abs(red - nextRed) + Math.abs(green - nextGreen) + Math.abs(blue - nextBlue) > 3) {
+      changed++;
+    }
+  }
+
+  return changed;
+}
+
+/** How many pixels differ between two reads of the canvas, as `rowChanged` counts them. */
 function pixelsChanged(before: CanvasPixels, after: CanvasPixels): number {
   let changed = 0;
 
-  for (let y = 0; y < before.height; y++) {
-    for (let x = 0; x < before.width; x++) {
-      const [red, green, blue] = before.rgb(x, y);
-      const [nextRed, nextGreen, nextBlue] = after.rgb(x, y);
-
-      if (Math.abs(red - nextRed) + Math.abs(green - nextGreen) + Math.abs(blue - nextBlue) > 3) {
-        changed++;
-      }
-    }
-  }
+  for (let y = 0; y < before.height; y++) changed += rowChanged(before, after, y);
 
   return changed;
 }
@@ -184,3 +191,66 @@ test('HeatShimmer — the shimmer rises up the canvas', async ({ page }) => {
 
   expect(rowsMovedUp(start, later, 80)).toBeGreaterThan(8);
 });
+
+// ---------------------------------------------
+// The band: only the band wavers
+// ---------------------------------------------
+
+// At a strength of 0 the warp moves no sample, so the canvas matches one
+// with no HeatShimmer mounted at all, pixel for pixel.
+test('HeatShimmer — a strength of 0 matches the photo with no HeatShimmer', async ({ page }) => {
+  const without = await probePixels(page, '&shimmer=none');
+  const still = await probePixels(page, '&strength=0');
+
+  expect(pixelsChanged(without, still)).toBe(0);
+});
+
+// The band's full height in the checks below, as a share of the canvas.
+const BAND_HEIGHT = 0.3;
+
+// Rows this close to a band edge belong to neither side of the check: the
+// edge falls between two rows, and a row's center may sit a hair on
+// either side of it.
+const EDGE_ROWS = 2;
+
+// With the feather at 0 the band has hard edges, so every row outside it
+// keeps the photo exactly as it was, and the rows inside it waver. The
+// check runs at the middle and again a quarter of the way down. A band
+// flipped top to bottom passes at 0.5, so only the off-center run catches
+// a y axis read the wrong way up, the bug CursorRipple once had: there,
+// the band would land three quarters of the way down, and rows the check
+// expects still would move.
+//
+// On macOS every row inside the band changed some pixels, so the check
+// asks for nine in ten, which leaves room for a flat stretch of the photo
+// on another GPU.
+for (const bandPosition of [0.5, 0.25]) {
+  test(`HeatShimmer — a hard-edged band at ${bandPosition} wavers only its own rows`, async ({
+    page,
+  }) => {
+    const without = await probePixels(page, '&shimmer=none');
+    const banded = await probePixels(
+      page,
+      `&band=1&bandPosition=${bandPosition}&bandHeight=${BAND_HEIGHT}&bandFeather=0`,
+    );
+    const top = (bandPosition - BAND_HEIGHT / 2) * without.height;
+    const bottom = (bandPosition + BAND_HEIGHT / 2) * without.height;
+    const movedOutside: number[] = [];
+    let insideRows = 0;
+    let movedInsideRows = 0;
+
+    for (let y = 0; y < without.height; y++) {
+      const center = y + 0.5;
+
+      if (center < top - EDGE_ROWS || center > bottom + EDGE_ROWS) {
+        if (rowChanged(without, banded, y) > 0) movedOutside.push(y);
+      } else if (center > top + EDGE_ROWS && center < bottom - EDGE_ROWS) {
+        insideRows++;
+        if (rowChanged(without, banded, y) > 0) movedInsideRows++;
+      }
+    }
+
+    expect(movedOutside, 'rows outside the band that moved').toEqual([]);
+    expect(movedInsideRows, 'rows inside the band that moved').toBeGreaterThan(insideRows * 0.9);
+  });
+}

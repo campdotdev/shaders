@@ -28,6 +28,10 @@ export default function HeatShimmerScene({
     <ShaderScene>
       <PhotoSource photo={photo} />
       <HeatShimmer
+        band={params.band}
+        bandFeather={params.bandFeather}
+        bandHeight={params.bandHeight}
+        bandPosition={params.bandPosition}
         scale={params.scale}
         speed={params.speed}
         strength={params.strength}
