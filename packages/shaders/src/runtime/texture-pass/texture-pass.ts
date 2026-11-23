@@ -64,6 +64,12 @@ export interface TexturePass {
   /** Draw the node into the texture, once per call. */
   render: () => void;
   /**
+   * Draw a different node from the next render on. The texture object stays
+   * the same, so a texture node bound to it stays bound. The renderer
+   * compiles the new node's shader on that render.
+   */
+  setNode: (node: Node | ShaderNodeObject<Node>) => void;
+  /**
    * Change the texture's size in texels, clamped as the options' width and
    * height are. The texture object stays the same, so a texture node bound
    * to it stays bound. A new size throws away the contents until the next
@@ -80,6 +86,9 @@ const inertPass: TexturePass = {
   texture: null,
   render: () => {
     // No target to draw into.
+  },
+  setNode: () => {
+    // No material to draw with.
   },
   resize: () => {
     // No target to resize.
@@ -189,6 +198,14 @@ export function createTexturePass(
       } finally {
         renderer.setRenderTarget(previousTarget);
       }
+    },
+
+    // needsUpdate is what makes the renderer compile the material's program
+    // again on its next draw, as it does for the output stage's quad.
+    setNode(nextNode) {
+      if (!alive()) return;
+      material.fragmentNode = nextNode;
+      material.needsUpdate = true;
     },
 
     // setSize keeps the texture object and frees its GPU memory, which three

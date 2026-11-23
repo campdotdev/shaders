@@ -213,6 +213,33 @@ describe('render', () => {
   });
 });
 
+describe('setNode', () => {
+  // Bloom's first pass draws the image beneath it, which the output stage
+  // hands over again each time it rebuilds.
+  it('draws the new node into the same texture from the next render on', () => {
+    const renderer = makeRenderer();
+    const pass = createTexturePass(renderer, red, floatSlices);
+    const texture = pass.texture;
+    const green = vec4(0, 1, 0, 1);
+
+    pass.setNode(green);
+
+    expect(renderer.render).not.toHaveBeenCalled();
+    pass.render();
+    expect(drawnNode(renderer)).toBe(green);
+    expect(pass.texture).toBe(texture);
+  });
+
+  it('does nothing after dispose', () => {
+    const renderer = makeRenderer();
+    const pass = createTexturePass(renderer, red, floatSlices);
+
+    pass.dispose();
+
+    expect(() => pass.setNode(vec4(0, 1, 0, 1))).not.toThrow();
+  });
+});
+
 describe('resize', () => {
   // The texture object survives, so a consumer's texture node stays bound to
   // it. Its contents do not: the consumer renders again after a resize.
