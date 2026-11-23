@@ -53,7 +53,7 @@ export type { GrainProps } from './grain/grain.js';
 export type { GrainBlend } from './grain/shader.js';
 
 export { HeatShimmer } from './heat-shimmer/heat-shimmer.js';
-export type { HeatShimmerProps, HeatShimmerTuning } from './heat-shimmer/heat-shimmer.js';
+export type { HeatShimmerProps } from './heat-shimmer/heat-shimmer.js';
 
 export { LedWall } from './led-wall/led-wall.js';
 export type { LedWallProps } from './led-wall/led-wall.js';

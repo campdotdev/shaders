@@ -7,15 +7,14 @@
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useStaticSceneHint } from '../../react/hooks/use-static-hint/use-static-hint.js';
 import { isHeatShimmerIdle } from './idle.js';
-import { HeatShimmerShader, type HeatShimmerTuning } from './shader.js';
-
-export type { HeatShimmerTuning } from './shader.js';
+import { HeatShimmerShader } from './shader.js';
 
 export interface HeatShimmerProps {
   /**
-   * How hard the shimmer pushes, from 0 to 1, where 1 is the most that
-   * can't fold the image and 0 leaves it unchanged. Values outside 0 to 1
-   * clamp. Defaults to 0.5. Accepts a static value or an animation signal.
+   * How hard the shimmer pushes, from 0 to 1. 0 leaves the image unchanged,
+   * and 1 is close to the most the image takes before it folds. A low
+   * `scale` can fold it sooner. Values outside 0 to 1 clamp. Defaults to 0.5.
+   * Accepts a static value or an animation signal.
    */
   strength?: AnimatableProp<number>;
   /**
@@ -61,11 +60,6 @@ export interface HeatShimmerProps {
    * to 0.5. Accepts a static value or an animation signal.
    */
   bandFeather?: AnimatableProp<number>;
-  /**
-   * TEMPORARY (build-phase tuning only): dev overrides for the feel
-   * constants. Stripped at the defaults gate, so don't use it.
-   */
-  tuning?: HeatShimmerTuning;
 }
 
 /**
@@ -85,11 +79,7 @@ export function HeatShimmer({
   bandPosition = 0.5,
   bandHeight = 0.3,
   bandFeather = 0.5,
-  tuning,
 }: HeatShimmerProps) {
-  // `strength`, `scale`, `bandHeight`, and `bandFeather` are provisional
-  // until the defaults gate tunes them by eye.
-  //
   // The idle vote. The clock moves the shimmer every frame, so it votes
   // animated, unless it moves the image by nothing or its clock holds
   // still. Then a scene of still Sources under it parks (./idle.ts).
@@ -104,7 +94,6 @@ export function HeatShimmer({
       scale={scale}
       speed={speed}
       strength={strength}
-      tuning={tuning}
     />
   );
 }

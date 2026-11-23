@@ -90,7 +90,7 @@ export const COMPONENTS = {
   },
   'heat-shimmer': {
     description:
-      'Hot air over the scene. The image beneath wavers as if seen through rising heat. Stacks on top of any Source inside <ShaderScene>.',
+      'Hot air over the scene. The image beneath wavers as if seen through rising heat, across the whole canvas or in a soft horizontal band. Stacks on top of any Source inside <ShaderScene>.',
     category: 'warp',
   },
   'led-wall': {

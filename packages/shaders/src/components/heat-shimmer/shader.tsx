@@ -48,18 +48,21 @@ import type { ResizeValue } from '../../react/hooks/use-resize/use-resize.js';
 import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
 
 // ---------------------------------------------
-// Feel constants (provisional until the defaults gate)
+// Feel constants
 // ---------------------------------------------
-// The tuning prop overrides the ones HeatShimmerTuning lists, on the docs
-// page, and the defaults gate bakes the landed values back in here.
+// FOLD_LIMIT, STRETCH, RISE_RATE, and MORPH_RATE set the shimmer's look and
+// pace. The props scale them, and nothing overrides them.
 
 /**
  * The shimmer's largest reach at a `scale` of 1, in canvas heights per unit
  * of noise. `strength={1}` reaches exactly this far, divided by `scale`. Past
  * some value the shift changes faster across the canvas than the pixels it
  * moves, so neighboring pixels swap places and the image folds over itself.
- * The tuning rig finds that value by raising this at `strength={1}` until
- * the image tears, then backing off. Higher pushes harder, lower is fainter.
+ * The noise's steepest slope is about 3.3 per noise unit, so at a STRETCH of
+ * 1.5 the image first folds somewhere at about 0.345. 0.25 stays under that
+ * with room for the shift texture's 8-bit rounding (see the warp below), so
+ * `strength={1}` is close to the most the image takes. Higher pushes harder
+ * and folds sooner, and lower is fainter.
  */
 const FOLD_LIMIT = 0.25;
 
@@ -142,44 +145,12 @@ function shiftTextureSide(cssSide: number, pixelRatio: number) {
   return Math.max(1, Math.ceil((cssSide * pixelRatio) / TEXEL_PIXELS));
 }
 
-/** TEMPORARY (build-phase tuning only): dev overrides for the feel constants. */
-export interface HeatShimmerTuning {
-  /** The shimmer's largest reach at a `scale` of 1, in canvas heights per unit of noise. */
-  foldLimit?: number;
-  /** How much wider than tall each lump is. 1 is round. */
-  stretch?: number;
-  /** How fast the shimmer rises at a `speed` of 1, in canvas heights per second. */
-  riseRate?: number;
-  /** How fast the lumps change shape at a `speed` of 1, in noise units per second. */
-  morphRate?: number;
-}
-
-/**
- * TEMPORARY (build-phase tuning only): the tuning overrides, each in a
- * uniform so the tuning sliders glide without rebuilding the shader. The
- * defaults gate deletes this hook and bakes the constants back in.
- */
-function useTuningUniforms(tuning: HeatShimmerTuning | undefined) {
-  const {
-    foldLimit = FOLD_LIMIT,
-    stretch = STRETCH,
-    riseRate = RISE_RATE,
-    morphRate = MORPH_RATE,
-  } = tuning ?? {};
-
-  return {
-    foldLimitUniform: useAnimatableUniform<number>(foldLimit),
-    stretchUniform: useAnimatableUniform<number>(stretch),
-    riseRateUniform: useAnimatableUniform<number>(riseRate),
-    morphRateUniform: useAnimatableUniform<number>(morphRate),
-  };
-}
-
 export interface HeatShimmerShaderProps {
   /**
-   * How hard the shimmer pushes, from 0 to 1, where 1 is the most that
-   * can't fold the image and 0 leaves it unchanged. Values outside 0 to 1
-   * clamp. Accepts a static value or an animation signal.
+   * How hard the shimmer pushes, from 0 to 1. 0 leaves the image unchanged,
+   * and 1 is close to the most the image takes before it folds. A low
+   * `scale` can fold it sooner. Values outside 0 to 1 clamp.
+   * Accepts a static value or an animation signal.
    */
   strength: AnimatableProp<number>;
   /**
@@ -215,11 +186,6 @@ export interface HeatShimmerShaderProps {
    * static value or an animation signal.
    */
   bandFeather: AnimatableProp<number>;
-  /**
-   * TEMPORARY (build-phase tuning only): dev overrides for the feel
-   * constants.
-   */
-  tuning: HeatShimmerTuning | undefined;
 }
 
 // ---------------------------------------------
@@ -232,8 +198,6 @@ interface ShiftPassInputs {
   shaderContext: ShaderContextValue;
   /** The canvas's width over its height. */
   aspect: FloatUniform;
-  /** How much wider than tall each lump is. */
-  stretch: FloatUniform;
   /** `scale`, kept off 0 by MIN_SCALE. */
   safeScale: ShaderNodeObject<Node>;
   /** How far the pattern has risen, in canvas heights. */
@@ -266,7 +230,6 @@ interface ShiftPass {
 function createShiftPass({
   shaderContext,
   aspect,
-  stretch,
   safeScale,
   rise,
   morph,
@@ -284,7 +247,7 @@ function createShiftPass({
     // Where this texel reads the noise. y is already in canvas heights. x
     // runs over the canvas width, so multiplying it by the aspect puts it
     // in canvas heights too, which keeps the lumps the same shape on a wide
-    // canvas and a tall one (aspect correction). Dividing x by the stretch
+    // canvas and a tall one (aspect correction). Dividing x by STRETCH
     // slows the noise across, so each lump spans more of the width than
     // the height. `scale` then fits that many lumps in the canvas's height.
     //
@@ -295,7 +258,7 @@ function createShiftPass({
     // steady, and it is added before `scale`, so it counts in canvas
     // heights. When the clock runs backward, the rise falls and the
     // pattern sinks.
-    const noisePoint = vec2(coordinate.x.mul(aspect).div(stretch), coordinate.y.add(rise)).mul(
+    const noisePoint = vec2(coordinate.x.mul(aspect).div(STRETCH), coordinate.y.add(rise)).mul(
       safeScale,
     );
 
@@ -382,7 +345,6 @@ export function HeatShimmerShader({
   bandPosition,
   bandHeight,
   bandFeather,
-  tuning,
 }: HeatShimmerShaderProps) {
   const shaderContext = useShaderContext();
 
@@ -398,8 +360,6 @@ export function HeatShimmerShader({
   // is a uniform write and a repaint. Branching on it in JS would build a
   // different shader for each value and register the warp again.
   const bandOnUniform = useAnimatableUniform<number>(band ? 1 : 0);
-  const { foldLimitUniform, stretchUniform, riseRateUniform, morphRateUniform } =
-    useTuningUniforms(tuning);
 
   // `scale` kept off 0, which the reach divides by. The pass and the warp
   // share this one node.
@@ -417,13 +377,11 @@ export function HeatShimmerShader({
   const clock = useAnimatableSpeed(speed);
 
   // One clock, two motions: how far the pattern has risen, in canvas
-  // heights, and how far it has moved along the noise's third axis. Both
-  // grow at a rate the tuning sets. A change of rate multiplies every
-  // second the clock has summed, so dragging a rate's tuning slider jumps
-  // the pattern. The defaults gate bakes both rates into constants, and the
-  // jump goes with them.
-  const rise = useMemo(() => clock.mul(riseRateUniform), [clock, riseRateUniform]);
-  const morph = useMemo(() => clock.mul(morphRateUniform), [clock, morphRateUniform]);
+  // heights, and how far it has moved along the noise's third axis. Each is
+  // the clock times a fixed rate, so both keep in step with `speed`, and a
+  // negative speed runs both backward.
+  const rise = useMemo(() => clock.mul(RISE_RATE), [clock]);
+  const morph = useMemo(() => clock.mul(MORPH_RATE), [clock]);
 
   // ---------------------------------------------
   // Point the warp at the shift pass
@@ -456,7 +414,6 @@ export function HeatShimmerShader({
     const pass = createShiftPass({
       shaderContext,
       aspect: aspectUniform,
-      stretch: stretchUniform,
       safeScale,
       rise,
       morph,
@@ -470,16 +427,7 @@ export function HeatShimmerShader({
       shiftReady.value = 0;
       pass.dispose();
     };
-  }, [
-    shaderContext,
-    shiftTexture,
-    shiftReady,
-    aspectUniform,
-    stretchUniform,
-    safeScale,
-    rise,
-    morph,
-  ]);
+  }, [shaderContext, shiftTexture, shiftReady, aspectUniform, safeScale, rise, morph]);
 
   // ---------------------------------------------
   // The band: how much of the shimmer a row gets
@@ -556,11 +504,14 @@ export function HeatShimmerShader({
       // line between two points on a curve is never steeper than the
       // curve's steepest part between them. 8-bit rounding can move two
       // neighboring texels up to one step, 1/128 of a noise unit, further
-      // apart than the noise has them. So the texture can fold slightly
-      // sooner than the inline noise did, most at a high `scale`, where a
-      // lump spans the fewest texels.
+      // apart than the noise has them, which steepens the shift between
+      // them. So the texture can fold slightly sooner than the inline noise
+      // did. The extra steepness is that step over the texel spacing in
+      // noise units, which shrinks as `scale` grows, so it matters most at a
+      // low `scale` on a tall canvas: at the default 12 on a canvas 1392
+      // device pixels tall it adds about 7% to the noise's steepest slope.
       const reach = clamp(strengthUniform, 0, 1)
-        .mul(foldLimitUniform)
+        .mul(FOLD_LIMIT)
         .div(safeScale)
         .mul(shiftReady)
         .mul(bandAmount(coordinate.y));
@@ -573,15 +524,7 @@ export function HeatShimmerShader({
 
       return coordinate.add(shift);
     },
-    [
-      shiftTexture,
-      shiftReady,
-      strengthUniform,
-      safeScale,
-      aspectUniform,
-      foldLimitUniform,
-      bandAmount,
-    ],
+    [shiftTexture, shiftReady, strengthUniform, safeScale, aspectUniform, bandAmount],
   );
 
   return null;

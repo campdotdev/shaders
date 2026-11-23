@@ -35,7 +35,6 @@ export default function HeatShimmerScene({
         scale={params.scale}
         speed={params.speed}
         strength={params.strength}
-        tuning={params.tuning}
       />
       {children}
     </ShaderScene>

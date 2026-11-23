@@ -331,9 +331,32 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
 </ShaderScene>`,
     usageNotes: (
       <>
-        HeatShimmer moves only what Sources drew, so an Effect such as Grain stays still whether you
-        mount it before or after the shimmer. Over a flat color the shimmer has nothing to move and
-        shows nothing. Mode 1 only: it needs the scene&apos;s output stage.
+        <p>
+          HeatShimmer moves only what Sources drew. Over a flat color the shimmer has nothing to
+          move and shows nothing. It works in Mode 1 only, because it needs the scene&apos;s output
+          stage.
+        </p>
+        <p>
+          To put the band on Swells&apos; horizon, set <code>bandPosition</code> to{' '}
+          <code>0.5 - tan(tilt) / (2 * tan(fieldOfView / 2))</code>, with both angles in radians. At
+          Swells&apos; defaults, a <code>tilt</code> of 12 degrees and a <code>fieldOfView</code> of
+          32, that is 0.129. Swells&apos; haze flattens the picture right at the horizon, and the
+          shimmer shows only where there is detail to move. To reach the far crests, set the band a
+          little below the horizon with a high <code>bandFeather</code>.
+        </p>
+        <p>
+          <strong>In a stack.</strong> Grain stays still whether you mount it before or after
+          HeatShimmer, because the output stage runs every color transform after every resample.
+          Mount PaletteMap before HeatShimmer and the mapped colors waver with the image. Mount it
+          after, and the image wavers first and gets mapped after, so the edges between mapped
+          colors crawl.
+        </p>
+        <p>
+          Mount FlutedGlass after HeatShimmer and the glass bends a wavering image. The glass reads
+          the image beneath it three times a pixel, once for each color it splits. Each read runs
+          HeatShimmer&apos;s warp again, which reads one texel of the shimmer&apos;s own texture.
+          Time a deep stack on your slowest target device before you ship it.
+        </p>
       </>
     ),
   },
