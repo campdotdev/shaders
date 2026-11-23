@@ -1,0 +1,14 @@
+# Flight Deck's repo record. /flight-build and /flight-check read it.
+# The Flight Deck README explains each field.
+
+[labels]
+bug = "flight-bug"
+feature = "flight-feature"
+
+[build]
+reproduce = ["reproducing-bugs"]
+implement = ["tdd"]
+finish = []
+
+[check]
+review = ["standards-review", "ponytail-review"]
