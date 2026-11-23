@@ -147,9 +147,10 @@ function shiftTextureSide(cssSide: number, pixelRatio: number) {
 
 export interface HeatShimmerShaderProps {
   /**
-   * How hard the shimmer pushes, from 0 to 1, where 1 is the most that
-   * can't fold the image and 0 leaves it unchanged. Values outside 0 to 1
-   * clamp. Accepts a static value or an animation signal.
+   * How hard the shimmer pushes, from 0 to 1. 0 leaves the image unchanged,
+   * and 1 is close to the most the image takes before it folds. A low
+   * `scale` can fold it sooner. Values outside 0 to 1 clamp.
+   * Accepts a static value or an animation signal.
    */
   strength: AnimatableProp<number>;
   /**

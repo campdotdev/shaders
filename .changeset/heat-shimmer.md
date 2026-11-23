@@ -4,7 +4,7 @@
 
 Add `HeatShimmer`, an Effect that wavers the image beneath it, the way hot air does. Mount it after the Sources it should act on inside a `ShaderScene`. Small lumps of shift rise up the canvas and change shape as they go, and the image beneath wavers with them. With no props the whole image wavers. Its props:
 
-- `strength` sets how hard the shimmer pushes, from 0 to 1. 1 is the most that can't fold the image, and `strength={0}` leaves the image unchanged.
+- `strength` sets how hard the shimmer pushes, from 0 to 1. 1 is close to the most the image takes before it folds over itself, and a low `scale` can fold it sooner. `strength={0}` leaves the image unchanged.
 - `scale` sets how many lumps fit in the canvas's height. Higher is more and smaller, as on `FractalNoise` and `SimplexNoise`, and a change of scale keeps the look's strength.
 - `speed` multiplies the shimmer's pace. A negative speed makes the shimmer sink, and `speed={0}` holds it still as a fixed warp.
 - `band` confines the shimmer to a horizontal band with soft edges.
