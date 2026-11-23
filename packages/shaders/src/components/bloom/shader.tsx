@@ -1,19 +1,23 @@
 'use client';
 
-// The bloom's GPU half: a resample that reads the image beneath it and keeps
-// only the light bright enough to bloom. The wrapper (./bloom.tsx) supplies
-// the props. In this build phase the kept light is the whole output, over
-// black, so the author can see what counts as bright. Later phases blur it
-// through a chain of smaller textures and add it back over the image.
-// ADR 0010 records why Bloom reads the image only through the sampler the
-// output stage hands it.
+// The bloom's GPU half: a resample that reads the image beneath it, keeps
+// only the light bright enough to bloom, and blurs that light through a
+// chain of smaller textures (./chain.ts). The wrapper (./bloom.tsx) supplies
+// the props. In this build phase the blurred light, the glow, is the whole
+// output, over black. The next phase adds it back over the image. ADR 0010
+// records why Bloom reads the image only through the sampler the output
+// stage hands it.
+import { useEffect, useMemo } from 'react';
+
 import type { ShaderNodeObject } from 'three/tsl';
-import { clamp, dot, float, max, type uniform, vec3, vec4 } from 'three/tsl';
+import { clamp, dot, float, max, type uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
 import { useAnimatableUniform } from '../../react/hooks/use-animatable-uniform/use-animatable-uniform.js';
 import { useResample } from '../../react/hooks/use-resample/use-resample.js';
+import { useShaderContext } from '../../react/hooks/use-shader-context/use-shader-context.js';
+import { createBloomChain } from './chain.js';
 
 type TSLValue = ShaderNodeObject<Node>;
 type FloatUniform = ReturnType<typeof uniform<number>>;
@@ -58,6 +62,15 @@ export interface BloomShaderProps {
    * the threshold up to it. Accepts a static value or an animation signal.
    */
   threshold: AnimatableProp<number>;
+  /**
+   * How far the glow reaches, from 0 to 1. 0 keeps it tight against the
+   * bright parts, and 1 lets it reach about a third of the canvas's
+   * height. The glow stays as bright against the light at every radius,
+   * and a higher one adds the wide, faint part. Values outside 0 to 1
+   * clamp. Accepts a static
+   * value or an animation signal.
+   */
+  radius: AnimatableProp<number>;
 }
 
 // ---------------------------------------------
@@ -102,26 +115,75 @@ export function keepBright(color: TSLValue, threshold: FloatUniform): TSLValue {
   return color.mul(kept);
 }
 
-export function BloomShader({ threshold }: BloomShaderProps) {
-  // The dial lives in a uniform, a value the CPU writes and the GPU reads
-  // at each draw, so changing it never rebuilds the output chain.
-  const thresholdUniform = useAnimatableUniform<number>(threshold);
+export function BloomShader({ threshold, radius }: BloomShaderProps) {
+  const shaderContext = useShaderContext();
 
+  // The dials live in uniforms, values the CPU writes and the GPU reads at
+  // each draw, so changing them never rebuilds the output chain.
+  const thresholdUniform = useAnimatableUniform<number>(threshold);
+  const radiusUniform = useAnimatableUniform<number>(radius);
+
+  // ---------------------------------------------
+  // The blur chain
+  // ---------------------------------------------
+  // The chain's nodes, which allocate nothing on the GPU, so a memo can
+  // hold them through a Strict Mode remount. The effect below allocates
+  // the textures and releases them (the Strict Mode gotcha in
+  // docs/agents/tsl.md).
+  const chain = useMemo(() => createBloomChain(float(radiusUniform)), [radiusUniform]);
+
+  useEffect(() => {
+    if (!shaderContext) return;
+
+    return chain.start(shaderContext);
+  }, [chain, shaderContext]);
+
+  // ---------------------------------------------
+  // The resample: hand the chain the bright parts, read back the glow
+  // ---------------------------------------------
   // A resample. The callback receives sampleBeneath, a function that reads
   // everything mounted beneath this Effect at a 0..1 canvas coordinate, and
-  // returns the function that replaces it. Bloom reads at the coordinate it
-  // is asked for, so a UV warp mounted above it moves what it shows.
+  // returns the function that replaces it. The output stage calls the
+  // callback again each time it rebuilds, with a new sampleBeneath.
   useResample(
-    (sampleBeneath) => (coordinate) => {
-      const beneath = sampleBeneath(coordinate);
-      const bright = keepBright(beneath, thresholdUniform);
+    (sampleBeneath) => {
+      // What the chain blurs. uv() here is the 0..1 position of a texel of
+      // the chain's first level. That level is half the canvas's size, so
+      // each texel sits where four of the canvas's pixels meet, and those
+      // pixels' centers are a quarter of a texel out along each diagonal.
+      // One read at each center returns that pixel alone. The bright pass
+      // runs on each read, and the four results are averaged.
+      //
+      // The order matters. One read at the texel's own position would
+      // return the average of the four pixels, and a lone bright pixel,
+      // such as one of Swells' glints, would drop to a quarter of its
+      // brightness before the bright pass saw it and fall below the
+      // threshold. Run per pixel, the bright pass keeps it, and the average
+      // then spreads its light over the texel.
+      //
+      // Every read goes through sampleBeneath, so each resample mounted
+      // beneath Bloom shapes the glow as it shapes the image. They run four
+      // times per texel here, which is once per pixel of the canvas.
+      const brightAt = (offsetX: number, offsetY: number) =>
+        keepBright(
+          sampleBeneath(uv().add(vec2(offsetX, offsetY).mul(chain.firstTexel))),
+          thresholdUniform,
+        );
 
-      // TEMPORARY (build phase 1): show the kept light alone. The image's
-      // own alpha goes back on, so an opaque pixel below the knee shows
-      // black and a transparent part of the scene stays transparent.
-      return vec4(bright.rgb, beneath.a);
+      chain.setSource(
+        brightAt(-0.25, -0.25)
+          .add(brightAt(0.25, -0.25))
+          .add(brightAt(-0.25, 0.25))
+          .add(brightAt(0.25, 0.25))
+          .mul(0.25),
+      );
+
+      // TEMPORARY (build phase 2): show the glow alone, over opaque black.
+      // The glow is read at the coordinate Bloom is asked for, so a UV warp
+      // mounted above Bloom moves it.
+      return (coordinate) => vec4(chain.glowAt(coordinate).rgb, 1);
     },
-    [thresholdUniform],
+    [chain, thresholdUniform],
   );
 
   return null;

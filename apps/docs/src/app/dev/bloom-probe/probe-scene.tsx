@@ -20,8 +20,34 @@ function query(name: string): string | null {
   return new URLSearchParams(window.location.search).get(name);
 }
 
+interface SliderProps {
+  label: string;
+  max: number;
+  value: number;
+  onChange: (value: number) => void;
+}
+
+/** One dial: its name, a range input from 0 to `max`, and its value. */
+function Slider({ label, max, value, onChange }: SliderProps) {
+  return (
+    <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+      <span style={{ width: 80 }}>{label}</span>
+      <input
+        max={max}
+        min={0}
+        onChange={(event) => onChange(Number(event.target.value))}
+        step={0.01}
+        type="range"
+        value={value}
+      />
+      {value.toFixed(2)}
+    </label>
+  );
+}
+
 export default function ProbeScene() {
   const [threshold, setThreshold] = useState(0.7);
+  const [radius, setRadius] = useState(0.5);
   // The scene mounts once the photo has decoded, so its first frame
   // already shows it.
   const photo = usePhoto(neonMotel);
@@ -33,16 +59,15 @@ export default function ProbeScene() {
     <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
       <ShaderScene>
         {overSwells ? <Swells /> : <PhotoSource photo={photo} />}
-        {query('bloom') !== 'none' && <Bloom threshold={threshold} />}
+        {query('bloom') !== 'none' && <Bloom radius={radius} threshold={threshold} />}
       </ShaderScene>
-      <label
+      <div
         style={{
           position: 'fixed',
           top: 72,
           left: 16,
-          display: 'flex',
-          gap: 8,
-          alignItems: 'center',
+          display: 'grid',
+          gap: 6,
           padding: '8px 12px',
           borderRadius: 6,
           background: 'rgb(0 0 0 / 0.7)',
@@ -50,17 +75,9 @@ export default function ProbeScene() {
           font: '13px ui-monospace, monospace',
         }}
       >
-        threshold
-        <input
-          max={2}
-          min={0}
-          onChange={(event) => setThreshold(Number(event.target.value))}
-          step={0.01}
-          type="range"
-          value={threshold}
-        />
-        {threshold.toFixed(2)}
-      </label>
+        <Slider label="threshold" max={2} onChange={setThreshold} value={threshold} />
+        <Slider label="radius" max={1} onChange={setRadius} value={radius} />
+      </div>
     </div>
   );
 }

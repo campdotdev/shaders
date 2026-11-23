@@ -2,7 +2,7 @@ import { type ReactNode, StrictMode } from 'react';
 
 import { render } from '@testing-library/react';
 import { uv, vec4 } from 'three/tsl';
-import type { WebGPURenderer } from 'three/webgpu';
+import type { RenderTarget, WebGPURenderer } from 'three/webgpu';
 import { afterEach, beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest';
 
 import { Bloom, type BloomProps } from '../../index.js';
@@ -14,12 +14,15 @@ import {
   type ShaderContextValue,
 } from '../../react/context/shader-context.js';
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
+import type { ResizeValue } from '../../react/hooks/use-resize/use-resize.js';
 import { createSignal } from '../../react/internal/create-signal.js';
 import type { SchedulerClient } from '../../runtime/frame-scheduler/frame-scheduler.js';
 
 // What the Effect asks of the scene, never what the bloom looks like. The
 // look is the probe page. A fake context counts what Bloom registers on the
-// output stage and how it votes.
+// output stage and how it votes. A stub renderer stands in for three's: the
+// chain's passes only bind their targets and draw a quad into each
+// (./chain.test.ts covers the chain itself).
 beforeEach(() => {
   vi.stubGlobal('requestAnimationFrame', () => 0);
   vi.stubGlobal('cancelAnimationFrame', () => {});
@@ -34,10 +37,19 @@ function makeScene() {
   const resamples: Resample[] = [];
   const overlays: PostProcessTransform[] = [];
   const unregisters = { resample: 0, overlay: 0 };
+  let boundTarget: RenderTarget | null = null;
   const renderer = {
     domElement: document.createElement('canvas'),
     getPixelRatio: () => 2,
+    render: vi.fn(),
+    setRenderTarget: vi.fn((target: RenderTarget | null) => {
+      boundTarget = target;
+    }),
+    getRenderTarget: vi.fn(() => boundTarget),
+    backend: {},
   } as unknown as WebGPURenderer;
+  // 800 by 400 CSS pixels at a pixel ratio of 2.
+  const size: ResizeValue = [800, 400, 2];
   const scheduler = {
     idle: true,
     add: (client: SchedulerClient) => clients.push(client),
@@ -68,13 +80,17 @@ function makeScene() {
         unregisters.resample += 1;
       };
     },
+    canvasSize: {
+      get: () => size,
+      on: () => () => undefined,
+    },
   } as unknown as ShaderContextValue;
 
   function Wrapper({ children }: { children: ReactNode }) {
     return <ShaderContext.Provider value={shaderContext}>{children}</ShaderContext.Provider>;
   }
 
-  return { Wrapper, scheduler, resamples, overlays, unregisters };
+  return { Wrapper, renderer, scheduler, resamples, overlays, unregisters };
 }
 
 /** One resample and no color transform, not removed or registered again. */
@@ -99,12 +115,13 @@ function makeSignal(initial: number) {
 }
 
 describe('Bloom', () => {
-  // The public shape so far: one optional dial, a number or an animation
-  // signal. pnpm typecheck runs this file too, so a missing export or a
-  // narrowed prop fails there as well as here.
-  it('takes an animatable threshold from the package root', () => {
+  // The public shape so far: two optional dials, each a number or an
+  // animation signal. pnpm typecheck runs this file too, so a missing
+  // export or a narrowed prop fails there as well as here.
+  it('takes two animatable dials from the package root', () => {
     expectTypeOf<BloomProps>().toEqualTypeOf<{
       threshold?: AnimatableProp<number>;
+      radius?: AnimatableProp<number>;
     }>();
   });
 
@@ -117,29 +134,49 @@ describe('Bloom', () => {
   });
 
   // Bloom reads the image beneath only through the sampler it is handed
-  // (ADR 0010), at the coordinate it is asked for, so a UV warp above or
-  // beneath it moves what Bloom shows.
-  it('reads the image beneath once, at the coordinate it is given', () => {
+  // (ADR 0010), so every resample beneath Bloom shapes the glow. The
+  // chain's first level reads it four times per texel, once at each of the
+  // four canvas pixels the texel covers.
+  it('reads the image beneath through the sampler, four times, for the chain', () => {
     const scene = makeScene();
 
     render(<Bloom />, { wrapper: scene.Wrapper });
 
     const sampleBeneath = vi.fn<Sampler>(() => vec4(0.5, 0.5, 0.5, 1));
-    const coordinate = uv();
 
-    scene.resamples[0]!(sampleBeneath)(coordinate);
+    scene.resamples[0]!(sampleBeneath);
 
-    expect(sampleBeneath).toHaveBeenCalledTimes(1);
-    expect(sampleBeneath).toHaveBeenCalledWith(coordinate);
+    expect(sampleBeneath).toHaveBeenCalledTimes(4);
+  });
+
+  // The glow is read at the coordinate Bloom is asked for, so a UV warp
+  // mounted above Bloom moves the glow with the image.
+  it('reads the glow at the coordinate it is given', () => {
+    const scene = makeScene();
+
+    render(<Bloom />, { wrapper: scene.Wrapper });
+
+    const coordinate = uv().add(0.1);
+    const output = scene.resamples[0]!(() => vec4(0.5, 0.5, 0.5, 1))(coordinate);
+    const reads: unknown[] = [];
+
+    output.traverse((node) => {
+      if ('passNode' in node && (node as unknown as { uvNode: unknown }).uvNode !== null)
+        reads.push((node as unknown as { uvNode: unknown }).uvNode);
+    });
+
+    expect(reads).toEqual([coordinate]);
   });
 
   // The dial rides a uniform, so a new value rebuilds nothing on the output
   // stage (the uniform-stability gotcha in docs/agents/tsl.md).
-  it('keeps its registration when threshold changes', () => {
+  it('keeps its registration when a dial changes', () => {
     const scene = makeScene();
-    const { rerender } = render(<Bloom threshold={0.2} />, { wrapper: scene.Wrapper });
+    const { rerender } = render(<Bloom radius={0.1} threshold={0.2} />, {
+      wrapper: scene.Wrapper,
+    });
 
-    rerender(<Bloom threshold={0.9} />);
+    rerender(<Bloom radius={0.9} threshold={0.9} />);
 
     expectOneResample(scene);
   });
@@ -163,6 +200,16 @@ describe('Bloom', () => {
     render(<Bloom />, { wrapper: scene.Wrapper });
 
     expect(scene.scheduler.setIdle).not.toHaveBeenCalled();
+  });
+
+  // The chain draws from a node's updateBefore during the output quad's
+  // draw, never from a pre-pass, which would run before the scene pass.
+  it('draws nothing on its own', () => {
+    const scene = makeScene();
+
+    render(<Bloom />, { wrapper: scene.Wrapper });
+
+    expect(scene.renderer.render).not.toHaveBeenCalled();
   });
 
   it('registers once per mount under Strict Mode', () => {
