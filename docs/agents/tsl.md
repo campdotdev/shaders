@@ -104,6 +104,8 @@ A client that only advances a value the draw reads can register in the scheduler
 
 Register the draw with `registerPrePass` from the scene context instead. The output stage runs every pre-pass before the scene pass, on every frame and on the redraw after a resize. Aurora's field pass is the model. `CursorRipple`'s wave field still steps from a scheduler client, and asks for one more frame after the step that settles it.
 
+A pre-pass runs before the scene pass, so it cannot draw a texture made from the scene. Bloom's blur chain reads the scene, and draws from a node's `updateBefore` during the output quad's draw instead, as ADR 0010 records. three calls `updateBefore` once per browser frame, so the redraw after a resize may skip it. Resize such a target when it next draws, as `components/bloom/chain.ts` does, or that redraw shows it empty.
+
 ### The float32-filterable gotcha: WebGPU binds a full-float target only with a device feature
 
 three 0.170 binds every render target's texture as a filterable float, whatever filter the texture sets. WebGPU accepts that for an `rgba32float` texture only on a device with the `float32-filterable` feature. Without it, the bind group fails validation and the draw fails. Half floats are filterable in core. `canRenderTo` in `runtime/renderer-capabilities/` checks the feature, and `createTexturePass` exposes no texture without it, so its consumer computes the value inline instead. Apple GPUs have the feature. At a three upgrade, check whether three binds a full-float render target as unfilterable.

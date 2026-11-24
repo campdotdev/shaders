@@ -5,8 +5,9 @@
 // distance, so a few reads at each size add up to the same blur. The chain
 // shrinks the bright parts level by level, then works back up, adding each
 // level to the one above it. Bloom's shader (./shader.tsx) hands it
-// the bright parts and reads the glow back. Like the texture pass it is
-// built on, it is written against three's renderer alone, with no React.
+// the bright parts and reads the glow back. It holds no React: `start`
+// takes the scene's context only for its renderer, its canvas size, and
+// its scheduler.
 import type { ShaderNodeObject } from 'three/tsl';
 import { clamp, passTexture, texture, uniform, uv, vec2, vec4 } from 'three/tsl';
 import {
@@ -180,6 +181,7 @@ interface Levels {
   glow: Texture;
 }
 
+/** What the chain blurs until Bloom sets a source: nothing, so the glow is empty. */
 const transparent = vec4(0, 0, 0, 0);
 
 /**
@@ -306,15 +308,19 @@ export interface BloomChain {
  * Create a chain. `radius` is how many of the levels join the glow, from 0
  * for the largest alone to 1 for all of them, as a node. Values outside
  * 0 to 1 clamp. `isOn` is asked once a frame, and the chain skips that
- * frame's draws when it returns false, which is how a glow nobody will see
- * costs nothing. Creating a chain allocates nothing on the GPU, so it is
+ * frame's draws when it returns false, so a glow nobody will see costs no
+ * draws. Creating a chain allocates nothing on the GPU, so it is
  * safe in a memo. `start` does.
  */
 export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => true): BloomChain {
   let built: Levels | null = null;
   let source: TSLValue = transparent;
+  // Set by `start`: fits the levels to a canvas size that changed since the
+  // last draw.
+  let fitToCanvas: (() => void) | null = null;
 
   const draw = () => {
+    fitToCanvas?.();
     if (!built || !isOn()) return;
     // Down the chain from the largest level, then back up from the
     // second-smallest. Each pass reads the one drawn just before it.
@@ -385,8 +391,7 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
       // resize-rebind gotcha in docs/agents/tsl.md), and the texel sizes
       // are written into the uniforms the filters already read. A canvas
       // that halves or doubles changes the number of levels, and the chain
-      // is built again. The frame request redraws a parked scene at the
-      // new size (the bare-uniform-write gotcha).
+      // is built again.
       const fit = ([width, height]: ResizeValue) => {
         const pixelRatio = renderer.getPixelRatio();
         const widthPx = width * pixelRatio;
@@ -411,13 +416,35 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
             ready.value = 1;
           }
         }
-        shaderContext.scheduler.requestRender();
       };
 
       fit(shaderContext.canvasSize.get());
-      const stopFitting = shaderContext.canvasSize.on('change', fit);
+      shaderContext.scheduler.requestRender();
+
+      // A later change of size waits for the chain's next draw. Resizing a
+      // target empties it, and the scene redraws in the same browser frame
+      // as the resize. three calls updateBefore once per browser frame, so
+      // when the loop has already drawn that frame, the redraw draws no
+      // chain, and an emptied target would show as a frame with no glow on
+      // every step of a window drag. Left alone, the targets keep the last
+      // frame's glow, stretched to the new canvas for that one redraw, as
+      // the scene pass keeps its own image. The frame request makes sure a
+      // draw follows, so a parked scene gets the glow at its new size (the
+      // bare-uniform-write gotcha in docs/agents/tsl.md).
+      let resizedTo: ResizeValue | null = null;
+
+      fitToCanvas = () => {
+        if (!resizedTo) return;
+        fit(resizedTo);
+        resizedTo = null;
+      };
+      const stopFitting = shaderContext.canvasSize.on('change', (size) => {
+        resizedTo = size;
+        shaderContext.scheduler.requestRender();
+      });
 
       return () => {
+        fitToCanvas = null;
         stopFitting();
         release();
       };

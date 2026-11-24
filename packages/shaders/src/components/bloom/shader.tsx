@@ -88,7 +88,7 @@ export interface BloomShaderProps {
  * knee, 1 at the threshold and above, and a smooth rise between. `color` is
  * a premultiplied rgba, so the result is too.
  */
-export function keepBright(color: TSLValue, threshold: FloatUniform): TSLValue {
+function keepBright(color: TSLValue, threshold: FloatUniform): TSLValue {
   // The scene texture is premultiplied: each color channel is already
   // scaled by alpha (the premultiplied-alpha gotcha in docs/agents/tsl.md).
   // So this luminance is already weighed by alpha. A half-transparent white

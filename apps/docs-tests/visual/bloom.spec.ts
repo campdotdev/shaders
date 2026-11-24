@@ -76,7 +76,7 @@ test('Bloom — the glow brightens the photo and darkens none of it', async ({ p
 });
 
 // At a strength of 0 the glow is multiplied by 0, so the canvas matches one
-// with no Bloom mounted at all, pixel for pixel.
+// with no Bloom mounted at all, within the 3 levels `compare` allows.
 test('Bloom — a strength of 0 matches the photo with no Bloom', async ({ page }) => {
   const without = await probePixels(page, '&bloom=none');
   const off = await probePixels(page, '&strength=0');

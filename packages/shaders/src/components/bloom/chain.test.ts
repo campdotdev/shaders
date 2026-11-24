@@ -165,13 +165,15 @@ describe('createBloomChain', () => {
   });
 
   // The source aims its reads at single canvas pixels with this.
+  // It follows a resize when the chain next draws, with the levels.
   it("reports the first level's texel size, and follows a resize", () => {
     const scene = makeScene();
-    const { chain } = startChain(scene);
+    const { chain, draw } = startChain(scene);
     const texel = chain.firstTexel.value;
 
     expect([texel.x, texel.y]).toEqual([1 / 800, 1 / 400]);
     scene.resizeCanvas([1600, 800, 2]);
+    draw();
 
     expect(chain.firstTexel.value).toBe(texel);
     expect([texel.x, texel.y]).toEqual([1 / 1600, 1 / 800]);
@@ -249,6 +251,22 @@ describe('createBloomChain', () => {
         [450, 225],
       ]);
       expect(scene.drawnInto).toEqual(before);
+    });
+
+    // A resize empties a target, and the scene's redraw after a resize
+    // may draw no chain, so the targets keep their size, and the last
+    // frame's glow, until the chain next draws.
+    it('leaves the targets as they are until the next draw', () => {
+      const scene = makeScene();
+      const { draw } = startChain(scene);
+
+      draw();
+      const sizes = () => scene.drawnInto.map((target) => [target.width, target.height]);
+      const before = sizes();
+
+      scene.resizeCanvas([900, 450, 2]);
+
+      expect(sizes()).toEqual(before);
     });
 
     it('builds the levels again when their number changes', () => {
