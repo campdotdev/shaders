@@ -6,10 +6,12 @@
 // `?still` holds the swells in place, and `?baseline` draws the
 // LinearGradient alone. `?shimmer` mounts HeatShimmer above Swells with its
 // band on Swells' horizon (SHA-344): its own cost is this page with the flag
-// less the page without it. Read after the intro lands, about 3 seconds in.
+// less the page without it. `?bloom` mounts Bloom on top at its defaults
+// (SHA-91), and its cost is read the same way. Read after the intro lands, about 3 seconds in.
 import { useState } from 'react';
 
 import {
+  Bloom,
   HeatShimmer,
   LinearGradient,
   ShaderMonitor,
@@ -36,6 +38,7 @@ interface Settings {
   still: boolean;
   baseline: boolean;
   shimmer: boolean;
+  bloom: boolean;
 }
 
 const readSettings = (): Settings => {
@@ -46,6 +49,7 @@ const readSettings = (): Settings => {
     still: search.has('still'),
     baseline: search.has('baseline'),
     shimmer: search.has('shimmer'),
+    bloom: search.has('bloom'),
   };
 };
 
@@ -64,24 +68,27 @@ function KeepDrawing() {
 const query = (dpr: number) => `?dpr=${dpr}`;
 
 export default function BenchmarkScene() {
-  const [{ pixelRatio, still, baseline, shimmer }] = useState(readSettings);
+  const [{ pixelRatio, still, baseline, shimmer, bloom }] = useState(readSettings);
 
   return (
     <div style={{ padding: 24, background: '#000', color: '#fff', minHeight: '100vh' }}>
       <p style={{ margin: '0 0 16px', font: '13px ui-monospace, monospace' }}>
         {baseline ? 'LinearGradient baseline' : 'Swells over a LinearGradient'}
         {still ? ' (swellSpeed 0)' : ''}
-        {shimmer ? ' under a HeatShimmer band on the horizon' : ''} at {WIDTH} × {HEIGHT} CSS px,
-        pixel ratio capped at {pixelRatio}x. <a href={query(1)}>1x</a> · <a href={query(2)}>2x</a> ·{' '}
+        {shimmer ? ' under a HeatShimmer band on the horizon' : ''}
+        {bloom ? ' under Bloom' : ''} at {WIDTH} × {HEIGHT} CSS px, pixel ratio capped at{' '}
+        {pixelRatio}x. <a href={query(1)}>1x</a> · <a href={query(2)}>2x</a> ·{' '}
         <a href={`${query(pixelRatio)}&still`}>still</a> ·{' '}
         <a href={`${query(pixelRatio)}&baseline`}>baseline</a> ·{' '}
-        <a href={`${query(pixelRatio)}&shimmer`}>shimmer</a>
+        <a href={`${query(pixelRatio)}&shimmer`}>shimmer</a> ·{' '}
+        <a href={`${query(pixelRatio)}&bloom`}>bloom</a>
       </p>
       <div style={{ position: 'relative', width: WIDTH, height: HEIGHT }}>
         <ShaderScene maxDPR={pixelRatio}>
           <LinearGradient />
           {baseline ? null : <Swells swellSpeed={still ? 0 : undefined} />}
           {shimmer ? <HeatShimmer band bandPosition={SWELLS_HORIZON} /> : null}
+          {bloom ? <Bloom /> : null}
           <KeepDrawing />
           <ShaderMonitor anchor="top-left" />
         </ShaderScene>
