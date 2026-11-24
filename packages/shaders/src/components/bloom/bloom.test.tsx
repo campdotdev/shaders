@@ -115,13 +115,14 @@ function makeSignal(initial: number) {
 }
 
 describe('Bloom', () => {
-  // The public shape so far: two optional dials, each a number or an
+  // The public shape: three optional dials, each a number or an
   // animation signal. pnpm typecheck runs this file too, so a missing
   // export or a narrowed prop fails there as well as here.
-  it('takes two animatable dials from the package root', () => {
+  it('takes three animatable dials from the package root', () => {
     expectTypeOf<BloomProps>().toEqualTypeOf<{
       threshold?: AnimatableProp<number>;
       radius?: AnimatableProp<number>;
+      strength?: AnimatableProp<number>;
     }>();
   });
 
@@ -136,7 +137,9 @@ describe('Bloom', () => {
   // Bloom reads the image beneath only through the sampler it is handed
   // (ADR 0010), so every resample beneath Bloom shapes the glow. The
   // chain's first level reads it four times per texel, once at each of the
-  // four canvas pixels the texel covers.
+  // four canvas pixels the texel covers. Building the resample makes those
+  // four reads, and each use of the sampler it returns makes one more, for
+  // the image the glow is added to.
   it('reads the image beneath through the sampler, four times, for the chain', () => {
     const scene = makeScene();
 
@@ -144,13 +147,21 @@ describe('Bloom', () => {
 
     const sampleBeneath = vi.fn<Sampler>(() => vec4(0.5, 0.5, 0.5, 1));
 
-    scene.resamples[0]!(sampleBeneath);
+    const sampler = scene.resamples[0]!(sampleBeneath);
 
     expect(sampleBeneath).toHaveBeenCalledTimes(4);
+
+    const coordinate = uv().add(0.1);
+
+    sampler(coordinate);
+
+    expect(sampleBeneath).toHaveBeenCalledTimes(5);
+    // Compared by identity: printing a node graph on a mismatch is slow.
+    expect(sampleBeneath.mock.lastCall?.[0] === coordinate).toBe(true);
   });
 
-  // The glow is read at the coordinate Bloom is asked for, so a UV warp
-  // mounted above Bloom moves the glow with the image.
+  // The glow is read at the coordinate Bloom is asked for, as the image
+  // is, so a UV warp mounted above Bloom moves the glow with the image.
   it('reads the glow at the coordinate it is given', () => {
     const scene = makeScene();
 
@@ -165,7 +176,10 @@ describe('Bloom', () => {
         reads.push((node as unknown as { uvNode: unknown }).uvNode);
     });
 
-    expect(reads).toEqual([coordinate]);
+    // The walk reaches the glow's read once for each place the output
+    // uses it, so every read it finds has to carry the coordinate.
+    expect(reads.length).toBeGreaterThan(0);
+    expect(reads.every((read) => read === coordinate)).toBe(true);
   });
 
   // The dial rides a uniform, so a new value rebuilds nothing on the output

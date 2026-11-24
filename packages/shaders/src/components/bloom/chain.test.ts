@@ -78,8 +78,8 @@ function drawNodeOf(glow: Node) {
 }
 
 /** A started chain, the function that draws it once, and the function that stops it. */
-function startChain(scene: ReturnType<typeof makeScene>) {
-  const chain = createBloomChain(float(0.5));
+function startChain(scene: ReturnType<typeof makeScene>, isOn?: () => boolean) {
+  const chain = createBloomChain(float(0.5), isOn);
   const glow = chain.glowAt(uv());
   const stop = chain.start(scene.shaderContext);
   const drawNode = drawNodeOf(glow);
@@ -175,6 +175,20 @@ describe('createBloomChain', () => {
 
     expect(chain.firstTexel.value).toBe(texel);
     expect([texel.x, texel.y]).toEqual([1 / 1600, 1 / 800]);
+  });
+
+  // Bloom turns the chain off at a strength of 0, where no one would see
+  // the glow, so the frame pays for none of its draws.
+  it("skips a frame's draws while it is off, and draws again once on", () => {
+    const scene = makeScene();
+    let on = false;
+    const { draw } = startChain(scene, () => on);
+
+    expect(draw()).toEqual([]);
+
+    on = true;
+
+    expect(draw()).toHaveLength(11);
   });
 
   it('restores the bound target after it draws', () => {

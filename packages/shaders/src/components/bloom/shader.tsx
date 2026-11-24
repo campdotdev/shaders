@@ -3,14 +3,13 @@
 // The bloom's GPU half: a resample that reads the image beneath it, keeps
 // only the light bright enough to bloom, and blurs that light through a
 // chain of smaller textures (./chain.ts). The wrapper (./bloom.tsx) supplies
-// the props. In this build phase the blurred light, the glow, is the whole
-// output, over black. The next phase adds it back over the image. ADR 0010
-// records why Bloom reads the image only through the sampler the output
+// the props. The blurred light, the glow, is then added back over the
+// image. ADR 0010 records why Bloom reads the image only through the sampler the output
 // stage hands it.
 import { useEffect, useMemo } from 'react';
 
 import type { ShaderNodeObject } from 'three/tsl';
-import { clamp, dot, float, max, type uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
+import { clamp, dot, float, max, min, type uniform, uv, vec2, vec3, vec4 } from 'three/tsl';
 import type { Node } from 'three/webgpu';
 
 import type { AnimatableProp } from '../../react/hooks/animatable-signal/animatable-signal.js';
@@ -71,6 +70,13 @@ export interface BloomShaderProps {
    * value or an animation signal.
    */
   radius: AnimatableProp<number>;
+  /**
+   * How much of the glow is added over the image. 0 adds none and leaves
+   * the image as it was, 1 adds the glow as the chain made it, and higher
+   * values add more. Negative values act as 0. Accepts a static value or
+   * an animation signal.
+   */
+  strength: AnimatableProp<number>;
 }
 
 // ---------------------------------------------
@@ -115,13 +121,14 @@ export function keepBright(color: TSLValue, threshold: FloatUniform): TSLValue {
   return color.mul(kept);
 }
 
-export function BloomShader({ threshold, radius }: BloomShaderProps) {
+export function BloomShader({ threshold, radius, strength }: BloomShaderProps) {
   const shaderContext = useShaderContext();
 
   // The dials live in uniforms, values the CPU writes and the GPU reads at
   // each draw, so changing them never rebuilds the output chain.
   const thresholdUniform = useAnimatableUniform<number>(threshold);
   const radiusUniform = useAnimatableUniform<number>(radius);
+  const strengthUniform = useAnimatableUniform<number>(strength);
 
   // ---------------------------------------------
   // The blur chain
@@ -130,7 +137,15 @@ export function BloomShader({ threshold, radius }: BloomShaderProps) {
   // hold them through a Strict Mode remount. The effect below allocates
   // the textures and releases them (the Strict Mode gotcha in
   // docs/agents/tsl.md).
-  const chain = useMemo(() => createBloomChain(float(radiusUniform)), [radiusUniform]);
+  //
+  // The second argument is asked once a frame, on the CPU, before the
+  // chain draws. A uniform's `.value` is the number the CPU last wrote, so
+  // at a strength of 0 the chain skips all its draws and Bloom costs one
+  // read of a stale texture, multiplied by 0.
+  const chain = useMemo(
+    () => createBloomChain(float(radiusUniform), () => strengthUniform.value > 0),
+    [radiusUniform, strengthUniform],
+  );
 
   useEffect(() => {
     if (!shaderContext) return;
@@ -178,12 +193,29 @@ export function BloomShader({ threshold, radius }: BloomShaderProps) {
           .mul(0.25),
       );
 
-      // TEMPORARY (build phase 2): show the glow alone, over opaque black.
-      // The glow is read at the coordinate Bloom is asked for, so a UV warp
-      // mounted above Bloom moves it.
-      return (coordinate) => vec4(chain.glowAt(coordinate).rgb, 1);
+      // The output: the image, plus the glow scaled by `strength`. Both
+      // are read at the coordinate Bloom is asked for, so a UV warp mounted
+      // above Bloom moves the image and its glow together.
+      return (coordinate) => {
+        const image = vec4(sampleBeneath(coordinate));
+        const glow = vec4(chain.glowAt(coordinate)).mul(max(strengthUniform, 0));
+
+        // Light adds. Two lamps on one wall are brighter than either, so
+        // the glow's color goes on top of the image's with a plain sum.
+        // The sum can pass 1, and the screen clips it to white there,
+        // which is what a camera does to light it cannot hold.
+        //
+        // Alpha takes the same sum, capped at 1. The glow's alpha is the
+        // blurred alpha of the light that bloomed, so where the glow lands
+        // on a transparent part of the scene it brings its own coverage
+        // and shows over the page behind the canvas. Both values are
+        // premultiplied, so color and alpha stay matched when they add
+        // (the premultiplied-alpha gotcha in docs/agents/tsl.md). Alpha
+        // past 1 has no meaning to the browser, hence the cap.
+        return vec4(image.rgb.add(glow.rgb), min(image.a.add(glow.a), 1));
+      };
     },
-    [chain, thresholdUniform],
+    [chain, thresholdUniform, strengthUniform],
   );
 
   return null;

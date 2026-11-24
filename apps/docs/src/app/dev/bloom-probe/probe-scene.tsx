@@ -8,12 +8,14 @@
 // what a threshold above 1 keeps.
 import { useState } from 'react';
 
-import { Bloom, ShaderScene, Swells } from '@camp-dev/shaders';
+import { Bloom, ShaderMonitor, ShaderScene, Swells } from '@camp-dev/shaders';
 
 import neonMotel from '@/components/photo/neon-motel.webp';
 import { PhotoSource, usePhoto } from '@/components/photo/photo-source';
 
-// ?bloom=none drops Bloom, to compare against the image alone.
+// ?bloom=none drops Bloom, to compare against the image alone. The monitor
+// in the corner shows the scene's GPU time per frame, so the same page with
+// and without Bloom gives Bloom's cost.
 
 /** A value from the page's query string, or null when it is absent. */
 function query(name: string): string | null {
@@ -48,6 +50,7 @@ function Slider({ label, max, value, onChange }: SliderProps) {
 export default function ProbeScene() {
   const [threshold, setThreshold] = useState(0.7);
   const [radius, setRadius] = useState(0.5);
+  const [strength, setStrength] = useState(0.5);
   // The scene mounts once the photo has decoded, so its first frame
   // already shows it.
   const photo = usePhoto(neonMotel);
@@ -59,7 +62,10 @@ export default function ProbeScene() {
     <div style={{ width: '100vw', height: '100vh', background: '#000' }}>
       <ShaderScene>
         {overSwells ? <Swells /> : <PhotoSource photo={photo} />}
-        {query('bloom') !== 'none' && <Bloom radius={radius} threshold={threshold} />}
+        {query('bloom') !== 'none' && (
+          <Bloom radius={radius} strength={strength} threshold={threshold} />
+        )}
+        <ShaderMonitor anchor="bottom-right" />
       </ShaderScene>
       <div
         style={{
@@ -77,6 +83,7 @@ export default function ProbeScene() {
       >
         <Slider label="threshold" max={2} onChange={setThreshold} value={threshold} />
         <Slider label="radius" max={1} onChange={setRadius} value={radius} />
+        <Slider label="strength" max={3} onChange={setStrength} value={strength} />
       </div>
     </div>
   );

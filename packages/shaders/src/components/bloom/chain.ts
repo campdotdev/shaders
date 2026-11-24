@@ -305,15 +305,17 @@ export interface BloomChain {
 /**
  * Create a chain. `radius` is how many of the levels join the glow, from 0
  * for the largest alone to 1 for all of them, as a node. Values outside
- * 0 to 1 clamp. Creating it allocates nothing on the GPU, so it is safe in
- * a memo. `start` does.
+ * 0 to 1 clamp. `isOn` is asked once a frame, and the chain skips that
+ * frame's draws when it returns false, which is how a glow nobody will see
+ * costs nothing. Creating a chain allocates nothing on the GPU, so it is
+ * safe in a memo. `start` does.
  */
-export function createBloomChain(radius: TSLValue): BloomChain {
+export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => true): BloomChain {
   let built: Levels | null = null;
   let source: TSLValue = transparent;
 
   const draw = () => {
-    if (!built) return;
+    if (!built || !isOn()) return;
     // Down the chain from the largest level, then back up from the
     // second-smallest. Each pass reads the one drawn just before it.
     for (const level of built.levels) level.down.render();
