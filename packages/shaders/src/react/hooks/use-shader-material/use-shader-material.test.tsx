@@ -1,10 +1,15 @@
 import { renderHook } from '@testing-library/react';
 import { vec3 } from 'three/tsl';
-import { describe, expect, it } from 'vitest';
+import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useShaderMaterial } from './use-shader-material.js';
 
 describe('useShaderMaterial', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('returns a MeshBasicNodeMaterial with colorNode set', () => {
     const { result } = renderHook(() => useShaderMaterial(() => vec3(1, 0, 0)));
 
@@ -25,6 +30,19 @@ describe('useShaderMaterial', () => {
     };
     unmount();
     expect(disposed).toBe(true);
+  });
+
+  it('returns a material that is not disposed after a Strict Mode remount', () => {
+    // Strict Mode mounts, cleans up, and mounts the effects again while it
+    // keeps the memoized material. The material the hook hands back after
+    // that cycle must still be live, or the user's mesh draws with a
+    // disposed one.
+    const disposeSpy = vi.spyOn(MeshBasicNodeMaterial.prototype, 'dispose');
+    const { result } = renderHook(() => useShaderMaterial(() => vec3(1, 0, 0)), {
+      reactStrictMode: true,
+    });
+
+    expect(disposeSpy.mock.instances).not.toContain(result.current);
   });
 
   it('rebuilds the material when the build function reference changes', () => {
