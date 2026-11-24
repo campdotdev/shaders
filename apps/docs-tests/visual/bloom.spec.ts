@@ -7,8 +7,8 @@ import { type CanvasPixels, readCanvasPixels, waitForShader } from './helpers';
 // Chromium runs. The probe checks below need no baseline: they compare loads
 // of /dev/bloom-probe with each other, to check that the glow adds light,
 // that it only adds, that a strength of 0 leaves the photo alone, that a
-// wider radius reaches further, and that a threshold no pixel passes blooms
-// nothing.
+// wider radius reaches further, that a threshold no pixel passes blooms
+// nothing, and that the glow holds the same light at 1x and at 2x.
 
 test('Bloom — default story', async ({ page }) => {
   await page.goto('/components/bloom?visualTest=1');
@@ -106,4 +106,51 @@ test('Bloom — a threshold no pixel passes blooms nothing', async ({ page }) =>
   const { brighter, darker } = compare(without, high);
 
   expect(brighter + darker).toBe(0);
+});
+
+// ---------------------------------------------
+// The same glow at any pixel density
+// ---------------------------------------------
+
+/** The light Bloom adds: the mean rise in red, green, and blue per pixel. */
+function addedLight(without: CanvasPixels, bloomed: CanvasPixels): number {
+  let added = 0;
+
+  for (let y = 0; y < without.height; y++) {
+    for (let x = 0; x < without.width; x++) {
+      const [red, green, blue] = without.rgb(x, y);
+      const [nextRed, nextGreen, nextBlue] = bloomed.rgb(x, y);
+
+      added += nextRed + nextGreen + nextBlue - (red + green + blue);
+    }
+  }
+
+  return added / (without.width * without.height);
+}
+
+// The glow's levels join it by their size as a share of the canvas, so a
+// canvas with twice the pixels adds the same light. A threshold of 0 blooms
+// everything, which makes the added light the photo's own light times the
+// levels' weights, and the low strength keeps the sum from clipping at
+// white. A chain that counted its levels from the finest one added a sixth
+// more light here at 2x, because the taller canvas has one more level.
+test('Bloom — the glow adds the same light at 1x and at 2x', async ({ page, browser }) => {
+  const dials = '&threshold=0&radius=1&strength=0.2';
+  const atOne = addedLight(await probePixels(page, '&bloom=none'), await probePixels(page, dials));
+
+  const context = await browser.newContext({
+    viewport: { width: 1280, height: 720 },
+    deviceScaleFactor: 2,
+  });
+  const densePage = await context.newPage();
+  const atTwo = addedLight(
+    await probePixels(densePage, '&bloom=none'),
+    await probePixels(densePage, dials),
+  );
+
+  await context.close();
+
+  expect(atOne).toBeGreaterThan(1);
+  expect(atTwo / atOne).toBeGreaterThan(0.95);
+  expect(atTwo / atOne).toBeLessThan(1.05);
 });
