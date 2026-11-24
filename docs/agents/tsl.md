@@ -42,6 +42,8 @@ For the aspect ratio, use `useAspectUniform`. It exists because twelve component
 
 Create, attach, and dispose in one `useEffect`. `react/hooks/use-cursor/use-cursor.ts` is the canonical pattern.
 
+When the value has to be usable on the first render, as `useShaderMaterial`'s material does, the effect cannot create it. Build it in render, and have the effect replace it when a remount finds its instance disposed. `react/hooks/use-shader-material/use-shader-material.ts` shows the shape: the cleanup records the material it disposed, and the next mount of that same material bumps a generation that the memo depends on.
+
 ## Write TSL math that compiles correctly
 
 ### The vec-uniform gotcha: pass vec uniforms as arguments, never as chained receivers
