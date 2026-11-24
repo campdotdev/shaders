@@ -367,6 +367,26 @@ describe('createBloomChain', () => {
     expect(onDispose).toHaveBeenCalledOnce();
   });
 
+  // Strict Mode stops a chain and starts the same one again. Without
+  // half-float targets the second start builds no levels, so the output
+  // keeps sampling the stand-in the first stop disposed. three uploads a
+  // texture it dropped only once its version moves.
+  it('marks the stand-in for upload again when it starts after a stop', () => {
+    const scene = makeScene({ noFloatTargets: true });
+    const chain = createBloomChain(float(0.5));
+    let standIn: { version: number } | undefined;
+
+    chain.glowAt(uv()).traverse((node) => {
+      if ('passNode' in node) standIn = (node as unknown as { value: typeof standIn }).value;
+    });
+    chain.start(scene.shaderContext)();
+    const versionAtStop = standIn?.version ?? 0;
+
+    chain.start(scene.shaderContext);
+
+    expect(standIn?.version).toBeGreaterThan(versionAtStop);
+  });
+
   // Without half-float targets Bloom has no glow, and the image passes
   // through unchanged.
   it('builds nothing on a renderer that cannot draw into half-float targets', () => {

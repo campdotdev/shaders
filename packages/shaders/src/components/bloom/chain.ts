@@ -439,6 +439,13 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
     start(shaderContext) {
       const renderer = shaderContext.renderer.three;
 
+      // An earlier stop disposed the stand-in, which drops three's record of
+      // it but leaves its version as it was, so a sampler still bound to it
+      // never asks for a new upload. A start that builds no levels, such as
+      // Strict Mode's second start on a renderer without half-float targets,
+      // keeps sampling it. Bumping the version makes three upload it again.
+      standIn.needsUpdate = true;
+
       const release = () => {
         if (!built) return;
         for (const level of built.levels) {
@@ -528,7 +535,8 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
         // A shader that samples the stand-in gives it a GPU texture, and
         // three frees a texture it only samples when the texture itself is
         // disposed. Its render target was never drawn into, so disposing
-        // the target would free nothing. A later start uploads it again.
+        // the target would free nothing. A later start marks it for upload
+        // again.
         standIn.dispose();
       };
     },
