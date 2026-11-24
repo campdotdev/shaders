@@ -11,4 +11,4 @@ implement = ["tdd"]
 finish = []
 
 [check]
-review = ["standards-review", "ponytail-review"]
+review = ["code-review", "ponytail-review"]
