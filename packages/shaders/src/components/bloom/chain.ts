@@ -181,6 +181,16 @@ interface Levels {
   glow: Texture;
 }
 
+/**
+ * Set `texel` to one texel of what `pass` draws into, at the size it was
+ * allocated. createTexturePass clamps each side to the device's limit, so
+ * on a very wide or tall canvas a level is smaller than levelSize asks
+ * for, and the filters' reads have to step by the texels it really has.
+ */
+function fitTexel(texel: Vector2, pass: TexturePass): void {
+  texel.set(1 / pass.width, 1 / pass.height);
+}
+
 /** What the chain blurs until Bloom sets a source: nothing, so the glow is empty. */
 const transparent = vec4(0, 0, 0, 0);
 
@@ -226,13 +236,15 @@ function buildLevels(
   // Down: level 0 draws the bright parts at half the canvas's size, and
   // each level after shrinks the one before.
   for (let index = 0; index < count; index += 1) {
-    const [width, height] = levelSize(widthPx, heightPx, index);
     const above = levels.at(-1);
     const down = createPass(above ? shrink(above.shrunk, uniform(above.texel)) : source, index);
     const shrunk = down.texture;
 
     if (shrunk === null) return fail();
-    levels.push({ down, shrunk, up: null, texel: new Vector2(1 / width, 1 / height) });
+    const texel = new Vector2();
+
+    fitTexel(texel, down);
+    levels.push({ down, shrunk, up: null, texel });
   }
 
   // Up: from the second-smallest level to the largest, add the summed
@@ -396,9 +408,6 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
         const pixelRatio = renderer.getPixelRatio();
         const widthPx = width * pixelRatio;
         const heightPx = height * pixelRatio;
-        const [firstWidth, firstHeight] = levelSize(widthPx, heightPx, 0);
-
-        firstTexelSize.set(1 / firstWidth, 1 / firstHeight);
 
         if (built?.levels.length === levelCount(heightPx)) {
           for (const [index, level] of built.levels.entries()) {
@@ -406,7 +415,7 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
 
             level.down.resize(levelWidth, levelHeight);
             level.up?.resize(levelWidth, levelHeight);
-            level.texel.set(1 / levelWidth, 1 / levelHeight);
+            fitTexel(level.texel, level.down);
           }
         } else {
           release();
@@ -415,6 +424,18 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
             glowTexture.value = built.glow;
             ready.value = 1;
           }
+        }
+
+        // The first level's texel, as allocated. Without a chain there is no
+        // glow to aim at, so the size it would have had stands in.
+        const first = built?.levels[0];
+
+        if (first) {
+          firstTexelSize.copy(first.texel);
+        } else {
+          const [firstWidth, firstHeight] = levelSize(widthPx, heightPx, 0);
+
+          firstTexelSize.set(1 / firstWidth, 1 / firstHeight);
         }
       };
 

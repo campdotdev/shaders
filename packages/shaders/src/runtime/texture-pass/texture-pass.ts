@@ -61,6 +61,13 @@ export interface TexturePass {
    * consumer then works the value out inline instead.
    */
   readonly texture: Texture | null;
+  /**
+   * The texture's width in texels, as allocated: the requested width,
+   * clamped to the device's limit. 0 while `texture` is null.
+   */
+  readonly width: number;
+  /** The texture's height in texels, clamped the same way. 0 while `texture` is null. */
+  readonly height: number;
   /** Draw the node into the texture, once per call. */
   render: () => void;
   /**
@@ -84,6 +91,8 @@ export interface TexturePass {
 // nothing behind it, whose null texture tells the consumer to fall back.
 const inertPass: TexturePass = {
   texture: null,
+  width: 0,
+  height: 0,
   render: () => {
     // No target to draw into.
   },
@@ -180,6 +189,14 @@ export function createTexturePass(
       alive();
 
       return target?.texture ?? null;
+    },
+
+    get width() {
+      return alive() && target !== null ? target.width : 0;
+    },
+
+    get height() {
+      return alive() && target !== null ? target.height : 0;
     },
 
     // Bind the target, draw the quad into it, and put back whatever target

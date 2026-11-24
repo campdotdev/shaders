@@ -291,9 +291,11 @@ describe('resize', () => {
     });
 
     expect(pass.texture?.image).toMatchObject({ width: limit, height: 1 });
+    expect([pass.width, pass.height]).toEqual([limit, 1]);
 
     pass.resize(limit * 2, limit + 10);
     expect(pass.texture?.image).toMatchObject({ width: limit, height: limit });
+    expect([pass.width, pass.height]).toEqual([limit, limit]);
 
     pass.resize(limit - 1, 1);
     expect(pass.texture?.image).toMatchObject({ width: limit - 1, height: 1 });

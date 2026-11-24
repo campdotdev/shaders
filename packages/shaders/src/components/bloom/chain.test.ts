@@ -18,6 +18,8 @@ import { createBloomChain, levelCount, levelSize } from './chain.js';
 interface SceneOptions {
   /** Whether the WebGL2 fallback lacks the extension for float targets. */
   noFloatTargets?: boolean;
+  /** The longest texture side the WebGPU device allows, in texels. */
+  maxSide?: number;
 }
 
 /**
@@ -25,7 +27,7 @@ interface SceneOptions {
  * 2, so 1600 by 800 device pixels, and can be resized by hand. The renderer
  * remembers every target a draw was bound to.
  */
-function makeScene({ noFloatTargets = false }: SceneOptions = {}) {
+function makeScene({ noFloatTargets = false, maxSide }: SceneOptions = {}) {
   let boundTarget: RenderTarget | null = null;
   const drawnInto: RenderTarget[] = [];
   const listeners = new Set<(value: ResizeValue) => void>();
@@ -39,7 +41,12 @@ function makeScene({ noFloatTargets = false }: SceneOptions = {}) {
       boundTarget = target;
     }),
     getRenderTarget: vi.fn(() => boundTarget),
-    backend: noFloatTargets ? { isWebGLBackend: true, extensions: { has: () => false } } : {},
+    backend: noFloatTargets
+      ? { isWebGLBackend: true, extensions: { has: () => false } }
+      : {
+          device:
+            maxSide === undefined ? undefined : { limits: { maxTextureDimension2D: maxSide } },
+        },
   } as unknown as WebGPURenderer;
   const scheduler = { requestRender: vi.fn(() => true) };
   const shaderContext = {
@@ -177,6 +184,29 @@ describe('createBloomChain', () => {
 
     expect(chain.firstTexel.value).toBe(texel);
     expect([texel.x, texel.y]).toEqual([1 / 1600, 1 / 800]);
+  });
+
+  // createTexturePass clamps a side past the device's limit, so the
+  // filters have to step by the texels the level really has.
+  it('sizes the texels to a level the device limit clamped', () => {
+    const scene = makeScene({ maxSide: 512 });
+    const { chain, draw } = startChain(scene);
+    const texel = chain.firstTexel.value;
+
+    expect(draw()[0]).toEqual([512, 400]);
+    expect([texel.x, texel.y]).toEqual([1 / 512, 1 / 400]);
+  });
+
+  it('sizes the texels to the clamped level after a resize', () => {
+    const scene = makeScene({ maxSide: 1024 });
+    const { chain, draw } = startChain(scene);
+    const texel = chain.firstTexel.value;
+
+    expect([texel.x, texel.y]).toEqual([1 / 800, 1 / 400]);
+    scene.resizeCanvas([1200, 400, 2]);
+
+    expect(draw()[0]).toEqual([1024, 400]);
+    expect([texel.x, texel.y]).toEqual([1 / 1024, 1 / 400]);
   });
 
   // Bloom turns the chain off at a strength of 0, where no one would see
