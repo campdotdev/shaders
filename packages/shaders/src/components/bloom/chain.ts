@@ -81,14 +81,18 @@ export function firstLevelScale(heightPx: number): number {
 /**
  * How many levels the chain builds for a canvas this many device pixels
  * tall: the number of times the height halves before it would drop below
- * COARSEST_HEIGHT, kept between 1 and MAX_LEVELS. A canvas 1392 pixels tall
+ * COARSEST_HEIGHT, kept between 2 and MAX_LEVELS. A canvas 1392 pixels tall
  * gets 7, the smallest about 11 texels tall. Doubling the canvas adds one
  * level, so the glow keeps its size as a share of the canvas.
+ *
+ * The least is 2 because a level's weight goes on in an up pass, and a
+ * chain of one level has no up pass. A canvas under 32 pixels tall would
+ * otherwise show its one level at full strength, whatever `radius` is.
  */
 export function levelCount(heightPx: number): number {
   const halvings = Math.floor(Math.log2(Math.max(heightPx, 1) / COARSEST_HEIGHT));
 
-  return Math.min(MAX_LEVELS, Math.max(1, halvings));
+  return Math.min(MAX_LEVELS, Math.max(2, halvings));
 }
 
 /**

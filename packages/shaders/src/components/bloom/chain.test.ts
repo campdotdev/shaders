@@ -111,9 +111,10 @@ describe('levelCount', () => {
     expect(levelCount(1600)).toBe(levelCount(800) + 1);
   });
 
-  it('builds at least 1 level and at most 8', () => {
-    expect(levelCount(0)).toBe(1);
-    expect(levelCount(10)).toBe(1);
+  it('builds at least 2 levels, so every level has an up pass to weight it, and at most 8', () => {
+    expect(levelCount(0)).toBe(2);
+    expect(levelCount(10)).toBe(2);
+    expect(levelCount(31)).toBe(2);
     expect(levelCount(100_000)).toBe(8);
   });
 });
@@ -188,6 +189,20 @@ describe('createBloomChain', () => {
 
   // The source aims its reads at single canvas pixels with this.
   // It follows a resize when the chain next draws, with the levels.
+  it('draws an up pass on a canvas too short to halve twice, so its glow is weighted', () => {
+    const scene = makeScene();
+    const { draw } = startChain(scene);
+
+    // 16 by 10 device pixels: two levels down, then the first level's up pass.
+    scene.resizeCanvas([8, 5, 2]);
+
+    expect(draw()).toEqual([
+      [8, 5],
+      [4, 3],
+      [8, 5],
+    ]);
+  });
+
   it("reports the first level's texel size, and follows a resize", () => {
     const scene = makeScene();
     const { chain, draw } = startChain(scene);
