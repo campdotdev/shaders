@@ -330,6 +330,28 @@ describe('createBloomChain', () => {
     expect(scene.listeners.size).toBe(0);
   });
 
+  // The output shader samples the stand-in until the chain builds, and for
+  // good on a renderer without half-float targets, so three gives it a GPU
+  // texture that only its dispose frees.
+  it.each([
+    ['after a built chain', {}],
+    ['on a renderer without half-float targets', { noFloatTargets: true }],
+  ] as const)('releases the stand-in when it stops, %s', (_name, options) => {
+    const scene = makeScene(options);
+    const chain = createBloomChain(float(0.5));
+    let standIn: { addEventListener: (type: 'dispose', listener: () => void) => void } | undefined;
+
+    chain.glowAt(uv()).traverse((node) => {
+      if ('passNode' in node) standIn = (node as unknown as { value: typeof standIn }).value;
+    });
+    const onDispose = vi.fn();
+
+    standIn?.addEventListener('dispose', onDispose);
+    chain.start(scene.shaderContext)();
+
+    expect(onDispose).toHaveBeenCalledOnce();
+  });
+
   // Without half-float targets Bloom has no glow, and the image passes
   // through unchanged.
   it('builds nothing on a renderer that cannot draw into half-float targets', () => {

@@ -468,6 +468,11 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
         fitToCanvas = null;
         stopFitting();
         release();
+        // A shader that samples the stand-in gives it a GPU texture, and
+        // three frees a texture it only samples when the texture itself is
+        // disposed. Its render target was never drawn into, so disposing
+        // the target would free nothing. A later start uploads it again.
+        standIn.dispose();
       };
     },
   };
