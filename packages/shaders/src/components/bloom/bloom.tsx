@@ -22,9 +22,10 @@ export interface BloomProps {
    * bright parts, and 1 lets it reach about a third of the canvas's
    * height. The glow stays as bright against the light at every radius,
    * and a higher one adds the wide, faint part. The glow scales with the
-   * canvas, so a small scene and a large one glow in the same proportion.
-   * Values outside 0 to 1 clamp. Defaults to 0.5. Accepts a static value
-   * or an animation signal.
+   * canvas, so a small scene and a large one glow in the same proportion,
+   * and it holds the same light on a 1x display and a 2x one. Values
+   * outside 0 to 1 clamp. Defaults to 0.5. Accepts a static value or an
+   * animation signal.
    */
   radius?: AnimatableProp<number>;
   /**

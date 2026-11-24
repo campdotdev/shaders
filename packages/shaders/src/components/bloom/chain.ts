@@ -9,7 +9,7 @@
 // takes the scene's context only for its renderer, its canvas size, and
 // its scheduler.
 import type { ShaderNodeObject } from 'three/tsl';
-import { clamp, passTexture, texture, uniform, uv, vec2, vec4 } from 'three/tsl';
+import { clamp, float, passTexture, texture, uniform, uv, vec2, vec4 } from 'three/tsl';
 import {
   HalfFloatType,
   LinearFilter,
@@ -48,6 +48,35 @@ const COARSEST_HEIGHT = 8;
  * tall, and a taller canvas gets a glow that is narrower for its size.
  */
 const MAX_LEVELS = 8;
+
+/**
+ * The two ends of the glow, as scales. A level's scale is the log2 of its
+ * height in texels, so a level 256 texels tall is at scale 8, and one
+ * step down in scale is one halving. A scale names a blur width as a share
+ * of the canvas, whatever the canvas's resolution: one texel at scale 8 is
+ * 1/256 of the canvas's height on a small canvas and on a large one.
+ *
+ * The glow is the band of scales from FINEST_SCALE down to where `radius`
+ * puts the other end, and COARSEST_SCALE is that end at a radius of 1.
+ * Levels finer than the band still exist on a tall canvas, because the
+ * chain has to halve its way down to the band, but they add nothing to
+ * the glow. That is what makes the glow the same on a 1x and a 2x display.
+ *
+ * Raising FINEST_SCALE adds a tighter, hotter rim, and canvases shorter
+ * than 2 ** (FINEST_SCALE + 1) device pixels then lose part of it.
+ * COARSEST_SCALE is one above the scale of COARSEST_HEIGHT, so the
+ * smallest level fades in as the canvas grows instead of switching on.
+ */
+const FINEST_SCALE = 8;
+const COARSEST_SCALE = Math.log2(COARSEST_HEIGHT) + 1;
+
+/**
+ * The scale of the chain's first level on a canvas this many device pixels
+ * tall: the log2 of half the height. Level `index` is `index` scales below.
+ */
+export function firstLevelScale(heightPx: number): number {
+  return Math.log2(Math.max(heightPx, 1)) - 1;
+}
 
 /**
  * How many levels the chain builds for a canvas this many device pixels
@@ -202,6 +231,7 @@ function buildLevels(
   renderer: WebGPURenderer,
   source: TSLValue,
   radius: TSLValue,
+  firstScale: TSLValue,
   widthPx: number,
   heightPx: number,
 ): Levels | null {
@@ -249,7 +279,7 @@ function buildLevels(
 
   // Up: from the second-smallest level to the largest, add the summed
   // level below, read through the tent, to each level's own shrunk image.
-  // The glow is then the sum of every level: a narrow blur, plus one twice
+  // The glow is then the sum of the levels: a narrow blur, plus one twice
   // as wide, plus one twice as wide again.
   //
   // The sum is what gives the glow its shape. Each level holds the same
@@ -261,28 +291,48 @@ function buildLevels(
   // ends at an edge. Nothing divides the sum, so a wider glow holds more
   // light, and its hot center stays as bright as it was.
   //
-  // `radius` sets how many levels join the sum. At 0 the glow is level 0
-  // alone, a tight rim. As it rises, each wider level fades in after the
-  // one above it, and at 1 they all count in full. `reach` is the radius in
-  // levels, and the share a level adds is how far `reach` has passed the
-  // level above it, kept within 0..1. clamp is a plain GPU function, so
-  // the dial moves without rebuilding anything.
-  const reach = clamp(radius, 0, 1).mul(count - 1);
-  let below: { image: Texture; texel: Vector2 } | null = null;
+  // Each level joins the sum by a weight, and the weight depends only on
+  // the level's scale (see FINEST_SCALE), never on its index. A level
+  // inside the band counts in full. At each end of the band the weight
+  // falls to 0 over one scale, in a straight line. The levels sit one
+  // scale apart, so as the canvas grows and every level's scale slides up,
+  // the weight one level loses on a ramp is the weight its neighbor gains,
+  // and the sum of the weights never changes. So the glow holds the same
+  // light at every resolution, and no level ever switches on or off.
+  //
+  // `radius` moves the band's coarse end, from FINEST_SCALE at 0, where
+  // the band is one scale wide, to COARSEST_SCALE at 1. clamp is a plain
+  // GPU function, so the dial moves without rebuilding anything.
+  const coarseEnd = clamp(radius, 0, 1)
+    .mul(COARSEST_SCALE - FINEST_SCALE)
+    .add(FINEST_SCALE);
+  const weightAt = (index: number): TSLValue => {
+    const scale = firstScale.sub(index);
+    const fadeIn = clamp(scale.sub(coarseEnd).add(1), 0, 1);
+    const fadeOut = clamp(float(FINEST_SCALE + 1).sub(scale), 0, 1);
+
+    return fadeIn.mul(fadeOut);
+  };
+  // The smallest level has nothing below it to add, so no pass sums it,
+  // and its weight goes on where the level above reads it. Every other
+  // level's weight goes on in its own pass, so the sum below it reads as 1.
+  let below: { image: Texture; texel: Vector2; weight: TSLValue } | null = null;
 
   for (const [index, level] of [...levels.entries()].reverse()) {
     if (below === null) {
-      below = { image: level.shrunk, texel: level.texel };
+      below = { image: level.shrunk, texel: level.texel, weight: weightAt(index) };
       continue;
     }
-    const own = vec4(texture(level.shrunk, uv()));
-    const share = clamp(reach.sub(index), 0, 1);
-    const up = createPass(own.add(tent(below.image, uniform(below.texel)).mul(share)), index);
+    const own = vec4(texture(level.shrunk, uv())).mul(weightAt(index));
+    const up = createPass(
+      own.add(tent(below.image, uniform(below.texel)).mul(below.weight)),
+      index,
+    );
     const summed = up.texture;
 
     if (summed === null) return fail();
     level.up = up;
-    below = { image: summed, texel: level.texel };
+    below = { image: summed, texel: level.texel, weight: float(1) };
   }
 
   return below ? { levels, glow: below.image } : fail();
@@ -317,9 +367,9 @@ export interface BloomChain {
 }
 
 /**
- * Create a chain. `radius` is how many of the levels join the glow, from 0
- * for the largest alone to 1 for all of them, as a node. Values outside
- * 0 to 1 clamp. `isOn` is asked once a frame, and the chain skips that
+ * Create a chain. `radius` is how far the glow's band of scales reaches
+ * toward the wide end, from 0 for the finest scale alone to 1 for all of
+ * them, as a node. Values outside 0 to 1 clamp. `isOn` is asked once a frame, and the chain skips that
  * frame's draws when it returns false, so a glow nobody will see costs no
  * draws. Creating a chain allocates nothing on the GPU, so it is
  * safe in a memo. `start` does.
@@ -371,6 +421,11 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
   const firstTexelSize = new Vector2(1, 1);
   const firstTexel = uniform(firstTexelSize);
 
+  // The first level's scale, which every level's weight is worked out
+  // from. It follows the canvas's height, so a resize moves the weights
+  // without rebuilding a pass.
+  const firstScale = uniform(0);
+
   return {
     setSource(nextSource) {
       source = nextSource;
@@ -409,6 +464,8 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
         const widthPx = width * pixelRatio;
         const heightPx = height * pixelRatio;
 
+        firstScale.value = firstLevelScale(heightPx);
+
         if (built?.levels.length === levelCount(heightPx)) {
           for (const [index, level] of built.levels.entries()) {
             const [levelWidth, levelHeight] = levelSize(widthPx, heightPx, index);
@@ -419,7 +476,7 @@ export function createBloomChain(radius: TSLValue, isOn: () => boolean = () => t
           }
         } else {
           release();
-          built = buildLevels(renderer, source, radius, widthPx, heightPx);
+          built = buildLevels(renderer, source, radius, float(firstScale), widthPx, heightPx);
           if (built) {
             glowTexture.value = built.glow;
             ready.value = 1;

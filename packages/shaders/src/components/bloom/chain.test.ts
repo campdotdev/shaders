@@ -13,7 +13,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import type { ShaderContextValue } from '../../react/context/shader-context.js';
 import type { ResizeValue } from '../../react/hooks/use-resize/use-resize.js';
-import { createBloomChain, levelCount, levelSize } from './chain.js';
+import { createBloomChain, firstLevelScale, levelCount, levelSize } from './chain.js';
 
 interface SceneOptions {
   /** Whether the WebGL2 fallback lacks the extension for float targets. */
@@ -127,6 +127,21 @@ describe('levelSize', () => {
 
   it('never goes below one texel a side', () => {
     expect(levelSize(3, 3, 6)).toEqual([1, 1]);
+  });
+});
+
+// A level's scale is the log2 of its height in texels. The glow's weights
+// are worked out from it, so the glow keeps its size as a share of the
+// canvas at any resolution.
+describe('firstLevelScale', () => {
+  it('is the log2 of half the canvas height', () => {
+    expect(firstLevelScale(512)).toBe(8);
+    expect(firstLevelScale(1024)).toBe(9);
+    expect(firstLevelScale(1392)).toBeCloseTo(9.443, 3);
+  });
+
+  it('stays finite on a canvas with no height', () => {
+    expect(firstLevelScale(0)).toBe(-1);
   });
 });
 
