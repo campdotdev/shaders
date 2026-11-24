@@ -28,6 +28,11 @@ export const COMPONENTS = {
       'Soft gooey blobs. Colored metaballs drifting around the center, merging and splitting over a transparent background.',
     category: 'scenes',
   },
+  bloom: {
+    description:
+      'Light that spills from the bright parts of the scene. Whatever is brighter than a threshold glows, tight against the light and fading out wide. Stacks on top of any Source inside <ShaderScene>.',
+    category: 'lens-film',
+  },
   'conic-gradient': {
     description:
       'A color ramp sweeping clockwise around a center point, with pinwheel repeats and rotation. Completes the CSS gradient trio with LinearGradient and RadialGradient.',
