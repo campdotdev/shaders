@@ -69,9 +69,9 @@ function Slider({ label, max, value, onChange }: SliderProps) {
 }
 
 export default function ProbeScene() {
-  const [threshold, setThreshold] = useState(() => queryNumber('threshold', 0.7));
+  const [threshold, setThreshold] = useState(() => queryNumber('threshold', 0.3));
   const [radius, setRadius] = useState(() => queryNumber('radius', 0.5));
-  const [strength, setStrength] = useState(() => queryNumber('strength', 0.5));
+  const [strength, setStrength] = useState(() => queryNumber('strength', 0.7));
   // The scene mounts once the photo has decoded, so its first frame
   // already shows it.
   const photo = usePhoto(neonMotel);

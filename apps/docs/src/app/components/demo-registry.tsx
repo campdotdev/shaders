@@ -103,9 +103,10 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
       <>
         <p>
           Bloom adds light, so it shows only where the image beneath has parts brighter than{' '}
-          <code>threshold</code>. Over a dark or evenly lit image at the default threshold it adds
-          nothing. Lower <code>threshold</code> to let more of the image glow, and set it to 0 to
-          bloom everything. It works in Mode 1 only, because it needs the scene&apos;s output stage.
+          <code>threshold</code>. Over a dark image it adds nothing, and over an evenly bright one
+          it lifts the whole picture. Raise <code>threshold</code> to keep the glow to the brightest
+          lights, lower it to let more of the image glow, and set it to 0 to bloom everything. It
+          works in Mode 1 only, because it needs the scene&apos;s output stage.
         </p>
         <p>
           <code>radius</code> only adds reach. The glow stays as bright against the light at every

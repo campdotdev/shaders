@@ -13,7 +13,7 @@ export interface BloomProps {
    * shows. 0 blooms everything. Light fades in over the range from half
    * the threshold up to it, so nothing switches on at a hard edge. A
    * Source that adds light can pass 1, so values above 1 work. Negative
-   * values act as 0. Defaults to 0.7. Accepts a static value or an
+   * values act as 0. Defaults to 0.3. Accepts a static value or an
    * animation signal.
    */
   threshold?: AnimatableProp<number>;
@@ -31,7 +31,7 @@ export interface BloomProps {
    * How much of the glow is added over the image. 0 adds none, leaves the
    * image as it was, and skips the glow's GPU work. 1 adds the glow as it
    * was blurred, and higher values add more, so bright parts can clip to
-   * white. Negative values act as 0. Defaults to 0.5. Accepts a static
+   * white. Negative values act as 0. Defaults to 0.7. Accepts a static
    * value or an animation signal.
    */
   strength?: AnimatableProp<number>;
@@ -45,6 +45,6 @@ export interface BloomProps {
  * part of the scene, it shows over the page behind the canvas. Mode 1 only,
  * because it needs the scene's output stage.
  */
-export function Bloom({ threshold = 0.7, radius = 0.5, strength = 0.5 }: BloomProps) {
+export function Bloom({ threshold = 0.3, radius = 0.5, strength = 0.7 }: BloomProps) {
   return <BloomShader radius={radius} strength={strength} threshold={threshold} />;
 }
