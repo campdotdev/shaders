@@ -146,7 +146,7 @@ A component whose `colorNode` emits light-contribution rgb with coverage alpha, 
 
 ### The no-depth gotcha: a WebGPU scene has no depth buffer and no MSAA
 
-Every component draws one quad that covers the canvas at the same depth and smooths its own edges in its shader. So `createRenderer` defaults `antialias` to false and gives the canvas no depth buffer, and the output stage's scene pass renders with `depthBuffer: false`. On WebGPU, nothing in a scene is depth-tested, and draw order alone decides what covers what. Passing `antialias: true` to `createRenderer` turns MSAA back on there, for the canvas and the scene pass.
+Every component draws one quad that covers the canvas at the same depth and smooths its own edges in its shader. So `createRenderer` defaults `antialias` to false and gives the canvas no depth buffer, and the output stage's scene pass renders with `depthBuffer: false`. On WebGPU, nothing in a scene is depth-tested, and draw order alone decides what covers what. Passing `antialias: true` to `createRenderer` turns MSAA back on there, for the canvas and the scene pass. Passing `depth: true` gives the canvas a depth buffer, for a caller that draws its own scene of meshes with the renderer, as `/dev/strand-probe` does. The scene pass of a `ShaderScene` still has none.
 
 On the WebGL2 fallback, neither setting changes anything. three creates the WebGL2 context with the browser's defaults, which include a depth buffer and MSAA. It never multisamples the scene pass, and it attaches the pass's depth texture whatever `depthBuffer` says. So WebGL2 still depth-tests, and a mesh that relies on depth would draw differently on the two backends.
 

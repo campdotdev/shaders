@@ -23,6 +23,15 @@ TSL building blocks for writing shader expressions, all exported from the packag
 - `displace(uv, offset)` — UV displacement helper.
 - `cursorRipple(uv, cursor, opts?)` — cursor-following ripple displacement (used by `<DotField>`).
 
+### Strands
+
+Four primitives draw strands: fine curves of light that are a mesh, not a fragment shader. They are for Mode 2, where your own camera draws them. [Three / r3f](/react/guides/three-r3f#draw-strands-in-your-scene) shows them together.
+
+- `createStrandGeometry({ strands, samples })` — a `BufferGeometry` of strips, one per strand, with `samples` points along each. It has no positions. Each vertex stores four floats: `strandAcross`, `strandSeed`, `strandAlong`, and `strandSide`. Dispose it when you are done.
+- `strandAttributes()` — those four attributes as float nodes: `across` (the strand's place among the others, 0 to 1), `seed` (a random number per strand, 0 to 1), `along` (0 to 1 down the strand), and `side` (-1 or 1, the edge of the strip).
+- `extrudeStrand(path, { strandWidth })` — widens a path into a strip `strandWidth` CSS pixels thick at any distance from the camera. `path` is a function `(along, across, seed) => vec3` that returns a point in the mesh's own space. It must depend only on its inputs and on uniforms. Returns `position`, a clip-space vec4 for the material's vertex node, and `distance`, the signed distance in CSS pixels from the strand's center line.
+- `strandProfile(distance, strandWidth)` — a Gaussian falloff across a strand: 1 on the center line and about 0 at the edges. Below a half-width of `MIN_STRAND_HALF_WIDTH` (1.5 CSS pixels), a strand keeps that width and dims.
+
 ## Layering and `elapsedTime`
 
 Shaders sits on top of Three.js's TSL. Pure TSL primitives (`uv`, `vec2`, `vec3`, `vec4`, `uniform`, `mix`, `smoothstep`, `mod`, `sin`, `cos`, `length`, `dot`, `normalize`, `max`, `min`) live in `three/tsl` — import them directly from there:
@@ -45,7 +54,7 @@ import { time as rawTime } from 'three/tsl'
 
 ## Runtime
 
-- **`createRenderer(opts)`** → `GpuRenderer`. Allocates a WebGPU renderer. Used internally by `<ShaderScene>`; you rarely call it directly.
+- **`createRenderer(canvas, opts?)`** → `Promise<GpuRenderer>`. Allocates a WebGPU renderer. Used internally by `<ShaderScene>`; you rarely call it directly. `depth: true` gives the canvas a depth buffer on WebGPU, for a scene of your own where a nearer mesh hides a farther one. It defaults to `false`.
 - **`FrameScheduler`** — the render-frame coordinator. Components register as `SchedulerClient`s; the scheduler ticks them when their scene is visible and not reduced-motion-paused.
 - **Visibility / intersection watchers** — `createVisibilityWatcher()`, `createIntersectionWatcher()`. Low-level utilities behind the offscreen-pause behavior.
 
@@ -81,7 +90,7 @@ import { parseColorString, linearSrgbToOklch } from '@camp-dev/shaders/color'
 
 ## Type exports
 
-The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vector2`, `ColorRampStop`, `TSLNode`, `FractalNoiseOptions`, `FractalFold`, `CursorRippleOptions`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`, `OutputGamut`, `ColorSpace`, `HueInterpolation`.
+The engine exports types for everything above: `GpuRenderer`, `CreateRendererOptions`, `GpuBackend`, `SchedulerTick`, `SchedulerClient`, `CursorInputOptions`, `Vector2`, `ColorRampStop`, `TSLNode`, `FractalNoiseOptions`, `FractalFold`, `CursorRippleOptions`, `StrandGeometryOptions`, `StrandAttributes`, `StrandPath`, `ExtrudeStrandOptions`, `ExtrudeStrandResult`, `ReducedMotionPolicy`, `ReducedMotionWatcher`, `VisibilityWatcher`, `IntersectionWatcher`, `OutputGamut`, `ColorSpace`, `HueInterpolation`.
 
 <Callout>
   For React-specific exports (`<ShaderScene>`, hooks, `<FallbackBoundary>`), see [the React API](/react/api). This page only covers `@camp-dev/shaders`.

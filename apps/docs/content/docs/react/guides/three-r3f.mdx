@@ -48,6 +48,59 @@ export function Scene() {
 
 The material plays by r3f's rules — dispose, frameloop, demand-rendering all work as r3f expects. Shaders just provides the TSL math; r3f provides the scene graph.
 
+## Draw strands in your scene
+
+Strands are fine curves of light drawn as a mesh, so they sit in your 3D scene: your camera moves around them, and your meshes hide the ones behind them. A strand stays the same number of CSS pixels thick at any distance.
+
+For strands, the builder returns two nodes. `vertex` places each vertex, and `color` shades each pixel:
+
+```tsx
+import { useEffect, useMemo } from 'react'
+import {
+  createStrandGeometry,
+  extrudeStrand,
+  strandProfile,
+  useShaderMaterial,
+} from '@camp-dev/shaders'
+import { mix, sin, vec3 } from 'three/tsl'
+
+const STRAND_WIDTH = 3
+
+const buildStrands = () => {
+  const strand = extrudeStrand(
+    // Where a strand is: a sine wave along x. Each strand sits further back.
+    (along, across) => {
+      const x = mix(-3, 3, along)
+      return vec3(x, sin(x.mul(4)).mul(0.15), across.mul(-6))
+    },
+    { strandWidth: STRAND_WIDTH },
+  )
+  const light = strandProfile(strand.distance, STRAND_WIDTH)
+
+  return { color: vec3(0.12, 0.3, 0.75).mul(light), vertex: strand.position }
+}
+
+function Strands() {
+  const material = useShaderMaterial(buildStrands, { blending: 'additive' })
+  const geometry = useMemo(() => createStrandGeometry({ strands: 24, samples: 256 }), [])
+
+  useEffect(() => () => geometry.dispose(), [geometry])
+
+  return <mesh geometry={geometry} material={material} />
+}
+```
+
+Four primitives do the work:
+
+- `createStrandGeometry` builds the mesh: one strip of triangles per strand, with `samples` points along each.
+- `extrudeStrand` takes your path and widens it into a strip. The path receives `along` (0 to 1 down the strand), `across` (the strand's place among the others, 0 to 1), and `seed` (a random number per strand), and returns a point in the mesh's own space. How far apart the strands sit, and how much each one strays, is up to your path.
+- `strandProfile` fades each strand from its center line to its edges.
+- `{ blending: 'additive' }` adds each strand's light to what is behind it, so strands brighten where they cross.
+
+`strandWidth` is how thick one strand is, edge to edge. The bright core is about 40% of that, because the fade reaches nothing at the edge. A strand thinner than 3 CSS pixels keeps that width and dims.
+
+The path must depend only on its inputs and on uniforms. To animate it, read a time uniform inside it.
+
 ## When to use Mode 2
 
 - You're building a 3D scene (geometry, lights, cameras) that also wants shader-y materials.
