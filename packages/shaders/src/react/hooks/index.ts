@@ -29,5 +29,9 @@ export { useScroll } from './use-scroll/use-scroll.js';
 export type { ScrollSignal, ScrollValue } from './use-scroll/use-scroll.js';
 
 export { useShaderMaterial } from './use-shader-material/use-shader-material.js';
+export type {
+  ShaderMaterialNodes,
+  ShaderMaterialOptions,
+} from './use-shader-material/use-shader-material.js';
 
 export { useStaticSceneHint } from './use-static-hint/use-static-hint.js';
