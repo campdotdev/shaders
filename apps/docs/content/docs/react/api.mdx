@@ -44,15 +44,18 @@ import { ShaderScene } from '@camp-dev/shaders'
 
 The lower-level hook for users who already own a `<Canvas>` from `@react-three/fiber`. Use this when you want Shaders primitives inside your own r3f scene — see [Three / r3f](/react/guides/three-r3f).
 
+Pass the hook a builder, a function that returns a TSL color, and the hook returns a material. The hook rebuilds the material whenever the builder's reference changes. Define the builder outside the component, not as an inline arrow:
+
 ```tsx
-import { useShaderMaterial } from '@camp-dev/shaders'
+import { fractalNoise, useShaderMaterial } from '@camp-dev/shaders'
 import { uv } from 'three/tsl'
-import { fractalNoise } from '@camp-dev/shaders'
+
+// Hoisted so its reference is stable: an inline arrow would recompile the
+// material on every render.
+const buildColor = () => fractalNoise(uv())
 
 function Plane() {
-  const material = useShaderMaterial({
-    color: fractalNoise(uv()),
-  })
+  const material = useShaderMaterial(buildColor)
   return <mesh material={material}><planeGeometry /></mesh>
 }
 ```
