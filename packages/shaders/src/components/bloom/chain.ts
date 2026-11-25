@@ -62,8 +62,10 @@ const MAX_LEVELS = 8;
  * chain has to halve its way down to the band, but they add nothing to
  * the glow. That is what makes the glow the same on a 1x and a 2x display.
  *
- * Raising FINEST_SCALE adds a tighter, hotter rim, and canvases shorter
- * than 2 ** (FINEST_SCALE + 1) device pixels then lose part of it.
+ * Raising FINEST_SCALE adds a tighter, hotter rim. A canvas shorter than
+ * 2 ** (FINEST_SCALE + 1) device pixels has no level fine enough to draw
+ * all of it, and its first level stands in for the ones it lacks (see the
+ * weights in buildLevels).
  * COARSEST_SCALE is one above the scale of COARSEST_HEIGHT, so the
  * smallest level fades in as the canvas grows instead of switching on.
  */
@@ -307,13 +309,34 @@ function buildLevels(
   // `radius` moves the band's coarse end, from FINEST_SCALE at 0, where
   // the band is one scale wide, to COARSEST_SCALE at 1. clamp is a plain
   // GPU function, so the dial moves without rebuilding anything.
+  //
+  // That sum holds only while the chain has a level at every scale in the
+  // band. On a canvas under 512 device pixels tall the first level is
+  // already coarser than FINEST_SCALE, so the band's finer scales have no
+  // level, and their weight would be lost: the glow would dim as the
+  // canvas shrank, and a small scene would glow less on a 1x display than
+  // on a 2x one. So the first level also takes the weight of every level
+  // that would sit above it, one scale apart, had the canvas been taller.
+  // Those weights add up to a short formula. Count from the fine end of
+  // the band, FINEST_SCALE + 1, down to the first level's scale: the
+  // weights of the levels from there up sum to that distance, because each
+  // full level adds 1 and the two ramps add what is left over. The sum
+  // stops growing at the whole band's weight, FINEST_SCALE + 1 minus the
+  // coarse end. At a first scale of 8 or more this is fadeOut, the same
+  // weight as before. At 7.5 it is 1.5: the level's own 1, plus the 0.5 of
+  // the missing level at 8.5. The small canvas then holds the same light
+  // as a large one, drawn by a coarser level, which is as fine as its
+  // pixels can show.
   const coarseEnd = clamp(radius, 0, 1)
     .mul(COARSEST_SCALE - FINEST_SCALE)
     .add(FINEST_SCALE);
+  const fineEnd = float(FINEST_SCALE + 1);
   const weightAt = (index: number): TSLValue => {
     const scale = firstScale.sub(index);
+
+    if (index === 0) return clamp(fineEnd.sub(scale), 0, fineEnd.sub(coarseEnd));
     const fadeIn = clamp(scale.sub(coarseEnd).add(1), 0, 1);
-    const fadeOut = clamp(float(FINEST_SCALE + 1).sub(scale), 0, 1);
+    const fadeOut = clamp(fineEnd.sub(scale), 0, 1);
 
     return fadeIn.mul(fadeOut);
   };
