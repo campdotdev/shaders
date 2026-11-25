@@ -17,11 +17,11 @@ const apiPage = path.join(docsRoot, 'content/docs/react/api.mdx');
 
 function exampleUnderHeading(mdx: string, heading: string): string {
   const section = mdx.split(/^## /m).find((part) => part.startsWith(heading));
-  const fence = section?.match(/```tsx\n([\s\S]*?)```/);
+  const example = section?.match(/```tsx\n([\s\S]*?)```/)?.[1];
 
-  if (!fence) throw new Error(`No tsx example under "## ${heading}"`);
+  if (example === undefined) throw new Error(`No tsx example under "## ${heading}"`);
 
-  return fence[1];
+  return example;
 }
 
 // ----
