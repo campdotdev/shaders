@@ -61,8 +61,21 @@ export interface TexturePass {
    * consumer then works the value out inline instead.
    */
   readonly texture: Texture | null;
+  /**
+   * The texture's width in texels, as allocated: the requested width,
+   * clamped to the device's limit. 0 while `texture` is null.
+   */
+  readonly width: number;
+  /** The texture's height in texels, clamped the same way. 0 while `texture` is null. */
+  readonly height: number;
   /** Draw the node into the texture, once per call. */
   render: () => void;
+  /**
+   * Draw a different node from the next render on. The texture object stays
+   * the same, so a texture node bound to it stays bound. The renderer
+   * compiles the new node's shader on that render.
+   */
+  setNode: (node: Node | ShaderNodeObject<Node>) => void;
   /**
    * Change the texture's size in texels, clamped as the options' width and
    * height are. The texture object stays the same, so a texture node bound
@@ -78,8 +91,13 @@ export interface TexturePass {
 // nothing behind it, whose null texture tells the consumer to fall back.
 const inertPass: TexturePass = {
   texture: null,
+  width: 0,
+  height: 0,
   render: () => {
     // No target to draw into.
+  },
+  setNode: () => {
+    // No material to draw with.
   },
   resize: () => {
     // No target to resize.
@@ -173,6 +191,14 @@ export function createTexturePass(
       return target?.texture ?? null;
     },
 
+    get width() {
+      return alive() && target !== null ? target.width : 0;
+    },
+
+    get height() {
+      return alive() && target !== null ? target.height : 0;
+    },
+
     // Bind the target, draw the quad into it, and put back whatever target
     // was bound before, in a finally block so a draw that throws (a lost
     // device) cannot leave the scene drawing into this texture. The throw
@@ -189,6 +215,14 @@ export function createTexturePass(
       } finally {
         renderer.setRenderTarget(previousTarget);
       }
+    },
+
+    // needsUpdate is what makes the renderer compile the material's program
+    // again on its next draw, as it does for the output stage's quad.
+    setNode(nextNode) {
+      if (!alive()) return;
+      material.fragmentNode = nextNode;
+      material.needsUpdate = true;
     },
 
     // setSize keeps the texture object and frees its GPU memory, which three

@@ -1,12 +1,13 @@
 import { OrthographicCamera, Scene } from 'three';
 import { type ShaderNodeObject, vec2 } from 'three/tsl';
-import type {
-  Node,
-  NodeMaterial,
-  PassNode,
-  QuadMesh,
-  TextureNode,
-  WebGPURenderer,
+import {
+  type Node,
+  type NodeMaterial,
+  NodeUpdateType,
+  type PassNode,
+  type QuadMesh,
+  type TextureNode,
+  type WebGPURenderer,
 } from 'three/webgpu';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -327,6 +328,31 @@ describe('createOutputStage', () => {
 
     expect(scenePasses.size).toBe(1);
     expect([...scenePasses][0]?.renderTarget.depthBuffer).toBe(false);
+  });
+
+  // Bloom draws the image beneath it into a texture of its own, with its
+  // own material (ADR 0010). three draws a pass before any material whose
+  // graph holds the pass's node, once a frame. So a read through
+  // sampleBeneath has to carry the scene's pass node, with the type that
+  // three updates once a frame, or Bloom's texture would hold the scene from
+  // the frame before.
+  it('hands a resample a sampler whose reads carry the scene pass', () => {
+    const { stage } = renderedMaterial();
+    let read: ShaderNodeObject<Node> | undefined;
+
+    stage.registerResample((sampleBeneath) => {
+      read = sampleBeneath(vec2(0.5, 0.5));
+
+      return sampleBeneath;
+    });
+    const scenePasses = new Set<PassNode>();
+
+    read?.traverse((node) => {
+      if ('isPassNode' in node) scenePasses.add(node as PassNode);
+    });
+
+    expect(scenePasses.size).toBe(1);
+    expect([...scenePasses][0]?.updateBeforeType).toBe(NodeUpdateType.FRAME);
   });
 
   it('disposes the quad material', () => {

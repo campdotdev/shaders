@@ -10,6 +10,7 @@ import type { ComponentType, ReactNode } from 'react';
 
 import { AuroraIsland } from './aurora/demo';
 import { BlobsIsland } from './blobs/demo';
+import { BloomIsland } from './bloom/demo';
 import { ConicGradientIsland } from './conic-gradient/demo';
 import { CursorRippleIsland } from './cursor-ripple/demo';
 import { CursorSmudgeIsland } from './cursor-smudge/demo';
@@ -88,6 +89,48 @@ export const COMPONENT_PAGES: Record<string, ComponentPageEntry> = {
       <>
         The space between blobs is transparent — stack Blobs over a gradient or any other layer and
         it shows through.
+      </>
+    ),
+  },
+  bloom: {
+    Island: BloomIsland,
+    copySiblings: ['<MeshGradient />'],
+    usageSnippet: `<ShaderScene>
+  <MeshGradient />
+  <Bloom />
+</ShaderScene>`,
+    usageNotes: (
+      <>
+        <p>
+          Bloom adds light, so it shows only where the image beneath has parts brighter than{' '}
+          <code>threshold</code>. Over a dark image it adds nothing, and over an evenly bright one
+          it lifts the whole picture. Raise <code>threshold</code> to keep the glow to the brightest
+          lights, lower it to let more of the image glow, and set it to 0 to bloom everything. It
+          works in Mode 1 only, because it needs the scene&apos;s output stage.
+        </p>
+        <p>
+          <code>radius</code> only adds reach. The glow stays as bright against the light at every
+          radius, and a higher one adds the wide, faint part, so a wider glow holds more light. Turn{' '}
+          <code>strength</code> down as you turn <code>radius</code> up to keep the same overall
+          brightness. A <code>strength</code> of 0 leaves the image as it was and skips the
+          glow&apos;s GPU work.
+        </p>
+        <p>
+          Where the glow lands on a transparent part of the scene, it shows over the page behind the
+          canvas.
+        </p>
+        <p>
+          <strong>In a stack.</strong> Mount a UV warp such as HeatShimmer before Bloom and the glow
+          comes from the warped image. Mount it after, and the warp bends the image and its glow
+          together. Grain and Vignette act on the finished picture wherever you mount them, because
+          the output stage runs every color transform after every resample. So Grain never blooms,
+          and Vignette darkens the glow with the image.
+        </p>
+        <p>
+          Bloom draws the bright parts of the image into a chain of smaller textures every frame,
+          about 1 ms of GPU time on a full-screen canvas at 2x. Time a deep stack on your slowest
+          target device before you ship it.
+        </p>
       </>
     ),
   },

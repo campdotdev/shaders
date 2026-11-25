@@ -5,6 +5,9 @@
 export { Aurora } from './aurora/aurora.js';
 export type { AuroraProps } from './aurora/aurora.js';
 
+export { Bloom } from './bloom/bloom.js';
+export type { BloomProps } from './bloom/bloom.js';
+
 export { Blobs } from './blobs/blobs.js';
 export type { BlobsProps } from './blobs/blobs.js';
 

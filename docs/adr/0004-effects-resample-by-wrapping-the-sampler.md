@@ -1,6 +1,6 @@
 # Effects resample the image beneath them by wrapping a sampler, not through render targets
 
-Status: Accepted. The output-stage change lands in its own sub-issue of SHA-266, before FlutedGlass's color split and blur.
+Status: Accepted. The output-stage change lands in its own sub-issue of SHA-266, before FlutedGlass's color split and blur. ADR 0010 narrows the title: an Effect may draw passes of its own, as long as it reads the image beneath through the sampler.
 
 FlutedGlass needs several samples of the image beneath it: three for its color split and twelve for its blur. The output stage gave an Effect one sample. `createOutputStage` passed the screen coordinate through every registered UV warp in turn and read the scene texture once, at the coordinate that came out. We chose to hand each Effect a function that samples everything beneath it, and the Effect returns a new function in its place. The output stage calls the last function once per pixel, at the screen coordinate. The glossary calls the Effect's rule a resample. A UV warp is the resample that calls the function beneath it once, at a moved coordinate, so Dither, CursorRipple, and CursorSmudge keep their code.
 

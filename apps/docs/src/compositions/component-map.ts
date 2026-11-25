@@ -9,6 +9,7 @@
 import {
   Aurora,
   Blobs,
+  Bloom,
   ConicGradient,
   CursorRipple,
   CursorSmudge,
@@ -39,6 +40,7 @@ import {
 export const COMPONENT_MAP = {
   Aurora,
   Blobs,
+  Bloom,
   ConicGradient,
   CursorRipple,
   CursorSmudge,

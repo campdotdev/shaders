@@ -213,6 +213,33 @@ describe('render', () => {
   });
 });
 
+describe('setNode', () => {
+  // Bloom's first pass draws the image beneath it, which the output stage
+  // hands over again each time it rebuilds.
+  it('draws the new node into the same texture from the next render on', () => {
+    const renderer = makeRenderer();
+    const pass = createTexturePass(renderer, red, floatSlices);
+    const texture = pass.texture;
+    const green = vec4(0, 1, 0, 1);
+
+    pass.setNode(green);
+
+    expect(renderer.render).not.toHaveBeenCalled();
+    pass.render();
+    expect(drawnNode(renderer)).toBe(green);
+    expect(pass.texture).toBe(texture);
+  });
+
+  it('does nothing after dispose', () => {
+    const renderer = makeRenderer();
+    const pass = createTexturePass(renderer, red, floatSlices);
+
+    pass.dispose();
+
+    expect(() => pass.setNode(vec4(0, 1, 0, 1))).not.toThrow();
+  });
+});
+
 describe('resize', () => {
   // The texture object survives, so a consumer's texture node stays bound to
   // it. Its contents do not: the consumer renders again after a resize.
@@ -264,9 +291,11 @@ describe('resize', () => {
     });
 
     expect(pass.texture?.image).toMatchObject({ width: limit, height: 1 });
+    expect([pass.width, pass.height]).toEqual([limit, 1]);
 
     pass.resize(limit * 2, limit + 10);
     expect(pass.texture?.image).toMatchObject({ width: limit, height: limit });
+    expect([pass.width, pass.height]).toEqual([limit, limit]);
 
     pass.resize(limit - 1, 1);
     expect(pass.texture?.image).toMatchObject({ width: limit - 1, height: 1 });
