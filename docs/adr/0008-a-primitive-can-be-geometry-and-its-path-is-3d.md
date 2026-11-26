@@ -1,6 +1,6 @@
 # A primitive can be geometry and a vertex node, and its path is 3D
 
-Status: Accepted. Nothing is built yet. The Ribbon spec, SHA-330, lands it, starting with the strand primitives in SHA-331.
+Status: Accepted. SHA-331 built the strand primitives and the `useShaderMaterial` change. The rest of the Ribbon spec, SHA-330, builds the Ribbon Source on them.
 
 Every Tier 2 primitive so far is a TSL function for the fragment stage: nodes in, nodes out. A ribbon is different. It is dozens of strands, each a few pixels wide, and the look depends on where strands cross. Drawn in a fragment shader, as WaveLines draws its lines, every pixel would search every strand for the nearest one. The distance to a twisting curve has no closed form, so each strand's part of that search is a loop of its own, run at every pixel on every frame.
 

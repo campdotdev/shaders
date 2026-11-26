@@ -60,6 +60,11 @@ function Plane() {
 }
 ```
 
+`useShaderMaterial(build, options?)` returns a `MeshBasicNodeMaterial`.
+
+- `build` returns a color node, or `{ color, vertex }`. The `vertex` node is a clip-space vec4 that becomes the material's `vertexNode` and replaces three's own position setup. Use it for a mesh the shader places itself, such as strands from `extrudeStrand`.
+- `options.blending` is `'normal'` or `'additive'`, and defaults to `'normal'`. An additive material adds its color to what is already drawn. It is transparent and writes no depth, so it never hides anything, and meshes in front still hide it.
+
 ## Input hooks
 
 All three return signal-shaped objects compatible with [animation props](/guides/animation):

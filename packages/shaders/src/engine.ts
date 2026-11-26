@@ -83,6 +83,21 @@ export type {
   MarchHeightMapResult,
 } from './primitives/march-height-map/march-height-map.js';
 
+// The strand primitives. createStrandGeometry is the first primitive that is
+// geometry, and extrudeStrand the first that runs in the vertex stage (ADR
+// 0008).
+export { createStrandGeometry } from './primitives/strand/create-strand-geometry.js';
+export type { StrandGeometryOptions } from './primitives/strand/create-strand-geometry.js';
+export { strandAttributes } from './primitives/strand/strand-attributes.js';
+export type { StrandAttributes } from './primitives/strand/strand-attributes.js';
+export { extrudeStrand } from './primitives/strand/extrude-strand.js';
+export type {
+  ExtrudeStrandOptions,
+  ExtrudeStrandResult,
+  StrandPath,
+} from './primitives/strand/extrude-strand.js';
+export { MIN_STRAND_HALF_WIDTH, strandProfile } from './primitives/strand/strand-profile.js';
+
 export { cursorRipple } from './primitives/cursor-ripple/cursor-ripple.js';
 export type { CursorRippleOptions } from './primitives/cursor-ripple/cursor-ripple.js';
 

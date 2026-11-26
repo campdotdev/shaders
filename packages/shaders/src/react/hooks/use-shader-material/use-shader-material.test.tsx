@@ -1,6 +1,6 @@
 import { renderHook } from '@testing-library/react';
-import { vec3 } from 'three/tsl';
-import { MeshBasicNodeMaterial } from 'three/webgpu';
+import { vec3, vec4 } from 'three/tsl';
+import { AdditiveBlending, MeshBasicNodeMaterial, NormalBlending } from 'three/webgpu';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { useShaderMaterial } from './use-shader-material.js';
@@ -53,5 +53,72 @@ describe('useShaderMaterial', () => {
 
     rerender({ build: () => vec3(0, 1, 0) });
     expect(result.current).not.toBe(first);
+  });
+
+  it('sets vertexNode when the build function returns color and vertex nodes', () => {
+    const color = vec3(1, 0, 0);
+    const vertex = vec4(0, 0, 0, 1);
+    const { result } = renderHook(() => useShaderMaterial(() => ({ color, vertex })));
+
+    expect(result.current.colorNode).toBe(color);
+    expect(result.current.vertexNode).toBe(vertex);
+  });
+
+  it('leaves vertexNode alone when the build function returns a color node', () => {
+    const { result } = renderHook(() => useShaderMaterial(() => vec3(1, 0, 0)));
+
+    expect(result.current.vertexNode).toBeNull();
+  });
+
+  it('blends normally and writes depth by default', () => {
+    const { result } = renderHook(() => useShaderMaterial(() => vec3(1, 0, 0)));
+
+    expect(result.current.blending).toBe(NormalBlending);
+    expect(result.current.depthWrite).toBe(true);
+    expect(result.current.transparent).toBe(false);
+  });
+
+  it('keeps the defaults under normal blending', () => {
+    const { result } = renderHook(() =>
+      useShaderMaterial(() => vec3(1, 0, 0), { blending: 'normal' }),
+    );
+
+    expect(result.current.blending).toBe(NormalBlending);
+    expect(result.current.depthWrite).toBe(true);
+    expect(result.current.transparent).toBe(false);
+  });
+
+  it('adds light, stops writing depth, and turns transparent under additive blending', () => {
+    const { result } = renderHook(() =>
+      useShaderMaterial(() => vec3(1, 0, 0), { blending: 'additive' }),
+    );
+
+    expect(result.current.blending).toBe(AdditiveBlending);
+    expect(result.current.depthWrite).toBe(false);
+    expect(result.current.transparent).toBe(true);
+  });
+
+  it('keeps the material when the options object is new but its blending is the same', () => {
+    const build = () => vec3(1, 0, 0);
+    const { result, rerender } = renderHook(() =>
+      useShaderMaterial(build, { blending: 'additive' }),
+    );
+    const first = result.current;
+
+    rerender();
+    expect(result.current).toBe(first);
+  });
+
+  it('rebuilds the material when blending changes', () => {
+    const build = () => vec3(1, 0, 0);
+    const { result, rerender } = renderHook(
+      ({ blending }: { blending: 'normal' | 'additive' }) => useShaderMaterial(build, { blending }),
+      { initialProps: { blending: 'normal' } },
+    );
+    const first = result.current;
+
+    rerender({ blending: 'additive' });
+    expect(result.current).not.toBe(first);
+    expect(result.current.blending).toBe(AdditiveBlending);
   });
 });

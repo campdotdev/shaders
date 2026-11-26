@@ -18,6 +18,12 @@ export type GpuBackend = 'webgpu' | 'webgl2';
 export interface CreateRendererOptions {
   /** Smooth triangle edges with 4x MSAA on WebGPU. Default: false. */
   antialias?: boolean;
+  /**
+   * Give the canvas a depth buffer on WebGPU, so a nearer mesh hides a
+   * farther one. Turn it on to draw your own 3D scene with this renderer.
+   * ShaderScene needs none. Default: false.
+   */
+  depth?: boolean;
   /** Force WebGL2 even if WebGPU is available (useful for testing fallback). Default: false. */
   forceWebGL?: boolean;
   /** Clear color (hex, CSS string, or THREE.Color). Default: transparent. */
@@ -57,6 +63,7 @@ export async function createRenderer(
     // its own soft edges. Every pixel is fully covered, so all 4 MSAA samples
     // would hold the same color.
     antialias = false,
+    depth = false,
     forceWebGL = false,
     clearColor = 0x000000,
     clearAlpha = 0,
@@ -65,11 +72,12 @@ export async function createRenderer(
   } = opts;
 
   // ShaderScene draws only its output quad to the canvas, so the canvas needs
-  // no depth buffer (the no-depth gotcha in docs/agents/tsl.md).
+  // no depth buffer (the no-depth gotcha in docs/agents/tsl.md). A caller
+  // that draws meshes at different depths with this renderer asks for one.
   const three = new WebGPURenderer({
     canvas,
     antialias,
-    depth: false,
+    depth,
     forceWebGL,
   });
 

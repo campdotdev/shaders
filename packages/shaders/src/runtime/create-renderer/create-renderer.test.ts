@@ -27,4 +27,10 @@ describe('createRenderer', () => {
 
     expect(three.samples).toBe(4);
   });
+
+  it('gives the canvas a depth buffer when the caller asks for depth', async () => {
+    const { three } = await createRenderer(document.createElement('canvas'), { depth: true });
+
+    expect(three.depth).toBe(true);
+  });
 });
