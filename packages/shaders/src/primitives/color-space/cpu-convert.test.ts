@@ -204,6 +204,12 @@ describe('parseOklchString', () => {
     expect(parseOklchString('oklch(70% 50% 280deg)')).toEqual([0.7, 0.2, 280]);
   });
 
+  it('reads a turn, grad, or rad hue in degrees', () => {
+    expect(parseOklchString('oklch(0.7 0.15 0.5turn)')).toEqual([0.7, 0.15, 180]);
+    expect(parseOklchString('oklch(0.7 0.15 200grad)')).toEqual([0.7, 0.15, 180]);
+    expect(parseOklchString(`oklch(0.7 0.15 ${Math.PI}rad)`)[2]).toBeCloseTo(180, 10);
+  });
+
   it('accepts commas, surrounding whitespace, and a dropped alpha', () => {
     expect(parseOklchString('  oklch(0.7, 0.15, 280 / 50%) ')).toEqual([0.7, 0.15, 280]);
   });
