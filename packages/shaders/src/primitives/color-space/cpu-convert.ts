@@ -289,6 +289,27 @@ function parseHexColor(value: string, input: string): [number, number, number] {
   ];
 }
 
+/** Degrees in one of each CSS angle unit. A bare number is degrees. */
+const DEGREES_PER_UNIT: Record<string, number> = {
+  deg: 1,
+  grad: 360 / 400,
+  rad: 180 / Math.PI,
+  turn: 360,
+};
+
+const HUE_TOKEN = /^(.*?)(deg|grad|rad|turn)?$/;
+
+/**
+ * Read an `oklch()` hue in any CSS angle unit, in degrees, or NaN. Every unit
+ * lands in the same [0, 360) range, so `1turn` and `0deg` read the same.
+ */
+function parseHue(token: string): number {
+  const [, numberToken = '', unit = 'deg'] = HUE_TOKEN.exec(token) ?? [];
+  const degrees = parseNumber(numberToken) * (DEGREES_PER_UNIT[unit] ?? NaN);
+
+  return ((degrees % 360) + 360) % 360;
+}
+
 /**
  * Read an `oklch(L C H)` string into its three numbers, with no conversion:
  * `[lightness, chroma, hueDegrees]`. 100% lightness is 1 and 100% chroma is
@@ -312,7 +333,7 @@ export function parseOklchString(input: string): [number, number, number] {
 
   const lightness = parseComponent(lightnessToken, 1);
   const chroma = parseComponent(chromaToken, 0.4);
-  const hueDegrees = parseNumber(hueToken.replace(/deg$/, ''));
+  const hueDegrees = parseHue(hueToken);
 
   // parseNumber answers NaN for a non-numeric token rather than throwing, and
   // NaN does not fail loudly: it rides into colorRamp or mixColor, gets baked
