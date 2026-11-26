@@ -312,7 +312,8 @@ export function parseOklchString(input: string): [number, number, number] {
 
   const lightness = parseComponent(lightnessToken, 1);
   const chroma = parseComponent(chromaToken, 0.4);
-  const hueDegrees = parseNumber(hueToken.replace(/deg$/, ''));
+  // CSS reads a `none` component as 0. Tools write greys as `oklch(L 0 none)`.
+  const hueDegrees = hueToken === 'none' ? 0 : parseNumber(hueToken.replace(/deg$/, ''));
 
   // parseNumber answers NaN for a non-numeric token rather than throwing, and
   // NaN does not fail loudly: it rides into colorRamp or mixColor, gets baked
