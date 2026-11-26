@@ -208,6 +208,10 @@ describe('parseOklchString', () => {
     expect(parseOklchString('  oklch(0.7, 0.15, 280 / 50%) ')).toEqual([0.7, 0.15, 280]);
   });
 
+  it('reads a none hue as the same grey as a 0 hue', () => {
+    expect(parseColorString('oklch(0.6 0 0)')).toEqual(oklchToLinearSrgb(0.6, 0, 0));
+  });
+
   it('returns the hue as written, without wrapping it into [0, 360)', () => {
     expect(parseOklchString('oklch(0.5 0.1 420)')).toEqual([0.5, 0.1, 420]);
     expect(parseOklchString('oklch(0.5 0.1 -30)')).toEqual([0.5, 0.1, -30]);
